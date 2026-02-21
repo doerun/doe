@@ -3,6 +3,8 @@ const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
+const surface_procs_mod = @import("wgpu_surface_procs.zig");
+const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const commands = @import("wgpu_commands.zig");
 
 pub const NativeExecutionStatus = types.NativeExecutionStatus;
@@ -22,6 +24,13 @@ pub const QueueSyncMode = enum {
     deferred,
 };
 
+pub const ManagedSurface = struct {
+    surface: surface_procs_mod.Surface,
+    configured: bool = false,
+    acquired_texture: types.WGPUTexture = null,
+    last_texture_status: u32 = 0,
+};
+
 pub const WebGPUBackend = struct {
     const Self = @This();
 
@@ -38,8 +47,11 @@ pub const WebGPUBackend = struct {
     render_pipeline_cache: std.AutoHashMap(u32, types.RenderPipelineCacheEntry),
     render_target_view_cache: std.AutoHashMap(u64, types.RenderTextureViewCacheEntry),
     render_depth_view_cache: std.AutoHashMap(u64, types.RenderTextureViewCacheEntry),
+    samplers: std.AutoHashMap(u64, types.WGPUSampler),
+    surfaces: std.AutoHashMap(u64, ManagedSurface),
     render_uniform_bind_group_layout: types.WGPUBindGroupLayout = null,
     render_uniform_bind_group: types.WGPUBindGroup = null,
+    render_sampler: types.WGPUSampler = null,
     upload_scratch: []u8 = &[_]u8{},
     upload_buffer_usage_mode: UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = 1,
@@ -63,6 +75,8 @@ pub const WebGPUBackend = struct {
             .render_pipeline_cache = std.AutoHashMap(u32, types.RenderPipelineCacheEntry).init(allocator),
             .render_target_view_cache = std.AutoHashMap(u64, types.RenderTextureViewCacheEntry).init(allocator),
             .render_depth_view_cache = std.AutoHashMap(u64, types.RenderTextureViewCacheEntry).init(allocator),
+            .samplers = std.AutoHashMap(u64, types.WGPUSampler).init(allocator),
+            .surfaces = std.AutoHashMap(u64, ManagedSurface).init(allocator),
             .kernel_root = kernel_root,
             .library_error = "",
             .requested_backend_type = preferredBackendType(profile),
@@ -113,6 +127,20 @@ pub const WebGPUBackend = struct {
             procs.wgpuBindGroupLayoutRelease(bind_group_layout);
             self.render_uniform_bind_group_layout = null;
         }
+        if (self.render_sampler) |sampler| {
+            if (texture_procs_mod.loadTextureProcs(self.dyn_lib)) |texture_procs| {
+                texture_procs.sampler_release(sampler);
+            }
+            self.render_sampler = null;
+        }
+
+        if (texture_procs_mod.loadTextureProcs(self.dyn_lib)) |texture_procs| {
+            var sampler_it = self.samplers.valueIterator();
+            while (sampler_it.next()) |sampler| {
+                if (sampler.* != null) texture_procs.sampler_release(sampler.*);
+            }
+        }
+        self.samplers.clearAndFree();
 
         var it = self.buffers.valueIterator();
         while (it.next()) |record| {
@@ -132,11 +160,29 @@ pub const WebGPUBackend = struct {
         }
         self.render_depth_view_cache.clearAndFree();
 
+        const texture_procs = texture_procs_mod.loadTextureProcs(self.dyn_lib);
         var texture_it = self.textures.valueIterator();
         while (texture_it.next()) |record| {
+            if (texture_procs) |tp| {
+                tp.texture_destroy(record.texture);
+            }
             procs.wgpuTextureRelease(record.texture);
         }
         self.textures.clearAndFree();
+
+        if (surface_procs_mod.loadSurfaceProcs(self.dyn_lib)) |surface_procs| {
+            var surface_it = self.surfaces.valueIterator();
+            while (surface_it.next()) |managed_surface| {
+                if (managed_surface.*.acquired_texture != null) {
+                    procs.wgpuTextureRelease(managed_surface.*.acquired_texture);
+                }
+                if (managed_surface.*.configured) {
+                    surface_procs.surface_unconfigure(managed_surface.*.surface);
+                }
+                surface_procs.surface_release(managed_surface.*.surface);
+            }
+        }
+        self.surfaces.clearAndFree();
 
         var pipe_it = self.pipeline_cache.valueIterator();
         while (pipe_it.next()) |entry| {
@@ -221,6 +267,85 @@ pub const WebGPUBackend = struct {
         try self.waitForQueue();
         const end = std.time.nanoTimestamp();
         return if (end > start) @as(u64, @intCast(end - start)) else 0;
+    }
+
+    pub fn createSurface(
+        self: *Self,
+        descriptor: surface_procs_mod.SurfaceDescriptor,
+    ) !surface_procs_mod.Surface {
+        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
+        const surface = surface_procs.instance_create_surface(self.instance.?, &descriptor);
+        if (surface == null) return error.SurfaceCreationFailed;
+        return surface;
+    }
+
+    pub fn getSurfaceCapabilities(
+        self: *Self,
+        surface: surface_procs_mod.Surface,
+    ) !surface_procs_mod.SurfaceCapabilities {
+        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
+        var capabilities = surface_procs_mod.SurfaceCapabilities{
+            .nextInChain = null,
+            .usages = types.WGPUTextureUsage_None,
+            .formatCount = 0,
+            .formats = null,
+            .presentModeCount = 0,
+            .presentModes = null,
+            .alphaModeCount = 0,
+            .alphaModes = null,
+        };
+        const status = surface_procs.surface_get_capabilities(surface, self.adapter.?, &capabilities);
+        if (status != types.WGPUStatus_Success) return error.SurfaceCapabilitiesFailed;
+        return capabilities;
+    }
+
+    pub fn freeSurfaceCapabilities(
+        self: *Self,
+        capabilities: surface_procs_mod.SurfaceCapabilities,
+    ) void {
+        if (surface_procs_mod.loadSurfaceProcs(self.dyn_lib)) |surface_procs| {
+            surface_procs.surface_capabilities_free_members(capabilities);
+        }
+    }
+
+    pub fn configureSurface(
+        self: *Self,
+        surface: surface_procs_mod.Surface,
+        config: surface_procs_mod.SurfaceConfiguration,
+    ) !void {
+        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
+        surface_procs.surface_configure(surface, &config);
+    }
+
+    pub fn getCurrentSurfaceTexture(
+        self: *Self,
+        surface: surface_procs_mod.Surface,
+    ) !surface_procs_mod.SurfaceTexture {
+        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
+        var surface_texture = surface_procs_mod.SurfaceTexture{
+            .nextInChain = null,
+            .texture = null,
+            .status = 0,
+        };
+        surface_procs.surface_get_current_texture(surface, &surface_texture);
+        return surface_texture;
+    }
+
+    pub fn presentSurface(self: *Self, surface: surface_procs_mod.Surface) !void {
+        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
+        const status = surface_procs.surface_present(surface);
+        if (status != types.WGPUStatus_Success) return error.SurfacePresentFailed;
+    }
+
+    pub fn unconfigureSurface(self: *Self, surface: surface_procs_mod.Surface) !void {
+        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
+        surface_procs.surface_unconfigure(surface);
+    }
+
+    pub fn releaseSurface(self: *Self, surface: surface_procs_mod.Surface) void {
+        if (surface_procs_mod.loadSurfaceProcs(self.dyn_lib)) |surface_procs| {
+            surface_procs.surface_release(surface);
+        }
     }
 
     pub fn prewarmUploadPath(self: *Self, max_upload_bytes: u64) !void {

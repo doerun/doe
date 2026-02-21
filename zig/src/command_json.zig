@@ -1,5 +1,7 @@
 const std = @import("std");
 const model = @import("model.zig");
+const parse_helpers = @import("command_parse_helpers.zig");
+const parse_extra = @import("command_json_extra.zig");
 
 const Allocator = std.mem.Allocator;
 
@@ -152,6 +154,92 @@ const RawCommand = struct {
     pipelineMode: ?[]const u8 = null,
     bind_group_mode: ?[]const u8 = null,
     bindGroupMode: ?[]const u8 = null,
+    encode_mode: ?[]const u8 = null,
+    encodeMode: ?[]const u8 = null,
+    viewport_x: ?f32 = null,
+    viewportX: ?f32 = null,
+    viewport_y: ?f32 = null,
+    viewportY: ?f32 = null,
+    viewport_width: ?f32 = null,
+    viewportWidth: ?f32 = null,
+    viewport_height: ?f32 = null,
+    viewportHeight: ?f32 = null,
+    viewport_min_depth: ?f32 = null,
+    viewportMinDepth: ?f32 = null,
+    viewport_max_depth: ?f32 = null,
+    viewportMaxDepth: ?f32 = null,
+    scissor_x: ?u32 = null,
+    scissorX: ?u32 = null,
+    scissor_y: ?u32 = null,
+    scissorY: ?u32 = null,
+    scissor_width: ?u32 = null,
+    scissorWidth: ?u32 = null,
+    scissor_height: ?u32 = null,
+    scissorHeight: ?u32 = null,
+    blend_r: ?f32 = null,
+    blendR: ?f32 = null,
+    blend_g: ?f32 = null,
+    blendG: ?f32 = null,
+    blend_b: ?f32 = null,
+    blendB: ?f32 = null,
+    blend_a: ?f32 = null,
+    blendA: ?f32 = null,
+    stencil_reference: ?u32 = null,
+    stencilReference: ?u32 = null,
+    bind_group_dynamic_offsets: ?[]u32 = null,
+    bindGroupDynamicOffsets: ?[]u32 = null,
+    handle: ?u64 = null,
+    resource_handle: ?u64 = null,
+    resourceHandle: ?u64 = null,
+    texture_handle: ?u64 = null,
+    textureHandle: ?u64 = null,
+    sampler_handle: ?u64 = null,
+    samplerHandle: ?u64 = null,
+    surface_handle: ?u64 = null,
+    surfaceHandle: ?u64 = null,
+    width: ?u32 = null,
+    height: ?u32 = null,
+    depth_or_array_layers: ?u32 = null,
+    depthOrArrayLayers: ?u32 = null,
+    depth: ?u32 = null,
+    format: ?[]const u8 = null,
+    usage: ?u64 = null,
+    dimension: ?[]const u8 = null,
+    view_dimension: ?[]const u8 = null,
+    viewDimension: ?[]const u8 = null,
+    mip_level: ?u32 = null,
+    mipLevel: ?u32 = null,
+    sample_count: ?u32 = null,
+    sampleCount: ?u32 = null,
+    aspect: ?[]const u8 = null,
+    offset: ?u64 = null,
+    rows_per_image: ?u32 = null,
+    data: ?[]u32 = null,
+    address_mode_u: ?[]const u8 = null,
+    addressModeU: ?[]const u8 = null,
+    address_mode_v: ?[]const u8 = null,
+    addressModeV: ?[]const u8 = null,
+    address_mode_w: ?[]const u8 = null,
+    addressModeW: ?[]const u8 = null,
+    mag_filter: ?[]const u8 = null,
+    magFilter: ?[]const u8 = null,
+    min_filter: ?[]const u8 = null,
+    minFilter: ?[]const u8 = null,
+    mipmap_filter: ?[]const u8 = null,
+    mipmapFilter: ?[]const u8 = null,
+    lod_min_clamp: ?f32 = null,
+    lodMinClamp: ?f32 = null,
+    lod_max_clamp: ?f32 = null,
+    lodMaxClamp: ?f32 = null,
+    compare: ?[]const u8 = null,
+    max_anisotropy: ?u16 = null,
+    maxAnisotropy: ?u16 = null,
+    alpha_mode: ?[]const u8 = null,
+    alphaMode: ?[]const u8 = null,
+    present_mode: ?[]const u8 = null,
+    presentMode: ?[]const u8 = null,
+    desired_maximum_frame_latency: ?u32 = null,
+    desiredMaximumFrameLatency: ?u32 = null,
     workgroupCount: ?[3]u32 = null,
     workgroups: ?[3]u32 = null,
     bindings: ?[]RawKernelBinding = null,
@@ -205,7 +293,11 @@ fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
                     .uint32 => |values| allocator.free(values),
                 }
             }
+            if (render_command.bind_group_dynamic_offsets) |offsets| {
+                allocator.free(offsets);
+            }
         },
+        .texture_write => |write_texture| allocator.free(write_texture.data),
         else => {},
     }
 }
@@ -225,6 +317,19 @@ const NormalizedKind = enum {
     dispatch,
     kernel_dispatch,
     render_draw,
+    sampler_create,
+    sampler_destroy,
+    texture_write,
+    texture_query,
+    texture_destroy,
+    surface_create,
+    surface_capabilities,
+    surface_configure,
+    surface_acquire,
+    surface_present,
+    surface_unconfigure,
+    surface_release,
+    async_diagnostics,
 };
 
 fn parseKind(raw: RawCommand) !NormalizedKind {
@@ -269,44 +374,47 @@ fn parseKind(raw: RawCommand) !NormalizedKind {
     {
         return .render_draw;
     }
+    if (commandKindEquals(kind, "sampler_create") or commandKindEquals(kind, "create_sampler")) {
+        return .sampler_create;
+    }
+    if (commandKindEquals(kind, "sampler_destroy") or commandKindEquals(kind, "destroy_sampler")) {
+        return .sampler_destroy;
+    }
+    if (commandKindEquals(kind, "texture_write") or commandKindEquals(kind, "write_texture") or commandKindEquals(kind, "queue_write_texture")) {
+        return .texture_write;
+    }
+    if (commandKindEquals(kind, "texture_query") or commandKindEquals(kind, "query_texture")) {
+        return .texture_query;
+    }
+    if (commandKindEquals(kind, "texture_destroy") or commandKindEquals(kind, "destroy_texture")) {
+        return .texture_destroy;
+    }
+    if (commandKindEquals(kind, "surface_create") or commandKindEquals(kind, "create_surface")) {
+        return .surface_create;
+    }
+    if (commandKindEquals(kind, "surface_capabilities") or commandKindEquals(kind, "surface_get_capabilities")) {
+        return .surface_capabilities;
+    }
+    if (commandKindEquals(kind, "surface_configure") or commandKindEquals(kind, "configure_surface")) {
+        return .surface_configure;
+    }
+    if (commandKindEquals(kind, "surface_acquire") or commandKindEquals(kind, "surface_get_current_texture") or commandKindEquals(kind, "surface_current_texture")) {
+        return .surface_acquire;
+    }
+    if (commandKindEquals(kind, "surface_present") or commandKindEquals(kind, "present_surface")) {
+        return .surface_present;
+    }
+    if (commandKindEquals(kind, "surface_unconfigure") or commandKindEquals(kind, "unconfigure_surface")) {
+        return .surface_unconfigure;
+    }
+    if (commandKindEquals(kind, "surface_release") or commandKindEquals(kind, "release_surface")) {
+        return .surface_release;
+    }
+    if (commandKindEquals(kind, "async_diagnostics") or commandKindEquals(kind, "pipeline_async_diagnostics")) {
+        return .async_diagnostics;
+    }
 
     return ParseError.UnknownCommandKind;
-}
-
-fn parseCopyDirectionFromKind(raw: RawCommand) model.CopyDirection {
-    const kind = getCommandName(raw) orelse return .buffer_to_buffer;
-    if (commandKindEquals(kind, "copy_buffer_to_texture") or
-        commandKindEquals(kind, "copy_texture") or
-        commandKindEquals(kind, "copyBufferToTexture") or
-        commandKindEquals(kind, "copyTexture"))
-    {
-        return .buffer_to_texture;
-    }
-    if (commandKindEquals(kind, "copy_texture_to_buffer") or commandKindEquals(kind, "copyTextureToBuffer")) {
-        return .texture_to_buffer;
-    }
-    if (commandKindEquals(kind, "copy_texture_to_texture") or commandKindEquals(kind, "copyTextureToTexture")) {
-        return .texture_to_texture;
-    }
-    return .buffer_to_buffer;
-}
-
-fn parseCopyDirection(raw_direction: ?[]const u8, raw: RawCommand) !model.CopyDirection {
-    if (raw_direction) |raw_value| {
-        if (commandKindEquals(raw_value, "buffer_to_buffer")) return .buffer_to_buffer;
-        if (commandKindEquals(raw_value, "buffer_to_texture")) return .buffer_to_texture;
-        if (commandKindEquals(raw_value, "texture_to_buffer")) return .texture_to_buffer;
-        if (commandKindEquals(raw_value, "texture_to_texture")) return .texture_to_texture;
-        return ParseError.InvalidCommandPayload;
-    }
-    return parseCopyDirectionFromKind(raw);
-}
-
-fn parseCopyResourceKind(raw_kind: ?[]const u8) ?model.CopyResourceKind {
-    const raw_value = raw_kind orelse return null;
-    if (commandKindEquals(raw_value, "buffer")) return .buffer;
-    if (commandKindEquals(raw_value, "texture")) return .texture;
-    return null;
 }
 
 fn parseCopyResource(
@@ -324,7 +432,7 @@ fn parseCopyResource(
 
     if (handle == null) return ParseError.InvalidCommandPayload;
 
-    const kind = parseCopyResourceKind(if (std.mem.eql(u8, side, "src")) raw.src_kind orelse raw.srcKind else raw.dst_kind orelse raw.dstKind) orelse default_kind;
+    const kind = parse_helpers.parseCopyResourceKind(if (std.mem.eql(u8, side, "src")) raw.src_kind orelse raw.srcKind else raw.dst_kind orelse raw.dstKind) orelse default_kind;
 
     const width = if (std.mem.eql(u8, side, "src"))
         (raw.src_width orelse raw.srcWidth orelse 1)
@@ -347,13 +455,13 @@ fn parseCopyResource(
     else
         (raw.dst_usage orelse raw.dstUsage orelse 0);
     const dimension = if (std.mem.eql(u8, side, "src"))
-        parseTextureDimension(raw.src_dimension orelse raw.srcDimension, .texture) catch model.WGPUTextureDimension_Undefined
+        parse_helpers.parseTextureDimension(raw.src_dimension orelse raw.srcDimension)
     else
-        parseTextureDimension(raw.dst_dimension orelse raw.dstDimension, .texture) catch model.WGPUTextureDimension_Undefined;
+        parse_helpers.parseTextureDimension(raw.dst_dimension orelse raw.dstDimension);
     const view_dimension = if (std.mem.eql(u8, side, "src"))
-        parseTextureViewDimension(raw.src_view_dimension orelse raw.srcViewDimension) orelse model.WGPUTextureViewDimension_Undefined
+        parse_helpers.parseTextureViewDimension(raw.src_view_dimension orelse raw.srcViewDimension)
     else
-        parseTextureViewDimension(raw.dst_view_dimension orelse raw.dstViewDimension) orelse model.WGPUTextureViewDimension_Undefined;
+        parse_helpers.parseTextureViewDimension(raw.dst_view_dimension orelse raw.dstViewDimension);
     const mip_level = if (std.mem.eql(u8, side, "src"))
         (raw.src_mip_level orelse raw.srcMipLevel orelse 0)
     else
@@ -363,9 +471,9 @@ fn parseCopyResource(
     else
         (raw.dst_sample_count orelse raw.dstSampleCount orelse 1);
     const aspect = if (std.mem.eql(u8, side, "src"))
-        parseTextureAspect(raw.src_aspect orelse raw.srcAspect) orelse model.WGPUTextureAspect_Undefined
+        parse_helpers.parseTextureAspect(raw.src_aspect orelse raw.srcAspect)
     else
-        parseTextureAspect(raw.dst_aspect orelse raw.dstAspect) orelse model.WGPUTextureAspect_Undefined;
+        parse_helpers.parseTextureAspect(raw.dst_aspect orelse raw.dstAspect);
     const bytes_per_row = if (std.mem.eql(u8, side, "src"))
         (raw.src_bytes_per_row orelse raw.srcBytesPerRow orelse 0)
     else
@@ -386,7 +494,7 @@ fn parseCopyResource(
 
     var texture_format: u32 = model.WGPUTextureFormat_Undefined;
     if (format_raw) |raw_format| {
-        texture_format = parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload;
+        texture_format = parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload;
     }
 
     return .{
@@ -444,8 +552,8 @@ fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBind
         const binding_index = raw_binding.binding orelse return ParseError.InvalidCommandPayload;
         const group = raw_binding.group orelse raw_binding.groupIndex orelse raw_binding.group_index orelse 0;
         const handle = raw_binding.handle orelse raw_binding.resource_handle orelse raw_binding.resourceHandle orelse return ParseError.InvalidCommandPayload;
-        const kind = parseKernelBindingKind(raw_binding.kind orelse raw_binding.resource_kind orelse raw_binding.resourceKind) orelse return ParseError.InvalidCommandPayload;
-        const visibility = parseShaderStage(raw_binding.visibility) orelse parseWGPUBits(raw_binding.visibilityMask) orelse model.WGPUShaderStage_Compute;
+        const kind = parse_helpers.parseKernelBindingKind(raw_binding.kind orelse raw_binding.resource_kind orelse raw_binding.resourceKind) orelse return ParseError.InvalidCommandPayload;
+        const visibility = parse_helpers.parseShaderStage(raw_binding.visibility) orelse parse_helpers.parseWGPUBits(raw_binding.visibilityMask) orelse model.WGPUShaderStage_Compute;
         const buffer_offset = raw_binding.buffer_offset orelse raw_binding.bufferOffset orelse 0;
         const buffer_size = raw_binding.buffer_size orelse raw_binding.bufferSize orelse model.WGPUWholeSize;
 
@@ -457,13 +565,13 @@ fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBind
             .visibility = visibility,
             .buffer_offset = buffer_offset,
             .buffer_size = buffer_size,
-            .buffer_type = parseBufferBindingType(raw_binding.buffer_type orelse raw_binding.bufferType) orelse model.WGPUBufferBindingType_Undefined,
-            .texture_sample_type = parseTextureSampleType(raw_binding.texture_sample_type orelse raw_binding.textureSampleType) orelse model.WGPUTextureSampleType_Undefined,
-            .texture_view_dimension = parseTextureViewDimension(raw_binding.texture_view_dimension orelse raw_binding.textureViewDimension) orelse model.WGPUTextureViewDimension_Undefined,
-            .storage_texture_access = parseStorageTextureAccess(raw_binding.storage_access orelse raw_binding.storageAccess) orelse model.WGPUStorageTextureAccess_Undefined,
-            .texture_aspect = parseTextureAspect(raw_binding.texture_aspect orelse raw_binding.textureAspect) orelse model.WGPUTextureAspect_Undefined,
+            .buffer_type = parse_helpers.parseBufferBindingType(raw_binding.buffer_type orelse raw_binding.bufferType),
+            .texture_sample_type = parse_helpers.parseTextureSampleType(raw_binding.texture_sample_type orelse raw_binding.textureSampleType),
+            .texture_view_dimension = parse_helpers.parseTextureViewDimension(raw_binding.texture_view_dimension orelse raw_binding.textureViewDimension),
+            .storage_texture_access = parse_helpers.parseStorageTextureAccess(raw_binding.storage_access orelse raw_binding.storageAccess),
+            .texture_aspect = parse_helpers.parseTextureAspect(raw_binding.texture_aspect orelse raw_binding.textureAspect),
             .texture_format = if (raw_binding.texture_format orelse raw_binding.textureFormat) |raw_format|
-                parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
+                parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
             else
                 model.WGPUTextureFormat_Undefined,
             .texture_multisampled = raw_binding.multisampled orelse false,
@@ -471,182 +579,6 @@ fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBind
     }
 
     return bindings.toOwnedSlice();
-}
-
-fn parseKernelBindingKind(raw_kind: ?[]const u8) ?model.KernelBindingResourceKind {
-    const value = raw_kind orelse return .buffer;
-    if (commandKindEquals(value, "buffer") or commandKindEquals(value, "uniform") or commandKindEquals(value, "storage_buffer") or commandKindEquals(value, "readonly_storage_buffer")) {
-        return .buffer;
-    }
-    if (commandKindEquals(value, "texture") or commandKindEquals(value, "sampled_texture") or commandKindEquals(value, "texture_sampled")) {
-        return .texture;
-    }
-    if (commandKindEquals(value, "storage_texture") or commandKindEquals(value, "storage_texture_binding") or commandKindEquals(value, "storage")) {
-        return .storage_texture;
-    }
-    return null;
-}
-
-fn parseShaderStage(raw_stage: ?[]const u8) ?model.WGPUFlags {
-    const value = raw_stage orelse return null;
-    if (commandKindEquals(value, "compute") or commandKindEquals(value, "compute-only") or commandKindEquals(value, "computeOnly")) {
-        return model.WGPUShaderStage_Compute;
-    }
-    if (commandKindEquals(value, "vertex")) return model.WGPUShaderStage_Vertex;
-    if (commandKindEquals(value, "fragment")) return model.WGPUShaderStage_Fragment;
-    if (commandKindEquals(value, "all") or commandKindEquals(value, "*")) return model.WGPUShaderStage_Vertex | model.WGPUShaderStage_Fragment | model.WGPUShaderStage_Compute;
-    return null;
-}
-
-fn parseWGPUBits(raw_bits: ?u64) ?model.WGPUFlags {
-    return raw_bits;
-}
-
-fn parseBufferBindingType(raw: ?[]const u8) ?u32 {
-    const value = raw orelse return model.WGPUBufferBindingType_Undefined;
-    if (commandKindEquals(value, "uniform")) return model.WGPUBufferBindingType_Uniform;
-    if (commandKindEquals(value, "storage")) return model.WGPUBufferBindingType_Storage;
-    if (commandKindEquals(value, "readonly") or commandKindEquals(value, "read_only_storage")) return model.WGPUBufferBindingType_ReadOnlyStorage;
-    return model.WGPUBufferBindingType_Undefined;
-}
-
-fn parseTextureSampleType(raw: ?[]const u8) ?u32 {
-    const value = raw orelse return model.WGPUTextureSampleType_Undefined;
-    if (commandKindEquals(value, "float")) return model.WGPUTextureSampleType_Float;
-    if (commandKindEquals(value, "unfilterable-float") or commandKindEquals(value, "unfilterable_float")) return model.WGPUTextureSampleType_UnfilterableFloat;
-    if (commandKindEquals(value, "depth")) return model.WGPUTextureSampleType_Depth;
-    if (commandKindEquals(value, "sint")) return model.WGPUTextureSampleType_Sint;
-    if (commandKindEquals(value, "uint")) return model.WGPUTextureSampleType_Uint;
-    return model.WGPUTextureSampleType_Undefined;
-}
-
-fn parseTextureViewDimension(raw: ?[]const u8) ?u32 {
-    const value = raw orelse return model.WGPUTextureViewDimension_Undefined;
-    if (commandKindEquals(value, "1d") or commandKindEquals(value, "1D") or commandKindEquals(value, "1d-array")) return model.WGPUTextureViewDimension_1D;
-    if (commandKindEquals(value, "2d") or commandKindEquals(value, "2D")) return model.WGPUTextureViewDimension_2D;
-    if (commandKindEquals(value, "2d-array")) return model.WGPUTextureViewDimension_2DArray;
-    if (commandKindEquals(value, "cube")) return model.WGPUTextureViewDimension_Cube;
-    if (commandKindEquals(value, "cube-array")) return model.WGPUTextureViewDimension_CubeArray;
-    if (commandKindEquals(value, "3d") or commandKindEquals(value, "3D")) return model.WGPUTextureViewDimension_3D;
-    return model.WGPUTextureViewDimension_Undefined;
-}
-
-fn parseTextureDimension(raw: ?[]const u8, fallback: model.CopyResourceKind) !u32 {
-    _ = fallback;
-    const value = raw orelse return model.WGPUTextureDimension_Undefined;
-    if (commandKindEquals(value, "1d")) return model.WGPUTextureDimension_1D;
-    if (commandKindEquals(value, "2d")) return model.WGPUTextureDimension_2D;
-    if (commandKindEquals(value, "3d")) return model.WGPUTextureDimension_3D;
-    return model.WGPUTextureDimension_Undefined;
-}
-
-fn parseStorageTextureAccess(raw: ?[]const u8) ?u32 {
-    const value = raw orelse return model.WGPUStorageTextureAccess_Undefined;
-    if (commandKindEquals(value, "write_only") or commandKindEquals(value, "write-only")) return model.WGPUStorageTextureAccess_WriteOnly;
-    if (commandKindEquals(value, "read_only") or commandKindEquals(value, "read-only")) return model.WGPUStorageTextureAccess_ReadOnly;
-    if (commandKindEquals(value, "read_write") or commandKindEquals(value, "read-write")) return model.WGPUStorageTextureAccess_ReadWrite;
-    return model.WGPUStorageTextureAccess_Undefined;
-}
-
-fn parseTextureAspect(raw: ?[]const u8) ?u32 {
-    const value = raw orelse return model.WGPUTextureAspect_Undefined;
-    if (commandKindEquals(value, "all")) return model.WGPUTextureAspect_All;
-    if (commandKindEquals(value, "depth-only") or commandKindEquals(value, "depth_only") or commandKindEquals(value, "depth")) return model.WGPUTextureAspect_DepthOnly;
-    if (commandKindEquals(value, "stencil-only") or commandKindEquals(value, "stencil_only") or commandKindEquals(value, "stencil")) return model.WGPUTextureAspect_StencilOnly;
-    return model.WGPUTextureAspect_Undefined;
-}
-
-fn parseTextureFormat(raw: []const u8) !u32 {
-    if (raw.len == 0) return model.WGPUTextureFormat_Undefined;
-    if (commandKindEquals(raw, "r8unorm")) return model.WGPUTextureFormat_R8Unorm;
-    if (commandKindEquals(raw, "r8snorm")) return model.WGPUTextureFormat_R8Snorm;
-    if (commandKindEquals(raw, "r8uint")) return model.WGPUTextureFormat_R8Uint;
-    if (commandKindEquals(raw, "r8sint")) return model.WGPUTextureFormat_R8Sint;
-    if (commandKindEquals(raw, "r16unorm")) return model.WGPUTextureFormat_R16Unorm;
-    if (commandKindEquals(raw, "r16snorm")) return model.WGPUTextureFormat_R16Snorm;
-    if (commandKindEquals(raw, "r16uint")) return model.WGPUTextureFormat_R16Uint;
-    if (commandKindEquals(raw, "r16sint")) return model.WGPUTextureFormat_R16Sint;
-    if (commandKindEquals(raw, "r16float")) return model.WGPUTextureFormat_R16Float;
-    if (commandKindEquals(raw, "rg8unorm")) return model.WGPUTextureFormat_RG8Unorm;
-    if (commandKindEquals(raw, "rg8snorm")) return model.WGPUTextureFormat_RG8Snorm;
-    if (commandKindEquals(raw, "rg8uint")) return model.WGPUTextureFormat_RG8Uint;
-    if (commandKindEquals(raw, "rg8sint")) return model.WGPUTextureFormat_RG8Sint;
-    if (commandKindEquals(raw, "r32float")) return model.WGPUTextureFormat_R32Float;
-    if (commandKindEquals(raw, "r32uint")) return model.WGPUTextureFormat_R32Uint;
-    if (commandKindEquals(raw, "r32sint")) return model.WGPUTextureFormat_R32Sint;
-    if (commandKindEquals(raw, "rg16unorm")) return model.WGPUTextureFormat_RG16Unorm;
-    if (commandKindEquals(raw, "rg16snorm")) return model.WGPUTextureFormat_RG16Snorm;
-    if (commandKindEquals(raw, "rg16uint")) return model.WGPUTextureFormat_RG16Uint;
-    if (commandKindEquals(raw, "rg16sint")) return model.WGPUTextureFormat_RG16Sint;
-    if (commandKindEquals(raw, "rg16float")) return model.WGPUTextureFormat_RG16Float;
-    if (commandKindEquals(raw, "rgba8unorm")) return model.WGPUTextureFormat_RGBA8Unorm;
-    if (commandKindEquals(raw, "rgba8unorm-srgb") or commandKindEquals(raw, "rgba8unormsrgb")) return model.WGPUTextureFormat_RGBA8UnormSrgb;
-    if (commandKindEquals(raw, "rgba8snorm")) return model.WGPUTextureFormat_RGBA8Snorm;
-    if (commandKindEquals(raw, "rgba8uint")) return model.WGPUTextureFormat_RGBA8Uint;
-    if (commandKindEquals(raw, "rgba8sint")) return model.WGPUTextureFormat_RGBA8Sint;
-    if (commandKindEquals(raw, "bgra8unorm")) return model.WGPUTextureFormat_BGRA8Unorm;
-    if (commandKindEquals(raw, "bgra8unorm-srgb") or commandKindEquals(raw, "bgra8unormsrgb")) return model.WGPUTextureFormat_BGRA8UnormSrgb;
-    if (commandKindEquals(raw, "depth16unorm")) return model.WGPUTextureFormat_Depth16Unorm;
-    if (commandKindEquals(raw, "depth24plus")) return model.WGPUTextureFormat_Depth24Plus;
-    if (commandKindEquals(raw, "depth24plus-stencil8") or commandKindEquals(raw, "depth24plus-stencil8")) return model.WGPUTextureFormat_Depth24PlusStencil8;
-    if (commandKindEquals(raw, "depth32float")) return model.WGPUTextureFormat_Depth32Float;
-    if (commandKindEquals(raw, "depth32float-stencil8")) return model.WGPUTextureFormat_Depth32FloatStencil8;
-    if (std.ascii.eqlIgnoreCase(raw, "undefined")) return model.WGPUTextureFormat_Undefined;
-    const int_value = std.fmt.parseInt(u32, raw, 10) catch return ParseError.InvalidCommandPayload;
-    return int_value;
-}
-
-fn parseRenderDrawPipelineMode(raw: ?[]const u8) !model.RenderDrawPipelineMode {
-    const value = raw orelse return .static;
-    if (commandKindEquals(value, "static")) return .static;
-    if (commandKindEquals(value, "redundant")) return .redundant;
-    return ParseError.InvalidCommandPayload;
-}
-
-fn parseRenderDrawBindGroupMode(raw: ?[]const u8) !model.RenderDrawBindGroupMode {
-    const value = raw orelse return .no_change;
-    if (commandKindEquals(value, "no-change") or commandKindEquals(value, "no_change")) return .no_change;
-    if (commandKindEquals(value, "redundant")) return .redundant;
-    return ParseError.InvalidCommandPayload;
-}
-
-fn parseRenderIndexFormat(raw: ?[]const u8) !?model.RenderIndexFormat {
-    const value = raw orelse return null;
-    if (commandKindEquals(value, "uint16") or commandKindEquals(value, "u16")) return .uint16;
-    if (commandKindEquals(value, "uint32") or commandKindEquals(value, "u32")) return .uint32;
-    return ParseError.InvalidCommandPayload;
-}
-
-fn inferRenderIndexFormat(indices: []const u32) model.RenderIndexFormat {
-    for (indices) |value| {
-        if (value > std.math.maxInt(u16)) return .uint32;
-    }
-    return .uint16;
-}
-
-fn parseRenderIndexData(
-    allocator: Allocator,
-    raw_indices: []const u32,
-    requested_format: ?model.RenderIndexFormat,
-) !model.RenderIndexData {
-    const chosen_format = requested_format orelse inferRenderIndexFormat(raw_indices);
-    return switch (chosen_format) {
-        .uint16 => blk: {
-            var values = try allocator.alloc(u16, raw_indices.len);
-            errdefer allocator.free(values);
-            for (raw_indices, 0..) |value, idx| {
-                if (value > std.math.maxInt(u16)) return ParseError.InvalidCommandPayload;
-                values[idx] = @as(u16, @intCast(value));
-            }
-            break :blk .{ .uint16 = values };
-        },
-        .uint32 => blk: {
-            const values = try allocator.alloc(u32, raw_indices.len);
-            errdefer allocator.free(values);
-            @memcpy(values, raw_indices);
-            break :blk .{ .uint32 = values };
-        },
-    };
 }
 
 fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
@@ -660,7 +592,7 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
 
     if (kind == .copy) {
         const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
-        const direction = try parseCopyDirection(raw.direction, raw);
+        const direction = parse_helpers.parseCopyDirection(raw.direction, getCommandName(raw)) catch return ParseError.InvalidCommandPayload;
         const default_src_kind: model.CopyResourceKind = switch (direction) {
             .buffer_to_buffer, .buffer_to_texture => .buffer,
             .texture_to_buffer, .texture_to_texture => .texture,
@@ -718,11 +650,11 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         };
         const raw_index_data = raw.index_data orelse raw.indexData orelse raw.indices;
         const indexed_draw = is_draw_indexed or parsed_index_count != null or raw_index_data != null;
-        const requested_index_format = try parseRenderIndexFormat(raw.index_format orelse raw.indexFormat);
+        const requested_index_format = parse_helpers.parseRenderIndexFormat(raw.index_format orelse raw.indexFormat) catch return ParseError.InvalidCommandPayload;
         const index_data = if (indexed_draw) blk: {
             const provided = raw_index_data orelse return ParseError.InvalidCommandPayload;
             if (provided.len == 0) return ParseError.InvalidCommandPayload;
-            break :blk try parseRenderIndexData(allocator, provided, requested_index_format);
+            break :blk parse_helpers.parseRenderIndexData(allocator, provided, requested_index_format) catch return ParseError.InvalidCommandPayload;
         } else null;
         errdefer if (index_data) |values| switch (values) {
             .uint16 => |items| allocator.free(items),
@@ -739,13 +671,39 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         const target_width = raw.target_width orelse raw.targetWidth orelse model.DEFAULT_RENDER_TARGET_WIDTH;
         const target_height = raw.target_height orelse raw.targetHeight orelse model.DEFAULT_RENDER_TARGET_HEIGHT;
         const target_format = if (raw.target_format orelse raw.targetFormat) |raw_format|
-            parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
+            parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
         else
             model.DEFAULT_RENDER_TARGET_FORMAT;
-        const pipeline_mode = parseRenderDrawPipelineMode(raw.pipeline_mode orelse raw.pipelineMode) catch return ParseError.InvalidCommandPayload;
-        const bind_group_mode = parseRenderDrawBindGroupMode(raw.bind_group_mode orelse raw.bindGroupMode) catch return ParseError.InvalidCommandPayload;
+        const pipeline_mode = parse_helpers.parseRenderDrawPipelineMode(raw.pipeline_mode orelse raw.pipelineMode) catch return ParseError.InvalidCommandPayload;
+        const bind_group_mode = parse_helpers.parseRenderDrawBindGroupMode(raw.bind_group_mode orelse raw.bindGroupMode) catch return ParseError.InvalidCommandPayload;
+        const encode_mode = parse_extra.parseRenderDrawEncodeMode(raw.encode_mode orelse raw.encodeMode) catch return ParseError.InvalidCommandPayload;
+        const viewport_x = raw.viewport_x orelse raw.viewportX orelse 0;
+        const viewport_y = raw.viewport_y orelse raw.viewportY orelse 0;
+        const viewport_width = raw.viewport_width orelse raw.viewportWidth;
+        const viewport_height = raw.viewport_height orelse raw.viewportHeight;
+        const viewport_min_depth = raw.viewport_min_depth orelse raw.viewportMinDepth orelse 0;
+        const viewport_max_depth = raw.viewport_max_depth orelse raw.viewportMaxDepth orelse 1;
+        const scissor_x = raw.scissor_x orelse raw.scissorX orelse 0;
+        const scissor_y = raw.scissor_y orelse raw.scissorY orelse 0;
+        const scissor_width = raw.scissor_width orelse raw.scissorWidth;
+        const scissor_height = raw.scissor_height orelse raw.scissorHeight;
+        const blend_r = raw.blend_r orelse raw.blendR orelse 0;
+        const blend_g = raw.blend_g orelse raw.blendG orelse 0;
+        const blend_b = raw.blend_b orelse raw.blendB orelse 0;
+        const blend_a = raw.blend_a orelse raw.blendA orelse 0;
+        const stencil_reference = raw.stencil_reference orelse raw.stencilReference orelse 0;
+        const dynamic_offsets = if (raw.bind_group_dynamic_offsets orelse raw.bindGroupDynamicOffsets) |offsets| blk: {
+            const copied = try allocator.alloc(u32, offsets.len);
+            errdefer allocator.free(copied);
+            @memcpy(copied, offsets);
+            break :blk copied;
+        } else null;
+        errdefer if (dynamic_offsets) |offsets| allocator.free(offsets);
 
         if (draw_count == 0 or vertex_count == 0 or instance_count == 0 or target_width == 0 or target_height == 0) {
+            return ParseError.InvalidCommandPayload;
+        }
+        if (viewport_min_depth < 0 or viewport_min_depth > 1 or viewport_max_depth < 0 or viewport_max_depth > 1 or viewport_max_depth < viewport_min_depth) {
             return ParseError.InvalidCommandPayload;
         }
         if (index_count != null and index_count.? == 0) return ParseError.InvalidCommandPayload;
@@ -770,8 +728,36 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
             .target_format = target_format,
             .pipeline_mode = pipeline_mode,
             .bind_group_mode = bind_group_mode,
+            .encode_mode = encode_mode,
+            .viewport_x = viewport_x,
+            .viewport_y = viewport_y,
+            .viewport_width = viewport_width,
+            .viewport_height = viewport_height,
+            .viewport_min_depth = viewport_min_depth,
+            .viewport_max_depth = viewport_max_depth,
+            .scissor_x = scissor_x,
+            .scissor_y = scissor_y,
+            .scissor_width = scissor_width,
+            .scissor_height = scissor_height,
+            .blend_constant = .{ blend_r, blend_g, blend_b, blend_a },
+            .stencil_reference = stencil_reference,
+            .bind_group_dynamic_offsets = dynamic_offsets,
         } };
     }
+
+    if (kind == .sampler_create) return .{ .sampler_create = parse_extra.parseSamplerCreateCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .sampler_destroy) return .{ .sampler_destroy = parse_extra.parseSamplerDestroyCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .texture_write) return .{ .texture_write = parse_extra.parseTextureWriteCommand(allocator, raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .texture_query) return .{ .texture_query = parse_extra.parseTextureQueryCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .texture_destroy) return .{ .texture_destroy = parse_extra.parseTextureDestroyCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .surface_create) return .{ .surface_create = parse_extra.parseSurfaceCreateCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .surface_capabilities) return .{ .surface_capabilities = parse_extra.parseSurfaceCapabilitiesCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .surface_configure) return .{ .surface_configure = parse_extra.parseSurfaceConfigureCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .surface_acquire) return .{ .surface_acquire = parse_extra.parseSurfaceAcquireCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .surface_present) return .{ .surface_present = parse_extra.parseSurfacePresentCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .surface_unconfigure) return .{ .surface_unconfigure = parse_extra.parseSurfaceUnconfigureCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .surface_release) return .{ .surface_release = parse_extra.parseSurfaceReleaseCommand(raw) catch return ParseError.InvalidCommandPayload };
+    if (kind == .async_diagnostics) return .{ .async_diagnostics = parse_extra.parseAsyncDiagnosticsCommand(raw) catch return ParseError.InvalidCommandPayload };
 
     return ParseError.UnknownCommandKind;
 }

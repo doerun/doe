@@ -1,0 +1,110 @@
+[
+  {
+    "kind": "sampler_create",
+    "handle": 100,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 200,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255, 0, 0, 255,
+      0, 255, 0, 255,
+      0, 0, 255, 255,
+      255, 255, 0, 255
+    ]
+  },
+  {
+    "kind": "texture_query",
+    "handle": 200
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "indexData": [0, 1, 2],
+    "indexFormat": "uint16",
+    "encodeMode": "render-pass",
+    "pipelineMode": "redundant",
+    "bindGroupMode": "redundant",
+    "viewportX": 0,
+    "viewportY": 0,
+    "viewportWidth": 64,
+    "viewportHeight": 64,
+    "scissorX": 0,
+    "scissorY": 0,
+    "scissorWidth": 64,
+    "scissorHeight": 64,
+    "blendR": 0,
+    "blendG": 0,
+    "blendB": 0,
+    "blendA": 0,
+    "stencilReference": 1,
+    "bindGroupDynamicOffsets": [0]
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "indexData": [0, 1, 2],
+    "indexFormat": "uint16",
+    "encodeMode": "render-bundle",
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "bindGroupDynamicOffsets": [256]
+  },
+  {
+    "kind": "surface_create",
+    "handle": 300
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 300
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 300,
+    "width": 64,
+    "height": 64,
+    "format": "rgba8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 300
+  },
+  {
+    "kind": "surface_present",
+    "handle": 300
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 300
+  },
+  {
+    "kind": "surface_release",
+    "handle": 300
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 100
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 200
+  }
+]

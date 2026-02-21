@@ -36,7 +36,61 @@
       "priority": "p0",
       "owner": "runtime-core",
       "contract": "zig/src/wgpu_types.zig Procs + zig/src/wgpu_loader.zig loadProcs + zig/src/wgpu_render_commands.zig executeRenderDraw",
-      "notes": "core render-pass APIs are first-class in the shared proc table: DeviceCreateRenderPipeline, CommandEncoderBeginRenderPass, RenderPassEncoder SetPipeline/SetVertexBuffer/SetIndexBuffer/SetBindGroup, Draw/DrawIndexed/(Indirect variants), End, and Release. current render_draw contract uses direct/indexed draws; indirect entry points are loaded and available for next command-contract expansion. render_draw fails fast as unsupported when required symbols are absent."
+      "notes": "core render-pass APIs are first-class in the shared proc table: DeviceCreateRenderPipeline, CommandEncoderBeginRenderPass, RenderPassEncoder SetPipeline/SetVertexBuffer/SetIndexBuffer/SetBindGroup, Draw/DrawIndexed/(Indirect variants), End, and Release. render_draw fails fast as unsupported when required symbols are absent."
+    },
+    {
+      "capabilityId": "render_pass_state_bindings",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_render_api.zig + zig/src/wgpu_render_commands.zig render-pass state setup",
+      "notes": "render_draw now applies bind-group (including dynamic offsets), viewport, scissor, blend-constant, stencil-reference, and pipeline bind-group-layout query in the native render path."
+    },
+    {
+      "capabilityId": "render_draw_encode_modes",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "RenderDrawCommand encode_mode + zig/src/wgpu_render_commands.zig encode branch",
+      "notes": "render_draw supports explicit render-pass and render-bundle encoding modes with deterministic, contract-driven behavior."
+    },
+    {
+      "capabilityId": "textured_render_workload_contract",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_render_resources.zig + zig/src/wgpu_texture_procs.zig + zig/src/wgpu_render_assets.zig",
+      "notes": "render_draw now uses a sampled texture + sampler bind-group contract; queueWriteTexture uploads deterministic texels; texture query/destroy lifecycle APIs are used by texture resource management and backend teardown."
+    },
+    {
+      "capabilityId": "render_bundle_execution",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_render_api.zig + zig/src/wgpu_render_commands.zig bundle encode/finish/execute",
+      "notes": "native render lowering now creates render bundle encoders, encodes draw/direct+indirect variants, finishes bundles, and executes bundles through RenderPassEncoderExecuteBundles."
+    },
+    {
+      "capabilityId": "surface_presentation",
+      "domain": "surface",
+      "status": "implemented",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_surface_procs.zig + zig/src/webgpu_ffi.zig surface methods",
+      "notes": "surface creation, capabilities, configure/get-current-texture/present/unconfigure/release wrappers are now implemented as explicit backend methods."
+    },
+    {
+      "capabilityId": "async_pipeline_diagnostics",
+      "domain": "pipeline",
+      "status": "implemented",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_async_procs.zig + zig/src/wgpu_render_commands.zig async pipeline path",
+      "notes": "render pipeline creation now uses DeviceCreateRenderPipelineAsync with explicit wait, push/pop error scopes, and shader compilation-info retrieval before pipeline cache insert."
     },
     {
       "capabilityId": "render_pass_state_space",
@@ -55,15 +109,6 @@
       "owner": "runtime-core",
       "contract": "executionGpuTimestampTotalNs trace-meta fields",
       "notes": "timestamp readback is implemented but still returns zero on some adapter/driver combinations."
-    },
-    {
-      "capabilityId": "surface_presentation",
-      "domain": "surface",
-      "status": "planned",
-      "priority": "p2",
-      "owner": "runtime-core",
-      "contract": "surface + swapchain command lane",
-      "notes": "offscreen command replay is implemented; present/swapchain path remains out of current contract."
     }
   ]
 }

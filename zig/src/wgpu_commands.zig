@@ -4,6 +4,8 @@ const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
 const render_commands = @import("wgpu_render_commands.zig");
+const extended_commands = @import("wgpu_extended_commands.zig");
+const async_diagnostics_command = @import("wgpu_async_diagnostics_command.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
@@ -36,6 +38,58 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
         .render_draw => |render| blk: {
             try flushPendingUploads(self);
             break :blk render_commands.executeRenderDraw(self, render);
+        },
+        .sampler_create => |sampler_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSamplerCreate(self, sampler_cmd);
+        },
+        .sampler_destroy => |sampler_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSamplerDestroy(self, sampler_cmd);
+        },
+        .texture_write => |texture_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeTextureWrite(self, texture_cmd);
+        },
+        .texture_query => |texture_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeTextureQuery(self, texture_cmd);
+        },
+        .texture_destroy => |texture_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeTextureDestroy(self, texture_cmd);
+        },
+        .surface_create => |surface_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSurfaceCreate(self, surface_cmd);
+        },
+        .surface_capabilities => |surface_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSurfaceCapabilities(self, surface_cmd);
+        },
+        .surface_configure => |surface_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSurfaceConfigure(self, surface_cmd);
+        },
+        .surface_acquire => |surface_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSurfaceAcquire(self, surface_cmd);
+        },
+        .surface_present => |surface_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSurfacePresent(self, surface_cmd);
+        },
+        .surface_unconfigure => |surface_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSurfaceUnconfigure(self, surface_cmd);
+        },
+        .surface_release => |surface_cmd| blk: {
+            try flushPendingUploads(self);
+            break :blk extended_commands.executeSurfaceRelease(self, surface_cmd);
+        },
+        .async_diagnostics => |diagnostics| blk: {
+            try flushPendingUploads(self);
+            break :blk async_diagnostics_command.executeAsyncDiagnostics(self, diagnostics);
         },
     };
 }

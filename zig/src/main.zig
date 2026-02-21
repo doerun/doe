@@ -6,6 +6,7 @@ const runtime = @import("runtime.zig");
 const execution = @import("execution.zig");
 const trace = @import("trace.zig");
 const replay = @import("replay.zig");
+const main_print = @import("main_print.zig");
 
 const sample_quirks =
     \\[
@@ -62,6 +63,19 @@ fn printUsage(stdout: anytype) !void {
         \\  dispatch | dispatch_workgroups | dispatch_invocations
         \\  kernel_dispatch (requires a kernel string)
         \\  render_draw | draw | draw_call | draw_indexed (requires draw_count; draw_indexed requires indexData/indices)
+        \\  sampler_create | create_sampler
+        \\  sampler_destroy | destroy_sampler
+        \\  texture_write | write_texture | queue_write_texture
+        \\  texture_query | query_texture
+        \\  texture_destroy | destroy_texture
+        \\  surface_create | create_surface
+        \\  surface_capabilities | get_surface_capabilities
+        \\  surface_configure | configure_surface
+        \\  surface_acquire | acquire_surface_texture
+        \\  surface_present | present_surface
+        \\  surface_unconfigure | unconfigure_surface
+        \\  surface_release | release_surface
+        \\  async_diagnostics | pipeline_async_diagnostics
         \\  command can be expressed as "kind", "command", or "command_kind"
         \\  kernel can be expressed as "kernel" or "kernel_name"
         \\If --quirks is omitted, the embedded sample profile is used.
@@ -73,7 +87,7 @@ fn printUsage(stdout: anytype) !void {
         \\--trace-meta writes a deterministic run summary JSON artifact.
         \\--backend chooses execution backend when --execute is enabled.
         \\  trace: do not execute commands (trace-only mode)
-        \\  native: execute through webgpu-native; dispatch and kernel_dispatch are lowered to compute passes (dispatch uses builtin fallback kernel), render_draw is lowered to a render pass.
+        \\  native: execute through webgpu-native; dispatch/kernel_dispatch lower to compute passes, render_draw lowers to render-pass or render-bundle mode, and sampler/texture/surface/async diagnostics commands run through explicit WebGPU API contracts.
         \\--upload-buffer-usage selects upload buffer usage when --execute is enabled.
         \\  copy-dst-copy-src: create upload buffers with CopyDst|CopySrc (default).
         \\  copy-dst: create upload buffers with CopyDst only.
@@ -94,35 +108,6 @@ fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
     return try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
-}
-
-fn commandName(command: model.Command) []const u8 {
-    return model.command_kind_name(model.command_kind(command));
-}
-
-fn commandKernel(command: model.Command) ?[]const u8 {
-    return switch (command) {
-        .kernel_dispatch => |dispatch| dispatch.kernel,
-        else => null,
-    };
-}
-
-fn printJsonU16Array(stdout: anytype, values: []const u16) !void {
-    try stdout.writeByte('[');
-    for (values, 0..) |value, idx| {
-        if (idx != 0) try stdout.writeByte(',');
-        try stdout.print("{}", .{value});
-    }
-    try stdout.writeByte(']');
-}
-
-fn printJsonU32Array(stdout: anytype, values: []const u32) !void {
-    try stdout.writeByte('[');
-    for (values, 0..) |value, idx| {
-        if (idx != 0) try stdout.writeByte(',');
-        try stdout.print("{}", .{value});
-    }
-    try stdout.writeByte(']');
 }
 
 fn optionExpectsValue(option: []const u8) bool {
@@ -156,123 +141,6 @@ fn maxUploadBytes(commands: []const model.Command) u64 {
         }
     }
     return max_bytes;
-}
-
-fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Command) !void {
-    switch (command) {
-        .upload => |upload| {
-            try stdout.writeAll("{\"seq\":");
-            try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"upload\",\"bytes\":");
-            try stdout.print("{}", .{upload.bytes});
-            try stdout.writeAll(",\"alignBytes\":");
-            try stdout.print("{}", .{upload.align_bytes});
-            try stdout.writeAll("}\n");
-        },
-        .copy_buffer_to_texture => |copy| {
-            try stdout.writeAll("{\"seq\":");
-            try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"copy_buffer_to_texture\",\"direction\":\"");
-            const direction = switch (copy.direction) {
-                .buffer_to_buffer => "buffer_to_buffer",
-                .buffer_to_texture => "buffer_to_texture",
-                .texture_to_buffer => "texture_to_buffer",
-                .texture_to_texture => "texture_to_texture",
-            };
-            try stdout.writeAll(direction);
-            try stdout.writeAll("\",\"srcHandle\":");
-            try stdout.print("{}", .{copy.src.handle});
-            try stdout.writeAll(",\"dstHandle\":");
-            try stdout.print("{}", .{copy.dst.handle});
-            try stdout.writeAll(",\"bytes\":");
-            try stdout.print("{}", .{copy.bytes});
-            try stdout.writeAll(",\"usesTemporaryBuffer\":");
-            try stdout.print("{}", .{copy.uses_temporary_buffer});
-            try stdout.writeAll(",\"temporaryBufferAlignment\":");
-            try stdout.print("{}", .{copy.temporary_buffer_alignment});
-            try stdout.writeAll("}\n");
-        },
-        .dispatch => |dispatch_cmd| {
-            try stdout.writeAll("{\"seq\":");
-            try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"dispatch\",\"x\":");
-            try stdout.print("{}", .{dispatch_cmd.x});
-            try stdout.writeAll(",\"y\":");
-            try stdout.print("{}", .{dispatch_cmd.y});
-            try stdout.writeAll(",\"z\":");
-            try stdout.print("{}", .{dispatch_cmd.z});
-            try stdout.writeAll("}\n");
-        },
-        .kernel_dispatch => |kernel_cmd| {
-            try stdout.writeAll("{\"seq\":");
-            try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"kernel_dispatch\",\"kernel\":\"");
-            try stdout.print("{s}\",\"x\":", .{kernel_cmd.kernel});
-            try stdout.print("{}", .{kernel_cmd.x});
-            try stdout.writeAll(",\"y\":");
-            try stdout.print("{}", .{kernel_cmd.y});
-            try stdout.writeAll(",\"z\":");
-            try stdout.print("{}", .{kernel_cmd.z});
-            try stdout.writeAll(",\"repeat\":");
-            try stdout.print("{}", .{kernel_cmd.repeat});
-            try stdout.writeAll("}\n");
-        },
-        .render_draw => |render_cmd| {
-            try stdout.writeAll("{\"seq\":");
-            try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"render_draw\",\"drawCount\":");
-            try stdout.print("{}", .{render_cmd.draw_count});
-            try stdout.writeAll(",\"vertexCount\":");
-            try stdout.print("{}", .{render_cmd.vertex_count});
-            try stdout.writeAll(",\"instanceCount\":");
-            try stdout.print("{}", .{render_cmd.instance_count});
-            try stdout.writeAll(",\"firstVertex\":");
-            try stdout.print("{}", .{render_cmd.first_vertex});
-            try stdout.writeAll(",\"firstInstance\":");
-            try stdout.print("{}", .{render_cmd.first_instance});
-            if (render_cmd.index_count) |index_count| {
-                try stdout.writeAll(",\"indexCount\":");
-                try stdout.print("{}", .{index_count});
-                try stdout.writeAll(",\"firstIndex\":");
-                try stdout.print("{}", .{render_cmd.first_index});
-                try stdout.writeAll(",\"baseVertex\":");
-                try stdout.print("{}", .{render_cmd.base_vertex});
-                if (render_cmd.index_data) |index_data| {
-                    try stdout.writeAll(",\"indexFormat\":\"");
-                    switch (index_data) {
-                        .uint16 => |values| {
-                            try stdout.writeAll("uint16\",\"indexData\":");
-                            try printJsonU16Array(stdout, values);
-                        },
-                        .uint32 => |values| {
-                            try stdout.writeAll("uint32\",\"indexData\":");
-                            try printJsonU32Array(stdout, values);
-                        },
-                    }
-                }
-            }
-            try stdout.writeAll(",\"targetHandle\":");
-            try stdout.print("{}", .{render_cmd.target_handle});
-            try stdout.writeAll(",\"targetWidth\":");
-            try stdout.print("{}", .{render_cmd.target_width});
-            try stdout.writeAll(",\"targetHeight\":");
-            try stdout.print("{}", .{render_cmd.target_height});
-            try stdout.writeAll(",\"targetFormat\":");
-            try stdout.print("{}", .{render_cmd.target_format});
-            try stdout.writeAll(",\"pipelineMode\":\"");
-            try stdout.print("{s}\",", .{@tagName(render_cmd.pipeline_mode)});
-            try stdout.writeAll("\"bindGroupMode\":\"");
-            try stdout.print("{s}\"", .{@tagName(render_cmd.bind_group_mode)});
-            try stdout.writeAll("}\n");
-        },
-        .barrier => |barrier_cmd| {
-            try stdout.writeAll("{\"seq\":");
-            try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"barrier\",\"dependencyCount\":");
-            try stdout.print("{}", .{barrier_cmd.dependency_count});
-            try stdout.writeAll("}\n");
-        },
-    }
 }
 
 pub fn main() !void {
@@ -448,7 +316,7 @@ pub fn main() !void {
     if (emit_normalized) {
         var normalized_idx: usize = 0;
         while (normalized_idx < commands.len) : (normalized_idx += 1) {
-            try printNormalizedCommand(stdout, normalized_idx, commands[normalized_idx]);
+            try main_print.printNormalizedCommand(stdout, normalized_idx, commands[normalized_idx]);
         }
         return;
     }
@@ -526,8 +394,8 @@ pub fn main() !void {
         const command = commands[idx];
         const result = runtime.dispatch(profile, dispatch_context, command);
         const target = result.command;
-        const kernel_name = commandKernel(target);
-        const command_label = commandName(target);
+        const kernel_name = main_print.commandKernel(target);
+        const command_label = main_print.commandName(target);
         const timestamp_ns: u64 = @intCast(std.time.nanoTimestamp());
         var execute_result: ?execution.ExecutionResult = null;
         const emit_trace_payload = emit_trace or (trace_jsonl_file != null) or (trace_meta_path != null) or (replay_expectations != null);
@@ -628,64 +496,7 @@ pub fn main() !void {
         } else {
             try stdout.print("cmd[{d}] matched=<none> score=0 matched_count={d}\\n", .{ idx, result.decision.matched_count });
         }
-        if (!emit_trace_payload) {
-            switch (target) {
-                .copy_buffer_to_texture => |copy| {
-                    try stdout.print("  -> copy bytes={} temp={} align={}\\n", .{
-                        copy.bytes,
-                        copy.uses_temporary_buffer,
-                        copy.temporary_buffer_alignment,
-                    });
-                },
-                .upload => |upload| {
-                    try stdout.print("  -> upload bytes={} align={}\\n", .{ upload.bytes, upload.align_bytes });
-                },
-                .kernel_dispatch => |kernel_cmd| {
-                    try stdout.print("  -> kernel={s} dispatch {}x{}x{} repeat={}\\n", .{ kernel_cmd.kernel, kernel_cmd.x, kernel_cmd.y, kernel_cmd.z, kernel_cmd.repeat });
-                },
-                .dispatch => |dispatch_cmd| {
-                    try stdout.print("  -> dispatch {}x{}x{}\\n", .{ dispatch_cmd.x, dispatch_cmd.y, dispatch_cmd.z });
-                },
-                .render_draw => |render_cmd| {
-                    try stdout.print(
-                        "  -> render_draw draws={} vertices={} instances={} firstVertex={} firstInstance={} indexCount={any} firstIndex={} baseVertex={} target={}x{} handle={} pipelineMode={s} bindGroupMode={s}\\n",
-                        .{
-                            render_cmd.draw_count,
-                            render_cmd.vertex_count,
-                            render_cmd.instance_count,
-                            render_cmd.first_vertex,
-                            render_cmd.first_instance,
-                            render_cmd.index_count,
-                            render_cmd.first_index,
-                            render_cmd.base_vertex,
-                            render_cmd.target_width,
-                            render_cmd.target_height,
-                            render_cmd.target_handle,
-                            @tagName(render_cmd.pipeline_mode),
-                            @tagName(render_cmd.bind_group_mode),
-                        },
-                    );
-                },
-                .barrier => |barrier_cmd| {
-                    try stdout.print("  -> barrier {} dependencies\\n", .{barrier_cmd.dependency_count});
-                },
-            }
-            if (execute_result) |exec| {
-                try stdout.print(
-                    "  -> exec backend={s} status={s} statusCode={s} durationNs={} setupNs={} encodeNs={} submitWaitNs={} dispatchCount={}\\n",
-                    .{
-                        exec.backend,
-                        execution.executionStatusName(exec.status),
-                        exec.status_code,
-                        exec.duration_ns,
-                        exec.setup_ns,
-                        exec.encode_ns,
-                        exec.submit_wait_ns,
-                        exec.dispatch_count,
-                    },
-                );
-            }
-        }
+        if (!emit_trace_payload) try main_print.printCommandSummary(stdout, target, execute_result);
     }
 
     if (execution_context) |*ctx| {

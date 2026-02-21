@@ -34,6 +34,19 @@ pub const DispatchContext = struct {
     dispatch: CommandDispatchBucket,
     kernel_dispatch: CommandDispatchBucket,
     render_draw: CommandDispatchBucket,
+    sampler_create: CommandDispatchBucket,
+    sampler_destroy: CommandDispatchBucket,
+    texture_write: CommandDispatchBucket,
+    texture_query: CommandDispatchBucket,
+    texture_destroy: CommandDispatchBucket,
+    surface_create: CommandDispatchBucket,
+    surface_capabilities: CommandDispatchBucket,
+    surface_configure: CommandDispatchBucket,
+    surface_acquire: CommandDispatchBucket,
+    surface_present: CommandDispatchBucket,
+    surface_unconfigure: CommandDispatchBucket,
+    surface_release: CommandDispatchBucket,
+    async_diagnostics: CommandDispatchBucket,
 
     pub fn deinit(self: DispatchContext) void {
         _ = self;
@@ -50,6 +63,19 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
             .dispatch = .{},
             .kernel_dispatch = .{},
             .render_draw = .{},
+            .sampler_create = .{},
+            .sampler_destroy = .{},
+            .texture_write = .{},
+            .texture_query = .{},
+            .texture_destroy = .{},
+            .surface_create = .{},
+            .surface_capabilities = .{},
+            .surface_configure = .{},
+            .surface_acquire = .{},
+            .surface_present = .{},
+            .surface_unconfigure = .{},
+            .surface_release = .{},
+            .async_diagnostics = .{},
         };
     }
 
@@ -66,6 +92,19 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
     var dispatch_commands = std.array_list.Managed(ScoredQuirk).init(allocator);
     var kernel_dispatch = std.array_list.Managed(ScoredQuirk).init(allocator);
     var render_draw = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var sampler_create = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var sampler_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var texture_write = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var texture_query = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var texture_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_create = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_capabilities = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_configure = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_acquire = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_present = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_unconfigure = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_release = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var async_diagnostics = std.array_list.Managed(ScoredQuirk).init(allocator);
 
     for (quirks) |quirk| {
         if (supportsCommand(quirk.scope, .upload)) {
@@ -86,6 +125,45 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
         if (supportsCommand(quirk.scope, .render_draw)) {
             try appendScored(&render_draw, quirk, .render_draw, scoring_profile);
         }
+        if (supportsCommand(quirk.scope, .sampler_create)) {
+            try appendScored(&sampler_create, quirk, .sampler_create, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .sampler_destroy)) {
+            try appendScored(&sampler_destroy, quirk, .sampler_destroy, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .texture_write)) {
+            try appendScored(&texture_write, quirk, .texture_write, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .texture_query)) {
+            try appendScored(&texture_query, quirk, .texture_query, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .texture_destroy)) {
+            try appendScored(&texture_destroy, quirk, .texture_destroy, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_create)) {
+            try appendScored(&surface_create, quirk, .surface_create, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_capabilities)) {
+            try appendScored(&surface_capabilities, quirk, .surface_capabilities, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_configure)) {
+            try appendScored(&surface_configure, quirk, .surface_configure, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_acquire)) {
+            try appendScored(&surface_acquire, quirk, .surface_acquire, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_present)) {
+            try appendScored(&surface_present, quirk, .surface_present, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_unconfigure)) {
+            try appendScored(&surface_unconfigure, quirk, .surface_unconfigure, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_release)) {
+            try appendScored(&surface_release, quirk, .surface_release, scoring_profile);
+        }
+        if (supportsCommand(quirk.scope, .async_diagnostics)) {
+            try appendScored(&async_diagnostics, quirk, .async_diagnostics, scoring_profile);
+        }
     }
 
     return DispatchContext{
@@ -96,6 +174,19 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
         .dispatch = finalizeBucket(&dispatch_commands),
         .kernel_dispatch = finalizeBucket(&kernel_dispatch),
         .render_draw = finalizeBucket(&render_draw),
+        .sampler_create = finalizeBucket(&sampler_create),
+        .sampler_destroy = finalizeBucket(&sampler_destroy),
+        .texture_write = finalizeBucket(&texture_write),
+        .texture_query = finalizeBucket(&texture_query),
+        .texture_destroy = finalizeBucket(&texture_destroy),
+        .surface_create = finalizeBucket(&surface_create),
+        .surface_capabilities = finalizeBucket(&surface_capabilities),
+        .surface_configure = finalizeBucket(&surface_configure),
+        .surface_acquire = finalizeBucket(&surface_acquire),
+        .surface_present = finalizeBucket(&surface_present),
+        .surface_unconfigure = finalizeBucket(&surface_unconfigure),
+        .surface_release = finalizeBucket(&surface_release),
+        .async_diagnostics = finalizeBucket(&async_diagnostics),
     };
 }
 
@@ -110,6 +201,19 @@ pub fn buildProfileDispatchContext(
     var dispatch_commands = std.array_list.Managed(ScoredQuirk).init(allocator);
     var kernel_dispatch = std.array_list.Managed(ScoredQuirk).init(allocator);
     var render_draw = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var sampler_create = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var sampler_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var texture_write = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var texture_query = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var texture_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_create = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_capabilities = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_configure = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_acquire = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_present = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_unconfigure = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var surface_release = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var async_diagnostics = std.array_list.Managed(ScoredQuirk).init(allocator);
 
     for (quirks) |quirk| {
         if (!matchesProfile(profile, quirk)) continue;
@@ -132,6 +236,45 @@ pub fn buildProfileDispatchContext(
         if (supportsCommand(quirk.scope, .render_draw)) {
             try appendScored(&render_draw, quirk, .render_draw, profile);
         }
+        if (supportsCommand(quirk.scope, .sampler_create)) {
+            try appendScored(&sampler_create, quirk, .sampler_create, profile);
+        }
+        if (supportsCommand(quirk.scope, .sampler_destroy)) {
+            try appendScored(&sampler_destroy, quirk, .sampler_destroy, profile);
+        }
+        if (supportsCommand(quirk.scope, .texture_write)) {
+            try appendScored(&texture_write, quirk, .texture_write, profile);
+        }
+        if (supportsCommand(quirk.scope, .texture_query)) {
+            try appendScored(&texture_query, quirk, .texture_query, profile);
+        }
+        if (supportsCommand(quirk.scope, .texture_destroy)) {
+            try appendScored(&texture_destroy, quirk, .texture_destroy, profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_create)) {
+            try appendScored(&surface_create, quirk, .surface_create, profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_capabilities)) {
+            try appendScored(&surface_capabilities, quirk, .surface_capabilities, profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_configure)) {
+            try appendScored(&surface_configure, quirk, .surface_configure, profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_acquire)) {
+            try appendScored(&surface_acquire, quirk, .surface_acquire, profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_present)) {
+            try appendScored(&surface_present, quirk, .surface_present, profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_unconfigure)) {
+            try appendScored(&surface_unconfigure, quirk, .surface_unconfigure, profile);
+        }
+        if (supportsCommand(quirk.scope, .surface_release)) {
+            try appendScored(&surface_release, quirk, .surface_release, profile);
+        }
+        if (supportsCommand(quirk.scope, .async_diagnostics)) {
+            try appendScored(&async_diagnostics, quirk, .async_diagnostics, profile);
+        }
     }
 
     return DispatchContext{
@@ -142,6 +285,19 @@ pub fn buildProfileDispatchContext(
         .dispatch = finalizeBucket(&dispatch_commands),
         .kernel_dispatch = finalizeBucket(&kernel_dispatch),
         .render_draw = finalizeBucket(&render_draw),
+        .sampler_create = finalizeBucket(&sampler_create),
+        .sampler_destroy = finalizeBucket(&sampler_destroy),
+        .texture_write = finalizeBucket(&texture_write),
+        .texture_query = finalizeBucket(&texture_query),
+        .texture_destroy = finalizeBucket(&texture_destroy),
+        .surface_create = finalizeBucket(&surface_create),
+        .surface_capabilities = finalizeBucket(&surface_capabilities),
+        .surface_configure = finalizeBucket(&surface_configure),
+        .surface_acquire = finalizeBucket(&surface_acquire),
+        .surface_present = finalizeBucket(&surface_present),
+        .surface_unconfigure = finalizeBucket(&surface_unconfigure),
+        .surface_release = finalizeBucket(&surface_release),
+        .async_diagnostics = finalizeBucket(&async_diagnostics),
     };
 }
 
@@ -246,10 +402,26 @@ fn proofPriority(level: model.ProofLevel) u8 {
 fn supportsCommand(scope: model.Scope, command_kind: model.CommandKind) bool {
     return switch (scope) {
         .alignment => command_kind == .upload or command_kind == .copy_buffer_to_texture,
-        .layout => command_kind == .dispatch or command_kind == .kernel_dispatch or command_kind == .render_draw or command_kind == .copy_buffer_to_texture,
-        .barrier => command_kind == .barrier or command_kind == .dispatch or command_kind == .kernel_dispatch or command_kind == .render_draw,
+        .layout => command_kind == .dispatch or
+            command_kind == .kernel_dispatch or
+            command_kind == .render_draw or
+            command_kind == .copy_buffer_to_texture or
+            command_kind == .sampler_create or
+            command_kind == .sampler_destroy or
+            command_kind == .texture_write or
+            command_kind == .texture_query or
+            command_kind == .texture_destroy or
+            command_kind == .surface_create or
+            command_kind == .surface_capabilities or
+            command_kind == .surface_configure or
+            command_kind == .surface_acquire or
+            command_kind == .surface_present or
+            command_kind == .surface_unconfigure or
+            command_kind == .surface_release or
+            command_kind == .async_diagnostics,
+        .barrier => command_kind == .barrier or command_kind == .dispatch or command_kind == .kernel_dispatch or command_kind == .render_draw or command_kind == .surface_present,
         .driver_toggle => true,
-        .memory => command_kind == .copy_buffer_to_texture or command_kind == .upload,
+        .memory => command_kind == .copy_buffer_to_texture or command_kind == .upload or command_kind == .texture_write or command_kind == .texture_query or command_kind == .texture_destroy,
     };
 }
 
@@ -292,6 +464,20 @@ fn scoreRule(quirk: model.Quirk, command_kind: model.CommandKind, profile: model
         .render_draw => {
             if (quirk.scope == .layout) score += 6;
             if (quirk.scope == .barrier) score += 3;
+        },
+        .sampler_create, .sampler_destroy => {
+            if (quirk.scope == .layout) score += 3;
+        },
+        .texture_write, .texture_query, .texture_destroy => {
+            if (quirk.scope == .memory) score += 6;
+            if (quirk.scope == .layout) score += 2;
+        },
+        .surface_create, .surface_capabilities, .surface_configure, .surface_acquire, .surface_present, .surface_unconfigure, .surface_release => {
+            if (quirk.scope == .layout) score += 5;
+            if (quirk.scope == .barrier) score += 2;
+        },
+        .async_diagnostics => {
+            if (quirk.scope == .layout) score += 4;
         },
     }
 
@@ -363,6 +549,19 @@ fn bucketForKind(context: DispatchContext, kind: model.CommandKind) CommandDispa
         .dispatch => context.dispatch,
         .kernel_dispatch => context.kernel_dispatch,
         .render_draw => context.render_draw,
+        .sampler_create => context.sampler_create,
+        .sampler_destroy => context.sampler_destroy,
+        .texture_write => context.texture_write,
+        .texture_query => context.texture_query,
+        .texture_destroy => context.texture_destroy,
+        .surface_create => context.surface_create,
+        .surface_capabilities => context.surface_capabilities,
+        .surface_configure => context.surface_configure,
+        .surface_acquire => context.surface_acquire,
+        .surface_present => context.surface_present,
+        .surface_unconfigure => context.surface_unconfigure,
+        .surface_release => context.surface_release,
+        .async_diagnostics => context.async_diagnostics,
     };
 }
 
@@ -404,17 +603,7 @@ fn applyAction(quirk: model.Quirk, command: model.Command) model.Command {
                     },
                 },
                 .render_draw => |render_command| .{
-                    .render_draw = .{
-                        .draw_count = render_command.draw_count,
-                        .vertex_count = render_command.vertex_count,
-                        .instance_count = render_command.instance_count,
-                        .target_handle = render_command.target_handle,
-                        .target_width = render_command.target_width,
-                        .target_height = render_command.target_height,
-                        .target_format = render_command.target_format,
-                        .pipeline_mode = render_command.pipeline_mode,
-                        .bind_group_mode = render_command.bind_group_mode,
-                    },
+                    .render_draw = render_command,
                 },
                 else => command,
             };

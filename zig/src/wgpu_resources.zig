@@ -2,6 +2,7 @@ const std = @import("std");
 const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
+const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
@@ -49,6 +50,7 @@ pub fn requiredBytes(bytes: u64, offset: u64) !u64 {
 pub fn getOrCreateTexture(self: *Backend, resource: model.CopyTextureResource, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
     if (resource.kind != .texture) return error.InvalidTextureResourceKind;
     const procs = self.procs orelse return error.ProceduralNotReady;
+    const texture_procs = texture_procs_mod.loadTextureProcs(self.dyn_lib) orelse return error.TextureProcUnavailable;
 
     const handle = resource.handle;
     const width = if (resource.width == 0) 1 else resource.width;
@@ -64,16 +66,19 @@ pub fn getOrCreateTexture(self: *Backend, resource: model.CopyTextureResource, r
     const usage = required_usage | resource.usage;
 
     if (self.textures.get(handle)) |existing| {
-        if (existing.width == width and
-            existing.height == height and
-            existing.depth_or_array_layers == depth and
-            existing.format == format and
-            existing.dimension == dimension and
-            existing.sample_count == sample_count and
-            (existing.usage & required_usage) == required_usage)
+        const queried = texture_procs_mod.queryTextureInfo(texture_procs, existing.texture);
+        if (queried.width == width and
+            queried.height == height and
+            queried.depth_or_array_layers == depth and
+            queried.format == format and
+            queried.dimension == dimension and
+            queried.sample_count == sample_count and
+            queried.mip_level_count == 1 and
+            (queried.usage & required_usage) == required_usage)
         {
             return existing.texture;
         }
+        texture_procs.texture_destroy(existing.texture);
         procs.wgpuTextureRelease(existing.texture);
         _ = self.textures.remove(handle);
     }
@@ -113,6 +118,7 @@ pub fn getOrCreateTexture(self: *Backend, resource: model.CopyTextureResource, r
 
 pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBinding, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
     const procs = self.procs orelse return error.ProceduralNotReady;
+    const texture_procs = texture_procs_mod.loadTextureProcs(self.dyn_lib) orelse return error.TextureProcUnavailable;
     const handle = binding.resource_handle;
     const requested_format = normalizeTextureFormat(binding.texture_format);
     const requested_dimension = inferTextureDimensionFromViewDimension(binding.texture_view_dimension);
@@ -125,22 +131,24 @@ pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBindin
     var fallback_usage: types.WGPUTextureUsage = types.WGPUTextureUsage_None;
 
     if (self.textures.get(handle)) |existing| {
-        fallback_format = if (requested_format == types.WGPUTextureFormat_Undefined) existing.format else requested_format;
-        fallback_dimension = existing.dimension;
-        fallback_width = existing.width;
-        fallback_height = existing.height;
-        fallback_depth = existing.depth_or_array_layers;
-        fallback_sample_count = existing.sample_count;
-        fallback_usage = existing.usage;
+        const queried = texture_procs_mod.queryTextureInfo(texture_procs, existing.texture);
+        fallback_format = if (requested_format == types.WGPUTextureFormat_Undefined) queried.format else requested_format;
+        fallback_dimension = queried.dimension;
+        fallback_width = queried.width;
+        fallback_height = queried.height;
+        fallback_depth = queried.depth_or_array_layers;
+        fallback_sample_count = queried.sample_count;
+        fallback_usage = queried.usage;
 
-        if ((existing.usage & required_usage) == required_usage) {
-            if ((requested_format == types.WGPUTextureFormat_Undefined or requested_format == existing.format) and
-                (requested_dimension == types.WGPUTextureDimension_Undefined or requested_dimension == existing.dimension))
+        if ((queried.usage & required_usage) == required_usage) {
+            if ((requested_format == types.WGPUTextureFormat_Undefined or requested_format == queried.format) and
+                (requested_dimension == types.WGPUTextureDimension_Undefined or requested_dimension == queried.dimension))
             {
                 return existing.texture;
             }
         }
 
+        texture_procs.texture_destroy(existing.texture);
         procs.wgpuTextureRelease(existing.texture);
         _ = self.textures.remove(handle);
     }

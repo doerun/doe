@@ -132,6 +132,19 @@ pub fn commandToTag(command: model.Command) []const u8 {
         .dispatch => "dispatch",
         .kernel_dispatch => "kernel_dispatch",
         .render_draw => "render_draw",
+        .sampler_create => "sampler_create",
+        .sampler_destroy => "sampler_destroy",
+        .texture_write => "texture_write",
+        .texture_query => "texture_query",
+        .texture_destroy => "texture_destroy",
+        .surface_create => "surface_create",
+        .surface_capabilities => "surface_capabilities",
+        .surface_configure => "surface_configure",
+        .surface_acquire => "surface_acquire",
+        .surface_present => "surface_present",
+        .surface_unconfigure => "surface_unconfigure",
+        .surface_release => "surface_release",
+        .async_diagnostics => "async_diagnostics",
     };
 }
 

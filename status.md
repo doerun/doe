@@ -157,6 +157,34 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 - `wgpuDeviceCreateRenderPipeline`, `wgpuCommandEncoderBeginRenderPass`, and `wgpuRenderPassEncoder*` draw/bind/end/release entry points are now declared in `zig/src/wgpu_types.zig` and loaded through `zig/src/wgpu_loader.zig`.
 - `render_draw` now consumes these canonical backend proc fields directly (`zig/src/wgpu_render_commands.zig`) instead of ad-hoc per-call symbol lookup.
 - unsupported render symbols remain explicit fail-fast runtime errors (`unsupported` status), preserving deterministic no-fallback behavior.
+43. Native render pass state coverage now includes explicit state/binding APIs in command execution:
+- `wgpuRenderPassEncoderSetViewport`
+- `wgpuRenderPassEncoderSetScissorRect`
+- `wgpuRenderPassEncoderSetBlendConstant`
+- `wgpuRenderPassEncoderSetStencilReference`
+- `wgpuRenderPipelineGetBindGroupLayout`
+44. Native textured render contract is now fully live in `render_draw`:
+- shader contract includes sampled texture + sampler bindings.
+- runtime creates sampler via `wgpuDeviceCreateSampler`, uploads deterministic texel data via `wgpuQueueWriteTexture`, and binds texture+sampler through the render bind group.
+- texture lifecycle now uses query/destroy API calls (`wgpuTextureGet*`, `wgpuTextureDestroy`) in resource management and teardown paths.
+45. Native render bundle execution path is now integrated:
+- `wgpuDeviceCreateRenderBundleEncoder` + `wgpuRenderBundleEncoder*` methods are loaded and used in render lowering.
+- render draws are encoded into bundles and submitted via `wgpuRenderPassEncoderExecuteBundles`.
+46. Surface presentation API wrappers are now implemented in backend FFI:
+- `wgpuInstanceCreateSurface`
+- `wgpuSurfaceGetCapabilities`
+- `wgpuSurfaceConfigure`
+- `wgpuSurfaceGetCurrentTexture`
+- `wgpuSurfacePresent`
+- `wgpuSurfaceUnconfigure`
+47. Async diagnostics and lifecycle polish are now wired into render pipeline creation:
+- `wgpuDeviceCreateRenderPipelineAsync` is used with explicit completion waiting.
+- `wgpuDevicePushErrorScope` / `wgpuDevicePopErrorScope` gate pipeline creation with explicit scope checks.
+- `wgpuShaderModuleGetCompilationInfo` is requested and validated before async pipeline insertion.
+48. `render_draw` now consumes full command-driven render-pass state and explicit encode mode:
+- `encodeMode` selects direct render-pass encoding or render-bundle encoding.
+- viewport/scissor/blend-constant/stencil-reference values are applied from command payload fields.
+- bind-group dynamic offsets are validated and applied deterministically (single dynamic uniform offset, stride- and bounds-checked).
 
 ### Missing in progress
 

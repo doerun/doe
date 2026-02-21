@@ -40,7 +40,13 @@ WebGPU backend:
 - `src/wgpu_types.zig` (707) — all WebGPU C API types, constants, function pointer types, Procs table, record types.
 - `src/wgpu_loader.zig` (212) — dynamic library loading, C callbacks, helper functions.
 - `src/wgpu_commands.zig` — command execution orchestration for upload/copy/barrier/dispatch/kernel dispatch plus render command delegation.
-- `src/wgpu_render_commands.zig` — native `render_draw` lowering via render pass, per-format pipeline caching, and draw-call submission loop.
+- `src/wgpu_render_commands.zig` — native `render_draw` lowering via render pass, async pipeline diagnostics, and render-bundle execution.
+- `src/wgpu_render_resources.zig` — render uniform/texture/sampler bind-group resource setup and cached texture-view helpers.
+- `src/wgpu_render_api.zig` — render-pass and render-bundle proc table for state/draw/execute APIs.
+- `src/wgpu_render_types.zig` — render bundle/pass/pipeline extern descriptor/value types.
+- `src/wgpu_texture_procs.zig` — sampler/queueWriteTexture/texture query+destroy proc surface.
+- `src/wgpu_surface_procs.zig` — surface creation/configure/present proc surface and structs.
+- `src/wgpu_async_procs.zig` — async render-pipeline/error-scope/compilation-info proc surface and wait helpers.
 - `src/wgpu_resources.zig` (573) — buffer/texture management, bind group building, shader module and pipeline creation.
 
 Build:
@@ -126,7 +132,11 @@ Execution capabilities:
   deferred mode skips per-submit waits and performs one final queue flush after the command loop.
 - `kernel_dispatch` runs through full compute pipeline lowering with bind groups and optional GPU timestamp queries.
 - render core APIs (`DeviceCreateRenderPipeline`, `CommandEncoderBeginRenderPass`, and `RenderPassEncoder*` state/draw/end/release calls) are wired through the shared `wgpu_types.zig` proc table and loaded in `wgpu_loader.zig`.
-- `render_draw` runs through a native render-pass path with a Dawn-aligned centered-triangle vertex-buffer pipeline, static fragment uniform bind-group parity, depth24plus-stencil8 attachment, per-format pipeline caching, cached render/depth texture views, and repeated draw calls.
+- render-pass state coverage includes bind-group, viewport, scissor, blend-constant, stencil-reference, and render-pipeline bind-group-layout query calls.
+- `render_draw` now uses async pipeline creation (`DeviceCreateRenderPipelineAsync`) with explicit shader compilation-info and error-scope checks before cache insert.
+- `render_draw` now uses a textured bind-group contract (uniform + texture + sampler) with deterministic `QueueWriteTexture` upload and runtime sampler creation.
+- `render_draw` draws through render-bundle encoding and `RenderPassEncoderExecuteBundles` submission.
+- surface presentation wrappers are available through backend methods for create/capabilities/configure/current-texture/present/unconfigure/release.
 - kernel lookup supports `--kernel-root` and built-in marker fallback kernels.
 - wall-time, setup, encode, and submit-wait timing split into trace rows and `--trace-meta`.
 
@@ -155,10 +165,27 @@ Reference commands:
   `index_count`/`indexCount`, `first_index`/`firstIndex`, and `base_vertex`/`baseVertex`,
   optional target size/format overrides, and explicit state-set variants:
   `pipelineMode` (`static` | `redundant`) and `bindGroupMode` (`no-change` | `redundant`).
+- `render_draw` also accepts:
+  `encodeMode` (`render-pass` | `render-bundle`),
+  viewport fields (`viewportX`, `viewportY`, `viewportWidth`, `viewportHeight`, `viewportMinDepth`, `viewportMaxDepth`),
+  scissor fields (`scissorX`, `scissorY`, `scissorWidth`, `scissorHeight`),
+  blend constants (`blendR`, `blendG`, `blendB`, `blendA`),
+  `stencilReference`, and `bindGroupDynamicOffsets` (single dynamic-uniform offset).
+- runtime command families now include:
+  `sampler_create`/`sampler_destroy`,
+  `texture_write`/`texture_query`/`texture_destroy`,
+  `surface_create`/`surface_capabilities`/`surface_configure`/`surface_acquire`/`surface_present`/`surface_unconfigure`/`surface_release`,
+  and `async_diagnostics`.
 - alias names accepted in command inputs:
   - `upload` | `buffer_upload`
   - `copy_buffer_to_texture` | `texture_copy` | `copy_texture` | `copy_buffer_to_buffer` | `copy_texture_to_buffer`
   - `dispatch` | `dispatch_workgroups` | `dispatch_invocations`
   - `kernel_dispatch`
   - `render_draw` | `draw` | `draw_call` | `draw_indexed`
+  - `sampler_create` | `create_sampler`, `sampler_destroy` | `destroy_sampler`
+  - `texture_write` | `write_texture` | `queue_write_texture`, `texture_query` | `query_texture`, `texture_destroy` | `destroy_texture`
+  - `surface_create` | `create_surface`, `surface_capabilities` | `get_surface_capabilities`, `surface_configure` | `configure_surface`,
+    `surface_acquire` | `acquire_surface_texture`, `surface_present` | `present_surface`,
+    `surface_unconfigure` | `unconfigure_surface`, `surface_release` | `release_surface`
+  - `async_diagnostics` | `pipeline_async_diagnostics`
 - either `kind` or `command` may carry the command name in command JSON.

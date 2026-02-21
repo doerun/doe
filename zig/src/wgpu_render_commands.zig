@@ -3,8 +3,12 @@ const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
+const async_procs_mod = @import("wgpu_async_procs.zig");
 const render_assets = @import("wgpu_render_assets.zig");
+const render_api_mod = @import("wgpu_render_api.zig");
 const render_indexing = @import("wgpu_render_indexing.zig");
+const render_resource_mod = @import("wgpu_render_resources.zig");
+const render_types_mod = @import("wgpu_render_types.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
@@ -25,300 +29,60 @@ const RENDER_OPTIONAL_BOOL_FALSE: u32 = 0x00000000;
 const RENDER_STENCIL_MASK_DEFAULT: u32 = 0x000000FF;
 const RENDER_DEPTH_ATTACHMENT_HANDLE_MASK: u64 = 0x8C9F_2400_0000_0000;
 const RENDER_VERTEX_BUFFER_HANDLE: u64 = 0x8C9F_2500_0000_0000;
-const RENDER_UNIFORM_BUFFER_HANDLE: u64 = 0x8C9F_2600_0000_0000;
+const RENDER_INDIRECT_BUFFER_HANDLE: u64 = 0x8C9F_2900_0000_0000;
 const RENDER_VERTEX_FORMAT_FLOAT32X4: u32 = 0x0000001F;
 const RENDER_VERTEX_STEP_MODE_VERTEX: u32 = 0x00000001;
 const RENDER_VERTEX_STRIDE_BYTES: u64 = 4 * @sizeOf(f32);
-const RENDER_UNIFORM_BINDING_INDEX: u32 = 0;
-const RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES: u64 = 3 * @sizeOf(f32);
+const RENDER_UNIFORM_BINDING_INDEX: u32 = render_resource_mod.RENDER_UNIFORM_BINDING_INDEX;
+const RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES;
+const RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES;
+const RENDER_UNIFORM_TOTAL_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_TOTAL_BYTES;
+const RENDER_BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
 
-const RenderColor = extern struct {
-    r: f64,
-    g: f64,
-    b: f64,
-    a: f64,
-};
-
-const RenderPassColorAttachment = extern struct {
-    nextInChain: ?*anyopaque,
-    view: types.WGPUTextureView,
-    depthSlice: u32,
-    resolveTarget: types.WGPUTextureView,
-    loadOp: u32,
-    storeOp: u32,
-    clearValue: RenderColor,
-};
-
-const RenderPassDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: types.WGPUStringView,
-    colorAttachmentCount: usize,
-    colorAttachments: [*]const RenderPassColorAttachment,
-    depthStencilAttachment: ?*const anyopaque,
-    occlusionQuerySet: types.WGPUQuerySet,
-    timestampWrites: ?*const types.WGPUPassTimestampWrites,
-};
-
-const RenderPassDepthStencilAttachment = extern struct {
-    nextInChain: ?*anyopaque,
-    view: types.WGPUTextureView,
-    depthLoadOp: u32,
-    depthStoreOp: u32,
-    depthClearValue: f32,
-    depthReadOnly: types.WGPUBool,
-    stencilLoadOp: u32,
-    stencilStoreOp: u32,
-    stencilClearValue: u32,
-    stencilReadOnly: types.WGPUBool,
-};
-
-const RenderConstantEntry = extern struct {
-    nextInChain: ?*anyopaque,
-    key: types.WGPUStringView,
-    value: f64,
-};
-
-const RenderVertexState = extern struct {
-    nextInChain: ?*anyopaque,
-    module: types.WGPUShaderModule,
-    entryPoint: types.WGPUStringView,
-    constantCount: usize,
-    constants: ?[*]const RenderConstantEntry,
-    bufferCount: usize,
-    buffers: ?*const anyopaque,
-};
-
-const RenderVertexAttribute = extern struct {
-    nextInChain: ?*anyopaque,
-    format: u32,
-    offset: u64,
-    shaderLocation: u32,
-};
-
-const RenderVertexBufferLayout = extern struct {
-    nextInChain: ?*anyopaque,
-    stepMode: u32,
-    arrayStride: u64,
-    attributeCount: usize,
-    attributes: ?[*]const RenderVertexAttribute,
-};
-
-const RenderColorTargetState = extern struct {
-    nextInChain: ?*anyopaque,
-    format: types.WGPUTextureFormat,
-    blend: ?*const anyopaque,
-    writeMask: u64,
-};
-
-const RenderFragmentState = extern struct {
-    nextInChain: ?*anyopaque,
-    module: types.WGPUShaderModule,
-    entryPoint: types.WGPUStringView,
-    constantCount: usize,
-    constants: ?[*]const RenderConstantEntry,
-    targetCount: usize,
-    targets: [*]const RenderColorTargetState,
-};
-
-const RenderPrimitiveState = extern struct {
-    nextInChain: ?*anyopaque,
-    topology: u32,
-    stripIndexFormat: u32,
-    frontFace: u32,
-    cullMode: u32,
-    unclippedDepth: types.WGPUBool,
-};
-
-const RenderMultisampleState = extern struct {
-    nextInChain: ?*anyopaque,
-    count: u32,
-    mask: u32,
-    alphaToCoverageEnabled: types.WGPUBool,
-};
-
-const RenderStencilFaceState = extern struct {
-    compare: u32,
-    failOp: u32,
-    depthFailOp: u32,
-    passOp: u32,
-};
-
-const RenderDepthStencilState = extern struct {
-    nextInChain: ?*anyopaque,
-    format: types.WGPUTextureFormat,
-    depthWriteEnabled: u32,
-    depthCompare: u32,
-    stencilFront: RenderStencilFaceState,
-    stencilBack: RenderStencilFaceState,
-    stencilReadMask: u32,
-    stencilWriteMask: u32,
-    depthBias: i32,
-    depthBiasSlopeScale: f32,
-    depthBiasClamp: f32,
-};
-
-const RenderPipelineDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: types.WGPUStringView,
-    layout: types.WGPUPipelineLayout,
-    vertex: RenderVertexState,
-    primitive: RenderPrimitiveState,
-    depthStencil: ?*const RenderDepthStencilState,
-    multisample: RenderMultisampleState,
-    fragment: ?*const RenderFragmentState,
-};
-
-const RenderUniformBindingResources = struct {
-    bind_group_layout: types.WGPUBindGroupLayout,
+const RenderColor = render_types_mod.RenderColor;
+const RenderBundleDescriptor = render_types_mod.RenderBundleDescriptor;
+const RenderBundleEncoderDescriptor = render_types_mod.RenderBundleEncoderDescriptor;
+const RenderDrawIndirectArgs = render_types_mod.RenderDrawIndirectArgs;
+const RenderDrawIndexedIndirectArgs = render_types_mod.RenderDrawIndexedIndirectArgs;
+const RenderPassColorAttachment = render_types_mod.RenderPassColorAttachment;
+const RenderPassDescriptor = render_types_mod.RenderPassDescriptor;
+const RenderPassDepthStencilAttachment = render_types_mod.RenderPassDepthStencilAttachment;
+const RenderVertexAttribute = render_types_mod.RenderVertexAttribute;
+const RenderVertexBufferLayout = render_types_mod.RenderVertexBufferLayout;
+const RenderColorTargetState = render_types_mod.RenderColorTargetState;
+const RenderFragmentState = render_types_mod.RenderFragmentState;
+const RenderStencilFaceState = render_types_mod.RenderStencilFaceState;
+const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
+const RenderPipelineDescriptor = render_types_mod.RenderPipelineDescriptor;
+const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingResources;
+fn setRenderPassBindGroup(
+    render_api: render_api_mod.RenderApi,
+    render_pass: types.WGPURenderPassEncoder,
     bind_group: types.WGPUBindGroup,
-};
-
-fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBindingResources {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    if (self.render_uniform_bind_group_layout != null and self.render_uniform_bind_group != null) {
-        return .{
-            .bind_group_layout = self.render_uniform_bind_group_layout,
-            .bind_group = self.render_uniform_bind_group,
-        };
-    }
-
-    if (self.render_uniform_bind_group) |stale_group| {
-        procs.wgpuBindGroupRelease(stale_group);
-        self.render_uniform_bind_group = null;
-    }
-    if (self.render_uniform_bind_group_layout) |stale_layout| {
-        procs.wgpuBindGroupLayoutRelease(stale_layout);
-        self.render_uniform_bind_group_layout = null;
-    }
-
-    const uniform_bytes = std.mem.sliceAsBytes(render_assets.RENDER_DRAW_UNIFORM_COLOR[0..]);
-    const uniform_usage = types.WGPUBufferUsage_Uniform | types.WGPUBufferUsage_CopyDst;
-    const uniform_bytes_u64 = @as(u64, @intCast(uniform_bytes.len));
-    const should_upload_uniform_data = blk: {
-        if (self.buffers.get(RENDER_UNIFORM_BUFFER_HANDLE)) |existing| {
-            if (existing.size >= uniform_bytes_u64 and
-                (existing.usage & uniform_usage) == uniform_usage)
-            {
-                break :blk false;
-            }
-        }
-        break :blk true;
-    };
-    const uniform_buffer = try resources.getOrCreateBuffer(
-        self,
-        RENDER_UNIFORM_BUFFER_HANDLE,
-        uniform_bytes_u64,
-        uniform_usage,
+    dynamic_offsets: []const u32,
+) void {
+    render_api.render_pass_encoder_set_bind_group(
+        render_pass,
+        RENDER_UNIFORM_BINDING_INDEX,
+        bind_group,
+        dynamic_offsets.len,
+        dynamic_offsets.ptr,
     );
-    if (should_upload_uniform_data) {
-        procs.wgpuQueueWriteBuffer(
-            self.queue.?,
-            uniform_buffer,
-            0,
-            uniform_bytes.ptr,
-            uniform_bytes.len,
-        );
-    }
-
-    const layout_entries = [_]types.WGPUBindGroupLayoutEntry{.{
-        .nextInChain = null,
-        .binding = RENDER_UNIFORM_BINDING_INDEX,
-        .visibility = types.WGPUShaderStage_Fragment,
-        .bindingArraySize = 0,
-        .buffer = .{
-            .nextInChain = null,
-            .type = types.WGPUBufferBindingType_Uniform,
-            .hasDynamicOffset = types.WGPU_FALSE,
-            .minBindingSize = RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES,
-        },
-        .sampler = .{
-            .nextInChain = null,
-            .type = types.WGPUSamplerBindingType_BindingNotUsed,
-        },
-        .texture = .{
-            .nextInChain = null,
-            .sampleType = types.WGPUTextureSampleType_BindingNotUsed,
-            .viewDimension = types.WGPUTextureViewDimension_Undefined,
-            .multisampled = types.WGPU_FALSE,
-        },
-        .storageTexture = .{
-            .nextInChain = null,
-            .access = types.WGPUStorageTextureAccess_BindingNotUsed,
-            .format = types.WGPUTextureFormat_Undefined,
-            .viewDimension = types.WGPUTextureViewDimension_Undefined,
-        },
-    }};
-    const bind_group_layout = try resources.createBindGroupLayout(self, layout_entries[0..]);
-    errdefer procs.wgpuBindGroupLayoutRelease(bind_group_layout);
-
-    const bind_entries = [_]types.WGPUBindGroupEntry{.{
-        .nextInChain = null,
-        .binding = RENDER_UNIFORM_BINDING_INDEX,
-        .buffer = uniform_buffer,
-        .offset = 0,
-        .size = RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES,
-        .sampler = null,
-        .textureView = null,
-    }};
-    const bind_group = try resources.createBindGroup(self, bind_group_layout, bind_entries[0..]);
-
-    self.render_uniform_bind_group_layout = bind_group_layout;
-    self.render_uniform_bind_group = bind_group;
-    return .{
-        .bind_group_layout = bind_group_layout,
-        .bind_group = bind_group,
-    };
 }
-
-fn getOrCreateCachedRenderTextureView(
-    self: *Backend,
-    cache: *std.AutoHashMap(u64, types.RenderTextureViewCacheEntry),
-    key: u64,
-    texture: types.WGPUTexture,
-    width: u32,
-    height: u32,
-    format: types.WGPUTextureFormat,
-    usage: types.WGPUTextureUsage,
-) !types.WGPUTextureView {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    if (cache.get(key)) |existing| {
-        if (existing.texture == texture and
-            existing.width == width and
-            existing.height == height and
-            existing.format == format)
-        {
-            return existing.view;
-        }
-        procs.wgpuTextureViewRelease(existing.view);
-        _ = cache.remove(key);
-    }
-
-    const view = procs.wgpuTextureCreateView(texture, &types.WGPUTextureViewDescriptor{
-        .nextInChain = null,
-        .label = loader.emptyStringView(),
-        .format = format,
-        .dimension = types.WGPUTextureViewDimension_2D,
-        .baseMipLevel = 0,
-        .mipLevelCount = 1,
-        .baseArrayLayer = 0,
-        .arrayLayerCount = 1,
-        .aspect = types.WGPUTextureAspect_All,
-        .usage = usage,
-    });
-    if (view == null) return error.TextureViewCreationFailed;
-    cache.put(key, .{
-        .texture = texture,
-        .view = view,
-        .width = width,
-        .height = height,
-        .format = format,
-    }) catch {
-        procs.wgpuTextureViewRelease(view);
-        return error.TextureViewCacheInsertFailed;
-    };
-    return view;
+fn setRenderBundleBindGroup(
+    render_api: render_api_mod.RenderApi,
+    render_bundle_encoder: render_api_mod.RenderBundleEncoder,
+    bind_group: types.WGPUBindGroup,
+    dynamic_offsets: []const u32,
+) void {
+    render_api.render_bundle_encoder_set_bind_group(
+        render_bundle_encoder,
+        RENDER_UNIFORM_BINDING_INDEX,
+        bind_group,
+        dynamic_offsets.len,
+        dynamic_offsets.ptr,
+    );
 }
-
 pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types.NativeExecutionResult {
     if (render.draw_count == 0) {
         return .{ .status = .unsupported, .status_message = "render_draw draw_count must be > 0" };
@@ -337,38 +101,11 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     }
 
     const procs = self.procs orelse return error.ProceduralNotReady;
-    const device_create_render_pipeline = procs.wgpuDeviceCreateRenderPipeline orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires full render api surface" };
     };
-    const command_encoder_begin_render_pass = procs.wgpuCommandEncoderBeginRenderPass orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_set_pipeline = procs.wgpuRenderPassEncoderSetPipeline orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_set_vertex_buffer = procs.wgpuRenderPassEncoderSetVertexBuffer orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_set_index_buffer = procs.wgpuRenderPassEncoderSetIndexBuffer orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_set_bind_group = procs.wgpuRenderPassEncoderSetBindGroup orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_draw = procs.wgpuRenderPassEncoderDraw orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_draw_indexed = procs.wgpuRenderPassEncoderDrawIndexed orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_end = procs.wgpuRenderPassEncoderEnd orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pass_encoder_release = procs.wgpuRenderPassEncoderRelease orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
-    };
-    const render_pipeline_release = procs.wgpuRenderPipelineRelease orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires async diagnostics api surface" };
     };
 
     const setup_start_ns = std.time.nanoTimestamp();
@@ -432,6 +169,30 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         };
     };
     const indexed_draw = prepared_index != null;
+    const viewport_width = render.viewport_width orelse @as(f32, @floatFromInt(render.target_width));
+    const viewport_height = render.viewport_height orelse @as(f32, @floatFromInt(render.target_height));
+    if (viewport_width <= 0 or viewport_height <= 0) {
+        return .{ .status = .unsupported, .status_message = "render_draw viewport dimensions must be > 0" };
+    }
+    const scissor_width = render.scissor_width orelse render.target_width;
+    const scissor_height = render.scissor_height orelse render.target_height;
+    if (scissor_width == 0 or scissor_height == 0) {
+        return .{ .status = .unsupported, .status_message = "render_draw scissor dimensions must be > 0" };
+    }
+    const requested_dynamic_offsets = render.bind_group_dynamic_offsets orelse &[_]u32{};
+    if (requested_dynamic_offsets.len > 1) {
+        return .{ .status = .unsupported, .status_message = "render_draw supports exactly one dynamic bind-group offset" };
+    }
+    var dynamic_offsets = [_]u32{0};
+    if (requested_dynamic_offsets.len == 1) {
+        dynamic_offsets[0] = requested_dynamic_offsets[0];
+    }
+    if (dynamic_offsets[0] % @as(u32, @intCast(RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES)) != 0) {
+        return .{ .status = .unsupported, .status_message = "render_draw dynamic offset must align to uniform stride" };
+    }
+    if (@as(u64, dynamic_offsets[0]) + RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES > RENDER_UNIFORM_TOTAL_BYTES) {
+        return .{ .status = .unsupported, .status_message = "render_draw dynamic offset exceeds uniform buffer bounds" };
+    }
 
     const normalized_target_format = resources.normalizeTextureFormat(render.target_format);
     const target_format = if (normalized_target_format == types.WGPUTextureFormat_Undefined)
@@ -461,7 +222,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         depth_resource,
         types.WGPUTextureUsage_RenderAttachment,
     );
-    const target_view = getOrCreateCachedRenderTextureView(
+    const target_view = render_resource_mod.getOrCreateCachedRenderTextureView(
         self,
         &self.render_target_view_cache,
         render.target_handle,
@@ -480,7 +241,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             },
         };
     };
-    const depth_view = getOrCreateCachedRenderTextureView(
+    const depth_view = render_resource_mod.getOrCreateCachedRenderTextureView(
         self,
         &self.render_depth_view_cache,
         depth_handle,
@@ -499,7 +260,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             },
         };
     };
-    const render_uniform_resources = getOrCreateRenderUniformBindingResources(self) catch |err| {
+    const render_uniform_resources = render_resource_mod.getOrCreateRenderUniformBindingResources(self) catch |err| {
         return .{
             .status = .@"error",
             .status_message = switch (err) {
@@ -507,6 +268,8 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 error.BufferAllocationFailed => "render_draw uniform buffer allocation failed",
                 error.BindGroupLayoutCreationFailed => "render_draw uniform bind group layout creation failed",
                 error.BindGroupCreationFailed => "render_draw uniform bind group creation failed",
+                error.TextureProcUnavailable => "render_draw texture proc surface unavailable",
+                error.SamplerCreationFailed => "render_draw sampler creation failed",
                 else => "render_draw uniform setup failed",
             },
         };
@@ -581,7 +344,25 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         };
         defer procs.wgpuPipelineLayoutRelease(render_pipeline_layout);
 
-        const pipeline = device_create_render_pipeline(self.device.?, &RenderPipelineDescriptor{
+        const compilation_state = async_procs_mod.requestShaderCompilationInfoAndWait(
+            async_procs,
+            self.instance.?,
+            procs,
+            shader_module,
+        ) catch {
+            procs.wgpuShaderModuleRelease(shader_module);
+            return .{ .status = .@"error", .status_message = "render_draw shader compilation info request failed" };
+        };
+        if (compilation_state.status != async_procs_mod.COMPILATION_INFO_STATUS_SUCCESS) {
+            procs.wgpuShaderModuleRelease(shader_module);
+            return .{ .status = .@"error", .status_message = "render_draw shader compilation info status not successful" };
+        }
+
+        async_procs_mod.pushErrorScope(async_procs, self.device.?, async_procs_mod.ERROR_FILTER_VALIDATION);
+        async_procs_mod.pushErrorScope(async_procs, self.device.?, async_procs_mod.ERROR_FILTER_INTERNAL);
+        async_procs_mod.pushErrorScope(async_procs, self.device.?, async_procs_mod.ERROR_FILTER_OUT_OF_MEMORY);
+
+        const pipeline_desc = RenderPipelineDescriptor{
             .nextInChain = null,
             .label = loader.stringView("fawn.render_draw"),
             .layout = render_pipeline_layout,
@@ -610,22 +391,64 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 .alphaToCoverageEnabled = types.WGPU_FALSE,
             },
             .fragment = &fragment_state,
-        });
-        if (pipeline == null) {
+        };
+        const pipeline = async_procs_mod.createRenderPipelineAsyncAndWait(
+            async_procs,
+            self.instance.?,
+            procs,
+            self.device.?,
+            @ptrCast(&pipeline_desc),
+        ) catch {
+            _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {};
+            _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {};
+            _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {};
             procs.wgpuShaderModuleRelease(shader_module);
-            return .{ .status = .@"error", .status_message = "render_draw pipeline creation failed" };
+            return .{ .status = .@"error", .status_message = "render_draw async pipeline creation failed" };
+        };
+
+        const out_of_memory_scope = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {
+            render_api.render_pipeline_release(pipeline);
+            procs.wgpuShaderModuleRelease(shader_module);
+            return .{ .status = .@"error", .status_message = "render_draw out-of-memory scope pop failed" };
+        };
+        const internal_scope = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {
+            render_api.render_pipeline_release(pipeline);
+            procs.wgpuShaderModuleRelease(shader_module);
+            return .{ .status = .@"error", .status_message = "render_draw internal scope pop failed" };
+        };
+        const validation_scope = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {
+            render_api.render_pipeline_release(pipeline);
+            procs.wgpuShaderModuleRelease(shader_module);
+            return .{ .status = .@"error", .status_message = "render_draw validation scope pop failed" };
+        };
+        const no_error = @as(u32, @intFromEnum(types.WGPUErrorType.noError));
+        if (out_of_memory_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
+            internal_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
+            validation_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
+            out_of_memory_scope.error_type != no_error or
+            internal_scope.error_type != no_error or
+            validation_scope.error_type != no_error)
+        {
+            render_api.render_pipeline_release(pipeline);
+            procs.wgpuShaderModuleRelease(shader_module);
+            return .{ .status = .@"error", .status_message = "render_draw error-scope validation failed" };
         }
 
         self.render_pipeline_cache.put(target_format, .{
             .shader_module = shader_module,
             .pipeline = pipeline,
         }) catch {
-            render_pipeline_release(pipeline);
+            render_api.render_pipeline_release(pipeline);
             procs.wgpuShaderModuleRelease(shader_module);
             return .{ .status = .@"error", .status_message = "render_draw pipeline cache insert failed" };
         };
         break :blk pipeline;
     };
+    const pipeline_bind_group_layout = render_api.render_pipeline_get_bind_group_layout(render_pipeline, RENDER_UNIFORM_BINDING_INDEX);
+    if (pipeline_bind_group_layout == null) {
+        return .{ .status = .@"error", .status_message = "render_draw pipeline bind-group-layout query failed" };
+    }
+    procs.wgpuBindGroupLayoutRelease(pipeline_bind_group_layout);
     const setup_end_ns = std.time.nanoTimestamp();
 
     const encode_start_ns = std.time.nanoTimestamp();
@@ -659,7 +482,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         .stencilClearValue = RENDER_STENCIL_CLEAR_VALUE,
         .stencilReadOnly = types.WGPU_FALSE,
     };
-    const render_pass = command_encoder_begin_render_pass(encoder, &RenderPassDescriptor{
+    const render_pass = render_api.command_encoder_begin_render_pass(encoder, &RenderPassDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .colorAttachmentCount = 1,
@@ -671,9 +494,33 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     if (render_pass == null) {
         return .{ .status = .@"error", .status_message = "render_draw begin render pass failed" };
     }
-    defer render_pass_encoder_release(render_pass);
+    defer render_api.render_pass_encoder_release(render_pass);
 
-    render_pass_encoder_set_vertex_buffer(
+    render_api.render_pass_encoder_set_viewport(
+        render_pass,
+        render.viewport_x,
+        render.viewport_y,
+        viewport_width,
+        viewport_height,
+        render.viewport_min_depth,
+        render.viewport_max_depth,
+    );
+    render_api.render_pass_encoder_set_scissor_rect(
+        render_pass,
+        render.scissor_x,
+        render.scissor_y,
+        scissor_width,
+        scissor_height,
+    );
+    const blend_constant = RenderColor{
+        .r = render.blend_constant[0],
+        .g = render.blend_constant[1],
+        .b = render.blend_constant[2],
+        .a = render.blend_constant[3],
+    };
+    render_api.render_pass_encoder_set_blend_constant(render_pass, &blend_constant);
+    render_api.render_pass_encoder_set_stencil_reference(render_pass, render.stencil_reference);
+    render_api.render_pass_encoder_set_vertex_buffer(
         render_pass,
         0,
         render_vertex_buffer,
@@ -681,7 +528,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         types.WGPU_WHOLE_SIZE,
     );
     if (indexed_draw) {
-        render_pass_encoder_set_index_buffer(
+        render_api.render_pass_encoder_set_index_buffer(
             render_pass,
             prepared_index.?.buffer,
             prepared_index.?.format,
@@ -689,46 +536,204 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             types.WGPU_WHOLE_SIZE,
         );
     }
-    if (render.pipeline_mode == .static) {
-        render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+    if (render.encode_mode == .render_pass and render.pipeline_mode == .static) {
+        render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
     }
-    if (render.bind_group_mode == .no_change) {
-        render_pass_encoder_set_bind_group(
-            render_pass,
-            RENDER_UNIFORM_BINDING_INDEX,
-            render_uniform_resources.bind_group,
-            0,
-            null,
-        );
+    if (render.encode_mode == .render_pass and render.bind_group_mode == .no_change) {
+        setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
     }
-    var draw_index: u32 = 0;
-    while (draw_index < render.draw_count) : (draw_index += 1) {
-        if (render.pipeline_mode == .redundant) {
-            render_pass_encoder_set_pipeline(render_pass, render_pipeline);
-        }
-        if (render.bind_group_mode == .redundant) {
-            render_pass_encoder_set_bind_group(
-                render_pass,
-                RENDER_UNIFORM_BINDING_INDEX,
-                render_uniform_resources.bind_group,
-                0,
-                null,
-            );
-        }
+
+    if (render.encode_mode == .render_pass) {
+        var draw_index: u32 = 0;
         if (indexed_draw) {
-            render_pass_encoder_draw_indexed(
-                render_pass,
-                render.index_count.?,
-                render.instance_count,
-                render.first_index,
-                render.base_vertex,
-                render.first_instance,
-            );
+            while (draw_index < render.draw_count) : (draw_index += 1) {
+                if (render.pipeline_mode == .redundant) {
+                    render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+                }
+                if (render.bind_group_mode == .redundant) {
+                    setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                }
+                render_api.render_pass_encoder_draw_indexed(
+                    render_pass,
+                    render.index_count.?,
+                    render.instance_count,
+                    render.first_index,
+                    render.base_vertex,
+                    render.first_instance,
+                );
+            }
         } else {
-            render_pass_encoder_draw(render_pass, render.vertex_count, render.instance_count, render.first_vertex, render.first_instance);
+            while (draw_index < render.draw_count) : (draw_index += 1) {
+                if (render.pipeline_mode == .redundant) {
+                    render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+                }
+                if (render.bind_group_mode == .redundant) {
+                    setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                }
+                render_api.render_pass_encoder_draw(
+                    render_pass,
+                    render.vertex_count,
+                    render.instance_count,
+                    render.first_vertex,
+                    render.first_instance,
+                );
+            }
         }
+    } else {
+        const bundle_color_formats = [_]types.WGPUTextureFormat{target_format};
+        const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
+            self.device.?,
+            &RenderBundleEncoderDescriptor{
+                .nextInChain = null,
+                .label = loader.stringView("fawn.render_bundle_encoder"),
+                .colorFormatCount = 1,
+                .colorFormats = bundle_color_formats[0..].ptr,
+                .depthStencilFormat = RENDER_DEPTH_STENCIL_FORMAT,
+                .sampleCount = 1,
+                .depthReadOnly = types.WGPU_FALSE,
+                .stencilReadOnly = types.WGPU_FALSE,
+            },
+        );
+        if (render_bundle_encoder == null) {
+            return .{ .status = .@"error", .status_message = "render_draw bundle encoder creation failed" };
+        }
+        render_api.render_bundle_encoder_add_ref(render_bundle_encoder);
+        defer render_api.render_bundle_encoder_release(render_bundle_encoder);
+        render_api.render_bundle_encoder_release(render_bundle_encoder);
+
+        render_api.render_bundle_encoder_set_label(render_bundle_encoder, loader.stringView("fawn.render_bundle_encoder"));
+        render_api.render_bundle_encoder_push_debug_group(render_bundle_encoder, loader.stringView("fawn.render_bundle"));
+        render_api.render_bundle_encoder_insert_debug_marker(render_bundle_encoder, loader.stringView("draw_loop"));
+
+        if (render.pipeline_mode == .static) {
+            render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
+        }
+        render_api.render_bundle_encoder_set_vertex_buffer(
+            render_bundle_encoder,
+            0,
+            render_vertex_buffer,
+            0,
+            types.WGPU_WHOLE_SIZE,
+        );
+        if (indexed_draw) {
+            render_api.render_bundle_encoder_set_index_buffer(
+                render_bundle_encoder,
+                prepared_index.?.buffer,
+                prepared_index.?.format,
+                0,
+                types.WGPU_WHOLE_SIZE,
+            );
+        }
+        if (render.bind_group_mode == .no_change) {
+            setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+        }
+
+        var draw_index: u32 = 0;
+        if (indexed_draw) {
+            while (draw_index < render.draw_count) : (draw_index += 1) {
+                if (render.pipeline_mode == .redundant) {
+                    render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
+                }
+                if (render.bind_group_mode == .redundant) {
+                    setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                }
+                if (draw_index == 0) {
+                    render_api.render_bundle_encoder_draw_indexed(
+                        render_bundle_encoder,
+                        render.index_count.?,
+                        render.instance_count,
+                        render.first_index,
+                        render.base_vertex,
+                        render.first_instance,
+                    );
+                } else {
+                    const indirect_args = RenderDrawIndexedIndirectArgs{
+                        .index_count = render.index_count.?,
+                        .instance_count = render.instance_count,
+                        .first_index = render.first_index,
+                        .base_vertex = render.base_vertex,
+                        .first_instance = render.first_instance,
+                    };
+                    const indirect_args_bytes = std.mem.asBytes(&indirect_args);
+                    const indirect_buffer = try resources.getOrCreateBuffer(
+                        self,
+                        RENDER_INDIRECT_BUFFER_HANDLE,
+                        @as(u64, @intCast(indirect_args_bytes.len)),
+                        types.WGPUBufferUsage_CopyDst | RENDER_BUFFER_USAGE_INDIRECT,
+                    );
+                    procs.wgpuQueueWriteBuffer(
+                        self.queue.?,
+                        indirect_buffer,
+                        0,
+                        indirect_args_bytes.ptr,
+                        indirect_args_bytes.len,
+                    );
+                    render_api.render_bundle_encoder_draw_indexed_indirect(render_bundle_encoder, indirect_buffer, 0);
+                }
+            }
+        } else {
+            while (draw_index < render.draw_count) : (draw_index += 1) {
+                if (render.pipeline_mode == .redundant) {
+                    render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
+                }
+                if (render.bind_group_mode == .redundant) {
+                    setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                }
+                if (draw_index == 0) {
+                    render_api.render_bundle_encoder_draw(
+                        render_bundle_encoder,
+                        render.vertex_count,
+                        render.instance_count,
+                        render.first_vertex,
+                        render.first_instance,
+                    );
+                } else {
+                    const indirect_args = RenderDrawIndirectArgs{
+                        .vertex_count = render.vertex_count,
+                        .instance_count = render.instance_count,
+                        .first_vertex = render.first_vertex,
+                        .first_instance = render.first_instance,
+                    };
+                    const indirect_args_bytes = std.mem.asBytes(&indirect_args);
+                    const indirect_buffer = try resources.getOrCreateBuffer(
+                        self,
+                        RENDER_INDIRECT_BUFFER_HANDLE,
+                        @as(u64, @intCast(indirect_args_bytes.len)),
+                        types.WGPUBufferUsage_CopyDst | RENDER_BUFFER_USAGE_INDIRECT,
+                    );
+                    procs.wgpuQueueWriteBuffer(
+                        self.queue.?,
+                        indirect_buffer,
+                        0,
+                        indirect_args_bytes.ptr,
+                        indirect_args_bytes.len,
+                    );
+                    render_api.render_bundle_encoder_draw_indirect(render_bundle_encoder, indirect_buffer, 0);
+                }
+            }
+        }
+
+        render_api.render_bundle_encoder_pop_debug_group(render_bundle_encoder);
+
+        const render_bundle = render_api.render_bundle_encoder_finish(
+            render_bundle_encoder,
+            &RenderBundleDescriptor{
+                .nextInChain = null,
+                .label = loader.stringView("fawn.render_bundle"),
+            },
+        );
+        if (render_bundle == null) {
+            return .{ .status = .@"error", .status_message = "render_draw bundle finish failed" };
+        }
+        render_api.render_bundle_set_label(render_bundle, loader.stringView("fawn.render_bundle"));
+        render_api.render_bundle_add_ref(render_bundle);
+        defer render_api.render_bundle_release(render_bundle);
+        render_api.render_bundle_release(render_bundle);
+
+        var bundles = [_]render_api_mod.RenderBundle{render_bundle};
+        render_api.render_pass_encoder_execute_bundles(render_pass, bundles.len, bundles[0..].ptr);
     }
-    render_pass_encoder_end(render_pass);
+    render_api.render_pass_encoder_end(render_pass);
 
     const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
         .nextInChain = null,

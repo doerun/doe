@@ -44,6 +44,19 @@ pub const CommandKind = enum(u8) {
     dispatch,
     kernel_dispatch,
     render_draw,
+    sampler_create,
+    sampler_destroy,
+    texture_write,
+    texture_query,
+    texture_destroy,
+    surface_create,
+    surface_capabilities,
+    surface_configure,
+    surface_acquire,
+    surface_present,
+    surface_unconfigure,
+    surface_release,
+    async_diagnostics,
 };
 
 pub const WGPUFlags = u64;
@@ -55,6 +68,7 @@ pub const WGPUTextureUsage_CopySrc: WGPUFlags = 0x0000000000000001;
 pub const WGPUTextureUsage_CopyDst: WGPUFlags = 0x0000000000000002;
 pub const WGPUTextureUsage_TextureBinding: WGPUFlags = 0x0000000000000004;
 pub const WGPUTextureUsage_StorageBinding: WGPUFlags = 0x0000000000000008;
+pub const WGPUTextureUsage_RenderAttachment: WGPUFlags = 0x0000000000000010;
 
 pub const WGPUCopyStrideUndefined: u32 = 0xFFFFFFFF;
 pub const WGPUWholeSize: u64 = 0xFFFFFFFFFFFFFFFF;
@@ -236,6 +250,11 @@ pub const RenderDrawBindGroupMode = enum {
     redundant,
 };
 
+pub const RenderDrawEncodeMode = enum {
+    render_pass,
+    render_bundle,
+};
+
 pub const RenderIndexFormat = enum {
     uint16,
     uint32,
@@ -262,6 +281,90 @@ pub const RenderDrawCommand = struct {
     target_format: WGPUTextureFormat = DEFAULT_RENDER_TARGET_FORMAT,
     pipeline_mode: RenderDrawPipelineMode = .static,
     bind_group_mode: RenderDrawBindGroupMode = .no_change,
+    encode_mode: RenderDrawEncodeMode = .render_bundle,
+    viewport_x: f32 = 0,
+    viewport_y: f32 = 0,
+    viewport_width: ?f32 = null,
+    viewport_height: ?f32 = null,
+    viewport_min_depth: f32 = 0,
+    viewport_max_depth: f32 = 1,
+    scissor_x: u32 = 0,
+    scissor_y: u32 = 0,
+    scissor_width: ?u32 = null,
+    scissor_height: ?u32 = null,
+    blend_constant: [4]f32 = .{ 0, 0, 0, 0 },
+    stencil_reference: u32 = 0,
+    bind_group_dynamic_offsets: ?[]const u32 = null,
+};
+
+pub const SamplerCreateCommand = struct {
+    handle: u64,
+    address_mode_u: u32 = 2,
+    address_mode_v: u32 = 2,
+    address_mode_w: u32 = 2,
+    mag_filter: u32 = 1,
+    min_filter: u32 = 1,
+    mipmap_filter: u32 = 1,
+    lod_min_clamp: f32 = 0,
+    lod_max_clamp: f32 = 32,
+    compare: u32 = 0,
+    max_anisotropy: u16 = 1,
+};
+
+pub const SamplerDestroyCommand = struct {
+    handle: u64,
+};
+
+pub const TextureWriteCommand = struct {
+    texture: CopyTextureResource,
+    data: []const u8,
+};
+
+pub const TextureQueryCommand = struct {
+    handle: u64,
+};
+
+pub const TextureDestroyCommand = struct {
+    handle: u64,
+};
+
+pub const SurfaceCreateCommand = struct {
+    handle: u64,
+};
+
+pub const SurfaceCapabilitiesCommand = struct {
+    handle: u64,
+};
+
+pub const SurfaceConfigureCommand = struct {
+    handle: u64,
+    width: u32,
+    height: u32,
+    format: WGPUTextureFormat = WGPUTextureFormat_RGBA8Unorm,
+    usage: WGPUFlags = WGPUTextureUsage_RenderAttachment,
+    alpha_mode: u32 = 0x00000001,
+    present_mode: u32 = 0x00000002,
+    desired_maximum_frame_latency: u32 = 2,
+};
+
+pub const SurfaceAcquireCommand = struct {
+    handle: u64,
+};
+
+pub const SurfacePresentCommand = struct {
+    handle: u64,
+};
+
+pub const SurfaceUnconfigureCommand = struct {
+    handle: u64,
+};
+
+pub const SurfaceReleaseCommand = struct {
+    handle: u64,
+};
+
+pub const AsyncDiagnosticsCommand = struct {
+    target_format: WGPUTextureFormat = WGPUTextureFormat_RGBA8Unorm,
 };
 
 pub const Command = union(CommandKind) {
@@ -271,6 +374,19 @@ pub const Command = union(CommandKind) {
     dispatch: DispatchCommand,
     kernel_dispatch: KernelDispatchCommand,
     render_draw: RenderDrawCommand,
+    sampler_create: SamplerCreateCommand,
+    sampler_destroy: SamplerDestroyCommand,
+    texture_write: TextureWriteCommand,
+    texture_query: TextureQueryCommand,
+    texture_destroy: TextureDestroyCommand,
+    surface_create: SurfaceCreateCommand,
+    surface_capabilities: SurfaceCapabilitiesCommand,
+    surface_configure: SurfaceConfigureCommand,
+    surface_acquire: SurfaceAcquireCommand,
+    surface_present: SurfacePresentCommand,
+    surface_unconfigure: SurfaceUnconfigureCommand,
+    surface_release: SurfaceReleaseCommand,
+    async_diagnostics: AsyncDiagnosticsCommand,
 };
 
 pub const UseTemporaryBufferAction = struct {
@@ -446,6 +562,19 @@ pub fn command_kind(cmd: Command) CommandKind {
         .dispatch => .dispatch,
         .kernel_dispatch => .kernel_dispatch,
         .render_draw => .render_draw,
+        .sampler_create => .sampler_create,
+        .sampler_destroy => .sampler_destroy,
+        .texture_write => .texture_write,
+        .texture_query => .texture_query,
+        .texture_destroy => .texture_destroy,
+        .surface_create => .surface_create,
+        .surface_capabilities => .surface_capabilities,
+        .surface_configure => .surface_configure,
+        .surface_acquire => .surface_acquire,
+        .surface_present => .surface_present,
+        .surface_unconfigure => .surface_unconfigure,
+        .surface_release => .surface_release,
+        .async_diagnostics => .async_diagnostics,
     };
 }
 
@@ -457,6 +586,19 @@ pub fn command_kind_name(cmd: CommandKind) []const u8 {
         .dispatch => "dispatch",
         .kernel_dispatch => "kernel_dispatch",
         .render_draw => "render_draw",
+        .sampler_create => "sampler_create",
+        .sampler_destroy => "sampler_destroy",
+        .texture_write => "texture_write",
+        .texture_query => "texture_query",
+        .texture_destroy => "texture_destroy",
+        .surface_create => "surface_create",
+        .surface_capabilities => "surface_capabilities",
+        .surface_configure => "surface_configure",
+        .surface_acquire => "surface_acquire",
+        .surface_present => "surface_present",
+        .surface_unconfigure => "surface_unconfigure",
+        .surface_release => "surface_release",
+        .async_diagnostics => "async_diagnostics",
     };
 }
 
