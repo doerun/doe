@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Run Metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "timestamp",
+    "host",
+    "gpu",
+    "driver",
+    "backend",
+    "toolchains",
+    "workloadId",
+    "build",
+    "hashes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "runId": { "type": "string", "minLength": 8 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "host": {
+      "type": "object",
+      "required": ["os", "arch"],
+      "additionalProperties": false,
+      "properties": {
+        "os": { "type": "string" },
+        "arch": { "type": "string" }
+      }
+    },
+    "gpu": { "type": "string" },
+    "driver": { "type": "string" },
+    "backend": { "type": "string", "enum": ["vulkan", "metal", "d3d12", "webgpu"] },
+    "toolchains": {
+      "type": "object",
+      "required": ["zig", "lean"],
+      "additionalProperties": false,
+      "properties": {
+        "zig": { "type": "string" },
+        "lean": { "type": "string" }
+      }
+    },
+    "workloadId": { "type": "string" },
+    "build": {
+      "type": "object",
+      "required": ["commit", "flags"],
+      "additionalProperties": false,
+      "properties": {
+        "commit": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "hashes": {
+      "type": "object",
+      "required": ["quirkSetHash", "traceHash"],
+      "additionalProperties": false,
+      "properties": {
+        "quirkSetHash": { "type": "string" },
+        "validatorHash": { "type": "string" },
+        "traceHash": { "type": "string" }
+      }
+    }
+  }
+}

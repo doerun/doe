@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 2,
+  "gateMode": {
+    "schema": "blocking",
+    "verification": "advisory",
+    "correctness": "blocking",
+    "performance": "advisory",
+    "trace": "blocking"
+  },
+  "gates": {
+    "schema": {
+      "requireValidPercent": 100
+    },
+    "verification": {
+      "maxRejected": 0,
+      "maxGuardedPercent": 100,
+      "requireLeanForSafetyClass": [],
+      "requireProofLevelForSafetyClass": {},
+      "requireLeanForVerificationMode": ["lean_required"],
+      "requireProofLevelForVerificationMode": {
+        "lean_required": "proven"
+      },
+      "modeSelectionRule": "verificationMode is the primary Lean obligation selector; safetyClass overrides are optional and empty in v0.",
+      "notes": "v0 speed-first posture: only lean_required is proof-blocking by default."
+    },
+    "correctness": {
+      "requireReplayDeterminism": true,
+      "requireInvariantPass": true
+    },
+    "performance": {
+      "metric": "submit_latency_p95_ms",
+      "maxRegressionPercent": 2.0,
+      "thresholdStatus": "bootstrap_placeholder",
+      "baselineRefs": ["dawn", "wgpu"],
+      "notes": "Reported in v0, not merge-blocking until baseline stabilizes."
+    },
+    "trace": {
+      "requireTraceArtifact": true,
+      "requireReplayArtifact": true
+    }
+  }
+}

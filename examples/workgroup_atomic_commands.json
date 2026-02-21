@@ -1,0 +1,21 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "workgroup_atomic.wgsl",
+    "x": 1024,
+    "y": 1,
+    "z": 1,
+    "repeat": 100,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 5001,
+        "buffer_size": 1048576,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

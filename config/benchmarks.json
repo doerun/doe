@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "baselines": [
+    {
+      "baselineId": "dawn",
+      "language": "cpp",
+      "role": "incumbent_reference",
+      "repo": "https://dawn.googlesource.com/dawn"
+    },
+    {
+      "baselineId": "wgpu",
+      "language": "rust",
+      "role": "incumbent_reference",
+      "repo": "https://github.com/gfx-rs/wgpu"
+    }
+  ],
+  "matrix": [
+    {
+      "metricId": "encode_overhead_ns",
+      "description": "CPU-side command encoding overhead"
+    },
+    {
+      "metricId": "validation_overhead_ns",
+      "description": "CPU-side validation overhead"
+    },
+    {
+      "metricId": "submit_latency_p50_ms",
+      "description": "Queue submit latency p50"
+    },
+    {
+      "metricId": "submit_latency_p95_ms",
+      "description": "Queue submit latency p95"
+    },
+    {
+      "metricId": "submit_latency_p99_ms",
+      "description": "Queue submit latency p99"
+    },
+    {
+      "metricId": "allocations_per_frame",
+      "description": "Heap/allocation churn proxy"
+    }
+  ],
+  "workloads": [
+    {
+      "workloadId": "compute_small_kernels_100k",
+      "description": "High-frequency tiny compute dispatches"
+    },
+    {
+      "workloadId": "mixed_encode_submit",
+      "description": "Representative mixed encode + submit loop"
+    }
+  ],
+  "comparisonContract": {
+    "claimStates": ["scaffold", "directional", "substantiated"],
+    "requiredMetricsForIncumbentClaim": [
+      "encode_overhead_ns",
+      "validation_overhead_ns",
+      "submit_latency_p95_ms",
+      "allocations_per_frame"
+    ],
+    "requiredBaselines": ["dawn", "wgpu"],
+    "requiredMetadataFields": [
+      "runId",
+      "timestamp",
+      "backend",
+      "workloadId",
+      "build.commit"
+    ],
+    "attributionMethod": {
+      "zig": "specialized_path_vs_generic_path_same_policy",
+      "lean": "lean_required_vs_non_lean_required_quality_delta",
+      "incumbents": "same_workload_same_metric_ids_same_backend_class"
+    },
+    "notes": "v0 scaffold outputs remain in claimState=scaffold until measured baseline datasets exist."
+  }
+}

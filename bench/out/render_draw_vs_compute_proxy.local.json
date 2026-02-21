@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 3,
+  "left": {
+    "runtime": "fawn_render_draw",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release: zig/zig-out/bin/fawn-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --execute --trace-meta /tmp/fawn_render_draw.meta.json",
+    "iterations": 6,
+    "timingsMs": [
+      58.379091089591384,
+      58.95299417898059,
+      55.39983697235584,
+      65.73927495628595,
+      64.16300893761218,
+      49.56603399477899
+    ],
+    "p5Ms": 49.56603399477899,
+    "p50Ms": 58.379091089591384,
+    "p95Ms": 64.16300893761218,
+    "p99Ms": 64.16300893761218,
+    "meanMs": 58.70004002160082,
+    "medianMs": 58.666042634285986,
+    "minMs": 49.56603399477899,
+    "maxMs": 65.73927495628595,
+    "meta": {
+      "traceVersion": 1,
+      "module": "fawn-zig-runtime",
+      "seqMax": 0,
+      "rowCount": 1,
+      "commandCount": 1,
+      "matchedCount": 0,
+      "blockingCount": 0,
+      "requiresLeanCount": 0,
+      "leanRequiredCount": 0,
+      "executionRowCount": 1,
+      "executionSuccessCount": 1,
+      "executionErrorCount": 0,
+      "executionSkippedCount": 0,
+      "executionUnsupportedCount": 0,
+      "executionTotalNs": 24856441,
+      "executionSetupTotalNs": 1980478,
+      "executionEncodeTotalNs": 77386,
+      "executionSubmitWaitTotalNs": 22781204,
+      "executionDispatchCount": 2000,
+      "executionGpuTimestampTotalNs": 0,
+      "hash": "0xde443a1dfd269197",
+      "previousHash": "0x9e3779b97f4a7c15",
+      "executionBackend": "webgpu-ffi",
+      "profile": {
+        "vendor": "amd",
+        "api": "vulkan",
+        "deviceFamily": "gfx11",
+        "driver": "24.0.0"
+      }
+    }
+  },
+  "right": {
+    "runtime": "fawn_compute_proxy",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release: zig/zig-out/bin/fawn-zig-runtime --commands /tmp/fawn_draw_proxy_compute_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --execute --kernel-root bench/kernels --trace-meta /tmp/fawn_compute_proxy.meta.json",
+    "iterations": 6,
+    "timingsMs": [
+      28.48595194518566,
+      28.0596271622926,
+      28.731185011565685,
+      32.34651987440884,
+      32.84147381782532,
+      32.60510810650885
+    ],
+    "p5Ms": 28.0596271622926,
+    "p50Ms": 28.731185011565685,
+    "p95Ms": 32.60510810650885,
+    "p99Ms": 32.60510810650885,
+    "meanMs": 30.51164431963116,
+    "medianMs": 30.538852442987263,
+    "minMs": 28.0596271622926,
+    "maxMs": 32.84147381782532,
+    "meta": {
+      "traceVersion": 1,
+      "module": "fawn-zig-runtime",
+      "seqMax": 0,
+      "rowCount": 1,
+      "commandCount": 1,
+      "matchedCount": 0,
+      "blockingCount": 0,
+      "requiresLeanCount": 0,
+      "leanRequiredCount": 0,
+      "executionRowCount": 1,
+      "executionSuccessCount": 1,
+      "executionErrorCount": 0,
+      "executionSkippedCount": 0,
+      "executionUnsupportedCount": 0,
+      "executionTotalNs": 12756170,
+      "executionSetupTotalNs": 1255400,
+      "executionEncodeTotalNs": 167796,
+      "executionSubmitWaitTotalNs": 11235348,
+      "executionDispatchCount": 2000,
+      "executionGpuTimestampTotalNs": 10609086,
+      "hash": "0x564c4c5bd882b732",
+      "previousHash": "0x9e3779b97f4a7c15",
+      "executionBackend": "webgpu-ffi",
+      "profile": {
+        "vendor": "amd",
+        "api": "vulkan",
+        "deviceFamily": "gfx11",
+        "driver": "24.0.0"
+      }
+    }
+  },
+  "deltaPercentConvention": {
+    "baseline": "right",
+    "formula": "((rightMs - leftMs) / rightMs) * 100",
+    "positive": "left faster",
+    "negative": "left slower",
+    "zero": "parity"
+  },
+  "delta": {
+    "p5Percent": -76.64537631985135,
+    "p50Percent": -103.19068310649557,
+    "p95Percent": -96.78821100060553,
+    "p99Percent": -96.78821100060553,
+    "meanPercent": -92.38569841296058,
+    "p50LeftMs": 58.379091089591384,
+    "p50RightMs": 28.731185011565685
+  }
+}

@@ -1,0 +1,41 @@
+# Fawn Lean Module
+
+Purpose:
+- formalize high-ROI invariants for selected quirk classes
+- emit proof verdicts and validator artifacts where required
+
+Policy:
+- not every quirk requires Lean in v0
+- use `verificationMode` in quirk records to decide obligation
+- obligation matrix:
+  - `guard_only`: no Lean proof required
+  - `lean_preferred`: proof is advisory in v0
+  - `lean_required`: proof is required (`proofLevel=proven`)
+- safetyClass may add stricter requirements only if configured in `fawn/config/gates.json`
+
+Current formalization:
+- `Fawn/Model.lean` (core enums, precedence lattice, requirement predicates)
+- `Fawn/Dispatch.lean` (command/scope relation and support lemmas)
+- `Fawn/Runtime.lean` (deterministic matching + scoring + selector for quirk streams)
+- `Fawn/Runtime.lean` now includes driver-range matching and dispatch decision metadata (`DispatchDecision`) with proof obligations in the path.
+- `Fawn/Bridge.lean` (obligation gate evaluation from dispatch decisions)
+- `Fawn/Dispatch.lean` and `Fawn/Runtime.lean` now include `kernelDispatch` as a first-class command kind.
+
+Bridge layer contract:
+- input: `Fawn.Runtime.DispatchResult` stream
+- optional override: `SafetyProofOverride` maps safety class to stricter proof level requirements
+- output per matched quirk (`QuirkLeanObligation`) with:
+  - `quirkId`
+  - `requiresLean`
+  - `requiredProofLevel` (`none` = no Lean requirement)
+  - `actualProofLevel`
+  - `isBlocking`
+  - `isAdvisory`
+- v0 policy:
+  - `lean_required` sets blocking requirement to `proven`
+  - `lean_preferred` is intentionally advisory only when explicitly driven by override
+  - default safety overrides remain empty (`none`)
+
+Usage model:
+- proofs are authored manually; no auto-generated theorem output is expected for `fawn`.
+- runtime obligations should map from `verificationMode` + safety class to theorem entry points in a separate integration layer.

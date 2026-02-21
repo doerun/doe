@@ -1,0 +1,31 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x5e230504c0097cba",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "buffer_upload_4mb",
+  "gtestFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
+  "selectedFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
+  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB --trace-file=fawn/bench/out/runtime-comparisons.full-suite-gpu-op.no-shader-no-render.2026-02-19/buffer_upload_4mb/right/dawn.run009.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.5213663105259999,
+  "elapsedMs": 6054.089150973596,
+  "processWallMs": 6054.089150973596,
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 521366,
+  "gtestFilterNoMatch": false,
+  "gtestRunningCount": 1,
+  "benchmarkWallMsSamples": [
+    0.5213663105259999,
+    0.522183464211,
+    0.518399435263
+  ]
+}

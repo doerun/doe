@@ -1,0 +1,1 @@
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1042914112400068, "hash": "0x53423a0ca42d25b7", "previousHash": "0x9e3779b97f4a7c15", "command": "buffer_upload_1mb", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 64250633}

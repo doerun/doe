@@ -1,0 +1,1 @@
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1167342165925444, "hash": "0xae8c78c2b6ad916a", "previousHash": "0x9e3779b97f4a7c15", "command": "matrix_vector_multiply_32768x2048_f32", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 17393903343}

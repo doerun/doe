@@ -1,0 +1,55 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xb265f9f024f2714a",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "matrix_vector_multiply_32768x2048_f32",
+  "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+  "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0 --trace-file=fawn/bench/out/runtime-comparisons/matrix_vector_multiply_32768x2048_f32/right/dawn.run009.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 30.165015370000003,
+  "timingMetric": "wall_time",
+  "elapsedMs": 18144.77012399584,
+  "processWallMs": 18144.77012399584,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 30.165015370000003,
+    "cpu_time": 30.16381622,
+    "gpu_time": 30.1006848
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 30165015,
+  "gtestFilterNoMatch": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      30.165015370000003,
+      30.054346040000002,
+      30.24088904
+    ],
+    "cpu_time": [
+      30.16381622,
+      30.05275116,
+      30.239296760000002
+    ],
+    "gpu_time": [
+      30.1006848,
+      29.98796288,
+      30.17408512
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    30.165015370000003,
+    30.054346040000002,
+    30.24088904
+  ]
+}

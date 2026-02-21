@@ -1,0 +1,1702 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "texture_sample_to_storage_64",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "texture",
+        "resource_handle": 7101,
+        "texture_sample_type": "float",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "storage_texture",
+        "resource_handle": 7102,
+        "storage_access": "write_only",
+        "texture_format": "rgba8unorm",
+        "texture_view_dimension": "2d",
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 256,
+    "y": 1,
+    "z": 1
+  }
+]

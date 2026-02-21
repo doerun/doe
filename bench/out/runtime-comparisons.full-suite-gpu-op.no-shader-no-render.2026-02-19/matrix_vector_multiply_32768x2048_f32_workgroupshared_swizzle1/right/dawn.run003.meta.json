@@ -1,0 +1,31 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x9931355f42cb4d45",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+  "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
+  "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
+  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1 --trace-file=fawn/bench/out/runtime-comparisons.full-suite-gpu-op.no-shader-no-render.2026-02-19/matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1/right/dawn.run003.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 1.783982396,
+  "elapsedMs": 5788.6182649526745,
+  "processWallMs": 5788.6182649526745,
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 1783982,
+  "gtestFilterNoMatch": false,
+  "gtestRunningCount": 1,
+  "benchmarkWallMsSamples": [
+    1.783867958,
+    1.787961356,
+    1.783982396
+  ]
+}

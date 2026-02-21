@@ -1,0 +1,1209 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-18T18:46:14.606065+00:00",
+  "left": {
+    "name": "fawn"
+  },
+  "right": {
+    "name": "dawn"
+  },
+  "comparabilityPolicy": {
+    "mode": "strict",
+    "requiredTimingClass": "operation",
+    "allowLeftNoExecution": false
+  },
+  "workloads": [
+    {
+      "id": "workgroup_atomic_1024",
+      "name": "workgroup-atomic 1024",
+      "description": "Workgroup-atomic compute kernel with 1024 workgroups and storage-buffer output.",
+      "domain": "compute",
+      "comparabilityNotes": "Matched compute/atomic intent with Dawn WorkgroupAtomicPerf; dispatch loop structure differs.",
+      "workloadComparable": true,
+      "workloadDefault": false,
+      "left": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:",
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/workgroup_atomic_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run001.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run001.meta.json",
+              "--kernel-root",
+              "fawn/bench/kernels"
+            ],
+            "elapsedMs": 29.7324659768492,
+            "measuredMs": 0.543634,
+            "timingSource": "fawn-execution-total-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-total-ns",
+              "traceMetaTimingMs": 0.543634,
+              "wallTimeMs": 29.7324659768492
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run001.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run001.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 1,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 543634,
+              "hash": "0x3fc0510d49249b85",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "profile": {
+                "vendor": "intel",
+                "api": "vulkan",
+                "deviceFamily": "gen12",
+                "driver": "31.0.101"
+              }
+            }
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:",
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/workgroup_atomic_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run002.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run002.meta.json",
+              "--kernel-root",
+              "fawn/bench/kernels"
+            ],
+            "elapsedMs": 27.123491978272796,
+            "measuredMs": 0.525811,
+            "timingSource": "fawn-execution-total-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-total-ns",
+              "traceMetaTimingMs": 0.525811,
+              "wallTimeMs": 27.123491978272796
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/left/fawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 1,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 525811,
+              "hash": "0x3fc0510d49249b85",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "profile": {
+                "vendor": "intel",
+                "api": "vulkan",
+                "deviceFamily": "gen12",
+                "driver": "31.0.101"
+              }
+            }
+          }
+        ],
+        "stats": {
+          "count": 2,
+          "minMs": 0.525811,
+          "maxMs": 0.543634,
+          "p50Ms": 0.525811,
+          "p95Ms": 0.525811,
+          "p99Ms": 0.525811,
+          "meanMs": 0.5347225,
+          "stdevMs": 0.008911499999999961
+        },
+        "timingsMs": [
+          0.543634,
+          0.525811
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "fawn-zig-runtime",
+          "seqMax": 0,
+          "rowCount": 1,
+          "commandCount": 1,
+          "matchedCount": 1,
+          "blockingCount": 0,
+          "requiresLeanCount": 0,
+          "leanRequiredCount": 0,
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionSkippedCount": 0,
+          "executionUnsupportedCount": 0,
+          "executionTotalNs": 525811,
+          "hash": "0x3fc0510d49249b85",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "executionBackend": "webgpu-ffi",
+          "profile": {
+            "vendor": "intel",
+            "api": "vulkan",
+            "deviceFamily": "gen12",
+            "driver": "31.0.101"
+          }
+        },
+        "timingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "timingClasses": [
+          "operation"
+        ]
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "workgroup_atomic_1024",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run001.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run001.meta.json"
+            ],
+            "elapsedMs": 6336.3089569611475,
+            "measuredMs": 0.055501412872,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.055501412872,
+              "wallTimeMs": 6336.3089569611475
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run001.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run001.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xf6614eba98a1909e",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "workgroup_atomic_1024",
+              "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+              "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run001.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.055501412872,
+              "elapsedMs": 6295.602552942,
+              "processWallMs": 6295.602552942,
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 55501,
+              "benchmarkWallMsSamples": [
+                0.05583273787199999,
+                0.055501412872,
+                0.055410977181
+              ]
+            }
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "workgroup_atomic_1024",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run002.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run002.meta.json"
+            ],
+            "elapsedMs": 6118.721420993097,
+            "measuredMs": 0.055457651722,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.055457651722,
+              "wallTimeMs": 6118.721420993097
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xc7451d05682c5642",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "workgroup_atomic_1024",
+              "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+              "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run002.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.055457651722,
+              "elapsedMs": 6075.932736042887,
+              "processWallMs": 6075.932736042887,
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 55458,
+              "benchmarkWallMsSamples": [
+                0.055457651722,
+                0.055170444221999994,
+                0.055950914111
+              ]
+            }
+          }
+        ],
+        "stats": {
+          "count": 2,
+          "minMs": 0.055457651722,
+          "maxMs": 0.055501412872,
+          "p50Ms": 0.055457651722,
+          "p95Ms": 0.055457651722,
+          "p99Ms": 0.055457651722,
+          "meanMs": 0.055479532297,
+          "stdevMs": 2.18805750000009e-05
+        },
+        "timingsMs": [
+          0.055501412872,
+          0.055457651722
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "dawn-perf-tests",
+          "schema": "adapter-meta",
+          "seqMax": 0,
+          "rowCount": 1,
+          "hash": "0xc7451d05682c5642",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "commandCount": 1,
+          "workload": "workgroup_atomic_1024",
+          "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+          "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+          "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/workgroup_atomic_1024/right/dawn.run002.ndjson",
+          "timingSource": "dawn-perf-wall-time",
+          "timingClass": "operation",
+          "timingMs": 0.055457651722,
+          "elapsedMs": 6075.932736042887,
+          "processWallMs": 6075.932736042887,
+          "executionBackend": "dawn-perf-tests",
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionTotalNs": 55458,
+          "benchmarkWallMsSamples": [
+            0.055457651722,
+            0.055170444221999994,
+            0.055950914111
+          ]
+        },
+        "timingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "timingClasses": [
+          "operation"
+        ]
+      },
+      "deltaPercent": {
+        "p50Percent": 848.130661276109,
+        "p95Percent": 848.130661276109,
+        "p99Percent": 848.130661276109,
+        "meanPercent": 863.8194084576207
+      },
+      "comparability": {
+        "comparable": true,
+        "requiredTimingClass": "operation",
+        "leftTimingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "rightTimingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "leftTimingClass": "operation",
+        "rightTimingClass": "operation",
+        "reasons": []
+      }
+    },
+    {
+      "id": "workgroup_non_atomic_1024",
+      "name": "workgroup-non-atomic 1024",
+      "description": "Non-atomic workgroup compute kernel with the same dispatch geometry as the atomic variant.",
+      "domain": "compute",
+      "comparabilityNotes": "Matched compute/non-atomic intent with Dawn WorkgroupAtomicPerf non-atomic variant; dispatch loop structure differs.",
+      "workloadComparable": true,
+      "workloadDefault": false,
+      "left": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:",
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/workgroup_non_atomic_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run001.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run001.meta.json",
+              "--kernel-root",
+              "fawn/bench/kernels"
+            ],
+            "elapsedMs": 30.840102001093328,
+            "measuredMs": 0.600301,
+            "timingSource": "fawn-execution-total-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-total-ns",
+              "traceMetaTimingMs": 0.600301,
+              "wallTimeMs": 30.840102001093328
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run001.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run001.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 1,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 600301,
+              "hash": "0x9f861e7971981399",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "profile": {
+                "vendor": "intel",
+                "api": "vulkan",
+                "deviceFamily": "gen12",
+                "driver": "31.0.101"
+              }
+            }
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:",
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/workgroup_non_atomic_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run002.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run002.meta.json",
+              "--kernel-root",
+              "fawn/bench/kernels"
+            ],
+            "elapsedMs": 27.907488984055817,
+            "measuredMs": 0.51537,
+            "timingSource": "fawn-execution-total-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-total-ns",
+              "traceMetaTimingMs": 0.51537,
+              "wallTimeMs": 27.907488984055817
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/left/fawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 1,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 515370,
+              "hash": "0x9f861e7971981399",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "profile": {
+                "vendor": "intel",
+                "api": "vulkan",
+                "deviceFamily": "gen12",
+                "driver": "31.0.101"
+              }
+            }
+          }
+        ],
+        "stats": {
+          "count": 2,
+          "minMs": 0.51537,
+          "maxMs": 0.600301,
+          "p50Ms": 0.51537,
+          "p95Ms": 0.51537,
+          "p99Ms": 0.51537,
+          "meanMs": 0.5578354999999999,
+          "stdevMs": 0.04246549999999999
+        },
+        "timingsMs": [
+          0.600301,
+          0.51537
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "fawn-zig-runtime",
+          "seqMax": 0,
+          "rowCount": 1,
+          "commandCount": 1,
+          "matchedCount": 1,
+          "blockingCount": 0,
+          "requiresLeanCount": 0,
+          "leanRequiredCount": 0,
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionSkippedCount": 0,
+          "executionUnsupportedCount": 0,
+          "executionTotalNs": 515370,
+          "hash": "0x9f861e7971981399",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "executionBackend": "webgpu-ffi",
+          "profile": {
+            "vendor": "intel",
+            "api": "vulkan",
+            "deviceFamily": "gen12",
+            "driver": "31.0.101"
+          }
+        },
+        "timingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "timingClasses": [
+          "operation"
+        ]
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "workgroup_non_atomic_1024",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run001.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run001.meta.json"
+            ],
+            "elapsedMs": 6005.209977040067,
+            "measuredMs": 0.055420784773,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.055420784773,
+              "wallTimeMs": 6005.209977040067
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run001.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run001.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xa02e683b74e3bf4a",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "workgroup_non_atomic_1024",
+              "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+              "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run001.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.055420784773,
+              "elapsedMs": 5957.093075034209,
+              "processWallMs": 5957.093075034209,
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 55421,
+              "benchmarkWallMsSamples": [
+                0.053142987442999993,
+                0.055420784773,
+                0.055585069773
+              ]
+            }
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "workgroup_non_atomic_1024",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run002.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run002.meta.json"
+            ],
+            "elapsedMs": 6136.715149041265,
+            "measuredMs": 0.0554622975,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.0554622975,
+              "wallTimeMs": 6136.715149041265
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x4e64e6b1bc428fa2",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "workgroup_non_atomic_1024",
+              "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+              "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run002.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.0554622975,
+              "elapsedMs": 6085.140926064923,
+              "processWallMs": 6085.140926064923,
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 55462,
+              "benchmarkWallMsSamples": [
+                0.055424684444,
+                0.0554622975,
+                0.055575554833
+              ]
+            }
+          }
+        ],
+        "stats": {
+          "count": 2,
+          "minMs": 0.055420784773,
+          "maxMs": 0.0554622975,
+          "p50Ms": 0.055420784773,
+          "p95Ms": 0.055420784773,
+          "p99Ms": 0.055420784773,
+          "meanMs": 0.0554415411365,
+          "stdevMs": 2.075636350000118e-05
+        },
+        "timingsMs": [
+          0.055420784773,
+          0.0554622975
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "dawn-perf-tests",
+          "schema": "adapter-meta",
+          "seqMax": 0,
+          "rowCount": 1,
+          "hash": "0x4e64e6b1bc428fa2",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "commandCount": 1,
+          "workload": "workgroup_non_atomic_1024",
+          "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+          "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+          "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/workgroup_non_atomic_1024/right/dawn.run002.ndjson",
+          "timingSource": "dawn-perf-wall-time",
+          "timingClass": "operation",
+          "timingMs": 0.0554622975,
+          "elapsedMs": 6085.140926064923,
+          "processWallMs": 6085.140926064923,
+          "executionBackend": "dawn-perf-tests",
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionTotalNs": 55462,
+          "benchmarkWallMsSamples": [
+            0.055424684444,
+            0.0554622975,
+            0.055575554833
+          ]
+        },
+        "timingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "timingClasses": [
+          "operation"
+        ]
+      },
+      "deltaPercent": {
+        "p50Percent": 829.921873374624,
+        "p95Percent": 829.921873374624,
+        "p99Percent": 829.921873374624,
+        "meanPercent": 906.1688195618146
+      },
+      "comparability": {
+        "comparable": true,
+        "requiredTimingClass": "operation",
+        "leftTimingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "rightTimingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "leftTimingClass": "operation",
+        "rightTimingClass": "operation",
+        "reasons": []
+      }
+    },
+    {
+      "id": "matrix_vector_multiply_32768x2048_f32",
+      "name": "matrix-vector multiply 32768x2048 f32",
+      "description": "Matrix-vector compute kernel aligned to Dawn MatrixVectorMultiplyPerf dimensions (Rows=32768, Cols=2048, F32/F32).",
+      "domain": "compute",
+      "comparabilityNotes": "Matched matrix-vector compute semantics and dimensions against Dawn MatrixVectorMultiplyPerf F32/F32 Naive variant.",
+      "workloadComparable": true,
+      "workloadDefault": false,
+      "left": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:",
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/matrix_vector_mul_32768x2048_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run001.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run001.meta.json",
+              "--kernel-root",
+              "fawn/bench/kernels"
+            ],
+            "elapsedMs": 37.68890199717134,
+            "measuredMs": 10.032985,
+            "timingSource": "fawn-execution-total-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-total-ns",
+              "traceMetaTimingMs": 10.032985,
+              "wallTimeMs": 37.68890199717134
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run001.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run001.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 1,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 10032985,
+              "hash": "0x42bb7f45e4c12ff1",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "profile": {
+                "vendor": "intel",
+                "api": "vulkan",
+                "deviceFamily": "gen12",
+                "driver": "31.0.101"
+              }
+            }
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:",
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/matrix_vector_mul_32768x2048_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run002.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run002.meta.json",
+              "--kernel-root",
+              "fawn/bench/kernels"
+            ],
+            "elapsedMs": 42.29756200220436,
+            "measuredMs": 11.259265,
+            "timingSource": "fawn-execution-total-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-total-ns",
+              "traceMetaTimingMs": 11.259265,
+              "wallTimeMs": 42.29756200220436
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/left/fawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 1,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 11259265,
+              "hash": "0x42bb7f45e4c12ff1",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "profile": {
+                "vendor": "intel",
+                "api": "vulkan",
+                "deviceFamily": "gen12",
+                "driver": "31.0.101"
+              }
+            }
+          }
+        ],
+        "stats": {
+          "count": 2,
+          "minMs": 10.032985,
+          "maxMs": 11.259265,
+          "p50Ms": 10.032985,
+          "p95Ms": 10.032985,
+          "p99Ms": 10.032985,
+          "meanMs": 10.646125,
+          "stdevMs": 0.6131399999999996
+        },
+        "timingsMs": [
+          10.032985,
+          11.259265
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "fawn-zig-runtime",
+          "seqMax": 0,
+          "rowCount": 1,
+          "commandCount": 1,
+          "matchedCount": 1,
+          "blockingCount": 0,
+          "requiresLeanCount": 0,
+          "leanRequiredCount": 0,
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionSkippedCount": 0,
+          "executionUnsupportedCount": 0,
+          "executionTotalNs": 11259265,
+          "hash": "0x42bb7f45e4c12ff1",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "executionBackend": "webgpu-ffi",
+          "profile": {
+            "vendor": "intel",
+            "api": "vulkan",
+            "deviceFamily": "gen12",
+            "driver": "31.0.101"
+          }
+        },
+        "timingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "timingClasses": [
+          "operation"
+        ]
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "matrix_vector_multiply_32768x2048_f32",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run001.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run001.meta.json"
+            ],
+            "elapsedMs": 17461.331750033423,
+            "measuredMs": 28.92857644,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 28.92857644,
+              "wallTimeMs": 17461.331750033423
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run001.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run001.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x77fa90b72fe28261",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "matrix_vector_multiply_32768x2048_f32",
+              "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0 --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run001.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 28.92857644,
+              "elapsedMs": 17427.92411101982,
+              "processWallMs": 17427.92411101982,
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 28928576,
+              "benchmarkWallMsSamples": [
+                28.94979052,
+                28.92857644,
+                28.76251304
+              ]
+            }
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "matrix_vector_multiply_32768x2048_f32",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run002.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run002.meta.json"
+            ],
+            "elapsedMs": 17718.54611497838,
+            "measuredMs": 29.38855203,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 29.38855203,
+              "wallTimeMs": 17718.54611497838
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x631c4058fc2a1cb1",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "matrix_vector_multiply_32768x2048_f32",
+              "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0 --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run002.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 29.38855203,
+              "elapsedMs": 17683.850378962234,
+              "processWallMs": 17683.850378962234,
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 29388552,
+              "benchmarkWallMsSamples": [
+                29.522840820000003,
+                29.33930261,
+                29.38855203
+              ]
+            }
+          }
+        ],
+        "stats": {
+          "count": 2,
+          "minMs": 28.92857644,
+          "maxMs": 29.38855203,
+          "p50Ms": 28.92857644,
+          "p95Ms": 28.92857644,
+          "p99Ms": 28.92857644,
+          "meanMs": 29.158564235,
+          "stdevMs": 0.22998779499999955
+        },
+        "timingsMs": [
+          28.92857644,
+          29.38855203
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "dawn-perf-tests",
+          "schema": "adapter-meta",
+          "seqMax": 0,
+          "rowCount": 1,
+          "hash": "0x631c4058fc2a1cb1",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "commandCount": 1,
+          "workload": "matrix_vector_multiply_32768x2048_f32",
+          "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+          "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+          "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0 --trace-file=fawn/bench/out/runtime-comparisons-compute-v2/matrix_vector_multiply_32768x2048_f32/right/dawn.run002.ndjson",
+          "timingSource": "dawn-perf-wall-time",
+          "timingClass": "operation",
+          "timingMs": 29.38855203,
+          "elapsedMs": 17683.850378962234,
+          "processWallMs": 17683.850378962234,
+          "executionBackend": "dawn-perf-tests",
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionTotalNs": 29388552,
+          "benchmarkWallMsSamples": [
+            29.522840820000003,
+            29.33930261,
+            29.38855203
+          ]
+        },
+        "timingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "timingClasses": [
+          "operation"
+        ]
+      },
+      "deltaPercent": {
+        "p50Percent": -65.31808255131686,
+        "p95Percent": -65.31808255131686,
+        "p99Percent": -65.31808255131686,
+        "meanPercent": -63.48885729009559
+      },
+      "comparability": {
+        "comparable": true,
+        "requiredTimingClass": "operation",
+        "leftTimingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "rightTimingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "leftTimingClass": "operation",
+        "rightTimingClass": "operation",
+        "reasons": []
+      }
+    }
+  ],
+  "overall": {
+    "left": {
+      "count": 6,
+      "minMs": 0.51537,
+      "maxMs": 11.259265,
+      "p50Ms": 0.543634,
+      "p95Ms": 10.032985,
+      "p99Ms": 10.032985,
+      "meanMs": 3.9128943333333335,
+      "stdevMs": 4.774330086141847
+    },
+    "right": {
+      "count": 6,
+      "minMs": 0.055420784773,
+      "maxMs": 29.38855203,
+      "p50Ms": 0.0554622975,
+      "p95Ms": 28.92857644,
+      "p99Ms": 28.92857644,
+      "meanMs": 9.756495102811167,
+      "stdevMs": 13.719977214544155
+    },
+    "deltaPercent": {
+      "p50Approx": 880.1865853104985
+    }
+  },
+  "comparabilitySummary": {
+    "workloadCount": 3,
+    "nonComparableCount": 0,
+    "nonComparableWorkloads": []
+  },
+  "comparisonStatus": "comparable"
+}

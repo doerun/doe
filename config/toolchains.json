@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "toolchains": {
+    "lean": {
+      "version": "4.16.0",
+      "channel": "stable",
+      "lockfile": "lean-toolchain"
+    },
+    "zig": {
+      "version": "0.15.2",
+      "channel": "stable",
+      "lockfile": "zig-toolchain"
+    }
+  },
+  "upgradePolicy": {
+    "cadenceDays": 30,
+    "requireBlockingGates": true,
+    "requireAdvisoryGateReports": true,
+    "blockOnCorrectnessRegression": true,
+    "blockOnPerfRegression": false
+  }
+}

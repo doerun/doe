@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-02-18T00:18:23.717945Z",
+  "input": [
+    "data/analysis/workarounds/workaround_rows-00001.jsonl"
+  ],
+  "months": [
+    {
+      "backend": "d3d12",
+      "changeCount": 1,
+      "failureClass": "unknown",
+      "month": "2025-05",
+      "signalRows": 1,
+      "vendor": "qualcomm"
+    },
+    {
+      "backend": "d3d12",
+      "changeCount": 1,
+      "failureClass": "unknown",
+      "month": "2025-07",
+      "signalRows": 1,
+      "vendor": "intel"
+    },
+    {
+      "backend": "webgpu",
+      "changeCount": 1,
+      "failureClass": "unknown",
+      "month": "2025-10",
+      "signalRows": 1,
+      "vendor": "unknown"
+    },
+    {
+      "backend": "metal",
+      "changeCount": 1,
+      "failureClass": "unknown",
+      "month": "2026-01",
+      "signalRows": 1,
+      "vendor": "unknown"
+    }
+  ]
+}

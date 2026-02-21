@@ -1,0 +1,467 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-18T19:12:46.037649+00:00",
+  "left": {
+    "name": "fawn"
+  },
+  "right": {
+    "name": "dawn"
+  },
+  "comparabilityPolicy": {
+    "mode": "strict",
+    "requiredTimingClass": "operation",
+    "allowLeftNoExecution": false,
+    "resourceProbe": "rocm-smi",
+    "resourceSampleMs": 100
+  },
+  "workloads": [
+    {
+      "id": "matrix_vector_multiply_32768x2048_f32",
+      "name": "matrix-vector multiply 32768x2048 f32",
+      "description": "Matrix-vector compute kernel aligned to Dawn MatrixVectorMultiplyPerf dimensions (Rows=32768, Cols=2048, F32/F32).",
+      "domain": "compute",
+      "comparabilityNotes": "Matched matrix-vector compute semantics and dimensions against Dawn MatrixVectorMultiplyPerf F32/F32 Naive variant.",
+      "workloadComparable": true,
+      "workloadDefault": false,
+      "left": {
+        "commandSamples": [
+          {
+            "runIndex": 0,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:",
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/matrix_vector_mul_32768x2048_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/left/fawn.run000.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/left/fawn.run000.meta.json",
+              "--kernel-root",
+              "fawn/bench/kernels"
+            ],
+            "elapsedMs": 142.76126504410058,
+            "measuredMs": 10.849632,
+            "timingSource": "fawn-execution-total-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-total-ns",
+              "traceMetaTimingMs": 10.849632,
+              "wallTimeMs": 142.76126504410058
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/left/fawn.run000.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/left/fawn.run000.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 1,
+              "processPeakRssKb": 73472,
+              "gpuMemoryProbe": "rocm-smi",
+              "gpuMemoryProbeAvailable": true,
+              "gpuMemoryProbeError": "",
+              "gpuVramUsedBeforeBytes": 398888960,
+              "gpuVramTotalBytes": 536870912,
+              "gpuVramCardCount": 1,
+              "gpuVramUsedAfterBytes": 398888960,
+              "gpuVramUsedPeakBytes": 398888960,
+              "gpuVramDeltaPeakFromBeforeBytes": 0
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 1,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 10849632,
+              "hash": "0x42bb7f45e4c12ff1",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "profile": {
+                "vendor": "intel",
+                "api": "vulkan",
+                "deviceFamily": "gen12",
+                "driver": "31.0.101"
+              }
+            }
+          }
+        ],
+        "stats": {
+          "count": 1,
+          "minMs": 10.849632,
+          "maxMs": 10.849632,
+          "p50Ms": 10.849632,
+          "p95Ms": 10.849632,
+          "p99Ms": 10.849632,
+          "meanMs": 10.849632,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [
+          10.849632
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "fawn-zig-runtime",
+          "seqMax": 0,
+          "rowCount": 1,
+          "commandCount": 1,
+          "matchedCount": 1,
+          "blockingCount": 0,
+          "requiresLeanCount": 0,
+          "leanRequiredCount": 0,
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionSkippedCount": 0,
+          "executionUnsupportedCount": 0,
+          "executionTotalNs": 10849632,
+          "hash": "0x42bb7f45e4c12ff1",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "executionBackend": "webgpu-ffi",
+          "profile": {
+            "vendor": "intel",
+            "api": "vulkan",
+            "deviceFamily": "gen12",
+            "driver": "31.0.101"
+          }
+        },
+        "timingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "resourceStats": {
+          "gpuProbeModes": [
+            "rocm-smi"
+          ],
+          "gpuProbeAvailableCount": 1,
+          "processPeakRssKb": {
+            "count": 1,
+            "min": 73472.0,
+            "max": 73472.0,
+            "p50": 73472.0,
+            "p95": 73472.0,
+            "p99": 73472.0,
+            "mean": 73472.0,
+            "stdev": 0.0
+          },
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 1,
+            "min": 0.0,
+            "max": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 1,
+            "min": 398888960.0,
+            "max": 398888960.0,
+            "p50": 398888960.0,
+            "p95": 398888960.0,
+            "p99": 398888960.0,
+            "mean": 398888960.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 1,
+            "min": 398888960.0,
+            "max": 398888960.0,
+            "p50": 398888960.0,
+            "p95": 398888960.0,
+            "p99": 398888960.0,
+            "mean": 398888960.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 1,
+            "min": 398888960.0,
+            "max": 398888960.0,
+            "p50": 398888960.0,
+            "p95": 398888960.0,
+            "p99": 398888960.0,
+            "mean": 398888960.0,
+            "stdev": 0.0
+          }
+        }
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "runIndex": 0,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "matrix_vector_multiply_32768x2048_f32",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/right/dawn.run000.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/right/dawn.run000.meta.json"
+            ],
+            "elapsedMs": 17721.193279023282,
+            "measuredMs": 28.97160452,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 28.97160452,
+              "wallTimeMs": 17721.193279023282
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/right/dawn.run000.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/right/dawn.run000.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 105,
+              "processPeakRssKb": 83340,
+              "gpuMemoryProbe": "rocm-smi",
+              "gpuMemoryProbeAvailable": true,
+              "gpuMemoryProbeError": "",
+              "gpuVramUsedBeforeBytes": 398901248,
+              "gpuVramTotalBytes": 536870912,
+              "gpuVramCardCount": 1,
+              "gpuVramUsedAfterBytes": 399028224,
+              "gpuVramUsedPeakBytes": 414822400,
+              "gpuVramDeltaPeakFromBeforeBytes": 15921152
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xef57e3ff0c0c6109",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "matrix_vector_multiply_32768x2048_f32",
+              "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0 --trace-file=fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/right/dawn.run000.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 28.97160452,
+              "elapsedMs": 17527.005812968127,
+              "processWallMs": 17527.005812968127,
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 28971605,
+              "benchmarkWallMsSamples": [
+                28.97160452,
+                28.894983520000004,
+                29.29202103
+              ]
+            }
+          }
+        ],
+        "stats": {
+          "count": 1,
+          "minMs": 28.97160452,
+          "maxMs": 28.97160452,
+          "p50Ms": 28.97160452,
+          "p95Ms": 28.97160452,
+          "p99Ms": 28.97160452,
+          "meanMs": 28.97160452,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [
+          28.97160452
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "dawn-perf-tests",
+          "schema": "adapter-meta",
+          "seqMax": 0,
+          "rowCount": 1,
+          "hash": "0xef57e3ff0c0c6109",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "commandCount": 1,
+          "workload": "matrix_vector_multiply_32768x2048_f32",
+          "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+          "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+          "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0 --trace-file=fawn/bench/out/runtime-comparisons-resource-matvec-strictguard/matrix_vector_multiply_32768x2048_f32/right/dawn.run000.ndjson",
+          "timingSource": "dawn-perf-wall-time",
+          "timingClass": "operation",
+          "timingMs": 28.97160452,
+          "elapsedMs": 17527.005812968127,
+          "processWallMs": 17527.005812968127,
+          "executionBackend": "dawn-perf-tests",
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionTotalNs": 28971605,
+          "benchmarkWallMsSamples": [
+            28.97160452,
+            28.894983520000004,
+            29.29202103
+          ]
+        },
+        "timingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "resourceStats": {
+          "gpuProbeModes": [
+            "rocm-smi"
+          ],
+          "gpuProbeAvailableCount": 1,
+          "processPeakRssKb": {
+            "count": 1,
+            "min": 83340.0,
+            "max": 83340.0,
+            "p50": 83340.0,
+            "p95": 83340.0,
+            "p99": 83340.0,
+            "mean": 83340.0,
+            "stdev": 0.0
+          },
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 1,
+            "min": 15921152.0,
+            "max": 15921152.0,
+            "p50": 15921152.0,
+            "p95": 15921152.0,
+            "p99": 15921152.0,
+            "mean": 15921152.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 1,
+            "min": 414822400.0,
+            "max": 414822400.0,
+            "p50": 414822400.0,
+            "p95": 414822400.0,
+            "p99": 414822400.0,
+            "mean": 414822400.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 1,
+            "min": 398901248.0,
+            "max": 398901248.0,
+            "p50": 398901248.0,
+            "p95": 398901248.0,
+            "p99": 398901248.0,
+            "mean": 398901248.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 1,
+            "min": 399028224.0,
+            "max": 399028224.0,
+            "p50": 399028224.0,
+            "p95": 399028224.0,
+            "p99": 399028224.0,
+            "mean": 399028224.0,
+            "stdev": 0.0
+          }
+        }
+      },
+      "deltaPercent": {
+        "p50Percent": -62.55080731717789,
+        "p95Percent": -62.55080731717789,
+        "p99Percent": -62.55080731717789,
+        "meanPercent": -62.55080731717789
+      },
+      "comparability": {
+        "comparable": false,
+        "requiredTimingClass": "operation",
+        "leftTimingSources": [
+          "fawn-execution-total-ns"
+        ],
+        "rightTimingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "leftTimingClass": "operation",
+        "rightTimingClass": "operation",
+        "resourceProbe": "rocm-smi",
+        "leftResourceSampleMedian": 1,
+        "rightResourceSampleMedian": 105,
+        "leftResourceProbeAvailableCount": 1,
+        "rightResourceProbeAvailableCount": 1,
+        "resourceReasons": [
+          "left side resource sampling too sparse (median samples=1, require >=5)",
+          "left/right resource sample-count mismatch is too high (1 vs 105, ratio=105.00, require <=2.00)"
+        ],
+        "reasons": [
+          "left side resource sampling too sparse (median samples=1, require >=5)",
+          "left/right resource sample-count mismatch is too high (1 vs 105, ratio=105.00, require <=2.00)"
+        ]
+      }
+    }
+  ],
+  "overall": {
+    "left": {
+      "count": 1,
+      "minMs": 10.849632,
+      "maxMs": 10.849632,
+      "p50Ms": 10.849632,
+      "p95Ms": 10.849632,
+      "p99Ms": 10.849632,
+      "meanMs": 10.849632,
+      "stdevMs": 0.0
+    },
+    "right": {
+      "count": 1,
+      "minMs": 28.97160452,
+      "maxMs": 28.97160452,
+      "p50Ms": 28.97160452,
+      "p95Ms": 28.97160452,
+      "p99Ms": 28.97160452,
+      "meanMs": 28.97160452,
+      "stdevMs": 0.0
+    },
+    "deltaPercent": {
+      "p50Approx": -62.55080731717789
+    }
+  },
+  "comparabilitySummary": {
+    "workloadCount": 1,
+    "nonComparableCount": 1,
+    "nonComparableWorkloads": [
+      {
+        "workloadId": "matrix_vector_multiply_32768x2048_f32",
+        "reasons": [
+          "left side resource sampling too sparse (median samples=1, require >=5)",
+          "left/right resource sample-count mismatch is too high (1 vs 105, ratio=105.00, require <=2.00)"
+        ]
+      }
+    ]
+  },
+  "comparisonStatus": "unreliable"
+}

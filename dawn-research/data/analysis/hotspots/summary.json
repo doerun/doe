@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-02-18T00:18:23.753963Z",
+  "input": [
+    "data/analysis/workarounds/workaround_rows-00001.jsonl"
+  ],
+  "rowShards": {
+    "files": {
+      "files": [
+        "file_hotspot-00001.jsonl"
+      ],
+      "prefix": "file_hotspot",
+      "shardSize": 500,
+      "totalRows": 7
+    },
+    "rowInputDirectory": "/Users/xyz/deco/ouroboros/fawn/dawn-research/data/analysis/hotspots/files"
+  },
+  "topFiles": [
+    {
+      "changeCount": 11,
+      "file": "unknown_file",
+      "signalRows": 13
+    }
+  ],
+  "topVendorBackendPairs": [
+    {
+      "backend": "dawn",
+      "signalRows": 6,
+      "vendor": "unknown"
+    },
+    {
+      "backend": "unknown",
+      "signalRows": 2,
+      "vendor": "intel"
+    },
+    {
+      "backend": "metal",
+      "signalRows": 1,
+      "vendor": "unknown"
+    },
+    {
+      "backend": "webgpu",
+      "signalRows": 1,
+      "vendor": "unknown"
+    },
+    {
+      "backend": "d3d12",
+      "signalRows": 1,
+      "vendor": "intel"
+    },
+    {
+      "backend": "d3d12",
+      "signalRows": 1,
+      "vendor": "qualcomm"
+    },
+    {
+      "backend": "dawn",
+      "signalRows": 1,
+      "vendor": "qualcomm"
+    }
+  ],
+  "totalFiles": 1,
+  "totalHotspotRows": 7
+}

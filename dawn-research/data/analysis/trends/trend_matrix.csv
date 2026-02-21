@@ -1,0 +1,5 @@
+vendor,backend,failureClass,signalRows,changeCount,firstSeen,lastSeen,topFiles
+unknown,metal,unknown,1,1,2026-01-08T17:28:46,2026-01-08T17:28:46,
+unknown,webgpu,unknown,1,1,2025-10-23T18:01:19,2025-10-23T18:01:19,
+intel,d3d12,unknown,1,1,2025-07-25T01:06:58,2025-07-25T01:06:58,
+qualcomm,d3d12,unknown,1,1,2025-05-22T04:31:15,2025-05-22T04:31:15,

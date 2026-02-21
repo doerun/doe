@@ -1,0 +1,29 @@
+[
+  {
+    "schemaVersion": 1,
+    "quirkId": "vulkan.intel.gen12.use_temp_buffer_compressed_copy",
+    "scope": "driver_toggle",
+    "match": {
+      "vendor": "intel",
+      "deviceFamily": "gen12",
+      "driverRange": ">=31.0.101,<32.0.0",
+      "api": "vulkan"
+    },
+    "action": {
+      "kind": "use_temporary_buffer",
+      "params": {
+        "reason": "compressed_copy_workaround",
+        "bufferAlignmentBytes": 4
+      }
+    },
+    "safetyClass": "high",
+    "verificationMode": "lean_preferred",
+    "proofLevel": "guarded",
+    "provenance": {
+      "sourceRepo": "dawn",
+      "sourcePath": "src/dawn/native/Toggles.cpp",
+      "sourceCommit": "example-commit",
+      "observedAt": "2026-02-17T00:00:00Z"
+    }
+  }
+]

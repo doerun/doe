@@ -1,0 +1,521 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-21T03:42:50.555531+00:00",
+  "sourceReport": "fawn/bench/out/dawn-vs-fawn.extended.coverage.i4w1.json",
+  "bootstrapIterations": 1000,
+  "bootstrapSeed": 1337,
+  "workloads": [
+    {
+      "id": "workgroup_atomic_1024",
+      "domain": "compute",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 0.04849664,
+        "maxMs": 0.049151999999999994,
+        "p5Ms": 0.04849664,
+        "p50Ms": 0.04849664,
+        "p95Ms": 0.04849664,
+        "p99Ms": 0.04849664,
+        "meanMs": 0.04871509333333333
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 0.054630281875,
+        "maxMs": 0.055068125922,
+        "p5Ms": 0.054630281875,
+        "p50Ms": 0.054948844999999996,
+        "p95Ms": 0.054948844999999996,
+        "p99Ms": 0.054948844999999996,
+        "meanMs": 0.054882417599
+      },
+      "deltaPercent": {
+        "p5Percent": 11.227549381924177,
+        "p50Percent": 11.742203134569973,
+        "p95Percent": 11.742203134569973,
+        "p99Percent": 11.742203134569973,
+        "meanPercent": 11.237340728552462
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 0.006167324265666667,
+        "probabilityLeftFaster": 1.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": 10.027921670869109,
+          "upper": 11.933374909667403
+        },
+        "p95": {
+          "lower": 10.027921670869109,
+          "upper": 11.933374909667403
+        },
+        "p99": {
+          "lower": 10.027921670869109,
+          "upper": 11.933374909667403
+        }
+      },
+      "leftSamplesMs": [
+        0.049151999999999994,
+        0.04849664,
+        0.04849664
+      ],
+      "rightSamplesMs": [
+        0.054630281875,
+        0.054948844999999996,
+        0.055068125922
+      ]
+    },
+    {
+      "id": "workgroup_non_atomic_1024",
+      "domain": "compute",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 0.04784128,
+        "maxMs": 0.04849664,
+        "p5Ms": 0.04784128,
+        "p50Ms": 0.04784128,
+        "p95Ms": 0.04784128,
+        "p99Ms": 0.04784128,
+        "meanMs": 0.048059733333333333
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 0.054896203314999996,
+        "maxMs": 0.055283198167,
+        "p5Ms": 0.054896203314999996,
+        "p50Ms": 0.055193549056,
+        "p95Ms": 0.055193549056,
+        "p99Ms": 0.055193549056,
+        "meanMs": 0.055124316846
+      },
+      "deltaPercent": {
+        "p5Percent": 12.851386596843737,
+        "p50Percent": 13.32088474423035,
+        "p95Percent": 13.32088474423035,
+        "p99Percent": 13.32088474423035,
+        "meanPercent": 12.81572982102053
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 0.007064583512666665,
+        "probabilityLeftFaster": 1.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": 11.657569974882689,
+          "upper": 13.461446540265973
+        },
+        "p95": {
+          "lower": 11.657569974882689,
+          "upper": 13.461446540265973
+        },
+        "p99": {
+          "lower": 11.657569974882689,
+          "upper": 13.461446540265973
+        }
+      },
+      "leftSamplesMs": [
+        0.04849664,
+        0.04784128,
+        0.04784128
+      ],
+      "rightSamplesMs": [
+        0.054896203314999996,
+        0.055193549056,
+        0.055283198167
+      ]
+    },
+    {
+      "id": "matrix_vector_multiply_32768x2048_f32",
+      "domain": "compute",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 0.00092654,
+        "maxMs": 0.00101681,
+        "p5Ms": 0.00092654,
+        "p50Ms": 0.00093195,
+        "p95Ms": 0.00093195,
+        "p99Ms": 0.00093195,
+        "meanMs": 0.0009584333333333333
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 0.291127434,
+        "maxMs": 0.2949346965,
+        "p5Ms": 0.291127434,
+        "p50Ms": 0.2944217208,
+        "p95Ms": 0.2944217208,
+        "p99Ms": 0.2944217208,
+        "meanMs": 0.29349461709999997
+      },
+      "deltaPercent": {
+        "p5Percent": 99.68174074587559,
+        "p50Percent": 99.6834642507123,
+        "p95Percent": 99.6834642507123,
+        "p99Percent": 99.6834642507123,
+        "meanPercent": 99.67344091595153
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 0.2925361837666667,
+        "probabilityLeftFaster": 1.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": 99.65073370584513,
+          "upper": 99.68584910117553
+        },
+        "p95": {
+          "lower": 99.65073370584513,
+          "upper": 99.68584910117553
+        },
+        "p99": {
+          "lower": 99.65073370584513,
+          "upper": 99.68584910117553
+        }
+      },
+      "leftSamplesMs": [
+        0.00092654,
+        0.00093195,
+        0.00101681
+      ],
+      "rightSamplesMs": [
+        0.2944217208,
+        0.291127434,
+        0.2949346965
+      ]
+    },
+    {
+      "id": "matrix_vector_multiply_32768x2048_f32_swizzle1",
+      "domain": "compute",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 0.00091893,
+        "maxMs": 0.00093886,
+        "p5Ms": 0.00091893,
+        "p50Ms": 0.0009303400000000001,
+        "p95Ms": 0.0009303400000000001,
+        "p99Ms": 0.0009303400000000001,
+        "meanMs": 0.0009293766666666667
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 0.024488764,
+        "maxMs": 0.0245662168,
+        "p5Ms": 0.024488764,
+        "p50Ms": 0.02453253858,
+        "p95Ms": 0.02453253858,
+        "p99Ms": 0.02453253858,
+        "meanMs": 0.024529173126666665
+      },
+      "deltaPercent": {
+        "p5Percent": 96.24754438402854,
+        "p50Percent": 96.20773041091452,
+        "p95Percent": 96.20773041091452,
+        "p99Percent": 96.20773041091452,
+        "meanPercent": 96.21113740007688
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 0.02359979646,
+        "probabilityLeftFaster": 1.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": 96.16616012143365,
+          "upper": 96.25937519203201
+        },
+        "p95": {
+          "lower": 96.16616012143365,
+          "upper": 96.25937519203201
+        },
+        "p99": {
+          "lower": 96.16616012143365,
+          "upper": 96.25937519203201
+        }
+      },
+      "leftSamplesMs": [
+        0.00093886,
+        0.00091893,
+        0.0009303400000000001
+      ],
+      "rightSamplesMs": [
+        0.02453253858,
+        0.0245662168,
+        0.024488764
+      ]
+    },
+    {
+      "id": "matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+      "domain": "compute",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 0.00092473,
+        "maxMs": 0.00094417,
+        "p5Ms": 0.00092473,
+        "p50Ms": 0.00092614,
+        "p95Ms": 0.00092614,
+        "p99Ms": 0.00092614,
+        "meanMs": 0.0009316799999999999
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 0.017742225,
+        "maxMs": 0.01776914984,
+        "p5Ms": 0.017742225,
+        "p50Ms": 0.0177643019,
+        "p95Ms": 0.0177643019,
+        "p99Ms": 0.0177643019,
+        "meanMs": 0.017758558913333333
+      },
+      "deltaPercent": {
+        "p5Percent": 94.78797050539039,
+        "p50Percent": 94.78651058052556,
+        "p95Percent": 94.78651058052556,
+        "p99Percent": 94.78651058052556,
+        "meanPercent": 94.75362835156356
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 0.016826878913333336,
+        "probabilityLeftFaster": 1.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": 94.67840138426831,
+          "upper": 94.79586807288695
+        },
+        "p95": {
+          "lower": 94.67840138426831,
+          "upper": 94.79586807288695
+        },
+        "p99": {
+          "lower": 94.67840138426831,
+          "upper": 94.79586807288695
+        }
+      },
+      "leftSamplesMs": [
+        0.00092614,
+        0.00094417,
+        0.00092473
+      ],
+      "rightSamplesMs": [
+        0.017742225,
+        0.0177643019,
+        0.01776914984
+      ]
+    },
+    {
+      "id": "shader_compile_pipeline_stress",
+      "domain": "pipeline",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 2.981848,
+        "maxMs": 3.484873,
+        "p5Ms": 2.981848,
+        "p50Ms": 3.296359,
+        "p95Ms": 3.296359,
+        "p99Ms": 3.296359,
+        "meanMs": 3.2543599999999997
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 0.136942713973,
+        "maxMs": 0.139788639021,
+        "p5Ms": 0.136942713973,
+        "p50Ms": 0.138589632168,
+        "p95Ms": 0.138589632168,
+        "p99Ms": 0.138589632168,
+        "meanMs": 0.13844032838733333
+      },
+      "deltaPercent": {
+        "p5Percent": -2077.441875869284,
+        "p50Percent": -2278.5033183464366,
+        "p95Percent": -2278.5033183464366,
+        "p99Percent": -2278.5033183464366,
+        "meanPercent": -2250.7312052127136
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 3.1159196716126667,
+        "probabilityLeftFaster": 0.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": -2444.7670043161893,
+          "upper": -2033.1118328951227
+        },
+        "p95": {
+          "lower": -2444.7670043161893,
+          "upper": -2033.1118328951227
+        },
+        "p99": {
+          "lower": -2444.7670043161893,
+          "upper": -2033.1118328951227
+        }
+      },
+      "leftSamplesMs": [
+        2.981848,
+        3.484873,
+        3.296359
+      ],
+      "rightSamplesMs": [
+        0.136942713973,
+        0.138589632168,
+        0.139788639021
+      ]
+    },
+    {
+      "id": "render_draw_throughput_proxy",
+      "domain": "render",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 0.065536,
+        "maxMs": 3.191703,
+        "p5Ms": 0.065536,
+        "p50Ms": 3.069433,
+        "p95Ms": 3.069433,
+        "p99Ms": 3.069433,
+        "meanMs": 2.108890666666667
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 8.948050999999999e-05,
+        "maxMs": 8.990482599999999e-05,
+        "p5Ms": 8.948050999999999e-05,
+        "p50Ms": 8.972610199999999e-05,
+        "p95Ms": 8.972610199999999e-05,
+        "p99Ms": 8.972610199999999e-05,
+        "meanMs": 8.970381266666666e-05
+      },
+      "deltaPercent": {
+        "p5Percent": -73140.53025625358,
+        "p50Percent": -3420791.949591213,
+        "p95Percent": -3420791.949591213,
+        "p99Percent": -3420791.949591213,
+        "meanPercent": -2350848.75454532
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 2.1088009628540005,
+        "probabilityLeftFaster": 0.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": -3566825.3561473894,
+          "upper": -72794.86328575954
+        },
+        "p95": {
+          "lower": -3566825.3561473894,
+          "upper": -72794.86328575954
+        },
+        "p99": {
+          "lower": -3566825.3561473894,
+          "upper": -72794.86328575954
+        }
+      },
+      "leftSamplesMs": [
+        3.069433,
+        3.191703,
+        0.065536
+      ],
+      "rightSamplesMs": [
+        8.948050999999999e-05,
+        8.990482599999999e-05,
+        8.972610199999999e-05
+      ]
+    },
+    {
+      "id": "texture_sampling_raster_proxy",
+      "domain": "texture-raster",
+      "comparable": true,
+      "leftSampleCount": 3,
+      "rightSampleCount": 3,
+      "leftStatsMs": {
+        "count": 3.0,
+        "minMs": 0.065536,
+        "maxMs": 3.886308,
+        "p5Ms": 0.065536,
+        "p50Ms": 2.931236,
+        "p95Ms": 2.931236,
+        "p99Ms": 2.931236,
+        "meanMs": 2.29436
+      },
+      "rightStatsMs": {
+        "count": 3.0,
+        "minMs": 0.006692251387,
+        "maxMs": 0.006708664707,
+        "p5Ms": 0.006692251387,
+        "p50Ms": 0.006701278218999999,
+        "p95Ms": 0.006701278218999999,
+        "p99Ms": 0.006701278218999999,
+        "meanMs": 0.006700731437666666
+      },
+      "deltaPercent": {
+        "p5Percent": -879.2818023439262,
+        "p50Percent": -43641.446097389686,
+        "p95Percent": -43641.446097389686,
+        "p99Percent": -43641.446097389686,
+        "meanPercent": -34140.44108233868
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 0.03262165165202117,
+        "wassersteinMs": 2.287659268562334,
+        "probabilityLeftFaster": 0.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": -57971.75754857817,
+          "upper": -876.8859059481388
+        },
+        "p95": {
+          "lower": -57971.75754857817,
+          "upper": -876.8859059481388
+        },
+        "p99": {
+          "lower": -57971.75754857817,
+          "upper": -876.8859059481388
+        }
+      },
+      "leftSamplesMs": [
+        0.065536,
+        3.886308,
+        2.931236
+      ],
+      "rightSamplesMs": [
+        0.006701278218999999,
+        0.006692251387,
+        0.006708664707
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+candidateId,priority,priorityScore,vendor,backend,failureClass,fawnApiHint,supportingSignals_signalRows,supportingSignals_changeCount,supportingSignals_firstSeen,supportingSignals_lastSeen,supportingSignals_topFiles,trendContext_trendSignalRows,trendContext_trendChangeCount,decision_state
+unknown__dawn__unknown,high,76,unknown,dawn,unknown,unknown,6,6,2025-04-29T02:41:36,2026-01-05T19:22:34,,0,0,human_review_pending

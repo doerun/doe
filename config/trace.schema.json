@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Trace Row (Runtime)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "traceVersion",
+    "module",
+    "opCode",
+    "seq",
+    "timestampMonoNs",
+    "hash",
+    "previousHash",
+    "command"
+  ],
+  "properties": {
+    "traceVersion": { "type": "integer", "const": 1 },
+    "module": { "type": "string" },
+    "opCode": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 0 },
+    "timestampMonoNs": { "type": "integer", "minimum": 0 },
+    "hash": { "type": "string" },
+    "previousHash": { "type": "string" },
+    "command": { "type": "string" },
+    "kernel": { "type": "string" },
+    "matched": { "type": ["string", "null"] },
+    "scope": { "type": "string" },
+    "safetyClass": { "type": "string" },
+    "verificationMode": { "type": "string" },
+    "proofLevel": { "type": "string" },
+    "requiresLean": { "type": "boolean" },
+    "blocking": { "type": "boolean" },
+    "score": { "type": "integer", "minimum": 0 },
+    "matched_count": { "type": "integer", "minimum": 0 },
+    "action": { "type": "string" },
+    "toggle": { "type": "string" },
+    "executionBackend": { "type": "string" },
+    "executionStatus": { "type": "string", "enum": ["ok", "skipped", "unsupported", "error"] },
+    "executionStatusMessage": { "type": "string" },
+    "executionDurationNs": { "type": "integer", "minimum": 0 }
+  }
+}

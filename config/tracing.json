@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "traceVersion": "v1",
+  "hashAlg": "sha256",
+  "ringBufferBytes": 4194304,
+  "eventFormat": "binary",
+  "requiredFields": [
+    "module",
+    "opCode",
+    "seq",
+    "timestampMonoNs",
+    "quirkSetHash",
+    "validatorHash"
+  ],
+  "focusMode": {
+    "enabled": false,
+    "includeModules": [],
+    "excludeModules": []
+  },
+  "crashArtifacts": {
+    "traceBin": "fawn_crash.bin",
+    "traceMeta": "fawn_crash.meta.json",
+    "requiredMetaFields": ["traceVersion", "seqMax", "hash", "rowCount", "previousHash"]
+  },
+  "wasm": {
+    "exportMode": "host_bridge",
+    "requireDeterministicSeq": true,
+    "useMonotonicCounterFallback": true
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x8e18cf4b8ce9d066",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+  "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
+  "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
+  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1 --trace-file=fawn/bench/out/runtime-comparisons/matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1/right/dawn.run004.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 1.781584334,
+  "timingMetric": "wall_time",
+  "elapsedMs": 5792.398901889101,
+  "processWallMs": 5792.398901889101,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 1.781584334,
+    "cpu_time": 1.7812564540000002,
+    "gpu_time": 1.770520576
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 1781584,
+  "gtestFilterNoMatch": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      1.781584334,
+      1.779541858,
+      1.790114368
+    ],
+    "cpu_time": [
+      1.7812564540000002,
+      1.7792223980000001,
+      1.789745596
+    ],
+    "gpu_time": [
+      1.770520576,
+      1.769472,
+      1.779433472
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    1.781584334,
+    1.779541858,
+    1.790114368
+  ]
+}

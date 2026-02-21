@@ -1,0 +1,24 @@
+{
+  "candidateCount": 1,
+  "candidateShard": {
+    "files": [
+      "candidate-00001.jsonl"
+    ],
+    "prefix": "candidate",
+    "shardSize": 500,
+    "totalRows": 1
+  },
+  "generatedAt": "2026-02-18T00:18:23.790337Z",
+  "input": {
+    "trends": "data/analysis/trends/trend_buckets.jsonl",
+    "workarounds": [
+      "data/analysis/workarounds/workaround_rows-00001.jsonl"
+    ]
+  },
+  "thresholds": {
+    "maxSamples": 6,
+    "maxTopFiles": 6,
+    "minChangeCount": 2,
+    "minSignalRows": 3
+  }
+}

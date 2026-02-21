@@ -1,0 +1,8 @@
+file,vendor,backend,failureClass,signalRows,changeCount,firstSeen,lastSeen,sampleCount,sampleUrls
+unknown_file,unknown,dawn,unknown,6,6,2025-04-29T02:41:36,2026-01-05T19:22:34,4,https://dawn-review.googlesource.com/c/dawn/+/I5384e74ff6ab9da6104b07e6d9d235bf5d4b40c2|https://dawn-review.googlesource.com/c/dawn/+/I2514e2ed9cb95af9bc09c3153029e6cfd8881c9e|https://dawn-review.googlesource.com/c/dawn/+/Ie8a3f9d8b6cd27117de8bf02bff212d048dd74c8|https://dawn-review.googlesource.com/c/dawn/+/I3b1c3db3b25944d7b2d636a946dd6e79feb22c9e
+unknown_file,intel,unknown,unknown,2,2,2025-12-09T20:49:50,2025-12-15T10:12:33,2,https://dawn-review.googlesource.com/c/dawn/+/Ib0661c9d96aa59cba4b3e4822e573272d2a6b5bc|https://dawn-review.googlesource.com/c/dawn/+/Id2dde6afec098c97d5dd3b058aff369f0cf77211
+unknown_file,unknown,metal,unknown,1,1,2026-01-08T17:28:46,2026-01-08T17:28:46,1,https://dawn-review.googlesource.com/c/dawn/+/I48d41001ff06ef06d8dec8780a9ac5f727ee8b38
+unknown_file,unknown,webgpu,unknown,1,1,2025-10-23T18:01:19,2025-10-23T18:01:19,1,https://dawn-review.googlesource.com/c/dawn/+/I2514e2ed9cb95af9bc09c3153029e6cfd8881c9e
+unknown_file,intel,d3d12,unknown,1,1,2025-07-25T01:06:58,2025-07-25T01:06:58,1,https://dawn-review.googlesource.com/c/dawn/+/I31e1d7410bf3d413150eb534920529cdf18f436a
+unknown_file,qualcomm,d3d12,unknown,1,1,2025-05-22T04:31:15,2025-05-22T04:31:15,1,https://dawn-review.googlesource.com/c/dawn/+/Iac9df090d18f440cd5e3adf46355a9c1b5cd2126
+unknown_file,qualcomm,dawn,unknown,1,1,2025-05-22T04:31:15,2025-05-22T04:31:15,1,https://dawn-review.googlesource.com/c/dawn/+/Iac9df090d18f440cd5e3adf46355a9c1b5cd2126

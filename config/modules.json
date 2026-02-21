@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "modules": [
+    {
+      "moduleId": "agent",
+      "modulePath": "fawn/agent",
+      "status": "scaffolded",
+      "owner": "runtime-automation",
+      "inputs": ["upstream_diff"],
+      "outputs": ["quirk_candidates"],
+      "contracts": ["quirks.schema.json"]
+    },
+    {
+      "moduleId": "lean",
+      "modulePath": "fawn/lean",
+      "status": "scaffolded",
+      "owner": "verification",
+      "inputs": ["quirk_candidates"],
+      "outputs": ["proof_verdicts", "validator_artifacts"],
+      "contracts": ["proof_level", "invariant_pack"]
+    },
+    {
+      "moduleId": "zig",
+      "modulePath": "fawn/zig",
+      "status": "scaffolded",
+      "owner": "runtime-core",
+      "inputs": ["validator_artifacts", "quirk_set"],
+      "outputs": ["runtime_binary", "runtime_manifest"],
+      "contracts": ["profile_table", "quirk_set_hash"]
+    },
+    {
+      "moduleId": "bench",
+      "modulePath": "fawn/bench",
+      "status": "scaffolded",
+      "owner": "performance",
+      "inputs": ["runtime_binary", "runtime_manifest"],
+      "outputs": ["correctness_report", "perf_report", "run_metadata"],
+      "contracts": ["ratchet_policy", "benchmarks.json", "run-metadata.schema.json"]
+    },
+    {
+      "moduleId": "trace",
+      "modulePath": "fawn/trace",
+      "status": "scaffolded",
+      "owner": "observability",
+      "inputs": ["runtime_events"],
+      "outputs": ["trace_bin", "trace_meta", "replay_report"],
+      "contracts": ["trace_schema"]
+    }
+  ]
+}

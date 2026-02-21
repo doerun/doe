@@ -1,0 +1,39 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "shader_robustness_matmul_512_f32.wgsl",
+    "x": 16,
+    "y": 16,
+    "z": 1,
+    "repeat": 50,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 7201,
+        "buffer_size": 1048576,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 7202,
+        "buffer_size": 1048576,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 7203,
+        "buffer_size": 1048576,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Trace Run Metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "traceVersion",
+    "module",
+    "seqMax",
+    "rowCount",
+    "hash",
+    "previousHash"
+  ],
+  "properties": {
+    "traceVersion": { "type": "integer", "const": 1 },
+    "module": { "type": "string" },
+    "seqMax": { "type": "integer", "minimum": 0 },
+    "rowCount": { "type": "integer", "minimum": 0 },
+    "commandCount": { "type": "integer", "minimum": 0 },
+    "matchedCount": { "type": "integer", "minimum": 0 },
+    "blockingCount": { "type": "integer", "minimum": 0 },
+    "requiresLeanCount": { "type": "integer", "minimum": 0 },
+    "leanRequiredCount": { "type": "integer", "minimum": 0 },
+    "hash": { "type": "string" },
+    "previousHash": { "type": "string" },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vendor", "api", "driver"],
+      "properties": {
+        "vendor": { "type": "string" },
+        "api": { "type": "string" },
+        "deviceFamily": { "type": ["string", "null"] },
+        "driver": { "type": "string" }
+      }
+    },
+    "executionBackend": { "type": "string" },
+    "executionRowCount": { "type": "integer", "minimum": 0 },
+    "executionSuccessCount": { "type": "integer", "minimum": 0 },
+    "executionErrorCount": { "type": "integer", "minimum": 0 },
+    "executionSkippedCount": { "type": "integer", "minimum": 0 },
+    "executionUnsupportedCount": { "type": "integer", "minimum": 0 },
+    "executionTotalNs": { "type": "integer", "minimum": 0 },
+    "executionSetupTotalNs": { "type": "integer", "minimum": 0 },
+    "executionEncodeTotalNs": { "type": "integer", "minimum": 0 },
+    "executionSubmitWaitTotalNs": { "type": "integer", "minimum": 0 },
+    "executionDispatchCount": { "type": "integer", "minimum": 0 },
+    "executionGpuTimestampTotalNs": { "type": "integer", "minimum": 0 },
+    "schema": { "type": "string" },
+    "workload": { "type": "string" },
+    "gtestFilter": { "type": "string" },
+    "selectedFilter": { "type": "string" },
+    "command": { "type": "string" },
+    "timingSource": { "type": "string" },
+    "timingClass": { "type": "string" },
+    "timingMs": { "type": "number", "minimum": 0 },
+    "elapsedMs": { "type": "number", "minimum": 0 },
+    "processWallMs": { "type": "number", "minimum": 0 },
+    "benchmarkWallMsSamples": {
+      "type": "array",
+      "items": { "type": "number", "minimum": 0 }
+    }
+  }
+}

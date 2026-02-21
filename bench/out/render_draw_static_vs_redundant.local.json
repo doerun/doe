@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 3,
+  "left": {
+    "runtime": "fawn_render_draw_static",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release: zig/zig-out/bin/fawn-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --execute --trace-meta /tmp/fawn_render_draw_static.meta.json",
+    "iterations": 6,
+    "timingsMs": [
+      66.96660188026726,
+      61.184738064184785,
+      62.14169505983591,
+      64.3631280399859,
+      64.86424407921731,
+      58.95202420651913
+    ],
+    "p5Ms": 58.95202420651913,
+    "p50Ms": 62.14169505983591,
+    "p95Ms": 64.86424407921731,
+    "p99Ms": 64.86424407921731,
+    "meanMs": 63.07873855500171,
+    "medianMs": 63.2524115499109,
+    "minMs": 58.95202420651913,
+    "maxMs": 66.96660188026726,
+    "meta": {
+      "traceVersion": 1,
+      "module": "fawn-zig-runtime",
+      "seqMax": 0,
+      "rowCount": 1,
+      "commandCount": 1,
+      "matchedCount": 0,
+      "blockingCount": 0,
+      "requiresLeanCount": 0,
+      "leanRequiredCount": 0,
+      "executionRowCount": 1,
+      "executionSuccessCount": 1,
+      "executionErrorCount": 0,
+      "executionSkippedCount": 0,
+      "executionUnsupportedCount": 0,
+      "executionTotalNs": 36528710,
+      "executionSetupTotalNs": 2045070,
+      "executionEncodeTotalNs": 82717,
+      "executionSubmitWaitTotalNs": 34387417,
+      "executionDispatchCount": 2000,
+      "executionGpuTimestampTotalNs": 0,
+      "hash": "0xde443a1dfd269197",
+      "previousHash": "0x9e3779b97f4a7c15",
+      "executionBackend": "webgpu-ffi",
+      "profile": {
+        "vendor": "amd",
+        "api": "vulkan",
+        "deviceFamily": "gfx11",
+        "driver": "24.0.0"
+      }
+    }
+  },
+  "right": {
+    "runtime": "fawn_render_draw_redundant",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release: zig/zig-out/bin/fawn-zig-runtime --commands /tmp/fawn_draw_proxy_redundant_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --execute --trace-meta /tmp/fawn_render_draw_redundant.meta.json",
+    "iterations": 6,
+    "timingsMs": [
+      45.91607814654708,
+      45.57364201173186,
+      47.73448104970157,
+      42.97279193997383,
+      46.48628388531506,
+      41.26518918201327
+    ],
+    "p5Ms": 41.26518918201327,
+    "p50Ms": 45.57364201173186,
+    "p95Ms": 46.48628388531506,
+    "p99Ms": 46.48628388531506,
+    "meanMs": 44.991411035880446,
+    "medianMs": 45.74486007913947,
+    "minMs": 41.26518918201327,
+    "maxMs": 47.73448104970157,
+    "meta": {
+      "traceVersion": 1,
+      "module": "fawn-zig-runtime",
+      "seqMax": 0,
+      "rowCount": 1,
+      "commandCount": 1,
+      "matchedCount": 0,
+      "blockingCount": 0,
+      "requiresLeanCount": 0,
+      "leanRequiredCount": 0,
+      "executionRowCount": 1,
+      "executionSuccessCount": 1,
+      "executionErrorCount": 0,
+      "executionSkippedCount": 0,
+      "executionUnsupportedCount": 0,
+      "executionTotalNs": 23082620,
+      "executionSetupTotalNs": 1711781,
+      "executionEncodeTotalNs": 190320,
+      "executionSubmitWaitTotalNs": 21166422,
+      "executionDispatchCount": 2000,
+      "executionGpuTimestampTotalNs": 0,
+      "hash": "0xde443a1dfd269197",
+      "previousHash": "0x9e3779b97f4a7c15",
+      "executionBackend": "webgpu-ffi",
+      "profile": {
+        "vendor": "amd",
+        "api": "vulkan",
+        "deviceFamily": "gfx11",
+        "driver": "24.0.0"
+      }
+    }
+  },
+  "deltaPercentConvention": {
+    "baseline": "right",
+    "formula": "((rightMs - leftMs) / rightMs) * 100",
+    "positive": "left faster",
+    "negative": "left slower",
+    "zero": "parity"
+  },
+  "delta": {
+    "p5Percent": -42.86139328355537,
+    "p50Percent": -36.35446349413767,
+    "p95Percent": -39.534156439008925,
+    "p99Percent": -39.534156439008925,
+    "meanPercent": -40.201734292566876,
+    "p50LeftMs": 62.14169505983591,
+    "p50RightMs": 45.57364201173186
+  }
+}

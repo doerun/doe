@@ -1,0 +1,31 @@
+{
+  "workloads": "fawn/bench/workloads.json",
+  "left": {
+    "name": "fawn",
+    "commandTemplate": "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/fawn-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+  },
+  "right": {
+    "name": "dawn",
+    "commandTemplate": "python3 fawn/bench/dawn_benchmark_adapter.py --dawn-state fawn/bench/dawn_runtime_state.json --dawn-filter-map fawn/bench/dawn_workload_map.json --workload {workload} --dawn-extra-args=--backend=vulkan --dawn-extra-args=--adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
+  },
+  "run": {
+    "iterations": 3,
+    "warmup": 1,
+    "out": "fawn/bench/out/dawn-vs-fawn.ryzen.json",
+    "workspace": "fawn/bench/out/runtime-comparisons.ryzen",
+    "workloadFilter": "",
+    "includeExtendedWorkloads": false,
+    "includeNoncomparableWorkloads": false,
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowLeftNoExecution": false
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  }
+}

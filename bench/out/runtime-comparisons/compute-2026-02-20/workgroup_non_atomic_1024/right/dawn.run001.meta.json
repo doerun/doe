@@ -1,0 +1,55 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x00e4d86825d1c968",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --trace-file=fawn/bench/out/runtime-comparisons/compute-2026-02-20/workgroup_non_atomic_1024/right/dawn.run001.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.05746629155599999,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6224.27471796982,
+  "processWallMs": 6224.27471796982,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.05746629155599999,
+    "cpu_time": 0.055857321721999996,
+    "gpu_time": 0.047324273778
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 57466,
+  "gtestFilterNoMatch": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.05746629155599999,
+      0.058293606555999994,
+      0.0551096075
+    ],
+    "cpu_time": [
+      0.055857321721999996,
+      0.056687544666999996,
+      0.053504561055999995
+    ],
+    "gpu_time": [
+      0.047324273778,
+      0.047429859556,
+      0.045933454222
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.05746629155599999,
+    0.058293606555999994,
+    0.0551096075
+  ]
+}

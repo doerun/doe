@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Driver Quirk Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "quirkId",
+    "scope",
+    "match",
+    "action",
+    "safetyClass",
+    "verificationMode",
+    "proofLevel",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "quirkId": { "type": "string", "minLength": 3 },
+    "scope": {
+      "type": "string",
+      "enum": ["alignment", "barrier", "layout", "driver_toggle", "memory"]
+    },
+    "match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vendor", "api"],
+      "properties": {
+        "vendor": { "type": "string" },
+        "deviceFamily": { "type": "string" },
+        "driverRange": { "type": "string" },
+        "api": { "type": "string", "enum": ["vulkan", "metal", "d3d12", "webgpu"] }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string" },
+        "params": { "type": "object" }
+      }
+    },
+    "safetyClass": {
+      "type": "string",
+      "enum": ["low", "moderate", "high", "critical"]
+    },
+    "verificationMode": {
+      "type": "string",
+      "enum": ["guard_only", "lean_preferred", "lean_required"]
+    },
+    "proofLevel": {
+      "type": "string",
+      "enum": ["proven", "guarded", "rejected"]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRepo", "sourcePath", "sourceCommit", "observedAt"],
+      "properties": {
+        "sourceRepo": { "type": "string" },
+        "sourcePath": { "type": "string" },
+        "sourceCommit": { "type": "string" },
+        "observedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

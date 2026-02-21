@@ -1,0 +1,685 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-18T17:02:29.964461+00:00",
+  "left": {
+    "name": "fawn"
+  },
+  "right": {
+    "name": "dawn"
+  },
+  "workloads": [
+    {
+      "id": "kernel_dispatch_100",
+      "name": "kernel-dispatch stress",
+      "description": "Replay-style kernel-dispatch command stream used by the Zig dispatcher fixture.",
+      "left": {
+        "commandSamples": [
+          {
+            "runIndex": 2,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.5877810763195157,
+            "measuredMs": 0.5877810763195157,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.5877810763195157,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          },
+          {
+            "runIndex": 3,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.6003149319440126,
+            "measuredMs": 0.6003149319440126,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.6003149319440126,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run003.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run003.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          },
+          {
+            "runIndex": 4,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.5115700187161565,
+            "measuredMs": 0.5115700187161565,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.5115700187161565,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run004.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run004.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          },
+          {
+            "runIndex": 5,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.8250519167631865,
+            "measuredMs": 0.8250519167631865,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.8250519167631865,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run005.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run005.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          },
+          {
+            "runIndex": 6,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.7342030294239521,
+            "measuredMs": 0.7342030294239521,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.7342030294239521,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run006.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run006.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          },
+          {
+            "runIndex": 7,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.7027949905022979,
+            "measuredMs": 0.7027949905022979,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.7027949905022979,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run007.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run007.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          },
+          {
+            "runIndex": 8,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.6229470018297434,
+            "measuredMs": 0.6229470018297434,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.6229470018297434,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run008.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run008.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          },
+          {
+            "runIndex": 9,
+            "command": [
+              "fawn/zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "fawn/examples/kernel_dispatch_commands.json",
+              "--quirks",
+              "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+              "--vendor",
+              "intel",
+              "--api",
+              "vulkan",
+              "--family",
+              "gen12",
+              "--driver",
+              "31.0.101"
+            ],
+            "elapsedMs": 0.5140749271959066,
+            "measuredMs": 0.5140749271959066,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 0.5140749271959066,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run009.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/left/fawn.run009.meta.json",
+            "returnCode": 0,
+            "traceMeta": {}
+          }
+        ],
+        "stats": {
+          "count": 8,
+          "minMs": 0.5115700187161565,
+          "maxMs": 0.8250519167631865,
+          "p50Ms": 0.6003149319440126,
+          "p95Ms": 0.7342030294239521,
+          "p99Ms": 0.7342030294239521,
+          "meanMs": 0.6373422365868464,
+          "stdevMs": 0.10243841640744242
+        },
+        "timingsMs": [
+          0.5877810763195157,
+          0.6003149319440126,
+          0.5115700187161565,
+          0.8250519167631865,
+          0.7342030294239521,
+          0.7027949905022979,
+          0.6229470018297434,
+          0.5140749271959066
+        ],
+        "lastMeta": {}
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "runIndex": 2,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run002.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run002.meta.json"
+            ],
+            "elapsedMs": 79.56348091829568,
+            "measuredMs": 79.56348091829568,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 79.56348091829568,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run002.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run002.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run002.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 52.04489198513329,
+              "elapsedMs": 52.04489198513329
+            }
+          },
+          {
+            "runIndex": 3,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run003.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run003.meta.json"
+            ],
+            "elapsedMs": 76.70736697036773,
+            "measuredMs": 76.70736697036773,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 76.70736697036773,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run003.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run003.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run003.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 49.01463398709893,
+              "elapsedMs": 49.01463398709893
+            }
+          },
+          {
+            "runIndex": 4,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run004.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run004.meta.json"
+            ],
+            "elapsedMs": 76.22430997435004,
+            "measuredMs": 76.22430997435004,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 76.22430997435004,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run004.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run004.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run004.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 48.36369608528912,
+              "elapsedMs": 48.36369608528912
+            }
+          },
+          {
+            "runIndex": 5,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run005.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run005.meta.json"
+            ],
+            "elapsedMs": 77.85016892012209,
+            "measuredMs": 77.85016892012209,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 77.85016892012209,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run005.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run005.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run005.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 49.76359591819346,
+              "elapsedMs": 49.76359591819346
+            }
+          },
+          {
+            "runIndex": 6,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run006.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run006.meta.json"
+            ],
+            "elapsedMs": 77.2817829856649,
+            "measuredMs": 77.2817829856649,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 77.2817829856649,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run006.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run006.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run006.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 48.7217609770596,
+              "elapsedMs": 48.7217609770596
+            }
+          },
+          {
+            "runIndex": 7,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run007.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run007.meta.json"
+            ],
+            "elapsedMs": 74.8217860236764,
+            "measuredMs": 74.8217860236764,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 74.8217860236764,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run007.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run007.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run007.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 47.15138499159366,
+              "elapsedMs": 47.15138499159366
+            }
+          },
+          {
+            "runIndex": 8,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run008.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run008.meta.json"
+            ],
+            "elapsedMs": 76.5948579646647,
+            "measuredMs": 76.5948579646647,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 76.5948579646647,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run008.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run008.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run008.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 48.49607206415385,
+              "elapsedMs": 48.49607206415385
+            }
+          },
+          {
+            "runIndex": 9,
+            "command": [
+              "python3",
+              "fawn/bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "fawn/bench/dawn_runtime_state.json",
+              "--dawn-filter",
+              "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "--dawn-filter-map",
+              "fawn/bench/dawn_workload_map.json",
+              "--workload",
+              "kernel_dispatch_100",
+              "--trace-jsonl",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run009.ndjson",
+              "--trace-meta",
+              "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run009.meta.json"
+            ],
+            "elapsedMs": 75.96994796767831,
+            "measuredMs": 75.96994796767831,
+            "timingSource": "wall-time",
+            "timing": {
+              "source": "wall-time",
+              "wallTimeMs": 75.96994796767831,
+              "traceRows": 0
+            },
+            "traceJsonlPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run009.ndjson",
+            "traceMetaPath": "fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run009.meta.json",
+            "returnCode": 0,
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "workload": "kernel_dispatch_100",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+              "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run009.ndjson",
+              "timingSource": "wall-time",
+              "timingMs": 48.153665964491665,
+              "elapsedMs": 48.153665964491665
+            }
+          }
+        ],
+        "stats": {
+          "count": 8,
+          "minMs": 74.8217860236764,
+          "maxMs": 79.56348091829568,
+          "p50Ms": 76.5948579646647,
+          "p95Ms": 77.85016892012209,
+          "p99Ms": 77.85016892012209,
+          "meanMs": 76.87671271560248,
+          "stdevMs": 1.3185748801701926
+        },
+        "timingsMs": [
+          79.56348091829568,
+          76.70736697036773,
+          76.22430997435004,
+          77.85016892012209,
+          77.2817829856649,
+          74.8217860236764,
+          76.5948579646647,
+          75.96994796767831
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "dawn-perf-tests",
+          "schema": "adapter-meta",
+          "workload": "kernel_dispatch_100",
+          "gtestFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+          "selectedFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
+          "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation --trace-file=fawn/bench/out/runtime-comparisons-walltime/kernel_dispatch_100/right/dawn.run009.ndjson",
+          "timingSource": "wall-time",
+          "timingMs": 48.153665964491665,
+          "elapsedMs": 48.153665964491665
+        }
+      },
+      "deltaPercent": {
+        "p50Percent": -99.2162464323376,
+        "p95Percent": -99.05690245813432,
+        "p99Percent": -99.05690245813432,
+        "meanPercent": -99.17095539849026
+      }
+    }
+  ],
+  "overall": {
+    "left": {
+      "count": 8,
+      "minMs": 0.5115700187161565,
+      "maxMs": 0.8250519167631865,
+      "p50Ms": 0.6003149319440126,
+      "p95Ms": 0.7342030294239521,
+      "p99Ms": 0.7342030294239521,
+      "meanMs": 0.6373422365868464,
+      "stdevMs": 0.10243841640744242
+    },
+    "right": {
+      "count": 8,
+      "minMs": 74.8217860236764,
+      "maxMs": 79.56348091829568,
+      "p50Ms": 76.5948579646647,
+      "p95Ms": 77.85016892012209,
+      "p99Ms": 77.85016892012209,
+      "meanMs": 76.87671271560248,
+      "stdevMs": 1.3185748801701926
+    },
+    "deltaPercent": {
+      "p50Approx": -99.2162464323376
+    }
+  }
+}

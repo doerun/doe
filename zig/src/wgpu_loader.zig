@@ -1,0 +1,224 @@
+const std = @import("std");
+const builtin = @import("builtin");
+const model = @import("model.zig");
+const types = @import("wgpu_types.zig");
+
+pub const native_library_names = blk: {
+    switch (builtin.os.tag) {
+        .windows => break :blk &[_][]const u8{
+            "webgpu.dll",
+            "webgpu-native.dll",
+            "wgpu_native.dll",
+        },
+        .macos => break :blk &[_][]const u8{
+            "libwebgpu.dylib",
+            "webgpu.dylib",
+            "libwgpu_native.dylib",
+        },
+        else => break :blk &[_][]const u8{
+            "libwebgpu.so",
+            "libwgpu_native.so",
+            "libwgpu_native.so.0",
+            "wgpu_native.so",
+        },
+    }
+};
+
+pub const BUFFER_UPLOAD_KEY = 0xFFFF_FFFF_FFFF_FFFF;
+pub const DEFAULT_TIMEOUT_NS = 2_000_000_000;
+pub const QUEUE_WAIT_TIMEOUT_NS = 2_000_000_000;
+pub const DEFAULT_WAIT_SLICE_NS = 50_000_000;
+
+pub const BUILTIN_KERNEL_DEFAULT_SOURCE =
+    \\@compute @workgroup_size(1)
+    \\fn main() {}
+;
+
+pub fn openLibrary() !std.DynLib {
+    var last_err: ?anyerror = null;
+
+    for (native_library_names) |candidate| {
+        const lib = std.DynLib.open(candidate) catch |err| {
+            last_err = err;
+            continue;
+        };
+        return lib;
+    }
+
+    if (last_err) |_| {}
+    return error.LibraryOpenFailed;
+}
+
+pub fn loadProcs(lib: std.DynLib) !types.Procs {
+    return .{
+        .wgpuCreateInstance = try loadProc(lib, "wgpuCreateInstance", types.FnWgpuCreateInstance),
+        .wgpuInstanceRequestAdapter = try loadProc(lib, "wgpuInstanceRequestAdapter", types.FnWgpuInstanceRequestAdapter),
+        .wgpuInstanceWaitAny = try loadProc(lib, "wgpuInstanceWaitAny", types.FnWgpuInstanceWaitAny),
+        .wgpuInstanceProcessEvents = try loadProc(lib, "wgpuInstanceProcessEvents", types.FnWgpuInstanceProcessEvents),
+        .wgpuAdapterRequestDevice = try loadProc(lib, "wgpuAdapterRequestDevice", types.FnWgpuAdapterRequestDevice),
+        .wgpuDeviceCreateBuffer = try loadProc(lib, "wgpuDeviceCreateBuffer", types.FnWgpuDeviceCreateBuffer),
+        .wgpuDeviceCreateShaderModule = try loadProc(lib, "wgpuDeviceCreateShaderModule", types.FnWgpuDeviceCreateShaderModule),
+        .wgpuShaderModuleRelease = try loadProc(lib, "wgpuShaderModuleRelease", types.FnWgpuShaderModuleRelease),
+        .wgpuDeviceCreateComputePipeline = try loadProc(lib, "wgpuDeviceCreateComputePipeline", types.FnWgpuDeviceCreateComputePipeline),
+        .wgpuComputePipelineRelease = try loadProc(lib, "wgpuComputePipelineRelease", types.FnWgpuComputePipelineRelease),
+        .wgpuRenderPipelineRelease = try loadOptionalProc(lib, "wgpuRenderPipelineRelease", types.FnWgpuRenderPipelineRelease),
+        .wgpuDeviceCreateCommandEncoder = try loadProc(lib, "wgpuDeviceCreateCommandEncoder", types.FnWgpuDeviceCreateCommandEncoder),
+        .wgpuCommandEncoderBeginComputePass = try loadProc(lib, "wgpuCommandEncoderBeginComputePass", types.FnWgpuCommandEncoderBeginComputePass),
+        .wgpuCommandEncoderWriteTimestamp = try loadOptionalProc(lib, "wgpuCommandEncoderWriteTimestamp", types.FnWgpuCommandEncoderWriteTimestamp),
+        .wgpuCommandEncoderCopyBufferToBuffer = try loadProc(lib, "wgpuCommandEncoderCopyBufferToBuffer", types.FnWgpuCommandEncoderCopyBufferToBuffer),
+        .wgpuCommandEncoderCopyBufferToTexture = try loadProc(lib, "wgpuCommandEncoderCopyBufferToTexture", types.FnWgpuCommandEncoderCopyBufferToTexture),
+        .wgpuCommandEncoderCopyTextureToBuffer = try loadProc(lib, "wgpuCommandEncoderCopyTextureToBuffer", types.FnWgpuCommandEncoderCopyTextureToBuffer),
+        .wgpuCommandEncoderCopyTextureToTexture = try loadProc(lib, "wgpuCommandEncoderCopyTextureToTexture", types.FnWgpuCommandEncoderCopyTextureToTexture),
+        .wgpuComputePassEncoderSetBindGroup = try loadProc(lib, "wgpuComputePassEncoderSetBindGroup", types.FnWgpuComputePassEncoderSetBindGroup),
+        .wgpuComputePassEncoderSetPipeline = try loadProc(lib, "wgpuComputePassEncoderSetPipeline", types.FnWgpuComputePassEncoderSetPipeline),
+        .wgpuComputePassEncoderDispatchWorkgroups = try loadProc(lib, "wgpuComputePassEncoderDispatchWorkgroups", types.FnWgpuComputePassEncoderDispatchWorkgroups),
+        .wgpuComputePassEncoderEnd = try loadProc(lib, "wgpuComputePassEncoderEnd", types.FnWgpuComputePassEncoderEnd),
+        .wgpuComputePassEncoderRelease = try loadProc(lib, "wgpuComputePassEncoderRelease", types.FnWgpuComputePassEncoderRelease),
+        .wgpuDeviceCreateTexture = try loadProc(lib, "wgpuDeviceCreateTexture", types.FnWgpuDeviceCreateTexture),
+        .wgpuTextureCreateView = try loadProc(lib, "wgpuTextureCreateView", types.FnWgpuTextureCreateView),
+        .wgpuDeviceCreateBindGroupLayout = try loadProc(lib, "wgpuDeviceCreateBindGroupLayout", types.FnWgpuDeviceCreateBindGroupLayout),
+        .wgpuBindGroupLayoutRelease = try loadProc(lib, "wgpuBindGroupLayoutRelease", types.FnWgpuBindGroupLayoutRelease),
+        .wgpuDeviceCreateBindGroup = try loadProc(lib, "wgpuDeviceCreateBindGroup", types.FnWgpuDeviceCreateBindGroup),
+        .wgpuBindGroupRelease = try loadProc(lib, "wgpuBindGroupRelease", types.FnWgpuBindGroupRelease),
+        .wgpuDeviceCreatePipelineLayout = try loadProc(lib, "wgpuDeviceCreatePipelineLayout", types.FnWgpuDeviceCreatePipelineLayout),
+        .wgpuPipelineLayoutRelease = try loadProc(lib, "wgpuPipelineLayoutRelease", types.FnWgpuPipelineLayoutRelease),
+        .wgpuTextureRelease = try loadProc(lib, "wgpuTextureRelease", types.FnWgpuTextureRelease),
+        .wgpuTextureViewRelease = try loadProc(lib, "wgpuTextureViewRelease", types.FnWgpuTextureViewRelease),
+        .wgpuCommandEncoderFinish = try loadProc(lib, "wgpuCommandEncoderFinish", types.FnWgpuCommandEncoderFinish),
+        .wgpuDeviceGetQueue = try loadProc(lib, "wgpuDeviceGetQueue", types.FnWgpuDeviceGetQueue),
+        .wgpuQueueSubmit = try loadProc(lib, "wgpuQueueSubmit", types.FnWgpuQueueSubmit),
+        .wgpuQueueOnSubmittedWorkDone = try loadProc(lib, "wgpuQueueOnSubmittedWorkDone", types.FnWgpuQueueOnSubmittedWorkDone),
+        .wgpuQueueWriteBuffer = try loadProc(lib, "wgpuQueueWriteBuffer", types.FnWgpuQueueWriteBuffer),
+        .wgpuInstanceRelease = try loadProc(lib, "wgpuInstanceRelease", types.FnWgpuInstanceRelease),
+        .wgpuAdapterRelease = try loadProc(lib, "wgpuAdapterRelease", types.FnWgpuAdapterRelease),
+        .wgpuDeviceRelease = try loadProc(lib, "wgpuDeviceRelease", types.FnWgpuDeviceRelease),
+        .wgpuQueueRelease = try loadProc(lib, "wgpuQueueRelease", types.FnWgpuQueueRelease),
+        .wgpuCommandEncoderRelease = try loadProc(lib, "wgpuCommandEncoderRelease", types.FnWgpuCommandEncoderRelease),
+        .wgpuCommandBufferRelease = try loadProc(lib, "wgpuCommandBufferRelease", types.FnWgpuCommandBufferRelease),
+        .wgpuBufferRelease = try loadProc(lib, "wgpuBufferRelease", types.FnWgpuBufferRelease),
+        .wgpuAdapterHasFeature = try loadProc(lib, "wgpuAdapterHasFeature", types.FnWgpuAdapterHasFeature),
+        .wgpuDeviceHasFeature = try loadOptionalProc(lib, "wgpuDeviceHasFeature", types.FnWgpuDeviceHasFeature),
+        .wgpuDeviceCreateQuerySet = try loadProc(lib, "wgpuDeviceCreateQuerySet", types.FnWgpuDeviceCreateQuerySet),
+        .wgpuCommandEncoderResolveQuerySet = try loadProc(lib, "wgpuCommandEncoderResolveQuerySet", types.FnWgpuCommandEncoderResolveQuerySet),
+        .wgpuQuerySetRelease = try loadProc(lib, "wgpuQuerySetRelease", types.FnWgpuQuerySetRelease),
+        .wgpuBufferMapAsync = try loadProc(lib, "wgpuBufferMapAsync", types.FnWgpuBufferMapAsync),
+        .wgpuBufferGetConstMappedRange = try loadProc(lib, "wgpuBufferGetConstMappedRange", types.FnWgpuBufferGetConstMappedRange),
+        .wgpuBufferUnmap = try loadProc(lib, "wgpuBufferUnmap", types.FnWgpuBufferUnmap),
+    };
+}
+
+fn loadProc(
+    lib: std.DynLib,
+    comptime name: [:0]const u8,
+    comptime T: type,
+) !T {
+    var mutable = lib;
+    return mutable.lookup(T, name) orelse error.SymbolMissing;
+}
+
+fn loadOptionalProc(
+    lib: std.DynLib,
+    comptime name: [:0]const u8,
+    comptime T: type,
+) !?T {
+    var mutable = lib;
+    return mutable.lookup(T, name);
+}
+
+pub fn queueWorkDoneCallback(
+    status: types.WGPUQueueWorkDoneStatus,
+    message: types.WGPUStringView,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) void {
+    _ = message;
+    _ = userdata2;
+    const state = @as(*types.QueueSubmitState, @ptrCast(@alignCast(userdata1.?)));
+    state.done = true;
+    state.status = status;
+}
+
+pub fn adapterCallback(
+    status: types.WGPURequestAdapterStatus,
+    adapter: types.WGPUAdapter,
+    message: types.WGPUStringView,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) void {
+    _ = message;
+    _ = userdata2;
+    const state = @as(*types.RequestState, @ptrCast(@alignCast(userdata1.?)));
+    state.done = true;
+    state.status = status;
+    state.adapter = adapter;
+}
+
+pub fn deviceRequestCallback(
+    status: types.WGPURequestDeviceStatus,
+    device: types.WGPUDevice,
+    message: types.WGPUStringView,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) void {
+    _ = message;
+    _ = userdata2;
+    const state = @as(*types.DeviceRequestState, @ptrCast(@alignCast(userdata1.?)));
+    state.done = true;
+    state.status = status;
+    state.device = device;
+}
+
+pub fn bufferMapCallback(
+    status: types.WGPUMapAsyncStatus,
+    message: types.WGPUStringView,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) void {
+    _ = message;
+    _ = userdata2;
+    const state = @as(*types.BufferMapState, @ptrCast(@alignCast(userdata1.?)));
+    state.done = true;
+    state.status = status;
+}
+
+pub fn uncapturedErrorCallback(
+    _: ?*const anyopaque,
+    error_type: types.WGPUErrorType,
+    message: types.WGPUStringView,
+    _: ?*anyopaque,
+    _: ?*anyopaque,
+) callconv(.c) void {
+    const msg_slice = if (message.data) |d| d[0..message.length] else "<no message>";
+    std.debug.print("[fawn-error] type={} message={s}\n", .{ @intFromEnum(error_type), msg_slice });
+}
+
+pub fn alignTo(value: u64, alignment: u64) u64 {
+    if (alignment == 0) return value;
+    const mask = alignment - 1;
+    return (value + mask) & ~mask;
+}
+
+pub fn emptyStringView() types.WGPUStringView {
+    return types.WGPUStringView{ .data = null, .length = types.WGPU_STRLEN };
+}
+
+pub fn stringView(source: []const u8) types.WGPUStringView {
+    if (source.len == 0) return emptyStringView();
+    return types.WGPUStringView{
+        .data = source.ptr,
+        .length = source.len,
+    };
+}
+
+pub fn normalizeCopyLayoutValue(raw_layout: u32) u32 {
+    if (raw_layout == 0 or raw_layout == model.WGPUCopyStrideUndefined) return types.WGPU_COPY_STRIDE_UNDEFINED;
+    return raw_layout;
+}
+
+pub fn normalizeTextureAspect(raw_aspect: u32) types.WGPUTextureAspect {
+    return switch (raw_aspect) {
+        model.WGPUTextureAspect_DepthOnly => types.WGPUTextureAspect_DepthOnly,
+        model.WGPUTextureAspect_StencilOnly => types.WGPUTextureAspect_StencilOnly,
+        else => types.WGPUTextureAspect_All,
+    };
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "copy_textures_x32",
+    "x": 2,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 4,
+    "y": 1,
+    "z": 1
+  },
+  {
+    "kind": "texture_copy",
+    "src_handle": 1024,
+    "dst_handle": 2048,
+    "bytes": 8192
+  }
+]

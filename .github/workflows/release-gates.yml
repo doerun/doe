@@ -1,0 +1,25 @@
+name: fawn-release-gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  trace-gate:
+    runs-on: ubuntu-latest
+    env:
+      REPORT_PATH: bench/out/dawn-vs-fawn.json
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run release report gates
+        run: |
+          if [ ! -f "$REPORT_PATH" ]; then
+            echo "FAIL: missing $REPORT_PATH"
+            exit 1
+          fi
+          python3 bench/trace_gate.py --report "$REPORT_PATH"
+          python3 bench/claim_gate.py --report "$REPORT_PATH" --require-claimability-mode release --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15

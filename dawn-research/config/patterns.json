@@ -1,0 +1,35 @@
+{
+  "workaround_patterns": [
+    { "id": "workaround", "pattern": "\\bworkaround\\b" },
+    { "id": "driver_workaround", "pattern": "\\bdriver(?:-|\\s+)workaround\\b" },
+    { "id": "workaround_for", "pattern": "\\bworkaround\\s+for\\b" },
+    { "id": "driver_bug", "pattern": "\\bdriver\\s+bug\\b" },
+    { "id": "backend_workaround", "pattern": "\\bbackend[_-]specific\\b" },
+    { "id": "adreno_workaround", "pattern": "\\badreno\\s+workaround\\b" },
+    { "id": "intel_workaround", "pattern": "\\bintel\\s+workaround\\b" }
+  ],
+  "vendor_patterns": [
+    { "id": "amd", "pattern": "\\bamd\\b|\\bradeon\\b|\\bgfx\\b" },
+    { "id": "intel", "pattern": "\\bintel\\b|\\bxe\\b|\\badln\\b|\\barc\\b|\\bultra\\b" },
+    { "id": "nvidia", "pattern": "\\bnvidia\\b|\\bgeforce\\b|\\bturing\\b|\\bampere\\b" },
+    { "id": "qualcomm", "pattern": "\\bqualcomm\\b|\\badreno\\b|\\bsnapdragon\\b" },
+    { "id": "apple", "pattern": "\\bapple\\b|\\bmgpu\\b|\\barm\\.?" },
+    { "id": "arm", "pattern": "\\barm\\b|\\bmali\\b" }
+  ],
+  "backend_patterns": [
+    { "id": "vulkan", "pattern": "\\bvulkan\\b" },
+    { "id": "metal", "pattern": "\\bmetal\\b" },
+    { "id": "d3d", "pattern": "\\bd3d\\b|\\bdirect3d\\b|\\bdx12\\b|\\bd3d12\\b" },
+    { "id": "opengl", "pattern": "\\bopengl\\b|\\bogl\\b" },
+    { "id": "webgpu", "pattern": "\\bwebgpu\\b" },
+    { "id": "dawn", "pattern": "\\bdawn\\b" }
+  ],
+  "severity_patterns": [
+    { "id": "crash", "pattern": "\\bcrash\\b|\\bcrashed\\b|\\bcrashing\\b" },
+    { "id": "hang", "pattern": "\\bhang\\b|\\bhangs\\b|\\bhanging\\b" },
+    { "id": "artifact", "pattern": "\\bartifact\\b|\\bvisual\\b|\\brendering\\b" },
+    { "id": "incorrect", "pattern": "\\bincorrect\\b|\\bwrong\\b|\\bregression\\b" },
+    { "id": "stability", "pattern": "\\bstability\\b|\\bflaky\\b|\\bsporadic\\b|\\bintermittent\\b" },
+    { "id": "performance", "pattern": "\\bperf\\b|\\bperformance\\b|\\bslowdown\\b|\\bspike\\b" }
+  ]
+}

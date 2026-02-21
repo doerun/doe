@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "description": "AMD Vulkan map with explicit autodiscover token for workload-specific Dawn filters.",
+  "filters": {
+    "buffer_upload_1kb": "@autodiscover",
+    "buffer_upload_64kb": "@autodiscover",
+    "buffer_upload_1mb": "@autodiscover",
+    "buffer_upload_4mb": "@autodiscover",
+    "buffer_upload_16mb": "@autodiscover",
+    "workgroup_atomic_1024": "@autodiscover",
+    "workgroup_non_atomic_1024": "@autodiscover",
+    "default": "@autodiscover"
+  }
+}

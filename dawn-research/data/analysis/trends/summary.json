@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-02-18T00:18:23.718230Z",
+  "input": "data/analysis/workarounds",
+  "rowShards": {
+    "monthly": {
+      "files": [
+        "trend_month-00001.jsonl"
+      ],
+      "shardSize": 500,
+      "totalRows": 4
+    },
+    "trendBuckets": {
+      "files": [
+        "trend_bucket-00001.jsonl"
+      ],
+      "shardSize": 500,
+      "totalRows": 4
+    }
+  },
+  "totalBuckets": 4,
+  "totalMonthlyRecords": 4
+}

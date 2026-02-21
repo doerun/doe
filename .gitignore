@@ -1,0 +1,3 @@
+# Ignore the oversized raw change dump
+dawn-research/data/raw_changes.ndjson
+.cache/doppler-compare/

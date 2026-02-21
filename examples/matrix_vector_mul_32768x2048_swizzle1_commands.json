@@ -1,0 +1,39 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matrix_vector_mul_32768x2048_f32_swizzle1",
+    "x": 128,
+    "y": 1,
+    "z": 1,
+    "repeat": 100,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 6111,
+        "buffer_size": 268435456,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 6112,
+        "buffer_size": 8192,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 6113,
+        "buffer_size": 131072,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

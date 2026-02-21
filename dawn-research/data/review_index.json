@@ -1,0 +1,23 @@
+{
+  "project": "dawn",
+  "status": "merged",
+  "shardSize": 300,
+  "maxShardBytes": 33554432,
+  "since": "2025-01-01",
+  "until": "2026-01-16",
+  "query": "project:dawn status:merged after:2025-01-01 before:2026-01-16",
+  "host": "dawn-review.googlesource.com",
+  "limit": 300,
+  "maxPages": 20,
+  "requests": 16,
+  "existingRows":     1000,
+  "addedRows": 3713,
+  "rawRows": 4713,
+  "rawShardCount": 18,
+  "rawShardDir": "raw_changes",
+  "totalChanges": 3713,
+  "lastUpdatedMin": "2025-01-01 10:29:04.000000000",
+  "lastUpdatedMax": "2025-10-28 16:51:55.000000000",
+  "resume": "1",
+  "output": "raw_changes.ndjson"
+}

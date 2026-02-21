@@ -1,0 +1,281 @@
+{
+  "analysis": {
+    "backendCounts": {
+      "d3d": 2,
+      "dawn": 7,
+      "metal": 1,
+      "webgpu": 1
+    },
+    "generatedAt": "2026-02-18T00:18:23.679712Z",
+    "input": "data/raw_changes",
+    "inputFiles": [
+      "data/raw_changes/changes-000001.jsonl",
+      "data/raw_changes/changes-000002.jsonl",
+      "data/raw_changes/changes-000003.jsonl",
+      "data/raw_changes/changes-000004.jsonl",
+      "data/raw_changes/changes-000005.jsonl",
+      "data/raw_changes/changes-000006.jsonl",
+      "data/raw_changes/changes-000007.jsonl",
+      "data/raw_changes/changes-000008.jsonl",
+      "data/raw_changes/changes-000009.jsonl",
+      "data/raw_changes/changes-000010.jsonl",
+      "data/raw_changes/changes-000011.jsonl",
+      "data/raw_changes/changes-000012.jsonl",
+      "data/raw_changes/changes-000013.jsonl",
+      "data/raw_changes/changes-000014.jsonl",
+      "data/raw_changes/changes-000015.jsonl",
+      "data/raw_changes/changes-000016.jsonl",
+      "data/raw_changes/changes-000017.jsonl",
+      "data/raw_changes/changes-000018.jsonl"
+    ],
+    "patternCounts": {
+      "driver_bug": 2,
+      "workaround": 9,
+      "workaround_for": 7
+    },
+    "severityCounts": {},
+    "shards": {
+      "reviewRows": {
+        "files": [
+          "review_rows-00001.jsonl",
+          "review_rows-00002.jsonl",
+          "review_rows-00003.jsonl",
+          "review_rows-00004.jsonl",
+          "review_rows-00005.jsonl",
+          "review_rows-00006.jsonl",
+          "review_rows-00007.jsonl",
+          "review_rows-00008.jsonl",
+          "review_rows-00009.jsonl",
+          "review_rows-00010.jsonl",
+          "review_rows-00011.jsonl",
+          "review_rows-00012.jsonl",
+          "review_rows-00013.jsonl",
+          "review_rows-00014.jsonl",
+          "review_rows-00015.jsonl",
+          "review_rows-00016.jsonl",
+          "review_rows-00017.jsonl",
+          "review_rows-00018.jsonl",
+          "review_rows-00019.jsonl",
+          "review_rows-00020.jsonl",
+          "review_rows-00021.jsonl",
+          "review_rows-00022.jsonl",
+          "review_rows-00023.jsonl",
+          "review_rows-00024.jsonl",
+          "review_rows-00025.jsonl",
+          "review_rows-00026.jsonl",
+          "review_rows-00027.jsonl",
+          "review_rows-00028.jsonl",
+          "review_rows-00029.jsonl",
+          "review_rows-00030.jsonl",
+          "review_rows-00031.jsonl",
+          "review_rows-00032.jsonl",
+          "review_rows-00033.jsonl",
+          "review_rows-00034.jsonl",
+          "review_rows-00035.jsonl",
+          "review_rows-00036.jsonl",
+          "review_rows-00037.jsonl",
+          "review_rows-00038.jsonl",
+          "review_rows-00039.jsonl",
+          "review_rows-00040.jsonl",
+          "review_rows-00041.jsonl",
+          "review_rows-00042.jsonl",
+          "review_rows-00043.jsonl",
+          "review_rows-00044.jsonl",
+          "review_rows-00045.jsonl",
+          "review_rows-00046.jsonl",
+          "review_rows-00047.jsonl",
+          "review_rows-00048.jsonl",
+          "review_rows-00049.jsonl",
+          "review_rows-00050.jsonl",
+          "review_rows-00051.jsonl",
+          "review_rows-00052.jsonl",
+          "review_rows-00053.jsonl",
+          "review_rows-00054.jsonl",
+          "review_rows-00055.jsonl",
+          "review_rows-00056.jsonl",
+          "review_rows-00057.jsonl"
+        ],
+        "prefix": "review_rows",
+        "shardSize": 1500,
+        "totalRows": 85460
+      },
+      "signals": {
+        "files": [
+          "signals-00001.jsonl"
+        ],
+        "prefix": "signals",
+        "shardSize": 500,
+        "totalRows": 15
+      },
+      "workaroundRows": {
+        "files": [
+          "workaround_rows-00001.jsonl"
+        ],
+        "prefix": "workaround_rows",
+        "shardSize": 500,
+        "totalRows": 11
+      }
+    },
+    "totalChanges": 4713,
+    "totalReviewRows": 85460,
+    "totalSignalRows": 15,
+    "totalWorkaroundRows": 11,
+    "unmatchedChangesWithoutSignal": 4702,
+    "vendorCounts": {
+      "intel": 3,
+      "qualcomm": 1
+    }
+  },
+  "candidatePack": {
+    "candidateCount": 1,
+    "candidateShard": {
+      "files": [
+        "candidate-00001.jsonl"
+      ],
+      "prefix": "candidate",
+      "shardSize": 500,
+      "totalRows": 1
+    },
+    "generatedAt": "2026-02-18T00:18:23.790337Z",
+    "input": {
+      "trends": "data/analysis/trends/trend_buckets.jsonl",
+      "workarounds": [
+        "data/analysis/workarounds/workaround_rows-00001.jsonl"
+      ]
+    },
+    "thresholds": {
+      "maxSamples": 6,
+      "maxTopFiles": 6,
+      "minChangeCount": 2,
+      "minSignalRows": 3
+    }
+  },
+  "generatedAt": "2026-02-18T00:18:23.811187Z",
+  "hotspots": {
+    "generatedAt": "2026-02-18T00:18:23.753963Z",
+    "input": [
+      "data/analysis/workarounds/workaround_rows-00001.jsonl"
+    ],
+    "rowShards": {
+      "files": {
+        "files": [
+          "file_hotspot-00001.jsonl"
+        ],
+        "prefix": "file_hotspot",
+        "shardSize": 500,
+        "totalRows": 7
+      },
+      "rowInputDirectory": "/Users/xyz/deco/ouroboros/fawn/dawn-research/data/analysis/hotspots/files"
+    },
+    "topFiles": [
+      {
+        "changeCount": 11,
+        "file": "unknown_file",
+        "signalRows": 13
+      }
+    ],
+    "topVendorBackendPairs": [
+      {
+        "backend": "dawn",
+        "signalRows": 6,
+        "vendor": "unknown"
+      },
+      {
+        "backend": "unknown",
+        "signalRows": 2,
+        "vendor": "intel"
+      },
+      {
+        "backend": "metal",
+        "signalRows": 1,
+        "vendor": "unknown"
+      },
+      {
+        "backend": "webgpu",
+        "signalRows": 1,
+        "vendor": "unknown"
+      },
+      {
+        "backend": "d3d12",
+        "signalRows": 1,
+        "vendor": "intel"
+      },
+      {
+        "backend": "d3d12",
+        "signalRows": 1,
+        "vendor": "qualcomm"
+      },
+      {
+        "backend": "dawn",
+        "signalRows": 1,
+        "vendor": "qualcomm"
+      }
+    ],
+    "totalFiles": 1,
+    "totalHotspotRows": 7
+  },
+  "outDir": "data",
+  "raw": {
+    "addedRows": 3713,
+    "existingRows": 1000,
+    "host": "dawn-review.googlesource.com",
+    "lastMaxUpdated": "2025-10-28 16:51:55.000000000",
+    "lastUpdatedMax": "2025-10-28 16:51:55.000000000",
+    "lastUpdatedMin": "2025-01-01 10:29:04.000000000",
+    "limit": 300,
+    "maxPages": 20,
+    "maxShardBytes": 33554432,
+    "output": "raw_changes.ndjson",
+    "project": "dawn",
+    "query": "project:dawn status:merged after:2025-01-01 before:2026-01-16",
+    "rawRows": 4713,
+    "rawShardCount": 18,
+    "rawShardDir": "raw_changes",
+    "requests": 16,
+    "resume": "1",
+    "shardSize": 300,
+    "since": "2025-01-01",
+    "status": "merged",
+    "totalChanges": 3713,
+    "until": "2026-01-16"
+  },
+  "stageControls": {
+    "query": "",
+    "resumeFetch": true,
+    "shards": {
+      "rawShardRows": 300,
+      "rawShardSizeMB": 32
+    },
+    "since": "2025-01-01",
+    "skipCandidates": false,
+    "skipFetch": false,
+    "skipHotspots": false,
+    "skipTrends": false,
+    "skipWorkarounds": false,
+    "status": "merged",
+    "until": "2026-01-16",
+    "useManifest": true
+  },
+  "trends": {
+    "generatedAt": "2026-02-18T00:18:23.718230Z",
+    "input": "data/analysis/workarounds",
+    "rowShards": {
+      "monthly": {
+        "files": [
+          "trend_month-00001.jsonl"
+        ],
+        "shardSize": 500,
+        "totalRows": 4
+      },
+      "trendBuckets": {
+        "files": [
+          "trend_bucket-00001.jsonl"
+        ],
+        "shardSize": 500,
+        "totalRows": 4
+      }
+    },
+    "totalBuckets": 4,
+    "totalMonthlyRecords": 4
+  }
+}

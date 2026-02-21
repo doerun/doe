@@ -1,0 +1,212 @@
+# Fawn Thesis
+
+## Abstract
+
+Fawn is a machine-driven runtime program for WebGPU-class execution with:
+
+- Zig for explicit low-overhead systems paths
+- Lean 4 for high-value invariant formalization
+- deterministic boundary decisions (`accept(receipt)` or `reject(trace)`)
+
+The intent is defense-in-depth and performance improvement, not sandbox replacement.
+
+## Process Goals (Priority Order)
+
+1. Development speed
+2. p95 latency reduction
+3. Correctness in runtime behavior (non-proof correctness)
+4. Deterministic replay/debuggability
+5. Formal proof coverage
+
+This ordering governs scope decisions and tradeoffs.
+
+## Delivery Mode
+
+- Commit-only workflow (no PR gate model).
+- Committers are responsible for keeping `main` healthy before and after commit.
+- Automation provides immediate signal, not committee process.
+
+## Problem Statement
+
+Industrial WebGPU stacks carry recurring CPU-side costs from:
+
+- repeated runtime validation
+- abstraction layering overhead
+- IPC/serialization overhead in sandboxed modes
+
+These costs often dominate high-frequency small-dispatch workloads.
+
+## Core Thesis
+
+Split validation into:
+
+1. hoistable checks (compile/init-time candidates)
+2. inherently dynamic checks (must stay runtime)
+
+Then use Lean where it has highest leverage and keep Zig hot paths explicit and minimal.
+
+## Security Position
+
+Formal methods complement isolation, they do not replace it.
+
+- proofs reduce logic defect surface
+- deterministic boundaries enforce admissibility
+- sandbox/process boundaries remain required where deployment needs them
+
+## Standalone Execution Model
+
+Fawn is self-contained.
+
+- Fawn owns its own runtime, verification boundary, benchmark harness, and replay tooling.
+- Dawn and wgpu are external incumbents used as comparison baselines only.
+- Fawn does not depend on incumbent internals at runtime.
+
+## Zero-Tape Operating System
+
+### A) Agent Miner (Nightly Drift Ingest)
+
+- automated miner scans Dawn/wgpu quirk logic nightly
+- emits structured quirk candidates into machine-readable data
+- committers review and merge data updates quickly
+
+No manual source archaeology as a recurring process.
+
+### B) Lean Guard (Invariant Gate)
+
+- consumes quirk data and contract inputs
+- checks core invariants and admissibility properties
+- emits validator artifacts or fails fast for quirks requiring Lean
+
+No meeting-based safety review loop.
+
+### C) Zig Muscle (Specialized Execution)
+
+- build reads quirk/profile data at comptime
+- generates specialized backend paths
+- avoids runtime toggle branching in hot loops when static specialization is possible
+
+## Debug-First Determinism
+
+### Flight Recorder
+
+- fixed-size ring buffer for structured events
+- zero-allocation write path
+- crash/device-loss dumps as replay artifacts
+
+### Replay Tooling
+
+- binary artifact replay reproduces command/event sequence
+- used for deterministic root-cause isolation
+- replay consistency is treated as a core product property
+
+## Performance Ratchet (Commit Mode)
+
+- benchmarking runs continuously on commit
+- regressions are surfaced immediately as machine signals
+- committers must fix, revert, or explicitly annotate baseline movement
+
+No delayed “perf sprint” process.
+
+## Incumbent Comparison Policy
+
+“Beat incumbents” means measured deltas, not narrative claims.
+
+- Baselines: Dawn (C++) and wgpu (Rust)
+- Metrics: encode overhead, validation overhead, submit latency (p50/p95/p99), allocation churn
+- Evidence: reproducible run metadata + published benchmark reports
+- Claim states:
+  - `scaffold`: placeholder outputs, no incumbent claim allowed
+  - `directional`: measured deltas exist but sample depth is below confidence target
+  - `substantiated`: measured deltas + stable trend window + reproducible metadata
+
+Attribution method for "why Zig + Lean":
+1. Zig attribution: compare specialized vs non-specialized Fawn paths with same policy/proof posture.
+2. Lean attribution: compare defect/reject/replay outcomes with and without Lean-required quirk sets.
+3. Incumbent attribution: compare Fawn against Dawn/wgpu on identical metric IDs and workload IDs.
+4. Any claim missing this decomposition is reported as "unattributed".
+
+## Runtime Architecture
+
+### Lean Contract Layer
+
+- formalize selected state machine invariants
+- prove admissibility-critical properties
+- keep proof scope aligned to leverage and maintenance cost
+- apply Lean proof requirements by per-quirk policy, not universally
+
+### Zig Execution Layer
+
+- explicit allocators and bounded memory behavior
+- specialized backend paths via comptime
+- deterministic trace emission and low-overhead submission paths
+
+### Boundary Decision Layer
+
+- input: state/policy/profile/hashes
+- output: `accept(receipt)` or `reject(trace)`
+- rule: no side effects before `accept`
+
+## Backend Strategy
+
+- target both native and WASM-compatible deployment modes with minimal overhead
+- primary lane first: Vulkan
+- secondary lane next: Metal
+- expand only after baseline stability and conformance trend are healthy
+
+## Validation Split (Hoisted vs Dynamic)
+
+### Hoisted First
+
+- static compatibility checks
+- structural command validity
+- profile and limit compatibility derivable from known state
+
+### Always Dynamic
+
+- device-loss and async lifecycle behavior
+- queue/timeline synchronization
+- residency and transient runtime pressure
+
+## Success Criteria (Trend-Based)
+
+- latency trend improves on representative workloads
+- correctness incidents trend down
+- replay success and determinism trend up
+- conformance trend improves on selected CTS subsets
+- proof coverage grows only where it yields clear correctness/perf value
+- benchmark deltas against Dawn/wgpu trend in Fawn's favor on targeted workloads
+
+No hard numeric threshold is required for v0 acceptance.
+
+Minimum acceptance contract for incumbent claims:
+1. use metric IDs defined in `fawn/config/benchmarks.json`
+2. include matching workload IDs and backend IDs in run metadata
+3. include baseline deltas for Dawn and wgpu from measured runs
+4. mark report `comparisonStatus=substantiated` before using "beats incumbents" language
+
+## v0 Delivery Reality
+
+v0 is process and data-contract heavy by design, but implementation-light:
+
+- module scaffolds + worked examples first
+- binding gates + hard thresholds later as empirical baselines stabilize
+
+## Risks
+
+1. Conformance sink from backend-specific divergence
+2. ABI compatibility drag (`webgpu.h` parity costs)
+3. proof maintenance burden under spec churn
+
+## Mitigations
+
+1. lane-first rollout (Vulkan first, then Metal)
+2. isolate compatibility layer from internal fast paths
+3. maintain explicit “proof ROI” policy so proof scope stays high leverage
+4. automate drift detection from upstream stacks
+
+## Immediate Next Steps
+
+1. implement the agent miner prototype and structured quirk dataset
+2. define the first Lean invariant bundle for admissibility-critical checks
+3. build commit-time benchmark + replay harness
+4. publish first baseline trend report for Dawn/wgpu comparisons
