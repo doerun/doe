@@ -1,0 +1,35 @@
+[
+  {
+    "kind": "surface_create",
+    "handle": 300
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 300
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 300,
+    "width": 64,
+    "height": 64,
+    "format": "rgba8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 300
+  },
+  {
+    "kind": "surface_present",
+    "handle": 300
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 300
+  },
+  {
+    "kind": "surface_release",
+    "handle": 300
+  }
+]

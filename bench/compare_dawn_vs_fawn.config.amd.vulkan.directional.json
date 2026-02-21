@@ -13,7 +13,7 @@
     "warmup": 1,
     "out": "bench/out/dawn-vs-fawn.amd.vulkan.directional.json",
     "workspace": "bench/out/runtime-comparisons.amd.vulkan.directional",
-    "workloadFilter": "render_draw_throughput_proxy,texture_sampling_raster_proxy",
+    "workloadFilter": "surface_presentation_contract",
     "includeExtendedWorkloads": true,
     "includeNoncomparableWorkloads": true,
     "emitShell": false

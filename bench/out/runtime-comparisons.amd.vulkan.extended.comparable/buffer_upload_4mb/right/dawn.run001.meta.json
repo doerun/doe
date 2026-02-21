@@ -4,50 +4,50 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x3741d5c5d04b2ae1",
+  "hash": "0x84ffe11ab8d763dc",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "buffer_upload_4mb",
   "gtestFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
   "selectedFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
   "filterResolution": "mapped",
-  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/buffer_upload_4mb/right/dawn.run001.ndjson",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/buffer_upload_4mb/right/dawn.run001.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.552704438889,
+  "timingMs": 0.5635730497139999,
   "timingMetric": "wall_time",
-  "elapsedMs": 6072.126151062548,
-  "processWallMs": 6072.126151062548,
+  "elapsedMs": 6059.422836871818,
+  "processWallMs": 6059.422836871818,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.552704438889,
-    "cpu_time": 0.549149643333
+    "wall_time": 0.5635730497139999,
+    "cpu_time": 0.560007676571
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 552704,
+  "executionTotalNs": 563573,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.547979401667,
-      0.552893917222,
-      0.552704438889
+      0.566463856571,
+      0.563309913714,
+      0.5635730497139999
     ],
     "cpu_time": [
-      0.544354958889,
-      0.549284319444,
-      0.549149643333
+      0.5628680937139999,
+      0.559716258857,
+      0.560007676571
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.547979401667,
-    0.552893917222,
-    0.552704438889
+    0.566463856571,
+    0.563309913714,
+    0.5635730497139999
   ]
 }

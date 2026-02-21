@@ -59,7 +59,34 @@ AUTODISCOVER_WORKLOAD_PATTERNS: dict[str, tuple[str, str | None]] = {
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
     "render_draw_throughput_proxy": ("DrawCallPerf", None),
+    "render_draw_state_bindings": ("DrawCallPerf", "DynamicBindGroup"),
+    "render_draw_redundant_pipeline_bindings": (
+        "DrawCallPerf",
+        "RedundantPipeline_RedundantBindGroups",
+    ),
+    "render_bundle_dynamic_bindings": ("DrawCallPerf", "DynamicBindGroup_RenderBundle"),
+    "render_bundle_dynamic_pipeline_bindings": (
+        "DrawCallPerf",
+        "DynamicPipeline_DynamicBindGroup_RenderBundle",
+    ),
+    "draw_indexed_render_proxy": ("DrawCallPerf", "DynamicVertexBuffer"),
     "texture_sampling_raster_proxy": ("SubresourceTrackingPerf", "arrayLayer_16_mipLevel_3"),
+    "texture_sampler_write_query_destroy_contract": (
+        "SubresourceTrackingPerf",
+        "arrayLayer_16_mipLevel_3",
+    ),
+    "texture_sampler_write_query_destroy_contract_mip8": (
+        "SubresourceTrackingPerf",
+        "arrayLayer_16_mipLevel_8",
+    ),
+    "async_pipeline_diagnostics_contract": (
+        "ShaderRobustnessPerf",
+        "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
+    ),
+    "surface_presentation_contract": (
+        "ConcurrentExecutionTest",
+        "ConcurrentExecutionType_RunSingle",
+    ),
     "kernel_dispatch_100": ("DrawCallPerf", "__e_skip_validation"),
 }
 TIME_UNIT_TO_MS = {

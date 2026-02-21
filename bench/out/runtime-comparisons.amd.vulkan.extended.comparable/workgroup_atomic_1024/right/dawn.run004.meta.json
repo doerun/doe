@@ -4,55 +4,55 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0xde80d2c4d8a0382a",
+  "hash": "0xfc1392c413c6ddf6",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "workgroup_atomic_1024",
   "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
   "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
   "filterResolution": "mapped",
-  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/workgroup_atomic_1024/right/dawn.run004.ndjson",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/workgroup_atomic_1024/right/dawn.run004.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.054488418232,
+  "timingMs": 0.056009227262,
   "timingMetric": "wall_time",
-  "elapsedMs": 6019.558029947802,
-  "processWallMs": 6019.558029947802,
+  "elapsedMs": 6006.578906206414,
+  "processWallMs": 6006.578906206414,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.054488418232,
-    "cpu_time": 0.052891160331,
-    "gpu_time": 0.045788301435999997
+    "wall_time": 0.056009227262,
+    "cpu_time": 0.054389604524,
+    "gpu_time": 0.046167771429
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 54488,
+  "executionTotalNs": 56009,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.052879540497,
-      0.054488418232,
-      0.054577565137999995
+      0.060209440595,
+      0.056009227262,
+      0.05594898006
     ],
     "cpu_time": [
-      0.051296664586,
-      0.052891160331,
-      0.052982227237999995
+      0.058601044583,
+      0.054389604524,
+      0.054355592439999996
     ],
     "gpu_time": [
-      0.046526939227,
-      0.045788301435999997,
-      0.045712265193
+      0.04790759618999999,
+      0.046167771429,
+      0.046156068571
     ]
   },
   "benchmarkWallMsSamples": [
-    0.052879540497,
-    0.054488418232,
-    0.054577565137999995
+    0.060209440595,
+    0.056009227262,
+    0.05594898006
   ]
 }

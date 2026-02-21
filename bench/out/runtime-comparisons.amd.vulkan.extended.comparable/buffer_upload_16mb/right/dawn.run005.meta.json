@@ -4,50 +4,50 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0xb34c042711c4a5a8",
+  "hash": "0xe6382869b45fd6a3",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "buffer_upload_16mb",
   "gtestFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
   "selectedFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
   "filterResolution": "mapped",
-  "command": "/home/x/deco/ouroboros/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/buffer_upload_16mb/right/dawn.run005.ndjson",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/buffer_upload_16mb/right/dawn.run005.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 2.851371137,
+  "timingMs": 2.975982457,
   "timingMetric": "wall_time",
-  "elapsedMs": 5496.786626055837,
-  "processWallMs": 5496.786626055837,
+  "elapsedMs": 5705.673125106841,
+  "processWallMs": 5705.673125106841,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 2.851371137,
-    "cpu_time": 2.8464778230000003
+    "wall_time": 2.975982457,
+    "cpu_time": 2.971169183
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 2851371,
+  "executionTotalNs": 2975982,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      2.851371137,
-      2.8493956830000005,
-      2.85401572
+      2.975982457,
+      2.98196278,
+      2.946509443
     ],
     "cpu_time": [
-      2.8464778230000003,
-      2.844485903,
-      2.8492596
+      2.971169183,
+      2.976970367,
+      2.941528253
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    2.851371137,
-    2.8493956830000005,
-    2.85401572
+    2.975982457,
+    2.98196278,
+    2.946509443
   ]
 }

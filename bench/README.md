@@ -190,9 +190,11 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
 
 Extended workload domains now include:
 
-- render/draw throughput proxy (`DrawCallPerf` mapping, directional, via native `render_draw` render-pass path with Dawn-like centered triangle vertex-buffer input, static uniform bind-group parity, depth-stencil attachment, and explicit `pipelineMode`/`bindGroupMode` state-set variants).
+- render/draw throughput and state-set variants (`DrawCallPerf` mappings for base, dynamic bind-group, redundant pipeline/bind-group, draw-indexed proxy, and render-bundle dynamic variants).
 - shader compile/pipeline stress (`ShaderRobustnessPerf` mapping, comparable, fixed single-test filter + per-step normalization).
-- texture/raster directional workload (`SubresourceTrackingPerf` mapping) with real texture-sampling compute plus a simplified native `render_draw` raster pass (including Dawn-like centered triangle vertex-buffer input, static uniform bind-group parity, depth-stencil attachment, and explicit `pipelineMode`/`bindGroupMode` variants).
+- texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
+- async pipeline diagnostics contract workload (mapped to `ShaderRobustnessPerf` pipeline-compilation baseline) covering `CreateRenderPipelineAsync`, error scopes, and shader compilation-info API paths.
+- surface lifecycle contract workload is tracked as directional (`surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:
   `matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
@@ -431,8 +433,9 @@ A ready-to-run AMD Vulkan preset is now included:
 Additional AMD Vulkan presets:
 
 - release claim mode: `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
-- extended comparable matrix (includes shader robustness workload): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
-- directional diagnostics (render/texture proxies, non-claim): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
+- extended comparable matrix (upload + compute + render + texture + render-bundle + async pipeline diagnostics): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
+- directional diagnostics (surface lifecycle contract): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
+- adapter-agnostic local comparable matrix (no fixed AMD vendor-id requirement): `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`
 
 Preset behavior:
 
@@ -456,18 +459,27 @@ python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config
 Extended AMD Vulkan runs:
 
 ```bash
-# comparable extended matrix (includes shader robustness workload)
+# comparable extended matrix (upload + compute + render + texture + render-bundle + async)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json
 
 # release-style claimability floor (15 timed samples)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json
 
-# directional diagnostics only (render/texture proxies, non-claim)
+# directional diagnostics only (surface lifecycle contract, non-claim)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json
+
+# local adapter-agnostic comparable matrix (strict, no vendor-id pin)
+python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json
 ```
 
 If Dawn cannot access an AMD Vulkan adapter on the host (for example, missing `/dev/dri` access),
 run fails by design and is reported as non-comparable.
+
+Quick host preflight (recommended before strict runs):
+
+```bash
+python3 bench/preflight_bench_host.py --strict-amd-vulkan
+```
 
 ## Apples-to-apples timing configuration
 

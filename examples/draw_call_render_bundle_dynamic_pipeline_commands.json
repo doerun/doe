@@ -1,0 +1,15 @@
+[
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "redundant",
+    "bindGroupMode": "redundant",
+    "encodeMode": "render-bundle",
+    "bindGroupDynamicOffsets": [256],
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  }
+]
