@@ -56,6 +56,7 @@ zig build run -- --quirks path/to/quirks.json --commands path/to/commands.json -
 zig build run -- --quirks path/to/quirks.json --commands path/to/commands.json --backend native --execute --trace --trace-jsonl run.jsonl --trace-meta run.meta.json
 zig build run -- --commands fawn/examples/kernel_dispatch_commands.json --backend native --execute --kernel-root fawn/bench/kernels
 zig build run -- --commands fawn/examples/draw_call_proxy_commands.json --backend native --execute --trace --trace-meta run.meta.json
+zig build run -- --commands fawn/examples/draw_call_proxy_commands.json --backend native --execute --trace --queue-sync-mode deferred --trace-meta run.deferred.meta.json
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --trace
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --emit-normalized
 zig build test
@@ -76,6 +77,7 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
   and the full decision envelope used by Lean parity checks.
 - `--trace-meta` execution timing now includes split fields:
   `executionSetupTotalNs`, `executionEncodeTotalNs`, `executionSubmitWaitTotalNs`, `executionDispatchCount`.
+  Native execution metadata also records `queueSyncMode` when `--execute` is enabled.
 - `--replay` mode validates per-row `seq`, `command`, optional `kernel`, `module`, `opCode`, and hash-chain fields.
 
 ## Runtime behavior contract (minimal clone slice)
@@ -120,6 +122,8 @@ Execution capabilities:
 - `--backend native --execute` emits `executionBackend` fields in trace rows.
 - `upload`, `copy`, `barrier`, `dispatch`, `kernel_dispatch`, and `render_draw` all submit through real command buffers.
 - native queue waiting is configurable via `--queue-wait-mode process-events|wait-any` (default: `process-events`; `wait-any` auto-falls back when unsupported).
+- queue synchronization timing is configurable via `--queue-sync-mode per-command|deferred` (default: `per-command`);
+  deferred mode skips per-submit waits and performs one final queue flush after the command loop.
 - `kernel_dispatch` runs through full compute pipeline lowering with bind groups and optional GPU timestamp queries.
 - `render_draw` runs through a native render-pass path with a Dawn-aligned centered-triangle vertex-buffer pipeline, static fragment uniform bind-group parity, depth24plus-stencil8 attachment, per-format pipeline caching, cached render/depth texture views, and repeated draw calls.
 - kernel lookup supports `--kernel-root` and built-in marker fallback kernels.
@@ -143,12 +147,17 @@ Reference commands:
 
 - `kernel_dispatch` with `kernel` label and dispatch dimensions: `fawn/examples/kernel_dispatch_commands.json`
 - `kernel_dispatch` accepts optional `repeat` (aliases: `dispatch_count`, `dispatchCount`), default `1`.
-- `render_draw` supports repeated draw-call submission via `draw_count`/`drawCount`, optional target size/format overrides, and explicit state-set variants:
+- `render_draw` supports repeated draw-call submission via `draw_count`/`drawCount`,
+  optional `first_vertex`/`firstVertex` and `first_instance`/`firstInstance`,
+  indexed mode via `draw_indexed` with required `index_data`/`indexData`/`indices`,
+  optional `index_format`/`indexFormat` (`uint16`|`uint32`), and optional indexed-draw fields
+  `index_count`/`indexCount`, `first_index`/`firstIndex`, and `base_vertex`/`baseVertex`,
+  optional target size/format overrides, and explicit state-set variants:
   `pipelineMode` (`static` | `redundant`) and `bindGroupMode` (`no-change` | `redundant`).
 - alias names accepted in command inputs:
   - `upload` | `buffer_upload`
   - `copy_buffer_to_texture` | `texture_copy` | `copy_texture` | `copy_buffer_to_buffer` | `copy_texture_to_buffer`
   - `dispatch` | `dispatch_workgroups` | `dispatch_invocations`
   - `kernel_dispatch`
-  - `render_draw` | `draw` | `draw_call`
+  - `render_draw` | `draw` | `draw_call` | `draw_indexed`
 - either `kind` or `command` may carry the command name in command JSON.

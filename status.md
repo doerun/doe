@@ -138,6 +138,21 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 - `bench/workloads.amd.vulkan.json`
 - `bench/workloads.amd.vulkan.extended.json`
 - local operation-scope A/B artifact: `bench/out/upload_64kb_submit_wait_100_vs_50.local.json` (`executionSubmitWaitTotalNs`, `n=30` per side): `submit100` faster at `p50 +19.52%`, `p95 +14.21%`.
+38. Native runtime now exposes explicit queue synchronization mode control:
+- `--queue-sync-mode per-command|deferred` in `fawn-zig-runtime` (`per-command` default preserves existing behavior).
+- deferred mode skips `waitForQueue` after individual submits and performs a single final queue flush after the command loop.
+- `trace-meta` now records `queueSyncMode` for native execution runs (`config/trace-meta.schema.json` updated).
+39. Native `render_draw` command contract now includes explicit draw-offset support:
+- command parser accepts `first_vertex`/`firstVertex` and `first_instance`/`firstInstance`.
+- native render lowering now forwards those values into `wgpuRenderPassEncoderDraw`.
+- defaults remain deterministic (`0`, `0`) when fields are omitted.
+40. WebGPU capability expansion is now tracked in config as code:
+- `config/webgpu-spec-coverage.schema.json` defines contract for machine-readable capability status.
+- `config/webgpu-spec-coverage.json` tracks implemented/partial/planned coverage items and priorities.
+41. Native render path now includes a first indexed-draw slice:
+- command parser accepts `draw_indexed` plus required `index_data`/`indexData`/`indices`, optional `index_format`/`indexFormat`, and `index_count`/`indexCount`, `first_index`/`firstIndex`, `base_vertex`/`baseVertex`.
+- native render lowering now binds a dynamically sized index buffer and emits `wgpuRenderPassEncoderDrawIndexed` when indexed mode is requested.
+- indexed validation is fail-fast: invalid/missing index data or out-of-bounds (`firstIndex + indexCount`) are rejected as unsupported command payloads.
 
 ### Missing in progress
 

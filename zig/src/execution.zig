@@ -166,6 +166,24 @@ pub const ExecutionContext = struct {
         }
     }
 
+    pub fn configureQueueSyncMode(
+        self: *ExecutionContext,
+        sync_mode: QueueSyncMode,
+    ) void {
+        if (self.mode != .native) return;
+        if (self.backend) |*backend| {
+            backend.setQueueSyncMode(sync_mode);
+        }
+    }
+
+    pub fn flushQueue(self: *ExecutionContext) !u64 {
+        if (self.mode != .native) return 0;
+        if (self.backend) |*backend| {
+            return try backend.flushQueue();
+        }
+        return 0;
+    }
+
     pub fn prewarmUploadPath(
         self: *ExecutionContext,
         max_upload_bytes: u64,
@@ -179,6 +197,7 @@ pub const ExecutionContext = struct {
 
 pub const UploadBufferUsageMode = webgpu.UploadBufferUsageMode;
 pub const QueueWaitMode = webgpu.QueueWaitMode;
+pub const QueueSyncMode = webgpu.QueueSyncMode;
 
 pub fn parseUploadBufferUsage(raw: []const u8) ?UploadBufferUsageMode {
     if (std.ascii.eqlIgnoreCase(raw, "copy-dst-copy-src")) return .copy_dst_copy_src;
@@ -189,6 +208,12 @@ pub fn parseUploadBufferUsage(raw: []const u8) ?UploadBufferUsageMode {
 pub fn parseQueueWaitMode(raw: []const u8) ?QueueWaitMode {
     if (std.ascii.eqlIgnoreCase(raw, "process-events")) return .process_events;
     if (std.ascii.eqlIgnoreCase(raw, "wait-any")) return .wait_any;
+    return null;
+}
+
+pub fn parseQueueSyncMode(raw: []const u8) ?QueueSyncMode {
+    if (std.ascii.eqlIgnoreCase(raw, "per-command")) return .per_command;
+    if (std.ascii.eqlIgnoreCase(raw, "deferred")) return .deferred;
     return null;
 }
 

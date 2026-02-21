@@ -3,10 +3,13 @@ const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
+const render_assets = @import("wgpu_render_assets.zig");
+const render_indexing = @import("wgpu_render_indexing.zig");
+const render_proc_mod = @import("wgpu_render_procs.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
-const RenderPassEncoder = ?*anyopaque;
+const RenderPassEncoder = render_proc_mod.RenderPassEncoder;
 const RENDER_LOAD_OP_CLEAR: u32 = 0x00000002;
 const RENDER_STORE_OP_STORE: u32 = 0x00000001;
 const RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: u32 = 0x00000004;
@@ -30,24 +33,6 @@ const RENDER_VERTEX_STEP_MODE_VERTEX: u32 = 0x00000001;
 const RENDER_VERTEX_STRIDE_BYTES: u64 = 4 * @sizeOf(f32);
 const RENDER_UNIFORM_BINDING_INDEX: u32 = 0;
 const RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES: u64 = 3 * @sizeOf(f32);
-
-const RENDER_DRAW_SHADER_SOURCE =
-    \\@group(0) @binding(0) var<uniform> color: vec3f;
-    \\@vertex
-    \\fn vs_main(@location(0) pos: vec4f) -> @builtin(position) vec4f {
-    \\  return pos;
-    \\}
-    \\@fragment
-    \\fn fs_main() -> @location(0) vec4f {
-    \\  return vec4f(color * (1.0 / 5000.0), 1.0);
-    \\}
-;
-const RENDER_DRAW_VERTEX_DATA = [12]f32{
-    0.0, 0.5, 0.0, 1.0,
-    -0.5, -0.5, 0.0, 1.0,
-    0.5, -0.5, 0.0, 1.0,
-};
-const RENDER_DRAW_UNIFORM_COLOR = [3]f32{ 0.0, 0.0, 0.0 };
 
 const RenderColor = extern struct {
     r: f64,
@@ -185,46 +170,7 @@ const RenderPipelineDescriptor = extern struct {
     fragment: ?*const RenderFragmentState,
 };
 
-const FnCommandEncoderBeginRenderPass = *const fn (types.WGPUCommandEncoder, *const RenderPassDescriptor) callconv(.c) RenderPassEncoder;
-const FnDeviceCreateRenderPipeline = *const fn (types.WGPUDevice, *const RenderPipelineDescriptor) callconv(.c) types.WGPURenderPipeline;
-const FnRenderPassEncoderSetPipeline = *const fn (RenderPassEncoder, types.WGPURenderPipeline) callconv(.c) void;
-const FnRenderPassEncoderSetVertexBuffer = *const fn (RenderPassEncoder, u32, types.WGPUBuffer, u64, u64) callconv(.c) void;
-const FnRenderPassEncoderSetBindGroup = *const fn (RenderPassEncoder, u32, types.WGPUBindGroup, usize, ?[*]const u32) callconv(.c) void;
-const FnRenderPassEncoderDraw = *const fn (RenderPassEncoder, u32, u32, u32, u32) callconv(.c) void;
-const FnRenderPassEncoderEnd = *const fn (RenderPassEncoder) callconv(.c) void;
-const FnRenderPassEncoderRelease = *const fn (RenderPassEncoder) callconv(.c) void;
-
-const RenderProcTable = struct {
-    command_encoder_begin_render_pass: FnCommandEncoderBeginRenderPass,
-    device_create_render_pipeline: FnDeviceCreateRenderPipeline,
-    render_pass_encoder_set_pipeline: FnRenderPassEncoderSetPipeline,
-    render_pass_encoder_set_vertex_buffer: FnRenderPassEncoderSetVertexBuffer,
-    render_pass_encoder_set_bind_group: FnRenderPassEncoderSetBindGroup,
-    render_pass_encoder_draw: FnRenderPassEncoderDraw,
-    render_pass_encoder_end: FnRenderPassEncoderEnd,
-    render_pass_encoder_release: FnRenderPassEncoderRelease,
-    render_pipeline_release: types.FnWgpuRenderPipelineRelease,
-};
-
-fn loadRenderProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
-    var mutable = lib;
-    return mutable.lookup(T, name);
-}
-
-fn loadRenderProcs(self: *Backend) ?RenderProcTable {
-    const lib = self.dyn_lib orelse return null;
-    return .{
-        .command_encoder_begin_render_pass = loadRenderProc(FnCommandEncoderBeginRenderPass, lib, "wgpuCommandEncoderBeginRenderPass") orelse return null,
-        .device_create_render_pipeline = loadRenderProc(FnDeviceCreateRenderPipeline, lib, "wgpuDeviceCreateRenderPipeline") orelse return null,
-        .render_pass_encoder_set_pipeline = loadRenderProc(FnRenderPassEncoderSetPipeline, lib, "wgpuRenderPassEncoderSetPipeline") orelse return null,
-        .render_pass_encoder_set_vertex_buffer = loadRenderProc(FnRenderPassEncoderSetVertexBuffer, lib, "wgpuRenderPassEncoderSetVertexBuffer") orelse return null,
-        .render_pass_encoder_set_bind_group = loadRenderProc(FnRenderPassEncoderSetBindGroup, lib, "wgpuRenderPassEncoderSetBindGroup") orelse return null,
-        .render_pass_encoder_draw = loadRenderProc(FnRenderPassEncoderDraw, lib, "wgpuRenderPassEncoderDraw") orelse return null,
-        .render_pass_encoder_end = loadRenderProc(FnRenderPassEncoderEnd, lib, "wgpuRenderPassEncoderEnd") orelse return null,
-        .render_pass_encoder_release = loadRenderProc(FnRenderPassEncoderRelease, lib, "wgpuRenderPassEncoderRelease") orelse return null,
-        .render_pipeline_release = loadRenderProc(types.FnWgpuRenderPipelineRelease, lib, "wgpuRenderPipelineRelease") orelse return null,
-    };
-}
+const RenderProcTable = render_proc_mod.RenderProcTable;
 
 const RenderUniformBindingResources = struct {
     bind_group_layout: types.WGPUBindGroupLayout,
@@ -249,7 +195,7 @@ fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBindin
         self.render_uniform_bind_group_layout = null;
     }
 
-    const uniform_bytes = std.mem.sliceAsBytes(RENDER_DRAW_UNIFORM_COLOR[0..]);
+    const uniform_bytes = std.mem.sliceAsBytes(render_assets.RENDER_DRAW_UNIFORM_COLOR[0..]);
     const uniform_usage = types.WGPUBufferUsage_Uniform | types.WGPUBufferUsage_CopyDst;
     const uniform_bytes_u64 = @as(u64, @intCast(uniform_bytes.len));
     const should_upload_uniform_data = blk: {
@@ -390,9 +336,12 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     if (render.target_width == 0 or render.target_height == 0) {
         return .{ .status = .unsupported, .status_message = "render_draw target dimensions must be > 0" };
     }
+    if (render.index_count != null and render.index_count.? == 0) {
+        return .{ .status = .unsupported, .status_message = "render_draw index_count must be > 0 when provided" };
+    }
 
     const procs = self.procs orelse return error.ProceduralNotReady;
-    const render_procs = loadRenderProcs(self) orelse {
+    const render_procs = render_proc_mod.loadRenderProcs(self.dyn_lib) orelse {
         return .{ .status = .unsupported, .status_message = "render_draw requires render proc symbols" };
     };
 
@@ -419,7 +368,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         target_resource,
         types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
     );
-    const render_vertex_bytes = std.mem.sliceAsBytes(RENDER_DRAW_VERTEX_DATA[0..]);
+    const render_vertex_bytes = std.mem.sliceAsBytes(render_assets.RENDER_DRAW_VERTEX_DATA[0..]);
     const render_vertex_usage = types.WGPUBufferUsage_Vertex | types.WGPUBufferUsage_CopyDst;
     const render_vertex_bytes_u64 = @as(u64, @intCast(render_vertex_bytes.len));
     const should_upload_vertex_data = blk: {
@@ -447,6 +396,16 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             render_vertex_bytes.len,
         );
     }
+    const prepared_index = render_indexing.prepareIndexBuffer(self, render) catch |err| {
+        return .{
+            .status = if (err == error.InvalidIndexedDrawData) .unsupported else .@"error",
+            .status_message = switch (err) {
+                error.InvalidIndexedDrawData => "render_draw indexed mode requires valid index_data and bounds",
+                else => "render_draw index buffer setup failed",
+            },
+        };
+    };
+    const indexed_draw = prepared_index != null;
 
     const normalized_target_format = resources.normalizeTextureFormat(render.target_format);
     const target_format = if (normalized_target_format == types.WGPUTextureFormat_Undefined)
@@ -530,7 +489,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const render_pipeline = if (self.render_pipeline_cache.get(target_format)) |cached|
         cached.pipeline
     else blk: {
-        const shader_module = resources.createShaderModule(self, RENDER_DRAW_SHADER_SOURCE) catch |err| {
+        const shader_module = resources.createShaderModule(self, render_assets.RENDER_DRAW_SHADER_SOURCE) catch |err| {
             return .{
                 .status = .@"error",
                 .status_message = switch (err) {
@@ -695,6 +654,15 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         0,
         types.WGPU_WHOLE_SIZE,
     );
+    if (indexed_draw) {
+        render_procs.render_pass_encoder_set_index_buffer(
+            render_pass,
+            prepared_index.?.buffer,
+            prepared_index.?.format,
+            0,
+            types.WGPU_WHOLE_SIZE,
+        );
+    }
     if (render.pipeline_mode == .static) {
         render_procs.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
     }
@@ -721,7 +689,18 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 null,
             );
         }
-        render_procs.render_pass_encoder_draw(render_pass, render.vertex_count, render.instance_count, 0, 0);
+        if (indexed_draw) {
+            render_procs.render_pass_encoder_draw_indexed(
+                render_pass,
+                render.index_count.?,
+                render.instance_count,
+                render.first_index,
+                render.base_vertex,
+                render.first_instance,
+            );
+        } else {
+            render_procs.render_pass_encoder_draw(render_pass, render.vertex_count, render.instance_count, render.first_vertex, render.first_instance);
+        }
     }
     render_procs.render_pass_encoder_end(render_pass);
 
@@ -738,7 +717,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
     const submit_wait_start_ns = std.time.nanoTimestamp();
     procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.waitForQueue();
+    try self.syncAfterSubmit();
     const submit_wait_end_ns = std.time.nanoTimestamp();
 
     const setup_ns = if (setup_end_ns > setup_start_ns)

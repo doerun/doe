@@ -236,10 +236,26 @@ pub const RenderDrawBindGroupMode = enum {
     redundant,
 };
 
+pub const RenderIndexFormat = enum {
+    uint16,
+    uint32,
+};
+
+pub const RenderIndexData = union(RenderIndexFormat) {
+    uint16: []const u16,
+    uint32: []const u32,
+};
+
 pub const RenderDrawCommand = struct {
     draw_count: u32,
     vertex_count: u32 = 3,
     instance_count: u32 = 1,
+    first_vertex: u32 = 0,
+    first_instance: u32 = 0,
+    index_count: ?u32 = null,
+    first_index: u32 = 0,
+    base_vertex: i32 = 0,
+    index_data: ?RenderIndexData = null,
     target_handle: u64 = DEFAULT_RENDER_TARGET_HANDLE,
     target_width: u32 = DEFAULT_RENDER_TARGET_WIDTH,
     target_height: u32 = DEFAULT_RENDER_TARGET_HEIGHT,

@@ -43,7 +43,7 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
 fn flushPendingUploads(self: *Backend) !void {
     if (self.upload_submit_pending == 0) return;
     self.procs.?.wgpuQueueSubmit(self.queue.?, 0, null);
-    try self.waitForQueue();
+    try self.syncAfterSubmit();
     self.upload_submit_pending = 0;
 }
 
@@ -82,7 +82,7 @@ fn executeUpload(self: *Backend, upload: model.UploadCommand) !types.NativeExecu
     if (self.upload_submit_pending >= self.upload_submit_every) {
         const submit_wait_start_ns = std.time.nanoTimestamp();
         self.procs.?.wgpuQueueSubmit(self.queue.?, 0, null);
-        try self.waitForQueue();
+        try self.syncAfterSubmit();
         const submit_wait_end_ns = std.time.nanoTimestamp();
         submit_wait_ns = if (submit_wait_end_ns > submit_wait_start_ns)
             @as(u64, @intCast(submit_wait_end_ns - submit_wait_start_ns))
@@ -246,7 +246,7 @@ fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionRe
 
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
     procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.waitForQueue();
+    try self.syncAfterSubmit();
 
     return .{
         .status = .ok,
@@ -527,7 +527,7 @@ fn executeKernelDispatchKernel(
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
     const submit_wait_start_ns = std.time.nanoTimestamp();
     procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.waitForQueue();
+    try self.syncAfterSubmit();
     const submit_wait_end_ns = std.time.nanoTimestamp();
 
     var gpu_timestamp_ns: u64 = 0;
@@ -589,7 +589,7 @@ fn executeNoopCommand(self: *Backend, reason: []const u8) !types.NativeExecution
 
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
     procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.waitForQueue();
+    try self.syncAfterSubmit();
 
     return .{ .status = .ok, .status_message = reason };
 }

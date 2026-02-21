@@ -52,6 +52,7 @@ fn printUsage(stdout: anytype) !void {
         \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
         \\ [--queue-wait-mode process-events|wait-any]
+        \\ [--queue-sync-mode per-command|deferred]
         \\ [--kernel-root <path>]
         \\ [--replay <path>]
         \\ [--execute]
@@ -60,7 +61,7 @@ fn printUsage(stdout: anytype) !void {
         \\  copy_buffer_to_texture | texture_copy | copy_texture | copy_buffer_to_buffer | copy_texture_to_buffer | copy_texture_to_texture
         \\  dispatch | dispatch_workgroups | dispatch_invocations
         \\  kernel_dispatch (requires a kernel string)
-        \\  render_draw | draw | draw_call (requires draw_count)
+        \\  render_draw | draw | draw_call | draw_indexed (requires draw_count; draw_indexed requires indexData/indices)
         \\  command can be expressed as "kind", "command", or "command_kind"
         \\  kernel can be expressed as "kernel" or "kernel_name"
         \\If --quirks is omitted, the embedded sample profile is used.
@@ -80,6 +81,9 @@ fn printUsage(stdout: anytype) !void {
         \\--queue-wait-mode controls queue completion waiting strategy for native execution.
         \\  process-events: callback + process-events loop (default).
         \\  wait-any: callback + wgpuInstanceWaitAny wait path (falls back to process-events when unsupported).
+        \\--queue-sync-mode controls when queue synchronization occurs.
+        \\  per-command: waitForQueue after every submit (default).
+        \\  deferred: skip per-submit waits; one final flush after the command loop.
         \\--kernel-root provides a filesystem root for kernel lookup when kernel_dispatch is used.
         \\--replay validates current dispatch rows against a replay artifact path.
         \\
@@ -103,6 +107,24 @@ fn commandKernel(command: model.Command) ?[]const u8 {
     };
 }
 
+fn printJsonU16Array(stdout: anytype, values: []const u16) !void {
+    try stdout.writeByte('[');
+    for (values, 0..) |value, idx| {
+        if (idx != 0) try stdout.writeByte(',');
+        try stdout.print("{}", .{value});
+    }
+    try stdout.writeByte(']');
+}
+
+fn printJsonU32Array(stdout: anytype, values: []const u32) !void {
+    try stdout.writeByte('[');
+    for (values, 0..) |value, idx| {
+        if (idx != 0) try stdout.writeByte(',');
+        try stdout.print("{}", .{value});
+    }
+    try stdout.writeByte(']');
+}
+
 fn optionExpectsValue(option: []const u8) bool {
     return std.mem.eql(u8, option, "--quirks") or
         std.mem.eql(u8, option, "--commands") or
@@ -117,6 +139,7 @@ fn optionExpectsValue(option: []const u8) bool {
         std.mem.eql(u8, option, "--upload-buffer-usage") or
         std.mem.eql(u8, option, "--upload-submit-every") or
         std.mem.eql(u8, option, "--queue-wait-mode") or
+        std.mem.eql(u8, option, "--queue-sync-mode") or
         std.mem.eql(u8, option, "--replay");
 }
 
@@ -203,6 +226,31 @@ fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Command) !
             try stdout.print("{}", .{render_cmd.vertex_count});
             try stdout.writeAll(",\"instanceCount\":");
             try stdout.print("{}", .{render_cmd.instance_count});
+            try stdout.writeAll(",\"firstVertex\":");
+            try stdout.print("{}", .{render_cmd.first_vertex});
+            try stdout.writeAll(",\"firstInstance\":");
+            try stdout.print("{}", .{render_cmd.first_instance});
+            if (render_cmd.index_count) |index_count| {
+                try stdout.writeAll(",\"indexCount\":");
+                try stdout.print("{}", .{index_count});
+                try stdout.writeAll(",\"firstIndex\":");
+                try stdout.print("{}", .{render_cmd.first_index});
+                try stdout.writeAll(",\"baseVertex\":");
+                try stdout.print("{}", .{render_cmd.base_vertex});
+                if (render_cmd.index_data) |index_data| {
+                    try stdout.writeAll(",\"indexFormat\":\"");
+                    switch (index_data) {
+                        .uint16 => |values| {
+                            try stdout.writeAll("uint16\",\"indexData\":");
+                            try printJsonU16Array(stdout, values);
+                        },
+                        .uint32 => |values| {
+                            try stdout.writeAll("uint32\",\"indexData\":");
+                            try printJsonU32Array(stdout, values);
+                        },
+                    }
+                }
+            }
             try stdout.writeAll(",\"targetHandle\":");
             try stdout.print("{}", .{render_cmd.target_handle});
             try stdout.writeAll(",\"targetWidth\":");
@@ -251,6 +299,7 @@ pub fn main() !void {
     var upload_buffer_usage_mode: execution.UploadBufferUsageMode = .copy_dst_copy_src;
     var upload_submit_every: u32 = 1;
     var queue_wait_mode: execution.QueueWaitMode = .process_events;
+    var queue_sync_mode: execution.QueueSyncMode = .per_command;
 
     var i: usize = 1;
     while (i < argv.len) {
@@ -324,6 +373,18 @@ pub fn main() !void {
                 try trace.writef(
                     stdout,
                     "invalid --queue-wait-mode value: {s} (expected process-events|wait-any)\n",
+                    .{argv[i]},
+                );
+                return;
+            }
+        } else if (std.mem.eql(u8, argv[i], "--queue-sync-mode") and i + 1 < argv.len) {
+            i += 1;
+            if (execution.parseQueueSyncMode(argv[i])) |mode| {
+                queue_sync_mode = mode;
+            } else {
+                try trace.writef(
+                    stdout,
+                    "invalid --queue-sync-mode value: {s} (expected per-command|deferred)\n",
                     .{argv[i]},
                 );
                 return;
@@ -407,6 +468,7 @@ pub fn main() !void {
         if (execution_context) |*ctx| {
             ctx.configureUploadBehavior(upload_buffer_usage_mode, upload_submit_every);
             ctx.configureQueueWaitMode(queue_wait_mode);
+            ctx.configureQueueSyncMode(queue_sync_mode);
             const max_upload_bytes = maxUploadBytes(commands);
             if (max_upload_bytes > 0) {
                 try ctx.prewarmUploadPath(max_upload_bytes);
@@ -453,6 +515,7 @@ pub fn main() !void {
         .profile_api = trace.apiName(profile.api),
         .profile_family = profile_family,
         .profile_driver = profile_driver,
+        .queue_sync_mode = if (execution_context != null) @tagName(queue_sync_mode) else null,
     };
     if (execution_context != null) {
         trace_summary.execution_backend = execution.executionModeName(backend_mode);
@@ -585,11 +648,16 @@ pub fn main() !void {
                 },
                 .render_draw => |render_cmd| {
                     try stdout.print(
-                        "  -> render_draw draws={} vertices={} instances={} target={}x{} handle={} pipelineMode={s} bindGroupMode={s}\\n",
+                        "  -> render_draw draws={} vertices={} instances={} firstVertex={} firstInstance={} indexCount={any} firstIndex={} baseVertex={} target={}x{} handle={} pipelineMode={s} bindGroupMode={s}\\n",
                         .{
                             render_cmd.draw_count,
                             render_cmd.vertex_count,
                             render_cmd.instance_count,
+                            render_cmd.first_vertex,
+                            render_cmd.first_instance,
+                            render_cmd.index_count,
+                            render_cmd.first_index,
+                            render_cmd.base_vertex,
                             render_cmd.target_width,
                             render_cmd.target_height,
                             render_cmd.target_handle,
@@ -617,6 +685,13 @@ pub fn main() !void {
                     },
                 );
             }
+        }
+    }
+
+    if (execution_context) |*ctx| {
+        if (queue_sync_mode == .deferred) {
+            const flush_ns = try ctx.flushQueue();
+            trace_summary.execution_submit_wait_total_ns += flush_ns;
         }
     }
 

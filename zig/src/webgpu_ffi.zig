@@ -17,6 +17,11 @@ pub const QueueWaitMode = enum {
     wait_any,
 };
 
+pub const QueueSyncMode = enum {
+    per_command,
+    deferred,
+};
+
 pub const WebGPUBackend = struct {
     const Self = @This();
 
@@ -40,6 +45,7 @@ pub const WebGPUBackend = struct {
     upload_submit_every: u32 = 1,
     upload_submit_pending: u32 = 0,
     queue_wait_mode: QueueWaitMode = .process_events,
+    queue_sync_mode: QueueSyncMode = .per_command,
     kernel_root: ?[]const u8 = null,
     library_error: []const u8 = "",
     requested_backend_type: types.WGPUBackendType = .undefined,
@@ -198,6 +204,23 @@ pub const WebGPUBackend = struct {
 
     pub fn setQueueWaitMode(self: *Self, wait_mode: QueueWaitMode) void {
         self.queue_wait_mode = wait_mode;
+    }
+
+    pub fn setQueueSyncMode(self: *Self, sync_mode: QueueSyncMode) void {
+        self.queue_sync_mode = sync_mode;
+    }
+
+    pub fn syncAfterSubmit(self: *Self) !void {
+        if (self.queue_sync_mode == .per_command) {
+            try self.waitForQueue();
+        }
+    }
+
+    pub fn flushQueue(self: *Self) !u64 {
+        const start = std.time.nanoTimestamp();
+        try self.waitForQueue();
+        const end = std.time.nanoTimestamp();
+        return if (end > start) @as(u64, @intCast(end - start)) else 0;
     }
 
     pub fn prewarmUploadPath(self: *Self, max_upload_bytes: u64) !void {

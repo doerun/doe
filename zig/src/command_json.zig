@@ -125,6 +125,21 @@ const RawCommand = struct {
     vertexCount: ?u32 = null,
     instance_count: ?u32 = null,
     instanceCount: ?u32 = null,
+    first_vertex: ?u32 = null,
+    firstVertex: ?u32 = null,
+    first_instance: ?u32 = null,
+    firstInstance: ?u32 = null,
+    index_count: ?u32 = null,
+    indexCount: ?u32 = null,
+    first_index: ?u32 = null,
+    firstIndex: ?u32 = null,
+    base_vertex: ?i32 = null,
+    baseVertex: ?i32 = null,
+    index_format: ?[]const u8 = null,
+    indexFormat: ?[]const u8 = null,
+    index_data: ?[]u32 = null,
+    indexData: ?[]u32 = null,
+    indices: ?[]u32 = null,
     target_handle: ?u64 = null,
     targetHandle: ?u64 = null,
     target_width: ?u32 = null,
@@ -182,6 +197,14 @@ fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
             allocator.free(kernel_command.kernel);
             if (kernel_command.entry_point) |entry_point| allocator.free(entry_point);
             if (kernel_command.bindings) |bindings| allocator.free(bindings);
+        },
+        .render_draw => |render_command| {
+            if (render_command.index_data) |index_data| {
+                switch (index_data) {
+                    .uint16 => |values| allocator.free(values),
+                    .uint32 => |values| allocator.free(values),
+                }
+            }
         },
         else => {},
     }
@@ -241,7 +264,8 @@ fn parseKind(raw: RawCommand) !NormalizedKind {
     }
     if (commandKindEquals(kind, "render_draw") or
         commandKindEquals(kind, "draw") or
-        commandKindEquals(kind, "draw_call"))
+        commandKindEquals(kind, "draw_call") or
+        commandKindEquals(kind, "draw_indexed"))
     {
         return .render_draw;
     }
@@ -586,6 +610,45 @@ fn parseRenderDrawBindGroupMode(raw: ?[]const u8) !model.RenderDrawBindGroupMode
     return ParseError.InvalidCommandPayload;
 }
 
+fn parseRenderIndexFormat(raw: ?[]const u8) !?model.RenderIndexFormat {
+    const value = raw orelse return null;
+    if (commandKindEquals(value, "uint16") or commandKindEquals(value, "u16")) return .uint16;
+    if (commandKindEquals(value, "uint32") or commandKindEquals(value, "u32")) return .uint32;
+    return ParseError.InvalidCommandPayload;
+}
+
+fn inferRenderIndexFormat(indices: []const u32) model.RenderIndexFormat {
+    for (indices) |value| {
+        if (value > std.math.maxInt(u16)) return .uint32;
+    }
+    return .uint16;
+}
+
+fn parseRenderIndexData(
+    allocator: Allocator,
+    raw_indices: []const u32,
+    requested_format: ?model.RenderIndexFormat,
+) !model.RenderIndexData {
+    const chosen_format = requested_format orelse inferRenderIndexFormat(raw_indices);
+    return switch (chosen_format) {
+        .uint16 => blk: {
+            var values = try allocator.alloc(u16, raw_indices.len);
+            errdefer allocator.free(values);
+            for (raw_indices, 0..) |value, idx| {
+                if (value > std.math.maxInt(u16)) return ParseError.InvalidCommandPayload;
+                values[idx] = @as(u16, @intCast(value));
+            }
+            break :blk .{ .uint16 = values };
+        },
+        .uint32 => blk: {
+            const values = try allocator.alloc(u32, raw_indices.len);
+            errdefer allocator.free(values);
+            @memcpy(values, raw_indices);
+            break :blk .{ .uint32 = values };
+        },
+    };
+}
+
 fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     const kind = try parseKind(raw);
 
@@ -646,6 +709,32 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         const draw_count = raw.draw_count orelse raw.drawCount orelse return ParseError.InvalidCommandPayload;
         const vertex_count = raw.vertex_count orelse raw.vertexCount orelse 3;
         const instance_count = raw.instance_count orelse raw.instanceCount orelse 1;
+        const first_vertex = raw.first_vertex orelse raw.firstVertex orelse 0;
+        const first_instance = raw.first_instance orelse raw.firstInstance orelse 0;
+        const parsed_index_count = raw.index_count orelse raw.indexCount;
+        const is_draw_indexed = blk: {
+            const command_name = getCommandName(raw) orelse break :blk false;
+            break :blk commandKindEquals(command_name, "draw_indexed");
+        };
+        const raw_index_data = raw.index_data orelse raw.indexData orelse raw.indices;
+        const indexed_draw = is_draw_indexed or parsed_index_count != null or raw_index_data != null;
+        const requested_index_format = try parseRenderIndexFormat(raw.index_format orelse raw.indexFormat);
+        const index_data = if (indexed_draw) blk: {
+            const provided = raw_index_data orelse return ParseError.InvalidCommandPayload;
+            if (provided.len == 0) return ParseError.InvalidCommandPayload;
+            break :blk try parseRenderIndexData(allocator, provided, requested_index_format);
+        } else null;
+        errdefer if (index_data) |values| switch (values) {
+            .uint16 => |items| allocator.free(items),
+            .uint32 => |items| allocator.free(items),
+        };
+        const index_data_len_u32 = if (index_data) |values| switch (values) {
+            .uint16 => |items| std.math.cast(u32, items.len) orelse return ParseError.InvalidCommandPayload,
+            .uint32 => |items| std.math.cast(u32, items.len) orelse return ParseError.InvalidCommandPayload,
+        } else 0;
+        const index_count = if (parsed_index_count) |count| count else if (indexed_draw) index_data_len_u32 else null;
+        const first_index = raw.first_index orelse raw.firstIndex orelse 0;
+        const base_vertex = raw.base_vertex orelse raw.baseVertex orelse 0;
         const target_handle = raw.target_handle orelse raw.targetHandle orelse model.DEFAULT_RENDER_TARGET_HANDLE;
         const target_width = raw.target_width orelse raw.targetWidth orelse model.DEFAULT_RENDER_TARGET_WIDTH;
         const target_height = raw.target_height orelse raw.targetHeight orelse model.DEFAULT_RENDER_TARGET_HEIGHT;
@@ -659,11 +748,22 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         if (draw_count == 0 or vertex_count == 0 or instance_count == 0 or target_width == 0 or target_height == 0) {
             return ParseError.InvalidCommandPayload;
         }
+        if (index_count != null and index_count.? == 0) return ParseError.InvalidCommandPayload;
+        if (index_count != null) {
+            const index_end = std.math.add(u32, first_index, index_count.?) catch return ParseError.InvalidCommandPayload;
+            if (index_end > index_data_len_u32) return ParseError.InvalidCommandPayload;
+        }
 
         return .{ .render_draw = .{
             .draw_count = draw_count,
             .vertex_count = vertex_count,
             .instance_count = instance_count,
+            .first_vertex = first_vertex,
+            .first_instance = first_instance,
+            .index_count = index_count,
+            .first_index = first_index,
+            .base_vertex = base_vertex,
+            .index_data = index_data,
             .target_handle = target_handle,
             .target_width = target_width,
             .target_height = target_height,

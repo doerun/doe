@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn WebGPU Spec Coverage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "lastUpdated", "coverage"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "lastUpdated": { "type": "string" },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capabilityId", "domain", "status", "priority", "owner", "contract"],
+        "properties": {
+          "capabilityId": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "render",
+              "compute",
+              "copy",
+              "resource",
+              "pipeline",
+              "queue",
+              "query",
+              "surface"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["implemented", "partial", "planned", "blocked"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["p0", "p1", "p2"]
+          },
+          "owner": { "type": "string" },
+          "contract": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

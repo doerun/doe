@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-02-21",
+  "coverage": [
+    {
+      "capabilityId": "queue_sync_mode",
+      "domain": "queue",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/main.zig --queue-sync-mode, zig/src/webgpu_ffi.zig QueueSyncMode",
+      "notes": "per-command and deferred queue sync modes are available; trace-meta records queueSyncMode."
+    },
+    {
+      "capabilityId": "render_draw_offsets",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/model.zig RenderDrawCommand first_vertex/first_instance",
+      "notes": "command parser supports firstVertex/firstInstance aliases and native render lowering forwards offsets."
+    },
+    {
+      "capabilityId": "render_draw_indexed",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "RenderDrawCommand index_data/index_format/index_count/first_index/base_vertex + native DrawIndexed lowering",
+      "notes": "draw_indexed consumes command-provided index data with explicit or inferred index format and dynamic index-buffer sizing."
+    },
+    {
+      "capabilityId": "render_pass_state_space",
+      "domain": "render",
+      "status": "partial",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "render_draw pipelineMode/bindGroupMode + target format contract",
+      "notes": "current runtime covers fixed triangle draw path with selected Dawn-like state parity; full pass state matrix remains open."
+    },
+    {
+      "capabilityId": "timestamp_query_claimability",
+      "domain": "query",
+      "status": "partial",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "executionGpuTimestampTotalNs trace-meta fields",
+      "notes": "timestamp readback is implemented but still returns zero on some adapter/driver combinations."
+    },
+    {
+      "capabilityId": "surface_presentation",
+      "domain": "surface",
+      "status": "planned",
+      "priority": "p2",
+      "owner": "runtime-core",
+      "contract": "surface + swapchain command lane",
+      "notes": "offscreen command replay is implemented; present/swapchain path remains out of current contract."
+    }
+  ]
+}

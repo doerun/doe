@@ -34,6 +34,7 @@ pub const TraceRunSummary = struct {
     profile_api: []const u8,
     profile_family: ?[]const u8,
     profile_driver: []const u8,
+    queue_sync_mode: ?[]const u8 = null,
 };
 
 pub fn writef(writer: anytype, comptime format: []const u8, args: anytype) !void {
@@ -277,6 +278,11 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     if (summary.execution_backend) |backend| {
         try writer.writeAll("\"executionBackend\":");
         try writeJsonString(&writer, backend);
+        try writer.writeAll(",");
+    }
+    if (summary.queue_sync_mode) |sync_mode| {
+        try writer.writeAll("\"queueSyncMode\":");
+        try writeJsonString(&writer, sync_mode);
         try writer.writeAll(",");
     }
     try writer.writeAll("\"profile\":{");
