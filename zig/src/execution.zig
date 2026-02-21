@@ -24,6 +24,8 @@ pub const ExecutionResult = struct {
     submit_wait_ns: u64,
     dispatch_count: u32,
     gpu_timestamp_ns: u64,
+    gpu_timestamp_attempted: bool,
+    gpu_timestamp_valid: bool,
 };
 
 pub const ExecutionContext = struct {
@@ -76,6 +78,8 @@ pub const ExecutionContext = struct {
             .submit_wait_ns = 0,
             .dispatch_count = 0,
             .gpu_timestamp_ns = 0,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
         };
 
         if (self.mode == .trace) return fallback;
@@ -90,6 +94,8 @@ pub const ExecutionContext = struct {
                 .submit_wait_ns = 0,
                 .dispatch_count = 0,
                 .gpu_timestamp_ns = 0,
+                .gpu_timestamp_attempted = false,
+                .gpu_timestamp_valid = false,
             };
         }
 
@@ -111,6 +117,8 @@ pub const ExecutionContext = struct {
                     .submit_wait_ns = 0,
                     .dispatch_count = 0,
                     .gpu_timestamp_ns = 0,
+                    .gpu_timestamp_attempted = false,
+                    .gpu_timestamp_valid = false,
                 };
             };
             const command_end = std.time.nanoTimestamp();
@@ -129,6 +137,8 @@ pub const ExecutionContext = struct {
                 .submit_wait_ns = status.submit_wait_ns,
                 .dispatch_count = status.dispatch_count,
                 .gpu_timestamp_ns = status.gpu_timestamp_ns,
+                .gpu_timestamp_attempted = status.gpu_timestamp_attempted,
+                .gpu_timestamp_valid = status.gpu_timestamp_valid,
             };
         }
 
@@ -142,6 +152,8 @@ pub const ExecutionContext = struct {
             .submit_wait_ns = 0,
             .dispatch_count = 0,
             .gpu_timestamp_ns = 0,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
         };
     }
 

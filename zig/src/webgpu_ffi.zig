@@ -494,7 +494,11 @@ pub const WebGPUBackend = struct {
         const begin_ts = timestamps[0];
         const end_ts = timestamps[1];
         procs.wgpuBufferUnmap(readback_buffer);
-        const delta = if (end_ts >= begin_ts) end_ts - begin_ts else 0;
+        if (end_ts < begin_ts) {
+            self.timestampLog("mapped_invalid_range begin={} end={}\n", .{ begin_ts, end_ts });
+            return error.TimestampRangeInvalid;
+        }
+        const delta = end_ts - begin_ts;
         self.timestampLog("mapped_begin={} mapped_end={} mapped_delta={}\n", .{ begin_ts, end_ts, delta });
         return delta;
     }

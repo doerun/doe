@@ -585,11 +585,13 @@ fn executeKernelDispatchKernel(
     const submit_wait_end_ns = std.time.nanoTimestamp();
 
     var gpu_timestamp_ns: u64 = 0;
+    var gpu_timestamp_valid = false;
     if (timestamps_active) {
         gpu_timestamp_ns = self.readTimestampBuffer(readback_buffer) catch |err| blk: {
             self.timestampLog("timestamp_readback_error={s}\n", .{@errorName(err)});
             break :blk 0;
         };
+        gpu_timestamp_valid = gpu_timestamp_ns > 0;
         self.timestampLog("timestamp_ns={}\n", .{gpu_timestamp_ns});
     }
 
@@ -618,6 +620,8 @@ fn executeKernelDispatchKernel(
         .submit_wait_ns = submit_wait_ns,
         .dispatch_count = repeat_count,
         .gpu_timestamp_ns = gpu_timestamp_ns,
+        .gpu_timestamp_attempted = timestamps_active,
+        .gpu_timestamp_valid = gpu_timestamp_valid,
     };
 }
 

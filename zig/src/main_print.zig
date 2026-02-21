@@ -219,6 +219,18 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{seq});
             try stdout.writeAll(",\"kind\":\"texture_query\",\"handle\":");
             try stdout.print("{}", .{texture_cmd.handle});
+            if (texture_cmd.expected_width) |expected| {
+                try stdout.writeAll(",\"expectedWidth\":");
+                try stdout.print("{}", .{expected});
+            }
+            if (texture_cmd.expected_height) |expected| {
+                try stdout.writeAll(",\"expectedHeight\":");
+                try stdout.print("{}", .{expected});
+            }
+            if (texture_cmd.expected_depth_or_array_layers) |expected| {
+                try stdout.writeAll(",\"expectedDepthOrArrayLayers\":");
+                try stdout.print("{}", .{expected});
+            }
             try stdout.writeAll("}\n");
         },
         .texture_destroy => |texture_cmd| {
@@ -361,7 +373,20 @@ pub fn printCommandSummary(stdout: anytype, target: model.Command, execute_resul
             });
         },
         .texture_query => |texture_cmd| {
-            try stdout.print("  -> texture_query handle={}\\n", .{texture_cmd.handle});
+            try stdout.print(
+                "  -> texture_query handle={} expectedWidth={any} expectedHeight={any} expectedDepth={any} expectedFormat={any} expectedDimension={any} expectedViewDimension={any} expectedSampleCount={any} expectedUsage={any}\\n",
+                .{
+                    texture_cmd.handle,
+                    texture_cmd.expected_width,
+                    texture_cmd.expected_height,
+                    texture_cmd.expected_depth_or_array_layers,
+                    texture_cmd.expected_format,
+                    texture_cmd.expected_dimension,
+                    texture_cmd.expected_view_dimension,
+                    texture_cmd.expected_sample_count,
+                    texture_cmd.expected_usage,
+                },
+            );
         },
         .texture_destroy => |texture_cmd| {
             try stdout.print("  -> texture_destroy handle={}\\n", .{texture_cmd.handle});
@@ -393,7 +418,7 @@ pub fn printCommandSummary(stdout: anytype, target: model.Command, execute_resul
     }
     if (execute_result) |exec| {
         try stdout.print(
-            "  -> exec backend={s} status={s} statusCode={s} durationNs={} setupNs={} encodeNs={} submitWaitNs={} dispatchCount={}\\n",
+            "  -> exec backend={s} status={s} statusCode={s} durationNs={} setupNs={} encodeNs={} submitWaitNs={} dispatchCount={} gpuTimestampNs={} gpuTimestampAttempted={} gpuTimestampValid={}\\n",
             .{
                 exec.backend,
                 execution.executionStatusName(exec.status),
@@ -403,6 +428,9 @@ pub fn printCommandSummary(stdout: anytype, target: model.Command, execute_resul
                 exec.encode_ns,
                 exec.submit_wait_ns,
                 exec.dispatch_count,
+                exec.gpu_timestamp_ns,
+                exec.gpu_timestamp_attempted,
+                exec.gpu_timestamp_valid,
             },
         );
     }

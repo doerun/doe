@@ -185,6 +185,14 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 - `encodeMode` selects direct render-pass encoding or render-bundle encoding.
 - viewport/scissor/blend-constant/stencil-reference values are applied from command payload fields.
 - bind-group dynamic offsets are validated and applied deterministically (single dynamic uniform offset, stride- and bounds-checked).
+49. Render pass state-space tracking has been promoted to implemented in config coverage:
+- `config/webgpu-spec-coverage.json` now marks `render_pass_state_space` as implemented based on command-driven state controls and deterministic runtime validation.
+50. Timestamp/query reliability reporting is now explicit in trace artifacts:
+- execution rows now include `executionGpuTimestampAttempted` and `executionGpuTimestampValid`.
+- trace-meta now includes `executionGpuTimestampAttemptedCount` and `executionGpuTimestampValidCount`.
+- timestamp readback now fails invalid begin/end ranges instead of silently coercing to zero.
+51. `texture_query` command contract now supports assertion-based validation:
+- optional expected fields for width/height/depth/format/dimension/view-dimension/sample-count/usage are validated against runtime `wgpuTextureGet*` results with fail-fast mismatch taxonomy.
 
 ### Missing in progress
 

@@ -322,6 +322,14 @@ pub const TextureWriteCommand = struct {
 
 pub const TextureQueryCommand = struct {
     handle: u64,
+    expected_width: ?u32 = null,
+    expected_height: ?u32 = null,
+    expected_depth_or_array_layers: ?u32 = null,
+    expected_format: ?WGPUTextureFormat = null,
+    expected_dimension: ?u32 = null,
+    expected_view_dimension: ?u32 = null,
+    expected_sample_count: ?u32 = null,
+    expected_usage: ?WGPUFlags = null,
 };
 
 pub const TextureDestroyCommand = struct {

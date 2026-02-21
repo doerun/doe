@@ -23,7 +23,15 @@
   },
   {
     "kind": "texture_query",
-    "handle": 200
+    "handle": 200,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "viewDimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
   },
   {
     "kind": "render_draw",

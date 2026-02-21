@@ -66,7 +66,7 @@ fn printUsage(stdout: anytype) !void {
         \\  sampler_create | create_sampler
         \\  sampler_destroy | destroy_sampler
         \\  texture_write | write_texture | queue_write_texture
-        \\  texture_query | query_texture
+        \\  texture_query | query_texture (optional expected width/height/depth/format/dimension/viewDimension/sampleCount/usage assertions)
         \\  texture_destroy | destroy_texture
         \\  surface_create | create_surface
         \\  surface_capabilities | get_surface_capabilities
@@ -376,6 +376,8 @@ pub fn main() !void {
         .execution_submit_wait_total_ns = 0,
         .execution_dispatch_count = 0,
         .execution_gpu_timestamp_total_ns = 0,
+        .execution_gpu_timestamp_attempted_count = 0,
+        .execution_gpu_timestamp_valid_count = 0,
         .execution_backend = null,
         .final_hash = trace_state.previous_hash,
         .final_previous_hash = trace_state.previous_hash,
@@ -410,6 +412,8 @@ pub fn main() !void {
             trace_summary.execution_submit_wait_total_ns += executed.submit_wait_ns;
             trace_summary.execution_dispatch_count += @as(u64, executed.dispatch_count);
             trace_summary.execution_gpu_timestamp_total_ns += executed.gpu_timestamp_ns;
+            if (executed.gpu_timestamp_attempted) trace_summary.execution_gpu_timestamp_attempted_count += 1;
+            if (executed.gpu_timestamp_valid) trace_summary.execution_gpu_timestamp_valid_count += 1;
             trace_summary.execution_backend = executed.backend;
             switch (executed.status) {
                 .ok => trace_summary.execution_success_count += 1,

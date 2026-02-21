@@ -122,6 +122,30 @@ pub fn executeTextureQuery(self: *Backend, texture_cmd: model.TextureQueryComman
         if (info.width == 0 or info.height == 0 or info.depth_or_array_layers == 0) {
             return .{ .status = .@"error", .status_message = "texture query returned invalid dimensions" };
         }
+        if (texture_cmd.expected_width) |expected| {
+            if (info.width != expected) return .{ .status = .unsupported, .status_message = "texture query width mismatch" };
+        }
+        if (texture_cmd.expected_height) |expected| {
+            if (info.height != expected) return .{ .status = .unsupported, .status_message = "texture query height mismatch" };
+        }
+        if (texture_cmd.expected_depth_or_array_layers) |expected| {
+            if (info.depth_or_array_layers != expected) return .{ .status = .unsupported, .status_message = "texture query depth mismatch" };
+        }
+        if (texture_cmd.expected_format) |expected| {
+            if (info.format != expected) return .{ .status = .unsupported, .status_message = "texture query format mismatch" };
+        }
+        if (texture_cmd.expected_dimension) |expected| {
+            if (info.dimension != expected) return .{ .status = .unsupported, .status_message = "texture query dimension mismatch" };
+        }
+        if (texture_cmd.expected_view_dimension) |expected| {
+            if (info.view_dimension != expected) return .{ .status = .unsupported, .status_message = "texture query view-dimension mismatch" };
+        }
+        if (texture_cmd.expected_sample_count) |expected| {
+            if (info.sample_count != expected) return .{ .status = .unsupported, .status_message = "texture query sample-count mismatch" };
+        }
+        if (texture_cmd.expected_usage) |expected| {
+            if ((info.usage & expected) != expected) return .{ .status = .unsupported, .status_message = "texture query usage mismatch" };
+        }
         record.width = info.width;
         record.height = info.height;
         record.depth_or_array_layers = info.depth_or_array_layers;

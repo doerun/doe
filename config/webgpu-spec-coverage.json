@@ -95,20 +95,29 @@
     {
       "capabilityId": "render_pass_state_space",
       "domain": "render",
-      "status": "partial",
+      "status": "implemented",
       "priority": "p1",
       "owner": "runtime-core",
       "contract": "render_draw pipelineMode/bindGroupMode + target format contract",
-      "notes": "current runtime covers fixed triangle draw path with selected Dawn-like state parity; full pass state matrix remains open."
+      "notes": "render_draw exposes explicit command-driven pass state (viewport/scissor/blend/stencil, dynamic bind-group offsets, encode mode, indexed/non-indexed variants, static/redundant bind modes) with deterministic validation and lowering."
     },
     {
       "capabilityId": "timestamp_query_claimability",
       "domain": "query",
-      "status": "partial",
+      "status": "implemented",
       "priority": "p1",
       "owner": "runtime-core",
-      "contract": "executionGpuTimestampTotalNs trace-meta fields",
-      "notes": "timestamp readback is implemented but still returns zero on some adapter/driver combinations."
+      "contract": "executionGpuTimestampTotalNs + executionGpuTimestampAttemptedCount + executionGpuTimestampValidCount trace-meta fields",
+      "notes": "timestamp reliability is now explicit in execution artifacts via attempted/valid counters; readback path fails invalid timestamp ranges instead of silently normalizing."
+    },
+    {
+      "capabilityId": "texture_query_assertions",
+      "domain": "resource",
+      "status": "implemented",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "TextureQueryCommand expected_* fields + native texture query validation",
+      "notes": "texture_query can now assert expected width/height/depth/format/dimension/view-dimension/sample-count/usage with fail-fast mismatch reporting."
     }
   ]
 }

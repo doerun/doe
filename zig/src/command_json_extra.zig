@@ -170,7 +170,24 @@ pub fn parseTextureWriteCommand(allocator: std.mem.Allocator, raw: anytype) Pars
 
 pub fn parseTextureQueryCommand(raw: anytype) ParseError!model.TextureQueryCommand {
     const handle = parseTextureHandle(raw) orelse return ParseError.InvalidCommandPayload;
-    return .{ .handle = handle };
+    const format = if (raw.format orelse raw.target_format orelse raw.targetFormat) |raw_format|
+        parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
+    else
+        null;
+    return .{
+        .handle = handle,
+        .expected_width = raw.width,
+        .expected_height = raw.height,
+        .expected_depth_or_array_layers = raw.depth_or_array_layers orelse raw.depthOrArrayLayers orelse raw.depth,
+        .expected_format = format,
+        .expected_dimension = if (raw.dimension != null) parse_helpers.parseTextureDimension(raw.dimension) else null,
+        .expected_view_dimension = if (raw.view_dimension != null or raw.viewDimension != null)
+            parse_helpers.parseTextureViewDimension(raw.view_dimension orelse raw.viewDimension)
+        else
+            null,
+        .expected_sample_count = raw.sample_count orelse raw.sampleCount,
+        .expected_usage = raw.usage,
+    };
 }
 
 pub fn parseTextureDestroyCommand(raw: anytype) ParseError!model.TextureDestroyCommand {

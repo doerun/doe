@@ -15,6 +15,8 @@ pub const NativeExecutionResult = struct {
     submit_wait_ns: u64 = 0,
     dispatch_count: u32 = 0,
     gpu_timestamp_ns: u64 = 0,
+    gpu_timestamp_attempted: bool = false,
+    gpu_timestamp_valid: bool = false,
 };
 
 pub const WGPUInstance = ?*anyopaque;

@@ -47,6 +47,8 @@
     "executionSubmitWaitTotalNs": { "type": "integer", "minimum": 0 },
     "executionDispatchCount": { "type": "integer", "minimum": 0 },
     "executionGpuTimestampTotalNs": { "type": "integer", "minimum": 0 },
+    "executionGpuTimestampAttemptedCount": { "type": "integer", "minimum": 0 },
+    "executionGpuTimestampValidCount": { "type": "integer", "minimum": 0 },
     "schema": { "type": "string" },
     "workload": { "type": "string" },
     "gtestFilter": { "type": "string" },

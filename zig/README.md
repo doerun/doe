@@ -84,6 +84,9 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 - `--trace-meta` execution timing now includes split fields:
   `executionSetupTotalNs`, `executionEncodeTotalNs`, `executionSubmitWaitTotalNs`, `executionDispatchCount`.
   Native execution metadata also records `queueSyncMode` when `--execute` is enabled.
+- GPU timestamp reliability fields are emitted when execution is enabled:
+  per-row `executionGpuTimestampAttempted` / `executionGpuTimestampValid`,
+  and trace-meta counters `executionGpuTimestampAttemptedCount` / `executionGpuTimestampValidCount`.
 - `--replay` mode validates per-row `seq`, `command`, optional `kernel`, `module`, `opCode`, and hash-chain fields.
 
 ## Runtime behavior contract (minimal clone slice)
@@ -142,7 +145,7 @@ Execution capabilities:
 
 Known gaps:
 - GPU timestamp readback returns zero on some adapter/driver combinations (investigation open).
-- render path is currently minimal (`render_draw`) and does not yet model full render-pass state space.
+- render path is currently minimal (`render_draw`) but now applies command-driven pass-state controls (viewport/scissor/blend/stencil, encode mode, dynamic bind-group offsets); broader multi-pass scene orchestration remains open.
 
 Reference commands:
 - `zig build run -- --quirks path/to/quirks.json --commands path/to/commands.json --backend native --execute`
@@ -171,6 +174,8 @@ Reference commands:
   scissor fields (`scissorX`, `scissorY`, `scissorWidth`, `scissorHeight`),
   blend constants (`blendR`, `blendG`, `blendB`, `blendA`),
   `stencilReference`, and `bindGroupDynamicOffsets` (single dynamic-uniform offset).
+- `texture_query` can optionally include expected values (`width`, `height`, `depthOrArrayLayers`, `format`,
+  `dimension`, `viewDimension`, `sampleCount`, `usage`) to assert runtime `wgpuTextureGet*` results.
 - runtime command families now include:
   `sampler_create`/`sampler_destroy`,
   `texture_write`/`texture_query`/`texture_destroy`,

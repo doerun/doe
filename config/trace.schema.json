@@ -37,6 +37,13 @@
     "executionBackend": { "type": "string" },
     "executionStatus": { "type": "string", "enum": ["ok", "skipped", "unsupported", "error"] },
     "executionStatusMessage": { "type": "string" },
-    "executionDurationNs": { "type": "integer", "minimum": 0 }
+    "executionDurationNs": { "type": "integer", "minimum": 0 },
+    "executionSetupNs": { "type": "integer", "minimum": 0 },
+    "executionEncodeNs": { "type": "integer", "minimum": 0 },
+    "executionSubmitWaitNs": { "type": "integer", "minimum": 0 },
+    "executionDispatchCount": { "type": "integer", "minimum": 0 },
+    "executionGpuTimestampNs": { "type": "integer", "minimum": 0 },
+    "executionGpuTimestampAttempted": { "type": "boolean" },
+    "executionGpuTimestampValid": { "type": "boolean" }
   }
 }
