@@ -50,15 +50,32 @@ def run_replay_check(meta_path: Path, trace_jsonl: Path) -> tuple[bool, str]:
 
 def main() -> int:
     args = parse_args()
-    report = load_json(args.report)
+    report_path = Path(args.report)
+    if not report_path.exists():
+        fail(f"missing report: {report_path}")
+        return 1
+
+    try:
+        report = load_json(args.report)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        fail(f"invalid report: {exc}")
+        return 1
+
     if not isinstance(report, dict):
         fail(f"invalid report format: {args.report}")
         return 1
 
-    workloads = report.get("workloads", [])
+    workloads = report.get("workloads")
+    if not isinstance(workloads, list):
+        fail("invalid report format: missing workloads list")
+        return 1
+
     failures: list[str] = []
     checks = 0
-    for workload in workloads:
+    for workload_idx, workload in enumerate(workloads):
+        if not isinstance(workload, dict):
+            failures.append(f"workloads[{workload_idx}] is not an object")
+            continue
         workload_id = workload.get("id", "unknown")
         for side in ("left", "right"):
             side_payload = workload.get(side, {})

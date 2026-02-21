@@ -1,3 +1,22 @@
 # Ignore the oversized raw change dump
 dawn-research/data/raw_changes.ndjson
 .cache/doppler-compare/
+
+# Local toolchains and build caches
+.tooling/
+.zig-global-cache/
+zig/.zig-cache/
+zig/.zig-cache-test/
+zig/.zig-cache-sandbox/
+zig/.zig-global-cache-sandbox/
+zig/zig-out/
+
+# Python cache artifacts
+bench/__pycache__/
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor/temp artifacts
+*.swp
+*.tmp

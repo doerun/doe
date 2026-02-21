@@ -45,29 +45,24 @@ pub fn parseQuirks(allocator: Allocator, text: []const u8) ![]model.Quirk {
     defer parsed.deinit();
 
     var list = std.array_list.Managed(model.Quirk).init(allocator);
+    errdefer {
+        for (list.items) |quirk| {
+            freeQuirkFields(allocator, quirk);
+        }
+        list.deinit();
+    }
     try list.ensureTotalCapacity(parsed.value.len);
 
     for (parsed.value) |raw| {
         const q = try materializeQuirk(allocator, raw);
-        try list.append(q);
+        list.appendAssumeCapacity(q);
     }
     return list.toOwnedSlice();
 }
 
 pub fn freeQuirks(allocator: Allocator, quirks: []model.Quirk) void {
     for (quirks) |quirk| {
-        allocator.free(quirk.quirk_id);
-        allocator.free(quirk.match_spec.vendor);
-        if (quirk.match_spec.device_family) |value| allocator.free(value);
-        if (quirk.match_spec.driver_range) |value| allocator.free(value);
-        switch (quirk.action) {
-            .toggle => |toggle| allocator.free(toggle.toggle_name),
-            .use_temporary_buffer, .no_op => {},
-        }
-        allocator.free(quirk.provenance.source_repo);
-        allocator.free(quirk.provenance.source_path);
-        allocator.free(quirk.provenance.source_commit);
-        allocator.free(quirk.provenance.observed_at);
+        freeQuirkFields(allocator, quirk);
     }
     allocator.free(quirks);
 }
@@ -75,31 +70,52 @@ pub fn freeQuirks(allocator: Allocator, quirks: []model.Quirk) void {
 fn materializeQuirk(allocator: Allocator, raw: RawQuirk) !model.Quirk {
     if (raw.schemaVersion != model.CURRENT_SCHEMA_VERSION) return ParseError.InvalidSchemaVersion;
 
-    const action = try parseAction(allocator, raw.action.kind, raw.action.params);
-    const match_spec = model.MatchSpec{
-        .vendor = try allocator.dupe(u8, raw.match.vendor),
-        .api = try model.parse_api(raw.match.api),
-        .device_family = if (raw.match.deviceFamily) |value| try allocator.dupe(u8, value) else null,
-        .driver_range = if (raw.match.driverRange) |value| try allocator.dupe(u8, value) else null,
-    };
+    const scope = try model.parse_scope(raw.scope);
+    const safety_class = try model.parse_safety(raw.safetyClass);
+    const verification_mode = try model.parse_verification_mode(raw.verificationMode);
+    const proof_level = try model.parse_proof_level(raw.proofLevel);
+    const match_api = try model.parse_api(raw.match.api);
 
-    const provenance = model.Provenance{
-        .source_repo = try allocator.dupe(u8, raw.provenance.sourceRepo),
-        .source_path = try allocator.dupe(u8, raw.provenance.sourcePath),
-        .source_commit = try allocator.dupe(u8, raw.provenance.sourceCommit),
-        .observed_at = try allocator.dupe(u8, raw.provenance.observedAt),
-    };
+    const action = try parseAction(allocator, raw.action.kind, raw.action.params);
+    errdefer freeAction(allocator, action);
+    const match_vendor = try allocator.dupe(u8, raw.match.vendor);
+    errdefer allocator.free(match_vendor);
+    const match_device_family = if (raw.match.deviceFamily) |value| try allocator.dupe(u8, value) else null;
+    errdefer if (match_device_family) |value| allocator.free(value);
+    const match_driver_range = if (raw.match.driverRange) |value| try allocator.dupe(u8, value) else null;
+    errdefer if (match_driver_range) |value| allocator.free(value);
+
+    const source_repo = try allocator.dupe(u8, raw.provenance.sourceRepo);
+    errdefer allocator.free(source_repo);
+    const source_path = try allocator.dupe(u8, raw.provenance.sourcePath);
+    errdefer allocator.free(source_path);
+    const source_commit = try allocator.dupe(u8, raw.provenance.sourceCommit);
+    errdefer allocator.free(source_commit);
+    const observed_at = try allocator.dupe(u8, raw.provenance.observedAt);
+    errdefer allocator.free(observed_at);
+    const quirk_id = try allocator.dupe(u8, raw.quirkId);
+    errdefer allocator.free(quirk_id);
 
     return model.Quirk{
         .schema_version = raw.schemaVersion,
-        .quirk_id = try allocator.dupe(u8, raw.quirkId),
-        .scope = try model.parse_scope(raw.scope),
-        .match_spec = match_spec,
+        .quirk_id = quirk_id,
+        .scope = scope,
+        .match_spec = .{
+            .vendor = match_vendor,
+            .api = match_api,
+            .device_family = match_device_family,
+            .driver_range = match_driver_range,
+        },
         .action = action,
-        .safety_class = try model.parse_safety(raw.safetyClass),
-        .verification_mode = try model.parse_verification_mode(raw.verificationMode),
-        .proof_level = try model.parse_proof_level(raw.proofLevel),
-        .provenance = provenance,
+        .safety_class = safety_class,
+        .verification_mode = verification_mode,
+        .proof_level = proof_level,
+        .provenance = .{
+            .source_repo = source_repo,
+            .source_path = source_path,
+            .source_commit = source_commit,
+            .observed_at = observed_at,
+        },
         .priority = inferPriority(raw.scope, raw.verificationMode, raw.safetyClass),
     };
 }
@@ -175,13 +191,38 @@ fn jsonToString(raw: std.json.Value) ?[]const u8 {
 
 fn jsonToU32(raw: std.json.Value) ?u32 {
     return switch (raw) {
-        .integer => |value| @as(u32, @intCast(value)),
-        .float => |value| if (value >= 0 and std.math.isFinite(value))
-            @as(u32, @intFromFloat(value))
+        .integer => |value| if (value < 0 or value > std.math.maxInt(u32))
+            null
         else
-            null,
+            @as(u32, @intCast(value)),
+        .float => |value| blk: {
+            if (value < 0 or !std.math.isFinite(value)) break :blk null;
+            const max_value = @as(f64, @floatFromInt(std.math.maxInt(u32)));
+            if (value > max_value) break :blk null;
+            if (value != @floor(value)) break :blk null;
+            break :blk @as(u32, @intFromFloat(value));
+        },
         else => null,
     };
+}
+
+fn freeAction(allocator: Allocator, action: model.QuirkAction) void {
+    switch (action) {
+        .toggle => |toggle| allocator.free(toggle.toggle_name),
+        .use_temporary_buffer, .no_op => {},
+    }
+}
+
+fn freeQuirkFields(allocator: Allocator, quirk: model.Quirk) void {
+    allocator.free(quirk.quirk_id);
+    allocator.free(quirk.match_spec.vendor);
+    if (quirk.match_spec.device_family) |value| allocator.free(value);
+    if (quirk.match_spec.driver_range) |value| allocator.free(value);
+    freeAction(allocator, quirk.action);
+    allocator.free(quirk.provenance.source_repo);
+    allocator.free(quirk.provenance.source_path);
+    allocator.free(quirk.provenance.source_commit);
+    allocator.free(quirk.provenance.observed_at);
 }
 
 fn inferPriority(scope: []const u8, verification_mode: []const u8, safety: []const u8) u32 {

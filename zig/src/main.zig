@@ -103,6 +103,23 @@ fn commandKernel(command: model.Command) ?[]const u8 {
     };
 }
 
+fn optionExpectsValue(option: []const u8) bool {
+    return std.mem.eql(u8, option, "--quirks") or
+        std.mem.eql(u8, option, "--commands") or
+        std.mem.eql(u8, option, "--vendor") or
+        std.mem.eql(u8, option, "--api") or
+        std.mem.eql(u8, option, "--family") or
+        std.mem.eql(u8, option, "--driver") or
+        std.mem.eql(u8, option, "--trace-jsonl") or
+        std.mem.eql(u8, option, "--trace-meta") or
+        std.mem.eql(u8, option, "--kernel-root") or
+        std.mem.eql(u8, option, "--backend") or
+        std.mem.eql(u8, option, "--upload-buffer-usage") or
+        std.mem.eql(u8, option, "--upload-submit-every") or
+        std.mem.eql(u8, option, "--queue-wait-mode") or
+        std.mem.eql(u8, option, "--replay");
+}
+
 fn maxUploadBytes(commands: []const model.Command) u64 {
     var max_bytes: u64 = 0;
     for (commands) |command| {
@@ -317,6 +334,18 @@ pub fn main() !void {
             i += 1;
             replay_path = argv[i];
         } else if (std.mem.eql(u8, argv[i], "--help")) {
+            try printUsage(stdout);
+            return;
+        } else if (optionExpectsValue(argv[i])) {
+            try trace.writef(stdout, "missing value for option: {s}\n", .{argv[i]});
+            try printUsage(stdout);
+            return;
+        } else if (std.mem.startsWith(u8, argv[i], "--")) {
+            try trace.writef(stdout, "unknown option: {s}\n", .{argv[i]});
+            try printUsage(stdout);
+            return;
+        } else {
+            try trace.writef(stdout, "unexpected positional argument: {s}\n", .{argv[i]});
             try printUsage(stdout);
             return;
         }
@@ -573,21 +602,21 @@ pub fn main() !void {
                     try stdout.print("  -> barrier {} dependencies\\n", .{barrier_cmd.dependency_count});
                 },
             }
-                if (execute_result) |exec| {
-                    try stdout.print(
-                        "  -> exec backend={s} status={s} statusCode={s} durationNs={} setupNs={} encodeNs={} submitWaitNs={} dispatchCount={}\\n",
-                        .{
-                            exec.backend,
-                            execution.executionStatusName(exec.status),
-                            exec.status_code,
-                            exec.duration_ns,
-                            exec.setup_ns,
-                            exec.encode_ns,
-                            exec.submit_wait_ns,
-                            exec.dispatch_count,
-                        },
-                    );
-                }
+            if (execute_result) |exec| {
+                try stdout.print(
+                    "  -> exec backend={s} status={s} statusCode={s} durationNs={} setupNs={} encodeNs={} submitWaitNs={} dispatchCount={}\\n",
+                    .{
+                        exec.backend,
+                        execution.executionStatusName(exec.status),
+                        exec.status_code,
+                        exec.duration_ns,
+                        exec.setup_ns,
+                        exec.encode_ns,
+                        exec.submit_wait_ns,
+                        exec.dispatch_count,
+                    },
+                );
+            }
         }
     }
 

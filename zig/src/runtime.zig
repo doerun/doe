@@ -338,7 +338,7 @@ fn matchesDriverRange(version: model.SemVer, expr: []const u8) bool {
         } else {
             const rhs = parseVersion(token) orelse return false;
             if (!version.equals(rhs)) return false;
-        } 
+        }
     }
     return true;
 }
@@ -412,6 +412,8 @@ fn applyAction(quirk: model.Quirk, command: model.Command) model.Command {
                         .target_width = render_command.target_width,
                         .target_height = render_command.target_height,
                         .target_format = render_command.target_format,
+                        .pipeline_mode = render_command.pipeline_mode,
+                        .bind_group_mode = render_command.bind_group_mode,
                     },
                 },
                 else => command,

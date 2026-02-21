@@ -30,7 +30,7 @@ pub const RawReplayRow = struct {
     command: ?[]const u8 = null,
     kernel: ?[]const u8 = null,
     hash: ?[]const u8 = null,
-    @"previousHash": ?[]const u8 = null,
+    previousHash: ?[]const u8 = null,
     opCode: ?[]const u8 = null,
     module: ?[]const u8 = null,
 };
@@ -56,15 +56,21 @@ pub fn parseReplayLine(allocator: std.mem.Allocator, expected_module: []const u8
 
     const command = parsed.command orelse return ReplayValidationError.ReplayCommandFieldMissing;
     const hash = parsed.hash orelse return ReplayValidationError.ReplayHashFieldMissing;
-    const previous_hash = parsed.@"previousHash" orelse return ReplayValidationError.ReplayPreviousHashFieldMissing;
+    const previous_hash = parsed.previousHash orelse return ReplayValidationError.ReplayPreviousHashFieldMissing;
     const seq = parsed.seq orelse return ReplayValidationError.ReplaySeqFieldMissing;
+    const command_copy = try allocator.dupe(u8, command);
+    errdefer allocator.free(command_copy);
+    const kernel_copy = if (parsed.kernel) |kernel| try allocator.dupe(u8, kernel) else null;
+    errdefer if (kernel_copy) |kernel| allocator.free(kernel);
+    const hash_parsed = try parseTraceHash(hash);
+    const previous_hash_parsed = try parseTraceHash(previous_hash);
 
     return .{
         .seq = seq,
-        .command = try allocator.dupe(u8, command),
-        .kernel = if (parsed.kernel) |kernel| try allocator.dupe(u8, kernel) else null,
-        .hash = try parseTraceHash(hash),
-        .previous_hash = try parseTraceHash(previous_hash),
+        .command = command_copy,
+        .kernel = kernel_copy,
+        .hash = hash_parsed,
+        .previous_hash = previous_hash_parsed,
     };
 }
 
@@ -73,6 +79,12 @@ pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![
     defer allocator.free(artifact_text);
 
     var expectations = std.array_list.Managed(ReplayExpectation).init(allocator);
+    errdefer {
+        for (expectations.items) |expectation| {
+            freeReplayExpectation(allocator, expectation);
+        }
+        expectations.deinit();
+    }
     var it = std.mem.splitScalar(u8, artifact_text, '\n');
     while (it.next()) |line| {
         const trimmed = std.mem.trim(u8, line, " \t\r\n");
@@ -80,6 +92,7 @@ pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![
         const parsed = try std.json.parseFromSlice(RawReplayRow, allocator, trimmed, .{ .ignore_unknown_fields = true });
         defer parsed.deinit();
         const validated = try parseReplayLine(allocator, "fawn-zig-runtime", &parsed.value);
+        errdefer freeReplayExpectation(allocator, validated);
         try expectations.append(validated);
     }
 
@@ -88,8 +101,7 @@ pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![
 
 pub fn freeReplayExpectations(allocator: std.mem.Allocator, expectations: []ReplayExpectation) void {
     for (expectations) |expectation| {
-        allocator.free(expectation.command);
-        if (expectation.kernel) |kernel| allocator.free(kernel);
+        freeReplayExpectation(allocator, expectation);
     }
     allocator.free(expectations);
 }
@@ -104,4 +116,9 @@ fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
     return try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
+}
+
+fn freeReplayExpectation(allocator: std.mem.Allocator, expectation: ReplayExpectation) void {
+    allocator.free(expectation.command);
+    if (expectation.kernel) |kernel| allocator.free(kernel);
 }

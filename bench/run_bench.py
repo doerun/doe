@@ -276,6 +276,14 @@ def load_workloads(path: str, workload_id: str) -> Workload:
         raise ValueError(f"workload {workload_id!r} not found; available={available}")
 
     cfg = matches[0]
+    raw_extra_args = cfg.get("extraArgs", [])
+    if raw_extra_args is None:
+        raw_extra_args = []
+    if not isinstance(raw_extra_args, list):
+        raise ValueError(
+            f"invalid workload {workload_id!r}: extraArgs must be an array when present"
+        )
+
     return Workload(
         workload_id=cfg["id"],
         name=cfg.get("name", workload_id),
@@ -286,8 +294,18 @@ def load_workloads(path: str, workload_id: str) -> Workload:
         api=cfg.get("api", "vulkan"),
         family=cfg.get("family", "gen12"),
         driver=cfg.get("driver", "31.0.101"),
-        extra_args=cfg.get("extraArgs", []),
+        extra_args=[str(value) for value in raw_extra_args],
     )
+
+
+def render_extra_args(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        return shlex.join(str(arg) for arg in value)
+    return str(value)
 
 
 def command_for(
@@ -308,9 +326,12 @@ def command_for(
         "workload": shlex.quote(workload.workload_id),
         "trace_jsonl": shlex.quote(str(trace_jsonl)),
         "trace_meta": shlex.quote(str(trace_meta)),
-        "extra_args": shlex.join(command_template_args.get("extra_args", [])),
+        "extra_args": render_extra_args(command_template_args.get("extra_args", [])),
     }
-    context.update(command_template_args)
+    for key, value in command_template_args.items():
+        if key == "extra_args":
+            continue
+        context[key] = value
     resolved = template.format(**context)
     return shlex.split(resolved)
 
@@ -386,11 +407,10 @@ def main() -> int:
             trace_meta=sample_trace_meta,
         )
 
-        sample_meta.append(sample_trace_meta)
-
         if run_idx < args.warmup:
             continue
 
+        sample_meta.append(sample_trace_meta)
         timings.append(measured_ms)
         command_records.append(
             {

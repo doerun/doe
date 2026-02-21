@@ -154,10 +154,16 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
     defer parsed.deinit();
 
     var list = std.array_list.Managed(model.Command).init(allocator);
+    errdefer {
+        for (list.items) |command| {
+            freeCommandPayload(allocator, command);
+        }
+        list.deinit();
+    }
     try list.ensureTotalCapacity(parsed.value.len);
 
     for (parsed.value) |raw| {
-        try list.append(try parseOne(allocator, raw));
+        list.appendAssumeCapacity(try parseOne(allocator, raw));
     }
 
     return list.toOwnedSlice();
@@ -165,16 +171,20 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
 
 pub fn freeCommands(allocator: Allocator, commands: []model.Command) void {
     for (commands) |command| {
-        switch (command) {
-            .kernel_dispatch => |kernel_command| {
-                allocator.free(kernel_command.kernel);
-                if (kernel_command.entry_point) |entry_point| allocator.free(entry_point);
-                if (kernel_command.bindings) |bindings| allocator.free(bindings);
-            },
-            else => {},
-        }
+        freeCommandPayload(allocator, command);
     }
     allocator.free(commands);
+}
+
+fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
+    switch (command) {
+        .kernel_dispatch => |kernel_command| {
+            allocator.free(kernel_command.kernel);
+            if (kernel_command.entry_point) |entry_point| allocator.free(entry_point);
+            if (kernel_command.bindings) |bindings| allocator.free(bindings);
+        },
+        else => {},
+    }
 }
 
 fn commandKindEquals(raw_kind: []const u8, kind: []const u8) bool {
@@ -404,6 +414,7 @@ fn parseDispatchDimensions(raw: RawCommand) !model.DispatchCommand {
 
 fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBinding) ![]const model.KernelBinding {
     var bindings = try std.array_list.Managed(model.KernelBinding).initCapacity(allocator, raw_bindings.len);
+    errdefer bindings.deinit();
 
     for (raw_bindings) |raw_binding| {
         const binding_index = raw_binding.binding orelse return ParseError.InvalidCommandPayload;
@@ -446,7 +457,7 @@ fn parseKernelBindingKind(raw_kind: ?[]const u8) ?model.KernelBindingResourceKin
     if (commandKindEquals(value, "texture") or commandKindEquals(value, "sampled_texture") or commandKindEquals(value, "texture_sampled")) {
         return .texture;
     }
-    if (commandKindEquals(value, "storage_texture") or commandKindEquals(value, "storage_texture_binding") or commandKindEquals(value, "storage") ) {
+    if (commandKindEquals(value, "storage_texture") or commandKindEquals(value, "storage_texture_binding") or commandKindEquals(value, "storage")) {
         return .storage_texture;
     }
     return null;
@@ -610,13 +621,14 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     if (kind == .kernel_dispatch or kind == .dispatch) {
         const dispatch = try parseDispatchDimensions(raw);
         if (kind == .kernel_dispatch) {
-            const kernel_name = try allocator.dupe(u8, raw.kernel orelse raw.kernel_name orelse return ParseError.InvalidCommandPayload);
-            const entry_point = if (raw.entry_point) |entry| try allocator.dupe(u8, entry)
-                else if (raw.entryPoint) |entry| try allocator.dupe(u8, entry)
-                else null;
             const repeat_count = raw.repeat orelse raw.dispatch_count orelse raw.dispatchCount orelse 1;
             if (repeat_count == 0) return ParseError.InvalidCommandPayload;
+            const kernel_name = try allocator.dupe(u8, raw.kernel orelse raw.kernel_name orelse return ParseError.InvalidCommandPayload);
+            errdefer allocator.free(kernel_name);
+            const entry_point = if (raw.entry_point) |entry| try allocator.dupe(u8, entry) else if (raw.entryPoint) |entry| try allocator.dupe(u8, entry) else null;
+            errdefer if (entry_point) |entry| allocator.free(entry);
             const kernel_bindings = if (raw.bindings) |raw_bindings| try parseKernelBindings(allocator, raw_bindings) else null;
+            errdefer if (kernel_bindings) |bindings| allocator.free(bindings);
             return .{ .kernel_dispatch = .{
                 .kernel = kernel_name,
                 .entry_point = entry_point,

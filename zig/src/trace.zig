@@ -174,51 +174,64 @@ pub fn printTraceLine(
 ) !void {
     try writef(
         stdout,
-        "{{\"traceVersion\":1,\"module\":\"fawn-zig-runtime\",\"opCode\":\"dispatch\",\"seq\":{},\"timestampMonoNs\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",\"command\":\"{s}\",",
+        "{{\"traceVersion\":1,\"module\":\"fawn-zig-runtime\",\"opCode\":\"dispatch\",\"seq\":{},\"timestampMonoNs\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",\"command\":",
         .{
             seq,
             timestamp_ns,
             hash,
             previous_hash,
-            command_label,
         },
     );
+    try writeJsonString(stdout, command_label);
+    try stdout.writeByte(',');
 
     if (kernel_name) |kernel| {
-        try writef(stdout, "\"kernel\":\"{s}\",", .{kernel});
+        try stdout.writeAll("\"kernel\":");
+        try writeJsonString(stdout, kernel);
+        try stdout.writeByte(',');
     }
 
     if (result.decision.matched_quirk_id) |quirk| {
-        try writef(stdout, "\"matched\":\"{s}\",", .{quirk});
+        try stdout.writeAll("\"matched\":");
+        try writeJsonString(stdout, quirk);
+        try stdout.writeByte(',');
     } else {
-        try writef(stdout, "\"matched\":null,", .{});
+        try stdout.writeAll("\"matched\":null,");
     }
 
+    try stdout.writeAll("\"scope\":");
+    try writeJsonString(stdout, scopeName(result.decision.matched_scope));
+    try stdout.writeAll(",\"safetyClass\":");
+    try writeJsonString(stdout, safetyClassName(result.decision.matched_safety_class));
+    try stdout.writeAll(",\"verificationMode\":");
+    try writeJsonString(stdout, verificationModeName(result.decision.verification_mode));
+    try stdout.writeAll(",\"proofLevel\":");
+    try writeJsonString(stdout, proofLevelName(result.decision.proof_level));
     try writef(
         stdout,
-        "\"scope\":\"{s}\",\"safetyClass\":\"{s}\",\"verificationMode\":\"{s}\",\"proofLevel\":\"{s}\",\"requiresLean\":{},\"blocking\":{},\"score\":{},\"matched_count\":{},\"action\":\"{s}\",\"toggle\":\"{s}\"",
+        ",\"requiresLean\":{},\"blocking\":{},\"score\":{},\"matched_count\":{},\"action\":",
         .{
-            scopeName(result.decision.matched_scope),
-            safetyClassName(result.decision.matched_safety_class),
-            verificationModeName(result.decision.verification_mode),
-            proofLevelName(result.decision.proof_level),
             result.decision.requires_lean,
             result.decision.is_blocking,
             result.decision.score,
             result.decision.matched_count,
-            actionName(result.decision.action),
-            result.decision.applied_toggle orelse "none",
         },
     );
+    try writeJsonString(stdout, actionName(result.decision.action));
+    try stdout.writeAll(",\"toggle\":");
+    try writeJsonString(stdout, result.decision.applied_toggle orelse "none");
 
     if (maybe_execution) |exec| {
+        try stdout.writeAll(",\"executionBackend\":");
+        try writeJsonString(stdout, exec.backend);
+        try stdout.writeAll(",\"executionStatus\":");
+        try writeJsonString(stdout, execution.executionStatusName(exec.status));
+        try stdout.writeAll(",\"executionStatusMessage\":");
+        try writeJsonString(stdout, exec.status_code);
         try writef(
             stdout,
-            ",\"executionBackend\":\"{s}\",\"executionStatus\":\"{s}\",\"executionStatusMessage\":\"{s}\",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampNs\":{}",
+            ",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampNs\":{}",
             .{
-                exec.backend,
-                execution.executionStatusName(exec.status),
-                exec.status_code,
                 exec.duration_ns,
                 exec.setup_ns,
                 exec.encode_ns,
@@ -262,7 +275,9 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
         summary.final_previous_hash,
     });
     if (summary.execution_backend) |backend| {
-        try writef(writer, "\"executionBackend\":\"{s}\",", .{backend});
+        try writer.writeAll("\"executionBackend\":");
+        try writeJsonString(&writer, backend);
+        try writer.writeAll(",");
     }
     try writer.writeAll("\"profile\":{");
     try writer.writeAll("\"vendor\":");

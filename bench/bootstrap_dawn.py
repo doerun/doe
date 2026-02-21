@@ -315,7 +315,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--build-system",
         choices=["cmake", "gn"],
-        default="cmake",
+        default="gn",
         help="Build system backend for Dawn bootstrap.",
     )
     parser.add_argument(
@@ -555,7 +555,12 @@ def main() -> int:
     build_dir = Path(args.build_dir).resolve()
     out_state = Path(args.output_state).resolve()
 
-    if args.build_system == "cmake" and "dawn_perf_tests" in args.targets:
+    if (
+        not args.manifest_only
+        and not args.skip_build
+        and args.build_system == "cmake"
+        and "dawn_perf_tests" in args.targets
+    ):
         raise RuntimeError(
             "dawn_perf_tests is not exposed as a CMake target here. Use --build-system gn with --build-type Release."
         )
