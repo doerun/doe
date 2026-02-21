@@ -153,6 +153,10 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 - command parser accepts `draw_indexed` plus required `index_data`/`indexData`/`indices`, optional `index_format`/`indexFormat`, and `index_count`/`indexCount`, `first_index`/`firstIndex`, `base_vertex`/`baseVertex`.
 - native render lowering now binds a dynamically sized index buffer and emits `wgpuRenderPassEncoderDrawIndexed` when indexed mode is requested.
 - indexed validation is fail-fast: invalid/missing index data or out-of-bounds (`firstIndex + indexCount`) are rejected as unsupported command payloads.
+42. Render core API wiring is now first-class in the shared WebGPU proc table:
+- `wgpuDeviceCreateRenderPipeline`, `wgpuCommandEncoderBeginRenderPass`, and `wgpuRenderPassEncoder*` draw/bind/end/release entry points are now declared in `zig/src/wgpu_types.zig` and loaded through `zig/src/wgpu_loader.zig`.
+- `render_draw` now consumes these canonical backend proc fields directly (`zig/src/wgpu_render_commands.zig`) instead of ad-hoc per-call symbol lookup.
+- unsupported render symbols remain explicit fail-fast runtime errors (`unsupported` status), preserving deterministic no-fallback behavior.
 
 ### Missing in progress
 

@@ -30,6 +30,15 @@
       "notes": "draw_indexed consumes command-provided index data with explicit or inferred index format and dynamic index-buffer sizing."
     },
     {
+      "capabilityId": "render_core_api_surface",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_types.zig Procs + zig/src/wgpu_loader.zig loadProcs + zig/src/wgpu_render_commands.zig executeRenderDraw",
+      "notes": "core render-pass APIs are first-class in the shared proc table: DeviceCreateRenderPipeline, CommandEncoderBeginRenderPass, RenderPassEncoder SetPipeline/SetVertexBuffer/SetIndexBuffer/SetBindGroup, Draw/DrawIndexed/(Indirect variants), End, and Release. current render_draw contract uses direct/indexed draws; indirect entry points are loaded and available for next command-contract expansion. render_draw fails fast as unsupported when required symbols are absent."
+    },
+    {
       "capabilityId": "render_pass_state_space",
       "domain": "render",
       "status": "partial",

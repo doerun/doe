@@ -125,6 +125,7 @@ Execution capabilities:
 - queue synchronization timing is configurable via `--queue-sync-mode per-command|deferred` (default: `per-command`);
   deferred mode skips per-submit waits and performs one final queue flush after the command loop.
 - `kernel_dispatch` runs through full compute pipeline lowering with bind groups and optional GPU timestamp queries.
+- render core APIs (`DeviceCreateRenderPipeline`, `CommandEncoderBeginRenderPass`, and `RenderPassEncoder*` state/draw/end/release calls) are wired through the shared `wgpu_types.zig` proc table and loaded in `wgpu_loader.zig`.
 - `render_draw` runs through a native render-pass path with a Dawn-aligned centered-triangle vertex-buffer pipeline, static fragment uniform bind-group parity, depth24plus-stencil8 attachment, per-format pipeline caching, cached render/depth texture views, and repeated draw calls.
 - kernel lookup supports `--kernel-root` and built-in marker fallback kernels.
 - wall-time, setup, encode, and submit-wait timing split into trace rows and `--trace-meta`.

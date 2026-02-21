@@ -5,11 +5,9 @@ const loader = @import("wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
 const render_assets = @import("wgpu_render_assets.zig");
 const render_indexing = @import("wgpu_render_indexing.zig");
-const render_proc_mod = @import("wgpu_render_procs.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
-const RenderPassEncoder = render_proc_mod.RenderPassEncoder;
 const RENDER_LOAD_OP_CLEAR: u32 = 0x00000002;
 const RENDER_STORE_OP_STORE: u32 = 0x00000001;
 const RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: u32 = 0x00000004;
@@ -169,8 +167,6 @@ const RenderPipelineDescriptor = extern struct {
     multisample: RenderMultisampleState,
     fragment: ?*const RenderFragmentState,
 };
-
-const RenderProcTable = render_proc_mod.RenderProcTable;
 
 const RenderUniformBindingResources = struct {
     bind_group_layout: types.WGPUBindGroupLayout,
@@ -341,8 +337,38 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     }
 
     const procs = self.procs orelse return error.ProceduralNotReady;
-    const render_procs = render_proc_mod.loadRenderProcs(self.dyn_lib) orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires render proc symbols" };
+    const device_create_render_pipeline = procs.wgpuDeviceCreateRenderPipeline orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const command_encoder_begin_render_pass = procs.wgpuCommandEncoderBeginRenderPass orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_set_pipeline = procs.wgpuRenderPassEncoderSetPipeline orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_set_vertex_buffer = procs.wgpuRenderPassEncoderSetVertexBuffer orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_set_index_buffer = procs.wgpuRenderPassEncoderSetIndexBuffer orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_set_bind_group = procs.wgpuRenderPassEncoderSetBindGroup orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_draw = procs.wgpuRenderPassEncoderDraw orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_draw_indexed = procs.wgpuRenderPassEncoderDrawIndexed orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_end = procs.wgpuRenderPassEncoderEnd orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pass_encoder_release = procs.wgpuRenderPassEncoderRelease orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
+    };
+    const render_pipeline_release = procs.wgpuRenderPipelineRelease orelse {
+        return .{ .status = .unsupported, .status_message = "render_draw requires render-pass proc symbols" };
     };
 
     const setup_start_ns = std.time.nanoTimestamp();
@@ -555,7 +581,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         };
         defer procs.wgpuPipelineLayoutRelease(render_pipeline_layout);
 
-        const pipeline = render_procs.device_create_render_pipeline(self.device.?, &RenderPipelineDescriptor{
+        const pipeline = device_create_render_pipeline(self.device.?, &RenderPipelineDescriptor{
             .nextInChain = null,
             .label = loader.stringView("fawn.render_draw"),
             .layout = render_pipeline_layout,
@@ -594,7 +620,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             .shader_module = shader_module,
             .pipeline = pipeline,
         }) catch {
-            render_procs.render_pipeline_release(pipeline);
+            render_pipeline_release(pipeline);
             procs.wgpuShaderModuleRelease(shader_module);
             return .{ .status = .@"error", .status_message = "render_draw pipeline cache insert failed" };
         };
@@ -633,7 +659,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         .stencilClearValue = RENDER_STENCIL_CLEAR_VALUE,
         .stencilReadOnly = types.WGPU_FALSE,
     };
-    const render_pass = render_procs.command_encoder_begin_render_pass(encoder, &RenderPassDescriptor{
+    const render_pass = command_encoder_begin_render_pass(encoder, &RenderPassDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .colorAttachmentCount = 1,
@@ -645,9 +671,9 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     if (render_pass == null) {
         return .{ .status = .@"error", .status_message = "render_draw begin render pass failed" };
     }
-    defer render_procs.render_pass_encoder_release(render_pass);
+    defer render_pass_encoder_release(render_pass);
 
-    render_procs.render_pass_encoder_set_vertex_buffer(
+    render_pass_encoder_set_vertex_buffer(
         render_pass,
         0,
         render_vertex_buffer,
@@ -655,7 +681,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         types.WGPU_WHOLE_SIZE,
     );
     if (indexed_draw) {
-        render_procs.render_pass_encoder_set_index_buffer(
+        render_pass_encoder_set_index_buffer(
             render_pass,
             prepared_index.?.buffer,
             prepared_index.?.format,
@@ -664,10 +690,10 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         );
     }
     if (render.pipeline_mode == .static) {
-        render_procs.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+        render_pass_encoder_set_pipeline(render_pass, render_pipeline);
     }
     if (render.bind_group_mode == .no_change) {
-        render_procs.render_pass_encoder_set_bind_group(
+        render_pass_encoder_set_bind_group(
             render_pass,
             RENDER_UNIFORM_BINDING_INDEX,
             render_uniform_resources.bind_group,
@@ -678,10 +704,10 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     var draw_index: u32 = 0;
     while (draw_index < render.draw_count) : (draw_index += 1) {
         if (render.pipeline_mode == .redundant) {
-            render_procs.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+            render_pass_encoder_set_pipeline(render_pass, render_pipeline);
         }
         if (render.bind_group_mode == .redundant) {
-            render_procs.render_pass_encoder_set_bind_group(
+            render_pass_encoder_set_bind_group(
                 render_pass,
                 RENDER_UNIFORM_BINDING_INDEX,
                 render_uniform_resources.bind_group,
@@ -690,7 +716,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             );
         }
         if (indexed_draw) {
-            render_procs.render_pass_encoder_draw_indexed(
+            render_pass_encoder_draw_indexed(
                 render_pass,
                 render.index_count.?,
                 render.instance_count,
@@ -699,10 +725,10 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 render.first_instance,
             );
         } else {
-            render_procs.render_pass_encoder_draw(render_pass, render.vertex_count, render.instance_count, render.first_vertex, render.first_instance);
+            render_pass_encoder_draw(render_pass, render.vertex_count, render.instance_count, render.first_vertex, render.first_instance);
         }
     }
-    render_procs.render_pass_encoder_end(render_pass);
+    render_pass_encoder_end(render_pass);
 
     const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
         .nextInChain = null,
