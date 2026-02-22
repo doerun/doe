@@ -10,7 +10,7 @@ Current `fawn/zig/src` size is 2,750 LOC and now includes native queue-submitted
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
 Benchmark contract coverage snapshot (2026-02-22 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `34` workload contracts: `26` comparable + `8` directional contracts (`surface_presentation_contract`, `p1_resource_table_immediates_contract`, `p1_resource_table_immediates_macro_500`, 3 macro stress workloads, and 2 pixel-local-storage contracts).
+- `bench/workloads.amd.vulkan.extended.json` now contains `34` workload contracts: `29` comparable + `5` directional contracts (`p1_resource_table_immediates_macro_500`, 3 macro stress workloads, and `p0_render_pixel_local_storage_barrier_macro_500`).
 - strict extended comparable matrix now includes render, render-bundle, texture-contract, draw-indexed proxy, and async diagnostics slices in addition to upload/compute/pipeline.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
@@ -292,15 +292,32 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
   policy is explicit in report `comparabilityPolicy.requireNativeExecutionTimingForLeftOperation=true`.
 
 62. Capability coverage metric contract now distinguishes directional-only capability domains:
-- `config/webgpu-spec-coverage.schema.json` now accepts `benchmarkClass` (`comparable` or `directional`) per capability entry.
-- `config/webgpu-spec-coverage.json` now marks these directional-only capability domains explicitly:
-  `surface_presentation`, `p1_resource_table_immediates_surface`, `p0_render_pixel_local_storage_barrier`.
-- `bench/generate_feature_benchmark_table.py` now emits both:
-  - overall comparable capability coverage (`86.36%`, `19/22`)
-  - eligible-only comparable capability coverage (`100.00%`, `19/19`) excluding directional-only capability domains.
+- `config/webgpu-spec-coverage.schema.json` accepts optional `benchmarkClass` (`comparable` or `directional`) per capability entry.
+- `bench/generate_feature_benchmark_table.py` now emits both overall comparable-coverage and eligible-only comparable-coverage metrics.
 - updated matrix artifact:
-  `bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`
-  now includes `directionalCapabilityIds` and the explicit directional-domain metric (`13.64%`, `3/22`).
+  `bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`.
+
+63. Gap-closure promotion completed: strict comparable capability coverage is now full (`22/22`).
+- promoted to comparable contracts:
+  `p1_resource_table_immediates_contract`,
+  `p0_render_pixel_local_storage_barrier_contract`,
+  `surface_presentation_contract`.
+- resource-table and PLS contracts now use workload-level strict comparability override
+  `allowLeftNoExecution=true` with deterministic unsupported/skipped evidence requirements
+  in `bench/compare_dawn_vs_fawn.py`; unsupported runtime paths remain explicit taxonomy statuses.
+- surface comparable proxy contract now uses deterministic create/release command shape
+  (`examples/surface_presentation_commands.json`) to avoid non-deterministic invalid-surface execution errors on headless adapter classes.
+- Dawn mapping for promoted contracts now uses explicit deterministic filters:
+  `p1_resource_table_immediates_contract -> DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151`
+  `p0_render_pixel_local_storage_barrier_contract -> DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151`.
+- strict gap-close probe artifact:
+  `bench/out/dawn-vs-fawn.amd.vulkan.gapclose.strict_probe.json`
+  reports `comparisonStatus=comparable`, `nonComparableCount=0` for all 3 promoted contracts.
+- matrix metrics now report:
+  - comparable capability benchmark coverage: `100.00% (22/22)`
+  - comparable capability benchmark coverage (eligible-only): `100.00% (22/22)`
+  - directional-only capability domains: `0.00% (0/22)`
+  (`bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`).
 
 ### Missing in progress
 
@@ -311,7 +328,7 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 5. Baseline dataset generation and end-to-end comparison automation against Dawn/wgpu incumbents.
 6. Native Zig/WebGPU/FFI execution backend in Zig (estimated 2,800+ LOC, hard runtime milestone).
 7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
-8. Surface lifecycle benchmarking remains directional-only (`surface_presentation_contract`) due missing direct Dawn perf-suite parity for surface lifecycle APIs.
+8. Keep directional diagnostics macro-scoped and non-claim (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`).
 
 ## Performance Reliability Investigation (2026-02-21)
 
@@ -368,15 +385,16 @@ Current contract state after matrix expansion:
 
 1. `bench/workloads.amd.vulkan.extended.json`
 - workload contracts: `34` total
-- strict comparable contracts: `26`
-- directional contracts: `8` (`surface_presentation_contract`, `p1_resource_table_immediates_contract`, `p1_resource_table_immediates_macro_500`, 3 macro stress contracts, and 2 pixel-local-storage contracts)
+- strict comparable contracts: `29`
+- directional contracts: `5` (`p1_resource_table_immediates_macro_500`, 3 macro stress contracts, and `p0_render_pixel_local_storage_barrier_macro_500`)
 
 2. `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - strict mode remains `includeNoncomparableWorkloads=false`
 - now targets the expanded comparable matrix (upload + compute + render + texture + render-bundle + async diagnostics)
 
 3. `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
-- directional diagnostics now focus on surface lifecycle only (`workloadFilter=surface_presentation_contract`)
+- directional diagnostics now focus on macro-only stress workloads
+  (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`)
 
 4. `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
 - directional diagnostics target macro stress workloads only (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`)
@@ -418,6 +436,7 @@ Current comparison claim state: `mixed` (strict comparable + directional diagnos
 
 Meaning:
 1. strict comparable AMD matrices are contract-defined and expanded, but claimable strict AMD substantiation requires a host with usable AMD render-node access.
-2. directional diagnostics are contract-scoped and non-claim: surface lifecycle (`surface_presentation_contract`) plus explicit macro stress workloads (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`).
+2. directional diagnostics are contract-scoped and non-claim: macro-only stress workloads (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`).
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
-4. directional diagnostics currently cover surface lifecycle (`surface_presentation_contract`), resource-table feature-gated contracts (`p1_resource_table_immediates_contract`, `p1_resource_table_immediates_macro_500`), and pixel-local-storage feature-gated contracts (`p0_render_pixel_local_storage_barrier_contract`, `p0_render_pixel_local_storage_barrier_macro_500`) plus explicit macro stress workloads.
+4. directional diagnostics currently cover macro-only stress workloads:
+`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`.

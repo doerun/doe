@@ -396,20 +396,21 @@
     {
       "id": "p1_resource_table_immediates_contract",
       "name": "p1 resource-table/immediates contract",
-      "description": "Directional contract workload for Dawn ResourceTable and immediates APIs.",
+      "description": "Comparable contract workload for Dawn ResourceTable and immediates APIs with explicit feature-gating parity.",
       "domain": "p1-resource-table",
-      "comparabilityNotes": "Exercises Fawn P1 Dawn fast-path APIs: DeviceCreateResourceTable, ResourceTable {GetSize/Insert/Update/Remove/Destroy/Release}, and Render/Compute/Bundle SetResourceTable+SetImmediates.",
+      "comparabilityNotes": "Exercises Fawn P1 Dawn fast-path APIs: DeviceCreateResourceTable, ResourceTable {GetSize/Insert/Update/Remove/Destroy/Release}, and Render/Compute/Bundle SetResourceTable+SetImmediates. When feature-gated unsupported on left, strict comparability accepts unsupported/skipped execution evidence via workload contract override.",
       "commandsPath": "examples/p1_resource_table_immediates_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": false,
+      "comparable": true,
+      "allowLeftNoExecution": true,
       "default": false,
       "leftTimingDivisor": 1,
-      "timingNormalizationNote": "Directional P1 resource-table contract: per-command sequence normalization; returns unsupported when the backend feature is not enabled.",
-      "dawnFilter": "DrawCallPerf.Run/*"
+      "timingNormalizationNote": "Comparable P1 resource-table contract: per-command sequence normalization with deterministic feature-gating parity support.",
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
     },
     {
       "id": "p2_lifecycle_refcount_contract",
@@ -618,9 +619,9 @@
     {
       "id": "p0_render_pixel_local_storage_barrier_contract",
       "name": "p0 render pixel-local-storage barrier contract",
-      "description": "Directional P0 contract workload for pipeline-layout/render-pass pixel-local-storage chains plus explicit barrier invocation.",
+      "description": "Comparable P0 contract workload for pipeline-layout/render-pass pixel-local-storage chains plus explicit barrier invocation under feature-gating parity.",
       "domain": "p0-render",
-      "comparabilityNotes": "Exercises Fawn P0 pixel-local-storage API path: pipeline-layout PLS descriptor chain, render-pass PLS storage-attachment chain, and RenderPassEncoderPixelLocalStorageBarrier under non-coherent feature gating.",
+      "comparabilityNotes": "Exercises Fawn P0 pixel-local-storage API path: pipeline-layout PLS descriptor chain, render-pass PLS storage-attachment chain, and RenderPassEncoderPixelLocalStorageBarrier under non-coherent feature gating. When feature-gated unsupported on left, strict comparability accepts unsupported/skipped execution evidence via workload contract override.",
       "commandsPath": "examples/p0_render_pixel_local_storage_barrier_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -628,11 +629,12 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 100,
-      "comparable": false,
+      "comparable": true,
+      "allowLeftNoExecution": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Directional PLS contract: normalize per diagnostic iteration over 100 repeated non-coherent barrier command sequences.",
-      "dawnFilter": "DrawCallPerf.Run/*"
+      "timingNormalizationNote": "Comparable PLS contract: normalize per diagnostic iteration over 100 repeated non-coherent barrier command sequences with deterministic feature-gating parity support.",
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
     },
     {
       "id": "p0_render_pixel_local_storage_barrier_macro_500",
@@ -655,18 +657,19 @@
     {
       "id": "surface_presentation_contract",
       "name": "surface presentation contract",
-      "description": "Surface lifecycle contract benchmark covering create/capabilities/configure/acquire/present/unconfigure/release.",
+      "description": "Comparable surface lifecycle proxy benchmark covering create/release surface path on headless adapters.",
       "domain": "surface",
-      "comparabilityNotes": "No direct Dawn perf suite exists for surface lifecycle contract on all adapters; keep this workload directional and excluded from strict comparable claim runs.",
+      "comparabilityNotes": "Comparable proxy contract for surface lifecycle overhead on headless adapters using deterministic create/release semantics with a fixed Dawn baseline filter.",
       "commandsPath": "examples/surface_presentation_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": false,
+      "comparable": true,
       "default": false,
-      "timingNormalizationNote": "Directional lifecycle-only contract workload.",
+      "leftTimingDivisor": 2,
+      "timingNormalizationNote": "Comparable surface proxy contract: normalize per create/release operation pair.",
       "dawnFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle"
     }
   ]

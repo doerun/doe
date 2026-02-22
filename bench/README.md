@@ -50,6 +50,7 @@ Template placeholders:
 
 - `fawn/bench/workloads.json` defines replay workloads, default profiles, and command seed artifacts.
 - each workload includes `comparable` to declare whether mapping quality is apples-to-apples (`true`) or directional (`false`).
+- workloads may set `allowLeftNoExecution: true` to allow strict comparability for deterministic feature-gated paths when left runtime reports unsupported/skipped execution evidence and zero execution errors.
 - each workload can include `default: false`; these extended workloads are skipped unless `--include-extended-workloads` or explicit `--workload-filter` is provided.
 - workloads are tagged with `domain` and `comparabilityNotes` for report transparency.
 - current comparable default matrix is upload scaling: `buffer_upload_{1kb,64kb,1mb,4mb,16mb}`.
@@ -114,6 +115,7 @@ python3 fawn/bench/compare_dawn_vs_fawn.py \
 - strict mode also exits non-zero when a selected workload contract is explicitly marked non-comparable (`comparable=false`).
 - `--require-timing-class operation` (default): require operation-level timings on both sides.
 - `--allow-left-no-execution`: opt out if left trace-meta has no `executionSuccessCount`/`executionRowCount`.
+- workload-level `allowLeftNoExecution: true` provides the same opt-out per workload contract and still requires explicit unsupported/skipped execution evidence when no successful execution samples are present.
 - strict mode rejects samples with runtime execution failures (`executionErrorCount > 0`) on either side.
 - Dawn adapter now fails fast when a gtest filter matches zero tests (`Running 0 tests` / filter no-match warning) so startup-only runs cannot be reported as comparable timings.
 - non-comparable workload mappings are excluded by default using `workloads.json` `comparable: false`.
@@ -203,10 +205,10 @@ Extended workload domains now include:
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
 - async pipeline diagnostics contract workload (mapped to `ShaderRobustnessPerf` pipeline-compilation baseline) covering `CreateRenderPipelineAsync`, error scopes, and shader compilation-info API paths.
 - comparable P0 API contracts now include resource lifecycle, compute indirect/timestamps, and render multidraw variants.
-- directional API contracts remain for feature-gated paths: resource-table/immediates and pixel-local-storage barrier descriptor-chain coverage.
-- surface lifecycle contract workload is tracked as directional (`surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
+- comparable feature-gated API contracts now include resource-table/immediates and pixel-local-storage barrier descriptor-chain coverage using explicit unsupported/skipped parity evidence (`allowLeftNoExecution`) in strict mode.
+- comparable surface lifecycle proxy contract (`surface_presentation_contract`) uses deterministic create/release semantics for headless adapter classes.
 - directional macro workloads for high-volume stress:
-  `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, and `p0_render_pixel_local_storage_barrier_macro_500`.
+  `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, and `p0_render_pixel_local_storage_barrier_macro_500`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:
   `matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
@@ -446,7 +448,7 @@ Additional AMD Vulkan presets:
 
 - release claim mode: `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
 - extended comparable matrix (upload + compute + render + texture + render-bundle + async pipeline diagnostics): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
-- directional diagnostics (surface lifecycle contract): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
+- directional diagnostics (macro-only non-claim stress set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
 - directional macro diagnostics (high-volume render/texture + P0 PLS stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
 - strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json`
 - adapter-agnostic local comparable matrix (no fixed AMD vendor-id requirement): `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`
@@ -479,7 +481,7 @@ python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config
 # release-style claimability floor (15 timed samples)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json
 
-# directional diagnostics only (surface lifecycle contract, non-claim)
+# directional diagnostics only (macro-only non-claim stress set)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json
 
 # directional macro diagnostics (high-volume render/texture + P0 PLS stress, non-claim)

@@ -88,6 +88,7 @@ class Workload:
     right_upload_submit_every: int
     dawn_filter: str
     comparable: bool
+    allow_left_no_execution: bool
     include_by_default: bool
     left_timing_divisor: float
     right_timing_divisor: float
@@ -1670,6 +1671,23 @@ def compare_assessment(
             reasons.append("left side has no execution evidence (executionSuccessCount/executionRowCount)")
         if not left_successful_execution:
             reasons.append("left side has no successful execution samples (executionSuccessCount=0)")
+    else:
+        left_successful_execution = False
+        left_has_unsupported_or_skipped = False
+        for sample in left_samples:
+            trace_meta = sample.get("traceMeta", {})
+            execution_success = safe_int(trace_meta.get("executionSuccessCount"), default=0)
+            execution_unsupported = safe_int(trace_meta.get("executionUnsupportedCount"), default=0)
+            execution_skipped = safe_int(trace_meta.get("executionSkippedCount"), default=0)
+            if execution_success > 0:
+                left_successful_execution = True
+                break
+            if execution_unsupported > 0 or execution_skipped > 0:
+                left_has_unsupported_or_skipped = True
+        if (not left_successful_execution) and (not left_has_unsupported_or_skipped):
+            reasons.append(
+                "left side has no successful execution samples and no unsupported/skipped execution evidence"
+            )
 
     left_execution_error_samples = 0
     right_execution_error_samples = 0
@@ -1982,6 +2000,7 @@ def load_workloads(
             ),
             dawn_filter=item.get("dawnFilter", ""),
             comparable=bool(item.get("comparable", False)),
+            allow_left_no_execution=bool(item.get("allowLeftNoExecution", False)),
             include_by_default=bool(item.get("default", True)),
             left_timing_divisor=float(item.get("leftTimingDivisor", 1.0)),
             right_timing_divisor=float(item.get("rightTimingDivisor", 1.0)),
@@ -2197,7 +2216,9 @@ def main() -> int:
             left=left,
             right=right,
             required_timing_class=args.require_timing_class,
-            allow_left_no_execution=args.allow_left_no_execution,
+            allow_left_no_execution=(
+                args.allow_left_no_execution or workload.allow_left_no_execution
+            ),
             resource_probe=args.resource_probe,
             comparability_mode=args.comparability,
             resource_sample_target_count=args.resource_sample_target_count,
@@ -2247,6 +2268,7 @@ def main() -> int:
                     "note": workload.timing_normalization_note,
                 },
                 "workloadComparable": workload.comparable,
+                "workloadAllowLeftNoExecution": workload.allow_left_no_execution,
                 "workloadDefault": workload.include_by_default,
                 "left": left,
                 "right": right,

@@ -24,7 +24,7 @@
     "texture_sampler_write_query_destroy_macro_500": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3",
     "async_pipeline_diagnostics_contract": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
     "p1_capability_introspection_contract": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
-    "p1_resource_table_immediates_contract": "DrawCallPerf.Run/*",
+    "p1_resource_table_immediates_contract": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
     "p2_lifecycle_refcount_contract": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
     "p1_capability_introspection_macro_500": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
     "p1_resource_table_immediates_macro_500": "DrawCallPerf.Run/*",
@@ -33,7 +33,7 @@
     "p0_compute_indirect_timestamp_contract": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
     "p0_render_multidraw_contract": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
     "p0_render_multidraw_indexed_contract": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer",
-    "p0_render_pixel_local_storage_barrier_contract": "DrawCallPerf.Run/*",
+    "p0_render_pixel_local_storage_barrier_contract": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
     "p0_render_pixel_local_storage_barrier_macro_500": "DrawCallPerf.Run/*",
     "surface_presentation_contract": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
     "default": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"

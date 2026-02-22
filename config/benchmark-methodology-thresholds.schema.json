@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Benchmark Methodology Thresholds",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "timingSelection", "claimabilityDefaults"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "timingSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minDispatchWindowNsWithoutEncode",
+        "minDispatchWindowCoveragePercentWithoutEncode"
+      ],
+      "properties": {
+        "minDispatchWindowNsWithoutEncode": { "type": "integer", "minimum": 0 },
+        "minDispatchWindowCoveragePercentWithoutEncode": { "type": "number", "minimum": 0.0 }
+      }
+    },
+    "claimabilityDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["localMinTimedSamples", "releaseMinTimedSamples"],
+      "properties": {
+        "localMinTimedSamples": { "type": "integer", "minimum": 0 },
+        "releaseMinTimedSamples": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
