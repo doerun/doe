@@ -43,13 +43,16 @@ DEFAULT_RESOURCE_SAMPLE_MS = 100
 DEFAULT_RESOURCE_SAMPLE_TARGET_COUNT = 0
 DEFAULT_CLAIMABILITY_MODE = "off"
 DEFAULT_CLAIM_MIN_TIMED_SAMPLES = 0
+DEFAULT_BENCHMARK_POLICY_PATH = ""
+DEFAULT_BENCHMARK_POLICY_CANDIDATES = (
+    "config/benchmark-methodology-thresholds.json",
+    "fawn/config/benchmark-methodology-thresholds.json",
+)
 VALID_COMPARABILITY_MODES = {"strict", "warn", "off"}
 VALID_REQUIRED_TIMING_CLASSES = {"any", "operation", "process-wall"}
 VALID_RESOURCE_PROBES = {"none", "rocm-smi"}
 VALID_CLAIMABILITY_MODES = {"off", "local", "release"}
 VALID_UPLOAD_BUFFER_USAGES = {"copy-dst-copy-src", "copy-dst"}
-MIN_DISPATCH_WINDOW_NS_WITHOUT_ENCODE = 100_000
-MIN_DISPATCH_WINDOW_TOTAL_COVERAGE_PERCENT_WITHOUT_ENCODE = 1.0
 FAWN_UPLOAD_RUNTIME_SOURCE_PATHS = (
     Path("zig/src/main.zig"),
     Path("zig/src/execution.zig"),
@@ -93,6 +96,15 @@ class Workload:
     left_timing_divisor: float
     right_timing_divisor: float
     timing_normalization_note: str
+
+
+@dataclass(frozen=True)
+class BenchmarkMethodologyPolicy:
+    source_path: str
+    min_dispatch_window_ns_without_encode: int
+    min_dispatch_window_coverage_percent_without_encode: float
+    local_claim_min_timed_samples: int
+    release_claim_min_timed_samples: int
 
 
 def parse_args() -> argparse.Namespace:
@@ -214,6 +226,14 @@ def parse_args() -> argparse.Namespace:
             "When 0, defaults by claimability mode (local=7, release=15)."
         ),
     )
+    parser.add_argument(
+        "--benchmark-policy",
+        default=DEFAULT_BENCHMARK_POLICY_PATH,
+        help=(
+            "Benchmark methodology threshold config. "
+            "Defaults to config/benchmark-methodology-thresholds.json."
+        ),
+    )
     parser.add_argument("--emit-shell", action="store_true", help="Print resolved commands instead of running")
     return parser.parse_args()
 
@@ -251,6 +271,12 @@ def as_int(value: Any, *, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"invalid config value for {field}: expected integer")
     return value
+
+
+def as_float(value: Any, *, field: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"invalid config value for {field}: expected number")
+    return float(value)
 
 
 def as_bool(value: Any, *, field: str) -> bool:
@@ -411,6 +437,13 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
                 value,
                 field="claimability.minTimedSamples",
             )
+    if args.benchmark_policy == DEFAULT_BENCHMARK_POLICY_PATH:
+        value = first_config_value(
+            payload,
+            ["benchmarkPolicy.path", "benchmarkPolicyPath"],
+        )
+        if value is not None:
+            args.benchmark_policy = as_str(value, field="benchmarkPolicy.path")
 
     if args.emit_shell is False:
         value = first_config_value(payload, ["run.emitShell", "emitShell"])
@@ -418,6 +451,69 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
             args.emit_shell = as_bool(value, field="run.emitShell")
 
     return args
+
+
+def resolve_benchmark_policy_path(explicit_path: str) -> Path:
+    if explicit_path:
+        candidate = Path(explicit_path)
+        if candidate.exists():
+            return candidate
+        raise ValueError(f"missing benchmark policy config: {candidate}")
+
+    for raw in DEFAULT_BENCHMARK_POLICY_CANDIDATES:
+        candidate = Path(raw)
+        if candidate.exists():
+            return candidate
+    raise ValueError(
+        "missing benchmark policy config; checked "
+        f"{', '.join(DEFAULT_BENCHMARK_POLICY_CANDIDATES)}"
+    )
+
+
+def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodologyPolicy:
+    path = resolve_benchmark_policy_path(explicit_path)
+    payload = load_json(path)
+    if not isinstance(payload, dict):
+        raise ValueError(f"invalid benchmark policy config: expected object in {path}")
+
+    dispatch_ns = as_int(
+        first_config_value(payload, ["timingSelection.minDispatchWindowNsWithoutEncode"]),
+        field="timingSelection.minDispatchWindowNsWithoutEncode",
+    )
+    dispatch_coverage = as_float(
+        first_config_value(
+            payload,
+            ["timingSelection.minDispatchWindowCoveragePercentWithoutEncode"],
+        ),
+        field="timingSelection.minDispatchWindowCoveragePercentWithoutEncode",
+    )
+    local_min_samples = as_int(
+        first_config_value(payload, ["claimabilityDefaults.localMinTimedSamples"]),
+        field="claimabilityDefaults.localMinTimedSamples",
+    )
+    release_min_samples = as_int(
+        first_config_value(payload, ["claimabilityDefaults.releaseMinTimedSamples"]),
+        field="claimabilityDefaults.releaseMinTimedSamples",
+    )
+
+    if dispatch_ns < 0:
+        raise ValueError("timingSelection.minDispatchWindowNsWithoutEncode must be >= 0")
+    if dispatch_coverage < 0.0:
+        raise ValueError(
+            "timingSelection.minDispatchWindowCoveragePercentWithoutEncode must be >= 0"
+        )
+    if local_min_samples < 0:
+        raise ValueError("claimabilityDefaults.localMinTimedSamples must be >= 0")
+    if release_min_samples < 0:
+        raise ValueError("claimabilityDefaults.releaseMinTimedSamples must be >= 0")
+
+    return BenchmarkMethodologyPolicy(
+        source_path=str(path),
+        min_dispatch_window_ns_without_encode=dispatch_ns,
+        min_dispatch_window_coverage_percent_without_encode=dispatch_coverage,
+        local_claim_min_timed_samples=local_min_samples,
+        release_claim_min_timed_samples=release_min_samples,
+    )
 
 
 def format_stats(values: list[float]) -> dict[str, float]:
@@ -768,6 +864,7 @@ def pick_measured_timing_ms(
     trace_meta: dict[str, Any],
     trace_jsonl: Path,
     required_timing_class: str,
+    benchmark_policy: BenchmarkMethodologyPolicy,
 ) -> tuple[float, str, dict[str, Any]]:
     if required_timing_class == "process-wall":
         timing_meta = {
@@ -845,16 +942,16 @@ def pick_measured_timing_ms(
                 ) * 100.0
                 if (
                     dispatch_window_ns
-                    < MIN_DISPATCH_WINDOW_NS_WITHOUT_ENCODE
+                    < benchmark_policy.min_dispatch_window_ns_without_encode
                     and coverage_percent
-                    < MIN_DISPATCH_WINDOW_TOTAL_COVERAGE_PERCENT_WITHOUT_ENCODE
+                    < benchmark_policy.min_dispatch_window_coverage_percent_without_encode
                 ):
                     dispatch_window_rejected = {
                         "reason": "dispatch-window-too-small-without-encode",
                         "dispatchWindowNs": dispatch_window_ns,
                         "dispatchWindowCoveragePercentOfExecutionTotal": coverage_percent,
-                        "minDispatchWindowNs": MIN_DISPATCH_WINDOW_NS_WITHOUT_ENCODE,
-                        "minDispatchWindowCoveragePercentOfExecutionTotal": MIN_DISPATCH_WINDOW_TOTAL_COVERAGE_PERCENT_WITHOUT_ENCODE,
+                        "minDispatchWindowNs": benchmark_policy.min_dispatch_window_ns_without_encode,
+                        "minDispatchWindowCoveragePercentOfExecutionTotal": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
                     }
                 else:
                     measured_ms = float(dispatch_window_ns) / 1_000_000.0
@@ -1415,6 +1512,7 @@ def run_workload(
     upload_submit_every: int,
     inject_upload_runtime_flags: bool,
     required_timing_class: str,
+    benchmark_policy: BenchmarkMethodologyPolicy,
     emit_shell: bool,
 ) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1486,6 +1584,7 @@ def run_workload(
             trace_meta=sample_meta,
             trace_jsonl=trace_jsonl,
             required_timing_class=required_timing_class,
+            benchmark_policy=benchmark_policy,
         )
         ignore_meta: dict[str, Any] = {}
         if required_timing_class != "process-wall" and ignore_first_ops > 0:
@@ -1815,11 +1914,14 @@ def compare_assessment(
     }
 
 
-def default_claim_min_timed_samples(mode: str) -> int:
+def default_claim_min_timed_samples(
+    mode: str,
+    benchmark_policy: BenchmarkMethodologyPolicy,
+) -> int:
     if mode == "local":
-        return 7
+        return benchmark_policy.local_claim_min_timed_samples
     if mode == "release":
-        return 15
+        return benchmark_policy.release_claim_min_timed_samples
     return 0
 
 
@@ -1879,6 +1981,7 @@ def assess_claimability(
     right: dict[str, Any],
     delta: dict[str, Any],
     comparability: dict[str, Any],
+    benchmark_policy: BenchmarkMethodologyPolicy,
 ) -> dict[str, Any]:
     if mode == "off":
         return {
@@ -1891,7 +1994,11 @@ def assess_claimability(
         }
 
     reasons: list[str] = []
-    effective_min_samples = min_timed_samples if min_timed_samples > 0 else default_claim_min_timed_samples(mode)
+    effective_min_samples = (
+        min_timed_samples
+        if min_timed_samples > 0
+        else default_claim_min_timed_samples(mode, benchmark_policy)
+    )
     required_percentiles = required_positive_percentiles(mode)
 
     if not comparability.get("comparable", False):
@@ -2076,6 +2183,7 @@ def main() -> int:
             "missing right command template: pass --right-command-template or "
             "--config with right.commandTemplate"
         )
+    benchmark_policy = load_benchmark_methodology_policy(args.benchmark_policy)
 
     workloads = load_workloads(
         Path(args.workloads),
@@ -2131,15 +2239,27 @@ def main() -> int:
             "requireNativeExecutionTimingForLeftOperation": (
                 args.require_timing_class == "operation"
             ),
+            "dispatchWindowSelectionThresholds": {
+                "minDispatchWindowNsWithoutEncode": benchmark_policy.min_dispatch_window_ns_without_encode,
+                "minDispatchWindowCoveragePercentWithoutEncode": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
+            },
         },
         "claimabilityPolicy": {
             "mode": args.claimability,
             "minTimedSamples": (
                 args.claim_min_timed_samples
                 if args.claim_min_timed_samples > 0
-                else default_claim_min_timed_samples(args.claimability)
+                else default_claim_min_timed_samples(args.claimability, benchmark_policy)
             ),
             "requiredPositivePercentiles": required_positive_percentiles(args.claimability),
+            "defaults": {
+                "localMinTimedSamples": benchmark_policy.local_claim_min_timed_samples,
+                "releaseMinTimedSamples": benchmark_policy.release_claim_min_timed_samples,
+            },
+        },
+        "benchmarkPolicy": {
+            "path": benchmark_policy.source_path,
+            "schemaVersion": 1,
         },
         "workloads": [],
     }
@@ -2174,6 +2294,7 @@ def main() -> int:
             upload_submit_every=workload.left_upload_submit_every,
             inject_upload_runtime_flags=True,
             required_timing_class=args.require_timing_class,
+            benchmark_policy=benchmark_policy,
             emit_shell=args.emit_shell,
         )
         right = run_workload(
@@ -2193,6 +2314,7 @@ def main() -> int:
             upload_submit_every=workload.right_upload_submit_every,
             inject_upload_runtime_flags=False,
             required_timing_class=args.require_timing_class,
+            benchmark_policy=benchmark_policy,
             emit_shell=args.emit_shell,
         )
 
@@ -2231,6 +2353,7 @@ def main() -> int:
             right=right,
             delta=delta,
             comparability=comparability,
+            benchmark_policy=benchmark_policy,
         )
         if not comparability["comparable"]:
             comparability_failures.append({"workloadId": workload.id, "reasons": comparability["reasons"]})

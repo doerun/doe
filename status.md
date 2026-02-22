@@ -5,8 +5,8 @@
 Date: 2026-02-22
 
 Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
-The execution platform strategy is now explicitly: full native Zig+WebGPU/FFI runtime path, estimated at 2,800+ LOC for non-prototype delivery.
-Current `fawn/zig/src` size is 2,750 LOC and now includes native queue-submitted execution for upload, copy, barrier, and dispatch-family lowering.
+The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
+Current `fawn/zig/src` size is 12,031 LOC (`wc -l zig/src/*.zig`, 2026-02-22) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
 Benchmark contract coverage snapshot (2026-02-22 update):
@@ -49,7 +49,7 @@ Benchmark contract coverage snapshot (2026-02-22 update):
 6. Real backend execution against GPU devices (current path includes queue-submission for upload/copy/barrier and dispatch-family compute lowering in `src/webgpu_ffi.zig`).
 - `fawn/zig/src` now has queue-submission execution for all implemented command classes in `src/webgpu_ffi.zig`.
 - Dispatch/kernel routes now use native compute pipeline lowering with fallback WGSL for missing kernel payloads.
-- Planned full native execution path (non-prototype): estimated 2,800+ LOC across command adapter, resource scheduling, IR lowering, and deterministic retry policy.
+- Planned full native execution path is now represented by implemented multi-module backend surfaces; remaining work is coverage hardening, reliability tuning, and benchmark substantiation.
 
 ### Non-prototype execution backlog (full native)
 
@@ -68,7 +68,7 @@ Planned implementation slices:
 7. `src/main.zig` release execution defaults and replay-linked hard failure mode.
 8. parity harness updates for execution results and benchmark artifacts.
 
-Estimated remaining effort: 2,800+ LOC before performance hardening.
+Estimated remaining effort is tracked by explicit capability/gate gaps below instead of LOC placeholders.
 
 ## Developer flow state (engineering, governance, and release pipeline)
 
@@ -136,7 +136,7 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 - `bindGroupMode`: `no-change` or `redundant`
 35. Release claimability hard-gate is now wired in repo CI:
 - new validator `bench/claim_gate.py` enforces report contract (`claimabilityPolicy.mode`, `claimStatus`, `comparisonStatus`, minimum timed-sample floor, workload-level claimability fields)
-- `.github/workflows/release-gates.yml` now runs both `bench/trace_gate.py` and `bench/claim_gate.py` as blocking gates on the report artifact.
+- `.github/workflows/release-gates.yml` now runs `bench/schema_gate.py`, `bench/check_correctness.py`, `bench/trace_gate.py`, and `bench/claim_gate.py` as blocking gates on the report artifact.
 36. Native runtime now exposes explicit queue wait behavior control:
 - `--queue-wait-mode process-events|wait-any` in `fawn-zig-runtime`
 - default remains `process-events`; `wait-any` is available for targeted wait-path diagnostics/tuning and auto-falls back to `process-events` when timeout-based wait-any is unsupported by the backend.
@@ -319,6 +319,17 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
   - directional-only capability domains: `0.00% (0/22)`
   (`bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`).
 
+64. Blocking gate enforcement is now aligned with process policy in CI:
+- canonical runner `bench/run_blocking_gates.py` now enforces schema -> correctness -> trace -> optional claim ordering.
+- `.github/workflows/release-gates.yml` now uses `bench/run_blocking_gates.py` with claim-gate requirements.
+- `.github/workflows/amd-vulkan-smoke.yml` now uses `bench/run_blocking_gates.py` (no claim gate) for identical blocking gate ordering.
+- new `bench/schema_gate.py` validates schema-backed config/data contracts before release claim checks.
+
+65. Benchmark methodology thresholds are now config contracts:
+- dispatch-window rejection and claimability default sample floors moved from hardcoded Python constants to `config/benchmark-methodology-thresholds.json`.
+- contract schema is `config/benchmark-methodology-thresholds.schema.json`.
+- migration recorded in `config/migration-notes.md`.
+
 ### Missing in progress
 
 1. Full upstream quirk mining automation.
@@ -326,9 +337,11 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 3. Self-hosted AMD Vulkan runner availability/maintenance for automated smoke workflow execution (`.github/workflows/amd-vulkan-smoke.yml`).
 4. Full benchmark harness with measured GPU timings tied to native execution spans.
 5. Baseline dataset generation and end-to-end comparison automation against Dawn/wgpu incumbents.
-6. Native Zig/WebGPU/FFI execution backend in Zig (estimated 2,800+ LOC, hard runtime milestone).
+6. Native Zig/WebGPU/FFI execution backend hardening in Zig remains a runtime milestone (coverage/reliability/perf).
 7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
 8. Keep directional diagnostics macro-scoped and non-claim (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`).
+9. Bench harness sharding follow-up (owner: performance):
+- split `bench/compare_dawn_vs_fawn.py` into cohesive modules (`timing_selection.py`, `comparability.py`, `claimability.py`, `reporting.py`) while preserving strict contract behavior.
 
 ## Performance Reliability Investigation (2026-02-21)
 
@@ -409,7 +422,7 @@ Current contract state after matrix expansion:
 
 Scope:
 - chosen path is full native Zig+WebGPU/FFI implementation from scratch.
-- expected size is 2,800+ LOC before performance/perf-hardening work.
+- current implementation size is 12,031 LOC (`zig/src`); remaining work is performance/reliability hardening and broader claim-grade coverage.
 - current codebase status: trace/replay/matching complete, with queue-submit execution coverage for upload/copy/barrier and dispatch-family compute routing.
 
 Execution gap list:

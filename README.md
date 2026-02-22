@@ -131,7 +131,7 @@ fawn/
   agent/             — upstream quirk mining
   config/            — schemas, gates, benchmark definitions
   lean/              — Lean 4 proofs, verification boundary
-  zig/               — runtime (~6,500 LOC)
+  zig/               — runtime (~12,000 LOC)
   bench/             — benchmark harness, Dawn comparison, visualization
   trace/             — replay and trace tooling
   examples/          — worked examples, command seeds

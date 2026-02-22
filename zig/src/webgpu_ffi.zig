@@ -165,17 +165,20 @@ pub const WebGPUBackend = struct {
                 self.device,
                 self.queue,
             );
-            std.debug.print("[fawn-init] adapter_ts={} device_ts={} inside_passes={} adapter_multi_draw={} device_multi_draw={} adapter_pls_coherent={} adapter_pls_noncoherent={} device_pls_coherent={} device_pls_noncoherent={}\n", .{
-                self.adapter_has_timestamp_query,
-                self.has_timestamp_query,
-                self.has_timestamp_inside_passes,
-                self.adapter_has_multi_draw_indirect,
-                self.has_multi_draw_indirect,
-                self.adapter_has_pixel_local_storage_coherent,
-                self.adapter_has_pixel_local_storage_non_coherent,
-                self.has_pixel_local_storage_coherent,
-                self.has_pixel_local_storage_non_coherent,
-            });
+            self.timestampLog(
+                "init_features adapter_ts={} device_ts={} inside_passes={} adapter_multi_draw={} device_multi_draw={} adapter_pls_coherent={} adapter_pls_noncoherent={} device_pls_coherent={} device_pls_noncoherent={}\n",
+                .{
+                    self.adapter_has_timestamp_query,
+                    self.has_timestamp_query,
+                    self.has_timestamp_inside_passes,
+                    self.adapter_has_multi_draw_indirect,
+                    self.has_multi_draw_indirect,
+                    self.adapter_has_pixel_local_storage_coherent,
+                    self.adapter_has_pixel_local_storage_non_coherent,
+                    self.has_pixel_local_storage_coherent,
+                    self.has_pixel_local_storage_non_coherent,
+                },
+            );
         }
         return self;
     }

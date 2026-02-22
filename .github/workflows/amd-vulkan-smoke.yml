@@ -22,9 +22,9 @@ jobs:
       - name: Verify GPU probe evidence
         run: |
           python3 bench/verify_smoke_gpu_usage.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json --require-comparable
-      - name: Replay gate
+      - name: Run blocking gates
         run: |
-          python3 bench/trace_gate.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
+          python3 bench/run_blocking_gates.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
       - name: Upload smoke artifacts
         uses: actions/upload-artifact@v4
         with:

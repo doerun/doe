@@ -1,110 +1,65 @@
 # Fawn Zig Style Guide
 
-This guide is the canonical style contract for Fawn Zig modules.  
-All Zig implementation and generated artifacts in `fawn/` should follow it.
+This guide is the Zig style contract for `fawn/zig`.
 
 ## Core principles
 
-- Prefer explicit data contracts over scattered boolean logic.
-- Prefer exhaustive type-based dispatch (`enum` + `switch`) over long `if`/`else` chains.
-- Keep policy outside hot-path runtime; runtime should execute validated evidence as data.
-- Keep behavior deterministic and auditable via explicit traces and rule IDs.
-- Use bounded, explicit memory ownership and fail-fast validation at load time.
+- Prefer explicit typed contracts over inferred behavior.
+- Keep runtime decisions deterministic and traceable.
+- Fail fast on invalid/unsupported inputs with actionable errors.
+- Keep hot-path execution allocation-light after initialization.
 
 ## Repository conventions
 
-- Put public surface types and contracts in `model.zig`.
-- Put policy/selection logic in `dispatch.zig`.
-- Put data normalization/parsing in `ingest.zig`.
-- Keep generated/derived artifacts in `generated/` and clearly mark provenance.
-- Co-locate tests with module (`*_test.zig`) and keep them deterministic.
-- Use `build.zig` for compile-time generation/preprocessing steps where appropriate.
+- Put shared command/profile contracts in `model.zig`.
+- Put quirk parsing in `quirk_json.zig` and command parsing in `command_json.zig`.
+- Keep deterministic selection logic in `runtime.zig`.
+- Keep execution orchestration in `execution.zig`.
+- Keep trace/replay behavior in `trace.zig` and `replay.zig`.
+- Keep WebGPU proc/table contracts in `wgpu_types.zig` and loader glue in `wgpu_loader.zig`.
+- Add new API clusters as feature-scoped `wgpu_*_procs.zig` modules.
 
-## Formatting and linting
+## Formatting
 
-- Run `zig fmt` on every changed `.zig` file before review.
-- Use one statement per logical line and keep lines readable before shortening.
-- Keep imports explicit and ordered: std first, then local imports.
-- Prefer module-local helper functions over wide utility files.
+- Run `zig fmt` for every changed Zig file.
+- Keep imports explicit (`std` first, then local modules).
+- Prefer small feature-scoped modules over catch-all utility files.
 
 ## Naming
 
-- Types (struct/enum/union): `PascalCase`.
-- Functions: `snake_case`.
-- Error unions: `error{...}` set with clear names (`InvalidPayload`, `UnknownVendor`, `MissingEvidence`).
-- Constants: `snake_case` unless exported public constants in API modules (prefer `pub const` with short clear names).
+- Types and enums: `PascalCase`
+- Functions, variables, fields: `snake_case`
+- Compile-time constants: `UPPER_SNAKE_CASE`
+- File names: `snake_case.zig`
 
 ## Control flow
 
-- Use `switch` over enum states:
-  - no hidden defaults for closed sets
-  - add `else`/`_` only for truly open sets
-- Favor guard-style early returns with explicit `try` + `catch`.
-- Avoid nested branching. If logic is a decision matrix:
-  - define `enum` keys
-  - index `comptime`/`std.AutoHashMap` dispatch tables
-  - apply ordered rules.
+- Prefer `switch` on enums over long `if` ladders.
+- Use early returns for invalid states.
+- Keep fallback behavior explicit and auditable.
+- Do not introduce silent capability switching.
 
-## Error handling
+## Errors and diagnostics
 
-- Return `!T` where recoverability is expected.
-- Use explicit `error` unions for known failure modes.
-- Propagate parse/validation failures with contextual errors and source path.
-- Never swallow parse/execution errors without an emitted trace.
-- Emit structured errors at boundaries (CLI/JSON in/out, file load, schema validation).
+- Return explicit error unions (`!T`) for recoverable failures.
+- Keep unsupported behavior explicit (`unsupported` taxonomy), never silent no-op.
+- Route runtime observability through trace/trace-meta contracts.
+- Avoid unconditional debug stderr printing in runtime paths.
 
-## Memory and allocation
+## Memory
 
-- Use explicit allocator parameters in constructors and context-aware calls.
-- Prefer arena allocators for request-scoped execution.
-- Keep long-lived caches and lookup tables explicit owners.
-- Close/free resources deterministically; use `defer` for scope cleanup.
+- Use explicit allocator ownership.
+- Scope temporary allocations with `defer` cleanup.
+- Keep long-lived caches explicit in owning structs.
 
-## Determinism and traceability
+## Determinism and trace
 
-- All outputs must be reproducible for identical inputs and config.
-- Include `rule_id`, `candidate_id`, evidence IDs, and decision metadata in runtime output.
-- Sort unordered collections before serialization where output order matters.
-- Emit machine-consumable traces (`trace_id`, `matched_rule`, `scores`, `feature_vector`, optional snippets).
+- Identical inputs/config must produce stable decision and trace sequences.
+- Preserve hash-chain invariants in trace rows/meta.
+- Include enough metadata to reproduce selection and execution outcomes.
 
-## JSON/data handling
+## Testing and checks
 
-- Parse external JSON via validated structs and strict decoding.
-- Reject unknown top-level fields only if schema version mismatch requires it; otherwise record as passthrough metadata.
-- Keep conversions to internal enums centralized (`parse_vendor`, `parse_backend`, etc.).
-
-## Performance
-
-- Avoid dynamic dispatch in hot paths when static dispatch or table lookup suffices.
-- Keep hot loops allocation-free after startup.
-- Precompute match indexes at compile/initialization time when config is static.
-- Prefer contiguous arrays + indexes over nested maps when cardinality is small.
-
-## Testing
-
-- Unit test each contract conversion (`parse_*`, evidence normalization, rule selection).
-- Unit test each decision branch in the dispatch matrix.
-- Add property-style tests for idempotency of parser/normalization when possible.
-- Include regression fixtures for:
-  - duplicate change IDs
-  - malformed JSON fields
-  - unknown enums
-  - tie-breakers in dispatch priority
-  - empty evidence
-
-## Fawn-specific implementation pattern (anti-if soup)
-
-- Model the quirk problem as:
-  - normalized candidate row → `QuirkKey`
-  - candidate key lookup -> ordered rule list
-  - rule application -> `QuirkAction`
-  - evidence emission -> immutable decision record
-- Keep the mapping logic as data (`candidate_pack`, generated maps) + `switch` on action variants.
-- Treat unrecognized combinations as explicit `unhandled` states, not silent defaults.
-
-## Mandatory checks before merge
-
-- `zig fmt` clean
-- `zig test` (at least targeted module tests)
-- `fawn/lean` gate/validation path passes for any schema changes consumed by Zig
-
+- Run `zig build test` for affected runtime modules.
+- Verify replay/trace gate compatibility for runtime-visible changes.
+- For WebGPU API-surface changes, update config coverage + benchmark contracts in the same change.

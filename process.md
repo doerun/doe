@@ -24,14 +24,20 @@
 - apply proof-driven elimination: when Lean discharges a runtime condition, hoist it into artifacts/config and remove the corresponding runtime branch.
 
 5. Gate
-- run correctness + trace gates (blocking in v0)
+- run schema + correctness + trace gates (blocking in v0)
 - run verification + performance gates (advisory in v0)
+- run schema hard gate:
+  `python3 fawn/bench/schema_gate.py`
+- run correctness hard gate from comparison report artifacts:
+  `python3 fawn/bench/check_correctness.py --gates fawn/config/gates.json --quirk fawn/examples/quirks/intel_gen12_temp_buffer.json --report fawn/bench/out/dawn-vs-fawn.json`
 - run replay hard gate from comparison report artifacts:
   `python3 fawn/bench/trace_gate.py --report fawn/bench/out/dawn-vs-fawn.json`
   CI must run without `--skip-missing` and fail hard if any sample is missing or fails replay checks.
 - run release claimability hard gate from comparison report artifacts:
   `python3 fawn/bench/claim_gate.py --report fawn/bench/out/dawn-vs-fawn.json --require-claimability-mode release --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15`
   CI must fail hard if report claim metadata is not explicit release mode claimable/comparable.
+- canonical CI/script entrypoint for blocking gate sequence:
+  `python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
 - for strict Dawn-vs-Fawn upload comparability, fail fast if the executed `fawn-zig-runtime` binary does not expose/validate upload knobs or appears older than key upload/runtime Zig sources.
 
 6. Benchmark
@@ -45,7 +51,7 @@
 
 7. Release
 - commit only when blocking gates are green
-- mandatory release precondition in CI: gate scripts must fail hard when replay or release-claimability checks fail.
+- mandatory release precondition in CI: gate scripts must fail hard when schema, correctness, replay, or release-claimability checks fail.
 
 ## 2. Gate Policy (v0)
 

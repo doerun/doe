@@ -1,143 +1,90 @@
-# Fawn Zig Architecture: Lean-Verified to Runtime Execution
+# Fawn Zig Architecture
 
-This document defines how Zig implements fast, deterministic runtime quirk behavior using
-Lean-verified evidence contracts from `fawn/dawn-research`.
+This document tracks the current Zig runtime topology in `fawn/zig/src`.
+It replaces the old `parser/dispatch/executor` module naming model.
 
-## Design goals
+## Runtime goals
 
-- Consume only validated artifacts (`candidate_pack`, optionally `workaround_rows`, `trend_buckets`).
-- Keep policy logic in Lean; keep Zig in deterministic execution and fast dispatch.
-- Replace nested branching with explicit state types, compile-time or startup-built lookup tables.
-- Produce auditable outputs (rule IDs, evidence IDs, decision traces).
-- Prevent silent behavior drift.
+- deterministic command selection and execution
+- explicit unsupported taxonomy (no silent fallback)
+- trace/replay parity for audit and debugging
+- config-driven behavior for benchmark and gate contracts
 
-## Module responsibilities
+## Current module topology
 
-- `fawn/lean/`
-  - verifies schema + safety invariants
-  - emits machine-checked guarantees consumed by Zig runtime boundary
+Core decision/runtime lane:
+
 - `fawn/zig/src/model.zig`
-  - canonical runtime contracts:
-    - `DecisionInput` (candidate rows + optional context)
-    - `EvidenceRef`
-    - `QuirkKey`
-    - `QuirkAction` (union enum)
-    - `DecisionRecord`
-- `fawn/zig/src/parser.zig`
-  - reads JSONL artifacts and maps to typed contract structs
-  - validates:
-    - required evidence fields
-    - enum/domain integrity
-    - rule/action consistency
-- `fawn/zig/src/dispatch.zig`
-  - builds decision indexes:
-    - `key -> rule list`
-    - ordered by `priority`/score
-  - resolves candidate deterministically
-- `fawn/zig/src/executor.zig`
-  - applies chosen `QuirkAction` on request/context
-  - emits `DecisionTrace` and execution result
+  - typed contract enums/structs for quirks, commands, and runtime status
+- `fawn/zig/src/quirk_json.zig`
+  - strict quirk JSON ingestion
+- `fawn/zig/src/command_json.zig`
+  - strict command JSON ingestion
+- `fawn/zig/src/runtime.zig`
+  - deterministic quirk matching + precedence selection
+- `fawn/zig/src/execution.zig`
+  - execution mode orchestration (`trace` vs `native`)
+- `fawn/zig/src/main.zig`
+  - CLI boundary and artifact wiring
+
+Trace/replay lane:
+
 - `fawn/zig/src/trace.zig`
-  - structured trace schema:
-    - `traceId`
-    - input signature
-    - selected rule id
-    - match rationale
-    - fallback path and reason
+  - trace row + trace-meta emission and hash-chain generation
+- `fawn/zig/src/replay.zig`
+  - replay validation against row/meta contract invariants
+
+WebGPU native execution lane:
+
+- `fawn/zig/src/webgpu_ffi.zig`
+  - backend lifecycle (instance/adapter/device/queue), capability probing, queue wait/sync behavior
+- `fawn/zig/src/wgpu_types.zig`
+  - C API type/function/proc-table contracts
+- `fawn/zig/src/wgpu_loader.zig`
+  - dynamic proc loading and callback helpers
+- `fawn/zig/src/wgpu_resources.zig`
+  - buffer/texture/shader/pipeline resource management
+- `fawn/zig/src/wgpu_commands.zig`
+  - upload/copy/barrier/dispatch and command execution glue
+- `fawn/zig/src/wgpu_render_*`
+  - render pass/bundle/resource/type-specific surfaces
+- `fawn/zig/src/wgpu_*_procs.zig`
+  - domain-specific proc tables (P0/P1/P2 surfaces, texture/surface/async/capability APIs)
 
 ## Data flow
 
-1) Ingestion
-- `candidate_pack/*.jsonl` (and optional context files) read in.
-- Inputs parsed to canonical structs.
+1. Input load
+- CLI arguments resolve quirk + command artifacts.
+- JSON ingestion modules parse into typed model contracts.
 
-2) Validate
-- Validate all entries via schema assumptions from Lean outputs.
-- Reject malformed rows as hard errors at load boundary.
+2. Deterministic selection
+- `runtime.zig` filters candidate quirks by profile.
+- per-command matching chooses one action with deterministic precedence.
 
-3) Index
-- Build `DispatchIndex`:
-  - `QuirkKey -> []RuleIndexEntry`
-- Keep stable ordering and deterministic tie-breakers.
+3. Execution
+- `execution.zig` routes command handling.
+- trace mode emits deterministic decision artifacts only.
+- native mode executes through WebGPU proc surfaces with explicit status mapping.
 
-4) Resolve
-- For each candidate:
-  - normalize key (vendor/backend/failure class)
-  - lookup key bucket
-  - select first eligible rule by score/policy ordering
-  - attach fallback state when no rule matches
+4. Observability
+- trace rows carry command/op metadata and hash-chain links.
+- trace-meta carries run-level timing, status counts, and terminal hash.
+- replay validates deterministic continuity.
 
-5) Execute
-- Convert selected action into a concrete runtime operation.
-- Return decision + trace.
+## Lean boundary
 
-## Anti-if-ladder mapping
+- Lean remains a verification producer and does not execute hot path logic at runtime.
+- Zig consumes verification-relevant fields (`verificationMode`, `proofLevel`) and emits obligations in trace artifacts.
+- Proof-driven elimination is implemented by deleting proven runtime branches and hoisting conditions into artifacts/config.
 
-- Replace conditions like:
-  - `if vendor == X && backend == Y && failure == Z`
-- with:
-  - typed `QuirkKey` lookup table
-  - ordered rule candidate list per key
-  - explicit `switch(action)` execution
+## Extension discipline
 
-## Initial folder structure
+- Add new WebGPU API surfaces as dedicated `wgpu_*_procs.zig` or feature-scoped modules.
+- Keep capability probing and unsupported taxonomy explicit.
+- Route all runtime-visible behavior changes through config + docs + status updates in the same change.
 
-- `fawn/zig/src/model.zig`
-- `fawn/zig/src/parser.zig`
-- `fawn/zig/src/dispatch.zig`
-- `fawn/zig/src/executor.zig`
-- `fawn/zig/src/trace.zig`
-- `fawn/zig/src/plan_cache.zig` (optional)
-- `fawn/zig/src/main.zig`
-- `fawn/zig/build.zig`
-- `fawn/zig/generated/` (generated lookup artifacts from candidate data)
-- `fawn/zig/tests/`
+## Gate expectations
 
-## Suggested first pass implementation
-
-### Phase 1: Contracts + loader (day 1)
-- Implement `model.zig` (core types + serde expectations)
-- Implement `parser.zig` for `candidate_pack/candidate-*.jsonl`
-- Add minimal fixture tests
-
-### Phase 2: Deterministic dispatch (day 2)
-- Implement `dispatch.zig` as key-indexed rules
-- Add deterministic sorting and tie-break tests
-
-### Phase 3: Executor + trace (day 3)
-- Implement `executor.zig` + `trace.zig`
-- Emit `DecisionRecord` with rule IDs/evidence list
-
-### Phase 4: Integration and Lean boundary
-- Add CLI entry `main.zig` for pipeline-driven replay
-- Validate output parity vs Lean expectations
-
-## Error model
-
-- Use explicit errors:
-  - `ParseError`
-  - `MissingField`
-  - `InvalidEnum`
-  - `NoApplicableRule`
-  - `SchemaMismatch`
-- Never default to silent fallback for unexpected combinations.
-
-## Trace fields (minimum)
-
-- `traceId`
-- `candidateId`
-- `decision`
-- `matchedRuleId`
-- `fallbackRule` (if any)
-- `evidenceIds` (array)
-- `reason`
-- `inputs` (vendor/backend/failureclass/context hash)
-- `generatedAt`
-
-## Build / validation gates
-
-- `zig fmt` + `zig test`
-- Determinism check:
- - same input artifact set => stable output JSON and traces
-- Lean gating:
- - no Zig execution run without Lean-verified schema acceptance for consuming artifacts.
+- `zig fmt` on changed Zig files
+- `zig build test` for affected modules
+- schema/correctness/trace gates must remain green for release paths

@@ -27,6 +27,10 @@ That document defines:
   - compares against incumbent baseline ids from `fawn/config/benchmarks.json`
 - `check_correctness.py`
   - runs deterministic contract-level correctness checks
+- `schema_gate.py`
+  - validates schema-backed benchmark/config contracts as blocking release checks (`webgpu-spec-coverage`, benchmark methodology thresholds, and all quirk examples).
+- `run_blocking_gates.py`
+  - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional claim gate.
 - `compare_runtimes.py`
   - runs two runtime commands repeatedly (left/right), captures wall-time quantiles, and writes a comparison artifact.
 - `compare_dawn_vs_fawn.py`
@@ -126,7 +130,7 @@ python3 fawn/bench/compare_dawn_vs_fawn.py \
   when a workload contract sets `--queue-wait-mode`, strict preflight also requires runtime support and validation for `--queue-wait-mode process-events|wait-any`.
 - claimability reliability mode is available:
   `--claimability local|release` enforces sample-floor and positive-tail checks for claimable speed reports.
-  use `--claim-min-timed-samples N` to override mode defaults (`local=7`, `release=15`).
+  use `--claim-min-timed-samples N` to override mode defaults loaded from `config/benchmark-methodology-thresholds.json` (`claimabilityDefaults.localMinTimedSamples`, `claimabilityDefaults.releaseMinTimedSamples`).
   claimability failures return non-zero exit status (`3`) and report `claimStatus=diagnostic`.
 - optional resource profiling is available via `--resource-probe rocm-smi` and is applied equally to both sides.
 - when resource probe is enabled, strict comparability also checks probe quality:
@@ -222,15 +226,14 @@ strict claims from directional investigation.
 ## Release hard gate (mandatory)
 
 Release CI should treat replay validation as a blocking gate.
-After each `compare_dawn_vs_fawn.py` run, fail CI if any successful sample lacks
-or fails replay validation. For claimable release statements, also fail CI unless
+After each `compare_dawn_vs_fawn.py` run, fail CI if schema, correctness, or replay
+validation fails. For claimable release statements, also fail CI unless
 the report is explicitly `claimability.mode=release`, `comparisonStatus=comparable`,
 and `claimStatus=claimable`. Then generate an HTML visualization artifact:
 
 ```bash
 python3 fawn/bench/compare_dawn_vs_fawn.py ... --out fawn/bench/out/dawn-vs-fawn.json
-python3 fawn/bench/trace_gate.py --report fawn/bench/out/dawn-vs-fawn.json
-python3 fawn/bench/claim_gate.py --report fawn/bench/out/dawn-vs-fawn.json --require-claimability-mode release --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15
+python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15
 python3 fawn/bench/visualize_dawn_vs_fawn.py --report fawn/bench/out/dawn-vs-fawn.json --out fawn/bench/out/dawn-vs-fawn.html
 # optional machine-readable distribution analysis:
 python3 fawn/bench/visualize_dawn_vs_fawn.py --report fawn/bench/out/dawn-vs-fawn.json --analysis-out fawn/bench/out/dawn-vs-fawn.distribution.json

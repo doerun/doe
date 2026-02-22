@@ -120,7 +120,7 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 
 ## Native execution status
 
-Native Zig+WebGPU/FFI execution is implemented across 5 backend modules (~2,364 LOC):
+Native Zig+WebGPU/FFI execution is implemented across backend modules in `zig/src`:
 - `webgpu_ffi.zig` — backend struct, adapter/device/queue lifecycle, timestamp readback.
 - `wgpu_types.zig` — C API type definitions and function pointer table.
 - `wgpu_loader.zig` — dynamic library loading, C callbacks, helpers.

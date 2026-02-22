@@ -250,8 +250,8 @@ pub fn uncapturedErrorCallback(
     _: ?*anyopaque,
     _: ?*anyopaque,
 ) callconv(.c) void {
-    const msg_slice = if (message.data) |d| d[0..message.length] else "<no message>";
-    std.debug.print("[fawn-error] type={} message={s}\n", .{ @intFromEnum(error_type), msg_slice });
+    _ = error_type;
+    _ = message;
 }
 
 pub fn alignTo(value: u64, alignment: u64) u64 {

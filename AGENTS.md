@@ -136,10 +136,11 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 
 ## File size
 
-- 777 lines max per source file; shard before exceeding this
+- 777 lines max for Zig runtime source files in `fawn/zig/src`; shard before exceeding this
 - split by cohesive functionality, not by arbitrary line count
 - group by feature (e.g. `pipeline_cache.zig`) not by type (e.g. `helpers.zig`)
 - keep related code together; splitting a file must not scatter a single concern
+- Python benchmark and tooling files must stay modular; when a file exceeds 1200 lines, add a tracked sharding follow-up in `fawn/status.md` with owner and next split target.
 
 ## Constants and thresholds
 

@@ -21,5 +21,4 @@ jobs:
             echo "FAIL: missing $REPORT_PATH"
             exit 1
           fi
-          python3 bench/trace_gate.py --report "$REPORT_PATH"
-          python3 bench/claim_gate.py --report "$REPORT_PATH" --require-claimability-mode release --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15
+          python3 bench/run_blocking_gates.py --report "$REPORT_PATH" --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15
