@@ -24,6 +24,8 @@ pub const CommandDispatchBucket = struct {
     best: ?model.Quirk = null,
     best_score: u32 = 0,
     matched_count: u32 = 0,
+    requires_lean: bool = false,
+    is_blocking: bool = false,
 };
 
 pub const DispatchContext = struct {
@@ -329,8 +331,6 @@ pub fn dispatch(profile: model.DeviceProfile, context: DispatchContext, command:
     }
 
     const quirk = bucket.best.?;
-    const requires_lean = model.requiresProof(quirk.verification_mode);
-    const is_blocking = requires_lean and quirk.proof_level != .proven;
 
     return .{
         .command = applyAction(quirk, command),
@@ -339,8 +339,8 @@ pub fn dispatch(profile: model.DeviceProfile, context: DispatchContext, command:
             .action = quirk.action,
             .score = bucket.best_score,
             .matched_count = bucket.matched_count,
-            .requires_lean = requires_lean,
-            .is_blocking = is_blocking,
+            .requires_lean = bucket.requires_lean,
+            .is_blocking = bucket.is_blocking,
             .proof_level = quirk.proof_level,
             .verification_mode = quirk.verification_mode,
             .applied_toggle = switch (quirk.action) {
@@ -373,10 +373,13 @@ fn finalizeBucket(storage: *std.ArrayList(ScoredQuirk)) CommandDispatchBucket {
 
     std.mem.sort(ScoredQuirk, storage.items, {}, compareScoredQuirk);
     const best = storage.items[0];
+    const requires_lean = model.requiresProof(best.quirk.verification_mode);
     const result = CommandDispatchBucket{
         .best = best.quirk,
         .best_score = best.score,
         .matched_count = @intCast(storage.items.len),
+        .requires_lean = requires_lean,
+        .is_blocking = requires_lean and best.quirk.proof_level != .proven,
     };
     storage.deinit();
     return result;

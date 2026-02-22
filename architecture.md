@@ -14,7 +14,7 @@ Fawn is split into five modules with hard interfaces. In v0 these interfaces are
 
 3. `lean` (verification)
 - Input: quirk records and invariant contracts.
-- Output: proof results and validator artifacts for quirks requiring Lean.
+- Output: formal model/obligation semantics in v0, plus proof results/validator artifacts when proof execution wiring is enabled.
 
 4. `zig` (execution)
 - Input: validated quirk set and validator artifacts.
@@ -67,6 +67,11 @@ Quirk record contract is schema-first in `fawn/config/quirks.schema.json`.
 Key fields:
 - `quirkId`, `scope`, `match`, `action`, `safetyClass`, `verificationMode`, `proofLevel`, `provenance`
 
+`action` (schemaVersion `2`, strict discriminated contract):
+- `use_temporary_buffer` with `params.bufferAlignmentBytes`
+- `toggle` with `params.toggle`
+- `no_op` with no params payload
+
 `verificationMode` (policy):
 - `guard_only`
 - `lean_preferred`
@@ -104,6 +109,11 @@ When logic should stay out of Zig:
 2. Use benchmark + trace artifacts to identify removable conditions in the actual hot path.
 3. Encode those conditions as Lean obligations; when proven, hoist them to bind/build artifacts and delete the corresponding Zig runtime branch.
 4. If a condition is not yet provable, keep the Zig branch explicit (no placeholder runtime logic).
+
+Current v0 integration note:
+- Lean contract/model files define obligation semantics and parity targets.
+- Runtime and gate enforcement of those semantics is currently executed in Zig/Python.
+- End-to-end Lean proof execution plus automated branch elimination is a roadmap item, not a completed CI path.
 
 ## 7. WASM Notes
 

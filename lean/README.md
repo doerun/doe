@@ -13,6 +13,12 @@ Policy:
   - `lean_required`: proof is required (`proofLevel=proven`)
 - safetyClass may add stricter requirements only if configured in `fawn/config/gates.json`
 
+Current integration boundary (v0):
+- Lean files in `fawn/lean/Fawn` are the formal contract/model source for verification semantics.
+- Blocking CI gates are currently schema/correctness/trace (and claim when enabled) through `fawn/bench` scripts.
+- Zig/Python runtime/gate logic mirrors Lean obligation fields and policy (`verificationMode`, `proofLevel`, blocking/advisory outcomes).
+- End-to-end Lean proof execution and automated proof-to-branch-elimination are planned but not yet wired.
+
 Current formalization:
 - `Fawn/Model.lean` (core enums, precedence lattice, requirement predicates)
 - `Fawn/Dispatch.lean` (command/scope relation and support lemmas)

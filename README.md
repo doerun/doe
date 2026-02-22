@@ -17,13 +17,13 @@ WebGPU runtimes like Dawn (C++) and wgpu (Rust) spend most of their CPU time on 
 
 C++ and Rust can achieve the same performance characteristics with enough discipline. Zig makes them the default. For a GPU runtime where CPU-side overhead is the bottleneck, that matters.
 
-**Lean 4** — we use Lean to prove that specific runtime checks are unnecessary, then delete them:
+**Lean 4** — current role and target role:
 
-- If Lean can prove a condition holds for all valid inputs, the corresponding runtime branch gets removed from the Zig hot path
-- Machine-checked invariants on state machine transitions (command validity, resource lifecycle)
-- The runtime gets faster over time as more conditions are proven and removed
+- Current: Lean is the formal contract/model layer for quirk selection and proof-obligation semantics (`verificationMode`, `proofLevel`, blocking/advisory mapping)
+- Current: Zig/runtime traces mirror those Lean obligation fields for gate and replay auditing
+- Target: when proof execution and artifact wiring are integrated end-to-end, proven conditions can be hoisted out and corresponding Zig runtime branches removed
 
-The combination is the point. Zig handles execution with minimal overhead. Lean proves which checks can be hoisted out of the runtime entirely. "Leaning out" means deleting runtime code, not adding a proof interpreter to the hot path.
+The combination is still the point. Zig handles execution with minimal overhead. Lean defines and checks invariants so elimination can be safe and explicit when wired. "Leaning out" means deleting runtime code, not adding a proof interpreter to the hot path.
 
 ## How we do better
 
@@ -45,10 +45,10 @@ For the hoistable category:
 
 1. Mine driver quirks from upstream Dawn/wgpu source automatically
 2. Normalize them into a schema-first dataset
-3. Prove what we can in Lean — delete the runtime branch when proven
+3. Prove what we can in Lean; delete runtime branches only when proof-to-artifact wiring is enforced in build/CI
 4. Pre-filter the rest once at startup by device profile — no per-command quirk matching
 
-The runtime binds a device profile at startup, filters the quirk set once, and buckets by command kind. After that, command dispatch is straight-line execution against pre-resolved actions. No per-command policy lookup. No toggle branching in hot loops. Future work will push more of this to comptime where the profile is known at build time.
+The runtime binds a device profile at startup, filters the quirk set once, and buckets by command kind. After that, command dispatch uses pre-resolved actions without per-command quirk matching or profile-table search in hot loops. Future work will push more of this to comptime where the profile is known at build time.
 
 ## Why this is the future
 
@@ -57,9 +57,9 @@ WebGPU is becoming the portable GPU API. Every browser ships it. Native embeddin
 The incumbent runtimes were built for correctness and portability first. The spec is stabilizing now, the conformance surface is known, and the driver quirk space is enumerable. That makes it possible to build a runtime that doesn't trade correctness for performance.
 
 - Zig's comptime system opens a path to make per-device specialization a build artifact instead of a runtime cost
-- Lean's proof system means validation elimination is mechanically checked, not reviewed by hand
+- Lean provides a path to mechanically checked validation elimination once proof execution is wired in CI/build
 - Both produce small, auditable, reproducible outputs
-- As more conditions are proven and hoisted out of the runtime, the hot path gets shorter without losing correctness
+- As more conditions are proven and integrated into artifacts, the hot path can get shorter without losing correctness
 
 ## Where we are faster today
 
@@ -106,7 +106,7 @@ Full comparison reports, trace artifacts, and visualization tooling are in `benc
 - Texture/raster path — compute texture sampling plus render-draw raster step. Currently slower than dispatch-only proxy. Non-claimable by contract.
 
 **Not yet implemented:**
-- Lean theorem packs with CI proof execution — proofs exist for core dispatch invariants; automated proof-driven branch elimination is not wired end-to-end
+- Lean theorem packs with CI/build proof execution — proofs exist for core dispatch invariants; automated proof-driven branch elimination is not wired end-to-end
 - Upstream quirk mining automation — prototype works; nightly drift ingest is not running
 - Metal backend — Vulkan-first; Metal is the second lane
 - GPU timestamp readback — returns zero on some adapter/driver combinations

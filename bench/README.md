@@ -31,6 +31,8 @@ That document defines:
   - validates schema-backed benchmark/config contracts as blocking release checks (`webgpu-spec-coverage`, benchmark methodology thresholds, and all quirk examples).
 - `run_blocking_gates.py`
   - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional claim gate.
+- `run_release_pipeline.py`
+  - canonical entrypoint for CI/local release orchestration: preflight -> compare report generation -> optional smoke verification -> blocking gates (optional claim gate).
 - `compare_runtimes.py`
   - runs two runtime commands repeatedly (left/right), captures wall-time quantiles, and writes a comparison artifact.
 - `compare_dawn_vs_fawn.py`
@@ -232,11 +234,16 @@ the report is explicitly `claimability.mode=release`, `comparisonStatus=comparab
 and `claimStatus=claimable`. Then generate an HTML visualization artifact:
 
 ```bash
-python3 fawn/bench/compare_dawn_vs_fawn.py ... --out fawn/bench/out/dawn-vs-fawn.json
-python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15
-python3 fawn/bench/visualize_dawn_vs_fawn.py --report fawn/bench/out/dawn-vs-fawn.json --out fawn/bench/out/dawn-vs-fawn.html
+# canonical one-command release pipeline:
+python3 fawn/bench/run_release_pipeline.py \
+  --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json \
+  --strict-amd-vulkan \
+  --with-claim-gate
+
+# optional visualization after the pipeline report exists:
+python3 fawn/bench/visualize_dawn_vs_fawn.py --report fawn/bench/out/dawn-vs-fawn.amd.vulkan.release.json --out fawn/bench/out/dawn-vs-fawn.amd.vulkan.release.html
 # optional machine-readable distribution analysis:
-python3 fawn/bench/visualize_dawn_vs_fawn.py --report fawn/bench/out/dawn-vs-fawn.json --analysis-out fawn/bench/out/dawn-vs-fawn.distribution.json
+python3 fawn/bench/visualize_dawn_vs_fawn.py --report fawn/bench/out/dawn-vs-fawn.amd.vulkan.release.json --analysis-out fawn/bench/out/dawn-vs-fawn.amd.vulkan.release.distribution.json
 ```
 
 ## Building dawn_perf_tests
@@ -493,6 +500,10 @@ python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config
 # strict AMD smoke + GPU probe evidence check
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json
 python3 bench/verify_smoke_gpu_usage.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json --require-comparable
+
+# canonical one-command variants:
+python3 bench/run_release_pipeline.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json --strict-amd-vulkan --with-claim-gate
+python3 bench/run_release_pipeline.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json --strict-amd-vulkan --verify-smoke-report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json --verify-smoke-require-comparable
 
 # local adapter-agnostic comparable matrix (strict, no vendor-id pin)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json

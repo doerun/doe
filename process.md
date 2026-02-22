@@ -21,11 +21,13 @@
 4. Bind
 - generate runtime config inputs and optional validator artifacts
 - build specialization targets
-- apply proof-driven elimination: when Lean discharges a runtime condition, hoist it into artifacts/config and remove the corresponding runtime branch.
+- target path: apply proof-driven elimination when Lean discharges a runtime condition, then hoist into artifacts/config and remove the corresponding runtime branch.
+- current v0 state: keep explicit Zig runtime branches unless elimination is wired end-to-end through build/CI artifacts.
 
 5. Gate
 - run schema + correctness + trace gates (blocking in v0)
 - run verification + performance gates (advisory in v0)
+- current v0 CI does not execute Lean toolchain proofs as a blocking step.
 - run schema hard gate:
   `python3 fawn/bench/schema_gate.py`
 - run correctness hard gate from comparison report artifacts:
@@ -38,6 +40,8 @@
   CI must fail hard if report claim metadata is not explicit release mode claimable/comparable.
 - canonical CI/script entrypoint for blocking gate sequence:
   `python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
+- canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
+  `python3 fawn/bench/run_release_pipeline.py --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json --strict-amd-vulkan --with-claim-gate`
 - for strict Dawn-vs-Fawn upload comparability, fail fast if the executed `fawn-zig-runtime` binary does not expose/validate upload knobs or appears older than key upload/runtime Zig sources.
 
 6. Benchmark

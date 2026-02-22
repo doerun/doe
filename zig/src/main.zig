@@ -11,7 +11,7 @@ const main_print = @import("main_print.zig");
 const sample_quirks =
     \\[
     \\  {
-    \\    "schemaVersion": 1,
+    \\    "schemaVersion": 2,
     \\    "quirkId": "vulkan.intel.gen12.use_temp_buffer_compressed_copy",
     \\    "scope": "memory",
     \\    "match": {

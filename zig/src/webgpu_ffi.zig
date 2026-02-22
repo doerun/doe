@@ -11,6 +11,7 @@ const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
 const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const commands = @import("wgpu_commands.zig");
+const env_flags = @import("env_flags.zig");
 
 pub const NativeExecutionStatus = types.NativeExecutionStatus;
 pub const NativeExecutionResult = types.NativeExecutionResult;
@@ -96,7 +97,7 @@ pub const WebGPUBackend = struct {
             .requested_backend_type = preferredBackendType(profile),
         };
         errdefer self.deinit();
-        self.timestamp_debug = envFlagEnabled(allocator, "FAWN_WGPU_TIMESTAMP_DEBUG");
+        self.timestamp_debug = env_flags.enabled(allocator, "FAWN_WGPU_TIMESTAMP_DEBUG");
         self.dyn_lib = try loader.openLibrary();
         self.procs = try loader.loadProcs(self.dyn_lib.?);
         self.capability_procs = p1_capability_procs_mod.loadCapabilityProcs(self.dyn_lib);
@@ -769,12 +770,3 @@ pub const WebGPUBackend = struct {
         std.debug.print("[fawn-timestamp] " ++ fmt, args);
     }
 };
-
-fn envFlagEnabled(allocator: std.mem.Allocator, name: []const u8) bool {
-    const value = std.process.getEnvVarOwned(allocator, name) catch return false;
-    defer allocator.free(value);
-    return std.mem.eql(u8, value, "1") or
-        std.ascii.eqlIgnoreCase(value, "true") or
-        std.ascii.eqlIgnoreCase(value, "yes") or
-        std.ascii.eqlIgnoreCase(value, "on");
-}

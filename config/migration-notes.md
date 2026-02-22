@@ -18,3 +18,16 @@
 
 - Bumped `config/modules.json` `schemaVersion` from `2` to `3`.
 - Updated module status values from `scaffolded` to `active` for current runtime posture.
+
+### `quirks.schema` action contract tightened
+
+- Bumped `config/quirks.schema.json` quirk `schemaVersion` from `1` to `2`.
+- Tightened `action` from open object to a strict discriminated contract:
+  - `use_temporary_buffer` requires `params.bufferAlignmentBytes` (`>= 1`)
+  - `toggle` requires `params.toggle`
+  - `no_op` requires only `kind` and rejects extra fields
+- Parser/runtime now enforce the same strictness:
+  - unknown quirk fields are rejected during JSON parse
+  - legacy action aliases (`noop`, `alignmentBytes`, `alignment`, `name`, `toggle_name`) are no longer accepted
+  - implicit fallback alignment is removed; alignment must be explicit in the quirk record
+- Updated first-party quirk examples to `schemaVersion: 2`.

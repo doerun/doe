@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub const SchemaVersion = u8;
-pub const CURRENT_SCHEMA_VERSION: SchemaVersion = 1;
+pub const CURRENT_SCHEMA_VERSION: SchemaVersion = 2;
 
 pub const Api = enum(u8) {
     vulkan,

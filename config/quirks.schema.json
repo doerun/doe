@@ -15,7 +15,7 @@
     "provenance"
   ],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
     "quirkId": { "type": "string", "minLength": 3 },
     "scope": {
       "type": "string",
@@ -33,13 +33,49 @@
       }
     },
     "action": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["kind"],
-      "properties": {
-        "kind": { "type": "string" },
-        "params": { "type": "object" }
-      }
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "params"],
+          "properties": {
+            "kind": { "const": "use_temporary_buffer" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["bufferAlignmentBytes"],
+              "properties": {
+                "bufferAlignmentBytes": { "type": "integer", "minimum": 1 },
+                "reason": { "type": "string" }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "params"],
+          "properties": {
+            "kind": { "const": "toggle" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["toggle"],
+              "properties": {
+                "toggle": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "no_op" }
+          }
+        }
+      ]
     },
     "safetyClass": {
       "type": "string",

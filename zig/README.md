@@ -22,23 +22,23 @@ Style guide:
 ## Source modules (runtime + backend lanes)
 
 Core:
-- `src/model.zig` (433) — typed contract for API, scope, safety, proof mode, match spec, actions, command kinds, device profile.
-- `src/runtime.zig` (402) — deterministic matcher, selector, and action application with profile-indexed command buckets.
-- `src/main.zig` (493) — CLI, arg parsing, dispatch loop, `--trace`/`--replay`/`--trace-meta` orchestration.
-- `src/execution.zig` (157) — execution mode switching (`trace` and `native`) and run result envelope.
+- `src/model.zig` — typed contract for API, scope, safety, proof mode, match spec, actions, command kinds, device profile.
+- `src/runtime.zig` — deterministic matcher, selector, and action application with profile-indexed command buckets.
+- `src/main.zig` — CLI, arg parsing, dispatch loop, `--trace`/`--replay`/`--trace-meta` orchestration.
+- `src/execution.zig` — execution mode switching (`trace` and `native`) and run result envelope.
 
 Parsing:
-- `src/command_json.zig` (595) — JSON command stream parser for replay-style inputs.
-- `src/quirk_json.zig` (194) — deterministic JSON parser for quirk records with strict schema checks.
+- `src/command_json.zig` — JSON command stream parser for replay-style inputs.
+- `src/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.
 
 Trace and replay:
-- `src/trace.zig` (280) — TraceState, hash functions, name helpers, trace row and meta output.
-- `src/replay.zig` (107) — replay expectation parsing and hash-chain validation.
+- `src/trace.zig` — TraceState, hash functions, name helpers, trace row and meta output.
+- `src/replay.zig` — replay expectation parsing and hash-chain validation.
 
 WebGPU backend:
-- `src/webgpu_ffi.zig` (311) — WebGPUBackend struct, lifecycle (init/deinit), adapter/device request, queue sync, timestamp readback.
-- `src/wgpu_types.zig` (707) — all WebGPU C API types, constants, function pointer types, Procs table, record types.
-- `src/wgpu_loader.zig` (212) — dynamic library loading, C callbacks, helper functions.
+- `src/webgpu_ffi.zig` — WebGPUBackend struct, lifecycle (init/deinit), adapter/device request, queue sync, timestamp readback.
+- `src/wgpu_types.zig` — all WebGPU C API types, constants, function pointer types, Procs table, record types.
+- `src/wgpu_loader.zig` — dynamic library loading, C callbacks, helper functions.
 - `src/wgpu_commands.zig` — command execution orchestration for upload/copy/barrier/dispatch/kernel dispatch plus render command delegation.
 - `src/wgpu_render_commands.zig` — native `render_draw` lowering via render pass, async pipeline diagnostics, and render-bundle execution.
 - `src/wgpu_render_resources.zig` — render uniform/texture/sampler bind-group resource setup and cached texture-view helpers.
@@ -47,7 +47,7 @@ WebGPU backend:
 - `src/wgpu_texture_procs.zig` — sampler/queueWriteTexture/texture query+destroy proc surface.
 - `src/wgpu_surface_procs.zig` — surface creation/configure/present proc surface and structs.
 - `src/wgpu_async_procs.zig` — async render-pipeline/error-scope/compilation-info proc surface and wait helpers.
-- `src/wgpu_resources.zig` (573) — buffer/texture management, bind group building, shader module and pipeline creation.
+- `src/wgpu_resources.zig` — buffer/texture management, bind group building, shader module and pipeline creation.
 
 Build:
 - `build.zig` — compile and run hooks, links libC and libdl.
@@ -69,6 +69,10 @@ zig build test
 ```
 
 When `--quirks` is provided, JSON file values are loaded directly and validated before transform.
+Quirk records now use schemaVersion `2` with strict action payloads:
+- `use_temporary_buffer` requires `params.bufferAlignmentBytes`
+- `toggle` requires `params.toggle`
+- `no_op` does not accept params
 
 Timestamp debug mode (for zero/empty GPU timestamp investigation):
 

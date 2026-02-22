@@ -9,16 +9,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  trace-gate:
-    runs-on: ubuntu-latest
+  release-report-gates:
+    runs-on:
+      - self-hosted
+      - linux
+      - amd-vulkan
     env:
-      REPORT_PATH: bench/out/dawn-vs-fawn.json
+      CONFIG_PATH: bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json
     steps:
       - uses: actions/checkout@v4
-      - name: Run release report gates
+      - name: Run canonical release pipeline
         run: |
-          if [ ! -f "$REPORT_PATH" ]; then
-            echo "FAIL: missing $REPORT_PATH"
-            exit 1
-          fi
-          python3 bench/run_blocking_gates.py --report "$REPORT_PATH" --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15
+          python3 bench/run_release_pipeline.py --config "$CONFIG_PATH" --strict-amd-vulkan --with-claim-gate
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fawn-release-gates-report
+          path: |
+            bench/out/dawn-vs-fawn.amd.vulkan.release*.json
+            bench/out/runtime-comparisons.amd.vulkan.release*

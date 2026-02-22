@@ -1,6 +1,6 @@
 [
   {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "quirkId": "vulkan.intel.gen12.use_temp_buffer_compressed_copy",
     "scope": "driver_toggle",
     "match": {

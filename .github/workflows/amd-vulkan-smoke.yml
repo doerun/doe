@@ -11,24 +11,19 @@ jobs:
       - self-hosted
       - linux
       - amd-vulkan
+    env:
+      CONFIG_PATH: bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json
+      REPORT_PATH: bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
+      WORKSPACE_PATH: bench/out/runtime-comparisons.amd.vulkan.smoke.gpu.16mb
     steps:
       - uses: actions/checkout@v4
-      - name: Host preflight
+      - name: Run canonical smoke pipeline
         run: |
-          python3 bench/preflight_bench_host.py --strict-amd-vulkan
-      - name: Dawn vs Fawn AMD Vulkan smoke
-        run: |
-          python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json
-      - name: Verify GPU probe evidence
-        run: |
-          python3 bench/verify_smoke_gpu_usage.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json --require-comparable
-      - name: Run blocking gates
-        run: |
-          python3 bench/run_blocking_gates.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
+          python3 bench/run_release_pipeline.py --config "$CONFIG_PATH" --report "$REPORT_PATH" --strict-amd-vulkan --verify-smoke-report "$REPORT_PATH" --verify-smoke-require-comparable
       - name: Upload smoke artifacts
         uses: actions/upload-artifact@v4
         with:
           name: amd-vulkan-smoke-report
           path: |
-            bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
-            bench/out/runtime-comparisons.amd.vulkan.smoke.gpu.16mb
+            ${{ env.REPORT_PATH }}
+            ${{ env.WORKSPACE_PATH }}

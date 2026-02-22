@@ -41,7 +41,7 @@ const RawQuirk = struct {
 };
 
 pub fn parseQuirks(allocator: Allocator, text: []const u8) ![]model.Quirk {
-    const parsed = try std.json.parseFromSlice([]const RawQuirk, allocator, text, .{ .ignore_unknown_fields = true });
+    const parsed = try std.json.parseFromSlice([]const RawQuirk, allocator, text, .{ .ignore_unknown_fields = false });
     defer parsed.deinit();
 
     var list = std.ArrayList(model.Quirk).init(allocator);
@@ -121,41 +121,36 @@ fn materializeQuirk(allocator: Allocator, raw: RawQuirk) !model.Quirk {
 }
 
 fn parseAction(allocator: Allocator, kind: []const u8, params: ?std.json.Value) !model.QuirkAction {
-    if (std.ascii.eqlIgnoreCase(kind, "use_temporary_buffer")) {
-        const alignment = if (params) |p| parseAlignment(p) else null;
+    if (std.mem.eql(u8, kind, "use_temporary_buffer")) {
+        const payload = params orelse return ParseError.InvalidPayload;
+        const alignment = parseTemporaryBufferAlignment(payload) orelse return ParseError.InvalidPayload;
+        if (alignment == 0) return ParseError.InvalidPayload;
         return model.QuirkAction{
             .use_temporary_buffer = model.UseTemporaryBufferAction{
-                .alignment_bytes = alignment orelse 4,
+                .alignment_bytes = alignment,
             },
         };
     }
-    if (std.ascii.eqlIgnoreCase(kind, "toggle")) {
-        const toggle_name = if (params) |p| parseToggleName(p) else null;
-        if (toggle_name == null) {
-            return ParseError.InvalidPayload;
-        }
+    if (std.mem.eql(u8, kind, "toggle")) {
+        const payload = params orelse return ParseError.InvalidPayload;
+        const toggle_name = parseToggleName(payload) orelse return ParseError.InvalidPayload;
         return model.QuirkAction{
             .toggle = model.ToggleAction{
-                .toggle_name = try allocator.dupe(u8, toggle_name.?),
+                .toggle_name = try allocator.dupe(u8, toggle_name),
             },
         };
     }
-    if (std.ascii.eqlIgnoreCase(kind, "no_op") or std.ascii.eqlIgnoreCase(kind, "noop")) {
+    if (std.mem.eql(u8, kind, "no_op")) {
+        if (params != null) return ParseError.InvalidPayload;
         return model.QuirkAction{ .no_op = {} };
     }
     return ParseError.UnsupportedActionKind;
 }
 
-fn parseAlignment(raw: std.json.Value) ?u32 {
+fn parseTemporaryBufferAlignment(raw: std.json.Value) ?u32 {
     switch (raw) {
         .object => |o| {
             if (o.get("bufferAlignmentBytes")) |field| {
-                return jsonToU32(field);
-            }
-            if (o.get("alignmentBytes")) |field| {
-                return jsonToU32(field);
-            }
-            if (o.get("alignment")) |field| {
                 return jsonToU32(field);
             }
         },
@@ -168,12 +163,6 @@ fn parseToggleName(raw: std.json.Value) ?[]const u8 {
     switch (raw) {
         .object => |o| {
             if (o.get("toggle")) |field| {
-                return jsonToString(field);
-            }
-            if (o.get("name")) |field| {
-                return jsonToString(field);
-            }
-            if (o.get("toggle_name")) |field| {
                 return jsonToString(field);
             }
         },

@@ -6,7 +6,7 @@ Date: 2026-02-22
 
 Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
-Current `fawn/zig/src` size is 12,031 LOC (`wc -l zig/src/*.zig`, 2026-02-22) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
+Current `fawn/zig/src` size is 12,036 LOC (`wc -l zig/src/*.zig`, 2026-02-22) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
 Benchmark contract coverage snapshot (2026-02-22 update):
@@ -34,6 +34,8 @@ Benchmark contract coverage snapshot (2026-02-22 update):
 - case-insensitive command/quirk parsing for stable config use
 - fail-fast action payload validation for toggle/use-temporary-buffer fields
 - trace enrichment with matched `scope`, `safetyClass`, and toggle payload for matched quirks.
+- strict quirk action contract alignment (`schemaVersion: 2`): parser now rejects unknown quirk fields, legacy action aliases, and implicit action payload defaults.
+- dispatch buckets now precompute `requires_lean`/`is_blocking` once per selected quirk, so per-command dispatch avoids recomputing Lean obligation flags.
 6. Lean runtime dispatch now includes driver-range matching, proof-priority tie-break support, and `Runtime.DispatchDecision` to mirror Zig trace metadata.
 7. Trace contract hardened with deterministic row hash-chain fields (`traceVersion`, `module`, `opCode`, `hash`, `previousHash`) and a companion parity comparator.
 8. Run-level Zig trace summary emission implemented via `--trace-meta`, including deterministic session-level `seqMax`, row counts, and terminal hash-chain anchors for fast replay validation.
@@ -321,8 +323,9 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 
 64. Blocking gate enforcement is now aligned with process policy in CI:
 - canonical runner `bench/run_blocking_gates.py` now enforces schema -> correctness -> trace -> optional claim ordering.
-- `.github/workflows/release-gates.yml` now uses `bench/run_blocking_gates.py` with claim-gate requirements.
-- `.github/workflows/amd-vulkan-smoke.yml` now uses `bench/run_blocking_gates.py` (no claim gate) for identical blocking gate ordering.
+- canonical release orchestration runner `bench/run_release_pipeline.py` now enforces preflight -> compare -> (optional smoke verify) -> blocking gates.
+- `.github/workflows/release-gates.yml` now uses `bench/run_release_pipeline.py` with release claim-gate requirements.
+- `.github/workflows/amd-vulkan-smoke.yml` now uses `bench/run_release_pipeline.py` with smoke GPU-usage verification.
 - new `bench/schema_gate.py` validates schema-backed config/data contracts before release claim checks.
 
 65. Benchmark methodology thresholds are now config contracts:
@@ -422,7 +425,7 @@ Current contract state after matrix expansion:
 
 Scope:
 - chosen path is full native Zig+WebGPU/FFI implementation from scratch.
-- current implementation size is 12,031 LOC (`zig/src`); remaining work is performance/reliability hardening and broader claim-grade coverage.
+- current implementation size is 12,036 LOC (`zig/src`); remaining work is performance/reliability hardening and broader claim-grade coverage.
 - current codebase status: trace/replay/matching complete, with queue-submit execution coverage for upload/copy/barrier and dispatch-family compute routing.
 
 Execution gap list:
