@@ -18,6 +18,7 @@ Current integration boundary (v0):
 - Blocking CI gates are currently schema/correctness/trace (and claim when enabled) through `fawn/bench` scripts.
 - Zig/Python runtime/gate logic mirrors Lean obligation fields and policy (`verificationMode`, `proofLevel`, blocking/advisory outcomes).
 - End-to-end Lean proof execution and automated proof-to-branch-elimination are planned but not yet wired.
+- Manual Lean typecheck/build is available through `./lean/check.sh` (uses pinned toolchain version from `config/toolchains.json`).
 
 Current formalization:
 - `Fawn/Model.lean` (core enums, precedence lattice, requirement predicates)
@@ -28,7 +29,7 @@ Current formalization:
 - `Fawn/Dispatch.lean` and `Fawn/Runtime.lean` now include `kernelDispatch` as a first-class command kind.
 
 Bridge layer contract:
-- input: `Fawn.Runtime.DispatchResult` stream
+- input: runtime `DispatchResult` stream
 - optional override: `SafetyProofOverride` maps safety class to stricter proof level requirements
 - output per matched quirk (`QuirkLeanObligation`) with:
   - `quirkId`

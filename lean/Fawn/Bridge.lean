@@ -55,7 +55,7 @@ structure QuirkLeanObligation where
   deriving Repr
 
 def fromQuirk
-    (quirk : Runtime.Quirk)
+    (quirk : Quirk)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : QuirkLeanObligation :=
   let required_level := requiredProofFromPolicy
@@ -83,7 +83,7 @@ def fromQuirk
   }
 
 def fromDispatchResult
-    (result : Runtime.DispatchResult)
+    (result : DispatchResult)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : Option QuirkLeanObligation :=
   match result.quirk with
@@ -91,7 +91,7 @@ def fromDispatchResult
   | some quirk => some (fromQuirk quirk safetyOverride)
 
 def fromDispatchDecision
-    (result : Runtime.DispatchDecision)
+    (result : DispatchDecision)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : Option QuirkLeanObligation :=
   match result.quirk with
@@ -99,7 +99,7 @@ def fromDispatchDecision
   | some quirk => some (fromQuirk quirk safetyOverride)
 
 def obligationsFromDispatches
-    (results : List Runtime.DispatchResult)
+    (results : List DispatchResult)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : List QuirkLeanObligation :=
   match results with
@@ -110,7 +110,7 @@ def obligationsFromDispatches
     | some obligation => obligation :: obligationsFromDispatches tail safetyOverride
 
 def obligationsFromDispatchDecisions
-    (results : List Runtime.DispatchDecision)
+    (results : List DispatchDecision)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : List QuirkLeanObligation :=
   match results with
@@ -121,13 +121,13 @@ def obligationsFromDispatchDecisions
     | some obligation => obligation :: obligationsFromDispatchDecisions tail safetyOverride
 
 def blockingObligations
-    (results : List Runtime.DispatchResult)
+    (results : List DispatchResult)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : List QuirkLeanObligation :=
   obligationsFromDispatches results safetyOverride |>.filter (fun item => item.isBlocking)
 
 def blockingObligationsFromDecisions
-    (results : List Runtime.DispatchDecision)
+    (results : List DispatchDecision)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : List QuirkLeanObligation :=
   obligationsFromDispatchDecisions results safetyOverride |>.filter (fun item => item.isBlocking)

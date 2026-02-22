@@ -1,5 +1,4 @@
 import Fawn.Model
-import Fawn.Dispatch
 
 inductive CommandKind where
   | upload

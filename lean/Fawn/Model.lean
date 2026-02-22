@@ -102,6 +102,6 @@ theorem critical_is_max_rank : SafetyClass.critical.rank = 3 := by
   rfl
 
 theorem requiredProof_forbidden_reject_from_rank :
-    ∀ c : SafetyClass, c.requiredProofClass = ProofLevel.rejected → False := by
+    ∀ c : SafetyClass, requiredProofClass c = ProofLevel.rejected → False := by
   intro c h
   cases c <;> simp [requiredProofClass] at h

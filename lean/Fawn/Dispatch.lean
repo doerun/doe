@@ -35,8 +35,7 @@ def requiresObligation (q : Quirk) : Bool :=
 theorem toggleAlwaysSupported (q : Quirk) :
     q.scope = .driver_toggle → ∀ cmd : CommandKind, supports q cmd := by
   intro h cmd
-  subst h
-  simp [supports, supportsScope]
+  simp [supports, supportsScope, h]
 
 theorem strongerSafetyRaisesProofDemand :
     ∀ q : Quirk, q.safetyClass = .critical → requiredProofClass q.safetyClass = ProofLevel.proven := by
