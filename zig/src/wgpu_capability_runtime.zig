@@ -7,11 +7,15 @@ pub const AdapterProbeResult = struct {
     adapter_has_timestamp_query: bool,
     has_timestamp_inside_passes: bool,
     adapter_has_multi_draw_indirect: bool,
+    adapter_has_pixel_local_storage_coherent: bool,
+    adapter_has_pixel_local_storage_non_coherent: bool,
 };
 
 pub const DeviceProbeResult = struct {
     has_timestamp_query: bool,
     has_multi_draw_indirect: bool,
+    has_pixel_local_storage_coherent: bool,
+    has_pixel_local_storage_non_coherent: bool,
 };
 
 pub fn probeInstanceCapabilities(
@@ -85,6 +89,14 @@ pub fn probeAdapterCapabilities(
         result.adapter_has_multi_draw_indirect = p1_capability_procs_mod.hasFeature(
             features,
             types.WGPUFeatureName_MultiDrawIndirect,
+        );
+        result.adapter_has_pixel_local_storage_coherent = p1_capability_procs_mod.hasFeature(
+            features,
+            types.WGPUFeatureName_PixelLocalStorageCoherent,
+        );
+        result.adapter_has_pixel_local_storage_non_coherent = p1_capability_procs_mod.hasFeature(
+            features,
+            types.WGPUFeatureName_PixelLocalStorageNonCoherent,
         );
         has_adapter_properties_memory_heaps = p1_capability_procs_mod.hasFeature(
             features,
@@ -180,6 +192,14 @@ pub fn probeDeviceCapabilities(
         result.has_multi_draw_indirect = p1_capability_procs_mod.hasFeature(
             features,
             types.WGPUFeatureName_MultiDrawIndirect,
+        );
+        result.has_pixel_local_storage_coherent = p1_capability_procs_mod.hasFeature(
+            features,
+            types.WGPUFeatureName_PixelLocalStorageCoherent,
+        );
+        result.has_pixel_local_storage_non_coherent = p1_capability_procs_mod.hasFeature(
+            features,
+            types.WGPUFeatureName_PixelLocalStorageNonCoherent,
         );
         has_adapter_properties_memory_heaps = p1_capability_procs_mod.hasFeature(
             features,

@@ -10,7 +10,7 @@ Current `fawn/zig/src` size is 2,750 LOC and now includes native queue-submitted
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
 Benchmark contract coverage snapshot (2026-02-22 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `26` workload contracts: `18` comparable + `8` directional contracts (`surface_presentation_contract`, 3 macro stress workloads, and 4 P0 API contract workloads).
+- `bench/workloads.amd.vulkan.extended.json` now contains `28` workload contracts: `18` comparable + `10` directional contracts (`surface_presentation_contract`, 4 macro stress workloads, and 6 P0 API contract workloads).
 - strict extended comparable matrix now includes render, render-bundle, texture-contract, draw-indexed proxy, and async diagnostics slices in addition to upload/compute/pipeline.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
@@ -243,11 +243,28 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
   `examples/p2_lifecycle_refcount_macro_commands.json`.
 - Dawn map entries for these IDs were added in `bench/dawn_workload_map.amd.extended.json`; all are directional (`comparable=false`) by contract.
 
+59. P0 pixel-local-storage barrier surface is now fully implemented as a deterministic diagnostics contract:
+- added `async_diagnostics` mode `pixel_local_storage` (`zig/src/wgpu_async_pixel_local_storage.zig`) with explicit non-coherent feature gating, pipeline-layout PLS chained descriptor, render-pass PLS chained descriptor, and in-pass `wgpuRenderPassEncoderPixelLocalStorageBarrier` invocation.
+- runtime now requests/probes Dawn pixel-local-storage features at adapter/device scope (`WGPUFeatureName_PixelLocalStorageCoherent`, `WGPUFeatureName_PixelLocalStorageNonCoherent`) through `zig/src/webgpu_ffi.zig` and `zig/src/wgpu_capability_runtime.zig`.
+- coverage state promoted from partial to implemented in `config/webgpu-spec-coverage.json`.
+- new directional benchmark contracts were added:
+  `p0_render_pixel_local_storage_barrier_contract` and `p0_render_pixel_local_storage_barrier_macro_500`
+  with command seeds
+  `examples/p0_render_pixel_local_storage_barrier_commands.json` and
+  `examples/p0_render_pixel_local_storage_barrier_macro_commands.json`.
+- AMD Vulkan smoke automation is now config-first:
+  `bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json`,
+  `bench/verify_smoke_gpu_usage.py`, and self-hosted workflow
+  `.github/workflows/amd-vulkan-smoke.yml`.
+- Dawn-vs-Fawn feature/benchmark coverage table generation is now scripted via
+  `bench/generate_feature_benchmark_table.py` with current artifact
+  `bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`.
+
 ### Missing in progress
 
 1. Full upstream quirk mining automation.
 2. Lean theorem packs with CI proof execution.
-3. External CI workflow wiring for mandatory release gate invocation.
+3. Self-hosted AMD Vulkan runner availability/maintenance for automated smoke workflow execution (`.github/workflows/amd-vulkan-smoke.yml`).
 4. Full benchmark harness with measured GPU timings tied to native execution spans.
 5. Baseline dataset generation and end-to-end comparison automation against Dawn/wgpu incumbents.
 6. Native Zig/WebGPU/FFI execution backend in Zig (estimated 2,800+ LOC, hard runtime milestone).
@@ -308,9 +325,9 @@ Interpretation:
 Current contract state after matrix expansion:
 
 1. `bench/workloads.amd.vulkan.extended.json`
-- workload contracts: `26` total
+- workload contracts: `28` total
 - strict comparable contracts: `18`
-- directional contracts: `8` (`surface_presentation_contract`, 3 macro stress contracts, and 4 P0 API contract workloads)
+- directional contracts: `10` (`surface_presentation_contract`, 4 macro stress contracts, and 6 P0 API contract workloads)
 
 2. `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - strict mode remains `includeNoncomparableWorkloads=false`
@@ -320,7 +337,7 @@ Current contract state after matrix expansion:
 - directional diagnostics now focus on surface lifecycle only (`workloadFilter=surface_presentation_contract`)
 
 4. `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
-- directional diagnostics target macro stress workloads only (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`)
+- directional diagnostics target macro stress workloads only (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`)
 
 5. Host execution note (this machine class)
 - strict AMD Vulkan Dawn runs can fail/skips when `/dev/dri/renderD128` access is unavailable to the active user.
@@ -361,3 +378,4 @@ Meaning:
 1. strict comparable AMD matrices are contract-defined and expanded, but claimable strict AMD substantiation requires a host with usable AMD render-node access.
 2. directional diagnostics are contract-scoped and non-claim: surface lifecycle (`surface_presentation_contract`) plus explicit macro stress workloads (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`).
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
+4. directional diagnostics also include P0 API contract workloads (`p0_resource_lifecycle_contract`, `p0_compute_indirect_timestamp_contract`, `p0_render_multidraw_contract`, `p0_render_multidraw_indexed_contract`, `p0_render_pixel_local_storage_barrier_contract`) and the macro PLS stress workload (`p0_render_pixel_local_storage_barrier_macro_500`).

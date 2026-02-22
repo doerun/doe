@@ -33,6 +33,8 @@
     "p0_compute_indirect_timestamp_contract": "WorkgroupAtomicPerf.Run/*WorkgroupUsageType_WorkgroupTypeAtomic",
     "p0_render_multidraw_contract": "DrawCallPerf.Run/*",
     "p0_render_multidraw_indexed_contract": "DrawCallPerf.Run/*DynamicVertexBuffer",
+    "p0_render_pixel_local_storage_barrier_contract": "DrawCallPerf.Run/*",
+    "p0_render_pixel_local_storage_barrier_macro_500": "DrawCallPerf.Run/*",
     "surface_presentation_contract": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
     "default": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
   }

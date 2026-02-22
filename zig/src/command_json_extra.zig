@@ -81,6 +81,7 @@ fn parseAsyncDiagnosticsMode(raw: ?[]const u8) ParseError!model.AsyncDiagnostics
     if (commandKindEqualsFn(value, "capability_introspection") or commandKindEqualsFn(value, "capability-introspection")) return .capability_introspection;
     if (commandKindEqualsFn(value, "resource_table_immediates") or commandKindEqualsFn(value, "resource-table-immediates")) return .resource_table_immediates;
     if (commandKindEqualsFn(value, "lifecycle_refcount") or commandKindEqualsFn(value, "lifecycle-refcount")) return .lifecycle_refcount;
+    if (commandKindEqualsFn(value, "pixel_local_storage") or commandKindEqualsFn(value, "pixel-local-storage")) return .pixel_local_storage;
     if (commandKindEqualsFn(value, "full")) return .full;
     return ParseError.InvalidCommandPayload;
 }

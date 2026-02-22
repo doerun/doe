@@ -37,6 +37,10 @@ That document defines:
   - includes ECDF overlays, workload×percentile delta heatmap, KS statistic/p-value, Wasserstein distance, probability of superiority `P(left<right)`, and bootstrap CIs for delta `p50`/`p95`/`p99`.
 - `claim_gate.py`
   - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, and per-workload claimability) for blocking release CI gates.
+- `generate_feature_benchmark_table.py`
+  - builds a markdown table joining `config/webgpu-spec-coverage.json`, workload contracts, and Dawn filter mappings for Dawn-vs-Fawn feature/benchmark coverage auditing.
+- `verify_smoke_gpu_usage.py`
+  - validates AMD Vulkan smoke reports include explicit GPU probe evidence (`gpuMemoryProbeAvailable`, sample counts, and VRAM peak fields) on both sides.
 
 Template placeholders:
 `{commands}`, `{quirks}`, `{vendor}`, `{api}`, `{family}`, `{driver}`, `{workload}`, `{dawn_filter}`, `{trace_jsonl}`, `{trace_meta}`, `{extra_args}`.
@@ -195,9 +199,10 @@ Extended workload domains now include:
 - shader compile/pipeline stress (`ShaderRobustnessPerf` mapping, comparable, fixed single-test filter + per-step normalization).
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
 - async pipeline diagnostics contract workload (mapped to `ShaderRobustnessPerf` pipeline-compilation baseline) covering `CreateRenderPipelineAsync`, error scopes, and shader compilation-info API paths.
+- directional P0 API contracts including resource lifecycle, compute indirect/timestamps, render multidraw variants, and pixel-local-storage barrier descriptor-chain coverage.
 - surface lifecycle contract workload is tracked as directional (`surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
 - directional macro workloads for high-volume stress:
-  `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, and `texture_sampler_write_query_destroy_macro_500`.
+  `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, and `p0_render_pixel_local_storage_barrier_macro_500`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:
   `matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
@@ -438,7 +443,8 @@ Additional AMD Vulkan presets:
 - release claim mode: `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
 - extended comparable matrix (upload + compute + render + texture + render-bundle + async pipeline diagnostics): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - directional diagnostics (surface lifecycle contract): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
-- directional macro diagnostics (high-volume render/texture stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
+- directional macro diagnostics (high-volume render/texture + P0 PLS stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
+- strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json`
 - adapter-agnostic local comparable matrix (no fixed AMD vendor-id requirement): `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`
 
 Preset behavior:
@@ -472,8 +478,12 @@ python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config
 # directional diagnostics only (surface lifecycle contract, non-claim)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json
 
-# directional macro diagnostics (high-volume render/texture stress, non-claim)
+# directional macro diagnostics (high-volume render/texture + P0 PLS stress, non-claim)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json
+
+# strict AMD smoke + GPU probe evidence check
+python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json
+python3 bench/verify_smoke_gpu_usage.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json --require-comparable
 
 # local adapter-agnostic comparable matrix (strict, no vendor-id pin)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json

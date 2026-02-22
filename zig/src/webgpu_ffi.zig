@@ -71,9 +71,13 @@ pub const WebGPUBackend = struct {
     requested_backend_type: types.WGPUBackendType = .undefined,
     adapter_has_timestamp_query: bool = false,
     adapter_has_multi_draw_indirect: bool = false,
+    adapter_has_pixel_local_storage_coherent: bool = false,
+    adapter_has_pixel_local_storage_non_coherent: bool = false,
     has_timestamp_query: bool = false,
     has_timestamp_inside_passes: bool = false,
     has_multi_draw_indirect: bool = false,
+    has_pixel_local_storage_coherent: bool = false,
+    has_pixel_local_storage_non_coherent: bool = false,
     timestamp_debug: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !Self {
@@ -93,23 +97,24 @@ pub const WebGPUBackend = struct {
         };
         errdefer self.deinit();
         self.timestamp_debug = envFlagEnabled(allocator, "FAWN_WGPU_TIMESTAMP_DEBUG");
-
         self.dyn_lib = try loader.openLibrary();
         self.procs = try loader.loadProcs(self.dyn_lib.?);
         self.capability_procs = p1_capability_procs_mod.loadCapabilityProcs(self.dyn_lib);
         self.resource_table_procs = p1_resource_table_procs_mod.loadResourceTableProcs(self.dyn_lib);
         self.lifecycle_procs = p2_lifecycle_procs_mod.loadLifecycleProcs(self.dyn_lib);
-
         if (self.procs) |procs| {
             self.instance = procs.wgpuCreateInstance(null);
             if (self.instance == null) return error.NativeInstanceUnavailable;
             try capability_runtime_mod.probeInstanceCapabilities(self.capability_procs, self.instance);
-
             self.adapter = try self.requestAdapter();
             self.adapter_has_timestamp_query = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_TimestampQuery) != types.WGPU_FALSE;
             self.adapter_has_multi_draw_indirect = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_MultiDrawIndirect) != types.WGPU_FALSE;
+            self.adapter_has_pixel_local_storage_coherent = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_PixelLocalStorageCoherent) != types.WGPU_FALSE;
+            self.adapter_has_pixel_local_storage_non_coherent = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_PixelLocalStorageNonCoherent) != types.WGPU_FALSE;
             self.has_timestamp_query = self.adapter_has_timestamp_query;
             self.has_multi_draw_indirect = self.adapter_has_multi_draw_indirect;
+            self.has_pixel_local_storage_coherent = self.adapter_has_pixel_local_storage_coherent;
+            self.has_pixel_local_storage_non_coherent = self.adapter_has_pixel_local_storage_non_coherent;
             self.has_timestamp_inside_passes = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses) != types.WGPU_FALSE;
             const adapter_probe = try capability_runtime_mod.probeAdapterCapabilities(
                 self.capability_procs,
@@ -119,15 +124,21 @@ pub const WebGPUBackend = struct {
                     .adapter_has_timestamp_query = self.adapter_has_timestamp_query,
                     .has_timestamp_inside_passes = self.has_timestamp_inside_passes,
                     .adapter_has_multi_draw_indirect = self.adapter_has_multi_draw_indirect,
+                    .adapter_has_pixel_local_storage_coherent = self.adapter_has_pixel_local_storage_coherent,
+                    .adapter_has_pixel_local_storage_non_coherent = self.adapter_has_pixel_local_storage_non_coherent,
                 },
             );
             self.adapter_has_timestamp_query = adapter_probe.adapter_has_timestamp_query;
             self.has_timestamp_inside_passes = adapter_probe.has_timestamp_inside_passes;
             self.adapter_has_multi_draw_indirect = adapter_probe.adapter_has_multi_draw_indirect;
+            self.adapter_has_pixel_local_storage_coherent = adapter_probe.adapter_has_pixel_local_storage_coherent;
+            self.adapter_has_pixel_local_storage_non_coherent = adapter_probe.adapter_has_pixel_local_storage_non_coherent;
             self.device = try self.requestDevice();
             if (procs.wgpuDeviceHasFeature) |device_has_feature| {
                 self.has_timestamp_query = device_has_feature(self.device.?, types.WGPUFeatureName_TimestampQuery) != types.WGPU_FALSE;
                 self.has_multi_draw_indirect = device_has_feature(self.device.?, types.WGPUFeatureName_MultiDrawIndirect) != types.WGPU_FALSE;
+                self.has_pixel_local_storage_coherent = device_has_feature(self.device.?, types.WGPUFeatureName_PixelLocalStorageCoherent) != types.WGPU_FALSE;
+                self.has_pixel_local_storage_non_coherent = device_has_feature(self.device.?, types.WGPUFeatureName_PixelLocalStorageNonCoherent) != types.WGPU_FALSE;
             }
             const device_probe = try capability_runtime_mod.probeDeviceCapabilities(
                 self.capability_procs,
@@ -136,10 +147,14 @@ pub const WebGPUBackend = struct {
                 .{
                     .has_timestamp_query = self.has_timestamp_query,
                     .has_multi_draw_indirect = self.has_multi_draw_indirect,
+                    .has_pixel_local_storage_coherent = self.has_pixel_local_storage_coherent,
+                    .has_pixel_local_storage_non_coherent = self.has_pixel_local_storage_non_coherent,
                 },
             );
             self.has_timestamp_query = device_probe.has_timestamp_query;
             self.has_multi_draw_indirect = device_probe.has_multi_draw_indirect;
+            self.has_pixel_local_storage_coherent = device_probe.has_pixel_local_storage_coherent;
+            self.has_pixel_local_storage_non_coherent = device_probe.has_pixel_local_storage_non_coherent;
             self.queue = procs.wgpuDeviceGetQueue(self.device.?);
             if (self.queue == null) return error.NativeQueueUnavailable;
             capability_runtime_mod.touchPrimaryObjectRefs(
@@ -150,18 +165,20 @@ pub const WebGPUBackend = struct {
                 self.device,
                 self.queue,
             );
-            std.debug.print("[fawn-init] adapter_ts={} device_ts={} inside_passes={} adapter_multi_draw={} device_multi_draw={}\n", .{
+            std.debug.print("[fawn-init] adapter_ts={} device_ts={} inside_passes={} adapter_multi_draw={} device_multi_draw={} adapter_pls_coherent={} adapter_pls_noncoherent={} device_pls_coherent={} device_pls_noncoherent={}\n", .{
                 self.adapter_has_timestamp_query,
                 self.has_timestamp_query,
                 self.has_timestamp_inside_passes,
                 self.adapter_has_multi_draw_indirect,
                 self.has_multi_draw_indirect,
+                self.adapter_has_pixel_local_storage_coherent,
+                self.adapter_has_pixel_local_storage_non_coherent,
+                self.has_pixel_local_storage_coherent,
+                self.has_pixel_local_storage_non_coherent,
             });
         }
-
         return self;
     }
-
     fn preferredBackendType(profile: model.DeviceProfile) types.WGPUBackendType {
         return switch (profile.api) {
             .vulkan => .vulkan,
@@ -313,11 +330,15 @@ pub const WebGPUBackend = struct {
                 .adapter_has_timestamp_query = self.adapter_has_timestamp_query,
                 .has_timestamp_inside_passes = self.has_timestamp_inside_passes,
                 .adapter_has_multi_draw_indirect = self.adapter_has_multi_draw_indirect,
+                .adapter_has_pixel_local_storage_coherent = self.adapter_has_pixel_local_storage_coherent,
+                .adapter_has_pixel_local_storage_non_coherent = self.adapter_has_pixel_local_storage_non_coherent,
             },
         );
         self.adapter_has_timestamp_query = adapter_probe.adapter_has_timestamp_query;
         self.has_timestamp_inside_passes = adapter_probe.has_timestamp_inside_passes;
         self.adapter_has_multi_draw_indirect = adapter_probe.adapter_has_multi_draw_indirect;
+        self.adapter_has_pixel_local_storage_coherent = adapter_probe.adapter_has_pixel_local_storage_coherent;
+        self.adapter_has_pixel_local_storage_non_coherent = adapter_probe.adapter_has_pixel_local_storage_non_coherent;
         const device_probe = try capability_runtime_mod.probeDeviceCapabilities(
             self.capability_procs,
             self.device,
@@ -325,10 +346,14 @@ pub const WebGPUBackend = struct {
             .{
                 .has_timestamp_query = self.has_timestamp_query,
                 .has_multi_draw_indirect = self.has_multi_draw_indirect,
+                .has_pixel_local_storage_coherent = self.has_pixel_local_storage_coherent,
+                .has_pixel_local_storage_non_coherent = self.has_pixel_local_storage_non_coherent,
             },
         );
         self.has_timestamp_query = device_probe.has_timestamp_query;
         self.has_multi_draw_indirect = device_probe.has_multi_draw_indirect;
+        self.has_pixel_local_storage_coherent = device_probe.has_pixel_local_storage_coherent;
+        self.has_pixel_local_storage_non_coherent = device_probe.has_pixel_local_storage_non_coherent;
     }
 
     pub fn getResourceTableProcs(self: Self) ?p1_resource_table_procs_mod.ResourceTableProcs {
@@ -666,7 +691,7 @@ pub const WebGPUBackend = struct {
             .userdata1 = &state,
             .userdata2 = null,
         };
-        var required_features = [_]types.WGPUFeatureName{undefined} ** 3;
+        var required_features = [_]types.WGPUFeatureName{undefined} ** 5;
         var feature_count: usize = 0;
         if (self.has_timestamp_query) {
             required_features[feature_count] = types.WGPUFeatureName_TimestampQuery;
@@ -680,9 +705,24 @@ pub const WebGPUBackend = struct {
             required_features[feature_count] = types.WGPUFeatureName_MultiDrawIndirect;
             feature_count += 1;
         }
+        if (self.has_pixel_local_storage_coherent) {
+            required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageCoherent;
+            feature_count += 1;
+        }
+        if (self.has_pixel_local_storage_non_coherent) {
+            required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageNonCoherent;
+            feature_count += 1;
+        }
         self.timestampLog(
-            "request_device required_features timestamp={} inside_passes={} multi_draw={} count={}\n",
-            .{ self.has_timestamp_query, self.has_timestamp_inside_passes, self.has_multi_draw_indirect, feature_count },
+            "request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} count={}\n",
+            .{
+                self.has_timestamp_query,
+                self.has_timestamp_inside_passes,
+                self.has_multi_draw_indirect,
+                self.has_pixel_local_storage_coherent,
+                self.has_pixel_local_storage_non_coherent,
+                feature_count,
+            },
         );
         const device_desc = types.WGPUDeviceDescriptor{
             .nextInChain = null,

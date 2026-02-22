@@ -1,0 +1,34 @@
+name: amd-vulkan-smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 8 * * *"
+
+jobs:
+  smoke:
+    runs-on:
+      - self-hosted
+      - linux
+      - amd-vulkan
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host preflight
+        run: |
+          python3 bench/preflight_bench_host.py --strict-amd-vulkan
+      - name: Dawn vs Fawn AMD Vulkan smoke
+        run: |
+          python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json
+      - name: Verify GPU probe evidence
+        run: |
+          python3 bench/verify_smoke_gpu_usage.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json --require-comparable
+      - name: Replay gate
+        run: |
+          python3 bench/trace_gate.py --report bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
+      - name: Upload smoke artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: amd-vulkan-smoke-report
+          path: |
+            bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
+            bench/out/runtime-comparisons.amd.vulkan.smoke.gpu.16mb

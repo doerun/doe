@@ -194,11 +194,11 @@
     {
       "capabilityId": "p0_render_pixel_local_storage_barrier",
       "domain": "render",
-      "status": "partial",
+      "status": "implemented",
       "priority": "p1",
       "owner": "runtime-core",
-      "contract": "zig/src/wgpu_p0_procs.zig symbol load + zig/src/wgpu_render_api.zig optional proc surface",
-      "notes": "wgpuRenderPassEncoderPixelLocalStorageBarrier is loaded and exposed, but full render-pass/pipeline local-storage attachment contracts are not yet emitted in native render lowering; runtime keeps this path disabled until those contracts are added."
+      "contract": "zig/src/wgpu_p0_procs.zig + zig/src/wgpu_render_api.zig + zig/src/wgpu_render_types.zig + zig/src/wgpu_resources.zig createPipelineLayoutWithPixelLocalStorage + zig/src/wgpu_async_pixel_local_storage.zig diagnostics mode",
+      "notes": "Pixel-local-storage diagnostics now emit full pipeline-layout and render-pass descriptor chains (storage attachments + total size), feature-gate non-coherent mode explicitly, and execute wgpuRenderPassEncoderPixelLocalStorageBarrier inside recorded render passes."
     }
   ]
 }

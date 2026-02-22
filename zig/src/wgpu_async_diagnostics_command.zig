@@ -7,6 +7,7 @@ const p0_procs_mod = @import("wgpu_p0_procs.zig");
 const p1_resource_table_procs_mod = @import("wgpu_p1_resource_table_procs.zig");
 const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const async_procs_mod = @import("wgpu_async_procs.zig");
+const async_pixel_local_storage_mod = @import("wgpu_async_pixel_local_storage.zig");
 const render_api_mod = @import("wgpu_render_api.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
@@ -61,6 +62,7 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
             .capability_introspection => runCapabilityIntrospectionDiagnostics(self),
             .resource_table_immediates => runResourceTableImmediatesDiagnostics(self, diagnostics.target_format),
             .lifecycle_refcount => runLifecycleRefcountDiagnostics(self, diagnostics.target_format),
+            .pixel_local_storage => async_pixel_local_storage_mod.runPixelLocalStorageDiagnostics(self, diagnostics.target_format),
             .full => runFullDiagnostics(self, diagnostics.target_format),
         };
         mode_result catch |err| {
@@ -89,6 +91,7 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
             .capability_introspection => "async diagnostics capability introspection completed",
             .resource_table_immediates => "async diagnostics resource-table/immediates completed",
             .lifecycle_refcount => "async diagnostics lifecycle/refcount completed",
+            .pixel_local_storage => "async diagnostics pixel-local-storage completed",
             .full => "async diagnostics full mode completed",
         },
         .setup_ns = setup_ns,
@@ -100,6 +103,7 @@ fn runFullDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !v
     try runCapabilityIntrospectionDiagnostics(self);
     try runResourceTableImmediatesDiagnostics(self, target_format);
     try runLifecycleRefcountDiagnostics(self, target_format);
+    try async_pixel_local_storage_mod.runPixelLocalStorageDiagnostics(self, target_format);
 }
 
 fn runCapabilityIntrospectionDiagnostics(self: *Backend) !void {
@@ -572,6 +576,8 @@ fn unsupportedDiagnosticsMessage(err: anyerror) ?[]const u8 {
         error.ResourceTableProcUnavailable => "resource-table proc surface unavailable",
         error.ResourceTableFeatureUnavailable => "resource-table feature unavailable",
         error.LifecycleProcUnavailable => "lifecycle proc surface unavailable",
+        error.PixelLocalStorageFeatureUnavailable => "pixel-local-storage feature unavailable",
+        error.PixelLocalStorageBarrierUnavailable => "pixel-local-storage barrier proc unavailable",
         else => null,
     };
 }

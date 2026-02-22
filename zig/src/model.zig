@@ -376,6 +376,7 @@ pub const AsyncDiagnosticsMode = enum {
     capability_introspection,
     resource_table_immediates,
     lifecycle_refcount,
+    pixel_local_storage,
     full,
 };
 

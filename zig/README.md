@@ -193,4 +193,6 @@ Reference commands:
     `surface_acquire` | `acquire_surface_texture`, `surface_present` | `present_surface`,
     `surface_unconfigure` | `unconfigure_surface`, `surface_release` | `release_surface`
   - `async_diagnostics` | `pipeline_async_diagnostics`
+- async diagnostics mode values:
+  `pipeline_async`, `capability_introspection`, `resource_table_immediates`, `lifecycle_refcount`, `pixel_local_storage`, `full`.
 - either `kind` or `command` may carry the command name in command JSON.
