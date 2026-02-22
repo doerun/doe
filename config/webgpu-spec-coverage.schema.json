@@ -28,7 +28,11 @@
               "pipeline",
               "queue",
               "query",
-              "surface"
+              "surface",
+              "capability",
+              "resource-table",
+              "lifecycle",
+              "device"
             ]
           },
           "status": {
@@ -41,6 +45,10 @@
           },
           "owner": { "type": "string" },
           "contract": { "type": "string" },
+          "benchmarkClass": {
+            "type": "string",
+            "enum": ["comparable", "directional"]
+          },
           "notes": { "type": "string" }
         }
       }

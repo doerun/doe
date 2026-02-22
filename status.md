@@ -272,6 +272,36 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
   - capability-to-benchmark mapping coverage: `100.00% (22/22)`
   (`bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`, `bench/out/dawn_header_vs_fawn_ref_scan.json`).
 
+61. Comparable contract promotion + timing rigor hardening completed for next-week item set:
+- promoted from directional to comparable (`comparable=true`) where execution is adapter-backed and deterministic:
+  `p1_capability_introspection_contract`,
+  `p2_lifecycle_refcount_contract`,
+  `p1_capability_introspection_macro_500`,
+  `p2_lifecycle_refcount_macro_200`,
+  `p0_resource_lifecycle_contract`,
+  `p0_compute_indirect_timestamp_contract`,
+  `p0_render_multidraw_contract`,
+  `p0_render_multidraw_indexed_contract`.
+- extended workload matrix now stands at `34` total contracts: `26` comparable + `8` directional.
+- strict probe run over promoted contracts (`bench/out/dawn-vs-fawn.amd.vulkan.promoted.strict_probe.json`) reports `comparisonStatus=comparable` for all 8 promoted workloads (claimability diagnostic due single-sample probe floor).
+- release claimability recheck for upload workloads (`buffer_upload_64kb`, `buffer_upload_1mb`) completed with strict comparability and release sample floor:
+  `bench/out/dawn-vs-fawn.amd.vulkan.release.upload64kb1mb.json`
+  => `comparisonStatus=comparable`, `claimStatus=claimable`.
+- benchmark timing rigor now enforces native execution-span timing for strict operation-class comparisons on webgpu-ffi left runs:
+  non-native fallback timing sources now trigger non-comparable reasons in `bench/compare_dawn_vs_fawn.py`;
+  policy is explicit in report `comparabilityPolicy.requireNativeExecutionTimingForLeftOperation=true`.
+
+62. Capability coverage metric contract now distinguishes directional-only capability domains:
+- `config/webgpu-spec-coverage.schema.json` now accepts `benchmarkClass` (`comparable` or `directional`) per capability entry.
+- `config/webgpu-spec-coverage.json` now marks these directional-only capability domains explicitly:
+  `surface_presentation`, `p1_resource_table_immediates_surface`, `p0_render_pixel_local_storage_barrier`.
+- `bench/generate_feature_benchmark_table.py` now emits both:
+  - overall comparable capability coverage (`86.36%`, `19/22`)
+  - eligible-only comparable capability coverage (`100.00%`, `19/19`) excluding directional-only capability domains.
+- updated matrix artifact:
+  `bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`
+  now includes `directionalCapabilityIds` and the explicit directional-domain metric (`13.64%`, `3/22`).
+
 ### Missing in progress
 
 1. Full upstream quirk mining automation.

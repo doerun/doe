@@ -81,6 +81,7 @@
       "priority": "p1",
       "owner": "runtime-core",
       "contract": "zig/src/wgpu_surface_procs.zig + zig/src/webgpu_ffi.zig surface methods",
+      "benchmarkClass": "directional",
       "notes": "surface creation, capabilities, configure/get-current-texture/present/unconfigure/release wrappers are now implemented as explicit backend methods."
     },
     {
@@ -135,6 +136,7 @@
       "priority": "p1",
       "owner": "runtime-core",
       "contract": "zig/src/wgpu_p1_resource_table_procs.zig + zig/src/wgpu_async_diagnostics_command.zig",
+      "benchmarkClass": "directional",
       "notes": "ResourceTable create/update/remove/destroy/release and pass/bundle/compute set-resource-table + set-immediates APIs are implemented behind explicit feature gating; unsupported adapters return deterministic unsupported status."
     },
     {
@@ -198,6 +200,7 @@
       "priority": "p1",
       "owner": "runtime-core",
       "contract": "zig/src/wgpu_p0_procs.zig + zig/src/wgpu_render_api.zig + zig/src/wgpu_render_types.zig + zig/src/wgpu_resources.zig createPipelineLayoutWithPixelLocalStorage + zig/src/wgpu_async_pixel_local_storage.zig diagnostics mode",
+      "benchmarkClass": "directional",
       "notes": "Pixel-local-storage diagnostics now emit full pipeline-layout and render-pass descriptor chains (storage attachments + total size), feature-gate non-coherent mode explicitly, and execute wgpuRenderPassEncoderPixelLocalStorageBarrier inside recorded render passes."
     }
   ]

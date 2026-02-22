@@ -117,6 +117,13 @@ def _compact(text: str, max_len: int = 110) -> str:
     return value[: max_len - 1] + "…"
 
 
+def _benchmark_class(item: dict[str, object]) -> str:
+    value = item.get("benchmarkClass")
+    if isinstance(value, str) and value in ("comparable", "directional"):
+        return value
+    return "comparable"
+
+
 def _measure_dawn_header_api_surface_coverage() -> tuple[int, int, float]:
     header = Path("bench/vendor/dawn/third_party/webgpu-headers/src/webgpu.h")
     header_text = header.read_text(errors="ignore")
@@ -151,6 +158,9 @@ def main() -> int:
     planned = 0
     mapped_capability_count = 0
     comparable_mapped_capability_count = 0
+    comparable_eligible_capability_count = 0
+    comparable_eligible_mapped_capability_count = 0
+    directional_capability_ids: list[str] = []
 
     for item in coverage.get("coverage", []):
         status = item.get("status", "unknown")
@@ -161,6 +171,11 @@ def main() -> int:
         else:
             planned += 1
         capability_id = item.get("capabilityId", "")
+        benchmark_class = _benchmark_class(item)
+        if benchmark_class == "directional":
+            directional_capability_ids.append(capability_id)
+        else:
+            comparable_eligible_capability_count += 1
         workload_ids = [
             workload
             for workload in CAPABILITY_TO_WORKLOADS.get(capability_id, [])
@@ -170,6 +185,8 @@ def main() -> int:
             mapped_capability_count += 1
             if any(workload in comparable_workloads for workload in workload_ids):
                 comparable_mapped_capability_count += 1
+                if benchmark_class == "comparable":
+                    comparable_eligible_mapped_capability_count += 1
         if not workload_ids:
             workload_field = "n/a"
             dawn_field = "n/a"
@@ -182,10 +199,11 @@ def main() -> int:
                     dawn_filters.append(mapped)
             dawn_field = "<br>".join(f"`{flt}`" for flt in dawn_filters) if dawn_filters else "n/a"
         rows.append(
-            "| `{capability}` | `{status}` | `{priority}` | {contract} | {workloads} | {dawn} |".format(
+            "| `{capability}` | `{status}` | `{priority}` | `{benchmark_class}` | {contract} | {workloads} | {dawn} |".format(
                 capability=capability_id,
                 status=status,
                 priority=item.get("priority", ""),
+                benchmark_class=benchmark_class,
                 contract=_compact(item.get("contract", "")),
                 workloads=workload_field,
                 dawn=dawn_field,
@@ -197,6 +215,17 @@ def main() -> int:
     mapped_capability_percent = (mapped_capability_count * 100.0 / total_capabilities) if total_capabilities else 0.0
     comparable_mapped_capability_percent = (
         (comparable_mapped_capability_count * 100.0 / total_capabilities)
+        if total_capabilities
+        else 0.0
+    )
+    comparable_eligible_mapped_capability_percent = (
+        (comparable_eligible_mapped_capability_count * 100.0 / comparable_eligible_capability_count)
+        if comparable_eligible_capability_count
+        else 0.0
+    )
+    directional_capability_count = len(directional_capability_ids)
+    directional_capability_percent = (
+        (directional_capability_count * 100.0 / total_capabilities)
         if total_capabilities
         else 0.0
     )
@@ -227,12 +256,27 @@ def main() -> int:
             done=comparable_mapped_capability_count,
             total=total_capabilities,
         ),
+        "| Comparable capability benchmark coverage (eligible-only) | {percent:.2f}% ({done}/{total}) | Excludes capability entries with `benchmarkClass=directional` in `config/webgpu-spec-coverage.json` |".format(
+            percent=comparable_eligible_mapped_capability_percent,
+            done=comparable_eligible_mapped_capability_count,
+            total=comparable_eligible_capability_count,
+        ),
+        "| Directional-only capability domains | {percent:.2f}% ({done}/{total}) | Capability entries with `benchmarkClass=directional` in `config/webgpu-spec-coverage.json` |".format(
+            percent=directional_capability_percent,
+            done=directional_capability_count,
+            total=total_capabilities,
+        ),
         "",
         f"- generatedFrom: `{args.coverage}` + `{args.workloads}` + `{args.dawn_map}`",
         f"- totals: implemented={implemented}, partial={partial}, planned={planned}",
+        "- directionalCapabilityIds: {ids}".format(
+            ids=", ".join(f"`{capability_id}`" for capability_id in sorted(directional_capability_ids))
+            if directional_capability_ids
+            else "none"
+        ),
         "",
-        "| Capability | Status | Priority | Fawn Contract | Benchmark Workloads | Dawn Baseline Filter(s) |",
-        "|---|---|---|---|---|---|",
+        "| Capability | Status | Priority | Benchmark Class | Fawn Contract | Benchmark Workloads | Dawn Baseline Filter(s) |",
+        "|---|---|---|---|---|---|---|",
     ]
     output.extend(rows)
 

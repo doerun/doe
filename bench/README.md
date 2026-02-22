@@ -39,6 +39,7 @@ That document defines:
   - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, and per-workload claimability) for blocking release CI gates.
 - `generate_feature_benchmark_table.py`
   - builds a markdown table joining `config/webgpu-spec-coverage.json`, workload contracts, and Dawn filter mappings for Dawn-vs-Fawn feature/benchmark coverage auditing.
+  - emits both overall comparable-coverage and eligible-only comparable-coverage metrics; eligibility is config-driven via `benchmarkClass` (`comparable` vs `directional`) in `config/webgpu-spec-coverage.json`.
 - `verify_smoke_gpu_usage.py`
   - validates AMD Vulkan smoke reports include explicit GPU probe evidence (`gpuMemoryProbeAvailable`, sample counts, and VRAM peak fields) on both sides.
 
@@ -187,6 +188,8 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   Fawn timing source is selected by `compare_dawn_vs_fawn.py` policy from trace metadata
   (`executionGpuTimestampTotalNs` -> `executionEncodeTotalNs+executionSubmitWaitTotalNs` -> `executionTotalNs`)
   with fallback to trace-window/wall-time when required fields are unavailable.
+  In strict operation mode, webgpu-ffi execution samples must resolve to native execution-span timing
+  sources (`fawn-execution-*`); fallback timing is treated as non-comparable.
   if encode/dispatch are both absent, tiny submit-only dispatch windows (`<100us` and `<1%` of `executionTotalNs`) are rejected as bookkeeping noise and `executionTotalNs` is used instead (`dispatchWindowSelectionRejected` in timing metadata).
   when ignore-first is enabled and applied, source is reported as `fawn-execution-row-total-ns+ignore-first-ops`.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
@@ -199,7 +202,8 @@ Extended workload domains now include:
 - shader compile/pipeline stress (`ShaderRobustnessPerf` mapping, comparable, fixed single-test filter + per-step normalization).
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
 - async pipeline diagnostics contract workload (mapped to `ShaderRobustnessPerf` pipeline-compilation baseline) covering `CreateRenderPipelineAsync`, error scopes, and shader compilation-info API paths.
-- directional P0 API contracts including resource lifecycle, compute indirect/timestamps, render multidraw variants, and pixel-local-storage barrier descriptor-chain coverage.
+- comparable P0 API contracts now include resource lifecycle, compute indirect/timestamps, and render multidraw variants.
+- directional API contracts remain for feature-gated paths: resource-table/immediates and pixel-local-storage barrier descriptor-chain coverage.
 - surface lifecycle contract workload is tracked as directional (`surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
 - directional macro workloads for high-volume stress:
   `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, and `p0_render_pixel_local_storage_barrier_macro_500`.
