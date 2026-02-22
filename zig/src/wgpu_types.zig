@@ -83,6 +83,9 @@ pub const WGPUBufferUsage_QueryResolve: WGPUBufferUsage = 0x0000000000000200;
 pub const WGPUFeatureName = u32;
 pub const WGPUFeatureName_TimestampQuery: WGPUFeatureName = 0x00000009;
 pub const WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses: WGPUFeatureName = 0x00050003;
+pub const WGPUFeatureName_PixelLocalStorageCoherent: WGPUFeatureName = 0x0005000A;
+pub const WGPUFeatureName_PixelLocalStorageNonCoherent: WGPUFeatureName = 0x0005000B;
+pub const WGPUFeatureName_MultiDrawIndirect: WGPUFeatureName = 0x00050031;
 
 pub const WGPUQueryType = u32;
 pub const WGPUQueryType_Timestamp: WGPUQueryType = 0x00000002;
@@ -104,6 +107,8 @@ pub const WGPUTextureUsage_CopyDst: WGPUTextureUsage = 0x0000000000000002;
 pub const WGPUTextureUsage_TextureBinding: WGPUTextureUsage = 0x0000000000000004;
 pub const WGPUTextureUsage_StorageBinding: WGPUTextureUsage = 0x0000000000000008;
 pub const WGPUTextureUsage_RenderAttachment: WGPUTextureUsage = 0x0000000000000010;
+pub const WGPUTextureUsage_TransientAttachment: WGPUTextureUsage = 0x0000000000000020;
+pub const WGPUTextureUsage_StorageAttachment: WGPUTextureUsage = 0x0000000000000040;
 pub const WGPUTextureFormat_Undefined: WGPUTextureFormat = 0;
 pub const WGPUTextureFormat_R8Unorm: WGPUTextureFormat = 0x00000001;
 

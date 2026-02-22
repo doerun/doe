@@ -1,5 +1,7 @@
 const types = @import("wgpu_types.zig");
 
+pub const WGPUSType_RenderPassPixelLocalStorage: types.WGPUSType = 0x00050010;
+
 pub const RenderColor = extern struct {
     r: f64,
     g: f64,
@@ -46,6 +48,22 @@ pub const RenderPassColorAttachment = extern struct {
     loadOp: u32,
     storeOp: u32,
     clearValue: RenderColor,
+};
+
+pub const RenderPassStorageAttachment = extern struct {
+    nextInChain: ?*anyopaque,
+    offset: u64,
+    storage: types.WGPUTextureView,
+    loadOp: u32,
+    storeOp: u32,
+    clearValue: RenderColor,
+};
+
+pub const RenderPassPixelLocalStorage = extern struct {
+    chain: types.WGPUChainedStruct,
+    totalPixelLocalStorageSize: u64,
+    storageAttachmentCount: usize,
+    storageAttachments: [*]const RenderPassStorageAttachment,
 };
 
 pub const RenderPassDescriptor = extern struct {

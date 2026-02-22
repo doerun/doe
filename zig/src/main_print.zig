@@ -298,6 +298,10 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{seq});
             try stdout.writeAll(",\"kind\":\"async_diagnostics\",\"targetFormat\":");
             try stdout.print("{}", .{diag_cmd.target_format});
+            try stdout.writeAll(",\"mode\":\"");
+            try stdout.writeAll(@tagName(diag_cmd.mode));
+            try stdout.writeAll("\",\"iterations\":");
+            try stdout.print("{}", .{diag_cmd.iterations});
             try stdout.writeAll("}\n");
         },
     }
@@ -413,7 +417,10 @@ pub fn printCommandSummary(stdout: anytype, target: model.Command, execute_resul
             try stdout.print("  -> surface_release handle={}\\n", .{surface_cmd.handle});
         },
         .async_diagnostics => |diag_cmd| {
-            try stdout.print("  -> async_diagnostics targetFormat={}\\n", .{diag_cmd.target_format});
+            try stdout.print(
+                "  -> async_diagnostics targetFormat={} mode={s} iterations={}\\n",
+                .{ diag_cmd.target_format, @tagName(diag_cmd.mode), diag_cmd.iterations },
+            );
         },
     }
     if (execute_result) |exec| {

@@ -2,6 +2,7 @@ const std = @import("std");
 const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
+const p0_procs_mod = @import("wgpu_p0_procs.zig");
 const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
@@ -13,10 +14,12 @@ pub fn getOrCreateBuffer(
     required_usage: types.WGPUBufferUsage,
 ) !types.WGPUBuffer {
     const procs = self.procs orelse return error.ProceduralNotReady;
+    const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
 
     if (self.buffers.get(handle)) |existing| {
         const can_reuse = existing.size >= requested_size and (existing.usage & required_usage) == required_usage;
         if (can_reuse) return existing.buffer;
+        p0_procs_mod.destroyBuffer(p0_procs, existing.buffer);
         procs.wgpuBufferRelease(existing.buffer);
         _ = self.buffers.remove(handle);
     }
@@ -440,6 +443,7 @@ pub fn createComputePipeline(
     pipeline_layout: types.WGPUPipelineLayout,
 ) !types.WGPUComputePipeline {
     const procs = self.procs orelse return error.ProceduralNotReady;
+    const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
     const compute_state = types.WGPUComputeState{
         .nextInChain = null,
         .module = module,
@@ -453,6 +457,17 @@ pub fn createComputePipeline(
         .layout = pipeline_layout,
         .compute = compute_state,
     };
+    if (p0_procs) |loaded| {
+        if (loaded.device_create_compute_pipeline_async != null) {
+            return p0_procs_mod.createComputePipelineAsyncAndWait(
+                loaded,
+                self.instance.?,
+                procs,
+                self.device.?,
+                &descriptor,
+            ) catch error.ComputePipelineCreationFailed;
+        }
+    }
     const pipeline = procs.wgpuDeviceCreateComputePipeline(self.device.?, &descriptor);
     if (pipeline == null) return error.ComputePipelineCreationFailed;
     return pipeline;

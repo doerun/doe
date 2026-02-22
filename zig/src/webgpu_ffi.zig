@@ -3,6 +3,11 @@ const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
+const capability_runtime_mod = @import("wgpu_capability_runtime.zig");
+const p0_procs_mod = @import("wgpu_p0_procs.zig");
+const p1_capability_procs_mod = @import("wgpu_p1_capability_procs.zig");
+const p1_resource_table_procs_mod = @import("wgpu_p1_resource_table_procs.zig");
+const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
 const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const commands = @import("wgpu_commands.zig");
@@ -37,6 +42,9 @@ pub const WebGPUBackend = struct {
     allocator: std.mem.Allocator,
     dyn_lib: ?std.DynLib = null,
     procs: ?types.Procs = null,
+    capability_procs: ?p1_capability_procs_mod.CapabilityProcs = null,
+    resource_table_procs: ?p1_resource_table_procs_mod.ResourceTableProcs = null,
+    lifecycle_procs: ?p2_lifecycle_procs_mod.LifecycleProcs = null,
     instance: types.WGPUInstance = null,
     adapter: types.WGPUAdapter = null,
     device: types.WGPUDevice = null,
@@ -62,8 +70,10 @@ pub const WebGPUBackend = struct {
     library_error: []const u8 = "",
     requested_backend_type: types.WGPUBackendType = .undefined,
     adapter_has_timestamp_query: bool = false,
+    adapter_has_multi_draw_indirect: bool = false,
     has_timestamp_query: bool = false,
     has_timestamp_inside_passes: bool = false,
+    has_multi_draw_indirect: bool = false,
     timestamp_debug: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !Self {
@@ -86,22 +96,67 @@ pub const WebGPUBackend = struct {
 
         self.dyn_lib = try loader.openLibrary();
         self.procs = try loader.loadProcs(self.dyn_lib.?);
+        self.capability_procs = p1_capability_procs_mod.loadCapabilityProcs(self.dyn_lib);
+        self.resource_table_procs = p1_resource_table_procs_mod.loadResourceTableProcs(self.dyn_lib);
+        self.lifecycle_procs = p2_lifecycle_procs_mod.loadLifecycleProcs(self.dyn_lib);
 
         if (self.procs) |procs| {
             self.instance = procs.wgpuCreateInstance(null);
             if (self.instance == null) return error.NativeInstanceUnavailable;
+            try capability_runtime_mod.probeInstanceCapabilities(self.capability_procs, self.instance);
 
             self.adapter = try self.requestAdapter();
             self.adapter_has_timestamp_query = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_TimestampQuery) != types.WGPU_FALSE;
+            self.adapter_has_multi_draw_indirect = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_MultiDrawIndirect) != types.WGPU_FALSE;
             self.has_timestamp_query = self.adapter_has_timestamp_query;
+            self.has_multi_draw_indirect = self.adapter_has_multi_draw_indirect;
             self.has_timestamp_inside_passes = procs.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses) != types.WGPU_FALSE;
+            const adapter_probe = try capability_runtime_mod.probeAdapterCapabilities(
+                self.capability_procs,
+                self.adapter,
+                self.instance,
+                .{
+                    .adapter_has_timestamp_query = self.adapter_has_timestamp_query,
+                    .has_timestamp_inside_passes = self.has_timestamp_inside_passes,
+                    .adapter_has_multi_draw_indirect = self.adapter_has_multi_draw_indirect,
+                },
+            );
+            self.adapter_has_timestamp_query = adapter_probe.adapter_has_timestamp_query;
+            self.has_timestamp_inside_passes = adapter_probe.has_timestamp_inside_passes;
+            self.adapter_has_multi_draw_indirect = adapter_probe.adapter_has_multi_draw_indirect;
             self.device = try self.requestDevice();
             if (procs.wgpuDeviceHasFeature) |device_has_feature| {
                 self.has_timestamp_query = device_has_feature(self.device.?, types.WGPUFeatureName_TimestampQuery) != types.WGPU_FALSE;
+                self.has_multi_draw_indirect = device_has_feature(self.device.?, types.WGPUFeatureName_MultiDrawIndirect) != types.WGPU_FALSE;
             }
+            const device_probe = try capability_runtime_mod.probeDeviceCapabilities(
+                self.capability_procs,
+                self.device,
+                self.adapter,
+                .{
+                    .has_timestamp_query = self.has_timestamp_query,
+                    .has_multi_draw_indirect = self.has_multi_draw_indirect,
+                },
+            );
+            self.has_timestamp_query = device_probe.has_timestamp_query;
+            self.has_multi_draw_indirect = device_probe.has_multi_draw_indirect;
             self.queue = procs.wgpuDeviceGetQueue(self.device.?);
             if (self.queue == null) return error.NativeQueueUnavailable;
-            std.debug.print("[fawn-init] adapter_ts={} device_ts={} inside_passes={}\n", .{ self.adapter_has_timestamp_query, self.has_timestamp_query, self.has_timestamp_inside_passes });
+            capability_runtime_mod.touchPrimaryObjectRefs(
+                self.lifecycle_procs,
+                procs,
+                self.instance,
+                self.adapter,
+                self.device,
+                self.queue,
+            );
+            std.debug.print("[fawn-init] adapter_ts={} device_ts={} inside_passes={} adapter_multi_draw={} device_multi_draw={}\n", .{
+                self.adapter_has_timestamp_query,
+                self.has_timestamp_query,
+                self.has_timestamp_inside_passes,
+                self.adapter_has_multi_draw_indirect,
+                self.has_multi_draw_indirect,
+            });
         }
 
         return self;
@@ -118,6 +173,7 @@ pub const WebGPUBackend = struct {
 
     pub fn deinit(self: *Self) void {
         const procs = self.procs orelse return;
+        const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
 
         if (self.render_uniform_bind_group) |bind_group| {
             procs.wgpuBindGroupRelease(bind_group);
@@ -144,6 +200,7 @@ pub const WebGPUBackend = struct {
 
         var it = self.buffers.valueIterator();
         while (it.next()) |record| {
+            p0_procs_mod.destroyBuffer(p0_procs, record.buffer);
             procs.wgpuBufferRelease(record.buffer);
         }
         self.buffers.clearAndFree();
@@ -210,6 +267,11 @@ pub const WebGPUBackend = struct {
             self.queue = null;
         }
         if (self.device) |device| {
+            if (p0_procs) |loaded| {
+                if (loaded.device_destroy) |destroy_device| {
+                    destroy_device(device);
+                }
+            }
             procs.wgpuDeviceRelease(device);
             self.device = null;
         }
@@ -228,6 +290,9 @@ pub const WebGPUBackend = struct {
         }
 
         self.procs = null;
+        self.capability_procs = null;
+        self.resource_table_procs = null;
+        self.lifecycle_procs = null;
     }
 
     pub fn backendAvailable(self: Self) bool {
@@ -236,6 +301,42 @@ pub const WebGPUBackend = struct {
 
     pub fn executeCommand(self: *Self, command: model.Command) !NativeExecutionResult {
         return commands.executeCommand(self, command);
+    }
+
+    pub fn runCapabilityIntrospection(self: *Self) !void {
+        try capability_runtime_mod.probeInstanceCapabilities(self.capability_procs, self.instance);
+        const adapter_probe = try capability_runtime_mod.probeAdapterCapabilities(
+            self.capability_procs,
+            self.adapter,
+            self.instance,
+            .{
+                .adapter_has_timestamp_query = self.adapter_has_timestamp_query,
+                .has_timestamp_inside_passes = self.has_timestamp_inside_passes,
+                .adapter_has_multi_draw_indirect = self.adapter_has_multi_draw_indirect,
+            },
+        );
+        self.adapter_has_timestamp_query = adapter_probe.adapter_has_timestamp_query;
+        self.has_timestamp_inside_passes = adapter_probe.has_timestamp_inside_passes;
+        self.adapter_has_multi_draw_indirect = adapter_probe.adapter_has_multi_draw_indirect;
+        const device_probe = try capability_runtime_mod.probeDeviceCapabilities(
+            self.capability_procs,
+            self.device,
+            self.adapter,
+            .{
+                .has_timestamp_query = self.has_timestamp_query,
+                .has_multi_draw_indirect = self.has_multi_draw_indirect,
+            },
+        );
+        self.has_timestamp_query = device_probe.has_timestamp_query;
+        self.has_multi_draw_indirect = device_probe.has_multi_draw_indirect;
+    }
+
+    pub fn getResourceTableProcs(self: Self) ?p1_resource_table_procs_mod.ResourceTableProcs {
+        return self.resource_table_procs;
+    }
+
+    pub fn getLifecycleProcs(self: Self) ?p2_lifecycle_procs_mod.LifecycleProcs {
+        return self.lifecycle_procs;
     }
 
     pub fn setUploadBehavior(
@@ -565,20 +666,29 @@ pub const WebGPUBackend = struct {
             .userdata1 = &state,
             .userdata2 = null,
         };
-        var required_features = [_]types.WGPUFeatureName{
-            types.WGPUFeatureName_TimestampQuery,
-            types.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses,
-        };
-        const feature_count: usize = if (!self.has_timestamp_query) 0 else if (self.has_timestamp_inside_passes) 2 else 1;
+        var required_features = [_]types.WGPUFeatureName{undefined} ** 3;
+        var feature_count: usize = 0;
+        if (self.has_timestamp_query) {
+            required_features[feature_count] = types.WGPUFeatureName_TimestampQuery;
+            feature_count += 1;
+        }
+        if (self.has_timestamp_inside_passes) {
+            required_features[feature_count] = types.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses;
+            feature_count += 1;
+        }
+        if (self.has_multi_draw_indirect) {
+            required_features[feature_count] = types.WGPUFeatureName_MultiDrawIndirect;
+            feature_count += 1;
+        }
         self.timestampLog(
-            "request_device required_timestamp_features={}\n",
-            .{feature_count},
+            "request_device required_features timestamp={} inside_passes={} multi_draw={} count={}\n",
+            .{ self.has_timestamp_query, self.has_timestamp_inside_passes, self.has_multi_draw_indirect, feature_count },
         );
         const device_desc = types.WGPUDeviceDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
             .requiredFeatureCount = feature_count,
-            .requiredFeatures = if (self.has_timestamp_query) required_features[0..].ptr else null,
+            .requiredFeatures = if (feature_count > 0) required_features[0..].ptr else null,
             .requiredLimits = null,
             .defaultQueue = .{ .nextInChain = null, .label = loader.emptyStringView() },
             .deviceLostCallbackInfo = .{

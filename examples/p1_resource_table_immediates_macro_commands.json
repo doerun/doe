@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "async_diagnostics",
+    "mode": "resource_table_immediates",
+    "iterations": 500,
+    "format": "rgba8unorm"
+  }
+]

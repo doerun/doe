@@ -3,9 +3,15 @@ const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
+const p0_procs_mod = @import("wgpu_p0_procs.zig");
+const p1_resource_table_procs_mod = @import("wgpu_p1_resource_table_procs.zig");
+const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const async_procs_mod = @import("wgpu_async_procs.zig");
 const render_api_mod = @import("wgpu_render_api.zig");
+const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
+const surface_procs_mod = @import("wgpu_surface_procs.zig");
+const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
@@ -14,6 +20,15 @@ const RENDER_FRONT_FACE_CCW: u32 = 0x00000001;
 const RENDER_CULL_MODE_NONE: u32 = 0x00000001;
 const RENDER_COLOR_WRITE_MASK_ALL: u64 = 0x000000000000000F;
 const RENDER_MULTISAMPLE_MASK_ALL: u32 = 0xFFFF_FFFF;
+const RENDER_LOAD_OP_CLEAR: u32 = 0x00000002;
+const RENDER_STORE_OP_STORE: u32 = 0x00000001;
+const DIAG_RESOURCE_TABLE_BUFFER_HANDLE: u64 = 0x8C9F_2B00_0000_0000;
+const DIAG_RESOURCE_TABLE_BUFFER_SIZE: u64 = 256;
+const DIAG_RESOURCE_TABLE_SIZE: u32 = 8;
+const DIAG_RENDER_TARGET_HANDLE: u64 = 0x8C9F_2C00_0000_0000;
+const DIAG_RENDER_TARGET_WIDTH: u32 = 4;
+const DIAG_RENDER_TARGET_HEIGHT: u32 = 4;
+const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable: types.WGPUFeatureName = 0x0005003A;
 
 const DIAGNOSTIC_SHADER_SOURCE =
     \\@vertex
@@ -32,23 +47,365 @@ const DIAGNOSTIC_SHADER_SOURCE =
     \\}
 ;
 
-pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosticsCommand) !types.NativeExecutionResult {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse {
-        return .{ .status = .unsupported, .status_message = "async diagnostics requires render api surface" };
-    };
-    const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse {
-        return .{ .status = .unsupported, .status_message = "async diagnostics requires async api surface" };
-    };
+const DIAGNOSTIC_COMPUTE_SHADER_SOURCE =
+    \\@compute @workgroup_size(1)
+    \\fn main() {}
+;
 
+pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosticsCommand) !types.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
+    var iteration: u32 = 0;
+    while (iteration < diagnostics.iterations) : (iteration += 1) {
+        const mode_result = switch (diagnostics.mode) {
+            .pipeline_async => runPipelineAsyncDiagnostics(self, diagnostics.target_format),
+            .capability_introspection => runCapabilityIntrospectionDiagnostics(self),
+            .resource_table_immediates => runResourceTableImmediatesDiagnostics(self, diagnostics.target_format),
+            .lifecycle_refcount => runLifecycleRefcountDiagnostics(self, diagnostics.target_format),
+            .full => runFullDiagnostics(self, diagnostics.target_format),
+        };
+        mode_result catch |err| {
+            if (unsupportedDiagnosticsMessage(err)) |message| {
+                return .{
+                    .status = .unsupported,
+                    .status_message = message,
+                };
+            }
+            return .{
+                .status = .@"error",
+                .status_message = @errorName(err),
+            };
+        };
+    }
+
+    const setup_end_ns = std.time.nanoTimestamp();
+    const setup_ns = if (setup_end_ns > setup_start_ns)
+        @as(u64, @intCast(setup_end_ns - setup_start_ns))
+    else
+        0;
+    return .{
+        .status = .ok,
+        .status_message = switch (diagnostics.mode) {
+            .pipeline_async => "async diagnostics pipeline mode completed",
+            .capability_introspection => "async diagnostics capability introspection completed",
+            .resource_table_immediates => "async diagnostics resource-table/immediates completed",
+            .lifecycle_refcount => "async diagnostics lifecycle/refcount completed",
+            .full => "async diagnostics full mode completed",
+        },
+        .setup_ns = setup_ns,
+    };
+}
+
+fn runFullDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+    try runPipelineAsyncDiagnostics(self, target_format);
+    try runCapabilityIntrospectionDiagnostics(self);
+    try runResourceTableImmediatesDiagnostics(self, target_format);
+    try runLifecycleRefcountDiagnostics(self, target_format);
+}
+
+fn runCapabilityIntrospectionDiagnostics(self: *Backend) !void {
+    try self.runCapabilityIntrospection();
+}
+
+fn runPipelineAsyncDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+    const pipeline = try createRenderPipelineForDiagnostics(self, target_format);
+    render_api.render_pipeline_release(pipeline);
+}
+
+fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+    const resource_table_procs = self.getResourceTableProcs() orelse return error.ResourceTableProcUnavailable;
+    if (!p1_resource_table_procs_mod.isResourceTableReady(resource_table_procs)) return error.ResourceTableProcUnavailable;
+    try requireResourceTableFeature(procs, self.device.?);
+
+    const buffer = try resources.getOrCreateBuffer(
+        self,
+        DIAG_RESOURCE_TABLE_BUFFER_HANDLE,
+        DIAG_RESOURCE_TABLE_BUFFER_SIZE,
+        types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst,
+    );
+    var table_descriptor = p1_resource_table_procs_mod.initResourceTableDescriptor(DIAG_RESOURCE_TABLE_SIZE);
+    const create_resource_table = resource_table_procs.device_create_resource_table orelse return error.ResourceTableProcUnavailable;
+    const table = create_resource_table(self.device.?, &table_descriptor);
+    if (table == null) return error.ResourceTableCreationFailed;
+    defer if (resource_table_procs.resource_table_release) |release_resource_table| release_resource_table(table);
+    defer if (resource_table_procs.resource_table_destroy) |destroy_resource_table| destroy_resource_table(table);
+
+    const get_resource_table_size = resource_table_procs.resource_table_get_size orelse return error.ResourceTableProcUnavailable;
+    if (get_resource_table_size(table) < DIAG_RESOURCE_TABLE_SIZE) return error.ResourceTableSizeMismatch;
+
+    var binding_resource = p1_resource_table_procs_mod.initBindingResource(buffer, 0, 64);
+    const insert_binding = resource_table_procs.resource_table_insert_binding orelse return error.ResourceTableProcUnavailable;
+    const slot = insert_binding(table, &binding_resource);
+    const update_binding = resource_table_procs.resource_table_update orelse return error.ResourceTableProcUnavailable;
+    if (update_binding(table, slot, &binding_resource) != types.WGPUStatus_Success) return error.ResourceTableUpdateFailed;
+    const remove_binding = resource_table_procs.resource_table_remove_binding orelse return error.ResourceTableProcUnavailable;
+    if (remove_binding(table, slot) != types.WGPUStatus_Success) return error.ResourceTableRemoveFailed;
+    _ = insert_binding(table, &binding_resource);
+
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+    });
+    if (encoder == null) return error.CommandEncoderCreationFailed;
+    defer procs.wgpuCommandEncoderRelease(encoder);
+
+    const immediate_data = [_]u8{ 0, 0, 0, 0 };
+    const compute_pass = procs.wgpuCommandEncoderBeginComputePass(
+        encoder,
+        &types.WGPUComputePassDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+            .timestampWrites = null,
+        },
+    );
+    if (compute_pass == null) return error.ComputePassCreationFailed;
+    defer procs.wgpuComputePassEncoderRelease(compute_pass);
+    p1_resource_table_procs_mod.setComputeResourceTable(resource_table_procs, compute_pass, table);
+    p1_resource_table_procs_mod.setComputeImmediates(resource_table_procs, compute_pass, 0, immediate_data[0..].ptr, 0);
+    procs.wgpuComputePassEncoderEnd(compute_pass);
+
+    const target_texture = try getOrCreateDiagnosticTexture(self, normalizeDiagnosticFormat(target_format));
+    const target_view = try createDiagnosticTextureView(procs, target_texture, normalizeDiagnosticFormat(target_format));
+    defer procs.wgpuTextureViewRelease(target_view);
+
+    var color_attachment = render_types_mod.RenderPassColorAttachment{
+        .nextInChain = null,
+        .view = target_view,
+        .depthSlice = std.math.maxInt(u32),
+        .resolveTarget = null,
+        .loadOp = RENDER_LOAD_OP_CLEAR,
+        .storeOp = RENDER_STORE_OP_STORE,
+        .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+    };
+    const render_pass = render_api.command_encoder_begin_render_pass(
+        encoder,
+        &render_types_mod.RenderPassDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+            .colorAttachmentCount = 1,
+            .colorAttachments = @ptrCast(&color_attachment),
+            .depthStencilAttachment = null,
+            .occlusionQuerySet = null,
+            .timestampWrites = null,
+        },
+    );
+    if (render_pass == null) return error.RenderPassCreationFailed;
+    defer render_api.render_pass_encoder_release(render_pass);
+    p1_resource_table_procs_mod.setRenderPassResourceTable(resource_table_procs, render_pass, table);
+    p1_resource_table_procs_mod.setRenderPassImmediates(resource_table_procs, render_pass, 0, immediate_data[0..].ptr, 0);
+    render_api.render_pass_encoder_end(render_pass);
+
+    const color_formats = [_]types.WGPUTextureFormat{normalizeDiagnosticFormat(target_format)};
+    const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
+        self.device.?,
+        &render_types_mod.RenderBundleEncoderDescriptor{
+            .nextInChain = null,
+            .label = loader.stringView("fawn.resource_table.bundle"),
+            .colorFormatCount = 1,
+            .colorFormats = color_formats[0..].ptr,
+            .depthStencilFormat = types.WGPUTextureFormat_Undefined,
+            .sampleCount = 1,
+            .depthReadOnly = types.WGPU_FALSE,
+            .stencilReadOnly = types.WGPU_FALSE,
+        },
+    );
+    if (render_bundle_encoder == null) return error.RenderBundleEncoderCreationFailed;
+    defer render_api.render_bundle_encoder_release(render_bundle_encoder);
+    p1_resource_table_procs_mod.setRenderBundleResourceTable(resource_table_procs, render_bundle_encoder, table);
+    p1_resource_table_procs_mod.setRenderBundleImmediates(resource_table_procs, render_bundle_encoder, 0, immediate_data[0..].ptr, 0);
+    const render_bundle = render_api.render_bundle_encoder_finish(
+        render_bundle_encoder,
+        &render_types_mod.RenderBundleDescriptor{
+            .nextInChain = null,
+            .label = loader.stringView("fawn.resource_table.bundle"),
+        },
+    );
+    if (render_bundle == null) return error.RenderBundleFinishFailed;
+    render_api.render_bundle_release(render_bundle);
+
+    const command_buffer = procs.wgpuCommandEncoderFinish(
+        encoder,
+        &types.WGPUCommandBufferDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+        },
+    );
+    if (command_buffer == null) return error.CommandBufferFinishFailed;
+    procs.wgpuCommandBufferRelease(command_buffer);
+}
+
+fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+    const lifecycle = self.getLifecycleProcs() orelse return error.LifecycleProcUnavailable;
+    const resource_table_procs = self.getResourceTableProcs();
+
+    touchAddRefAndRelease(types.WGPUInstance, lifecycle.instance_add_ref, procs.wgpuInstanceRelease, self.instance);
+    touchAddRefAndRelease(types.WGPUAdapter, lifecycle.adapter_add_ref, procs.wgpuAdapterRelease, self.adapter);
+    touchAddRefAndRelease(types.WGPUDevice, lifecycle.device_add_ref, procs.wgpuDeviceRelease, self.device);
+    touchAddRefAndRelease(types.WGPUQueue, lifecycle.queue_add_ref, procs.wgpuQueueRelease, self.queue);
+
+    const binding_resources = try render_resource_mod.getOrCreateRenderUniformBindingResources(self);
+    touchAddRefAndRelease(types.WGPUBindGroupLayout, lifecycle.bind_group_layout_add_ref, procs.wgpuBindGroupLayoutRelease, binding_resources.bind_group_layout);
+    touchAddRefAndRelease(types.WGPUBindGroup, lifecycle.bind_group_add_ref, procs.wgpuBindGroupRelease, binding_resources.bind_group);
+    const texture_procs = texture_procs_mod.loadTextureProcs(self.dyn_lib) orelse return error.TextureProcUnavailable;
+    touchAddRefAndRelease(types.WGPUSampler, lifecycle.sampler_add_ref, texture_procs.sampler_release, self.render_sampler);
+
+    const buffer = try resources.getOrCreateBuffer(
+        self,
+        DIAG_RESOURCE_TABLE_BUFFER_HANDLE,
+        DIAG_RESOURCE_TABLE_BUFFER_SIZE,
+        types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst,
+    );
+    touchAddRefAndRelease(types.WGPUBuffer, lifecycle.buffer_add_ref, procs.wgpuBufferRelease, buffer);
+
+    const texture = try getOrCreateDiagnosticTexture(self, normalizeDiagnosticFormat(target_format));
+    touchAddRefAndRelease(types.WGPUTexture, lifecycle.texture_add_ref, procs.wgpuTextureRelease, texture);
+    const texture_view = try createDiagnosticTextureView(procs, texture, normalizeDiagnosticFormat(target_format));
+    defer procs.wgpuTextureViewRelease(texture_view);
+    touchAddRefAndRelease(types.WGPUTextureView, lifecycle.texture_view_add_ref, procs.wgpuTextureViewRelease, texture_view);
+
+    const shader_module = try resources.createShaderModule(self, DIAGNOSTIC_COMPUTE_SHADER_SOURCE);
+    defer procs.wgpuShaderModuleRelease(shader_module);
+    touchAddRefAndRelease(types.WGPUShaderModule, lifecycle.shader_module_add_ref, procs.wgpuShaderModuleRelease, shader_module);
+
+    const pipeline_layout = try resources.createPipelineLayout(self, &[_]types.WGPUBindGroupLayout{binding_resources.bind_group_layout});
+    defer procs.wgpuPipelineLayoutRelease(pipeline_layout);
+    touchAddRefAndRelease(types.WGPUPipelineLayout, lifecycle.pipeline_layout_add_ref, procs.wgpuPipelineLayoutRelease, pipeline_layout);
+
+    const compute_pipeline = try resources.createComputePipeline(
+        self,
+        "fawn.lifecycle.compute",
+        shader_module,
+        "main",
+        pipeline_layout,
+    );
+    defer procs.wgpuComputePipelineRelease(compute_pipeline);
+    touchAddRefAndRelease(types.WGPUComputePipeline, lifecycle.compute_pipeline_add_ref, procs.wgpuComputePipelineRelease, compute_pipeline);
+
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+    });
+    if (encoder == null) return error.CommandEncoderCreationFailed;
+    defer procs.wgpuCommandEncoderRelease(encoder);
+    touchAddRefAndRelease(types.WGPUCommandEncoder, lifecycle.command_encoder_add_ref, procs.wgpuCommandEncoderRelease, encoder);
+
+    const compute_pass = procs.wgpuCommandEncoderBeginComputePass(
+        encoder,
+        &types.WGPUComputePassDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+            .timestampWrites = null,
+        },
+    );
+    if (compute_pass == null) return error.ComputePassCreationFailed;
+    defer procs.wgpuComputePassEncoderRelease(compute_pass);
+    touchAddRefAndRelease(types.WGPUComputePassEncoder, lifecycle.compute_pass_encoder_add_ref, procs.wgpuComputePassEncoderRelease, compute_pass);
+    procs.wgpuComputePassEncoderSetPipeline(compute_pass, compute_pipeline);
+    procs.wgpuComputePassEncoderEnd(compute_pass);
+
+    var color_attachment = render_types_mod.RenderPassColorAttachment{
+        .nextInChain = null,
+        .view = texture_view,
+        .depthSlice = std.math.maxInt(u32),
+        .resolveTarget = null,
+        .loadOp = RENDER_LOAD_OP_CLEAR,
+        .storeOp = RENDER_STORE_OP_STORE,
+        .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+    };
+    const render_pass = render_api.command_encoder_begin_render_pass(
+        encoder,
+        &render_types_mod.RenderPassDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+            .colorAttachmentCount = 1,
+            .colorAttachments = @ptrCast(&color_attachment),
+            .depthStencilAttachment = null,
+            .occlusionQuerySet = null,
+            .timestampWrites = null,
+        },
+    );
+    if (render_pass == null) return error.RenderPassCreationFailed;
+    defer render_api.render_pass_encoder_release(render_pass);
+    touchAddRefAndRelease(types.WGPURenderPassEncoder, lifecycle.render_pass_encoder_add_ref, render_api.render_pass_encoder_release, render_pass);
+    render_api.render_pass_encoder_end(render_pass);
+
+    const command_buffer = procs.wgpuCommandEncoderFinish(
+        encoder,
+        &types.WGPUCommandBufferDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+        },
+    );
+    if (command_buffer == null) return error.CommandBufferFinishFailed;
+    defer procs.wgpuCommandBufferRelease(command_buffer);
+    touchAddRefAndRelease(types.WGPUCommandBuffer, lifecycle.command_buffer_add_ref, procs.wgpuCommandBufferRelease, command_buffer);
+
+    const query_set = procs.wgpuDeviceCreateQuerySet(self.device.?, &types.WGPUQuerySetDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+        .@"type" = types.WGPUQueryType_Timestamp,
+        .count = 1,
+    });
+    if (query_set != null) {
+        defer procs.wgpuQuerySetRelease(query_set);
+        touchAddRefAndRelease(types.WGPUQuerySet, lifecycle.query_set_add_ref, procs.wgpuQuerySetRelease, query_set);
+        const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
+        p0_procs_mod.destroyQuerySet(p0_procs, query_set);
+    }
+
+    const render_pipeline = try createRenderPipelineForDiagnostics(self, normalizeDiagnosticFormat(target_format));
+    defer render_api.render_pipeline_release(render_pipeline);
+    touchAddRefAndOptionalRelease(types.WGPURenderPipeline, lifecycle.render_pipeline_add_ref, render_api.render_pipeline_release, render_pipeline);
+
+    if (resource_table_procs) |table_procs| {
+        if (p1_resource_table_procs_mod.isResourceTableReady(table_procs)) {
+            if (requireResourceTableFeature(procs, self.device.?)) |_| {
+                var table_descriptor = p1_resource_table_procs_mod.initResourceTableDescriptor(DIAG_RESOURCE_TABLE_SIZE);
+                const create_resource_table = table_procs.device_create_resource_table.?;
+                const table = create_resource_table(self.device.?, &table_descriptor);
+                if (table != null) {
+                    defer if (table_procs.resource_table_release) |release_resource_table| release_resource_table(table);
+                    defer if (table_procs.resource_table_destroy) |destroy_resource_table| destroy_resource_table(table);
+                    touchAddRefAndOptionalRelease(
+                        p1_resource_table_procs_mod.WGPUResourceTable,
+                        lifecycle.resource_table_add_ref,
+                        table_procs.resource_table_release,
+                        table,
+                    );
+                }
+            } else |_| {
+                // ResourceTable object lifetime probes are skipped when feature is unavailable.
+            }
+        }
+    }
+
+    if (surface_procs_mod.loadSurfaceProcs(self.dyn_lib)) |surface_procs| {
+        var surface_it = self.surfaces.valueIterator();
+        if (surface_it.next()) |managed_surface| {
+            touchAddRefAndRelease(
+                p2_lifecycle_procs_mod.WGPUSurface,
+                lifecycle.surface_add_ref,
+                surface_procs.surface_release,
+                managed_surface.*.surface,
+            );
+        }
+    }
+}
+
+fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !types.WGPURenderPipeline {
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+    const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse return error.AsyncProcUnavailable;
+
     const shader_module = resources.createShaderModule(self, DIAGNOSTIC_SHADER_SOURCE) catch |err| {
-        return .{
-            .status = .@"error",
-            .status_message = switch (err) {
-                error.KernelModuleCreationFailed => "async diagnostics shader module creation failed",
-                else => "async diagnostics shader setup failed",
-            },
+        return switch (err) {
+            error.KernelModuleCreationFailed => error.DiagnosticShaderModuleCreationFailed,
+            else => error.DiagnosticShaderModuleCreationFailed,
         };
     };
     defer procs.wgpuShaderModuleRelease(shader_module);
@@ -58,11 +415,9 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
         self.instance.?,
         procs,
         shader_module,
-    ) catch {
-        return .{ .status = .@"error", .status_message = "async diagnostics compilation info request failed" };
-    };
+    ) catch return error.DiagnosticCompilationInfoFailed;
     if (compilation_state.status != async_procs_mod.COMPILATION_INFO_STATUS_SUCCESS) {
-        return .{ .status = .@"error", .status_message = "async diagnostics compilation info status not successful" };
+        return error.DiagnosticCompilationInfoFailed;
     }
 
     async_procs_mod.pushErrorScope(async_procs, self.device.?, async_procs_mod.ERROR_FILTER_VALIDATION);
@@ -71,13 +426,10 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
 
     var color_target = render_types_mod.RenderColorTargetState{
         .nextInChain = null,
-        .format = resources.normalizeTextureFormat(diagnostics.target_format),
+        .format = normalizeDiagnosticFormat(target_format),
         .blend = null,
         .writeMask = RENDER_COLOR_WRITE_MASK_ALL,
     };
-    if (color_target.format == types.WGPUTextureFormat_Undefined) {
-        color_target.format = model.WGPUTextureFormat_RGBA8Unorm;
-    }
     var fragment_state = render_types_mod.RenderFragmentState{
         .nextInChain = null,
         .module = shader_module,
@@ -127,18 +479,20 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
         _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {};
         _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {};
         _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {};
-        return .{ .status = .@"error", .status_message = "async diagnostics async pipeline creation failed" };
+        return error.DiagnosticPipelineCreationFailed;
     };
-    render_api.render_pipeline_release(pipeline);
 
     const out_of_memory_scope = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {
-        return .{ .status = .@"error", .status_message = "async diagnostics out-of-memory scope pop failed" };
+        render_api.render_pipeline_release(pipeline);
+        return error.DiagnosticErrorScopeFailed;
     };
     const internal_scope = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {
-        return .{ .status = .@"error", .status_message = "async diagnostics internal scope pop failed" };
+        render_api.render_pipeline_release(pipeline);
+        return error.DiagnosticErrorScopeFailed;
     };
     const validation_scope = async_procs_mod.popErrorScopeAndWait(async_procs, self.instance.?, procs, self.device.?) catch {
-        return .{ .status = .@"error", .status_message = "async diagnostics validation scope pop failed" };
+        render_api.render_pipeline_release(pipeline);
+        return error.DiagnosticErrorScopeFailed;
     };
     const no_error = @as(u32, @intFromEnum(types.WGPUErrorType.noError));
     if (out_of_memory_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
@@ -148,17 +502,104 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
         internal_scope.error_type != no_error or
         validation_scope.error_type != no_error)
     {
-        return .{ .status = .@"error", .status_message = "async diagnostics error-scope validation failed" };
+        render_api.render_pipeline_release(pipeline);
+        return error.DiagnosticErrorScopeFailed;
     }
+    return pipeline;
+}
 
-    const setup_end_ns = std.time.nanoTimestamp();
-    const setup_ns = if (setup_end_ns > setup_start_ns)
-        @as(u64, @intCast(setup_end_ns - setup_start_ns))
-    else
-        0;
-    return .{
-        .status = .ok,
-        .status_message = "async diagnostics completed",
-        .setup_ns = setup_ns,
+fn getOrCreateDiagnosticTexture(self: *Backend, target_format: types.WGPUTextureFormat) !types.WGPUTexture {
+    return resources.getOrCreateTexture(
+        self,
+        .{
+            .handle = DIAG_RENDER_TARGET_HANDLE,
+            .kind = .texture,
+            .width = DIAG_RENDER_TARGET_WIDTH,
+            .height = DIAG_RENDER_TARGET_HEIGHT,
+            .depth_or_array_layers = 1,
+            .format = target_format,
+            .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopyDst | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_TextureBinding,
+            .dimension = model.WGPUTextureDimension_2D,
+            .view_dimension = model.WGPUTextureViewDimension_2D,
+            .mip_level = 0,
+            .sample_count = 1,
+            .aspect = model.WGPUTextureAspect_All,
+            .bytes_per_row = 0,
+            .rows_per_image = 0,
+            .offset = 0,
+        },
+        types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopyDst | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_TextureBinding,
+    );
+}
+
+fn createDiagnosticTextureView(
+    procs: types.Procs,
+    texture: types.WGPUTexture,
+    target_format: types.WGPUTextureFormat,
+) !types.WGPUTextureView {
+    const view = procs.wgpuTextureCreateView(texture, &types.WGPUTextureViewDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+        .format = target_format,
+        .dimension = types.WGPUTextureViewDimension_2D,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1,
+        .aspect = types.WGPUTextureAspect_All,
+        .usage = types.WGPUTextureUsage_RenderAttachment,
+    });
+    if (view == null) return error.TextureViewCreationFailed;
+    return view;
+}
+
+fn normalizeDiagnosticFormat(raw: types.WGPUTextureFormat) types.WGPUTextureFormat {
+    const normalized = resources.normalizeTextureFormat(raw);
+    return if (normalized == types.WGPUTextureFormat_Undefined) model.WGPUTextureFormat_RGBA8Unorm else normalized;
+}
+
+fn requireResourceTableFeature(procs: types.Procs, device: types.WGPUDevice) !void {
+    const has_feature = procs.wgpuDeviceHasFeature orelse return error.ResourceTableFeatureUnavailable;
+    if (has_feature(device, WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) == types.WGPU_FALSE) {
+        return error.ResourceTableFeatureUnavailable;
+    }
+}
+
+fn unsupportedDiagnosticsMessage(err: anyerror) ?[]const u8 {
+    return switch (err) {
+        error.RenderApiUnavailable => "render api surface unavailable",
+        error.AsyncProcUnavailable => "async proc surface unavailable",
+        error.ResourceTableProcUnavailable => "resource-table proc surface unavailable",
+        error.ResourceTableFeatureUnavailable => "resource-table feature unavailable",
+        error.LifecycleProcUnavailable => "lifecycle proc surface unavailable",
+        else => null,
     };
+}
+
+fn touchAddRefAndRelease(
+    comptime T: type,
+    add_ref: ?*const fn (T) callconv(.c) void,
+    release: *const fn (T) callconv(.c) void,
+    object: T,
+) void {
+    if (object == null) return;
+    if (add_ref) |add_ref_fn| {
+        add_ref_fn(object);
+        release(object);
+    }
+}
+
+fn touchAddRefAndOptionalRelease(
+    comptime T: type,
+    add_ref: ?*const fn (T) callconv(.c) void,
+    release: ?*const fn (T) callconv(.c) void,
+    object: T,
+) void {
+    if (object == null) return;
+    if (add_ref) |add_ref_fn| {
+        if (release) |release_fn| {
+            add_ref_fn(object);
+            release_fn(object);
+        }
+    }
 }

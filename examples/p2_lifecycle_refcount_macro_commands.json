@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "async_diagnostics",
+    "mode": "lifecycle_refcount",
+    "iterations": 200,
+    "format": "rgba8unorm"
+  }
+]

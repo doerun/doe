@@ -76,6 +76,7 @@ fn printUsage(stdout: anytype) !void {
         \\  surface_unconfigure | unconfigure_surface
         \\  surface_release | release_surface
         \\  async_diagnostics | pipeline_async_diagnostics
+        \\    optional fields: mode=pipeline_async|capability_introspection|resource_table_immediates|lifecycle_refcount|full, iterations>0
         \\  command can be expressed as "kind", "command", or "command_kind"
         \\  kernel can be expressed as "kernel" or "kernel_name"
         \\If --quirks is omitted, the embedded sample profile is used.

@@ -7,6 +7,7 @@ const async_procs_mod = @import("wgpu_async_procs.zig");
 const render_assets = @import("wgpu_render_assets.zig");
 const render_api_mod = @import("wgpu_render_api.zig");
 const render_indexing = @import("wgpu_render_indexing.zig");
+const render_p0_mod = @import("wgpu_render_p0.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const ffi = @import("webgpu_ffi.zig");
@@ -29,6 +30,7 @@ const RENDER_OPTIONAL_BOOL_FALSE: u32 = 0x00000000;
 const RENDER_STENCIL_MASK_DEFAULT: u32 = 0x000000FF;
 const RENDER_DEPTH_ATTACHMENT_HANDLE_MASK: u64 = 0x8C9F_2400_0000_0000;
 const RENDER_VERTEX_BUFFER_HANDLE: u64 = 0x8C9F_2500_0000_0000;
+const RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE: u64 = 0x8C9F_2A00_0000_0000;
 const RENDER_VERTEX_FORMAT_FLOAT32X4: u32 = 0x0000001F;
 const RENDER_VERTEX_STEP_MODE_VERTEX: u32 = 0x00000001;
 const RENDER_VERTEX_STRIDE_BYTES: u64 = 4 * @sizeOf(f32);
@@ -38,17 +40,12 @@ const RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES: u64 = render_resource_mod.RENDER_UN
 const RENDER_UNIFORM_TOTAL_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_TOTAL_BYTES;
 
 const RenderColor = render_types_mod.RenderColor;
-const RenderBundleDescriptor = render_types_mod.RenderBundleDescriptor;
-const RenderBundleEncoderDescriptor = render_types_mod.RenderBundleEncoderDescriptor;
+const RenderBundleDescriptor = render_types_mod.RenderBundleDescriptor; const RenderBundleEncoderDescriptor = render_types_mod.RenderBundleEncoderDescriptor;
 const RenderPassColorAttachment = render_types_mod.RenderPassColorAttachment;
-const RenderPassDescriptor = render_types_mod.RenderPassDescriptor;
-const RenderPassDepthStencilAttachment = render_types_mod.RenderPassDepthStencilAttachment;
-const RenderVertexAttribute = render_types_mod.RenderVertexAttribute;
-const RenderVertexBufferLayout = render_types_mod.RenderVertexBufferLayout;
-const RenderColorTargetState = render_types_mod.RenderColorTargetState;
-const RenderFragmentState = render_types_mod.RenderFragmentState;
-const RenderStencilFaceState = render_types_mod.RenderStencilFaceState;
-const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
+const RenderPassDescriptor = render_types_mod.RenderPassDescriptor; const RenderPassDepthStencilAttachment = render_types_mod.RenderPassDepthStencilAttachment;
+const RenderVertexAttribute = render_types_mod.RenderVertexAttribute; const RenderVertexBufferLayout = render_types_mod.RenderVertexBufferLayout;
+const RenderColorTargetState = render_types_mod.RenderColorTargetState; const RenderFragmentState = render_types_mod.RenderFragmentState;
+const RenderStencilFaceState = render_types_mod.RenderStencilFaceState; const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
 const RenderPipelineDescriptor = render_types_mod.RenderPipelineDescriptor;
 const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingResources;
 fn setRenderPassBindGroup(
@@ -57,13 +54,7 @@ fn setRenderPassBindGroup(
     bind_group: types.WGPUBindGroup,
     dynamic_offsets: []const u32,
 ) void {
-    render_api.render_pass_encoder_set_bind_group(
-        render_pass,
-        RENDER_UNIFORM_BINDING_INDEX,
-        bind_group,
-        dynamic_offsets.len,
-        dynamic_offsets.ptr,
-    );
+    render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, bind_group, dynamic_offsets.len, dynamic_offsets.ptr);
 }
 fn setRenderBundleBindGroup(
     render_api: render_api_mod.RenderApi,
@@ -71,13 +62,7 @@ fn setRenderBundleBindGroup(
     bind_group: types.WGPUBindGroup,
     dynamic_offsets: []const u32,
 ) void {
-    render_api.render_bundle_encoder_set_bind_group(
-        render_bundle_encoder,
-        RENDER_UNIFORM_BINDING_INDEX,
-        bind_group,
-        dynamic_offsets.len,
-        dynamic_offsets.ptr,
-    );
+    render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, bind_group, dynamic_offsets.len, dynamic_offsets.ptr);
 }
 pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types.NativeExecutionResult {
     if (render.draw_count == 0) {
@@ -445,6 +430,11 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         return .{ .status = .@"error", .status_message = "render_draw pipeline bind-group-layout query failed" };
     }
     procs.wgpuBindGroupLayoutRelease(pipeline_bind_group_layout);
+    const p0_state = render_p0_mod.prepare(self, procs, render_api, indexed_draw, RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE);
+    defer render_p0_mod.deinit(p0_state, procs);
+    const command_encoder_write_buffer = p0_state.command_encoder_write_buffer;
+    const occlusion_query_set = p0_state.occlusion_query_set;
+    const render_indirect_buffer = p0_state.indirect_buffer;
     const setup_end_ns = std.time.nanoTimestamp();
 
     const encode_start_ns = std.time.nanoTimestamp();
@@ -456,6 +446,40 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         return .{ .status = .@"error", .status_message = "deviceCreateCommandEncoder returned null" };
     }
     defer procs.wgpuCommandEncoderRelease(encoder);
+    const use_multi_draw_indexed = render.encode_mode == .render_pass and
+        indexed_draw and
+        render.pipeline_mode == .static and
+        render.bind_group_mode == .no_change and
+        render_indirect_buffer != null and
+        command_encoder_write_buffer != null and
+        render_api.render_pass_encoder_multi_draw_indexed_indirect != null;
+    const use_multi_draw = render.encode_mode == .render_pass and
+        !indexed_draw and
+        render.pipeline_mode == .static and
+        render.bind_group_mode == .no_change and
+        render_indirect_buffer != null and
+        command_encoder_write_buffer != null and
+        render_api.render_pass_encoder_multi_draw_indirect != null;
+    if (use_multi_draw_indexed) {
+        const draw_args = render_types_mod.RenderDrawIndexedIndirectArgs{
+            .index_count = render.index_count.?,
+            .instance_count = render.instance_count,
+            .first_index = render.first_index,
+            .base_vertex = render.base_vertex,
+            .first_instance = render.first_instance,
+        };
+        const draw_args_bytes = std.mem.asBytes(&draw_args);
+        command_encoder_write_buffer.?(encoder, render_indirect_buffer, 0, draw_args_bytes.ptr, @as(u64, draw_args_bytes.len));
+    } else if (use_multi_draw) {
+        const draw_args = render_types_mod.RenderDrawIndirectArgs{
+            .vertex_count = render.vertex_count,
+            .instance_count = render.instance_count,
+            .first_vertex = render.first_vertex,
+            .first_instance = render.first_instance,
+        };
+        const draw_args_bytes = std.mem.asBytes(&draw_args);
+        command_encoder_write_buffer.?(encoder, render_indirect_buffer, 0, draw_args_bytes.ptr, @as(u64, draw_args_bytes.len));
+    }
 
     var color_attachment = RenderPassColorAttachment{
         .nextInChain = null,
@@ -484,13 +508,14 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         .colorAttachmentCount = 1,
         .colorAttachments = @ptrCast(&color_attachment),
         .depthStencilAttachment = &depth_stencil_attachment,
-        .occlusionQuerySet = null,
+        .occlusionQuerySet = occlusion_query_set,
         .timestampWrites = null,
     });
     if (render_pass == null) {
         return .{ .status = .@"error", .status_message = "render_draw begin render pass failed" };
     }
     defer render_api.render_pass_encoder_release(render_pass);
+    render_p0_mod.beginPass(p0_state, render_api, render_pass);
 
     render_api.render_pass_encoder_set_viewport(
         render_pass,
@@ -542,37 +567,59 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     if (render.encode_mode == .render_pass) {
         var draw_index: u32 = 0;
         if (indexed_draw) {
-            while (draw_index < render.draw_count) : (draw_index += 1) {
-                if (render.pipeline_mode == .redundant) {
-                    render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
-                }
-                if (render.bind_group_mode == .redundant) {
-                    setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
-                }
-                render_api.render_pass_encoder_draw_indexed(
+            if (use_multi_draw_indexed) {
+                render_api.render_pass_encoder_multi_draw_indexed_indirect.?(
                     render_pass,
-                    render.index_count.?,
-                    render.instance_count,
-                    render.first_index,
-                    render.base_vertex,
-                    render.first_instance,
+                    render_indirect_buffer,
+                    0,
+                    render.draw_count,
+                    null,
+                    0,
                 );
+            } else {
+                while (draw_index < render.draw_count) : (draw_index += 1) {
+                    if (render.pipeline_mode == .redundant) {
+                        render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+                    }
+                    if (render.bind_group_mode == .redundant) {
+                        setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                    }
+                    render_api.render_pass_encoder_draw_indexed(
+                        render_pass,
+                        render.index_count.?,
+                        render.instance_count,
+                        render.first_index,
+                        render.base_vertex,
+                        render.first_instance,
+                    );
+                }
             }
         } else {
-            while (draw_index < render.draw_count) : (draw_index += 1) {
-                if (render.pipeline_mode == .redundant) {
-                    render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
-                }
-                if (render.bind_group_mode == .redundant) {
-                    setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
-                }
-                render_api.render_pass_encoder_draw(
+            if (use_multi_draw) {
+                render_api.render_pass_encoder_multi_draw_indirect.?(
                     render_pass,
-                    render.vertex_count,
-                    render.instance_count,
-                    render.first_vertex,
-                    render.first_instance,
+                    render_indirect_buffer,
+                    0,
+                    render.draw_count,
+                    null,
+                    0,
                 );
+            } else {
+                while (draw_index < render.draw_count) : (draw_index += 1) {
+                    if (render.pipeline_mode == .redundant) {
+                        render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+                    }
+                    if (render.bind_group_mode == .redundant) {
+                        setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                    }
+                    render_api.render_pass_encoder_draw(
+                        render_pass,
+                        render.vertex_count,
+                        render.instance_count,
+                        render.first_vertex,
+                        render.first_instance,
+                    );
+                }
             }
         }
     } else {
@@ -680,6 +727,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         var bundles = [_]render_api_mod.RenderBundle{render_bundle};
         render_api.render_pass_encoder_execute_bundles(render_pass, bundles.len, bundles[0..].ptr);
     }
+    render_p0_mod.endPass(p0_state, render_api, render_pass);
     render_api.render_pass_encoder_end(render_pass);
 
     const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{

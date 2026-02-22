@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "runId": "f03e16a5715d9969",
+  "timestamp": "2026-02-22T03:10:43.410532+00:00",
+  "host": {
+    "os": "Linux",
+    "arch": "x86_64"
+  },
+  "gpu": "unknown",
+  "driver": "unknown",
+  "backend": "vulkan",
+  "toolchains": {
+    "zig": "unknown",
+    "lean": "unknown"
+  },
+  "workloadId": "p0_compute_indirect_timestamp_contract",
+  "build": {
+    "commit": "unknown",
+    "flags": []
+  },
+  "hashes": {
+    "quirkSetHash": "37517e5f3dc66819",
+    "traceHash": "0xd1af628df7a97569",
+    "validatorHash": "unknown"
+  }
+}

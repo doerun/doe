@@ -47,19 +47,35 @@ pub fn prepareIndexBuffer(self: *Backend, render: model.RenderDrawCommand) !?Pre
 
     const procs = self.procs orelse return error.ProceduralNotReady;
     const requested_size = std.math.cast(u64, selected.bytes.len) orelse return error.InvalidIndexedDrawData;
+    const aligned_size = try resources.requiredBytes(requested_size, 0);
     const index_buffer = try resources.getOrCreateBuffer(
         self,
         DEFAULT_INDEX_BUFFER_HANDLE,
-        requested_size,
+        aligned_size,
         index_usage,
     );
-    procs.wgpuQueueWriteBuffer(
-        self.queue.?,
-        index_buffer,
-        0,
-        selected.bytes.ptr,
-        selected.bytes.len,
-    );
+    if ((selected.bytes.len & 3) == 0) {
+        procs.wgpuQueueWriteBuffer(
+            self.queue.?,
+            index_buffer,
+            0,
+            selected.bytes.ptr,
+            selected.bytes.len,
+        );
+    } else {
+        const aligned_len = std.math.cast(usize, aligned_size) orelse return error.InvalidIndexedDrawData;
+        const padded = try self.allocator.alloc(u8, aligned_len);
+        defer self.allocator.free(padded);
+        @memset(padded, 0);
+        @memcpy(padded[0..selected.bytes.len], selected.bytes);
+        procs.wgpuQueueWriteBuffer(
+            self.queue.?,
+            index_buffer,
+            0,
+            padded.ptr,
+            padded.len,
+        );
+    }
     return .{
         .buffer = index_buffer,
         .format = selected.format,

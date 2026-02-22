@@ -10,7 +10,7 @@ Current `fawn/zig/src` size is 2,750 LOC and now includes native queue-submitted
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
 Benchmark contract coverage snapshot (2026-02-22 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `22` workload contracts: `18` comparable + `4` directional contracts (`surface_presentation_contract` + 3 macro stress workloads).
+- `bench/workloads.amd.vulkan.extended.json` now contains `26` workload contracts: `18` comparable + `8` directional contracts (`surface_presentation_contract`, 3 macro stress workloads, and 4 P0 API contract workloads).
 - strict extended comparable matrix now includes render, render-bundle, texture-contract, draw-indexed proxy, and async diagnostics slices in addition to upload/compute/pipeline.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
@@ -215,6 +215,33 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 - new workload IDs: `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`.
 - new preset config: `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`.
 - new command seeds: `examples/draw_call_proxy_macro_commands.json`, `examples/draw_call_indexed_proxy_macro_commands.json`, `examples/texture_sampler_write_query_destroy_macro_commands.json`.
+56. P0 WebGPU API slice implementation and benchmark contracts are now integrated:
+- native runtime wiring now covers `wgpuBufferDestroy`, `wgpuCommandEncoderClearBuffer`, `wgpuCommandEncoderWriteBuffer`, `wgpuComputePassEncoderDispatchWorkgroupsIndirect`, `wgpuComputePassEncoderWriteTimestamp`, `wgpuDeviceCreateComputePipelineAsync`, `wgpuDeviceDestroy`, `wgpuQuerySetDestroy`, `wgpuQuerySetGetCount`, `wgpuQuerySetGetType`, `wgpuRenderPassEncoderBeginOcclusionQuery`, `wgpuRenderPassEncoderEndOcclusionQuery`, `wgpuRenderPassEncoderMultiDrawIndirect`, `wgpuRenderPassEncoderMultiDrawIndexedIndirect`, and `wgpuRenderPassEncoderWriteTimestamp`.
+- render multidraw dispatch is now feature-gated via `WGPUFeatureName_MultiDrawIndirect`; fallback draw loops remain deterministic when unavailable.
+- new directional P0 benchmark workloads were added: `p0_resource_lifecycle_contract`, `p0_compute_indirect_timestamp_contract`, `p0_render_multidraw_contract`, `p0_render_multidraw_indexed_contract`.
+- local benchmark artifacts are emitted under `bench/out/p0_*.perf_report.json` and `bench/out/run-bench-p0_*`.
+- Dawn-side directional comparisons for these contracts currently skip on CPU-only adapters in this host class (`DawnPerfTest::IsCPU`), so claimable Dawn-vs-Fawn artifacts remain blocked pending a non-CPU adapter host.
+57. P1/P2 capability and lifecycle API coverage has been expanded:
+- new capability-introspection proc surface is implemented in `zig/src/wgpu_p1_capability_procs.zig` and wired through `zig/src/wgpu_capability_runtime.zig` + `zig/src/webgpu_ffi.zig`.
+- covered APIs include adapter/device/instance feature+limit+info/proc-address paths and free-members contracts:
+  `wgpuAdapterGetFeatures`, `wgpuAdapterGetFormatCapabilities`, `wgpuAdapterGetInfo`, `wgpuAdapterGetInstance`, `wgpuAdapterGetLimits`, `wgpuAdapterInfoFreeMembers`, `wgpuAdapterPropertiesMemoryHeapsFreeMembers`, `wgpuAdapterPropertiesSubgroupMatrixConfigsFreeMembers`, `wgpuDawnDrmFormatCapabilitiesFreeMembers`, `wgpuDeviceGetAdapter`, `wgpuDeviceGetAdapterInfo`, `wgpuDeviceGetFeatures`, `wgpuDeviceGetLimits`, `wgpuGetInstanceFeatures`, `wgpuGetInstanceLimits`, `wgpuGetProcAddress`, `wgpuHasInstanceFeature`, `wgpuInstanceGetWGSLLanguageFeatures`, `wgpuInstanceHasWGSLLanguageFeature`, `wgpuSupportedFeaturesFreeMembers`, `wgpuSupportedInstanceFeaturesFreeMembers`, `wgpuSupportedWGSLLanguageFeaturesFreeMembers`.
+- new Dawn ResourceTable + immediates proc surface is implemented in `zig/src/wgpu_p1_resource_table_procs.zig` and exercised via `async_diagnostics` mode routing in `zig/src/wgpu_async_diagnostics_command.zig`.
+- covered APIs include:
+  `wgpuComputePassEncoderSetImmediates`, `wgpuComputePassEncoderSetResourceTable`, `wgpuDeviceCreateResourceTable`, `wgpuRenderBundleEncoderSetImmediates`, `wgpuRenderBundleEncoderSetResourceTable`, `wgpuRenderPassEncoderSetImmediates`, `wgpuRenderPassEncoderSetResourceTable`, `wgpuResourceTableDestroy`, `wgpuResourceTableGetSize`, `wgpuResourceTableInsertBinding`, `wgpuResourceTableRelease`, `wgpuResourceTableRemoveBinding`, `wgpuResourceTableUpdate`.
+- explicit feature gating is now enforced for ResourceTable flow (`WGPUFeatureName_ChromiumExperimentalSamplingResourceTable`): unsupported adapters return deterministic `unsupported` status rather than silent fallback.
+- new lifecycle/AddRef proc surface is implemented in `zig/src/wgpu_p2_lifecycle_procs.zig`; all requested AddRef symbols are dynamically loaded and available:
+  `wgpuAdapterAddRef`, `wgpuBindGroupAddRef`, `wgpuBindGroupLayoutAddRef`, `wgpuBufferAddRef`, `wgpuCommandBufferAddRef`, `wgpuCommandEncoderAddRef`, `wgpuComputePassEncoderAddRef`, `wgpuComputePipelineAddRef`, `wgpuDeviceAddRef`, `wgpuExternalTextureAddRef`, `wgpuInstanceAddRef`, `wgpuPipelineLayoutAddRef`, `wgpuQuerySetAddRef`, `wgpuQueueAddRef`, `wgpuRenderPassEncoderAddRef`, `wgpuRenderPipelineAddRef`, `wgpuResourceTableAddRef`, `wgpuSamplerAddRef`, `wgpuShaderModuleAddRef`, `wgpuSharedBufferMemoryAddRef`, `wgpuSharedFenceAddRef`, `wgpuSharedTextureMemoryAddRef`, `wgpuSurfaceAddRef`, `wgpuTexelBufferViewAddRef`, `wgpuTextureAddRef`, `wgpuTextureViewAddRef`.
+58. New directional micro+macro benchmark contracts were added for P1/P2 API clusters (AMD Vulkan extended matrix):
+- micro contracts: `p1_capability_introspection_contract`, `p1_resource_table_immediates_contract`, `p2_lifecycle_refcount_contract`.
+- macro contracts: `p1_capability_introspection_macro_500`, `p1_resource_table_immediates_macro_500`, `p2_lifecycle_refcount_macro_200`.
+- command seeds are in:
+  `examples/p1_capability_introspection_commands.json`,
+  `examples/p1_resource_table_immediates_commands.json`,
+  `examples/p2_lifecycle_refcount_commands.json`,
+  `examples/p1_capability_introspection_macro_commands.json`,
+  `examples/p1_resource_table_immediates_macro_commands.json`,
+  `examples/p2_lifecycle_refcount_macro_commands.json`.
+- Dawn map entries for these IDs were added in `bench/dawn_workload_map.amd.extended.json`; all are directional (`comparable=false`) by contract.
 
 ### Missing in progress
 
@@ -281,9 +308,9 @@ Interpretation:
 Current contract state after matrix expansion:
 
 1. `bench/workloads.amd.vulkan.extended.json`
-- workload contracts: `22` total
+- workload contracts: `26` total
 - strict comparable contracts: `18`
-- directional contracts: `4` (`surface_presentation_contract` + 3 macro stress contracts)
+- directional contracts: `8` (`surface_presentation_contract`, 3 macro stress contracts, and 4 P0 API contract workloads)
 
 2. `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - strict mode remains `includeNoncomparableWorkloads=false`

@@ -1,5 +1,6 @@
 const std = @import("std");
 const types = @import("wgpu_types.zig");
+const p0_procs_mod = @import("wgpu_p0_procs.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 
 pub const RenderBundle = ?*anyopaque;
@@ -73,6 +74,12 @@ pub const RenderApi = struct {
     render_bundle_set_label: FnRenderBundleSetLabel,
     render_bundle_add_ref: FnRenderBundleAddRef,
     render_bundle_release: FnRenderBundleRelease,
+    render_pass_encoder_begin_occlusion_query: ?p0_procs_mod.FnRenderPassEncoderBeginOcclusionQuery,
+    render_pass_encoder_end_occlusion_query: ?p0_procs_mod.FnRenderPassEncoderEndOcclusionQuery,
+    render_pass_encoder_multi_draw_indexed_indirect: ?p0_procs_mod.FnRenderPassEncoderMultiDrawIndexedIndirect,
+    render_pass_encoder_multi_draw_indirect: ?p0_procs_mod.FnRenderPassEncoderMultiDrawIndirect,
+    render_pass_encoder_pixel_local_storage_barrier: ?p0_procs_mod.FnRenderPassEncoderPixelLocalStorageBarrier,
+    render_pass_encoder_write_timestamp: ?p0_procs_mod.FnRenderPassEncoderWriteTimestamp,
 };
 
 fn loadProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
@@ -82,6 +89,7 @@ fn loadProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
 
 pub fn loadRenderApi(procs: types.Procs, dyn_lib: ?std.DynLib) ?RenderApi {
     const lib = dyn_lib orelse return null;
+    const p0_procs = p0_procs_mod.loadP0Procs(dyn_lib);
     return .{
         .device_create_render_pipeline = procs.wgpuDeviceCreateRenderPipeline orelse return null,
         .command_encoder_begin_render_pass = procs.wgpuCommandEncoderBeginRenderPass orelse return null,
@@ -121,5 +129,11 @@ pub fn loadRenderApi(procs: types.Procs, dyn_lib: ?std.DynLib) ?RenderApi {
         .render_bundle_set_label = loadProc(FnRenderBundleSetLabel, lib, "wgpuRenderBundleSetLabel") orelse return null,
         .render_bundle_add_ref = loadProc(FnRenderBundleAddRef, lib, "wgpuRenderBundleAddRef") orelse return null,
         .render_bundle_release = loadProc(FnRenderBundleRelease, lib, "wgpuRenderBundleRelease") orelse return null,
+        .render_pass_encoder_begin_occlusion_query = if (p0_procs) |loaded| loaded.render_pass_encoder_begin_occlusion_query else null,
+        .render_pass_encoder_end_occlusion_query = if (p0_procs) |loaded| loaded.render_pass_encoder_end_occlusion_query else null,
+        .render_pass_encoder_multi_draw_indexed_indirect = if (p0_procs) |loaded| loaded.render_pass_encoder_multi_draw_indexed_indirect else null,
+        .render_pass_encoder_multi_draw_indirect = if (p0_procs) |loaded| loaded.render_pass_encoder_multi_draw_indirect else null,
+        .render_pass_encoder_pixel_local_storage_barrier = if (p0_procs) |loaded| loaded.render_pass_encoder_pixel_local_storage_barrier else null,
+        .render_pass_encoder_write_timestamp = if (p0_procs) |loaded| loaded.render_pass_encoder_write_timestamp else null,
     };
 }

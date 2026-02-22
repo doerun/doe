@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-02-21",
+  "lastUpdated": "2026-02-22",
   "coverage": [
     {
       "capabilityId": "queue_sync_mode",
@@ -118,6 +118,87 @@
       "owner": "runtime-core",
       "contract": "TextureQueryCommand expected_* fields + native texture query validation",
       "notes": "texture_query can now assert expected width/height/depth/format/dimension/view-dimension/sample-count/usage with fail-fast mismatch reporting."
+    },
+    {
+      "capabilityId": "p1_capability_introspection_surface",
+      "domain": "capability",
+      "status": "implemented",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_p1_capability_procs.zig + zig/src/wgpu_capability_runtime.zig + zig/src/webgpu_ffi.zig",
+      "notes": "instance/adapter/device capability introspection APIs are dynamically loaded and exercised with explicit status checks, including feature/limits/info/proc-address paths and related free-members contracts."
+    },
+    {
+      "capabilityId": "p1_resource_table_immediates_surface",
+      "domain": "resource-table",
+      "status": "implemented",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_p1_resource_table_procs.zig + zig/src/wgpu_async_diagnostics_command.zig",
+      "notes": "ResourceTable create/update/remove/destroy/release and pass/bundle/compute set-resource-table + set-immediates APIs are implemented behind explicit feature gating; unsupported adapters return deterministic unsupported status."
+    },
+    {
+      "capabilityId": "p2_lifecycle_addref_surface",
+      "domain": "lifecycle",
+      "status": "implemented",
+      "priority": "p2",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_p2_lifecycle_procs.zig + zig/src/wgpu_async_diagnostics_command.zig + zig/src/wgpu_capability_runtime.zig",
+      "notes": "all requested AddRef entry points are loaded and wired; lifecycle diagnostics execute balanced addref/release touch paths for available object classes and skip unsupported object families deterministically."
+    },
+    {
+      "capabilityId": "p0_buffer_destroy_and_barrier_clear",
+      "domain": "resource",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_p0_procs.zig + zig/src/wgpu_resources.zig + zig/src/wgpu_commands.zig barrier lowering",
+      "notes": "buffer replacement and teardown now call wgpuBufferDestroy before release; barrier commands lower through wgpuCommandEncoderClearBuffer with deterministic scratch-buffer sizing."
+    },
+    {
+      "capabilityId": "p0_compute_indirect_async_timestamp",
+      "domain": "compute",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_p0_procs.zig + zig/src/wgpu_resources.zig + zig/src/wgpu_commands.zig",
+      "notes": "compute pipelines use wgpuDeviceCreateComputePipelineAsync when available; dispatch path stages indirect args with wgpuCommandEncoderWriteBuffer, dispatches with wgpuComputePassEncoderDispatchWorkgroupsIndirect, and uses pass timestamps with wgpuComputePassEncoderWriteTimestamp when pass timestamps are available."
+    },
+    {
+      "capabilityId": "p0_query_set_introspection_lifecycle",
+      "domain": "query",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_p0_procs.zig querySetMatches + destroyQuerySet; compute/render query setup paths",
+      "notes": "query sets now validate count/type via wgpuQuerySetGetCount/wgpuQuerySetGetType and call wgpuQuerySetDestroy before release in compute and render P0 helper paths."
+    },
+    {
+      "capabilityId": "p0_render_occlusion_multidraw_timestamp",
+      "domain": "render",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_render_api.zig + zig/src/wgpu_render_p0.zig + zig/src/wgpu_render_commands.zig + zig/src/webgpu_ffi.zig feature-gating",
+      "notes": "render pass now wires Begin/EndOcclusionQuery and WriteTimestamp query paths; multi-draw indirect APIs are used when WGPUFeatureName_MultiDrawIndirect is enabled and deterministically fall back to draw loops otherwise."
+    },
+    {
+      "capabilityId": "p0_device_destroy_lifecycle",
+      "domain": "device",
+      "status": "implemented",
+      "priority": "p0",
+      "owner": "runtime-core",
+      "contract": "zig/src/webgpu_ffi.zig deinit",
+      "notes": "device teardown now explicitly calls wgpuDeviceDestroy before wgpuDeviceRelease."
+    },
+    {
+      "capabilityId": "p0_render_pixel_local_storage_barrier",
+      "domain": "render",
+      "status": "partial",
+      "priority": "p1",
+      "owner": "runtime-core",
+      "contract": "zig/src/wgpu_p0_procs.zig symbol load + zig/src/wgpu_render_api.zig optional proc surface",
+      "notes": "wgpuRenderPassEncoderPixelLocalStorageBarrier is loaded and exposed, but full render-pass/pipeline local-storage attachment contracts are not yet emitted in native render lowering; runtime keeps this path disabled until those contracts are added."
     }
   ]
 }

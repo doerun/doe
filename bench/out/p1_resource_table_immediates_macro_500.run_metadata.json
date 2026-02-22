@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "runId": "d37a8698f7f58eaa",
+  "timestamp": "2026-02-22T13:34:21.105407+00:00",
+  "host": {
+    "os": "Linux",
+    "arch": "x86_64"
+  },
+  "gpu": "unknown",
+  "driver": "unknown",
+  "backend": "vulkan",
+  "toolchains": {
+    "zig": "unknown",
+    "lean": "unknown"
+  },
+  "workloadId": "p1_resource_table_immediates_macro_500",
+  "build": {
+    "commit": "unknown",
+    "flags": []
+  },
+  "hashes": {
+    "quirkSetHash": "37517e5f3dc66819",
+    "traceHash": "0xb0c7835789a1e23b",
+    "validatorHash": "unknown"
+  }
+}

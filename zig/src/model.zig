@@ -371,8 +371,18 @@ pub const SurfaceReleaseCommand = struct {
     handle: u64,
 };
 
+pub const AsyncDiagnosticsMode = enum {
+    pipeline_async,
+    capability_introspection,
+    resource_table_immediates,
+    lifecycle_refcount,
+    full,
+};
+
 pub const AsyncDiagnosticsCommand = struct {
     target_format: WGPUTextureFormat = WGPUTextureFormat_RGBA8Unorm,
+    mode: AsyncDiagnosticsMode = .pipeline_async,
+    iterations: u32 = 1,
 };
 
 pub const Command = union(CommandKind) {

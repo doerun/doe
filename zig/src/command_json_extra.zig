@@ -75,6 +75,16 @@ fn parseSurfacePresentMode(raw: ?[]const u8) ParseError!u32 {
     return ParseError.InvalidCommandPayload;
 }
 
+fn parseAsyncDiagnosticsMode(raw: ?[]const u8) ParseError!model.AsyncDiagnosticsMode {
+    const value = raw orelse return .pipeline_async;
+    if (commandKindEqualsFn(value, "pipeline_async") or commandKindEqualsFn(value, "pipeline-async")) return .pipeline_async;
+    if (commandKindEqualsFn(value, "capability_introspection") or commandKindEqualsFn(value, "capability-introspection")) return .capability_introspection;
+    if (commandKindEqualsFn(value, "resource_table_immediates") or commandKindEqualsFn(value, "resource-table-immediates")) return .resource_table_immediates;
+    if (commandKindEqualsFn(value, "lifecycle_refcount") or commandKindEqualsFn(value, "lifecycle-refcount")) return .lifecycle_refcount;
+    if (commandKindEqualsFn(value, "full")) return .full;
+    return ParseError.InvalidCommandPayload;
+}
+
 fn parseBytesU32ToU8(allocator: std.mem.Allocator, values: []const u32) ParseError![]const u8 {
     const bytes = try allocator.alloc(u8, values.len);
     errdefer allocator.free(bytes);
@@ -256,5 +266,12 @@ pub fn parseAsyncDiagnosticsCommand(raw: anytype) ParseError!model.AsyncDiagnost
         parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
     else
         model.WGPUTextureFormat_RGBA8Unorm;
-    return .{ .target_format = target_format };
+    const mode = try parseAsyncDiagnosticsMode(raw.mode);
+    const iterations = raw.iterations orelse raw.repeat orelse 1;
+    if (iterations == 0) return ParseError.InvalidCommandPayload;
+    return .{
+        .target_format = target_format,
+        .mode = mode,
+        .iterations = iterations,
+    };
 }

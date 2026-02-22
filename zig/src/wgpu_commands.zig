@@ -2,12 +2,14 @@ const std = @import("std");
 const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 const loader = @import("wgpu_loader.zig");
+const p0_procs_mod = @import("wgpu_p0_procs.zig");
 const resources = @import("wgpu_resources.zig");
 const render_commands = @import("wgpu_render_commands.zig");
 const extended_commands = @import("wgpu_extended_commands.zig");
 const async_diagnostics_command = @import("wgpu_async_diagnostics_command.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
+const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB; const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA; const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
 
 pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecutionResult {
     if (!self.backendAvailable()) {
@@ -314,8 +316,43 @@ fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionRe
 }
 
 fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.NativeExecutionResult {
-    _ = barrier.dependency_count;
-    return executeNoopCommand(self, "barrier command translated into empty command buffer");
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
+    const clear_buffer = if (p0_procs) |loaded| loaded.command_encoder_clear_buffer else null;
+    if (clear_buffer == null) {
+        return executeNoopCommand(self, "barrier command translated into empty command buffer");
+    }
+    const clear_size = loader.alignTo(@max(@as(u64, 16), @as(u64, barrier.dependency_count) * 16), 4);
+    const scratch_buffer = try resources.getOrCreateBuffer(
+        self,
+        BARRIER_SCRATCH_BUFFER_HANDLE,
+        clear_size,
+        types.WGPUBufferUsage_CopyDst,
+    );
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+    });
+    if (encoder == null) {
+        return .{ .status = .@"error", .status_message = "deviceCreateCommandEncoder returned null" };
+    }
+    defer procs.wgpuCommandEncoderRelease(encoder);
+    clear_buffer.?(encoder, scratch_buffer, 0, clear_size);
+    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+    });
+    if (command_buffer == null) {
+        return .{ .status = .@"error", .status_message = "commandEncoderFinish returned null" };
+    }
+    defer procs.wgpuCommandBufferRelease(command_buffer);
+    var commands = [_]types.WGPUCommandBuffer{command_buffer};
+    procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
+    try self.syncAfterSubmit();
+    return .{
+        .status = .ok,
+        .status_message = "barrier command lowered via commandEncoderClearBuffer",
+    };
 }
 
 fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.NativeExecutionResult {
@@ -379,6 +416,7 @@ fn executeKernelDispatchKernel(
     defer if (source.owned) self.allocator.free(source.source);
 
     const procs = self.procs orelse return error.ProceduralNotReady;
+    const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
 
     const cache_key = pipelineCacheKey(source.source, entry_point);
     const cached = self.pipeline_cache.get(cache_key);
@@ -452,6 +490,10 @@ fn executeKernelDispatchKernel(
     var query_set: types.WGPUQuerySet = null;
     var resolve_buffer: types.WGPUBuffer = null;
     var readback_buffer: types.WGPUBuffer = null;
+    const dispatch_indirect_proc = if (p0_procs) |loaded| loaded.compute_pass_encoder_dispatch_workgroups_indirect else null;
+    const command_encoder_write_buffer = if (p0_procs) |loaded| loaded.command_encoder_write_buffer else null;
+    const compute_pass_write_timestamp = if (p0_procs) |loaded| loaded.compute_pass_encoder_write_timestamp else null;
+    var dispatch_indirect_buffer: types.WGPUBuffer = null;
 
     if (use_timestamps) {
         query_set = procs.wgpuDeviceCreateQuerySet(self.device.?, &types.WGPUQuerySetDescriptor{
@@ -460,6 +502,13 @@ fn executeKernelDispatchKernel(
             .@"type" = types.WGPUQueryType_Timestamp,
             .count = 2,
         });
+        if (query_set != null) {
+            if (!p0_procs_mod.querySetMatches(p0_procs, query_set, 2, types.WGPUQueryType_Timestamp)) {
+                p0_procs_mod.destroyQuerySet(p0_procs, query_set);
+                procs.wgpuQuerySetRelease(query_set);
+                query_set = null;
+            }
+        }
         if (query_set != null) {
             resolve_buffer = procs.wgpuDeviceCreateBuffer(self.device.?, &types.WGPUBufferDescriptor{
                 .nextInChain = null,
@@ -477,6 +526,14 @@ fn executeKernelDispatchKernel(
             });
         }
     }
+    if (dispatch_indirect_proc != null and command_encoder_write_buffer != null) {
+        dispatch_indirect_buffer = resources.getOrCreateBuffer(
+            self,
+            DISPATCH_INDIRECT_ARGS_HANDLE,
+            @sizeOf([3]u32),
+            BUFFER_USAGE_INDIRECT | types.WGPUBufferUsage_CopyDst,
+        ) catch null;
+    }
     const timestamps_active = query_set != null and resolve_buffer != null and readback_buffer != null;
     self.timestampLog(
         "timestamp_artifacts qs={} resolve={} readback={} active={}\n",
@@ -491,7 +548,10 @@ fn executeKernelDispatchKernel(
         );
     }
     defer {
-        if (query_set) |qs| procs.wgpuQuerySetRelease(qs);
+        if (query_set) |qs| {
+            p0_procs_mod.destroyQuerySet(p0_procs, qs);
+            procs.wgpuQuerySetRelease(qs);
+        }
         if (resolve_buffer) |buf| procs.wgpuBufferRelease(buf);
         if (readback_buffer) |buf| procs.wgpuBufferRelease(buf);
     }
@@ -509,11 +569,13 @@ fn executeKernelDispatchKernel(
     defer procs.wgpuCommandEncoderRelease(encoder);
 
     const command_encoder_write_timestamp = procs.wgpuCommandEncoderWriteTimestamp;
-    const use_command_encoder_timestamps = timestamps_active and command_encoder_write_timestamp != null and self.has_timestamp_inside_passes;
+    const use_compute_pass_timestamps = timestamps_active and compute_pass_write_timestamp != null and self.has_timestamp_inside_passes;
+    const use_command_encoder_timestamps = timestamps_active and !use_compute_pass_timestamps and command_encoder_write_timestamp != null and self.has_timestamp_inside_passes;
     if (timestamps_active) {
+        const mode = if (use_compute_pass_timestamps) "compute_pass" else if (use_command_encoder_timestamps) "command_encoder" else "pass_timestamp_writes";
         self.timestampLog(
             "timestamp_write_mode={s}\n",
-            .{if (use_command_encoder_timestamps) "command_encoder" else "pass_timestamp_writes"},
+            .{mode},
         );
     }
     var timestamp_writes = types.WGPUPassTimestampWrites{
@@ -526,13 +588,18 @@ fn executeKernelDispatchKernel(
     if (use_command_encoder_timestamps) {
         command_encoder_write_timestamp.?(encoder, query_set, 0);
     }
+    if (dispatch_indirect_proc != null and command_encoder_write_buffer != null and dispatch_indirect_buffer != null) {
+        const dispatch_args = [3]u32{ x, y, z };
+        const dispatch_args_bytes = std.mem.asBytes(&dispatch_args);
+        command_encoder_write_buffer.?(encoder, dispatch_indirect_buffer, 0, dispatch_args_bytes.ptr, @as(u64, dispatch_args_bytes.len));
+    }
 
     const pass = procs.wgpuCommandEncoderBeginComputePass(
         encoder,
         &types.WGPUComputePassDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
-            .timestampWrites = if (timestamps_active and !use_command_encoder_timestamps) &timestamp_writes else null,
+            .timestampWrites = if (timestamps_active and !use_command_encoder_timestamps and !use_compute_pass_timestamps) &timestamp_writes else null,
         },
     );
     if (pass == null) {
@@ -554,9 +621,19 @@ fn executeKernelDispatchKernel(
             }
         }
     }
+    if (use_compute_pass_timestamps) {
+        compute_pass_write_timestamp.?(pass, query_set, 0);
+    }
     var dispatch_index: u32 = 0;
     while (dispatch_index < repeat_count) : (dispatch_index += 1) {
-        procs.wgpuComputePassEncoderDispatchWorkgroups(pass, x, y, z);
+        if (dispatch_indirect_proc != null and dispatch_indirect_buffer != null) {
+            dispatch_indirect_proc.?(pass, dispatch_indirect_buffer, 0);
+        } else {
+            procs.wgpuComputePassEncoderDispatchWorkgroups(pass, x, y, z);
+        }
+    }
+    if (use_compute_pass_timestamps) {
+        compute_pass_write_timestamp.?(pass, query_set, 1);
     }
     procs.wgpuComputePassEncoderEnd(pass);
     if (use_command_encoder_timestamps) {
