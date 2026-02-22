@@ -28,6 +28,47 @@ pub const BUFFER_UPLOAD_KEY = 0xFFFF_FFFF_FFFF_FFFF;
 pub const DEFAULT_TIMEOUT_NS = 2_000_000_000;
 pub const QUEUE_WAIT_TIMEOUT_NS = 2_000_000_000;
 pub const DEFAULT_WAIT_SLICE_NS = 50_000_000;
+const FnAnySymbol = *const fn () callconv(.c) void;
+
+pub const OPTIONAL_API_SURFACE_SYMBOLS = [_][:0]const u8{
+    "wgpuBindGroupLayoutSetLabel",
+    "wgpuBindGroupSetLabel",
+    "wgpuBufferGetMapState",
+    "wgpuBufferGetMappedRange",
+    "wgpuBufferGetSize",
+    "wgpuBufferGetUsage",
+    "wgpuBufferReadMappedRange",
+    "wgpuBufferSetLabel",
+    "wgpuBufferWriteMappedRange",
+    "wgpuCommandBufferSetLabel",
+    "wgpuCommandEncoderInsertDebugMarker",
+    "wgpuCommandEncoderPopDebugGroup",
+    "wgpuCommandEncoderPushDebugGroup",
+    "wgpuCommandEncoderSetLabel",
+    "wgpuComputePassEncoderInsertDebugMarker",
+    "wgpuComputePassEncoderPopDebugGroup",
+    "wgpuComputePassEncoderPushDebugGroup",
+    "wgpuComputePassEncoderSetLabel",
+    "wgpuComputePipelineGetBindGroupLayout",
+    "wgpuComputePipelineSetLabel",
+    "wgpuDeviceGetLostFuture",
+    "wgpuDeviceSetLabel",
+    "wgpuExternalTextureRelease",
+    "wgpuExternalTextureSetLabel",
+    "wgpuPipelineLayoutSetLabel",
+    "wgpuQuerySetSetLabel",
+    "wgpuQueueSetLabel",
+    "wgpuRenderPassEncoderInsertDebugMarker",
+    "wgpuRenderPassEncoderPopDebugGroup",
+    "wgpuRenderPassEncoderPushDebugGroup",
+    "wgpuRenderPassEncoderSetLabel",
+    "wgpuRenderPipelineSetLabel",
+    "wgpuSamplerSetLabel",
+    "wgpuShaderModuleSetLabel",
+    "wgpuSurfaceSetLabel",
+    "wgpuTextureSetLabel",
+    "wgpuTextureViewSetLabel",
+};
 
 pub const BUILTIN_KERNEL_DEFAULT_SOURCE =
     \\@compute @workgroup_size(1)
@@ -50,7 +91,7 @@ pub fn openLibrary() !std.DynLib {
 }
 
 pub fn loadProcs(lib: std.DynLib) !types.Procs {
-    return .{
+    const procs: types.Procs = .{
         .wgpuCreateInstance = try loadProc(lib, "wgpuCreateInstance", types.FnWgpuCreateInstance),
         .wgpuInstanceRequestAdapter = try loadProc(lib, "wgpuInstanceRequestAdapter", types.FnWgpuInstanceRequestAdapter),
         .wgpuInstanceWaitAny = try loadProc(lib, "wgpuInstanceWaitAny", types.FnWgpuInstanceWaitAny),
@@ -117,6 +158,15 @@ pub fn loadProcs(lib: std.DynLib) !types.Procs {
         .wgpuBufferGetConstMappedRange = try loadProc(lib, "wgpuBufferGetConstMappedRange", types.FnWgpuBufferGetConstMappedRange),
         .wgpuBufferUnmap = try loadProc(lib, "wgpuBufferUnmap", types.FnWgpuBufferUnmap),
     };
+    preloadOptionalApiSurfaceSymbols(lib);
+    return procs;
+}
+
+pub fn preloadOptionalApiSurfaceSymbols(lib: std.DynLib) void {
+    var mutable = lib;
+    inline for (OPTIONAL_API_SURFACE_SYMBOLS) |name| {
+        _ = mutable.lookup(FnAnySymbol, name);
+    }
 }
 
 fn loadProc(

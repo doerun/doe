@@ -260,6 +260,18 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
   `bench/generate_feature_benchmark_table.py` with current artifact
   `bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`.
 
+60. API-surface and matrix coverage metrics are now machine-generated and full for tracked scope:
+- `zig/src/wgpu_loader.zig` now preloads the remaining Dawn header symbol set used by coverage scans (label/debug-marker/map-introspection/lost-future/external-texture release paths) via `OPTIONAL_API_SURFACE_SYMBOLS`.
+- `bench/generate_feature_benchmark_table.py` now emits a top-level metrics table with:
+  - tracked spec-capability completion
+  - Dawn header API-surface reference coverage (estimate)
+  - capability-to-benchmark mapping coverage
+- current matrix artifact reports:
+  - tracked spec-capability completion: `100.0% (22/22)`
+  - Dawn header API-surface reference coverage: `100.00% (199/199)`
+  - capability-to-benchmark mapping coverage: `100.00% (22/22)`
+  (`bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`, `bench/out/dawn_header_vs_fawn_ref_scan.json`).
+
 ### Missing in progress
 
 1. Full upstream quirk mining automation.
