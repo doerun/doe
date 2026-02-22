@@ -256,7 +256,7 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
     const parsed = try std.json.parseFromSlice([]const RawCommand, allocator, text, .{ .ignore_unknown_fields = true });
     defer parsed.deinit();
 
-    var list = std.array_list.Managed(model.Command).init(allocator);
+    var list = std.ArrayList(model.Command).init(allocator);
     errdefer {
         for (list.items) |command| {
             freeCommandPayload(allocator, command);
@@ -545,7 +545,7 @@ fn parseDispatchDimensions(raw: RawCommand) !model.DispatchCommand {
 }
 
 fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBinding) ![]const model.KernelBinding {
-    var bindings = try std.array_list.Managed(model.KernelBinding).initCapacity(allocator, raw_bindings.len);
+    var bindings = try std.ArrayList(model.KernelBinding).initCapacity(allocator, raw_bindings.len);
     errdefer bindings.deinit();
 
     for (raw_bindings) |raw_binding| {

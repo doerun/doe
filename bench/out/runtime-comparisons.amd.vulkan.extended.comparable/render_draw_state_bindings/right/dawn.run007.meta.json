@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x03b87b9eb6e83540",
+  "hash": "0xaa79b0916bb06a9a",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "render_draw_state_bindings",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicBindGroup --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/render_draw_state_bindings/right/dawn.run007.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.00016381352899999999,
+  "timingMs": 0.000166440107,
   "timingMetric": "wall_time",
-  "elapsedMs": 6059.707437874749,
-  "processWallMs": 6059.707437874749,
+  "elapsedMs": 6086.4938190206885,
+  "processWallMs": 6086.4938190206885,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.00016381352899999999,
-    "cpu_time": 0.00012543604699999998
+    "wall_time": 0.000166440107,
+    "cpu_time": 0.00012808497499999997
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 164,
+  "executionTotalNs": 166,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.000163606309,
-      0.00016381352899999999,
-      0.00016425788
+      0.00016710453399999999,
+      0.000166101621,
+      0.000166440107
     ],
     "cpu_time": [
-      0.00012525802,
-      0.00012543604699999998,
-      0.000125808687
+      0.00012959666799999998,
+      0.000127757942,
+      0.00012808497499999997
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.000163606309,
-    0.00016381352899999999,
-    0.00016425788
+    0.00016710453399999999,
+    0.000166101621,
+    0.000166440107
   ]
 }

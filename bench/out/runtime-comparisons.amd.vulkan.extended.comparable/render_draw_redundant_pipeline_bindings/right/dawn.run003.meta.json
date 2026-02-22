@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0xb3c08434d5fe3172",
+  "hash": "0x3520cb83fd32b094",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "render_draw_redundant_pipeline_bindings",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__RedundantPipeline_RedundantBindGroups --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/render_draw_redundant_pipeline_bindings/right/dawn.run003.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.000185493126,
+  "timingMs": 0.00018764349399999998,
   "timingMetric": "wall_time",
-  "elapsedMs": 6055.009024916217,
-  "processWallMs": 6055.009024916217,
+  "elapsedMs": 6058.936126995832,
+  "processWallMs": 6058.936126995832,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.000185493126,
-    "cpu_time": 0.000147053478
+    "wall_time": 0.00018764349399999998,
+    "cpu_time": 0.000149881945
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 185,
+  "executionTotalNs": 188,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.000185493126,
-      0.000185655112,
-      0.000184667039
+      0.000187638888,
+      0.00018764349399999998,
+      0.000188493054
     ],
     "cpu_time": [
-      0.000147053478,
-      0.00014725828,
-      0.000146347696
+      0.000149815937,
+      0.000149881945,
+      0.00015036161
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.000185493126,
-    0.000185655112,
-    0.000184667039
+    0.000187638888,
+    0.00018764349399999998,
+    0.000188493054
   ]
 }

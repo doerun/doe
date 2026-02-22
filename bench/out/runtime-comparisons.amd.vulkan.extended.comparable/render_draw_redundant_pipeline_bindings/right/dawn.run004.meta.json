@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x7a9804926bf1dbdf",
+  "hash": "0x8ed5bca71ecde2b2",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "render_draw_redundant_pipeline_bindings",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__RedundantPipeline_RedundantBindGroups --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/render_draw_redundant_pipeline_bindings/right/dawn.run004.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.000185361818,
+  "timingMs": 0.00018773336699999998,
   "timingMetric": "wall_time",
-  "elapsedMs": 6086.798727978021,
-  "processWallMs": 6086.798727978021,
+  "elapsedMs": 6060.3236281313,
+  "processWallMs": 6060.3236281313,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.000185361818,
-    "cpu_time": 0.000146931569
+    "wall_time": 0.00018773336699999998,
+    "cpu_time": 0.000149511882
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 185,
+  "executionTotalNs": 188,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.000185578122,
-      0.000185361818,
-      0.000185320639
+      0.00018773336699999998,
+      0.000187204215,
+      0.00018793577099999998
     ],
     "cpu_time": [
-      0.000147118161,
-      0.000146931569,
-      0.000146870599
+      0.000149511882,
+      0.00014884259599999997,
+      0.000150119686
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.000185578122,
-    0.000185361818,
-    0.000185320639
+    0.00018773336699999998,
+    0.000187204215,
+    0.00018793577099999998
   ]
 }

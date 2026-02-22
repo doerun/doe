@@ -332,7 +332,7 @@ fn textureBytesPerTexel(format: types.WGPUTextureFormat) !u64 {
 fn removeTextureViewsForTexture(self: *Backend, texture: types.WGPUTexture) void {
     const procs = self.procs orelse return;
 
-    var target_keys = std.array_list.Managed(u64).init(self.allocator);
+    var target_keys = std.ArrayList(u64).init(self.allocator);
     defer target_keys.deinit();
     var target_it = self.render_target_view_cache.iterator();
     while (target_it.next()) |entry| {
@@ -344,7 +344,7 @@ fn removeTextureViewsForTexture(self: *Backend, texture: types.WGPUTexture) void
         }
     }
 
-    var depth_keys = std.array_list.Managed(u64).init(self.allocator);
+    var depth_keys = std.ArrayList(u64).init(self.allocator);
     defer depth_keys.deinit();
     var depth_it = self.render_depth_view_cache.iterator();
     while (depth_it.next()) |entry| {

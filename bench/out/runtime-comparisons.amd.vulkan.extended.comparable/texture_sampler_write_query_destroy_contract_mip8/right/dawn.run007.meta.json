@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x063ae008b3f56b8a",
+  "hash": "0x622de913af232207",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "texture_sampler_write_query_destroy_contract_mip8",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_8 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/texture_sampler_write_query_destroy_contract_mip8/right/dawn.run007.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.007486645822,
+  "timingMs": 0.007495542927,
   "timingMetric": "wall_time",
-  "elapsedMs": 6040.126954903826,
-  "processWallMs": 6040.126954903826,
+  "elapsedMs": 6071.347753051668,
+  "processWallMs": 6071.347753051668,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.007486645822,
-    "cpu_time": 0.001185602601
+    "wall_time": 0.007495542927,
+    "cpu_time": 0.001144769268
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 7487,
+  "executionTotalNs": 7496,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.007578908265,
-      0.007456311221,
-      0.007486645822
+      0.007495542927,
+      0.007403975415,
+      0.007560996683
     ],
     "cpu_time": [
-      0.001177166095,
-      0.001191601081,
-      0.001185602601
+      0.001144769268,
+      0.001132331617,
+      0.001148335775
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.007578908265,
-    0.007456311221,
-    0.007486645822
+    0.007495542927,
+    0.007403975415,
+    0.007560996683
   ]
 }

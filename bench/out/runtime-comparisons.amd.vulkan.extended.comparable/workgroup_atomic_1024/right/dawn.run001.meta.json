@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x6297d93e56c693f9",
+  "hash": "0x0b2690b356aec7ac",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "workgroup_atomic_1024",
@@ -14,45 +14,45 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/workgroup_atomic_1024/right/dawn.run001.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.056436311467,
+  "timingMs": 0.053433276861999994,
   "timingMetric": "wall_time",
-  "elapsedMs": 6274.264910956845,
-  "processWallMs": 6274.264910956845,
+  "elapsedMs": 6108.1067530903965,
+  "processWallMs": 6108.1067530903965,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.056436311467,
-    "cpu_time": 0.054832301522,
-    "gpu_time": 0.046879610435
+    "wall_time": 0.053433276861999994,
+    "cpu_time": 0.051837178936,
+    "gpu_time": 0.045781079148999995
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 56436,
+  "executionTotalNs": 53433,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.055825023261,
-      0.05891180641299999,
-      0.056436311467
+      0.05380547383,
+      0.053433276861999994,
+      0.053387296435999994
     ],
     "cpu_time": [
-      0.054218106249999995,
-      0.057312473532999994,
-      0.054832301522
+      0.052192513032,
+      0.051837178936,
+      0.051780321223
     ],
     "gpu_time": [
-      0.046263429565,
-      0.04722509913,
-      0.046879610435
+      0.046108759149,
+      0.045760163404,
+      0.045781079148999995
     ]
   },
   "benchmarkWallMsSamples": [
-    0.055825023261,
-    0.05891180641299999,
-    0.056436311467
+    0.05380547383,
+    0.053433276861999994,
+    0.053387296435999994
   ]
 }

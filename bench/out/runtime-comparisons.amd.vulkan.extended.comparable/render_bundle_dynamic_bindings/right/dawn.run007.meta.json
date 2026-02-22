@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x0ade33b6f6fd8aa4",
+  "hash": "0x8530b838669163f8",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "render_bundle_dynamic_bindings",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicBindGroup_RenderBundle --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/render_bundle_dynamic_bindings/right/dawn.run007.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 9.876524899999999e-05,
+  "timingMs": 9.732357399999999e-05,
   "timingMetric": "wall_time",
-  "elapsedMs": 6068.200636887923,
-  "processWallMs": 6068.200636887923,
+  "elapsedMs": 6076.761818956584,
+  "processWallMs": 6076.761818956584,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 9.876524899999999e-05,
-    "cpu_time": 5.3246754e-05
+    "wall_time": 9.732357399999999e-05,
+    "cpu_time": 5.3128515999999995e-05
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 99,
+  "executionTotalNs": 97,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      9.802529699999999e-05,
-      9.9946066e-05,
-      9.876524899999999e-05
+      9.7224957e-05,
+      0.000100840759,
+      9.732357399999999e-05
     ],
     "cpu_time": [
-      5.2959936999999995e-05,
-      5.5230510999999996e-05,
-      5.3246754e-05
+      5.2605632e-05,
+      5.6414863999999996e-05,
+      5.3128515999999995e-05
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    9.802529699999999e-05,
-    9.9946066e-05,
-    9.876524899999999e-05
+    9.7224957e-05,
+    0.000100840759,
+    9.732357399999999e-05
   ]
 }

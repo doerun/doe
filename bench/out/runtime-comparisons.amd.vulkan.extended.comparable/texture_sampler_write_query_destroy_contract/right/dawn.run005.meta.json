@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0xd118c177cb975810",
+  "hash": "0x8cda526fab6cebd8",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "texture_sampler_write_query_destroy_contract",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/texture_sampler_write_query_destroy_contract/right/dawn.run005.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.0064982634109999994,
+  "timingMs": 0.006726717881999999,
   "timingMetric": "wall_time",
-  "elapsedMs": 6065.9669891465455,
-  "processWallMs": 6065.9669891465455,
+  "elapsedMs": 6084.586036158726,
+  "processWallMs": 6084.586036158726,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.0064982634109999994,
-    "cpu_time": 0.00035864531899999996
+    "wall_time": 0.006726717881999999,
+    "cpu_time": 0.000483132309
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 6498,
+  "executionTotalNs": 6727,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.00652826985,
-      0.00648116651,
-      0.0064982634109999994
+      0.006708069491999999,
+      0.006728650313,
+      0.006726717881999999
     ],
     "cpu_time": [
-      0.00038889062499999997,
-      0.000351270514,
-      0.00035864531899999996
+      0.00047713308199999997,
+      0.000489552881,
+      0.000483132309
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.00652826985,
-    0.00648116651,
-    0.0064982634109999994
+    0.006708069491999999,
+    0.006728650313,
+    0.006726717881999999
   ]
 }

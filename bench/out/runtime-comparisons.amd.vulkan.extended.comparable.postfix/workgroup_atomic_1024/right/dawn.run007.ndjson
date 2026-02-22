@@ -1,0 +1,1 @@
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1245845913913545, "hash": "0xca818f3fbd2ea161", "previousHash": "0x9e3779b97f4a7c15", "command": "workgroup_atomic_1024", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6100049054}

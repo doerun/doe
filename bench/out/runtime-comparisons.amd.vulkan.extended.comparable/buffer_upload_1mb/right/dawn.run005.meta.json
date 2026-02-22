@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0xfebd2352145b92d5",
+  "hash": "0xba61e8c7ef7fea4b",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "buffer_upload_1mb",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/buffer_upload_1mb/right/dawn.run005.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.14016978468099997,
+  "timingMs": 0.14453497714299998,
   "timingMetric": "wall_time",
-  "elapsedMs": 6058.121637906879,
-  "processWallMs": 6058.121637906879,
+  "elapsedMs": 6105.97643093206,
+  "processWallMs": 6105.97643093206,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.14016978468099997,
-    "cpu_time": 0.136639307518
+    "wall_time": 0.14453497714299998,
+    "cpu_time": 0.141051029857
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 140170,
+  "executionTotalNs": 144535,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.14000896099299998,
-      0.14059589574499998,
-      0.14016978468099997
+      0.14453497714299998,
+      0.14481012128600002,
+      0.14371837742899998
     ],
     "cpu_time": [
-      0.13647383177300001,
-      0.13704831659599997,
-      0.136639307518
+      0.141051029857,
+      0.141331791143,
+      0.14021989028600002
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.14000896099299998,
-    0.14059589574499998,
-    0.14016978468099997
+    0.14453497714299998,
+    0.14481012128600002,
+    0.14371837742899998
   ]
 }

@@ -86,25 +86,25 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
         .driver_version = .{ .major = 9999, .minor = 9999, .patch = 9999 },
     };
 
-    var upload = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var copy_buffer_to_texture = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var barrier = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var dispatch_commands = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var kernel_dispatch = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var render_draw = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var sampler_create = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var sampler_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var texture_write = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var texture_query = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var texture_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_create = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_capabilities = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_configure = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_acquire = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_present = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_unconfigure = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_release = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var async_diagnostics = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var upload = std.ArrayList(ScoredQuirk).init(allocator);
+    var copy_buffer_to_texture = std.ArrayList(ScoredQuirk).init(allocator);
+    var barrier = std.ArrayList(ScoredQuirk).init(allocator);
+    var dispatch_commands = std.ArrayList(ScoredQuirk).init(allocator);
+    var kernel_dispatch = std.ArrayList(ScoredQuirk).init(allocator);
+    var render_draw = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_write = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_query = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_capabilities = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_configure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_acquire = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_present = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_unconfigure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_release = std.ArrayList(ScoredQuirk).init(allocator);
+    var async_diagnostics = std.ArrayList(ScoredQuirk).init(allocator);
 
     for (quirks) |quirk| {
         if (supportsCommand(quirk.scope, .upload)) {
@@ -195,25 +195,25 @@ pub fn buildProfileDispatchContext(
     profile: model.DeviceProfile,
     quirks: []const model.Quirk,
 ) !DispatchContext {
-    var upload = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var copy_buffer_to_texture = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var barrier = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var dispatch_commands = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var kernel_dispatch = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var render_draw = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var sampler_create = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var sampler_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var texture_write = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var texture_query = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var texture_destroy = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_create = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_capabilities = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_configure = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_acquire = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_present = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_unconfigure = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var surface_release = std.array_list.Managed(ScoredQuirk).init(allocator);
-    var async_diagnostics = std.array_list.Managed(ScoredQuirk).init(allocator);
+    var upload = std.ArrayList(ScoredQuirk).init(allocator);
+    var copy_buffer_to_texture = std.ArrayList(ScoredQuirk).init(allocator);
+    var barrier = std.ArrayList(ScoredQuirk).init(allocator);
+    var dispatch_commands = std.ArrayList(ScoredQuirk).init(allocator);
+    var kernel_dispatch = std.ArrayList(ScoredQuirk).init(allocator);
+    var render_draw = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_write = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_query = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_capabilities = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_configure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_acquire = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_present = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_unconfigure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_release = std.ArrayList(ScoredQuirk).init(allocator);
+    var async_diagnostics = std.ArrayList(ScoredQuirk).init(allocator);
 
     for (quirks) |quirk| {
         if (!matchesProfile(profile, quirk)) continue;
@@ -354,7 +354,7 @@ pub fn dispatch(profile: model.DeviceProfile, context: DispatchContext, command:
 }
 
 fn appendScored(
-    storage: *std.array_list.Managed(ScoredQuirk),
+    storage: *std.ArrayList(ScoredQuirk),
     quirk: model.Quirk,
     command_kind: model.CommandKind,
     profile: model.DeviceProfile,
@@ -365,7 +365,7 @@ fn appendScored(
     });
 }
 
-fn finalizeBucket(storage: *std.array_list.Managed(ScoredQuirk)) CommandDispatchBucket {
+fn finalizeBucket(storage: *std.ArrayList(ScoredQuirk)) CommandDispatchBucket {
     if (storage.items.len == 0) {
         storage.deinit();
         return CommandDispatchBucket{};

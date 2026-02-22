@@ -29,7 +29,6 @@ const RENDER_OPTIONAL_BOOL_FALSE: u32 = 0x00000000;
 const RENDER_STENCIL_MASK_DEFAULT: u32 = 0x000000FF;
 const RENDER_DEPTH_ATTACHMENT_HANDLE_MASK: u64 = 0x8C9F_2400_0000_0000;
 const RENDER_VERTEX_BUFFER_HANDLE: u64 = 0x8C9F_2500_0000_0000;
-const RENDER_INDIRECT_BUFFER_HANDLE: u64 = 0x8C9F_2900_0000_0000;
 const RENDER_VERTEX_FORMAT_FLOAT32X4: u32 = 0x0000001F;
 const RENDER_VERTEX_STEP_MODE_VERTEX: u32 = 0x00000001;
 const RENDER_VERTEX_STRIDE_BYTES: u64 = 4 * @sizeOf(f32);
@@ -37,13 +36,10 @@ const RENDER_UNIFORM_BINDING_INDEX: u32 = render_resource_mod.RENDER_UNIFORM_BIN
 const RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES;
 const RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES;
 const RENDER_UNIFORM_TOTAL_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_TOTAL_BYTES;
-const RENDER_BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
 
 const RenderColor = render_types_mod.RenderColor;
 const RenderBundleDescriptor = render_types_mod.RenderBundleDescriptor;
 const RenderBundleEncoderDescriptor = render_types_mod.RenderBundleEncoderDescriptor;
-const RenderDrawIndirectArgs = render_types_mod.RenderDrawIndirectArgs;
-const RenderDrawIndexedIndirectArgs = render_types_mod.RenderDrawIndexedIndirectArgs;
 const RenderPassColorAttachment = render_types_mod.RenderPassColorAttachment;
 const RenderPassDescriptor = render_types_mod.RenderPassDescriptor;
 const RenderPassDepthStencilAttachment = render_types_mod.RenderPassDepthStencilAttachment;
@@ -637,39 +633,14 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 if (render.bind_group_mode == .redundant) {
                     setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
                 }
-                if (draw_index == 0) {
-                    render_api.render_bundle_encoder_draw_indexed(
-                        render_bundle_encoder,
-                        render.index_count.?,
-                        render.instance_count,
-                        render.first_index,
-                        render.base_vertex,
-                        render.first_instance,
-                    );
-                } else {
-                    const indirect_args = RenderDrawIndexedIndirectArgs{
-                        .index_count = render.index_count.?,
-                        .instance_count = render.instance_count,
-                        .first_index = render.first_index,
-                        .base_vertex = render.base_vertex,
-                        .first_instance = render.first_instance,
-                    };
-                    const indirect_args_bytes = std.mem.asBytes(&indirect_args);
-                    const indirect_buffer = try resources.getOrCreateBuffer(
-                        self,
-                        RENDER_INDIRECT_BUFFER_HANDLE,
-                        @as(u64, @intCast(indirect_args_bytes.len)),
-                        types.WGPUBufferUsage_CopyDst | RENDER_BUFFER_USAGE_INDIRECT,
-                    );
-                    procs.wgpuQueueWriteBuffer(
-                        self.queue.?,
-                        indirect_buffer,
-                        0,
-                        indirect_args_bytes.ptr,
-                        indirect_args_bytes.len,
-                    );
-                    render_api.render_bundle_encoder_draw_indexed_indirect(render_bundle_encoder, indirect_buffer, 0);
-                }
+                render_api.render_bundle_encoder_draw_indexed(
+                    render_bundle_encoder,
+                    render.index_count.?,
+                    render.instance_count,
+                    render.first_index,
+                    render.base_vertex,
+                    render.first_instance,
+                );
             }
         } else {
             while (draw_index < render.draw_count) : (draw_index += 1) {
@@ -679,37 +650,13 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 if (render.bind_group_mode == .redundant) {
                     setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
                 }
-                if (draw_index == 0) {
-                    render_api.render_bundle_encoder_draw(
-                        render_bundle_encoder,
-                        render.vertex_count,
-                        render.instance_count,
-                        render.first_vertex,
-                        render.first_instance,
-                    );
-                } else {
-                    const indirect_args = RenderDrawIndirectArgs{
-                        .vertex_count = render.vertex_count,
-                        .instance_count = render.instance_count,
-                        .first_vertex = render.first_vertex,
-                        .first_instance = render.first_instance,
-                    };
-                    const indirect_args_bytes = std.mem.asBytes(&indirect_args);
-                    const indirect_buffer = try resources.getOrCreateBuffer(
-                        self,
-                        RENDER_INDIRECT_BUFFER_HANDLE,
-                        @as(u64, @intCast(indirect_args_bytes.len)),
-                        types.WGPUBufferUsage_CopyDst | RENDER_BUFFER_USAGE_INDIRECT,
-                    );
-                    procs.wgpuQueueWriteBuffer(
-                        self.queue.?,
-                        indirect_buffer,
-                        0,
-                        indirect_args_bytes.ptr,
-                        indirect_args_bytes.len,
-                    );
-                    render_api.render_bundle_encoder_draw_indirect(render_bundle_encoder, indirect_buffer, 0);
-                }
+                render_api.render_bundle_encoder_draw(
+                    render_bundle_encoder,
+                    render.vertex_count,
+                    render.instance_count,
+                    render.first_vertex,
+                    render.first_instance,
+                );
             }
         }
 

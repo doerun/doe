@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0xfb4cf4ddba2013fb",
+  "hash": "0xe9c0398a2937011a",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "texture_sampling_raster_proxy",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/texture_sampling_raster_proxy/right/dawn.run003.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.006527013133,
+  "timingMs": 0.0065667842369999995,
   "timingMetric": "wall_time",
-  "elapsedMs": 6062.155746854842,
-  "processWallMs": 6062.155746854842,
+  "elapsedMs": 6110.351510113105,
+  "processWallMs": 6110.351510113105,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.006527013133,
-    "cpu_time": 0.000373053486
+    "wall_time": 0.0065667842369999995,
+    "cpu_time": 0.000388878154
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 6527,
+  "executionTotalNs": 6567,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.006495858812,
-      0.006527013133,
-      0.006527872193
+      0.006591710515,
+      0.006533133243999999,
+      0.0065667842369999995
     ],
     "cpu_time": [
-      0.000363718688,
-      0.00038676019599999997,
-      0.000373053486
+      0.000429262311,
+      0.000388878154,
+      0.000388806325
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.006495858812,
-    0.006527013133,
-    0.006527872193
+    0.006591710515,
+    0.006533133243999999,
+    0.0065667842369999995
   ]
 }

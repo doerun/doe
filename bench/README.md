@@ -183,6 +183,7 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   Fawn timing source is selected by `compare_dawn_vs_fawn.py` policy from trace metadata
   (`executionGpuTimestampTotalNs` -> `executionEncodeTotalNs+executionSubmitWaitTotalNs` -> `executionTotalNs`)
   with fallback to trace-window/wall-time when required fields are unavailable.
+  if encode/dispatch are both absent, tiny submit-only dispatch windows (`<100us` and `<1%` of `executionTotalNs`) are rejected as bookkeeping noise and `executionTotalNs` is used instead (`dispatchWindowSelectionRejected` in timing metadata).
   when ignore-first is enabled and applied, source is reported as `fawn-execution-row-total-ns+ignore-first-ops`.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
   in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=100` to report per-dispatch units).
@@ -195,6 +196,8 @@ Extended workload domains now include:
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
 - async pipeline diagnostics contract workload (mapped to `ShaderRobustnessPerf` pipeline-compilation baseline) covering `CreateRenderPipelineAsync`, error scopes, and shader compilation-info API paths.
 - surface lifecycle contract workload is tracked as directional (`surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
+- directional macro workloads for high-volume stress:
+  `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, and `texture_sampler_write_query_destroy_macro_500`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:
   `matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
@@ -435,6 +438,7 @@ Additional AMD Vulkan presets:
 - release claim mode: `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
 - extended comparable matrix (upload + compute + render + texture + render-bundle + async pipeline diagnostics): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - directional diagnostics (surface lifecycle contract): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
+- directional macro diagnostics (high-volume render/texture stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
 - adapter-agnostic local comparable matrix (no fixed AMD vendor-id requirement): `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`
 
 Preset behavior:
@@ -467,6 +471,9 @@ python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config
 
 # directional diagnostics only (surface lifecycle contract, non-claim)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json
+
+# directional macro diagnostics (high-volume render/texture stress, non-claim)
+python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json
 
 # local adapter-agnostic comparable matrix (strict, no vendor-id pin)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json

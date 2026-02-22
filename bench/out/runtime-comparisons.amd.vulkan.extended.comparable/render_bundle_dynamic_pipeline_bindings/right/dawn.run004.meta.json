@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x7cc03845aab64a27",
+  "hash": "0x5c1bf44f70d0ff5e",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "render_bundle_dynamic_pipeline_bindings",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicPipeline_DynamicBindGroup_RenderBundle --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/render_bundle_dynamic_pipeline_bindings/right/dawn.run004.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.000368278214,
+  "timingMs": 0.00036642318,
   "timingMetric": "wall_time",
-  "elapsedMs": 6039.849946973845,
-  "processWallMs": 6039.849946973845,
+  "elapsedMs": 6058.590888977051,
+  "processWallMs": 6058.590888977051,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.000368278214,
-    "cpu_time": 0.00030991877899999993
+    "wall_time": 0.00036642318,
+    "cpu_time": 0.00030754416300000003
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 368,
+  "executionTotalNs": 366,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.00036950536599999995,
-      0.000367848563,
-      0.000368278214
+      0.00036642318,
+      0.000367441646,
+      0.00036379035499999995
     ],
     "cpu_time": [
-      0.000310428507,
-      0.000309148649,
-      0.00030991877899999993
+      0.00030754416300000003,
+      0.000308327938,
+      0.000304224283
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.00036950536599999995,
-    0.000367848563,
-    0.000368278214
+    0.00036642318,
+    0.000367441646,
+    0.00036379035499999995
   ]
 }

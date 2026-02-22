@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 3,
+  "left": {
+    "runtime": "fawn_render_deferred",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/fawn-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --execute --queue-sync-mode deferred",
+    "iterations": 12,
+    "timingsMs": [
+      109.34578091837466,
+      110.69034901447594,
+      105.01917288638651,
+      87.54433505237103,
+      88.925302028656,
+      89.28259718231857,
+      86.52135310694575,
+      80.41019714437425,
+      79.21674405224621,
+      80.96928196027875,
+      83.08556722477078,
+      83.6931939702481
+    ],
+    "p5Ms": 79.21674405224621,
+    "p50Ms": 86.52135310694575,
+    "p95Ms": 109.34578091837466,
+    "p99Ms": 109.34578091837466,
+    "meanMs": 90.39198954512055,
+    "medianMs": 87.03284407965839,
+    "minMs": 79.21674405224621,
+    "maxMs": 110.69034901447594,
+    "meta": {}
+  },
+  "right": {
+    "runtime": "fawn_render_per_command",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/fawn-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --execute --queue-sync-mode per-command",
+    "iterations": 12,
+    "timingsMs": [
+      80.92295401729643,
+      83.57050293125212,
+      84.90777690894902,
+      84.90456989966333,
+      75.93633001670241,
+      77.10267207585275,
+      83.75780610367656,
+      90.50385095179081,
+      86.80099109187722,
+      89.3831851426512,
+      81.11856412142515,
+      84.79614602401853
+    ],
+    "p5Ms": 75.93633001670241,
+    "p50Ms": 83.75780610367656,
+    "p95Ms": 89.3831851426512,
+    "p99Ms": 89.3831851426512,
+    "meanMs": 83.64211244042963,
+    "medianMs": 84.27697606384754,
+    "minMs": 75.93633001670241,
+    "maxMs": 90.50385095179081,
+    "meta": {}
+  },
+  "deltaPercentConvention": {
+    "baseline": "right",
+    "formula": "((rightMs - leftMs) / rightMs) * 100",
+    "positive": "left faster",
+    "negative": "left slower",
+    "zero": "parity"
+  },
+  "delta": {
+    "p5Percent": -4.3199533541089785,
+    "p50Percent": -3.2994500833133564,
+    "p95Percent": -22.33372612965641,
+    "p99Percent": -22.33372612965641,
+    "meanPercent": -8.069950540163873,
+    "p50LeftMs": 86.52135310694575,
+    "p50RightMs": 83.75780610367656
+  }
+}

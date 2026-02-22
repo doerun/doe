@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x6cd5d9ecc763e27f",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "workgroup_non_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable.rebuilt.full/workgroup_non_atomic_1024/right/dawn.run004.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.054563889836,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6082.455870928243,
+  "processWallMs": 6082.455870928243,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.054563889836,
+    "cpu_time": 0.052963150328,
+    "gpu_time": 0.045714045902
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 54564,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.054992281420999996,
+      0.054563889836,
+      0.054384225956
+    ],
+    "cpu_time": [
+      0.053388011202,
+      0.052963150328,
+      0.052785082732
+    ],
+    "gpu_time": [
+      0.045628097049000005,
+      0.045714045902,
+      0.04687435540999999
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.054992281420999996,
+    0.054563889836,
+    0.054384225956
+  ]
+}

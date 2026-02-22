@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x526251a089a2839c",
+  "hash": "0xd56f2a0f7fa8ccf8",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "texture_sampler_write_query_destroy_contract_mip8",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_8 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/texture_sampler_write_query_destroy_contract_mip8/right/dawn.run005.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.007401009608,
+  "timingMs": 0.007460260022,
   "timingMetric": "wall_time",
-  "elapsedMs": 6178.408792009577,
-  "processWallMs": 6178.408792009577,
+  "elapsedMs": 6085.851327050477,
+  "processWallMs": 6085.851327050477,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.007401009608,
-    "cpu_time": 0.0011198119759999999
+    "wall_time": 0.007460260022,
+    "cpu_time": 0.001152107244
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 7401,
+  "executionTotalNs": 7460,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.006861096103,
-      0.007469960721999999,
-      0.007401009608
+      0.007460260022,
+      0.007608389006,
+      0.007443753797999999
     ],
     "cpu_time": [
-      0.000821294123,
-      0.0011198119759999999,
-      0.001137683862
+      0.001152107244,
+      0.0011812198129999998,
+      0.0011480067419999999
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.006861096103,
-    0.007469960721999999,
-    0.007401009608
+    0.007460260022,
+    0.007608389006,
+    0.007443753797999999
   ]
 }

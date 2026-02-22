@@ -1,0 +1,19 @@
+[
+  {
+    "kind": "draw_indexed",
+    "drawCount": 200000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "indexData": [0, 1, 2],
+    "indexFormat": "uint16",
+    "indexCount": 3,
+    "firstIndex": 0,
+    "baseVertex": 0,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "encodeMode": "render-pass",
+    "targetWidth": 256,
+    "targetHeight": 256,
+    "targetFormat": "rgba8unorm"
+  }
+]

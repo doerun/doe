@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x47c0521a84c5927b",
+  "hash": "0xc5e23cb34fe4da1f",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "render_draw_throughput_proxy",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/render_draw_throughput_proxy/right/dawn.run004.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 9.101621299999999e-05,
+  "timingMs": 9.0242806e-05,
   "timingMetric": "wall_time",
-  "elapsedMs": 6115.012070164084,
-  "processWallMs": 6115.012070164084,
+  "elapsedMs": 6131.616797065362,
+  "processWallMs": 6131.616797065362,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 9.101621299999999e-05,
-    "cpu_time": 4.9370116e-05
+    "wall_time": 9.0242806e-05,
+    "cpu_time": 4.8975084e-05
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 91,
+  "executionTotalNs": 90,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      9.101621299999999e-05,
-      9.107294400000001e-05,
-      8.966197499999999e-05
+      9.0383995e-05,
+      9.0242806e-05,
+      8.9449808e-05
     ],
     "cpu_time": [
-      4.9370116e-05,
-      4.980812e-05,
-      4.8840506e-05
+      4.8975084e-05,
+      4.908612e-05,
+      4.8465709e-05
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    9.101621299999999e-05,
-    9.107294400000001e-05,
-    8.966197499999999e-05
+    9.0383995e-05,
+    9.0242806e-05,
+    8.9449808e-05
   ]
 }

@@ -284,10 +284,15 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
+      "extraArgs": [
+        "--queue-sync-mode",
+        "deferred"
+      ],
+      "leftCommandRepeat": 10,
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 2000,
-      "timingNormalizationNote": "Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant.",
+      "leftTimingDivisor": 20000,
+      "timingNormalizationNote": "Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer"
     },
     {
@@ -325,10 +330,11 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
+      "leftCommandRepeat": 10,
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Fawn command stream executes 50 render draws plus explicit sampler/texture lifecycle calls; normalized to per-iteration units for parity with SubresourceTrackingPerf.",
+      "leftTimingDivisor": 500,
+      "timingNormalizationNote": "Fawn command stream executes sampler/texture lifecycle calls plus render draws; repeat=10 and per-iteration normalization reduce fixed setup/sync skew while keeping SubresourceTrackingPerf-oriented units.",
       "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3"
     },
     {
@@ -343,10 +349,11 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
+      "leftCommandRepeat": 10,
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Normalized per iteration against the SubresourceTrackingPerf mipLevel=8 variant.",
+      "leftTimingDivisor": 500,
+      "timingNormalizationNote": "Normalized per iteration against the SubresourceTrackingPerf mipLevel=8 variant with repeat=10 to amortize fixed setup/sync overhead.",
       "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_8"
     },
     {
@@ -367,6 +374,64 @@
       "leftTimingDivisor": 50,
       "timingNormalizationNote": "Fawn repeats async diagnostics command 50 times and normalizes to per-iteration units against Dawn shader/pipeline robustness benchmark cadence.",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16"
+    },
+    {
+      "id": "render_draw_throughput_macro_200k",
+      "name": "render draw throughput macro (200k draws)",
+      "description": "Directional macro render throughput stress using a 200k-draw command stream.",
+      "domain": "render-macro",
+      "comparabilityNotes": "Directional only: intentionally larger-than-Dawn-step draw volume for macro stress and setup amortization analysis.",
+      "commandsPath": "examples/draw_call_proxy_macro_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "vulkan",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "comparable": false,
+      "default": false,
+      "leftTimingDivisor": 200000,
+      "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k draws.",
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
+    },
+    {
+      "id": "draw_indexed_render_macro_200k",
+      "name": "draw indexed macro (200k draws)",
+      "description": "Directional macro indexed draw stress using a 200k-draw indexed command stream.",
+      "domain": "render-macro",
+      "comparabilityNotes": "Directional only: larger indexed draw volume than Dawn DrawCallPerf step size; used for macro scaling analysis.",
+      "commandsPath": "examples/draw_call_indexed_proxy_macro_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "vulkan",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "extraArgs": [
+        "--queue-sync-mode",
+        "deferred"
+      ],
+      "comparable": false,
+      "default": false,
+      "leftTimingDivisor": 200000,
+      "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer"
+    },
+    {
+      "id": "texture_sampler_write_query_destroy_macro_500",
+      "name": "texture contract macro (500 draws)",
+      "description": "Directional macro texture lifecycle workload with a larger render-draw phase for setup amortization analysis.",
+      "domain": "texture-macro",
+      "comparabilityNotes": "Directional only: command shape intentionally scales render volume beyond Dawn SubresourceTrackingPerf step semantics.",
+      "commandsPath": "examples/texture_sampler_write_query_destroy_macro_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "vulkan",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "comparable": false,
+      "default": false,
+      "leftTimingDivisor": 500,
+      "timingNormalizationNote": "Directional macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
+      "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3"
     },
     {
       "id": "surface_presentation_contract",

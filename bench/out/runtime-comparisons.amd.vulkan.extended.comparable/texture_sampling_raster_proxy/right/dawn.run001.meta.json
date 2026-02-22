@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0xec5d88769f9bb6b8",
+  "hash": "0x558a4275decb3b31",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "texture_sampling_raster_proxy",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/texture_sampling_raster_proxy/right/dawn.run001.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.006536574023999999,
+  "timingMs": 0.006731039052,
   "timingMetric": "wall_time",
-  "elapsedMs": 6085.87436308153,
-  "processWallMs": 6085.87436308153,
+  "elapsedMs": 6072.450252017006,
+  "processWallMs": 6072.450252017006,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.006536574023999999,
-    "cpu_time": 0.00038593291299999995
+    "wall_time": 0.006731039052,
+    "cpu_time": 0.0004895694889999999
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 6537,
+  "executionTotalNs": 6731,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.006543147619,
-      0.00651809329,
-      0.006536574023999999
+      0.00673162807,
+      0.006731039052,
+      0.00669859154
     ],
     "cpu_time": [
-      0.000389773225,
-      0.00038593291299999995,
-      0.000377040188
+      0.00049189538,
+      0.0004895694889999999,
+      0.000480717888
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.006543147619,
-    0.00651809329,
-    0.006536574023999999
+    0.00673162807,
+    0.006731039052,
+    0.00669859154
   ]
 }

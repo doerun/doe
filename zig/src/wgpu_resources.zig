@@ -217,8 +217,8 @@ pub fn buildDispatchPassGroups(self: *Backend, bindings: []const model.KernelBin
 
     var groups = try self.allocator.alloc(types.DispatchPassGroup, group_count);
     for (groups) |*group| {
-        group.layout_entries = std.array_list.Managed(types.WGPUBindGroupLayoutEntry).init(self.allocator);
-        group.bind_entries = std.array_list.Managed(types.WGPUBindGroupEntry).init(self.allocator);
+        group.layout_entries = std.ArrayList(types.WGPUBindGroupLayoutEntry).init(self.allocator);
+        group.bind_entries = std.ArrayList(types.WGPUBindGroupEntry).init(self.allocator);
     }
 
     var pending_group_layouts = try self.allocator.alloc(?types.WGPUBindGroupLayout, group_count);
@@ -226,7 +226,7 @@ pub fn buildDispatchPassGroups(self: *Backend, bindings: []const model.KernelBin
     for (pending_group_layouts) |*pending| pending.* = null;
     for (pass_bind_groups) |*pending| pending.* = null;
 
-    var texture_views = std.array_list.Managed(types.WGPUTextureView).init(self.allocator);
+    var texture_views = std.ArrayList(types.WGPUTextureView).init(self.allocator);
     var clean_after = true;
     defer {
         if (clean_after) {
@@ -351,7 +351,7 @@ fn dispatchPassLayoutEntry(binding: model.KernelBinding) types.WGPUBindGroupLayo
     return layout_entry;
 }
 
-fn dispatchPassBindEntry(self: *Backend, binding: model.KernelBinding, texture_views: *std.array_list.Managed(types.WGPUTextureView)) !types.WGPUBindGroupEntry {
+fn dispatchPassBindEntry(self: *Backend, binding: model.KernelBinding, texture_views: *std.ArrayList(types.WGPUTextureView)) !types.WGPUBindGroupEntry {
     var bind_entry = types.WGPUBindGroupEntry{
         .nextInChain = null,
         .binding = binding.binding,

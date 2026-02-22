@@ -48,6 +48,8 @@ VALID_REQUIRED_TIMING_CLASSES = {"any", "operation", "process-wall"}
 VALID_RESOURCE_PROBES = {"none", "rocm-smi"}
 VALID_CLAIMABILITY_MODES = {"off", "local", "release"}
 VALID_UPLOAD_BUFFER_USAGES = {"copy-dst-copy-src", "copy-dst"}
+MIN_DISPATCH_WINDOW_NS_WITHOUT_ENCODE = 100_000
+MIN_DISPATCH_WINDOW_TOTAL_COVERAGE_PERCENT_WITHOUT_ENCODE = 1.0
 FAWN_UPLOAD_RUNTIME_SOURCE_PATHS = (
     Path("zig/src/main.zig"),
     Path("zig/src/execution.zig"),
@@ -818,22 +820,63 @@ def pick_measured_timing_ms(
         or execution_row_count > 0
         or execution_success_count > 0
     )
+    dispatch_window_ns = -1
+    dispatch_window_rejected: dict[str, Any] | None = None
     if execution_encode_total_ns >= 0 and execution_submit_wait_total_ns >= 0:
         dispatch_window_ns = execution_encode_total_ns + execution_submit_wait_total_ns
         if dispatch_window_ns > 0 and has_execution_evidence:
-            measured_ms = float(dispatch_window_ns) / 1_000_000.0
-            timing_meta = {
-                "source": "trace-meta",
-                "traceMetaSource": "fawn-execution-dispatch-window-ns",
-                "traceMetaTimingMs": measured_ms,
-                "executionEncodeTotalNs": execution_encode_total_ns,
-                "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
-                "executionDispatchCount": execution_dispatch_count,
-                "executionRowCount": execution_row_count,
-                "executionSuccessCount": execution_success_count,
-                "wallTimeMs": wall_ms,
-            }
-            return measured_ms, "fawn-execution-dispatch-window-ns", timing_meta
+            # If encode and dispatch are both absent, a tiny submit-only window is
+            # usually queue flush bookkeeping noise, not workload operation time.
+            # Keep dispatch-window timing only when it is meaningfully non-trivial.
+            if (
+                execution_dispatch_count == 0
+                and execution_encode_total_ns == 0
+                and execution_total_ns > 0
+            ):
+                coverage_percent = (
+                    float(dispatch_window_ns) / float(execution_total_ns)
+                ) * 100.0
+                if (
+                    dispatch_window_ns
+                    < MIN_DISPATCH_WINDOW_NS_WITHOUT_ENCODE
+                    and coverage_percent
+                    < MIN_DISPATCH_WINDOW_TOTAL_COVERAGE_PERCENT_WITHOUT_ENCODE
+                ):
+                    dispatch_window_rejected = {
+                        "reason": "dispatch-window-too-small-without-encode",
+                        "dispatchWindowNs": dispatch_window_ns,
+                        "dispatchWindowCoveragePercentOfExecutionTotal": coverage_percent,
+                        "minDispatchWindowNs": MIN_DISPATCH_WINDOW_NS_WITHOUT_ENCODE,
+                        "minDispatchWindowCoveragePercentOfExecutionTotal": MIN_DISPATCH_WINDOW_TOTAL_COVERAGE_PERCENT_WITHOUT_ENCODE,
+                    }
+                else:
+                    measured_ms = float(dispatch_window_ns) / 1_000_000.0
+                    timing_meta = {
+                        "source": "trace-meta",
+                        "traceMetaSource": "fawn-execution-dispatch-window-ns",
+                        "traceMetaTimingMs": measured_ms,
+                        "executionEncodeTotalNs": execution_encode_total_ns,
+                        "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
+                        "executionDispatchCount": execution_dispatch_count,
+                        "executionRowCount": execution_row_count,
+                        "executionSuccessCount": execution_success_count,
+                        "wallTimeMs": wall_ms,
+                    }
+                    return measured_ms, "fawn-execution-dispatch-window-ns", timing_meta
+            else:
+                measured_ms = float(dispatch_window_ns) / 1_000_000.0
+                timing_meta = {
+                    "source": "trace-meta",
+                    "traceMetaSource": "fawn-execution-dispatch-window-ns",
+                    "traceMetaTimingMs": measured_ms,
+                    "executionEncodeTotalNs": execution_encode_total_ns,
+                    "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
+                    "executionDispatchCount": execution_dispatch_count,
+                    "executionRowCount": execution_row_count,
+                    "executionSuccessCount": execution_success_count,
+                    "wallTimeMs": wall_ms,
+                }
+                return measured_ms, "fawn-execution-dispatch-window-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
         measured_ms = float(execution_total_ns) / 1_000_000.0
@@ -846,6 +889,8 @@ def pick_measured_timing_ms(
             "executionSuccessCount": execution_success_count,
             "wallTimeMs": wall_ms,
         }
+        if dispatch_window_rejected is not None:
+            timing_meta["dispatchWindowSelectionRejected"] = dispatch_window_rejected
         return measured_ms, "fawn-execution-total-ns", timing_meta
 
     trace_rows = parse_trace_rows(trace_jsonl)

@@ -1,0 +1,112 @@
+[
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "render_draw",
+    "drawCount": 2000,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  }
+]

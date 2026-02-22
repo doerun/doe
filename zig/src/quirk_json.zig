@@ -44,7 +44,7 @@ pub fn parseQuirks(allocator: Allocator, text: []const u8) ![]model.Quirk {
     const parsed = try std.json.parseFromSlice([]const RawQuirk, allocator, text, .{ .ignore_unknown_fields = true });
     defer parsed.deinit();
 
-    var list = std.array_list.Managed(model.Quirk).init(allocator);
+    var list = std.ArrayList(model.Quirk).init(allocator);
     errdefer {
         for (list.items) |quirk| {
             freeQuirkFields(allocator, quirk);

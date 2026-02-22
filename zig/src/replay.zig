@@ -78,7 +78,7 @@ pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![
     const artifact_text = try readFileAlloc(allocator, path);
     defer allocator.free(artifact_text);
 
-    var expectations = std.array_list.Managed(ReplayExpectation).init(allocator);
+    var expectations = std.ArrayList(ReplayExpectation).init(allocator);
     errdefer {
         for (expectations.items) |expectation| {
             freeReplayExpectation(allocator, expectation);

@@ -4,7 +4,7 @@
   "schema": "adapter-meta",
   "seqMax": 0,
   "rowCount": 1,
-  "hash": "0x3043e3b65ca69625",
+  "hash": "0xaef33b6866d8b10b",
   "previousHash": "0x9e3779b97f4a7c15",
   "commandCount": 1,
   "workload": "render_bundle_dynamic_pipeline_bindings",
@@ -14,40 +14,40 @@
   "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicPipeline_DynamicBindGroup_RenderBundle --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.extended.comparable/render_bundle_dynamic_pipeline_bindings/right/dawn.run007.ndjson",
   "timingSource": "dawn-perf-wall-time",
   "timingClass": "operation",
-  "timingMs": 0.000365215409,
+  "timingMs": 0.000364385505,
   "timingMetric": "wall_time",
-  "elapsedMs": 6081.449366174638,
-  "processWallMs": 6081.449366174638,
+  "elapsedMs": 6061.636850936338,
+  "processWallMs": 6061.636850936338,
   "dawnTimingMetricRequested": "wall_time",
   "dawnMetricMediansMs": {
-    "wall_time": 0.000365215409,
-    "cpu_time": 0.00030663901600000003
+    "wall_time": 0.000364385505,
+    "cpu_time": 0.00030524822799999994
   },
   "executionBackend": "dawn-perf-tests",
   "executionRowCount": 1,
   "executionSuccessCount": 1,
   "executionErrorCount": 0,
-  "executionTotalNs": 365,
+  "executionTotalNs": 364,
   "gtestFilterNoMatch": false,
   "gtestSkippedCount": 0,
   "gtestUnsupported": false,
   "gtestRunningCount": 1,
   "dawnMetricSamplesMs": {
     "wall_time": [
-      0.000365029965,
-      0.000370445074,
-      0.000365215409
+      0.00036566688299999995,
+      0.000364385505,
+      0.000364099375
     ],
     "cpu_time": [
-      0.000306236106,
-      0.000311988631,
-      0.00030663901600000003
+      0.00030726147200000004,
+      0.00030520794699999995,
+      0.00030524822799999994
     ],
     "gpu_time": []
   },
   "benchmarkWallMsSamples": [
-    0.000365029965,
-    0.000370445074,
-    0.000365215409
+    0.00036566688299999995,
+    0.000364385505,
+    0.000364099375
   ]
 }

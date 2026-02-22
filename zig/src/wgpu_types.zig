@@ -713,8 +713,8 @@ pub const RenderTextureViewCacheEntry = struct {
 };
 
 pub const DispatchPassGroup = struct {
-    layout_entries: std.array_list.Managed(WGPUBindGroupLayoutEntry),
-    bind_entries: std.array_list.Managed(WGPUBindGroupEntry),
+    layout_entries: std.ArrayList(WGPUBindGroupLayoutEntry),
+    bind_entries: std.ArrayList(WGPUBindGroupEntry),
 };
 
 pub const RequestState = struct {

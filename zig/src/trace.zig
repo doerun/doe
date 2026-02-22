@@ -266,7 +266,7 @@ pub fn printTraceLine(
 pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     const file = try std.fs.cwd().createFile(path, .{});
     defer file.close();
-    var writer = file.deprecatedWriter();
+    var writer = file.writer();
 
     try writef(writer, "{{\"traceVersion\":{},\"module\":", .{summary.trace_version});
     try writeJsonString(&writer, summary.module_name);

@@ -2,15 +2,15 @@
 
 ## Snapshot
 
-Date: 2026-02-21
+Date: 2026-02-22
 
 Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is now explicitly: full native Zig+WebGPU/FFI runtime path, estimated at 2,800+ LOC for non-prototype delivery.
 Current `fawn/zig/src` size is 2,750 LOC and now includes native queue-submitted execution for upload, copy, barrier, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
-Benchmark contract coverage snapshot (2026-02-21 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `19` workload contracts: `18` comparable + `1` directional surface lifecycle contract.
+Benchmark contract coverage snapshot (2026-02-22 update):
+- `bench/workloads.amd.vulkan.extended.json` now contains `22` workload contracts: `18` comparable + `4` directional contracts (`surface_presentation_contract` + 3 macro stress workloads).
 - strict extended comparable matrix now includes render, render-bundle, texture-contract, draw-indexed proxy, and async diagnostics slices in addition to upload/compute/pipeline.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
@@ -205,6 +205,16 @@ Estimated remaining effort: 2,800+ LOC before performance hardening.
 - surface lifecycle contract is explicitly tracked as directional-only (`surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
 - new local adapter-agnostic strict config is available: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host requirement preflight is now explicit via `bench/preflight_bench_host.py`.
+53. Benchmark timing-source selection now rejects tiny submit-only dispatch-window measurements when encode/dispatch work is absent:
+- rejection threshold: dispatch window `<100us` and `<1%` of `executionTotalNs`.
+- fallback source is `fawn-execution-total-ns`, with explicit metadata `dispatchWindowSelectionRejected`.
+54. AMD Vulkan comparable workload defaults were tuned for setup-amortized per-unit normalization:
+- `draw_indexed_render_proxy` now runs with `leftCommandRepeat=10`, `leftTimingDivisor=20000`, and `--queue-sync-mode deferred`.
+- `texture_sampler_write_query_destroy_contract` and `texture_sampler_write_query_destroy_contract_mip8` now run with `leftCommandRepeat=10` and `leftTimingDivisor=500`.
+55. Directional macrobenchmark coverage was added as config-first contracts:
+- new workload IDs: `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`.
+- new preset config: `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`.
+- new command seeds: `examples/draw_call_proxy_macro_commands.json`, `examples/draw_call_indexed_proxy_macro_commands.json`, `examples/texture_sampler_write_query_destroy_macro_commands.json`.
 
 ### Missing in progress
 
@@ -266,14 +276,14 @@ Interpretation:
 - this confirms the new texture command seed exercises real `kernel_dispatch + render_draw` behavior.
 - remaining gap is expected while directional texture methodology is still simplified versus Dawn's full render-pass transitions.
 
-## AMD Vulkan run snapshot (2026-02-21)
+## AMD Vulkan run snapshot (2026-02-22)
 
 Current contract state after matrix expansion:
 
 1. `bench/workloads.amd.vulkan.extended.json`
-- workload contracts: `19` total
+- workload contracts: `22` total
 - strict comparable contracts: `18`
-- directional contracts: `1` (`surface_presentation_contract`)
+- directional contracts: `4` (`surface_presentation_contract` + 3 macro stress contracts)
 
 2. `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - strict mode remains `includeNoncomparableWorkloads=false`
@@ -282,7 +292,10 @@ Current contract state after matrix expansion:
 3. `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
 - directional diagnostics now focus on surface lifecycle only (`workloadFilter=surface_presentation_contract`)
 
-4. Host execution note (this machine class)
+4. `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
+- directional diagnostics target macro stress workloads only (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`)
+
+5. Host execution note (this machine class)
 - strict AMD Vulkan Dawn runs can fail/skips when `/dev/dri/renderD128` access is unavailable to the active user.
 - preflight command: `python3 bench/preflight_bench_host.py --strict-amd-vulkan`
 - adapter-agnostic strict comparable fallback: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`
@@ -319,5 +332,5 @@ Current comparison claim state: `mixed` (strict comparable + directional diagnos
 
 Meaning:
 1. strict comparable AMD matrices are contract-defined and expanded, but claimable strict AMD substantiation requires a host with usable AMD render-node access.
-2. directional diagnostics are now limited to surface lifecycle (`surface_presentation_contract`) by contract.
+2. directional diagnostics are contract-scoped and non-claim: surface lifecycle (`surface_presentation_contract`) plus explicit macro stress workloads (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`).
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
