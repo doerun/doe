@@ -140,11 +140,17 @@ def main() -> int:
     dawn_map = _load_json(args.dawn_map).get("filters", {})
 
     known_workloads = {entry["id"] for entry in workloads.get("workloads", [])}
+    comparable_workloads = {
+        entry["id"]
+        for entry in workloads.get("workloads", [])
+        if isinstance(entry, dict) and entry.get("comparable") is True
+    }
     rows: list[str] = []
     implemented = 0
     partial = 0
     planned = 0
     mapped_capability_count = 0
+    comparable_mapped_capability_count = 0
 
     for item in coverage.get("coverage", []):
         status = item.get("status", "unknown")
@@ -162,6 +168,8 @@ def main() -> int:
         ]
         if workload_ids:
             mapped_capability_count += 1
+            if any(workload in comparable_workloads for workload in workload_ids):
+                comparable_mapped_capability_count += 1
         if not workload_ids:
             workload_field = "n/a"
             dawn_field = "n/a"
@@ -187,6 +195,11 @@ def main() -> int:
     total_capabilities = len(coverage.get("coverage", []))
     tracked_completion_percent = (implemented * 100.0 / total_capabilities) if total_capabilities else 0.0
     mapped_capability_percent = (mapped_capability_count * 100.0 / total_capabilities) if total_capabilities else 0.0
+    comparable_mapped_capability_percent = (
+        (comparable_mapped_capability_count * 100.0 / total_capabilities)
+        if total_capabilities
+        else 0.0
+    )
     dawn_header_covered, dawn_header_total, dawn_header_percent = _measure_dawn_header_api_surface_coverage()
 
     output = [
@@ -207,6 +220,11 @@ def main() -> int:
         "| Capability-to-benchmark mapping coverage | {percent:.2f}% ({done}/{total}) | `CAPABILITY_TO_WORKLOADS` intersection with `bench/workloads.amd.vulkan.extended.json` |".format(
             percent=mapped_capability_percent,
             done=mapped_capability_count,
+            total=total_capabilities,
+        ),
+        "| Comparable capability benchmark coverage | {percent:.2f}% ({done}/{total}) | Capabilities with at least one mapped workload where `comparable=true` in `bench/workloads.amd.vulkan.extended.json` |".format(
+            percent=comparable_mapped_capability_percent,
+            done=comparable_mapped_capability_count,
             total=total_capabilities,
         ),
         "",

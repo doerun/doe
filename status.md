@@ -10,7 +10,7 @@ Current `fawn/zig/src` size is 2,750 LOC and now includes native queue-submitted
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
 Benchmark contract coverage snapshot (2026-02-22 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `28` workload contracts: `18` comparable + `10` directional contracts (`surface_presentation_contract`, 4 macro stress workloads, and 6 P0 API contract workloads).
+- `bench/workloads.amd.vulkan.extended.json` now contains `34` workload contracts: `26` comparable + `8` directional contracts (`surface_presentation_contract`, `p1_resource_table_immediates_contract`, `p1_resource_table_immediates_macro_500`, 3 macro stress workloads, and 2 pixel-local-storage contracts).
 - strict extended comparable matrix now includes render, render-bundle, texture-contract, draw-indexed proxy, and async diagnostics slices in addition to upload/compute/pipeline.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
@@ -337,9 +337,9 @@ Interpretation:
 Current contract state after matrix expansion:
 
 1. `bench/workloads.amd.vulkan.extended.json`
-- workload contracts: `28` total
-- strict comparable contracts: `18`
-- directional contracts: `10` (`surface_presentation_contract`, 4 macro stress contracts, and 6 P0 API contract workloads)
+- workload contracts: `34` total
+- strict comparable contracts: `26`
+- directional contracts: `8` (`surface_presentation_contract`, `p1_resource_table_immediates_contract`, `p1_resource_table_immediates_macro_500`, 3 macro stress contracts, and 2 pixel-local-storage contracts)
 
 2. `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - strict mode remains `includeNoncomparableWorkloads=false`
@@ -390,4 +390,4 @@ Meaning:
 1. strict comparable AMD matrices are contract-defined and expanded, but claimable strict AMD substantiation requires a host with usable AMD render-node access.
 2. directional diagnostics are contract-scoped and non-claim: surface lifecycle (`surface_presentation_contract`) plus explicit macro stress workloads (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`).
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
-4. directional diagnostics also include P0 API contract workloads (`p0_resource_lifecycle_contract`, `p0_compute_indirect_timestamp_contract`, `p0_render_multidraw_contract`, `p0_render_multidraw_indexed_contract`, `p0_render_pixel_local_storage_barrier_contract`) and the macro PLS stress workload (`p0_render_pixel_local_storage_barrier_macro_500`).
+4. directional diagnostics currently cover surface lifecycle (`surface_presentation_contract`), resource-table feature-gated contracts (`p1_resource_table_immediates_contract`, `p1_resource_table_immediates_macro_500`), and pixel-local-storage feature-gated contracts (`p0_render_pixel_local_storage_barrier_contract`, `p0_render_pixel_local_storage_barrier_macro_500`) plus explicit macro stress workloads.

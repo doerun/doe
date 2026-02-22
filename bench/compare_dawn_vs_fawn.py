@@ -56,6 +56,12 @@ FAWN_UPLOAD_RUNTIME_SOURCE_PATHS = (
     Path("zig/src/wgpu_commands.zig"),
     Path("zig/src/webgpu_ffi.zig"),
 )
+NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
+    "fawn-execution-total-ns",
+    "fawn-execution-row-total-ns",
+    "fawn-execution-dispatch-window-ns",
+    "fawn-execution-gpu-timestamp-ns",
+}
 
 
 @dataclass
@@ -1614,6 +1620,32 @@ def compare_assessment(
     left_class = left_classes[0] if len(left_classes) == 1 else "mixed"
     right_class = right_classes[0] if len(right_classes) == 1 else "mixed"
 
+    if required_timing_class == "operation":
+        invalid_native_execution_sources: set[str] = set()
+        for sample in left_samples:
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            if str(trace_meta.get("executionBackend", "")) != "webgpu-ffi":
+                continue
+            execution_dispatch = safe_int(trace_meta.get("executionDispatchCount"), default=0)
+            execution_success = safe_int(trace_meta.get("executionSuccessCount"), default=0)
+            execution_rows = safe_int(trace_meta.get("executionRowCount"), default=0)
+            if execution_dispatch <= 0 and execution_success <= 0 and execution_rows <= 0:
+                continue
+            timing_source_raw = sample.get("timingSource")
+            if not isinstance(timing_source_raw, str) or not timing_source_raw:
+                invalid_native_execution_sources.add("<missing>")
+                continue
+            canonical_source = canonical_timing_source(timing_source_raw)
+            if canonical_source not in NATIVE_EXECUTION_OPERATION_TIMING_SOURCES:
+                invalid_native_execution_sources.add(canonical_source)
+        if invalid_native_execution_sources:
+            reasons.append(
+                "left side uses non-native operation timing source(s) for webgpu-ffi execution: "
+                + ", ".join(sorted(invalid_native_execution_sources))
+            )
+
     if required_timing_class != "any":
         if left_class != required_timing_class:
             reasons.append(f"left timing class is {left_class}, required {required_timing_class}")
@@ -2077,6 +2109,9 @@ def main() -> int:
             "resourceProbe": args.resource_probe,
             "resourceSampleMs": args.resource_sample_ms,
             "resourceSampleTargetCount": args.resource_sample_target_count,
+            "requireNativeExecutionTimingForLeftOperation": (
+                args.require_timing_class == "operation"
+            ),
         },
         "claimabilityPolicy": {
             "mode": args.claimability,
