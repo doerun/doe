@@ -27,27 +27,40 @@
 5. Gate
 - run schema + correctness + trace gates (blocking in v0)
 - run verification + performance gates (advisory in v0)
+- run drop-in compatibility gate (blocking for drop-in artifact lanes)
 - current v0 CI does not execute Lean toolchain proofs as a blocking step.
 - run schema hard gate:
   `python3 fawn/bench/schema_gate.py`
 - run correctness hard gate from comparison report artifacts:
   `python3 fawn/bench/check_correctness.py --gates fawn/config/gates.json --quirk fawn/examples/quirks/intel_gen12_temp_buffer.json --report fawn/bench/out/dawn-vs-fawn.json`
 - run replay hard gate from comparison report artifacts:
-  `python3 fawn/bench/trace_gate.py --report fawn/bench/out/dawn-vs-fawn.json`
+  `python3 fawn/bench/trace_gate.py --report fawn/bench/out/dawn-vs-fawn.json --semantic-parity-mode auto`
   CI must run without `--skip-missing` and fail hard if any sample is missing or fails replay checks.
+  For runtime-to-runtime oracle lanes (for example Zig vs Lean trace parity), run with `--semantic-parity-mode required` so the gate fails unless semantic parity checks execute and pass.
+- run drop-in compatibility hard gate from a built shared-library artifact:
+  `python3 fawn/bench/dropin_gate.py --artifact fawn/zig/zig-out/lib/libfawn_webgpu.so --report fawn/bench/out/dropin_report.json`
+  CI must fail hard if symbol completeness, black-box behavior, or drop-in benchmark execution fails, and must emit a drop-in report on every run.
 - run release claimability hard gate from comparison report artifacts:
   `python3 fawn/bench/claim_gate.py --report fawn/bench/out/dawn-vs-fawn.json --require-claimability-mode release --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15`
   CI must fail hard if report claim metadata is not explicit release mode claimable/comparable.
+- benchmark and drop-in pipeline scripts timestamp output artifacts by default (`YYYYMMDDTHHMMSSZ`) to avoid clobbering. For fixed report paths in manual command chains, either pass `--no-timestamp-output` to the producing command or feed the resolved stamped path into gates.
 - canonical CI/script entrypoint for blocking gate sequence:
-  `python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
+  `python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
 - canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
-  `python3 fawn/bench/run_release_pipeline.py --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json --strict-amd-vulkan --with-claim-gate`
+  `python3 fawn/bench/run_release_pipeline.py --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so --with-claim-gate`
+  the release config now targets the AMD Vulkan extended comparable matrix (all comparable workload contracts), not only the default 7-workload subset.
+- canonical trend/substantiation entrypoint for repeated release windows:
+  `python3 fawn/bench/run_release_claim_windows.py --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json --windows 3 --strict-amd-vulkan --with-substantiation-gate --substantiation-policy fawn/config/substantiation-policy.json`
+  this emits a timestamped window summary and a substantiation report with policy-backed report-count and profile-diversity checks.
 - for strict Dawn-vs-Fawn upload comparability, fail fast if the executed `fawn-zig-runtime` binary does not expose/validate upload knobs or appears older than key upload/runtime Zig sources.
 
 6. Benchmark
 - run self-contained benchmark matrix
 - publish deltas against Dawn/wgpu baselines
 - generate post-benchmark visualization artifacts from comparison reports
+- build/update tested-profile inventory + dashboard from comparison artifacts:
+  `python3 fawn/bench/build_test_inventory_dashboard.py --report-glob "fawn/bench/out/dawn-vs-fawn*.json"`
+  this maintains a canonical latest inventory file (`fawn/bench/out/test-inventory.latest.json`) plus dashboard (`fawn/bench/out/test-dashboard.latest.html`) and timestamped snapshots for audit.
 - include distribution diagnostics in benchmark reporting (ECDF overlays, KS/p-value, Wasserstein, superiority probability, and bootstrap CI summaries)
 - for claimable "faster" statements, require reliability checks in addition to comparability:
   minimum timed-sample floor and positive tail deltas (not median-only wins)
@@ -55,7 +68,8 @@
 
 7. Release
 - commit only when blocking gates are green
-- mandatory release precondition in CI: gate scripts must fail hard when schema, correctness, replay, or release-claimability checks fail.
+- mandatory release precondition in CI: gate scripts must fail hard when schema, correctness, replay, drop-in compatibility, or release-claimability checks fail.
+- scheduled claim-trend publication should run the substantiation gate policy over repeated windows; single-run release CI remains focused on per-run blocking gates.
 
 ## 2. Gate Policy (v0)
 
@@ -64,8 +78,9 @@ v0 is speed-first. Blocking vs advisory:
 1. Schema gate: blocking
 2. Correctness gate: blocking
 3. Trace gate: blocking
-4. Verification gate: advisory globally, but per-quirk proof obligation is blocking when `verificationMode=lean_required`
-5. Performance gate: advisory (ratchet report)
+4. Drop-in compatibility gate: blocking for artifact-lane acceptance (`dropin_gate.py`)
+5. Verification gate: advisory globally, but per-quirk proof obligation is blocking when `verificationMode=lean_required`
+6. Performance gate: advisory (ratchet report)
 
 This keeps process weight aligned with v0 maturity.
 

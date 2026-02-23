@@ -503,15 +503,7 @@ pub const WebGPUBackend = struct {
     pub fn waitForQueue(self: *Self) !void {
         switch (self.queue_wait_mode) {
             .process_events => return self.waitForQueueProcessEvents(),
-            .wait_any => {
-                self.waitForQueueWaitAny() catch |err| switch (err) {
-                    error.WaitAnyUnsupported, error.WaitTimedOut, error.QueueSubmissionError => {
-                        self.queue_wait_mode = .process_events;
-                        return self.waitForQueueProcessEvents();
-                    },
-                    else => return err,
-                };
-            },
+            .wait_any => return self.waitForQueueWaitAny(),
         }
     }
 
@@ -570,15 +562,15 @@ pub const WebGPUBackend = struct {
         );
         switch (wait_status) {
             .success => {},
-            .timedOut => return error.WaitAnyUnsupported,
-            .@"error" => return error.WaitAnyUnsupported,
+            .timedOut => return error.WaitTimedOut,
+            .@"error" => return error.WaitAnyFailed,
             else => return error.WaitAnyUnsupported,
         }
 
         if (!done_state.done) {
             try self.processEventsUntil(&done_state.done, loader.DEFAULT_WAIT_SLICE_NS);
         }
-        if (!done_state.done) return error.WaitAnyUnsupported;
+        if (!done_state.done) return error.WaitAnyIncomplete;
         if (done_state.status == .@"error") {
             return error.QueueSubmissionError;
         }

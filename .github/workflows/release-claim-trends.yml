@@ -1,0 +1,44 @@
+name: release-claim-trends
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 8 * * *"
+
+jobs:
+  release-trend-windows:
+    runs-on:
+      - self-hosted
+      - linux
+      - amd-vulkan
+    env:
+      CONFIG_PATH: bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json
+      SUBSTANTIATION_POLICY: config/substantiation-policy.json
+      WINDOWS: "3"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run release claim windows + substantiation gate
+        run: |
+          python3 bench/run_release_claim_windows.py \
+            --config "$CONFIG_PATH" \
+            --windows "$WINDOWS" \
+            --strict-amd-vulkan \
+            --trace-semantic-parity-mode auto \
+            --with-substantiation-gate \
+            --substantiation-policy "$SUBSTANTIATION_POLICY" \
+            --substantiation-report bench/out/substantiation_report.ci.json
+      - name: Build tested-profile inventory + dashboard
+        run: |
+          python3 bench/build_test_inventory_dashboard.py \
+            --report-glob "bench/out/dawn-vs-fawn*.json"
+      - name: Upload release trend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-claim-trend-report
+          path: |
+            bench/out/release-claim-windows*.json
+            bench/out/substantiation_report*.json
+            bench/out/test-inventory*.json
+            bench/out/test-dashboard*.html
+            bench/out/dawn-vs-fawn.amd.vulkan.release*.json
+            bench/out/runtime-comparisons.amd.vulkan.release*

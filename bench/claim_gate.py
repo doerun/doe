@@ -61,6 +61,68 @@ def parse_int(value: Any) -> int | None:
     return None
 
 
+def parse_float(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def workload_runtime_hint(workload: dict[str, Any]) -> str:
+    workload_id = str(workload.get("id", "unknown"))
+    claimability = workload.get("claimability")
+    delta = workload.get("deltaPercent")
+    left = workload.get("left")
+    right = workload.get("right")
+
+    reasons: list[str] = []
+    if isinstance(claimability, dict):
+        raw_reasons = claimability.get("reasons")
+        if isinstance(raw_reasons, list):
+            reasons = [str(item) for item in raw_reasons if isinstance(item, str)]
+
+    delta_p50 = None
+    delta_p95 = None
+    if isinstance(delta, dict):
+        delta_p50 = parse_float(delta.get("p50Percent"))
+        delta_p95 = parse_float(delta.get("p95Percent"))
+
+    left_p50 = None
+    right_p50 = None
+    left_source = "unknown"
+    right_source = "unknown"
+    if isinstance(left, dict):
+        stats = left.get("stats")
+        if isinstance(stats, dict):
+            left_p50 = parse_float(stats.get("p50Ms"))
+        sources = left.get("timingSources")
+        if isinstance(sources, list) and sources:
+            left_source = str(sources[0])
+    if isinstance(right, dict):
+        stats = right.get("stats")
+        if isinstance(stats, dict):
+            right_p50 = parse_float(stats.get("p50Ms"))
+        sources = right.get("timingSources")
+        if isinstance(sources, list) and sources:
+            right_source = str(sources[0])
+
+    parts: list[str] = [f"{workload_id}"]
+    if delta_p50 is not None:
+        parts.append(f"deltaP50={delta_p50:.6f}%")
+    if delta_p95 is not None:
+        parts.append(f"deltaP95={delta_p95:.6f}%")
+    if left_p50 is not None:
+        parts.append(f"leftP50Ms={left_p50:.9f}")
+    if right_p50 is not None:
+        parts.append(f"rightP50Ms={right_p50:.9f}")
+    parts.append(f"leftTiming={left_source}")
+    parts.append(f"rightTiming={right_source}")
+    if reasons:
+        parts.append("reasons=" + " | ".join(reasons))
+    return ", ".join(parts)
+
+
 def load_report(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -195,6 +257,25 @@ def main() -> int:
         fail("claim gate failed")
         for item in failures:
             print(item)
+        if (
+            args.require_claim_status == "claimable"
+            and isinstance(workloads, list)
+            and workloads
+        ):
+            print("non-claimable runtime details:")
+            printed = False
+            for workload in workloads:
+                if not isinstance(workload, dict):
+                    continue
+                workload_claimability = workload.get("claimability")
+                if not isinstance(workload_claimability, dict):
+                    continue
+                if workload_claimability.get("claimable") is True:
+                    continue
+                print(workload_runtime_hint(workload))
+                printed = True
+            if not printed:
+                print("none")
         return 1
 
     print(

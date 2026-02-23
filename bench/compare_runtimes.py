@@ -14,6 +14,8 @@ import statistics
 import subprocess
 import time
 from pathlib import Path
+from datetime import datetime, timezone
+import output_paths
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,6 +29,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--left-meta", default="")
     parser.add_argument("--right-meta", default="")
     parser.add_argument("--out", default="fawn/bench/out/runtime-comparison.json")
+    parser.add_argument(
+        "--timestamp",
+        default="",
+        help=(
+            "UTC suffix for output artifact path (YYYYMMDDTHHMMSSZ). "
+            "Defaults to current UTC time when --timestamp-output is enabled."
+        ),
+    )
+    parser.add_argument(
+        "--timestamp-output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Stamp the output report path with a UTC timestamp suffix.",
+    )
     return parser.parse_args()
 
 
@@ -82,6 +98,11 @@ def summarize(name: str, command: str, iterations: int, warmup: int, meta_path: 
 
 def main() -> int:
     args = parse_args()
+    output_timestamp = (
+        output_paths.resolve_timestamp(args.timestamp)
+        if args.timestamp_output
+        else ""
+    )
     left = summarize(args.left_label, args.left_cmd, args.iterations, args.warmup, args.left_meta)
     right = summarize(args.right_label, args.right_cmd, args.iterations, args.warmup, args.right_meta)
 
@@ -98,6 +119,8 @@ def main() -> int:
 
     report = {
         "schemaVersion": 3,
+        "generatedAtUtc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "outputTimestamp": output_timestamp,
         "left": left,
         "right": right,
         "deltaPercentConvention": {
@@ -118,7 +141,11 @@ def main() -> int:
         },
     }
 
-    out = Path(args.out)
+    out = output_paths.with_timestamp(
+        args.out,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(

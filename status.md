@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-Date: 2026-02-22
+Date: 2026-02-23
 
 Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
-Current `fawn/zig/src` size is 12,036 LOC (`wc -l zig/src/*.zig`, 2026-02-22) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
+Current `fawn/zig/src` size is 13,485 LOC (`wc -l zig/src/*.zig`, 2026-02-23) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
 
 Benchmark contract coverage snapshot (2026-02-22 update):
@@ -23,7 +23,7 @@ Benchmark contract coverage snapshot (2026-02-22 update):
 - typed model and JSON ingestion
 - deterministic matcher + selector + action application
 - runnable `fawn-zig-runtime` entry path
-- dispatch/trace/replay now work; execution remains simulator-oriented
+- dispatch/trace/replay now work; execution is native for implemented command classes with explicit unsupported taxonomy on unimplemented paths
 2. Lean contract sources in `fawn/lean/Fawn` (`Model.lean`, `Dispatch.lean`).
 - runtime command stream parser in `fawn/zig/src/command_json.zig`
 - lean runtime selection module in `fawn/lean/Fawn/Runtime.lean`.
@@ -43,12 +43,10 @@ Benchmark contract coverage snapshot (2026-02-22 update):
 
 ### Missing for full product confidence (runtime + validation quality)
 
-1. Full semantic replay parity between runtime implementations (e.g., Zig vs Lean oracle) is still not implemented end-to-end.
-2. Replay validation path is implemented in `trace_gate.py`, but Rust/CI-native parity checker integration remains pending.
-3. Real measured GPU benchmark timing path is partially operational for `compare_dawn_vs_fawn.py`; full matrix/substantiation and trend reporting remain open.
-4. Baseline dataset generation for Dawn/wgpu comparisons.
-5. Comprehensive quirk coverage from upstream mining for full production confidence.
-6. Real backend execution against GPU devices (current path includes queue-submission for upload/copy/barrier and dispatch-family compute lowering in `src/webgpu_ffi.zig`).
+1. Baseline dataset generation for Dawn/wgpu comparisons.
+2. Comprehensive quirk coverage from upstream mining for full production confidence.
+3. Real backend execution against GPU devices (current path includes queue-submission for upload/copy/barrier and dispatch-family compute lowering in `src/webgpu_ffi.zig`).
+4. Multi-host profile diversity for claim substantiation remains an infrastructure target; policy and gate wiring now exist, but broader runner coverage still needs provisioning.
 - `fawn/zig/src` now has queue-submission execution for all implemented command classes in `src/webgpu_ffi.zig`.
 - Dispatch/kernel routes now use native compute pipeline lowering with fallback WGSL for missing kernel payloads.
 - Planned full native execution path is now represented by implemented multi-module backend surfaces; remaining work is coverage hardening, reliability tuning, and benchmark substantiation.
@@ -141,7 +139,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - `.github/workflows/release-gates.yml` now runs `bench/schema_gate.py`, `bench/check_correctness.py`, `bench/trace_gate.py`, and `bench/claim_gate.py` as blocking gates on the report artifact.
 36. Native runtime now exposes explicit queue wait behavior control:
 - `--queue-wait-mode process-events|wait-any` in `fawn-zig-runtime`
-- default remains `process-events`; `wait-any` is available for targeted wait-path diagnostics/tuning and auto-falls back to `process-events` when timeout-based wait-any is unsupported by the backend.
+- default remains `process-events`; `wait-any` is available for targeted wait-path diagnostics/tuning and now fails explicitly with runtime taxonomy errors when unsupported or timed out.
 37. AMD Vulkan 64KB upload workload cadence is retuned from `leftUploadSubmitEvery=50` to `leftUploadSubmitEvery=100` (with `leftCommandRepeat=500`, `leftTimingDivisor=500`) in:
 - `bench/workloads.amd.vulkan.json`
 - `bench/workloads.amd.vulkan.extended.json`
@@ -284,7 +282,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
   `p0_compute_indirect_timestamp_contract`,
   `p0_render_multidraw_contract`,
   `p0_render_multidraw_indexed_contract`.
-- extended workload matrix now stands at `34` total contracts: `26` comparable + `8` directional.
+- at this checkpoint (before later gap-closure promotions), extended workload matrix stood at `34` total contracts: `26` comparable + `8` directional.
 - strict probe run over promoted contracts (`bench/out/dawn-vs-fawn.amd.vulkan.promoted.strict_probe.json`) reports `comparisonStatus=comparable` for all 8 promoted workloads (claimability diagnostic due single-sample probe floor).
 - release claimability recheck for upload workloads (`buffer_upload_64kb`, `buffer_upload_1mb`) completed with strict comparability and release sample floor:
   `bench/out/dawn-vs-fawn.amd.vulkan.release.upload64kb1mb.json`
@@ -322,7 +320,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
   (`bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`).
 
 64. Blocking gate enforcement is now aligned with process policy in CI:
-- canonical runner `bench/run_blocking_gates.py` now enforces schema -> correctness -> trace -> optional claim ordering.
+- canonical runner `bench/run_blocking_gates.py` now enforces schema -> correctness -> trace -> optional drop-in -> optional claim ordering.
 - canonical release orchestration runner `bench/run_release_pipeline.py` now enforces preflight -> compare -> (optional smoke verify) -> blocking gates.
 - `.github/workflows/release-gates.yml` now uses `bench/run_release_pipeline.py` with release claim-gate requirements.
 - `.github/workflows/amd-vulkan-smoke.yml` now uses `bench/run_release_pipeline.py` with smoke GPU-usage verification.
@@ -332,6 +330,58 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - dispatch-window rejection and claimability default sample floors moved from hardcoded Python constants to `config/benchmark-methodology-thresholds.json`.
 - contract schema is `config/benchmark-methodology-thresholds.schema.json`.
 - migration recorded in `config/migration-notes.md`.
+
+66. Drop-in compatibility acceptance lane is now artifact-first and runtime-internal independent:
+- new contract file `config/dropin_abi.symbols.txt` defines required exported WebGPU C API symbols for drop-in acceptance checks.
+- new gates in `bench/`:
+  - `dropin_symbol_gate.py` (symbol completeness)
+  - `dropin_behavior_suite.py` + `dropin_behavior_suite.c` (black-box API behavior: create device, queue ops, error scope capture, lifecycle release)
+  - `dropin_benchmark_suite.py` + `dropin_benchmark_harness.c` (micro + end-to-end benchmark suite)
+  - `dropin_gate.py` (consolidated gate/report with per-step runtimes and failure tokens)
+- canonical gate runners now support drop-in enforcement:
+  - `bench/run_blocking_gates.py --with-dropin-gate --dropin-artifact <path>`
+  - `bench/run_release_pipeline.py --with-dropin-gate --dropin-artifact <path>`
+- CI now includes `.github/workflows/dropin-compat.yml`, which builds a candidate shared-library artifact, consumes that artifact in a separate gate job, and fails hard on compatibility regressions while publishing drop-in reports every run.
+
+67. Release claim diagnostics and 1KB upload contract were hardened for actionable "faster everywhere" enforcement:
+- `bench/workloads.amd.vulkan.json` now sets `buffer_upload_1kb` `extraArgs` to explicit deferred queue sync (`--queue-sync-mode deferred`) and updates comparability/timing notes so the tiny-upload contract reflects the intended apples-to-apples execution semantics.
+- `bench/claim_gate.py` now prints non-claimable workload runtime details (delta tails, left/right p50 timing, timing sources, and claimability reasons) so gate failures directly identify which runtime path needs fixing.
+
+68. Release lane workload coverage was switched from default subset to extended comparable matrix:
+- `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json` now loads `bench/workloads.amd.vulkan.extended.json`, enables `includeExtendedWorkloads=true`, and uses `bench/dawn_workload_map.amd.extended.json`.
+- release CI (`.github/workflows/release-gates.yml`) continues to invoke the same release config entrypoint, but now evaluates all comparable AMD Vulkan contracts from the extended matrix under release claimability policy.
+
+69. Drop-in artifact lane now defaults to Fawn-produced shared-library outputs:
+- `bench/run_release_pipeline.py`, `bench/run_blocking_gates.py`, and `bench/dropin_gate.py` now default `--dropin-artifact` to `zig/zig-out/lib/libfawn_webgpu.so` and fail fast when a configured artifact is missing.
+- release CI now builds `zig build dropin` and passes `zig/zig-out/lib/libfawn_webgpu.so` to drop-in gates.
+- drop-in compatibility CI now publishes and gates `libfawn_webgpu.so` plus required sidecars (`libwebgpu_dawn.so`, `libwebgpu.so`, `libwgpu_native.so`) from `zig/zig-out/lib/`.
+
+70. Queue wait-mode fallback behavior is now explicit-taxonomy only:
+- native `--queue-wait-mode wait-any` no longer silently mutates to `process-events` on unsupported/timeout paths.
+- unsupported/timeout/error outcomes now surface as runtime error taxonomy (`WaitAnyUnsupported`, `WaitTimedOut`, `WaitAnyFailed`, `WaitAnyIncomplete`) for deterministic diagnostics.
+
+71. Release claim-window trend automation is now scriptable and CI-scheduled:
+- `bench/run_release_claim_windows.py` runs repeated release windows and emits a summary artifact with per-window command/report path, return code, `comparisonStatus`, `claimStatus`, and non-comparable/non-claimable workload IDs.
+- new CI workflow `.github/workflows/release-claim-trends.yml` schedules repeated AMD Vulkan release windows and publishes trend artifacts.
+
+72. Replay gate now includes CI-native semantic parity checks for runtime-to-runtime lanes:
+- `bench/trace_gate.py` adds `--semantic-parity-mode off|auto|required`.
+- `auto` compares eligible fawn-to-fawn trace pairs with `trace/compare_dispatch_traces.py` while preserving Dawn-vs-Fawn release compatibility.
+- `required` fails hard unless semantic parity checks execute and pass, enabling strict Zig-vs-oracle parity lanes.
+
+73. Substantiation evidence is now policy-backed and machine-gated:
+- new config contract `config/substantiation-policy.json` (+ schema) defines minimum report-count and minimum unique left-profile requirements.
+- new gate `bench/substantiation_gate.py` validates repeated-window and/or explicit report artifacts against that policy.
+- `bench/run_release_claim_windows.py` can now run the substantiation gate in-line via `--with-substantiation-gate`.
+
+74. Canonical tested hardware/driver inventory and matrix dashboard are now generated from artifacts:
+- new script `bench/build_test_inventory_dashboard.py` scans compare reports and builds:
+  - timestamped inventory snapshots (`bench/out/test-inventory.<timestamp>.json`)
+  - stable latest inventory registry (`bench/out/test-inventory.latest.json`)
+  - timestamped dashboard snapshots (`bench/out/test-dashboard.<timestamp>.html`)
+  - stable latest dashboard (`bench/out/test-dashboard.latest.html`)
+- dashboard includes per-matrix latest status (`comparisonStatus`, `claimStatus`, non-comparable/non-claimable counts) and top-level p50 delta vs Dawn.
+- inventory includes tested profile combos keyed by `vendor|api|deviceFamily|driver` (from `traceMeta.profile`) plus first/last-seen and matrix/report coverage.
 
 ### Missing in progress
 
@@ -345,6 +395,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 8. Keep directional diagnostics macro-scoped and non-claim (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`).
 9. Bench harness sharding follow-up (owner: performance):
 - split `bench/compare_dawn_vs_fawn.py` into cohesive modules (`timing_selection.py`, `comparability.py`, `claimability.py`, `reporting.py`) while preserving strict contract behavior.
+10. Expand substantiation gate inputs across multiple non-CPU host profiles so `targetUniqueLeftProfiles` can be enforced as blocking (currently advisory target only).
 
 ## Performance Reliability Investigation (2026-02-21)
 
@@ -425,7 +476,7 @@ Current contract state after matrix expansion:
 
 Scope:
 - chosen path is full native Zig+WebGPU/FFI implementation from scratch.
-- current implementation size is 12,036 LOC (`zig/src`); remaining work is performance/reliability hardening and broader claim-grade coverage.
+- current implementation size is 13,485 LOC (`zig/src`); remaining work is performance/reliability hardening and broader claim-grade coverage.
 - current codebase status: trace/replay/matching complete, with queue-submit execution coverage for upload/copy/barrier and dispatch-family compute routing.
 
 Execution gap list:
@@ -440,6 +491,16 @@ Execution gap list:
 
 - “Not implemented” in developer flow does not mean the runtime is unusable.
 - It means release confidence, automation, and proof-binary reproducibility are not yet at stable v1-grade completeness.
+
+## Drop-in + release benchmark update (2026-02-23)
+
+1. Drop-in benchmark coverage is now expanded and grouped by class in the HTML artifact:
+- micro: `instance_create_destroy`, `command_encoder_finish_empty`, `queue_submit_empty`, `queue_write_buffer_{1kb,4kb,64kb}`, `buffer_create_destroy_{4kb,64kb}`
+- end-to-end: `full_lifecycle_device_only`, `full_lifecycle_queue_submit`, `full_lifecycle_write_{4kb,64kb}`, `full_lifecycle_queue_ops`
+- drop-in gate reports continue to include per-step runtime and explicit runtime-to-fix output for failing steps.
+- latest Fawn-vs-Dawn p50 snapshot on this host shows the dominant lag at `instance_create_destroy`; `queue_write_buffer_1kb` can also be marginally slower and should be treated as a small residual micro-gap.
+
+2. AMD Vulkan extended release workload contract now uses deferred queue sync for `buffer_upload_1kb` in `bench/workloads.amd.vulkan.extended.json` (matching `bench/workloads.amd.vulkan.json`) to avoid per-command wait inflation at tiny payload sizes while preserving per-upload normalization semantics.
 
 ## v0 Reality
 

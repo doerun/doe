@@ -66,6 +66,7 @@ zig build run -- --commands fawn/examples/draw_call_proxy_commands.json --backen
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --trace
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --emit-normalized
 zig build test
+zig build dropin
 ```
 
 When `--quirks` is provided, JSON file values are loaded directly and validated before transform.
@@ -73,6 +74,19 @@ Quirk records now use schemaVersion `2` with strict action payloads:
 - `use_temporary_buffer` requires `params.bufferAlignmentBytes`
 - `toggle` requires `params.toggle`
 - `no_op` does not accept params
+
+Drop-in shared library artifact:
+- `zig build dropin` installs `zig/zig-out/lib/libfawn_webgpu.so`
+- when Dawn sidecars are present at `bench/vendor/dawn/out/Release/libwebgpu_dawn.so`,
+  `zig build dropin` co-installs:
+  - `zig/zig-out/lib/libwebgpu_dawn.so`
+  - `zig/zig-out/lib/libwebgpu.so`
+  - `zig/zig-out/lib/libwgpu_native.so`
+- exported core WebGPU symbols are forwarded through deterministic resolver logic
+- `wgpuGetProcAddress` returns local exported wrappers first, then resolves from the native backend
+- resolver error state can be queried with:
+  - `fawnWgpuDropinLastErrorCode()`
+  - `fawnWgpuDropinClearLastError()`
 
 Timestamp debug mode (for zero/empty GPU timestamp investigation):
 
@@ -134,7 +148,7 @@ Native Zig+WebGPU/FFI execution is implemented across backend modules in `zig/sr
 Execution capabilities:
 - `--backend native --execute` emits `executionBackend` fields in trace rows.
 - `upload`, `copy`, `barrier`, `dispatch`, `kernel_dispatch`, and `render_draw` all submit through real command buffers.
-- native queue waiting is configurable via `--queue-wait-mode process-events|wait-any` (default: `process-events`; `wait-any` auto-falls back when unsupported).
+- native queue waiting is configurable via `--queue-wait-mode process-events|wait-any` (default: `process-events`; `wait-any` fails explicitly when unsupported).
 - queue synchronization timing is configurable via `--queue-sync-mode per-command|deferred` (default: `per-command`);
   deferred mode skips per-submit waits and performs one final queue flush after the command loop.
 - `kernel_dispatch` runs through full compute pipeline lowering with bind groups and optional GPU timestamp queries.

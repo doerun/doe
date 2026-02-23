@@ -21,7 +21,7 @@ Modes:
 - `compare_dispatch_traces.py`
   - compares two NDJSON trace streams by normalized decision envelope
   - fails fast with first mismatch report
-  - useful when a Lean oracle trace is available (manual/prototype path in v0)
+  - used by `fawn/bench/trace_gate.py` semantic parity mode (`--semantic-parity-mode auto|required`) for runtime-to-runtime parity checks
   - example:
     - `python3 fawn/trace/compare_dispatch_traces.py --left zig.ndjson --right lean.ndjson`
 

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "releaseEvidence": {
+    "minReports": 3,
+    "minClaimableComparableReports": 3,
+    "requiredComparisonStatus": "comparable",
+    "requiredClaimStatus": "claimable",
+    "minUniqueLeftProfiles": 1,
+    "targetUniqueLeftProfiles": 3,
+    "notes": "Blocking minimums are set for single-host CI; target profile diversity tracks broader device/driver confidence goals."
+  }
+}

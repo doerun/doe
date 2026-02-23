@@ -1,0 +1,219 @@
+{
+  "artifact": "zig/zig-out/lib/libwebgpu_dawn.so",
+  "compileCommand": [
+    "cc",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "/home/x/deco/fawn/bench/vendor/dawn/third_party/webgpu-headers/src",
+    "/home/x/deco/fawn/bench/dropin_benchmark_harness.c",
+    "-L",
+    "/home/x/deco/fawn/zig/zig-out/lib",
+    "-Wl,-rpath,/home/x/deco/fawn/zig/zig-out/lib",
+    "-l:libwebgpu_dawn.so",
+    "-o",
+    "/tmp/fawn-dropin-bench-r_r9ojh1/dropin_benchmark_suite"
+  ],
+  "compileReturnCode": 0,
+  "compileStderr": "",
+  "compileStdout": "",
+  "e2eIterations": 10,
+  "generatedAtUtc": "2026-02-23T16:36:48.286213Z",
+  "headerDir": "bench/vendor/dawn/third_party/webgpu-headers/src",
+  "microIterations": 30,
+  "outputTimestamp": "20260223T163648Z",
+  "pass": true,
+  "runCommand": [
+    "/tmp/fawn-dropin-bench-r_r9ojh1/dropin_benchmark_suite",
+    "--micro-iterations",
+    "30",
+    "--e2e-iterations",
+    "10"
+  ],
+  "runReturnCode": 0,
+  "runStderr": "Warning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\n",
+  "runStdout": "{\"schemaVersion\":1,\"pass\":true,\"failure\":\"none\",\"microIterationsRequested\":30,\"e2eIterationsRequested\":10,\"benchmarks\":[{\"id\":\"instance_create_destroy\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":4949,\"maxNs\":117642,\"meanNs\":9068.13,\"p50Ns\":5090,\"p95Ns\":5841}},{\"id\":\"command_encoder_finish_empty\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":360,\"maxNs\":7945,\"meanNs\":641.60,\"p50Ns\":361,\"p95Ns\":501}},{\"id\":\"queue_submit_empty\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":2088267,\"maxNs\":2340542,\"meanNs\":2129613.53,\"p50Ns\":2120938,\"p95Ns\":2137850}},{\"id\":\"queue_write_buffer_1kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1031735,\"maxNs\":2737751,\"meanNs\":1117770.53,\"p50Ns\":1056111,\"p95Ns\":1078894}},{\"id\":\"queue_write_buffer_4kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1017077,\"maxNs\":2677918,\"meanNs\":1112753.00,\"p50Ns\":1055409,\"p95Ns\":1077041}},{\"id\":\"queue_write_buffer_64kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1034741,\"maxNs\":1069947,\"meanNs\":1056948.77,\"p50Ns\":1056432,\"p95Ns\":1061741}},{\"id\":\"buffer_create_destroy_4kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":541,\"maxNs\":14397,\"meanNs\":1524.17,\"p50Ns\":602,\"p95Ns\":1953}},{\"id\":\"buffer_create_destroy_64kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":531,\"maxNs\":1823,\"meanNs\":693.33,\"p50Ns\":601,\"p95Ns\":972}},{\"id\":\"full_lifecycle_device_only\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":14338440,\"maxNs\":20510665,\"meanNs\":15650036.60,\"p50Ns\":14892533,\"p95Ns\":16415334}},{\"id\":\"full_lifecycle_queue_submit\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":16557322,\"maxNs\":18943280,\"meanNs\":17685545.70,\"p50Ns\":17676371,\"p95Ns\":18738193}},{\"id\":\"full_lifecycle_write_4kb\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":16615842,\"maxNs\":20187365,\"meanNs\":17927531.70,\"p50Ns\":17707981,\"p95Ns\":18700211}},{\"id\":\"full_lifecycle_write_64kb\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":16966222,\"maxNs\":20788178,\"meanNs\":18526853.50,\"p50Ns\":18161716,\"p95Ns\":20075354}},{\"id\":\"full_lifecycle_queue_ops\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":18904817,\"maxNs\":23166190,\"meanNs\":20843539.60,\"p50Ns\":20525523,\"p95Ns\":22830848}}]}\n",
+  "schemaVersion": 1,
+  "source": "bench/dropin_benchmark_harness.c",
+  "suiteResult": {
+    "benchmarks": [
+      {
+        "class": "micro",
+        "id": "instance_create_destroy",
+        "samples": 30,
+        "stats": {
+          "maxNs": 117642,
+          "meanNs": 9068.13,
+          "minNs": 4949,
+          "p50Ns": 5090,
+          "p95Ns": 5841
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "command_encoder_finish_empty",
+        "samples": 30,
+        "stats": {
+          "maxNs": 7945,
+          "meanNs": 641.6,
+          "minNs": 360,
+          "p50Ns": 361,
+          "p95Ns": 501
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "queue_submit_empty",
+        "samples": 30,
+        "stats": {
+          "maxNs": 2340542,
+          "meanNs": 2129613.53,
+          "minNs": 2088267,
+          "p50Ns": 2120938,
+          "p95Ns": 2137850
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "queue_write_buffer_1kb",
+        "samples": 30,
+        "stats": {
+          "maxNs": 2737751,
+          "meanNs": 1117770.53,
+          "minNs": 1031735,
+          "p50Ns": 1056111,
+          "p95Ns": 1078894
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "queue_write_buffer_4kb",
+        "samples": 30,
+        "stats": {
+          "maxNs": 2677918,
+          "meanNs": 1112753.0,
+          "minNs": 1017077,
+          "p50Ns": 1055409,
+          "p95Ns": 1077041
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "queue_write_buffer_64kb",
+        "samples": 30,
+        "stats": {
+          "maxNs": 1069947,
+          "meanNs": 1056948.77,
+          "minNs": 1034741,
+          "p50Ns": 1056432,
+          "p95Ns": 1061741
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "buffer_create_destroy_4kb",
+        "samples": 30,
+        "stats": {
+          "maxNs": 14397,
+          "meanNs": 1524.17,
+          "minNs": 541,
+          "p50Ns": 602,
+          "p95Ns": 1953
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "buffer_create_destroy_64kb",
+        "samples": 30,
+        "stats": {
+          "maxNs": 1823,
+          "meanNs": 693.33,
+          "minNs": 531,
+          "p50Ns": 601,
+          "p95Ns": 972
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "end_to_end",
+        "id": "full_lifecycle_device_only",
+        "samples": 10,
+        "stats": {
+          "maxNs": 20510665,
+          "meanNs": 15650036.6,
+          "minNs": 14338440,
+          "p50Ns": 14892533,
+          "p95Ns": 16415334
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "end_to_end",
+        "id": "full_lifecycle_queue_submit",
+        "samples": 10,
+        "stats": {
+          "maxNs": 18943280,
+          "meanNs": 17685545.7,
+          "minNs": 16557322,
+          "p50Ns": 17676371,
+          "p95Ns": 18738193
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "end_to_end",
+        "id": "full_lifecycle_write_4kb",
+        "samples": 10,
+        "stats": {
+          "maxNs": 20187365,
+          "meanNs": 17927531.7,
+          "minNs": 16615842,
+          "p50Ns": 17707981,
+          "p95Ns": 18700211
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "end_to_end",
+        "id": "full_lifecycle_write_64kb",
+        "samples": 10,
+        "stats": {
+          "maxNs": 20788178,
+          "meanNs": 18526853.5,
+          "minNs": 16966222,
+          "p50Ns": 18161716,
+          "p95Ns": 20075354
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "end_to_end",
+        "id": "full_lifecycle_queue_ops",
+        "samples": 10,
+        "stats": {
+          "maxNs": 23166190,
+          "meanNs": 20843539.6,
+          "minNs": 18904817,
+          "p50Ns": 20525523,
+          "p95Ns": 22830848
+        },
+        "unit": "ns"
+      }
+    ],
+    "e2eIterationsRequested": 10,
+    "failure": "none",
+    "microIterationsRequested": 30,
+    "pass": true,
+    "schemaVersion": 1
+  }
+}

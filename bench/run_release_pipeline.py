@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical release/smoke pipeline runner for benchmark + gates."""
+"""Canonical release/smoke pipeline runner for benchmark + gates (drop-in optional)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+import output_paths
 
 
 def parse_args() -> argparse.Namespace:
@@ -22,6 +23,11 @@ def parse_args() -> argparse.Namespace:
         "--report",
         default="",
         help="Override report path. Defaults to run.out from --config.",
+    )
+    parser.add_argument(
+        "--workspace",
+        default="",
+        help="Override workspace path. Defaults to run.workspace from --config.",
     )
     parser.add_argument(
         "--strict-amd-vulkan",
@@ -42,6 +48,69 @@ def parse_args() -> argparse.Namespace:
         "--with-claim-gate",
         action="store_true",
         help="Run claim gate in addition to schema/correctness/trace gates.",
+    )
+    parser.add_argument(
+        "--trace-semantic-parity-mode",
+        choices=["off", "auto", "required"],
+        default="auto",
+        help="Semantic parity mode forwarded to trace gate execution.",
+    )
+    parser.add_argument(
+        "--with-dropin-gate",
+        action="store_true",
+        help="Run drop-in compatibility gate in addition to schema/correctness/trace gates.",
+    )
+    parser.add_argument(
+        "--dropin-artifact",
+        default="zig/zig-out/lib/libfawn_webgpu.so",
+        help="Shared library artifact path for drop-in gate when --with-dropin-gate is set.",
+    )
+    parser.add_argument(
+        "--dropin-symbols",
+        default="config/dropin_abi.symbols.txt",
+        help="Required symbol list for drop-in gate.",
+    )
+    parser.add_argument(
+        "--dropin-report",
+        default="bench/out/dropin_report.json",
+        help="Drop-in consolidated report path.",
+    )
+    parser.add_argument(
+        "--dropin-symbol-report",
+        default="bench/out/dropin_symbol_report.json",
+        help="Drop-in symbol report path.",
+    )
+    parser.add_argument(
+        "--dropin-behavior-report",
+        default="bench/out/dropin_behavior_report.json",
+        help="Drop-in behavior report path.",
+    )
+    parser.add_argument(
+        "--dropin-benchmark-report",
+        default="bench/out/dropin_benchmark_report.json",
+        help="Drop-in benchmark report path.",
+    )
+    parser.add_argument(
+        "--dropin-benchmark-html",
+        default="bench/out/dropin_benchmark_report.html",
+        help="Drop-in benchmark HTML path.",
+    )
+    parser.add_argument(
+        "--dropin-micro-iterations",
+        type=int,
+        default=30,
+        help="Micro benchmark iterations for drop-in gate.",
+    )
+    parser.add_argument(
+        "--dropin-e2e-iterations",
+        type=int,
+        default=10,
+        help="End-to-end benchmark iterations for drop-in gate.",
+    )
+    parser.add_argument(
+        "--dropin-skip-benchmarks",
+        action="store_true",
+        help="Skip drop-in benchmark execution while still running symbol + behavior checks.",
     )
     parser.add_argument(
         "--claim-require-comparison-status",
@@ -84,6 +153,20 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print commands without executing them.",
     )
+    parser.add_argument(
+        "--timestamp",
+        default="",
+        help=(
+            "UTC suffix for artifact paths (YYYYMMDDTHHMMSSZ). "
+            "Defaults to current UTC time when --timestamp-output is enabled."
+        ),
+    )
+    parser.add_argument(
+        "--timestamp-output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Stamp compare/drop-in artifact paths with a UTC timestamp suffix.",
+    )
     return parser.parse_args()
 
 
@@ -108,6 +191,20 @@ def resolve_report_path(config_path: Path, explicit_report: str) -> Path:
     return Path(out_value)
 
 
+def resolve_workspace_path(config_path: Path, explicit_workspace: str) -> Path:
+    if explicit_workspace:
+        return Path(explicit_workspace)
+
+    config_payload = load_json(config_path)
+    run_payload = config_payload.get("run")
+    if not isinstance(run_payload, dict):
+        raise ValueError(f"invalid config {config_path}: missing object field run")
+    workspace_value = run_payload.get("workspace")
+    if not isinstance(workspace_value, str) or not workspace_value.strip():
+        raise ValueError(f"invalid config {config_path}: missing non-empty run.workspace")
+    return Path(workspace_value)
+
+
 def run_step(label: str, command: list[str], *, dry_run: bool) -> None:
     print(f"[pipeline] {label}: {' '.join(command)}", flush=True)
     if dry_run:
@@ -124,13 +221,49 @@ def main() -> int:
             f"{args.claim_require_min_timed_samples} expected >= 0"
         )
         return 1
+    if args.dropin_micro_iterations < 0:
+        print(
+            "FAIL: invalid --dropin-micro-iterations="
+            f"{args.dropin_micro_iterations} expected >= 0"
+        )
+        return 1
+    if args.dropin_e2e_iterations < 0:
+        print(
+            "FAIL: invalid --dropin-e2e-iterations="
+            f"{args.dropin_e2e_iterations} expected >= 0"
+        )
+        return 1
 
     config_path = Path(args.config)
     if not config_path.exists():
         print(f"FAIL: missing config: {config_path}")
         return 1
+    if args.with_dropin_gate and not args.dropin_artifact.strip():
+        print("FAIL: --with-dropin-gate requires --dropin-artifact")
+        return 1
+    if args.with_dropin_gate and not args.dry_run:
+        artifact_path = Path(args.dropin_artifact)
+        if not artifact_path.exists():
+            print(f"FAIL: missing --dropin-artifact: {artifact_path}")
+            return 1
 
-    report_path = resolve_report_path(config_path, args.report)
+    raw_report_path = resolve_report_path(config_path, args.report)
+    raw_workspace_path = resolve_workspace_path(config_path, args.workspace)
+    output_timestamp = (
+        output_paths.resolve_timestamp(args.timestamp)
+        if args.timestamp_output
+        else ""
+    )
+    report_path = output_paths.with_timestamp(
+        raw_report_path,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
+    workspace_path = output_paths.with_timestamp(
+        raw_workspace_path,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
 
     bench_dir = Path(__file__).resolve().parent
     python_exe = sys.executable
@@ -148,18 +281,31 @@ def main() -> int:
             )
 
         if not args.skip_compare:
-            run_step(
-                "compare",
-                [python_exe, str(compare), "--config", str(config_path)],
-                dry_run=args.dry_run,
-            )
+            compare_command = [
+                python_exe,
+                str(compare),
+                "--config",
+                str(config_path),
+                "--out",
+                str(report_path),
+                "--workspace",
+                str(workspace_path),
+            ]
+            if args.timestamp_output:
+                compare_command.extend(["--timestamp", output_timestamp])
+            else:
+                compare_command.append("--no-timestamp-output")
+            run_step("compare", compare_command, dry_run=args.dry_run)
 
         if args.verify_smoke_report:
+            smoke_report_path = Path(args.verify_smoke_report)
+            if args.timestamp_output and smoke_report_path == raw_report_path:
+                smoke_report_path = report_path
             verify_cmd = [
                 python_exe,
                 str(smoke_verify),
                 "--report",
-                args.verify_smoke_report,
+                str(smoke_report_path),
             ]
             if args.verify_smoke_require_comparable:
                 verify_cmd.append("--require-comparable")
@@ -167,6 +313,37 @@ def main() -> int:
 
         if not args.skip_gates:
             gates_cmd = [python_exe, str(gates), "--report", str(report_path)]
+            gates_cmd.extend(["--trace-semantic-parity-mode", args.trace_semantic_parity_mode])
+            if args.timestamp_output:
+                gates_cmd.extend(["--timestamp", output_timestamp])
+            else:
+                gates_cmd.append("--no-timestamp-output")
+            if args.with_dropin_gate:
+                gates_cmd.extend(
+                    [
+                        "--with-dropin-gate",
+                        "--dropin-artifact",
+                        args.dropin_artifact,
+                        "--dropin-symbols",
+                        args.dropin_symbols,
+                        "--dropin-report",
+                        args.dropin_report,
+                        "--dropin-symbol-report",
+                        args.dropin_symbol_report,
+                        "--dropin-behavior-report",
+                        args.dropin_behavior_report,
+                        "--dropin-benchmark-report",
+                        args.dropin_benchmark_report,
+                        "--dropin-benchmark-html",
+                        args.dropin_benchmark_html,
+                        "--dropin-micro-iterations",
+                        str(args.dropin_micro_iterations),
+                        "--dropin-e2e-iterations",
+                        str(args.dropin_e2e_iterations),
+                    ]
+                )
+                if args.dropin_skip_benchmarks:
+                    gates_cmd.append("--dropin-skip-benchmarks")
             if args.with_claim_gate:
                 gates_cmd.extend(
                     [

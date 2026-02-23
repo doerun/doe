@@ -1,12 +1,12 @@
 {
-  "workloads": "bench/workloads.amd.vulkan.json",
+  "workloads": "bench/workloads.amd.vulkan.extended.json",
   "left": {
     "name": "fawn",
     "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/fawn-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
   },
   "right": {
     "name": "dawn",
-    "commandTemplate": "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter-map bench/dawn_workload_map.amd.autodiscover.json --workload {workload} --dawn-extra-args=--backend=vulkan --dawn-extra-args=--adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
+    "commandTemplate": "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter-map bench/dawn_workload_map.amd.extended.json --workload {workload} --dawn-extra-args=--backend=vulkan --dawn-extra-args=--adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
   },
   "run": {
     "iterations": 16,
@@ -14,7 +14,7 @@
     "out": "bench/out/dawn-vs-fawn.amd.vulkan.release.json",
     "workspace": "bench/out/runtime-comparisons.amd.vulkan.release",
     "workloadFilter": "",
-    "includeExtendedWorkloads": false,
+    "includeExtendedWorkloads": true,
     "includeNoncomparableWorkloads": false,
     "emitShell": false
   },

@@ -1,0 +1,17 @@
+{
+  "artifact": "zig/zig-out/lib/libfawn_webgpu.so",
+  "exportedSymbolCount": 229,
+  "extraSymbolCount": 30,
+  "generatedAtUtc": "2026-02-23T16:42:10.401707Z",
+  "missingSymbolCount": 0,
+  "missingSymbols": [],
+  "outputTimestamp": "20260223T164210Z",
+  "pass": true,
+  "requiredSymbolCount": 199,
+  "schemaVersion": 1,
+  "symbolsPath": "config/dropin_abi.symbols.txt",
+  "toolAttempts": [
+    "nm -D --defined-only zig/zig-out/lib/libfawn_webgpu.so"
+  ],
+  "toolCommandUsed": "nm -D --defined-only zig/zig-out/lib/libfawn_webgpu.so"
+}

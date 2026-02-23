@@ -16,6 +16,7 @@ pub const native_library_names = blk: {
             "libwgpu_native.dylib",
         },
         else => break :blk &[_][]const u8{
+            "libwebgpu_dawn.so",
             "libwebgpu.so",
             "libwgpu_native.so",
             "libwgpu_native.so.0",

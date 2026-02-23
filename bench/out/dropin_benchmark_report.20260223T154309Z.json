@@ -1,0 +1,101 @@
+{
+  "artifact": "bench/vendor/dawn/out/Release/libwebgpu_dawn.so",
+  "compileCommand": [
+    "cc",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "/home/x/deco/fawn/bench/vendor/dawn/third_party/webgpu-headers/src",
+    "/home/x/deco/fawn/bench/dropin_benchmark_harness.c",
+    "-L",
+    "/home/x/deco/fawn/bench/vendor/dawn/out/Release",
+    "-Wl,-rpath,/home/x/deco/fawn/bench/vendor/dawn/out/Release",
+    "-l:libwebgpu_dawn.so",
+    "-o",
+    "/tmp/fawn-dropin-bench-_akj27a8/dropin_benchmark_suite"
+  ],
+  "compileReturnCode": 0,
+  "compileStderr": "",
+  "compileStdout": "",
+  "e2eIterations": 10,
+  "generatedAtUtc": "2026-02-23T15:42:36.077804Z",
+  "headerDir": "bench/vendor/dawn/third_party/webgpu-headers/src",
+  "microIterations": 30,
+  "pass": true,
+  "runCommand": [
+    "/tmp/fawn-dropin-bench-_akj27a8/dropin_benchmark_suite",
+    "--micro-iterations",
+    "30",
+    "--e2e-iterations",
+    "10"
+  ],
+  "runReturnCode": 0,
+  "runStderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\n",
+  "runStdout": "{\"schemaVersion\":1,\"pass\":true,\"failure\":\"none\",\"microIterationsRequested\":30,\"e2eIterationsRequested\":10,\"benchmarks\":[{\"id\":\"instance_create_destroy\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":5771,\"maxNs\":91973,\"meanNs\":8923.20,\"p50Ns\":5831,\"p95Ns\":6422}},{\"id\":\"queue_submit_empty\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":2092632,\"maxNs\":2466947,\"meanNs\":2135397.37,\"p50Ns\":2118551,\"p95Ns\":2156823}},{\"id\":\"queue_write_buffer_4kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1008059,\"maxNs\":3125288,\"meanNs\":1125043.50,\"p50Ns\":1056180,\"p95Ns\":1068443}},{\"id\":\"full_lifecycle_queue_ops\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":21311949,\"maxNs\":26904535,\"meanNs\":23571657.90,\"p50Ns\":22811433,\"p95Ns\":26020570}}]}\n",
+  "schemaVersion": 1,
+  "source": "bench/dropin_benchmark_harness.c",
+  "suiteResult": {
+    "benchmarks": [
+      {
+        "class": "micro",
+        "id": "instance_create_destroy",
+        "samples": 30,
+        "stats": {
+          "maxNs": 91973,
+          "meanNs": 8923.2,
+          "minNs": 5771,
+          "p50Ns": 5831,
+          "p95Ns": 6422
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "queue_submit_empty",
+        "samples": 30,
+        "stats": {
+          "maxNs": 2466947,
+          "meanNs": 2135397.37,
+          "minNs": 2092632,
+          "p50Ns": 2118551,
+          "p95Ns": 2156823
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "micro",
+        "id": "queue_write_buffer_4kb",
+        "samples": 30,
+        "stats": {
+          "maxNs": 3125288,
+          "meanNs": 1125043.5,
+          "minNs": 1008059,
+          "p50Ns": 1056180,
+          "p95Ns": 1068443
+        },
+        "unit": "ns"
+      },
+      {
+        "class": "end_to_end",
+        "id": "full_lifecycle_queue_ops",
+        "samples": 10,
+        "stats": {
+          "maxNs": 26904535,
+          "meanNs": 23571657.9,
+          "minNs": 21311949,
+          "p50Ns": 22811433,
+          "p95Ns": 26020570
+        },
+        "unit": "ns"
+      }
+    ],
+    "e2eIterationsRequested": 10,
+    "failure": "none",
+    "microIterationsRequested": 30,
+    "pass": true,
+    "schemaVersion": 1
+  }
+}

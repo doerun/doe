@@ -95,7 +95,7 @@ fn printUsage(stdout: anytype) !void {
         \\--upload-submit-every submits and waits after every N upload commands (default: 1).
         \\--queue-wait-mode controls queue completion waiting strategy for native execution.
         \\  process-events: callback + process-events loop (default).
-        \\  wait-any: callback + wgpuInstanceWaitAny wait path (falls back to process-events when unsupported).
+        \\  wait-any: callback + wgpuInstanceWaitAny wait path (fails explicitly when unsupported).
         \\--queue-sync-mode controls when queue synchronization occurs.
         \\  per-command: waitForQueue after every submit (default).
         \\  deferred: skip per-submit waits; one final flush after the command loop.

@@ -120,6 +120,10 @@ def collect_targets(root: Path) -> list[ValidationTarget]:
             schema_rel="config/benchmark-methodology-thresholds.schema.json",
             data_rel="config/benchmark-methodology-thresholds.json",
         ),
+        ValidationTarget(
+            schema_rel="config/substantiation-policy.schema.json",
+            data_rel="config/substantiation-policy.json",
+        ),
     ]
 
     quirks = sorted((root / "examples/quirks").glob("*.json"))

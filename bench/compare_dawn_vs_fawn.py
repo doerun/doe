@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import shlex
+import output_paths
 
 MAX_RSS_MARKER = "__FAWN_MAXRSS_KB__:"
 DEFAULT_WORKLOADS_PATH = "fawn/bench/workloads.json"
@@ -53,6 +54,18 @@ VALID_REQUIRED_TIMING_CLASSES = {"any", "operation", "process-wall"}
 VALID_RESOURCE_PROBES = {"none", "rocm-smi"}
 VALID_CLAIMABILITY_MODES = {"off", "local", "release"}
 VALID_UPLOAD_BUFFER_USAGES = {"copy-dst-copy-src", "copy-dst"}
+NON_APPLES_TO_APPLES_DOMAINS = {
+    "pipeline-async",
+    "p1-capability",
+    "p1-resource-table",
+    "p1-capability-macro",
+    "p2-lifecycle",
+    "p2-lifecycle-macro",
+    "p0-resource",
+    "p0-compute",
+    "p0-render",
+    "surface",
+}
 FAWN_UPLOAD_RUNTIME_SOURCE_PATHS = (
     Path("zig/src/main.zig"),
     Path("zig/src/execution.zig"),
@@ -233,6 +246,20 @@ def parse_args() -> argparse.Namespace:
             "Benchmark methodology threshold config. "
             "Defaults to config/benchmark-methodology-thresholds.json."
         ),
+    )
+    parser.add_argument(
+        "--timestamp",
+        default="",
+        help=(
+            "UTC suffix for artifact paths (YYYYMMDDTHHMMSSZ). "
+            "Defaults to current UTC time when --timestamp-output is enabled."
+        ),
+    )
+    parser.add_argument(
+        "--timestamp-output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Stamp report/workspace artifact paths with a UTC timestamp suffix.",
     )
     parser.add_argument("--emit-shell", action="store_true", help="Print resolved commands instead of running")
     return parser.parse_args()
@@ -2072,6 +2099,7 @@ def load_workloads(
     for item in raw_workloads:
         if not isinstance(item, dict):
             raise ValueError(f"invalid workload entry in {path}: expected object")
+        apples_to_apples_vetted = bool(item.get("applesToApplesVetted", False))
         workload = Workload(
             id=item["id"],
             name=item.get("name", item["id"]),
@@ -2155,6 +2183,15 @@ def load_workloads(
             raise ValueError(
                 f"invalid workload {workload.id}: rightUploadSubmitEvery must be >= 1"
             )
+        if (
+            workload.comparable
+            and workload.domain in NON_APPLES_TO_APPLES_DOMAINS
+            and (not apples_to_apples_vetted)
+        ):
+            raise ValueError(
+                f"invalid workload {workload.id}: domain={workload.domain} must be "
+                "directional (comparable=false) unless applesToApplesVetted=true"
+            )
         if selected and workload.id not in selected:
             continue
         if not selected and (not include_extended) and (not workload.include_by_default):
@@ -2216,10 +2253,27 @@ def main() -> int:
                 workload=strict_upload_workload,
             )
 
-    workspace = Path(args.workspace)
+    output_timestamp = (
+        output_paths.resolve_timestamp(args.timestamp)
+        if args.timestamp_output
+        else ""
+    )
+    workspace = output_paths.with_timestamp(
+        args.workspace,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
+    out = output_paths.with_timestamp(
+        args.out,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
     report: dict[str, Any] = {
         "schemaVersion": 3,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "outputTimestamp": output_timestamp,
+        "outPath": str(out),
+        "workspacePath": str(workspace),
         "left": {"name": args.left_name},
         "right": {"name": args.right_name},
         "deltaPercentConvention": {
@@ -2443,7 +2497,6 @@ def main() -> int:
     else:
         report["claimStatus"] = "claimable" if not claimability_failures else "diagnostic"
 
-    out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if args.emit_shell:

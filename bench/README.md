@@ -28,16 +28,38 @@ That document defines:
 - `check_correctness.py`
   - runs deterministic contract-level correctness checks
 - `schema_gate.py`
-  - validates schema-backed benchmark/config contracts as blocking release checks (`webgpu-spec-coverage`, benchmark methodology thresholds, and all quirk examples).
+  - validates schema-backed benchmark/config contracts as blocking release checks (`webgpu-spec-coverage`, benchmark methodology thresholds, substantiation policy, and all quirk examples).
 - `run_blocking_gates.py`
-  - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional claim gate.
+  - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional drop-in -> optional claim gate.
 - `run_release_pipeline.py`
-  - canonical entrypoint for CI/local release orchestration: preflight -> compare report generation -> optional smoke verification -> blocking gates (optional claim gate).
+  - canonical entrypoint for CI/local release orchestration: preflight -> compare report generation -> optional smoke verification -> blocking gates (optional drop-in + optional claim gate).
+- `run_release_claim_windows.py`
+  - runs repeated release pipeline windows and emits a trend summary (`comparisonStatus`, `claimStatus`, non-claimable/non-comparable workload IDs per window); can run `substantiation_gate.py` over that summary in one command.
+- `build_test_inventory_dashboard.py`
+  - scans Dawn-vs-Fawn compare reports and emits:
+    - canonical tested-profile inventory JSON (`vendor/api/deviceFamily/driver` coverage, matrix status history, report-level status rollups)
+    - simple HTML dashboard for matrix status + performance delta vs Dawn
+  - profile combos are sourced from per-sample `traceMeta.profile` fields; sides without profile metadata are tracked as report status only (not hardware-profile coverage).
+  - also writes stable latest paths (`bench/out/test-inventory.latest.json`, `bench/out/test-dashboard.latest.html`) for a single canonical source of truth.
+- `substantiation_gate.py`
+  - validates claim substantiation evidence from one or more comparison reports and/or release-window summaries using `config/substantiation-policy.json` (minimum comparable+claimable report count and minimum unique left-side profile diversity).
+- `dropin_symbol_gate.py`
+  - validates candidate shared-library symbol completeness against `config/dropin_abi.symbols.txt`.
+- `dropin_behavior_suite.py`
+  - compiles and runs an artifact-linked black-box API behavior harness (instance/device creation, queue ops, error scopes, lifecycle release).
+- `dropin_benchmark_suite.py`
+  - compiles and runs artifact-linked micro + end-to-end benchmarks for drop-in runtime surfaces.
+- `dropin_gate.py`
+  - canonical drop-in compatibility entrypoint; runs symbol + behavior + benchmark suites, emits a consolidated report with per-step runtimes, and generates benchmark HTML with micro and end-to-end sections.
+- `visualize_dropin_benchmark.py`
+  - reads `dropin_benchmark_suite.py` JSON output and writes an HTML report that includes all benchmark rows grouped by class (`micro`, `end_to_end`).
 - `compare_runtimes.py`
   - runs two runtime commands repeatedly (left/right), captures wall-time quantiles, and writes a comparison artifact.
 - `compare_dawn_vs_fawn.py`
   - executes shared workload files against two explicit command templates (default Fawn runtime + configurable Dawn/competitor runtime).
   - outputs per-run trace artifacts (`--trace-jsonl` and `--trace-meta` when templates provide these placeholders) plus workload-level and overall quantile summaries.
+- `cleanup_out.py`
+  - prunes legacy untimestamped artifacts from `bench/out` and can optionally prune old timestamped entries by retention window.
 - `visualize_dawn_vs_fawn.py`
   - reads a `compare_dawn_vs_fawn.py` report and writes a self-contained HTML visualization plus optional analysis JSON.
   - includes ECDF overlays, workload×percentile delta heatmap, KS statistic/p-value, Wasserstein distance, probability of superiority `P(left<right)`, and bootstrap CIs for delta `p50`/`p95`/`p99`.
@@ -51,6 +73,21 @@ That document defines:
 
 Template placeholders:
 `{commands}`, `{quirks}`, `{vendor}`, `{api}`, `{family}`, `{driver}`, `{workload}`, `{dawn_filter}`, `{trace_jsonl}`, `{trace_meta}`, `{extra_args}`.
+
+Benchmark/report-producing scripts now timestamp outputs by default (`YYYYMMDDTHHMMSSZ`) to avoid artifact clobbering. Use `--no-timestamp-output` when you intentionally need an exact fixed output path.
+
+## Artifact cleanup
+
+```bash
+# show what would be removed
+python3 fawn/bench/cleanup_out.py --dry-run
+
+# remove legacy untimestamped top-level bench/out artifacts
+python3 fawn/bench/cleanup_out.py
+
+# additionally prune timestamped artifacts older than 14 days
+python3 fawn/bench/cleanup_out.py --retention-days 14
+```
 
 ## Workload presets
 
@@ -134,6 +171,9 @@ python3 fawn/bench/compare_dawn_vs_fawn.py \
   `--claimability local|release` enforces sample-floor and positive-tail checks for claimable speed reports.
   use `--claim-min-timed-samples N` to override mode defaults loaded from `config/benchmark-methodology-thresholds.json` (`claimabilityDefaults.localMinTimedSamples`, `claimabilityDefaults.releaseMinTimedSamples`).
   claimability failures return non-zero exit status (`3`) and report `claimStatus=diagnostic`.
+- trace replay gate supports semantic parity lanes:
+  `bench/trace_gate.py --semantic-parity-mode auto|required`.
+  use `required` only for runtime-to-runtime parity artifacts (for example Zig vs oracle traces), because Dawn comparison traces are not semantic-envelope compatible.
 - optional resource profiling is available via `--resource-probe rocm-smi` and is applied equally to both sides.
 - when resource probe is enabled, strict comparability also checks probe quality:
   use fixed `N vs N` probing via `--resource-sample-target-count N`.
@@ -238,7 +278,47 @@ and `claimStatus=claimable`. Then generate an HTML visualization artifact:
 python3 fawn/bench/run_release_pipeline.py \
   --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json \
   --strict-amd-vulkan \
+  --trace-semantic-parity-mode auto \
   --with-claim-gate
+
+# drop-in compatibility + benchmark suite against a built shared-library artifact:
+python3 fawn/bench/dropin_gate.py \
+  --artifact fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --report fawn/bench/out/dropin_report.json
+
+# optional standalone drop-in benchmark visualization (micro vs end-to-end sections):
+python3 fawn/bench/visualize_dropin_benchmark.py \
+  --report fawn/bench/out/dropin_benchmark_report.json \
+  --out fawn/bench/out/dropin_benchmark_report.html
+
+# run release pipeline and include drop-in gating:
+python3 fawn/bench/run_release_pipeline.py \
+  --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json \
+  --strict-amd-vulkan \
+  --trace-semantic-parity-mode auto \
+  --with-dropin-gate \
+  --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --with-claim-gate
+
+# optional repeated release windows for trend evidence:
+python3 fawn/bench/run_release_claim_windows.py \
+  --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json \
+  --windows 5 \
+  --strict-amd-vulkan \
+  --trace-semantic-parity-mode auto \
+  --with-dropin-gate \
+  --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --with-substantiation-gate \
+  --substantiation-policy fawn/config/substantiation-policy.json
+
+# optional standalone substantiation gate from existing window summaries/reports:
+python3 fawn/bench/substantiation_gate.py \
+  --policy fawn/config/substantiation-policy.json \
+  --summary fawn/bench/out/release-claim-windows.json
+
+# tested-profile inventory database + simple dashboard:
+python3 fawn/bench/build_test_inventory_dashboard.py \
+  --report-glob "fawn/bench/out/dawn-vs-fawn*.json"
 
 # optional visualization after the pipeline report exists:
 python3 fawn/bench/visualize_dawn_vs_fawn.py --report fawn/bench/out/dawn-vs-fawn.amd.vulkan.release.json --out fawn/bench/out/dawn-vs-fawn.amd.vulkan.release.html
@@ -456,8 +536,8 @@ A ready-to-run AMD Vulkan preset is now included:
 
 Additional AMD Vulkan presets:
 
-- release claim mode: `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
-- extended comparable matrix (upload + compute + render + texture + render-bundle + async pipeline diagnostics): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
+- release claim mode on extended comparable matrix (29 comparable workloads, release sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
+- extended comparable matrix local-claim preset (same workload family, lower sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - directional diagnostics (macro-only non-claim stress set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
 - directional macro diagnostics (high-volume render/texture + P0 PLS stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
 - strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json`
@@ -474,7 +554,7 @@ Preset behavior:
 - Upload workloads are configured for strict apples-to-apples matching against Dawn `BufferUploadPerf WriteBuffer`:
   `leftUploadBufferUsage=copy-dst`, `leftIgnoreFirstOps=1`, and explicit per-size
   `leftCommandRepeat`/`leftTimingDivisor`/`leftUploadSubmitEvery` values in
-  `bench/workloads.amd.vulkan.json`.
+  `bench/workloads.amd.vulkan.extended.json`.
 
 Run from `fawn/` directory:
 
@@ -485,10 +565,10 @@ python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config
 Extended AMD Vulkan runs:
 
 ```bash
-# comparable extended matrix (upload + compute + render + texture + render-bundle + async)
+# comparable extended matrix local-claim preset (upload + compute + render + texture + render-bundle + async)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json
 
-# release-style claimability floor (15 timed samples)
+# release claim gate matrix (extended comparable set, 15 timed samples)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json
 
 # directional diagnostics only (macro-only non-claim stress set)

@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import output_paths
+
 
 DEFAULT_TIMESTAMP = "1970-01-01T00:00:00Z"
 TRACE_SEED = "0x9e3779b97f4a7c15"
@@ -60,6 +62,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--driver", default="unknown")
     parser.add_argument("--commit", default="unknown")
     parser.add_argument("--timestamp", default="")
+    parser.add_argument(
+        "--timestamp-output",
+        dest="timestamp_output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Append UTC timestamp suffixes to out paths. "
+            "Defaults to enabled for non-clobbering artifacts."
+        ),
+    )
     parser.add_argument("--run-id", default="")
     parser.add_argument("--out-dir", default="fawn/bench/out/run-bench")
     return parser.parse_args()
@@ -368,14 +380,21 @@ def main() -> int:
     if args.iterations < 0 or args.warmup < 0:
         raise ValueError("--iterations and --warmup must be >= 0")
 
-    timestamp = args.timestamp or datetime.now(timezone.utc).isoformat()
+    generated_at = datetime.now(timezone.utc).isoformat()
+    output_timestamp = (
+        output_paths.resolve_timestamp(args.timestamp) if args.timestamp_output else ""
+    )
     workload = load_workloads(args.workloads, args.workload_id)
 
     bench_cfg = load_json(args.bench_config)
     metric_ids = [m["metricId"] for m in bench_cfg.get("matrix", []) if isinstance(m, dict)]
     baselines = [b["baselineId"] for b in bench_cfg.get("baselines", []) if isinstance(b, dict)]
 
-    out = Path(args.out_dir)
+    out = output_paths.with_timestamp(
+        args.out_dir,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
     out.mkdir(parents=True, exist_ok=True)
 
     command_records: list[dict[str, Any]] = []
@@ -444,8 +463,10 @@ def main() -> int:
 
     report = {
         "schemaVersion": 1,
-        "generatedAt": timestamp,
+        "generatedAt": generated_at,
+        "outputTimestamp": output_timestamp,
         "backend": args.backend,
+        "outDir": str(out),
         "workload": {
             "id": workload.workload_id,
             "name": workload.name,
@@ -476,14 +497,15 @@ def main() -> int:
             "gpu": args.gpu,
             "driver": args.driver,
             "commit": args.commit,
-            "timestamp": timestamp,
+            "timestamp": generated_at,
             "workloadId": workload.workload_id,
         }
     )
     metadata = {
         "schemaVersion": 1,
         "runId": run_id,
-        "timestamp": timestamp,
+        "timestamp": generated_at,
+        "outputTimestamp": output_timestamp,
         "host": {
             "os": platform.system() or "unknown",
             "arch": platform.machine() or "unknown",
@@ -507,8 +529,18 @@ def main() -> int:
         },
     }
 
-    out_report = Path(args.out_report)
-    out_meta = Path(args.out_metadata)
+    out_report = output_paths.with_timestamp(
+        args.out_report,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
+    out_meta = output_paths.with_timestamp(
+        args.out_metadata,
+        output_timestamp,
+        enabled=args.timestamp_output,
+    )
+    report["outPath"] = str(out_report)
+    metadata["outPath"] = str(out_meta)
     out_report.parent.mkdir(parents=True, exist_ok=True)
     out_meta.parent.mkdir(parents=True, exist_ok=True)
     out_report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

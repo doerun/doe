@@ -6,7 +6,7 @@
       "name": "buffer-upload 1KB",
       "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB.",
       "domain": "upload",
-      "comparabilityNotes": "Matched single queue write upload shape on both sides.",
+      "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
       "commandsPath": "examples/upload_1kb_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -17,11 +17,14 @@
       "leftIgnoreFirstOps": 1,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 50,
-      "extraArgs": [],
+      "extraArgs": [
+        "--queue-sync-mode",
+        "deferred"
+      ],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence, and normalize to per-upload units.",
+      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
     },
     {

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Substantiation Policy",
+  "type": "object",
+  "required": ["schemaVersion", "releaseEvidence"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "releaseEvidence": {
+      "type": "object",
+      "required": [
+        "minReports",
+        "minClaimableComparableReports",
+        "requiredComparisonStatus",
+        "requiredClaimStatus",
+        "minUniqueLeftProfiles"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "minReports": { "type": "integer", "minimum": 1 },
+        "minClaimableComparableReports": { "type": "integer", "minimum": 1 },
+        "requiredComparisonStatus": { "type": "string", "minLength": 1 },
+        "requiredClaimStatus": { "type": "string", "minLength": 1 },
+        "minUniqueLeftProfiles": { "type": "integer", "minimum": 1 },
+        "targetUniqueLeftProfiles": { "type": "integer", "minimum": 1 },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}
