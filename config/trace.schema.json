@@ -36,6 +36,7 @@
     "toggle": { "type": "string" },
     "executionBackend": { "type": "string" },
     "executionStatus": { "type": "string", "enum": ["ok", "skipped", "unsupported", "error"] },
+    "executionStatusCode": { "type": "string" },
     "executionStatusMessage": { "type": "string" },
     "executionDurationNs": { "type": "integer", "minimum": 0 },
     "executionSetupNs": { "type": "integer", "minimum": 0 },

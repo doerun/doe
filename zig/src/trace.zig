@@ -61,6 +61,44 @@ pub fn writeJsonString(writer: anytype, value: []const u8) !void {
     try writer.writeByte('"');
 }
 
+fn normalizeExecutionStatusCode(
+    message: []const u8,
+    fallback: []const u8,
+    buffer: *[160]u8,
+) []const u8 {
+    const source = if (message.len > 0) message else fallback;
+    var out_len: usize = 0;
+    var last_was_separator = true;
+
+    for (source) |byte| {
+        const lower = std.ascii.toLower(byte);
+        const is_alnum = (lower >= 'a' and lower <= 'z') or (lower >= '0' and lower <= '9');
+        if (is_alnum) {
+            if (out_len >= buffer.len) break;
+            buffer[out_len] = lower;
+            out_len += 1;
+            last_was_separator = false;
+            continue;
+        }
+        if (last_was_separator) continue;
+        if (out_len >= buffer.len) break;
+        buffer[out_len] = '_';
+        out_len += 1;
+        last_was_separator = true;
+    }
+
+    while (out_len > 0 and buffer[out_len - 1] == '_') {
+        out_len -= 1;
+    }
+
+    if (out_len == 0) {
+        const fallback_len = @min(fallback.len, buffer.len);
+        std.mem.copyForwards(u8, buffer[0..fallback_len], fallback[0..fallback_len]);
+        return buffer[0..fallback_len];
+    }
+    return buffer[0..out_len];
+}
+
 pub fn actionName(action: ?model.QuirkAction) []const u8 {
     const actual = action orelse return "none";
     return switch (actual) {
@@ -238,10 +276,19 @@ pub fn printTraceLine(
     try writeJsonString(stdout, result.decision.applied_toggle orelse "none");
 
     if (maybe_execution) |exec| {
+        var status_code_buffer: [160]u8 = undefined;
+        const status_name = execution.executionStatusName(exec.status);
+        const status_code = normalizeExecutionStatusCode(
+            exec.status_code,
+            status_name,
+            &status_code_buffer,
+        );
         try stdout.writeAll(",\"executionBackend\":");
         try writeJsonString(stdout, exec.backend);
         try stdout.writeAll(",\"executionStatus\":");
-        try writeJsonString(stdout, execution.executionStatusName(exec.status));
+        try writeJsonString(stdout, status_name);
+        try stdout.writeAll(",\"executionStatusCode\":");
+        try writeJsonString(stdout, status_code);
         try stdout.writeAll(",\"executionStatusMessage\":");
         try writeJsonString(stdout, exec.status_code);
         try writef(

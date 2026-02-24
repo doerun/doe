@@ -57,7 +57,8 @@ jobs:
             --symbol-report bench/out/dropin_symbol_report.ci.json \
             --behavior-report bench/out/dropin_behavior_report.ci.json \
             --benchmark-report bench/out/dropin_benchmark_report.ci.json \
-            --report bench/out/dropin_report.ci.json
+            --report bench/out/dropin_report.ci.json \
+            --no-timestamp-output
       - name: Upload drop-in reports
         uses: actions/upload-artifact@v4
         with:

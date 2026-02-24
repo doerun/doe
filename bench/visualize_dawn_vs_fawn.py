@@ -97,7 +97,7 @@ def sample_stats(values: list[float]) -> dict[str, float]:
             "count": 0.0,
             "minMs": 0.0,
             "maxMs": 0.0,
-            "p5Ms": 0.0,
+            "p10Ms": 0.0,
             "p50Ms": 0.0,
             "p95Ms": 0.0,
             "p99Ms": 0.0,
@@ -107,7 +107,7 @@ def sample_stats(values: list[float]) -> dict[str, float]:
         "count": float(len(values)),
         "minMs": min(values),
         "maxMs": max(values),
-        "p5Ms": percentile(values, 0.05),
+        "p10Ms": percentile(values, 0.10),
         "p50Ms": percentile(values, 0.5),
         "p95Ms": percentile(values, 0.95),
         "p99Ms": percentile(values, 0.99),
@@ -289,14 +289,14 @@ def analyze_workload(
     left_stats = sample_stats(left_samples)
     right_stats = sample_stats(right_samples)
 
-    for key, q in (("p5Ms", 0.05), ("p50Ms", 0.5), ("p95Ms", 0.95), ("p99Ms", 0.99)):
+    for key, q in (("p10Ms", 0.10), ("p50Ms", 0.5), ("p95Ms", 0.95), ("p99Ms", 0.99)):
         left_stats[key] = resolve_stat_ms(left_stats_raw, key, left_samples, q)
         right_stats[key] = resolve_stat_ms(right_stats_raw, key, right_samples, q)
     left_stats["meanMs"] = resolve_stat_ms(left_stats_raw, "meanMs", left_samples)
     right_stats["meanMs"] = resolve_stat_ms(right_stats_raw, "meanMs", right_samples)
 
     delta = {
-        "p5Percent": percent_delta(left_stats["p5Ms"], right_stats["p5Ms"]),
+        "p10Percent": percent_delta(left_stats["p10Ms"], right_stats["p10Ms"]),
         "p50Percent": percent_delta(left_stats["p50Ms"], right_stats["p50Ms"]),
         "p95Percent": percent_delta(left_stats["p95Ms"], right_stats["p95Ms"]),
         "p99Percent": percent_delta(left_stats["p99Ms"], right_stats["p99Ms"]),
@@ -450,7 +450,7 @@ def ecdf_svg(analysis: dict[str, Any], width: int = 920, height: int = 220) -> s
 
 
 def heatmap_svg(analyses: list[dict[str, Any]]) -> str:
-    quantiles = [("p5Percent", "p5"), ("p50Percent", "p50"), ("p95Percent", "p95"), ("p99Percent", "p99")]
+    quantiles = [("p10Percent", "p10"), ("p50Percent", "p50"), ("p95Percent", "p95"), ("p99Percent", "p99")]
     values: list[float] = []
     for analysis in analyses:
         delta = analysis.get("deltaPercent", {})
@@ -513,7 +513,7 @@ def generate_html(
         "<table>"
         "<thead><tr><th>Metric</th><th>Delta</th></tr></thead>"
         "<tbody>"
-        f"<tr><td>p5Approx</td><td style='color:{pick_delta_color(overall_delta.get('p5Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p5Approx'))}</td></tr>"
+        f"<tr><td>p10Approx</td><td style='color:{pick_delta_color(overall_delta.get('p10Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p10Approx'))}</td></tr>"
         f"<tr><td>p50Approx</td><td style='color:{pick_delta_color(overall_delta.get('p50Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p50Approx'))}</td></tr>"
         f"<tr><td>p95Approx</td><td style='color:{pick_delta_color(overall_delta.get('p95Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p95Approx'))}</td></tr>"
         f"<tr><td>p99Approx</td><td style='color:{pick_delta_color(overall_delta.get('p99Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p99Approx'))}</td></tr>"
@@ -557,15 +557,15 @@ def generate_html(
             f"<td>{escape(str(analysis.get('id', '')))}</td>"
             f"<td>{escape(str(analysis.get('domain', '')))}</td>"
             f"<td>{escape(comparable_text)}</td>"
-            f"<td>{fmt_ms(left_stats.get('p5Ms'))}</td>"
+            f"<td>{fmt_ms(left_stats.get('p10Ms'))}</td>"
             f"<td>{fmt_ms(left_stats.get('p50Ms'))}</td>"
             f"<td>{fmt_ms(left_stats.get('p95Ms'))}</td>"
             f"<td>{fmt_ms(left_stats.get('p99Ms'))}</td>"
-            f"<td>{fmt_ms(right_stats.get('p5Ms'))}</td>"
+            f"<td>{fmt_ms(right_stats.get('p10Ms'))}</td>"
             f"<td>{fmt_ms(right_stats.get('p50Ms'))}</td>"
             f"<td>{fmt_ms(right_stats.get('p95Ms'))}</td>"
             f"<td>{fmt_ms(right_stats.get('p99Ms'))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p5Percent'))};font-weight:600'>{fmt_pct(delta.get('p5Percent'))}</td>"
+            f"<td style='color:{pick_delta_color(delta.get('p10Percent'))};font-weight:600'>{fmt_pct(delta.get('p10Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p50Percent'))};font-weight:600'>{fmt_pct(delta.get('p50Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p95Percent'))};font-weight:600'>{fmt_pct(delta.get('p95Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p99Percent'))};font-weight:600'>{fmt_pct(delta.get('p99Percent'))}</td>"
@@ -745,6 +745,7 @@ def generate_html(
     </section>
     <section class="panel">
       <h2>Workload Table</h2>
+      <div class="meta">Fast-end metric shown is p10.</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -752,15 +753,15 @@ def generate_html(
               <th>workload</th>
               <th>domain</th>
               <th>comparable</th>
-              <th>left p5 ms</th>
+              <th>left p10 ms</th>
               <th>left p50 ms</th>
               <th>left p95 ms</th>
               <th>left p99 ms</th>
-              <th>right p5 ms</th>
+              <th>right p10 ms</th>
               <th>right p50 ms</th>
               <th>right p95 ms</th>
               <th>right p99 ms</th>
-              <th>delta p5</th>
+              <th>delta p10</th>
               <th>delta p50</th>
               <th>delta p95</th>
               <th>delta p99</th>

@@ -22,6 +22,11 @@ from typing import Any
 import shlex
 import output_paths
 
+from compare_dawn_vs_fawn_modules import claimability as claimability_mod
+from compare_dawn_vs_fawn_modules import comparability as comparability_mod
+from compare_dawn_vs_fawn_modules import reporting as reporting_mod
+from compare_dawn_vs_fawn_modules import timing_selection as timing_selection_mod
+
 MAX_RSS_MARKER = "__FAWN_MAXRSS_KB__:"
 DEFAULT_WORKLOADS_PATH = "fawn/bench/workloads.json"
 DEFAULT_LEFT_NAME = "fawn"
@@ -76,8 +81,10 @@ NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "fawn-execution-total-ns",
     "fawn-execution-row-total-ns",
     "fawn-execution-dispatch-window-ns",
+    "fawn-execution-encode-ns",
     "fawn-execution-gpu-timestamp-ns",
 }
+RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
 
 
 @dataclass
@@ -543,525 +550,43 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
     )
 
 
-def format_stats(values: list[float]) -> dict[str, float]:
-    if not values:
-        return {
-            "count": 0,
-            "minMs": 0.0,
-            "maxMs": 0.0,
-            "p5Ms": 0.0,
-            "p50Ms": 0.0,
-            "p95Ms": 0.0,
-            "p99Ms": 0.0,
-            "meanMs": 0.0,
-            "stdevMs": 0.0,
-        }
-
-    sorted_values = sorted(values)
-    def percentile(p: float) -> float:
-        if not sorted_values:
-            return 0.0
-        index = int((len(sorted_values) - 1) * p)
-        return sorted_values[index]
-
-    return {
-        "count": len(values),
-        "minMs": min(values),
-        "maxMs": max(values),
-        "p5Ms": percentile(0.05),
-        "p50Ms": percentile(0.5),
-        "p95Ms": percentile(0.95),
-        "p99Ms": percentile(0.99),
-        "meanMs": statistics.fmean(values),
-        "stdevMs": statistics.pstdev(values) if len(values) > 1 else 0.0,
-    }
-
-
-def format_distribution(values: list[float]) -> dict[str, float]:
-    if not values:
-        return {
-            "count": 0,
-            "min": 0.0,
-            "max": 0.0,
-            "p5": 0.0,
-            "p50": 0.0,
-            "p95": 0.0,
-            "p99": 0.0,
-            "mean": 0.0,
-            "stdev": 0.0,
-        }
-
-    sorted_values = sorted(values)
-
-    def percentile(p: float) -> float:
-        if not sorted_values:
-            return 0.0
-        index = int((len(sorted_values) - 1) * p)
-        return sorted_values[index]
-
-    return {
-        "count": len(values),
-        "min": min(values),
-        "max": max(values),
-        "p5": percentile(0.05),
-        "p50": percentile(0.5),
-        "p95": percentile(0.95),
-        "p99": percentile(0.99),
-        "mean": statistics.fmean(values),
-        "stdev": statistics.pstdev(values) if len(values) > 1 else 0.0,
-    }
-
-
-def parse_trace_rows(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-
-    rows: list[dict[str, Any]] = []
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        raw = raw.strip()
-        if not raw:
-            continue
-        try:
-            rows.append(json.loads(raw))
-        except json.JSONDecodeError as exc:
-            print(f"WARN: invalid trace jsonl row in {path}: {exc}")
-            return []
-    return rows
-
-
-def parse_execution_duration_ns_rows(path: Path) -> list[int]:
-    rows = parse_trace_rows(path)
-    durations: list[int] = []
-    for row in rows:
-        duration_ns = safe_int(row.get("executionDurationNs"), default=-1)
-        if duration_ns >= 0:
-            durations.append(duration_ns)
-    return durations
-
-
-def maybe_adjust_timing_for_ignored_first_ops(
+def maybe_override_render_encode_timing(
     *,
+    workload: Workload,
     measured_ms: float,
     measured_source: str,
-    trace_jsonl: Path,
-    ignore_first_ops: int,
-) -> tuple[float, str, dict[str, Any]]:
-    if ignore_first_ops <= 0:
-        return measured_ms, measured_source, {
-            "uploadIgnoreFirstOps": 0,
-            "uploadIgnoreFirstApplied": False,
-        }
-
-    durations_ns = parse_execution_duration_ns_rows(trace_jsonl)
-    if not durations_ns:
-        return measured_ms, measured_source, {
-            "uploadIgnoreFirstOps": ignore_first_ops,
-            "uploadIgnoreFirstApplied": False,
-            "uploadIgnoreFirstReason": "trace has no executionDurationNs rows",
-        }
-
-    if len(durations_ns) <= ignore_first_ops:
-        return measured_ms, measured_source, {
-            "uploadIgnoreFirstOps": ignore_first_ops,
-            "uploadIgnoreFirstApplied": False,
-            "uploadIgnoreFirstReason": (
-                "trace row count is not greater than ignore count "
-                f"({len(durations_ns)} <= {ignore_first_ops})"
-            ),
-        }
-
-    adjusted_ns = sum(durations_ns[ignore_first_ops:])
-    adjusted_ms = float(adjusted_ns) / 1_000_000.0
-    # Ignore-first is computed from row-level executionDurationNs, so we expose
-    # the adjusted source explicitly instead of inheriting the pre-adjustment source.
-    adjusted_source = "fawn-execution-row-total-ns+ignore-first-ops"
-    return adjusted_ms, adjusted_source, {
-        "uploadIgnoreFirstOps": ignore_first_ops,
-        "uploadIgnoreFirstApplied": True,
-        "uploadIgnoreFirstBaseTimingSource": measured_source,
-        "uploadIgnoreFirstAdjustedTimingSource": "fawn-execution-row-total-ns",
-        "uploadRowsTotal": len(durations_ns),
-        "uploadRowsIncluded": len(durations_ns) - ignore_first_ops,
-        "uploadTimingRawMsBeforeIgnore": measured_ms,
-        "uploadTimingRawMsAfterIgnore": adjusted_ms,
-    }
-
-
-def is_dawn_writebuffer_upload_workload(workload: Workload) -> bool:
-    if workload.domain != "upload":
-        return False
-    return (
-        "BufferUploadPerf.Run/" in workload.dawn_filter
-        and "WriteBuffer" in workload.dawn_filter
-    )
-
-
-def validate_upload_apples_to_apples(
-    workload: Workload,
-    *,
-    comparability_mode: str,
-) -> None:
-    if workload.left_upload_submit_every < 1:
-        raise ValueError(
-            f"invalid workload {workload.id}: leftUploadSubmitEvery must be >= 1"
-        )
-    if workload.right_upload_submit_every < 1:
-        raise ValueError(
-            f"invalid workload {workload.id}: rightUploadSubmitEvery must be >= 1"
-        )
-    if workload.left_command_repeat % workload.left_upload_submit_every != 0:
-        raise ValueError(
-            f"invalid workload {workload.id}: leftCommandRepeat ({workload.left_command_repeat}) "
-            f"must be divisible by leftUploadSubmitEvery ({workload.left_upload_submit_every})"
-        )
-    if workload.right_command_repeat % workload.right_upload_submit_every != 0:
-        raise ValueError(
-            f"invalid workload {workload.id}: rightCommandRepeat ({workload.right_command_repeat}) "
-            f"must be divisible by rightUploadSubmitEvery ({workload.right_upload_submit_every})"
-        )
-
-    if not is_dawn_writebuffer_upload_workload(workload):
-        return
-
-    if comparability_mode == "strict" and workload.left_upload_buffer_usage != "copy-dst":
-        raise ValueError(
-            "strict upload comparability requires leftUploadBufferUsage=copy-dst "
-            f"for Dawn WriteBuffer workload {workload.id}; got {workload.left_upload_buffer_usage}"
-        )
-
-
-def find_fawn_runtime_index(command: list[str]) -> int | None:
-    for idx, token in enumerate(command):
-        if Path(token).name == "fawn-zig-runtime":
-            return idx
-    return None
-
-
-def subprocess_combined_output(proc: subprocess.CompletedProcess[str]) -> str:
-    stdout = proc.stdout if isinstance(proc.stdout, str) else ""
-    stderr = proc.stderr if isinstance(proc.stderr, str) else ""
-    return f"{stdout}\n{stderr}".strip()
-
-
-def assert_runtime_not_stale(runtime_binary: Path) -> None:
-    if not runtime_binary.exists():
-        return
-    runtime_mtime = runtime_binary.stat().st_mtime
-    stale_sources = [
-        str(path)
-        for path in FAWN_UPLOAD_RUNTIME_SOURCE_PATHS
-        if path.exists() and path.stat().st_mtime > runtime_mtime
-    ]
-    if stale_sources:
-        raise ValueError(
-            "strict upload comparability requires a rebuilt fawn-zig-runtime binary; "
-            "binary appears older than runtime sources: "
-            + ", ".join(stale_sources)
-        )
-
-
-def verify_fawn_upload_runtime_contract(
-    *,
-    template: str,
-    workload: Workload,
-) -> None:
-    queue_wait_mode_value: str | None = None
-    for idx, arg in enumerate(workload.extra_args):
-        if arg != "--queue-wait-mode":
-            continue
-        if idx + 1 >= len(workload.extra_args):
-            raise ValueError(
-                f"invalid workload {workload.id}: --queue-wait-mode requires a value"
-            )
-        queue_wait_mode_value = str(workload.extra_args[idx + 1])
-        if queue_wait_mode_value not in ("process-events", "wait-any"):
-            raise ValueError(
-                f"invalid workload {workload.id}: --queue-wait-mode must be process-events|wait-any"
-            )
-
-    preflight_trace_jsonl = Path("/tmp/fawn-upload-preflight.ndjson")
-    preflight_trace_meta = Path("/tmp/fawn-upload-preflight.meta.json")
-    preflight_extra_args = list(workload.extra_args)
-    preflight_extra_args.extend(
-        [
-            "--upload-buffer-usage",
-            workload.left_upload_buffer_usage,
-            "--upload-submit-every",
-            str(workload.left_upload_submit_every),
-        ]
-    )
-    command = command_for(
-        template,
-        workload=workload,
-        workload_id=workload.id,
-        commands_path=workload.commands_path,
-        trace_jsonl=preflight_trace_jsonl,
-        trace_meta=preflight_trace_meta,
-        extra_args=preflight_extra_args,
-    )
-    runtime_index = find_fawn_runtime_index(command)
-    if runtime_index is None:
-        return
-
-    runtime_token = command[runtime_index]
-    runtime_binary = Path(runtime_token)
-    if not runtime_binary.is_absolute():
-        runtime_binary = Path.cwd() / runtime_binary
-    assert_runtime_not_stale(runtime_binary)
-
-    runtime_prefix = command[: runtime_index + 1]
-    help_proc = subprocess.run(
-        [*runtime_prefix, "--help"],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    help_output = subprocess_combined_output(help_proc)
-    required_flags = ["--upload-buffer-usage", "--upload-submit-every"]
-    if queue_wait_mode_value is not None:
-        required_flags.append("--queue-wait-mode")
-    missing_flags = [flag for flag in required_flags if flag not in help_output]
-    if missing_flags:
-        raise ValueError(
-            "strict upload comparability requires runtime upload knobs to be supported by the "
-            f"executed fawn-zig-runtime binary; missing help flags: {', '.join(missing_flags)}"
-        )
-
-    capability_checks = [
-        (
-            ["--upload-buffer-usage", "invalid-value", "--help"],
-            "invalid --upload-buffer-usage",
-        ),
-        (
-            ["--upload-submit-every", "0", "--help"],
-            "invalid --upload-submit-every",
-        ),
-    ]
-    if queue_wait_mode_value is not None:
-        capability_checks.append(
-            (
-                ["--queue-wait-mode", "invalid-value", "--help"],
-                "invalid --queue-wait-mode",
-            )
-        )
-    for probe_args, expected_fragment in capability_checks:
-        probe_proc = subprocess.run(
-            [*runtime_prefix, *probe_args],
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        probe_output = subprocess_combined_output(probe_proc)
-        if expected_fragment not in probe_output:
-            raise ValueError(
-                "strict upload comparability requires runtime validation of upload knobs; "
-                f"missing expected probe output '{expected_fragment}' for command: "
-                f"{' '.join([*runtime_prefix, *probe_args])}"
-            )
-
-
-def canonical_timing_source(source: str) -> str:
-    if not source:
-        return ""
-    # Derived timing sources preserve the base source plus explicit modifiers.
-    return source.split("+", 1)[0]
-
-
-def classify_timing_source(source: str) -> str:
-    canonical = canonical_timing_source(source)
-    if canonical in (
-        "fawn-execution-total-ns",
-        "fawn-execution-row-total-ns",
-        "fawn-execution-dispatch-window-ns",
-        "fawn-execution-gpu-timestamp-ns",
-        "dawn-perf-wall-time",
-        "dawn-perf-cpu-time",
-        "dawn-perf-gpu-time",
-        "dawn-perf-wall-ns",
-        "fawn-trace-window",
-    ):
-        return "operation"
-    if canonical == "wall-time":
-        return "process-wall"
-    return "unknown"
-
-
-def pick_measured_timing_ms(
-    wall_ms: float,
+    measured_meta: dict[str, Any],
     trace_meta: dict[str, Any],
-    trace_jsonl: Path,
     required_timing_class: str,
-    benchmark_policy: BenchmarkMethodologyPolicy,
 ) -> tuple[float, str, dict[str, Any]]:
     if required_timing_class == "process-wall":
-        timing_meta = {
-            "source": "wall-time",
-            "wallTimeMs": wall_ms,
-            "timingSelectionPolicy": "forced-process-wall",
-        }
-        return wall_ms, "wall-time", timing_meta
-
-    meta_timing_ms = safe_float(trace_meta.get("timingMs"))
-    meta_source = trace_meta.get("timingSource")
-    if meta_timing_ms is not None and meta_timing_ms >= 0.0:
-        source = meta_source if isinstance(meta_source, str) and meta_source else "trace-meta"
-        if source == "wall-time":
-            timing_meta = {
-                "source": "wall-time",
-                "traceMetaSource": "wall-time",
-                "traceMetaTimingMs": meta_timing_ms,
-                "wallTimeMs": wall_ms,
-                "timingSelectionPolicy": "outer-process-wall-time",
-            }
-            return wall_ms, "wall-time", timing_meta
-        timing_meta = {
-            "source": "trace-meta",
-            "traceMetaSource": source,
-            "traceMetaTimingMs": meta_timing_ms,
-            "wallTimeMs": wall_ms,
-        }
-        return meta_timing_ms, source, timing_meta
-
-    execution_total_ns = safe_int(trace_meta.get("executionTotalNs"), default=-1)
+        return measured_ms, measured_source, measured_meta
+    if workload.domain not in RENDER_ENCODE_TIMING_DOMAINS:
+        return measured_ms, measured_source, measured_meta
+    if measured_source not in (
+        "fawn-execution-dispatch-window-ns",
+        "fawn-execution-total-ns",
+        "fawn-execution-row-total-ns",
+    ):
+        return measured_ms, measured_source, measured_meta
     execution_encode_total_ns = safe_int(trace_meta.get("executionEncodeTotalNs"), default=-1)
-    execution_submit_wait_total_ns = safe_int(
-        trace_meta.get("executionSubmitWaitTotalNs"), default=-1
-    )
     execution_dispatch_count = safe_int(trace_meta.get("executionDispatchCount"), default=0)
-    execution_row_count = safe_int(trace_meta.get("executionRowCount"), default=0)
-    execution_success_count = safe_int(trace_meta.get("executionSuccessCount"), default=0)
+    if execution_encode_total_ns <= 0 or execution_dispatch_count <= 0:
+        return measured_ms, measured_source, measured_meta
 
-    gpu_timestamp_total_ns = safe_int(
-        trace_meta.get("executionGpuTimestampTotalNs"), default=-1
-    )
-    if gpu_timestamp_total_ns > 0:
-        measured_ms = float(gpu_timestamp_total_ns) / 1_000_000.0
-        timing_meta = {
-            "source": "trace-meta",
-            "traceMetaSource": "fawn-execution-gpu-timestamp-ns",
-            "traceMetaTimingMs": measured_ms,
-            "executionGpuTimestampTotalNs": gpu_timestamp_total_ns,
-            "executionDispatchCount": execution_dispatch_count,
-            "wallTimeMs": wall_ms,
-        }
-        return measured_ms, "fawn-execution-gpu-timestamp-ns", timing_meta
-
-    has_execution_evidence = (
-        execution_dispatch_count > 0
-        or execution_row_count > 0
-        or execution_success_count > 0
-    )
-    dispatch_window_ns = -1
-    dispatch_window_rejected: dict[str, Any] | None = None
-    if execution_encode_total_ns >= 0 and execution_submit_wait_total_ns >= 0:
-        dispatch_window_ns = execution_encode_total_ns + execution_submit_wait_total_ns
-        if dispatch_window_ns > 0 and has_execution_evidence:
-            # If encode and dispatch are both absent, a tiny submit-only window is
-            # usually queue flush bookkeeping noise, not workload operation time.
-            # Keep dispatch-window timing only when it is meaningfully non-trivial.
-            if (
-                execution_dispatch_count == 0
-                and execution_encode_total_ns == 0
-                and execution_total_ns > 0
-            ):
-                coverage_percent = (
-                    float(dispatch_window_ns) / float(execution_total_ns)
-                ) * 100.0
-                if (
-                    dispatch_window_ns
-                    < benchmark_policy.min_dispatch_window_ns_without_encode
-                    and coverage_percent
-                    < benchmark_policy.min_dispatch_window_coverage_percent_without_encode
-                ):
-                    dispatch_window_rejected = {
-                        "reason": "dispatch-window-too-small-without-encode",
-                        "dispatchWindowNs": dispatch_window_ns,
-                        "dispatchWindowCoveragePercentOfExecutionTotal": coverage_percent,
-                        "minDispatchWindowNs": benchmark_policy.min_dispatch_window_ns_without_encode,
-                        "minDispatchWindowCoveragePercentOfExecutionTotal": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
-                    }
-                else:
-                    measured_ms = float(dispatch_window_ns) / 1_000_000.0
-                    timing_meta = {
-                        "source": "trace-meta",
-                        "traceMetaSource": "fawn-execution-dispatch-window-ns",
-                        "traceMetaTimingMs": measured_ms,
-                        "executionEncodeTotalNs": execution_encode_total_ns,
-                        "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
-                        "executionDispatchCount": execution_dispatch_count,
-                        "executionRowCount": execution_row_count,
-                        "executionSuccessCount": execution_success_count,
-                        "wallTimeMs": wall_ms,
-                    }
-                    return measured_ms, "fawn-execution-dispatch-window-ns", timing_meta
-            else:
-                measured_ms = float(dispatch_window_ns) / 1_000_000.0
-                timing_meta = {
-                    "source": "trace-meta",
-                    "traceMetaSource": "fawn-execution-dispatch-window-ns",
-                    "traceMetaTimingMs": measured_ms,
-                    "executionEncodeTotalNs": execution_encode_total_ns,
-                    "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
-                    "executionDispatchCount": execution_dispatch_count,
-                    "executionRowCount": execution_row_count,
-                    "executionSuccessCount": execution_success_count,
-                    "wallTimeMs": wall_ms,
-                }
-                return measured_ms, "fawn-execution-dispatch-window-ns", timing_meta
-
-    if execution_total_ns > 0 and has_execution_evidence:
-        measured_ms = float(execution_total_ns) / 1_000_000.0
-        timing_meta = {
-            "source": "trace-meta",
-            "traceMetaSource": "fawn-execution-total-ns",
-            "traceMetaTimingMs": measured_ms,
-            "executionDispatchCount": execution_dispatch_count,
-            "executionRowCount": execution_row_count,
-            "executionSuccessCount": execution_success_count,
-            "wallTimeMs": wall_ms,
-        }
-        if dispatch_window_rejected is not None:
-            timing_meta["dispatchWindowSelectionRejected"] = dispatch_window_rejected
-        return measured_ms, "fawn-execution-total-ns", timing_meta
-
-    trace_rows = parse_trace_rows(trace_jsonl)
-    timing_meta: dict[str, Any] = {
-        "source": "wall-time",
-        "wallTimeMs": wall_ms,
-        "traceRows": len(trace_rows),
-    }
-
-    if not trace_rows:
-        return wall_ms, "wall-time", timing_meta
-
-    timestamps: list[int] = []
-    for row in trace_rows:
-        ts = row.get("timestampMonoNs")
-        if isinstance(ts, int):
-            timestamps.append(ts)
-
-    if len(timestamps) < 2:
-        timing_meta["traceRows"] = len(timestamps)
-        return wall_ms, "wall-time", timing_meta
-
-    first = min(timestamps)
-    last = max(timestamps)
-    measured_ms = float(last - first) / 1_000_000.0
-
-    if measured_ms < 0:
-        timing_meta["traceRows"] = len(timestamps)
-        return wall_ms, "wall-time", timing_meta
-
+    encode_ms = float(execution_encode_total_ns) / 1_000_000.0
+    timing_meta = dict(measured_meta)
     timing_meta.update(
         {
-            "source": "fawn-trace-window",
-            "traceWindowStartMonoNs": first,
-            "traceWindowEndMonoNs": last,
-            "traceRows": len(timestamps),
-            "rowCount": safe_int(trace_meta.get("rowCount"), default=0),
+            "timingSelectionPolicy": "render-encode-only",
+            "renderEncodeTimingDomain": workload.domain,
+            "renderEncodeTimingBaseSource": measured_source,
+            "renderEncodeTotalNs": execution_encode_total_ns,
+            "traceMetaSource": "fawn-execution-encode-ns",
+            "traceMetaTimingMs": encode_ms,
         }
     )
-    return measured_ms, "fawn-trace-window", timing_meta
+    return encode_ms, "fawn-execution-encode-ns", timing_meta
 
 
 def safe_int(value: Any, default: int = 0) -> int:
@@ -1147,27 +672,6 @@ def normalize_timing_metrics_ms(
     return normalized
 
 
-def summarize_timing_metric_stats(
-    run_records: list[dict[str, Any]],
-    field: str,
-) -> dict[str, dict[str, float]]:
-    metric_values: dict[str, list[float]] = {
-        "wall_time": [],
-        "cpu_time": [],
-        "gpu_time": [],
-    }
-    for sample in run_records:
-        metrics = sample.get(field)
-        if not isinstance(metrics, dict):
-            continue
-        for metric in metric_values:
-            value = safe_float(metrics.get(metric))
-            if value is None:
-                continue
-            metric_values[metric].append(value)
-    return {metric: format_stats(values) for metric, values in metric_values.items()}
-
-
 def read_process_rss_kb(pid: int) -> int:
     status_path = Path("/proc") / str(pid) / "status"
     try:
@@ -1234,62 +738,6 @@ def read_rocm_vram_snapshot() -> tuple[dict[str, int] | None, str | None]:
         "totalBytes": total_total,
         "cardCount": card_count,
     }, None
-
-
-def summarize_resource_stats(samples: list[dict[str, Any]]) -> dict[str, Any]:
-    process_peak_rss_kb_values: list[float] = []
-    gpu_vram_delta_peak_bytes_values: list[float] = []
-    gpu_vram_peak_bytes_values: list[float] = []
-    gpu_vram_before_bytes_values: list[float] = []
-    gpu_vram_after_bytes_values: list[float] = []
-    probe_modes: set[str] = set()
-    gpu_probe_available_count = 0
-    sampling_truncated_count = 0
-
-    for sample in samples:
-        resource = sample.get("resource")
-        if not isinstance(resource, dict):
-            continue
-        probe_mode = resource.get("gpuMemoryProbe")
-        if isinstance(probe_mode, str) and probe_mode:
-            probe_modes.add(probe_mode)
-
-        rss_kb = parse_int(resource.get("processPeakRssKb"))
-        if rss_kb is not None:
-            process_peak_rss_kb_values.append(float(rss_kb))
-
-        gpu_available = resource.get("gpuMemoryProbeAvailable")
-        if gpu_available is True:
-            gpu_probe_available_count += 1
-        if resource.get("resourceSamplingTruncated") is True:
-            sampling_truncated_count += 1
-
-        peak_delta = parse_int(resource.get("gpuVramDeltaPeakFromBeforeBytes"))
-        if peak_delta is not None:
-            gpu_vram_delta_peak_bytes_values.append(float(peak_delta))
-
-        peak_used = parse_int(resource.get("gpuVramUsedPeakBytes"))
-        if peak_used is not None:
-            gpu_vram_peak_bytes_values.append(float(peak_used))
-
-        before_used = parse_int(resource.get("gpuVramUsedBeforeBytes"))
-        if before_used is not None:
-            gpu_vram_before_bytes_values.append(float(before_used))
-
-        after_used = parse_int(resource.get("gpuVramUsedAfterBytes"))
-        if after_used is not None:
-            gpu_vram_after_bytes_values.append(float(after_used))
-
-    return {
-        "gpuProbeModes": sorted(probe_modes),
-        "gpuProbeAvailableCount": gpu_probe_available_count,
-        "samplingTruncatedCount": sampling_truncated_count,
-        "processPeakRssKb": format_distribution(process_peak_rss_kb_values),
-        "gpuVramDeltaPeakFromBeforeBytes": format_distribution(gpu_vram_delta_peak_bytes_values),
-        "gpuVramUsedPeakBytes": format_distribution(gpu_vram_peak_bytes_values),
-        "gpuVramUsedBeforeBytes": format_distribution(gpu_vram_before_bytes_values),
-        "gpuVramUsedAfterBytes": format_distribution(gpu_vram_after_bytes_values),
-    }
 
 
 def assert_json_object(payload: Any, *, context: str, path: Path) -> dict[str, Any]:
@@ -1613,6 +1061,14 @@ def run_workload(
             required_timing_class=required_timing_class,
             benchmark_policy=benchmark_policy,
         )
+        measured_ms, measured_source, measured_meta = maybe_override_render_encode_timing(
+            workload=workload,
+            measured_ms=measured_ms,
+            measured_source=measured_source,
+            measured_meta=measured_meta,
+            trace_meta=sample_meta,
+            required_timing_class=required_timing_class,
+        )
         ignore_meta: dict[str, Any] = {}
         if required_timing_class != "process-wall" and ignore_first_ops > 0:
             measured_ms, measured_source, ignore_meta = maybe_adjust_timing_for_ignored_first_ops(
@@ -1708,377 +1164,6 @@ def run_workload(
         "resourceStats": summarize_resource_stats(run_records),
         "timingMetricsRawStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsRawMs"),
         "timingMetricsNormalizedStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsNormalizedMs"),
-    }
-
-
-def compare_assessment(
-    *,
-    workload_comparable: bool,
-    left: dict[str, Any],
-    right: dict[str, Any],
-    required_timing_class: str,
-    allow_left_no_execution: bool,
-    resource_probe: str,
-    comparability_mode: str,
-    resource_sample_target_count: int,
-) -> dict[str, Any]:
-    left_samples = left.get("commandSamples", [])
-    right_samples = right.get("commandSamples", [])
-
-    left_sources = sorted({str(sample.get("timingSource", "")) for sample in left_samples})
-    right_sources = sorted({str(sample.get("timingSource", "")) for sample in right_samples})
-    left_classes = sorted({classify_timing_source(source) for source in left_sources if source})
-    right_classes = sorted({classify_timing_source(source) for source in right_sources if source})
-    reasons: list[str] = []
-
-    if not workload_comparable:
-        reasons.append("workload is marked non-comparable by workload contract")
-
-    if not left_samples:
-        reasons.append("left side has no measured samples")
-    if not right_samples:
-        reasons.append("right side has no measured samples")
-
-    if len(left_classes) != 1:
-        reasons.append(f"left side uses mixed timing classes: {left_classes}")
-    if len(right_classes) != 1:
-        reasons.append(f"right side uses mixed timing classes: {right_classes}")
-
-    left_class = left_classes[0] if len(left_classes) == 1 else "mixed"
-    right_class = right_classes[0] if len(right_classes) == 1 else "mixed"
-
-    if required_timing_class == "operation":
-        invalid_native_execution_sources: set[str] = set()
-        for sample in left_samples:
-            trace_meta = sample.get("traceMeta", {})
-            if not isinstance(trace_meta, dict):
-                continue
-            if str(trace_meta.get("executionBackend", "")) != "webgpu-ffi":
-                continue
-            execution_dispatch = safe_int(trace_meta.get("executionDispatchCount"), default=0)
-            execution_success = safe_int(trace_meta.get("executionSuccessCount"), default=0)
-            execution_rows = safe_int(trace_meta.get("executionRowCount"), default=0)
-            if execution_dispatch <= 0 and execution_success <= 0 and execution_rows <= 0:
-                continue
-            timing_source_raw = sample.get("timingSource")
-            if not isinstance(timing_source_raw, str) or not timing_source_raw:
-                invalid_native_execution_sources.add("<missing>")
-                continue
-            canonical_source = canonical_timing_source(timing_source_raw)
-            if canonical_source not in NATIVE_EXECUTION_OPERATION_TIMING_SOURCES:
-                invalid_native_execution_sources.add(canonical_source)
-        if invalid_native_execution_sources:
-            reasons.append(
-                "left side uses non-native operation timing source(s) for webgpu-ffi execution: "
-                + ", ".join(sorted(invalid_native_execution_sources))
-            )
-
-    if required_timing_class != "any":
-        if left_class != required_timing_class:
-            reasons.append(f"left timing class is {left_class}, required {required_timing_class}")
-        if right_class != required_timing_class:
-            reasons.append(f"right timing class is {right_class}, required {required_timing_class}")
-
-    if left_class != "mixed" and right_class != "mixed" and left_class != right_class:
-        reasons.append(f"left/right timing class mismatch: {left_class} vs {right_class}")
-
-    if not allow_left_no_execution:
-        left_has_execution = False
-        left_successful_execution = False
-        for sample in left_samples:
-            trace_meta = sample.get("traceMeta", {})
-            execution_success = safe_int(trace_meta.get("executionSuccessCount"), default=0)
-            execution_rows = safe_int(trace_meta.get("executionRowCount"), default=0)
-            if execution_success > 0 or execution_rows > 0:
-                left_has_execution = True
-            if execution_success > 0:
-                left_successful_execution = True
-        if not left_has_execution:
-            reasons.append("left side has no execution evidence (executionSuccessCount/executionRowCount)")
-        if not left_successful_execution:
-            reasons.append("left side has no successful execution samples (executionSuccessCount=0)")
-    else:
-        left_successful_execution = False
-        left_has_unsupported_or_skipped = False
-        for sample in left_samples:
-            trace_meta = sample.get("traceMeta", {})
-            execution_success = safe_int(trace_meta.get("executionSuccessCount"), default=0)
-            execution_unsupported = safe_int(trace_meta.get("executionUnsupportedCount"), default=0)
-            execution_skipped = safe_int(trace_meta.get("executionSkippedCount"), default=0)
-            if execution_success > 0:
-                left_successful_execution = True
-                break
-            if execution_unsupported > 0 or execution_skipped > 0:
-                left_has_unsupported_or_skipped = True
-        if (not left_successful_execution) and (not left_has_unsupported_or_skipped):
-            reasons.append(
-                "left side has no successful execution samples and no unsupported/skipped execution evidence"
-            )
-
-    left_execution_error_samples = 0
-    right_execution_error_samples = 0
-    for sample in left_samples:
-        trace_meta = sample.get("traceMeta", {})
-        if safe_int(trace_meta.get("executionErrorCount"), default=0) > 0:
-            left_execution_error_samples += 1
-    for sample in right_samples:
-        trace_meta = sample.get("traceMeta", {})
-        if safe_int(trace_meta.get("executionErrorCount"), default=0) > 0:
-            right_execution_error_samples += 1
-    if left_execution_error_samples > 0:
-        reasons.append(
-            f"left side reported execution errors in {left_execution_error_samples}/{len(left_samples)} samples"
-        )
-    if right_execution_error_samples > 0:
-        reasons.append(
-            f"right side reported execution errors in {right_execution_error_samples}/{len(right_samples)} samples"
-        )
-
-    resource_reasons: list[str] = []
-    left_resource_sample_counts: list[int] = []
-    right_resource_sample_counts: list[int] = []
-    left_resource_probe_available = 0
-    right_resource_probe_available = 0
-    left_resource_truncated = 0
-    right_resource_truncated = 0
-
-    for sample in left_samples:
-        resource = sample.get("resource", {})
-        if isinstance(resource, dict):
-            count = parse_int(resource.get("resourceSampleCount"))
-            if count is not None:
-                left_resource_sample_counts.append(count)
-            if resource.get("gpuMemoryProbeAvailable") is True:
-                left_resource_probe_available += 1
-            if resource.get("resourceSamplingTruncated") is True:
-                left_resource_truncated += 1
-
-    for sample in right_samples:
-        resource = sample.get("resource", {})
-        if isinstance(resource, dict):
-            count = parse_int(resource.get("resourceSampleCount"))
-            if count is not None:
-                right_resource_sample_counts.append(count)
-            if resource.get("gpuMemoryProbeAvailable") is True:
-                right_resource_probe_available += 1
-            if resource.get("resourceSamplingTruncated") is True:
-                right_resource_truncated += 1
-
-    left_resource_sample_median = (
-        int(statistics.median(left_resource_sample_counts))
-        if left_resource_sample_counts
-        else 0
-    )
-    right_resource_sample_median = (
-        int(statistics.median(right_resource_sample_counts))
-        if right_resource_sample_counts
-        else 0
-    )
-
-    if resource_probe != "none":
-        if left_resource_probe_available == 0:
-            resource_reasons.append("left side has no successful GPU resource probe samples")
-        if right_resource_probe_available == 0:
-            resource_reasons.append("right side has no successful GPU resource probe samples")
-
-        if comparability_mode == "strict":
-            if resource_sample_target_count <= 0:
-                resource_reasons.append(
-                    "strict resource comparability requires --resource-sample-target-count > 0 for N-vs-N probing"
-                )
-            else:
-                if left_resource_sample_median != resource_sample_target_count:
-                    resource_reasons.append(
-                        "left side resource sample median does not match target "
-                        f"({left_resource_sample_median} vs target={resource_sample_target_count})"
-                    )
-                if right_resource_sample_median != resource_sample_target_count:
-                    resource_reasons.append(
-                        "right side resource sample median does not match target "
-                        f"({right_resource_sample_median} vs target={resource_sample_target_count})"
-                    )
-                if left_resource_truncated > 0:
-                    resource_reasons.append(
-                        "left side resource probing truncated before process completion; "
-                        "increase --resource-sample-target-count or reduce --resource-sample-ms"
-                    )
-                if right_resource_truncated > 0:
-                    resource_reasons.append(
-                        "right side resource probing truncated before process completion; "
-                        "increase --resource-sample-target-count or reduce --resource-sample-ms"
-                    )
-        else:
-            if left_resource_sample_median < 5:
-                resource_reasons.append(
-                    f"left side resource sampling too sparse (median samples={left_resource_sample_median}, require >=5)"
-                )
-            if right_resource_sample_median < 5:
-                resource_reasons.append(
-                    f"right side resource sampling too sparse (median samples={right_resource_sample_median}, require >=5)"
-                )
-
-    reasons.extend(resource_reasons)
-
-    return {
-        "comparable": len(reasons) == 0,
-        "requiredTimingClass": required_timing_class,
-        "leftTimingSources": left_sources,
-        "rightTimingSources": right_sources,
-        "leftTimingClass": left_class,
-        "rightTimingClass": right_class,
-        "resourceProbe": resource_probe,
-        "leftResourceSampleMedian": left_resource_sample_median,
-        "rightResourceSampleMedian": right_resource_sample_median,
-        "leftResourceProbeAvailableCount": left_resource_probe_available,
-        "rightResourceProbeAvailableCount": right_resource_probe_available,
-        "resourceSampleTargetCount": max(resource_sample_target_count, 0),
-        "leftResourceSamplingTruncatedCount": left_resource_truncated,
-        "rightResourceSamplingTruncatedCount": right_resource_truncated,
-        "leftExecutionErrorSampleCount": left_execution_error_samples,
-        "rightExecutionErrorSampleCount": right_execution_error_samples,
-        "resourceReasons": resource_reasons,
-        "reasons": reasons,
-    }
-
-
-def default_claim_min_timed_samples(
-    mode: str,
-    benchmark_policy: BenchmarkMethodologyPolicy,
-) -> int:
-    if mode == "local":
-        return benchmark_policy.local_claim_min_timed_samples
-    if mode == "release":
-        return benchmark_policy.release_claim_min_timed_samples
-    return 0
-
-
-def required_positive_percentiles(mode: str) -> list[str]:
-    if mode == "release":
-        return ["p50Percent", "p95Percent", "p99Percent"]
-    if mode == "local":
-        return ["p50Percent", "p95Percent"]
-    return []
-
-
-def assess_upload_timing_scope_consistency(
-    *,
-    side_name: str,
-    command_samples: list[dict[str, Any]],
-) -> list[str]:
-    reasons: list[str] = []
-    canonical_sources = {
-        canonical_timing_source(str(sample.get("timingSource", "")))
-        for sample in command_samples
-        if isinstance(sample.get("timingSource"), str) and str(sample.get("timingSource", ""))
-    }
-    if len(canonical_sources) > 1:
-        reasons.append(
-            f"{side_name} upload timings use mixed canonical sources: {sorted(canonical_sources)}"
-        )
-
-    for sample in command_samples:
-        timing = sample.get("timing", {})
-        if not isinstance(timing, dict):
-            continue
-        ignore_applied = timing.get("uploadIgnoreFirstApplied") is True
-        timing_source_raw = sample.get("timingSource")
-        timing_source = str(timing_source_raw) if isinstance(timing_source_raw, str) else ""
-        canonical = canonical_timing_source(timing_source)
-        run_index = safe_int(sample.get("runIndex"), default=-1)
-        run_label = f"run {run_index}" if run_index >= 0 else "sample"
-
-        if ignore_applied and canonical != "fawn-execution-row-total-ns":
-            reasons.append(
-                f"{side_name} {run_label} uses ignore-first with non-row timing source "
-                f"({canonical}); require fawn-execution-row-total-ns"
-            )
-        if "ignore-first-ops" in timing_source and not ignore_applied:
-            reasons.append(
-                f"{side_name} {run_label} timing source marks ignore-first but uploadIgnoreFirstApplied=false"
-            )
-    return reasons
-
-
-def assess_claimability(
-    *,
-    mode: str,
-    min_timed_samples: int,
-    workload: Workload,
-    left: dict[str, Any],
-    right: dict[str, Any],
-    delta: dict[str, Any],
-    comparability: dict[str, Any],
-    benchmark_policy: BenchmarkMethodologyPolicy,
-) -> dict[str, Any]:
-    if mode == "off":
-        return {
-            "mode": "off",
-            "evaluated": False,
-            "claimable": None,
-            "minTimedSamples": 0,
-            "requiredPositivePercentiles": [],
-            "reasons": [],
-        }
-
-    reasons: list[str] = []
-    effective_min_samples = (
-        min_timed_samples
-        if min_timed_samples > 0
-        else default_claim_min_timed_samples(mode, benchmark_policy)
-    )
-    required_percentiles = required_positive_percentiles(mode)
-
-    if not comparability.get("comparable", False):
-        reasons.append("workload is non-comparable; reliability claimability requires comparability")
-
-    left_count = safe_int(left.get("stats", {}).get("count"), default=0)
-    right_count = safe_int(right.get("stats", {}).get("count"), default=0)
-    if left_count < effective_min_samples:
-        reasons.append(
-            f"left timed sample count {left_count} is below claim floor {effective_min_samples}"
-        )
-    if right_count < effective_min_samples:
-        reasons.append(
-            f"right timed sample count {right_count} is below claim floor {effective_min_samples}"
-        )
-
-    for percentile_key in required_percentiles:
-        value = safe_float(delta.get(percentile_key))
-        if value is None:
-            reasons.append(f"missing delta percentile {percentile_key}")
-            continue
-        if value <= 0.0:
-            reasons.append(
-                f"{percentile_key}={value:.6f} is not positive (positive means left faster)"
-            )
-
-    if workload.domain == "upload":
-        left_samples = left.get("commandSamples", [])
-        right_samples = right.get("commandSamples", [])
-        if isinstance(left_samples, list):
-            reasons.extend(
-                assess_upload_timing_scope_consistency(
-                    side_name="left",
-                    command_samples=left_samples,
-                )
-            )
-        if isinstance(right_samples, list):
-            reasons.extend(
-                assess_upload_timing_scope_consistency(
-                    side_name="right",
-                    command_samples=right_samples,
-                )
-            )
-
-    return {
-        "mode": mode,
-        "evaluated": True,
-        "claimable": len(reasons) == 0,
-        "minTimedSamples": effective_min_samples,
-        "requiredPositivePercentiles": required_percentiles,
-        "leftTimedSamples": left_count,
-        "rightTimedSamples": right_count,
-        "reasons": reasons,
     }
 
 
@@ -2203,6 +1288,28 @@ def load_workloads(
     return result
 
 
+format_stats = reporting_mod.format_stats
+format_distribution = reporting_mod.format_distribution
+summarize_timing_metric_stats = reporting_mod.summarize_timing_metric_stats
+summarize_resource_stats = reporting_mod.summarize_resource_stats
+
+parse_trace_rows = timing_selection_mod.parse_trace_rows
+parse_execution_duration_ns_rows = timing_selection_mod.parse_execution_duration_ns_rows
+maybe_adjust_timing_for_ignored_first_ops = timing_selection_mod.maybe_adjust_timing_for_ignored_first_ops
+canonical_timing_source = timing_selection_mod.canonical_timing_source
+classify_timing_source = timing_selection_mod.classify_timing_source
+pick_measured_timing_ms = timing_selection_mod.pick_measured_timing_ms
+
+is_dawn_writebuffer_upload_workload = comparability_mod.is_dawn_writebuffer_upload_workload
+validate_upload_apples_to_apples = comparability_mod.validate_upload_apples_to_apples
+compare_assessment = comparability_mod.compare_assessment
+
+default_claim_min_timed_samples = claimability_mod.default_claim_min_timed_samples
+required_positive_percentiles = claimability_mod.required_positive_percentiles
+assess_upload_timing_scope_consistency = claimability_mod.assess_upload_timing_scope_consistency
+assess_claimability = claimability_mod.assess_claimability
+
+
 def main() -> int:
     args = parse_args()
     args = apply_config_defaults(args)
@@ -2248,9 +1355,11 @@ def main() -> int:
             None,
         )
         if strict_upload_workload is not None:
-            verify_fawn_upload_runtime_contract(
+            comparability_mod.verify_fawn_upload_runtime_contract(
                 template=args.left_command_template,
                 workload=strict_upload_workload,
+                command_for_fn=command_for,
+                runtime_source_paths=FAWN_UPLOAD_RUNTIME_SOURCE_PATHS,
             )
 
     output_timestamp = (
@@ -2269,7 +1378,7 @@ def main() -> int:
         enabled=args.timestamp_output,
     )
     report: dict[str, Any] = {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "outputTimestamp": output_timestamp,
         "outPath": str(out),
@@ -2381,7 +1490,7 @@ def main() -> int:
         if not isinstance(right_timings, list):
             right_timings = []
         delta = {
-            "p5Percent": percent_delta(safe_float(left_stats["p5Ms"]) or 0.0, safe_float(right_stats["p5Ms"]) or 0.0),
+            "p10Percent": percent_delta(safe_float(left_stats["p10Ms"]) or 0.0, safe_float(right_stats["p10Ms"]) or 0.0),
             "p50Percent": percent_delta(safe_float(left_stats["p50Ms"]) or 0.0, safe_float(right_stats["p50Ms"]) or 0.0),
             "p95Percent": percent_delta(safe_float(left_stats["p95Ms"]) or 0.0, safe_float(right_stats["p95Ms"]) or 0.0),
             "p99Percent": percent_delta(safe_float(left_stats["p99Ms"]) or 0.0, safe_float(right_stats["p99Ms"]) or 0.0),
@@ -2462,9 +1571,9 @@ def main() -> int:
             "left": overall_left_stats,
             "right": overall_right_stats,
             "deltaPercent": {
-                "p5Approx": percent_delta(
-                    safe_float(overall_left_stats["p5Ms"]) or 0.0,
-                    safe_float(overall_right_stats["p5Ms"]) or 0.0,
+                "p10Approx": percent_delta(
+                    safe_float(overall_left_stats["p10Ms"]) or 0.0,
+                    safe_float(overall_right_stats["p10Ms"]) or 0.0,
                 ),
                 "p50Approx": percent_delta(
                     safe_float(overall_left_stats["p50Ms"]) or 0.0,
@@ -2499,6 +1608,26 @@ def main() -> int:
 
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    run_status = "passed"
+    if comparability_failures and args.comparability == "strict":
+        run_status = "failed"
+    elif args.claimability != "off" and claimability_failures:
+        run_status = "failed"
+    elif comparability_failures and args.comparability == "warn":
+        run_status = "diagnostic"
+    output_paths.write_run_manifest_for_outputs(
+        [out, workspace],
+        {
+            "runType": "compare_dawn_vs_fawn",
+            "config": str(Path(args.config)) if args.config else "",
+            "fullRun": not args.emit_shell,
+            "claimGateRan": False,
+            "dropinGateRan": False,
+            "reportPath": str(out),
+            "workspacePath": str(workspace),
+            "status": run_status,
+        },
+    )
     if args.emit_shell:
         print(json.dumps({"resolvedCommandsOnly": True, "out": str(out)}, indent=2))
         return 0

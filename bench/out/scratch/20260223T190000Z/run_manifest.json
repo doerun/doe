@@ -1,0 +1,13 @@
+{
+  "claimGateRan": false,
+  "config": "",
+  "createdAtUtc": "2026-02-23T18:51:49.246259Z",
+  "dropinGateRan": false,
+  "fullRun": false,
+  "outputTimestamp": "20260223T190000Z",
+  "runFolder": "bench/out/scratch/20260223T190000Z",
+  "runType": "scratch_ad_hoc",
+  "schemaVersion": 1,
+  "status": "ad-hoc",
+  "updatedAtUtc": "2026-02-23T18:51:49.246259Z"
+}

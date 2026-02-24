@@ -21,6 +21,7 @@ class ReleaseEvidencePolicy:
     required_claim_status: str
     min_unique_left_profiles: int
     target_unique_left_profiles: int | None
+    enforce_target_unique_left_profiles: bool
 
 
 def parse_args() -> argparse.Namespace:
@@ -64,6 +65,15 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Stamp output report path with a UTC timestamp suffix.",
     )
+    parser.add_argument(
+        "--enforce-target-unique-left-profiles",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Override policy behavior for targetUniqueLeftProfiles enforcement. "
+            "By default, follows releaseEvidence.enforceTargetUniqueLeftProfiles."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -83,6 +93,9 @@ def load_policy(path: Path) -> ReleaseEvidencePolicy:
     target_unique_left_profiles = release_evidence.get("targetUniqueLeftProfiles")
     if target_unique_left_profiles is not None and not isinstance(target_unique_left_profiles, int):
         raise ValueError("invalid policy: targetUniqueLeftProfiles must be int when present")
+    enforce_target_unique_left_profiles = release_evidence.get("enforceTargetUniqueLeftProfiles")
+    if not isinstance(enforce_target_unique_left_profiles, bool):
+        raise ValueError("invalid policy: enforceTargetUniqueLeftProfiles must be boolean")
 
     return ReleaseEvidencePolicy(
         min_reports=int(release_evidence.get("minReports", 0)),
@@ -91,6 +104,7 @@ def load_policy(path: Path) -> ReleaseEvidencePolicy:
         required_claim_status=str(release_evidence.get("requiredClaimStatus", "")),
         min_unique_left_profiles=int(release_evidence.get("minUniqueLeftProfiles", 0)),
         target_unique_left_profiles=target_unique_left_profiles,
+        enforce_target_unique_left_profiles=enforce_target_unique_left_profiles,
     )
 
 
@@ -240,6 +254,11 @@ def main() -> int:
             f"(target={policy.target_unique_left_profiles} min={policy.min_unique_left_profiles})"
         )
         return 1
+    effective_enforce_target_unique_left_profiles = (
+        policy.enforce_target_unique_left_profiles
+        if args.enforce_target_unique_left_profiles is None
+        else bool(args.enforce_target_unique_left_profiles)
+    )
 
     report_paths, collection_failures = collect_report_paths(args.summary, args.report)
     failures: list[str] = list(collection_failures)
@@ -299,10 +318,14 @@ def main() -> int:
         policy.target_unique_left_profiles is not None
         and len(aggregated_left_profiles) < policy.target_unique_left_profiles
     ):
-        warnings.append(
+        target_failure = (
             "target unique left profile diversity not reached: "
             f"target={policy.target_unique_left_profiles} actual={len(aggregated_left_profiles)}"
         )
+        if effective_enforce_target_unique_left_profiles:
+            failures.append(target_failure)
+        else:
+            warnings.append(target_failure)
 
     output_timestamp = (
         output_paths.resolve_timestamp(args.timestamp)
@@ -326,6 +349,8 @@ def main() -> int:
             "requiredClaimStatus": policy.required_claim_status,
             "minUniqueLeftProfiles": policy.min_unique_left_profiles,
             "targetUniqueLeftProfiles": policy.target_unique_left_profiles,
+            "enforceTargetUniqueLeftProfiles": policy.enforce_target_unique_left_profiles,
+            "effectiveEnforceTargetUniqueLeftProfiles": effective_enforce_target_unique_left_profiles,
         },
         "reportCount": len(report_paths),
         "qualifyingReportCount": qualifying_reports,
@@ -337,6 +362,23 @@ def main() -> int:
         "pass": len(failures) == 0,
     }
     write_report(out_path, payload)
+    output_paths.write_run_manifest_for_outputs(
+        [out_path],
+        {
+            "runType": "substantiation_gate",
+            "config": {
+                "policy": str(policy_path),
+                "summaryCount": len(args.summary),
+                "reportCount": len(args.report),
+                "effectiveEnforceTargetUniqueLeftProfiles": effective_enforce_target_unique_left_profiles,
+            },
+            "fullRun": True,
+            "claimGateRan": False,
+            "dropinGateRan": False,
+            "reportPath": str(out_path),
+            "status": "passed" if payload["pass"] else "failed",
+        },
+    )
 
     if failures:
         print("FAIL: substantiation gate")

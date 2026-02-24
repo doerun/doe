@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x13a1ca423f23f42b",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "workgroup_non_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "filterResolution": "autodiscover",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --backend=vulkan --trace-file=bench/out/runtime-comparisons.local.vulkan.extended.comparable.full39.final/workgroup_non_atomic_1024/right/dawn.run000.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.056013737234,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6278.635618975386,
+  "processWallMs": 6278.635618975386,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.056013737234,
+    "cpu_time": 0.054407191488999994,
+    "gpu_time": 0.046042525956999994
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 56014,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.055203764414999995,
+      0.056518970265999995,
+      0.056013737234
+    ],
+    "cpu_time": [
+      0.053583892446999994,
+      0.054917672074,
+      0.054407191488999994
+    ],
+    "gpu_time": [
+      0.045683472339999996,
+      0.046394607659999997,
+      0.046042525956999994
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.055203764414999995,
+    0.056518970265999995,
+    0.056013737234
+  ]
+}

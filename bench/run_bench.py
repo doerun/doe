@@ -545,6 +545,29 @@ def main() -> int:
     out_meta.parent.mkdir(parents=True, exist_ok=True)
     out_report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     out_meta.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+    output_paths.write_run_manifest_for_outputs(
+        [out, out_report, out_meta],
+        {
+            "runType": "run_bench",
+            "config": {
+                "benchConfig": args.bench_config,
+                "workloads": args.workloads,
+                "workloadId": args.workload_id,
+                "iterations": args.iterations,
+                "warmup": args.warmup,
+                "backend": args.backend,
+                "gpu": args.gpu,
+                "driver": args.driver,
+            },
+            "fullRun": True,
+            "claimGateRan": False,
+            "dropinGateRan": False,
+            "outDir": str(out),
+            "reportPath": str(out_report),
+            "metadataPath": str(out_meta),
+            "status": "passed",
+        },
+    )
     return 0
 
 

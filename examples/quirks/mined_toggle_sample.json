@@ -1,0 +1,26 @@
+[
+  {
+    "schemaVersion": 2,
+    "quirkId": "auto.amd.vulkan.toggle.shaderrobustnessperf.2f6838e7ce",
+    "scope": "driver_toggle",
+    "match": {
+      "vendor": "amd",
+      "api": "vulkan"
+    },
+    "action": {
+      "kind": "toggle",
+      "params": {
+        "toggle": "ShaderRobustnessPerf"
+      }
+    },
+    "safetyClass": "moderate",
+    "verificationMode": "guard_only",
+    "proofLevel": "guarded",
+    "provenance": {
+      "sourceRepo": "dawn/main",
+      "sourcePath": "src/dawn/native/vulkan/PhysicalDeviceVk.cpp",
+      "sourceCommit": "example-commit",
+      "observedAt": "2026-02-23T00:00:00Z"
+    }
+  }
+]

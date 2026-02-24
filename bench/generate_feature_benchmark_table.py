@@ -80,6 +80,20 @@ CAPABILITY_TO_WORKLOADS: dict[str, list[str]] = {
     ],
 }
 
+FEATURE_INVENTORY_WORKLOADS = [
+    "p1_capability_introspection_contract",
+    "p1_capability_introspection_macro_500",
+]
+
+
+def _workloads_for_capability(capability_id: str) -> list[str]:
+    mapped = CAPABILITY_TO_WORKLOADS.get(capability_id)
+    if mapped is not None:
+        return mapped
+    if capability_id.startswith("feature_"):
+        return FEATURE_INVENTORY_WORKLOADS
+    return []
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -155,7 +169,9 @@ def main() -> int:
     rows: list[str] = []
     implemented = 0
     partial = 0
+    tracked = 0
     planned = 0
+    blocked = 0
     mapped_capability_count = 0
     comparable_mapped_capability_count = 0
     comparable_eligible_capability_count = 0
@@ -168,6 +184,12 @@ def main() -> int:
             implemented += 1
         elif status == "partial":
             partial += 1
+        elif status == "tracked":
+            tracked += 1
+        elif status == "planned":
+            planned += 1
+        elif status == "blocked":
+            blocked += 1
         else:
             planned += 1
         capability_id = item.get("capabilityId", "")
@@ -176,11 +198,7 @@ def main() -> int:
             directional_capability_ids.append(capability_id)
         else:
             comparable_eligible_capability_count += 1
-        workload_ids = [
-            workload
-            for workload in CAPABILITY_TO_WORKLOADS.get(capability_id, [])
-            if workload in known_workloads
-        ]
+        workload_ids = [workload for workload in _workloads_for_capability(capability_id) if workload in known_workloads]
         if workload_ids:
             mapped_capability_count += 1
             if any(workload in comparable_workloads for workload in workload_ids):
@@ -211,7 +229,9 @@ def main() -> int:
         )
 
     total_capabilities = len(coverage.get("coverage", []))
-    tracked_completion_percent = (implemented * 100.0 / total_capabilities) if total_capabilities else 0.0
+    tracked_inventory_count = total_capabilities - planned
+    tracked_inventory_percent = (tracked_inventory_count * 100.0 / total_capabilities) if total_capabilities else 0.0
+    implemented_completion_percent = (implemented * 100.0 / total_capabilities) if total_capabilities else 0.0
     mapped_capability_percent = (mapped_capability_count * 100.0 / total_capabilities) if total_capabilities else 0.0
     comparable_mapped_capability_percent = (
         (comparable_mapped_capability_count * 100.0 / total_capabilities)
@@ -236,8 +256,13 @@ def main() -> int:
         "",
         "| Metric | % | How it was measured |",
         "|---|---:|---|",
-        "| Tracked spec-capability completion | {percent:.1f}% ({done}/{total}) | `config/webgpu-spec-coverage.json` status counts |".format(
-            percent=tracked_completion_percent,
+        "| Spec-universe inventory tracking completion | {percent:.1f}% ({done}/{total}) | `config/webgpu-spec-coverage.json` entries not in `planned` state |".format(
+            percent=tracked_inventory_percent,
+            done=tracked_inventory_count,
+            total=total_capabilities,
+        ),
+        "| Runtime-implemented capability completion | {percent:.1f}% ({done}/{total}) | `config/webgpu-spec-coverage.json` entries with `status=implemented` |".format(
+            percent=implemented_completion_percent,
             done=implemented,
             total=total_capabilities,
         ),
@@ -268,7 +293,7 @@ def main() -> int:
         ),
         "",
         f"- generatedFrom: `{args.coverage}` + `{args.workloads}` + `{args.dawn_map}`",
-        f"- totals: implemented={implemented}, partial={partial}, planned={planned}",
+        f"- totals: implemented={implemented}, partial={partial}, tracked={tracked}, planned={planned}, blocked={blocked}",
         "- directionalCapabilityIds: {ids}".format(
             ids=", ".join(f"`{capability_id}`" for capability_id in sorted(directional_capability_ids))
             if directional_capability_ids

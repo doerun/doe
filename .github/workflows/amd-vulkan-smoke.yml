@@ -26,4 +26,8 @@ jobs:
           name: amd-vulkan-smoke-report
           path: |
             ${{ env.REPORT_PATH }}
+            bench/out/**/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb*.json
+            bench/out/**/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb*.html
             ${{ env.WORKSPACE_PATH }}
+            bench/out/**/runtime-comparisons.amd.vulkan.smoke.gpu.16mb*
+            bench/out/**/run_manifest.json

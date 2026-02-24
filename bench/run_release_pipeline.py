@@ -113,6 +113,28 @@ def parse_args() -> argparse.Namespace:
         help="Skip drop-in benchmark execution while still running symbol + behavior checks.",
     )
     parser.add_argument(
+        "--compare-html-output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Generate Dawn-vs-Fawn visualization HTML from the compare report. "
+            "Enabled by default."
+        ),
+    )
+    parser.add_argument(
+        "--compare-html-out",
+        default="",
+        help="Optional HTML output path override (default: report path with .html suffix).",
+    )
+    parser.add_argument(
+        "--compare-analysis-out",
+        default="",
+        help=(
+            "Optional distribution-analysis JSON path for visualize_dawn_vs_fawn.py "
+            "(default: disabled)."
+        ),
+    )
+    parser.add_argument(
         "--claim-require-comparison-status",
         default="comparable",
         help="Required comparisonStatus for claim gate.",
@@ -264,16 +286,40 @@ def main() -> int:
         output_timestamp,
         enabled=args.timestamp_output,
     )
+    if args.compare_html_out.strip():
+        compare_html_path = output_paths.with_timestamp(
+            Path(args.compare_html_out.strip()),
+            output_timestamp,
+            enabled=args.timestamp_output,
+        )
+    else:
+        compare_html_path = report_path.with_suffix(".html")
+    compare_analysis_path: Path | None = None
+    if args.compare_analysis_out.strip():
+        compare_analysis_path = output_paths.with_timestamp(
+            Path(args.compare_analysis_out.strip()),
+            output_timestamp,
+            enabled=args.timestamp_output,
+        )
 
     bench_dir = Path(__file__).resolve().parent
     python_exe = sys.executable
     preflight = bench_dir / "preflight_bench_host.py"
     compare = bench_dir / "compare_dawn_vs_fawn.py"
+    visualize = bench_dir / "visualize_dawn_vs_fawn.py"
     smoke_verify = bench_dir / "verify_smoke_gpu_usage.py"
     gates = bench_dir / "run_blocking_gates.py"
+    preflight_ran = False
+    compare_ran = False
+    compare_html_ran = False
+    smoke_verify_ran = False
+    gates_ran = False
+    current_step = ""
 
     try:
         if args.strict_amd_vulkan and not args.skip_preflight:
+            preflight_ran = True
+            current_step = "preflight"
             run_step(
                 "preflight",
                 [python_exe, str(preflight), "--strict-amd-vulkan"],
@@ -281,6 +327,8 @@ def main() -> int:
             )
 
         if not args.skip_compare:
+            compare_ran = True
+            current_step = "compare"
             compare_command = [
                 python_exe,
                 str(compare),
@@ -296,8 +344,24 @@ def main() -> int:
             else:
                 compare_command.append("--no-timestamp-output")
             run_step("compare", compare_command, dry_run=args.dry_run)
+        if args.compare_html_output:
+            compare_html_ran = True
+            current_step = "visualize"
+            visualize_cmd = [
+                python_exe,
+                str(visualize),
+                "--report",
+                str(report_path),
+                "--out",
+                str(compare_html_path),
+            ]
+            if compare_analysis_path is not None:
+                visualize_cmd.extend(["--analysis-out", str(compare_analysis_path)])
+            run_step("visualize", visualize_cmd, dry_run=args.dry_run)
 
         if args.verify_smoke_report:
+            smoke_verify_ran = True
+            current_step = "verify-smoke"
             smoke_report_path = Path(args.verify_smoke_report)
             if args.timestamp_output and smoke_report_path == raw_report_path:
                 smoke_report_path = report_path
@@ -312,6 +376,8 @@ def main() -> int:
             run_step("verify-smoke", verify_cmd, dry_run=args.dry_run)
 
         if not args.skip_gates:
+            gates_ran = True
+            current_step = "gates"
             gates_cmd = [python_exe, str(gates), "--report", str(report_path)]
             gates_cmd.extend(["--trace-semantic-parity-mode", args.trace_semantic_parity_mode])
             if args.timestamp_output:
@@ -361,7 +427,66 @@ def main() -> int:
             run_step("gates", gates_cmd, dry_run=args.dry_run)
     except subprocess.CalledProcessError as exc:
         print(f"FAIL: pipeline step failed with return code {exc.returncode}")
+        if not args.dry_run:
+            manifest_payload: dict[str, Any] = {
+                "runType": "release_pipeline",
+                "config": str(config_path),
+                "fullRun": (
+                    (not args.skip_compare)
+                    and (not args.skip_gates)
+                    and ((not args.strict_amd_vulkan) or (not args.skip_preflight))
+                ),
+                "claimGateRan": bool(args.with_claim_gate and gates_ran),
+                "dropinGateRan": bool(args.with_dropin_gate and gates_ran),
+                "compareHtmlRan": bool(compare_html_ran),
+                "preflightRan": preflight_ran,
+                "compareRan": compare_ran,
+                "gatesRan": gates_ran,
+                "smokeVerifyRan": smoke_verify_ran,
+                "reportPath": str(report_path),
+                "workspacePath": str(workspace_path),
+                "compareHtmlPath": str(compare_html_path) if args.compare_html_output else "",
+                "compareAnalysisPath": (
+                    str(compare_analysis_path) if compare_analysis_path is not None else ""
+                ),
+                "status": "failed",
+                "failedStep": current_step or "unknown",
+            }
+            output_paths.write_run_manifest_for_outputs(
+                [report_path, workspace_path, compare_html_path],
+                manifest_payload,
+            )
         return exc.returncode
+
+    if not args.dry_run:
+        manifest_payload = {
+            "runType": "release_pipeline",
+            "config": str(config_path),
+            "fullRun": (
+                (not args.skip_compare)
+                and (not args.skip_gates)
+                and ((not args.strict_amd_vulkan) or (not args.skip_preflight))
+            ),
+            "claimGateRan": bool(args.with_claim_gate and gates_ran),
+            "dropinGateRan": bool(args.with_dropin_gate and gates_ran),
+            "compareHtmlRan": bool(compare_html_ran),
+            "preflightRan": preflight_ran,
+            "compareRan": compare_ran,
+            "gatesRan": gates_ran,
+            "smokeVerifyRan": smoke_verify_ran,
+            "reportPath": str(report_path),
+            "workspacePath": str(workspace_path),
+            "compareHtmlPath": str(compare_html_path) if args.compare_html_output else "",
+            "compareAnalysisPath": (
+                str(compare_analysis_path) if compare_analysis_path is not None else ""
+            ),
+            "status": "passed",
+            "failedStep": "",
+        }
+        output_paths.write_run_manifest_for_outputs(
+            [report_path, workspace_path, compare_html_path],
+            manifest_payload,
+        )
 
     print("PASS: release pipeline completed")
     return 0

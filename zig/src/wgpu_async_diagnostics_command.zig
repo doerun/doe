@@ -63,9 +63,39 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
             .resource_table_immediates => runResourceTableImmediatesDiagnostics(self, diagnostics.target_format),
             .lifecycle_refcount => runLifecycleRefcountDiagnostics(self, diagnostics.target_format),
             .pixel_local_storage => async_pixel_local_storage_mod.runPixelLocalStorageDiagnostics(self, diagnostics.target_format),
-            .full => runFullDiagnostics(self, diagnostics.target_format),
+            .full => runFullDiagnostics(self, diagnostics.target_format, diagnostics.feature_policy),
         };
         mode_result catch |err| {
+            if (shouldEmulateUnavailableFeature(diagnostics.feature_policy, diagnostics.mode, err)) {
+                if (diagnostics.mode == .resource_table_immediates) {
+                    runResourceTableImmediatesDiagnosticsEmulated(self, diagnostics.target_format) catch |emulated_err| {
+                        if (unsupportedDiagnosticsMessage(emulated_err)) |message| {
+                            return .{
+                                .status = .unsupported,
+                                .status_message = message,
+                            };
+                        }
+                        return .{
+                            .status = .@"error",
+                            .status_message = @errorName(emulated_err),
+                        };
+                    };
+                } else if (diagnostics.mode == .pixel_local_storage) {
+                    async_pixel_local_storage_mod.runPixelLocalStorageDiagnosticsEmulated(self, diagnostics.target_format) catch |emulated_err| {
+                        if (unsupportedDiagnosticsMessage(emulated_err)) |message| {
+                            return .{
+                                .status = .unsupported,
+                                .status_message = message,
+                            };
+                        }
+                        return .{
+                            .status = .@"error",
+                            .status_message = @errorName(emulated_err),
+                        };
+                    };
+                }
+                continue;
+            }
             if (unsupportedDiagnosticsMessage(err)) |message| {
                 return .{
                     .status = .unsupported,
@@ -89,21 +119,43 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
         .status_message = switch (diagnostics.mode) {
             .pipeline_async => "async diagnostics pipeline mode completed",
             .capability_introspection => "async diagnostics capability introspection completed",
-            .resource_table_immediates => "async diagnostics resource-table/immediates completed",
+            .resource_table_immediates => switch (diagnostics.feature_policy) {
+                .strict => "async diagnostics resource-table/immediates completed",
+                .emulate_when_unavailable => "async diagnostics resource-table/immediates completed (emulate-when-unavailable policy)",
+            },
             .lifecycle_refcount => "async diagnostics lifecycle/refcount completed",
-            .pixel_local_storage => "async diagnostics pixel-local-storage completed",
+            .pixel_local_storage => switch (diagnostics.feature_policy) {
+                .strict => "async diagnostics pixel-local-storage completed",
+                .emulate_when_unavailable => "async diagnostics pixel-local-storage completed (emulate-when-unavailable policy)",
+            },
             .full => "async diagnostics full mode completed",
         },
         .setup_ns = setup_ns,
     };
 }
 
-fn runFullDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+fn runFullDiagnostics(
+    self: *Backend,
+    target_format: types.WGPUTextureFormat,
+    feature_policy: model.AsyncDiagnosticsFeaturePolicy,
+) !void {
     try runPipelineAsyncDiagnostics(self, target_format);
     try runCapabilityIntrospectionDiagnostics(self);
-    try runResourceTableImmediatesDiagnostics(self, target_format);
+    runResourceTableImmediatesDiagnostics(self, target_format) catch |err| {
+        if (shouldEmulateUnavailableFeature(feature_policy, .resource_table_immediates, err)) {
+            try runResourceTableImmediatesDiagnosticsEmulated(self, target_format);
+        } else {
+            return err;
+        }
+    };
     try runLifecycleRefcountDiagnostics(self, target_format);
-    try async_pixel_local_storage_mod.runPixelLocalStorageDiagnostics(self, target_format);
+    async_pixel_local_storage_mod.runPixelLocalStorageDiagnostics(self, target_format) catch |err| {
+        if (shouldEmulateUnavailableFeature(feature_policy, .pixel_local_storage, err)) {
+            try async_pixel_local_storage_mod.runPixelLocalStorageDiagnosticsEmulated(self, target_format);
+        } else {
+            return err;
+        }
+    };
 }
 
 fn runCapabilityIntrospectionDiagnostics(self: *Backend) !void {
@@ -225,6 +277,96 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
         &render_types_mod.RenderBundleDescriptor{
             .nextInChain = null,
             .label = loader.stringView("fawn.resource_table.bundle"),
+        },
+    );
+    if (render_bundle == null) return error.RenderBundleFinishFailed;
+    render_api.render_bundle_release(render_bundle);
+
+    const command_buffer = procs.wgpuCommandEncoderFinish(
+        encoder,
+        &types.WGPUCommandBufferDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+        },
+    );
+    if (command_buffer == null) return error.CommandBufferFinishFailed;
+    procs.wgpuCommandBufferRelease(command_buffer);
+}
+
+fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+    });
+    if (encoder == null) return error.CommandEncoderCreationFailed;
+    defer procs.wgpuCommandEncoderRelease(encoder);
+
+    const compute_pass = procs.wgpuCommandEncoderBeginComputePass(
+        encoder,
+        &types.WGPUComputePassDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+            .timestampWrites = null,
+        },
+    );
+    if (compute_pass == null) return error.ComputePassCreationFailed;
+    defer procs.wgpuComputePassEncoderRelease(compute_pass);
+    procs.wgpuComputePassEncoderEnd(compute_pass);
+
+    const normalized_target_format = normalizeDiagnosticFormat(target_format);
+    const target_texture = try getOrCreateDiagnosticTexture(self, normalized_target_format);
+    const target_view = try createDiagnosticTextureView(procs, target_texture, normalized_target_format);
+    defer procs.wgpuTextureViewRelease(target_view);
+
+    var color_attachment = render_types_mod.RenderPassColorAttachment{
+        .nextInChain = null,
+        .view = target_view,
+        .depthSlice = std.math.maxInt(u32),
+        .resolveTarget = null,
+        .loadOp = RENDER_LOAD_OP_CLEAR,
+        .storeOp = RENDER_STORE_OP_STORE,
+        .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+    };
+    const render_pass = render_api.command_encoder_begin_render_pass(
+        encoder,
+        &render_types_mod.RenderPassDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+            .colorAttachmentCount = 1,
+            .colorAttachments = @ptrCast(&color_attachment),
+            .depthStencilAttachment = null,
+            .occlusionQuerySet = null,
+            .timestampWrites = null,
+        },
+    );
+    if (render_pass == null) return error.RenderPassCreationFailed;
+    defer render_api.render_pass_encoder_release(render_pass);
+    render_api.render_pass_encoder_end(render_pass);
+
+    const color_formats = [_]types.WGPUTextureFormat{normalized_target_format};
+    const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
+        self.device.?,
+        &render_types_mod.RenderBundleEncoderDescriptor{
+            .nextInChain = null,
+            .label = loader.stringView("fawn.resource_table.bundle.emulated"),
+            .colorFormatCount = 1,
+            .colorFormats = color_formats[0..].ptr,
+            .depthStencilFormat = types.WGPUTextureFormat_Undefined,
+            .sampleCount = 1,
+            .depthReadOnly = types.WGPU_FALSE,
+            .stencilReadOnly = types.WGPU_FALSE,
+        },
+    );
+    if (render_bundle_encoder == null) return error.RenderBundleEncoderCreationFailed;
+    defer render_api.render_bundle_encoder_release(render_bundle_encoder);
+    const render_bundle = render_api.render_bundle_encoder_finish(
+        render_bundle_encoder,
+        &render_types_mod.RenderBundleDescriptor{
+            .nextInChain = null,
+            .label = loader.stringView("fawn.resource_table.bundle.emulated"),
         },
     );
     if (render_bundle == null) return error.RenderBundleFinishFailed;
@@ -567,6 +709,29 @@ fn requireResourceTableFeature(procs: types.Procs, device: types.WGPUDevice) !vo
     if (has_feature(device, WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) == types.WGPU_FALSE) {
         return error.ResourceTableFeatureUnavailable;
     }
+}
+
+fn shouldEmulateUnavailableFeature(
+    feature_policy: model.AsyncDiagnosticsFeaturePolicy,
+    mode: model.AsyncDiagnosticsMode,
+    err: anyerror,
+) bool {
+    if (feature_policy != .emulate_when_unavailable) return false;
+    return switch (mode) {
+        .resource_table_immediates => switch (err) {
+            error.ResourceTableProcUnavailable,
+            error.ResourceTableFeatureUnavailable,
+            => true,
+            else => false,
+        },
+        .pixel_local_storage => switch (err) {
+            error.PixelLocalStorageFeatureUnavailable,
+            error.PixelLocalStorageBarrierUnavailable,
+            => true,
+            else => false,
+        },
+        else => false,
+    };
 }
 
 fn unsupportedDiagnosticsMessage(err: anyerror) ?[]const u8 {

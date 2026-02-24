@@ -39,6 +39,15 @@ def parse_args() -> argparse.Namespace:
         help="Semantic parity mode forwarded to each release pipeline window.",
     )
     parser.add_argument(
+        "--compare-html-output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Forward compare HTML generation toggle to each release pipeline window "
+            "(default: enabled)."
+        ),
+    )
+    parser.add_argument(
         "--with-dropin-gate",
         action="store_true",
         help="Run drop-in gate for each window.",
@@ -312,6 +321,8 @@ def main() -> int:
                     str(args.claim_require_min_timed_samples),
                 ]
             )
+        if not args.compare_html_output:
+            command.append("--no-compare-html-output")
         if args.timestamp_output:
             command.extend(["--timestamp", window_timestamp])
         else:
@@ -389,6 +400,11 @@ def main() -> int:
         if args.dry_run:
             print(f"[substantiation] {' '.join(substantiation_cmd_preview)}")
 
+    if args.dry_run:
+        print("PASS: release claim-window plan generated")
+        print(f"report: {out_path}")
+        return 0
+
     write_report(out_path, payload)
 
     substantiation_failed = False
@@ -416,10 +432,26 @@ def main() -> int:
             substantiation_failed = True
         write_report(out_path, payload)
 
-    if args.dry_run:
-        print("PASS: release claim-window plan generated")
-        print(f"report: {out_path}")
-        return 0
+    if not args.dry_run:
+        output_paths.write_run_manifest_for_outputs(
+            [out_path, substantiation_report_path],
+            {
+                "runType": "release_claim_windows",
+                "config": str(config_path),
+                "fullRun": completed_windows == args.windows and not failed_windows,
+                "claimGateRan": bool(args.with_claim_gate),
+                "dropinGateRan": bool(args.with_dropin_gate),
+                "compareHtmlRan": bool(args.compare_html_output),
+                "windowsRequested": args.windows,
+                "windowsCompleted": completed_windows,
+                "failedWindowIndexes": failed_windows,
+                "status": (
+                    "failed"
+                    if (failed_windows or substantiation_failed)
+                    else "passed"
+                ),
+            },
+        )
 
     if failed_windows or substantiation_failed:
         print("FAIL: one or more release claim windows failed")

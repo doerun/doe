@@ -1,0 +1,21 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "zero_initialize_workgroup_memory_2048.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "repeat": 50,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 9301,
+        "buffer_size": 8192,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

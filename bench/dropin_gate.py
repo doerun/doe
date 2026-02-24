@@ -229,6 +229,24 @@ def main() -> int:
     }
 
     write_report(report_path, consolidated_report)
+    output_paths.write_run_manifest_for_outputs(
+        [report_path, symbol_report, behavior_report, benchmark_report, benchmark_html],
+        {
+            "runType": "dropin_gate",
+            "config": {
+                "artifact": str(artifact_path),
+                "symbols": str(symbols_path),
+                "microIterations": args.micro_iterations,
+                "e2eIterations": args.e2e_iterations,
+                "skipBenchmarks": bool(args.skip_benchmarks),
+            },
+            "fullRun": not args.skip_benchmarks,
+            "claimGateRan": False,
+            "dropinGateRan": True,
+            "reportPath": str(report_path),
+            "status": "passed" if overall_pass else "failed",
+        },
+    )
 
     if overall_pass:
         print("PASS: drop-in gate")

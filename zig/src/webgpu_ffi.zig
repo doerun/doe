@@ -61,6 +61,8 @@ pub const WebGPUBackend = struct {
     render_uniform_bind_group_layout: types.WGPUBindGroupLayout = null,
     render_uniform_bind_group: types.WGPUBindGroup = null,
     render_sampler: types.WGPUSampler = null,
+    render_occlusion_query_set: types.WGPUQuerySet = null,
+    render_timestamp_query_set: types.WGPUQuerySet = null,
     upload_scratch: []u8 = &[_]u8{},
     upload_buffer_usage_mode: UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = 1,
@@ -277,6 +279,16 @@ pub const WebGPUBackend = struct {
             procs.wgpuShaderModuleRelease(entry.shader_module);
         }
         self.render_pipeline_cache.clearAndFree();
+        if (self.render_occlusion_query_set) |query_set| {
+            p0_procs_mod.destroyQuerySet(p0_procs, query_set);
+            procs.wgpuQuerySetRelease(query_set);
+            self.render_occlusion_query_set = null;
+        }
+        if (self.render_timestamp_query_set) |query_set| {
+            p0_procs_mod.destroyQuerySet(p0_procs, query_set);
+            procs.wgpuQuerySetRelease(query_set);
+            self.render_timestamp_query_set = null;
+        }
 
         if (self.upload_scratch.len > 0) {
             self.allocator.free(self.upload_scratch);
@@ -687,8 +699,9 @@ pub const WebGPUBackend = struct {
             .userdata1 = &state,
             .userdata2 = null,
         };
-        var required_features = [_]types.WGPUFeatureName{undefined} ** 5;
+        var required_features = [_]types.WGPUFeatureName{undefined} ** 6;
         var feature_count: usize = 0;
+        const has_resource_table_feature = self.procs.?.wgpuAdapterHasFeature(self.adapter.?, types.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) != types.WGPU_FALSE;
         if (self.has_timestamp_query) {
             required_features[feature_count] = types.WGPUFeatureName_TimestampQuery;
             feature_count += 1;
@@ -701,25 +714,10 @@ pub const WebGPUBackend = struct {
             required_features[feature_count] = types.WGPUFeatureName_MultiDrawIndirect;
             feature_count += 1;
         }
-        if (self.has_pixel_local_storage_coherent) {
-            required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageCoherent;
-            feature_count += 1;
-        }
-        if (self.has_pixel_local_storage_non_coherent) {
-            required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageNonCoherent;
-            feature_count += 1;
-        }
-        self.timestampLog(
-            "request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} count={}\n",
-            .{
-                self.has_timestamp_query,
-                self.has_timestamp_inside_passes,
-                self.has_multi_draw_indirect,
-                self.has_pixel_local_storage_coherent,
-                self.has_pixel_local_storage_non_coherent,
-                feature_count,
-            },
-        );
+        if (self.has_pixel_local_storage_coherent) { required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageCoherent; feature_count += 1; }
+        if (self.has_pixel_local_storage_non_coherent) { required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageNonCoherent; feature_count += 1; }
+        if (has_resource_table_feature) { required_features[feature_count] = types.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable; feature_count += 1; }
+        self.timestampLog("request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} resource_table={} count={}\n", .{ self.has_timestamp_query, self.has_timestamp_inside_passes, self.has_multi_draw_indirect, self.has_pixel_local_storage_coherent, self.has_pixel_local_storage_non_coherent, has_resource_table_feature, feature_count });
         const device_desc = types.WGPUDeviceDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),

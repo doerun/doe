@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xe1fca01b9854eed5",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "workgroup_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260223T202753Z/runtime-comparisons.amd.vulkan.release/workgroup_atomic_1024/right/dawn.run008.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.055875745606999996,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6046.354344114661,
+  "processWallMs": 6046.354344114661,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.055875745606999996,
+    "cpu_time": 0.054270343294999995,
+    "gpu_time": 0.047322295491
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 55876,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.059722194682,
+      0.055875745606999996,
+      0.053652742600999996
+    ],
+    "cpu_time": [
+      0.058100498671,
+      0.054270343294999995,
+      0.052078144508999995
+    ],
+    "gpu_time": [
+      0.04786022104,
+      0.047322295491,
+      0.047132885087
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.059722194682,
+    0.055875745606999996,
+    0.053652742600999996
+  ]
+}

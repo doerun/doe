@@ -16,7 +16,8 @@
         "minClaimableComparableReports",
         "requiredComparisonStatus",
         "requiredClaimStatus",
-        "minUniqueLeftProfiles"
+        "minUniqueLeftProfiles",
+        "enforceTargetUniqueLeftProfiles"
       ],
       "additionalProperties": false,
       "properties": {
@@ -26,6 +27,7 @@
         "requiredClaimStatus": { "type": "string", "minLength": 1 },
         "minUniqueLeftProfiles": { "type": "integer", "minimum": 1 },
         "targetUniqueLeftProfiles": { "type": "integer", "minimum": 1 },
+        "enforceTargetUniqueLeftProfiles": { "type": "boolean" },
         "notes": { "type": "string" }
       }
     }

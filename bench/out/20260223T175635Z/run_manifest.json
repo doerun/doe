@@ -1,0 +1,18 @@
+{
+  "claimGateRan": false,
+  "config": {
+    "inferenceSignals": [
+      "dawn-vs-fawn*.json"
+    ],
+    "inferred": true
+  },
+  "createdAtUtc": "2026-02-23T18:59:48.628737Z",
+  "dropinGateRan": false,
+  "fullRun": false,
+  "outputTimestamp": "20260223T175635Z",
+  "runFolder": "bench/out/20260223T175635Z",
+  "runType": "compare_dawn_vs_fawn",
+  "schemaVersion": 1,
+  "status": "unknown_historical",
+  "updatedAtUtc": "2026-02-23T18:59:48.628737Z"
+}

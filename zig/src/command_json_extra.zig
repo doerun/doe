@@ -86,6 +86,18 @@ fn parseAsyncDiagnosticsMode(raw: ?[]const u8) ParseError!model.AsyncDiagnostics
     return ParseError.InvalidCommandPayload;
 }
 
+fn parseAsyncDiagnosticsFeaturePolicy(raw: ?[]const u8) ParseError!model.AsyncDiagnosticsFeaturePolicy {
+    const value = raw orelse return .strict;
+    if (commandKindEqualsFn(value, "strict")) return .strict;
+    if (commandKindEqualsFn(value, "emulate_when_unavailable") or
+        commandKindEqualsFn(value, "emulate-when-unavailable") or
+        commandKindEqualsFn(value, "emulate"))
+    {
+        return .emulate_when_unavailable;
+    }
+    return ParseError.InvalidCommandPayload;
+}
+
 fn parseBytesU32ToU8(allocator: std.mem.Allocator, values: []const u32) ParseError![]const u8 {
     const bytes = try allocator.alloc(u8, values.len);
     errdefer allocator.free(bytes);
@@ -269,10 +281,12 @@ pub fn parseAsyncDiagnosticsCommand(raw: anytype) ParseError!model.AsyncDiagnost
         model.WGPUTextureFormat_RGBA8Unorm;
     const mode = try parseAsyncDiagnosticsMode(raw.mode);
     const iterations = raw.iterations orelse raw.repeat orelse 1;
+    const feature_policy = try parseAsyncDiagnosticsFeaturePolicy(raw.feature_policy orelse raw.featurePolicy);
     if (iterations == 0) return ParseError.InvalidCommandPayload;
     return .{
         .target_format = target_format,
         .mode = mode,
         .iterations = iterations,
+        .feature_policy = feature_policy,
     };
 }

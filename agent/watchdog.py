@@ -26,9 +26,9 @@ def build_candidate(
     vendor: str,
     api: str,
     observed_at: str,
-) -> dict:
+ ) -> dict:
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "quirkId": f"auto.{toggle.lower()}",
         "scope": "driver_toggle",
         "match": {"vendor": vendor, "api": api},

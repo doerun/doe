@@ -176,6 +176,21 @@ def main() -> int:
         exit_code = 1
     finally:
         write_report(report_path, report)
+        output_paths.write_run_manifest_for_outputs(
+            [report_path],
+            {
+                "runType": "dropin_symbol_gate",
+                "config": {
+                    "artifact": str(artifact_path),
+                    "symbolsPath": str(symbols_path),
+                },
+                "fullRun": True,
+                "claimGateRan": False,
+                "dropinGateRan": False,
+                "reportPath": str(report_path),
+                "status": "passed" if report.get("pass") else "failed",
+            },
+        )
 
     if report.get("pass"):
         print(f"PASS: drop-in symbol gate ({report.get('requiredSymbolCount')} required)")

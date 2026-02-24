@@ -380,10 +380,16 @@ pub const AsyncDiagnosticsMode = enum {
     full,
 };
 
+pub const AsyncDiagnosticsFeaturePolicy = enum {
+    strict,
+    emulate_when_unavailable,
+};
+
 pub const AsyncDiagnosticsCommand = struct {
     target_format: WGPUTextureFormat = WGPUTextureFormat_RGBA8Unorm,
     mode: AsyncDiagnosticsMode = .pipeline_async,
     iterations: u32 = 1,
+    feature_policy: AsyncDiagnosticsFeaturePolicy = .strict,
 };
 
 pub const Command = union(CommandKind) {

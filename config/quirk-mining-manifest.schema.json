@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Quirk Mining Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAtUtc",
+    "sourceRepo",
+    "sourceCommit",
+    "sourceRoots",
+    "vendor",
+    "api",
+    "observedAt",
+    "allowedSuffixes",
+    "scannedFileCount",
+    "toggleHitCount",
+    "candidateCount",
+    "hashChain",
+    "toggleHits",
+    "candidateOutputPath"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "generatedAtUtc": { "type": "string", "format": "date-time" },
+    "sourceRepo": { "type": "string", "minLength": 1 },
+    "sourceCommit": { "type": "string", "minLength": 1 },
+    "sourceRoots": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "vendor": { "type": "string", "minLength": 1 },
+    "api": {
+      "type": "string",
+      "enum": ["vulkan", "metal", "d3d12", "webgpu"]
+    },
+    "deviceFamily": { "type": "string" },
+    "driverRange": { "type": "string" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "allowedSuffixes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "scannedFileCount": { "type": "integer", "minimum": 0 },
+    "toggleHitCount": { "type": "integer", "minimum": 0 },
+    "candidateCount": { "type": "integer", "minimum": 0 },
+    "hashChain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "seedHash", "finalHash", "rowCount", "rows"],
+      "properties": {
+        "algorithm": { "type": "string", "const": "sha256" },
+        "seedHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "finalHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "rowCount": { "type": "integer", "minimum": 0 },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["index", "quirkId", "hash", "previousHash"],
+            "properties": {
+              "index": { "type": "integer", "minimum": 0 },
+              "quirkId": { "type": "string", "minLength": 1 },
+              "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "previousHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    "toggleHits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["toggle", "sourcePath", "line"],
+        "properties": {
+          "toggle": { "type": "string", "minLength": 1 },
+          "sourcePath": { "type": "string", "minLength": 1 },
+          "line": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "candidateOutputPath": { "type": "string", "minLength": 1 }
+  }
+}

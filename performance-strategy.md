@@ -32,7 +32,7 @@ If any invariant fails, label the run diagnostic, not claimable.
 
 When reporting outcomes, include tails and floor, not only median:
 
-- `p5` (best/floor-side view)
+- `p10` (fast-end floor view; less noisy than `p5` at low sample counts)
 - `p50` (median)
 - `p95` and `p99` (tail stability)
 

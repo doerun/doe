@@ -124,6 +124,10 @@ def collect_targets(root: Path) -> list[ValidationTarget]:
             schema_rel="config/substantiation-policy.schema.json",
             data_rel="config/substantiation-policy.json",
         ),
+        ValidationTarget(
+            schema_rel="config/quirk-mining-manifest.schema.json",
+            data_rel="examples/quirk-mining.manifest.sample.json",
+        ),
     ]
 
     quirks = sorted((root / "examples/quirks").glob("*.json"))

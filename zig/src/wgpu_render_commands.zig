@@ -40,30 +40,19 @@ const RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES: u64 = render_resource_mod.RENDER_UN
 const RENDER_UNIFORM_TOTAL_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_TOTAL_BYTES;
 
 const RenderColor = render_types_mod.RenderColor;
-const RenderBundleDescriptor = render_types_mod.RenderBundleDescriptor; const RenderBundleEncoderDescriptor = render_types_mod.RenderBundleEncoderDescriptor;
+const RenderBundleDescriptor = render_types_mod.RenderBundleDescriptor;
+const RenderBundleEncoderDescriptor = render_types_mod.RenderBundleEncoderDescriptor;
 const RenderPassColorAttachment = render_types_mod.RenderPassColorAttachment;
-const RenderPassDescriptor = render_types_mod.RenderPassDescriptor; const RenderPassDepthStencilAttachment = render_types_mod.RenderPassDepthStencilAttachment;
-const RenderVertexAttribute = render_types_mod.RenderVertexAttribute; const RenderVertexBufferLayout = render_types_mod.RenderVertexBufferLayout;
-const RenderColorTargetState = render_types_mod.RenderColorTargetState; const RenderFragmentState = render_types_mod.RenderFragmentState;
-const RenderStencilFaceState = render_types_mod.RenderStencilFaceState; const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
+const RenderPassDescriptor = render_types_mod.RenderPassDescriptor;
+const RenderPassDepthStencilAttachment = render_types_mod.RenderPassDepthStencilAttachment;
+const RenderVertexAttribute = render_types_mod.RenderVertexAttribute;
+const RenderVertexBufferLayout = render_types_mod.RenderVertexBufferLayout;
+const RenderColorTargetState = render_types_mod.RenderColorTargetState;
+const RenderFragmentState = render_types_mod.RenderFragmentState;
+const RenderStencilFaceState = render_types_mod.RenderStencilFaceState;
+const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
 const RenderPipelineDescriptor = render_types_mod.RenderPipelineDescriptor;
 const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingResources;
-fn setRenderPassBindGroup(
-    render_api: render_api_mod.RenderApi,
-    render_pass: types.WGPURenderPassEncoder,
-    bind_group: types.WGPUBindGroup,
-    dynamic_offsets: []const u32,
-) void {
-    render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, bind_group, dynamic_offsets.len, dynamic_offsets.ptr);
-}
-fn setRenderBundleBindGroup(
-    render_api: render_api_mod.RenderApi,
-    render_bundle_encoder: render_api_mod.RenderBundleEncoder,
-    bind_group: types.WGPUBindGroup,
-    dynamic_offsets: []const u32,
-) void {
-    render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, bind_group, dynamic_offsets.len, dynamic_offsets.ptr);
-}
 pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types.NativeExecutionResult {
     if (render.draw_count == 0) {
         return .{ .status = .unsupported, .status_message = "render_draw draw_count must be > 0" };
@@ -84,9 +73,6 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const procs = self.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse {
         return .{ .status = .unsupported, .status_message = "render_draw requires full render api surface" };
-    };
-    const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse {
-        return .{ .status = .unsupported, .status_message = "render_draw requires async diagnostics api surface" };
     };
 
     const setup_start_ns = std.time.nanoTimestamp();
@@ -324,6 +310,10 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             return .{ .status = .@"error", .status_message = "render_draw pipeline layout creation failed" };
         };
         defer procs.wgpuPipelineLayoutRelease(render_pipeline_layout);
+        const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse {
+            procs.wgpuShaderModuleRelease(shader_module);
+            return .{ .status = .unsupported, .status_message = "render_draw requires async diagnostics api surface" };
+        };
 
         const compilation_state = async_procs_mod.requestShaderCompilationInfoAndWait(
             async_procs,
@@ -425,16 +415,118 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         };
         break :blk pipeline;
     };
-    const pipeline_bind_group_layout = render_api.render_pipeline_get_bind_group_layout(render_pipeline, RENDER_UNIFORM_BINDING_INDEX);
-    if (pipeline_bind_group_layout == null) {
-        return .{ .status = .@"error", .status_message = "render_draw pipeline bind-group-layout query failed" };
-    }
-    procs.wgpuBindGroupLayoutRelease(pipeline_bind_group_layout);
     const p0_state = render_p0_mod.prepare(self, procs, render_api, indexed_draw, RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE);
     defer render_p0_mod.deinit(p0_state, procs);
     const command_encoder_write_buffer = p0_state.command_encoder_write_buffer;
     const occlusion_query_set = p0_state.occlusion_query_set;
     const render_indirect_buffer = p0_state.indirect_buffer;
+    var prepared_render_bundle: render_api_mod.RenderBundle = null;
+    defer if (prepared_render_bundle != null) {
+        render_api.render_bundle_release(prepared_render_bundle);
+    };
+    if (render.encode_mode != .render_pass) {
+        const bundle_color_formats = [_]types.WGPUTextureFormat{target_format};
+        const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
+            self.device.?,
+            &RenderBundleEncoderDescriptor{
+                .nextInChain = null,
+                .label = loader.stringView("fawn.render_bundle_encoder"),
+                .colorFormatCount = 1,
+                .colorFormats = bundle_color_formats[0..].ptr,
+                .depthStencilFormat = RENDER_DEPTH_STENCIL_FORMAT,
+                .sampleCount = 1,
+                .depthReadOnly = types.WGPU_FALSE,
+                .stencilReadOnly = types.WGPU_FALSE,
+            },
+        );
+        if (render_bundle_encoder == null) {
+            return .{ .status = .@"error", .status_message = "render_draw bundle encoder creation failed" };
+        }
+        defer render_api.render_bundle_encoder_release(render_bundle_encoder);
+
+        if (render.pipeline_mode == .static) {
+            render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
+        }
+        render_api.render_bundle_encoder_set_vertex_buffer(
+            render_bundle_encoder,
+            0,
+            render_vertex_buffer,
+            0,
+            types.WGPU_WHOLE_SIZE,
+        );
+        if (indexed_draw) {
+            render_api.render_bundle_encoder_set_index_buffer(
+                render_bundle_encoder,
+                prepared_index.?.buffer,
+                prepared_index.?.format,
+                0,
+                types.WGPU_WHOLE_SIZE,
+            );
+        }
+        if (render.bind_group_mode == .no_change) {
+            render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
+        }
+
+        var bundle_draw_index: u32 = 0;
+        if (indexed_draw) {
+            while (bundle_draw_index < render.draw_count) : (bundle_draw_index += 1) {
+                if (render.pipeline_mode == .redundant) {
+                    render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
+                }
+                if (render.bind_group_mode == .redundant) {
+                    render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
+                }
+                render_api.render_bundle_encoder_draw_indexed(
+                    render_bundle_encoder,
+                    render.index_count.?,
+                    render.instance_count,
+                    render.first_index,
+                    render.base_vertex,
+                    render.first_instance,
+                );
+            }
+        } else {
+            if (render.pipeline_mode != .redundant and render.bind_group_mode == .redundant) {
+                while (bundle_draw_index < render.draw_count) : (bundle_draw_index += 1) {
+                    render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
+                    render_api.render_bundle_encoder_draw(
+                        render_bundle_encoder,
+                        render.vertex_count,
+                        render.instance_count,
+                        render.first_vertex,
+                        render.first_instance,
+                    );
+                }
+            } else {
+                while (bundle_draw_index < render.draw_count) : (bundle_draw_index += 1) {
+                    if (render.pipeline_mode == .redundant) {
+                        render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
+                    }
+                    if (render.bind_group_mode == .redundant) {
+                        render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
+                    }
+                    render_api.render_bundle_encoder_draw(
+                        render_bundle_encoder,
+                        render.vertex_count,
+                        render.instance_count,
+                        render.first_vertex,
+                        render.first_instance,
+                    );
+                }
+            }
+        }
+
+        prepared_render_bundle = render_api.render_bundle_encoder_finish(
+            render_bundle_encoder,
+            &RenderBundleDescriptor{
+                .nextInChain = null,
+                .label = loader.stringView("fawn.render_bundle"),
+            },
+        );
+        if (prepared_render_bundle == null) {
+            return .{ .status = .@"error", .status_message = "render_draw bundle finish failed" };
+        }
+    }
     const setup_end_ns = std.time.nanoTimestamp();
 
     const encode_start_ns = std.time.nanoTimestamp();
@@ -561,7 +653,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
     }
     if (render.encode_mode == .render_pass and render.bind_group_mode == .no_change) {
-        setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+        render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
     }
 
     if (render.encode_mode == .render_pass) {
@@ -582,7 +674,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                         render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
                     }
                     if (render.bind_group_mode == .redundant) {
-                        setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                        render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
                     }
                     render_api.render_pass_encoder_draw_indexed(
                         render_pass,
@@ -610,7 +702,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                         render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
                     }
                     if (render.bind_group_mode == .redundant) {
-                        setRenderPassBindGroup(render_api, render_pass, render_uniform_resources.bind_group, dynamic_offsets[0..]);
+                        render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
                     }
                     render_api.render_pass_encoder_draw(
                         render_pass,
@@ -623,108 +715,10 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             }
         }
     } else {
-        const bundle_color_formats = [_]types.WGPUTextureFormat{target_format};
-        const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
-            self.device.?,
-            &RenderBundleEncoderDescriptor{
-                .nextInChain = null,
-                .label = loader.stringView("fawn.render_bundle_encoder"),
-                .colorFormatCount = 1,
-                .colorFormats = bundle_color_formats[0..].ptr,
-                .depthStencilFormat = RENDER_DEPTH_STENCIL_FORMAT,
-                .sampleCount = 1,
-                .depthReadOnly = types.WGPU_FALSE,
-                .stencilReadOnly = types.WGPU_FALSE,
-            },
-        );
-        if (render_bundle_encoder == null) {
-            return .{ .status = .@"error", .status_message = "render_draw bundle encoder creation failed" };
+        if (prepared_render_bundle == null) {
+            return .{ .status = .@"error", .status_message = "render_draw bundle setup missing prepared bundle" };
         }
-        render_api.render_bundle_encoder_add_ref(render_bundle_encoder);
-        defer render_api.render_bundle_encoder_release(render_bundle_encoder);
-        render_api.render_bundle_encoder_release(render_bundle_encoder);
-
-        render_api.render_bundle_encoder_set_label(render_bundle_encoder, loader.stringView("fawn.render_bundle_encoder"));
-        render_api.render_bundle_encoder_push_debug_group(render_bundle_encoder, loader.stringView("fawn.render_bundle"));
-        render_api.render_bundle_encoder_insert_debug_marker(render_bundle_encoder, loader.stringView("draw_loop"));
-
-        if (render.pipeline_mode == .static) {
-            render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
-        }
-        render_api.render_bundle_encoder_set_vertex_buffer(
-            render_bundle_encoder,
-            0,
-            render_vertex_buffer,
-            0,
-            types.WGPU_WHOLE_SIZE,
-        );
-        if (indexed_draw) {
-            render_api.render_bundle_encoder_set_index_buffer(
-                render_bundle_encoder,
-                prepared_index.?.buffer,
-                prepared_index.?.format,
-                0,
-                types.WGPU_WHOLE_SIZE,
-            );
-        }
-        if (render.bind_group_mode == .no_change) {
-            setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
-        }
-
-        var draw_index: u32 = 0;
-        if (indexed_draw) {
-            while (draw_index < render.draw_count) : (draw_index += 1) {
-                if (render.pipeline_mode == .redundant) {
-                    render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
-                }
-                if (render.bind_group_mode == .redundant) {
-                    setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
-                }
-                render_api.render_bundle_encoder_draw_indexed(
-                    render_bundle_encoder,
-                    render.index_count.?,
-                    render.instance_count,
-                    render.first_index,
-                    render.base_vertex,
-                    render.first_instance,
-                );
-            }
-        } else {
-            while (draw_index < render.draw_count) : (draw_index += 1) {
-                if (render.pipeline_mode == .redundant) {
-                    render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
-                }
-                if (render.bind_group_mode == .redundant) {
-                    setRenderBundleBindGroup(render_api, render_bundle_encoder, render_uniform_resources.bind_group, dynamic_offsets[0..]);
-                }
-                render_api.render_bundle_encoder_draw(
-                    render_bundle_encoder,
-                    render.vertex_count,
-                    render.instance_count,
-                    render.first_vertex,
-                    render.first_instance,
-                );
-            }
-        }
-
-        render_api.render_bundle_encoder_pop_debug_group(render_bundle_encoder);
-
-        const render_bundle = render_api.render_bundle_encoder_finish(
-            render_bundle_encoder,
-            &RenderBundleDescriptor{
-                .nextInChain = null,
-                .label = loader.stringView("fawn.render_bundle"),
-            },
-        );
-        if (render_bundle == null) {
-            return .{ .status = .@"error", .status_message = "render_draw bundle finish failed" };
-        }
-        render_api.render_bundle_set_label(render_bundle, loader.stringView("fawn.render_bundle"));
-        render_api.render_bundle_add_ref(render_bundle);
-        defer render_api.render_bundle_release(render_bundle);
-        render_api.render_bundle_release(render_bundle);
-
-        var bundles = [_]render_api_mod.RenderBundle{render_bundle};
+        var bundles = [_]render_api_mod.RenderBundle{prepared_render_bundle};
         render_api.render_pass_encoder_execute_bundles(render_pass, bundles.len, bundles[0..].ptr);
     }
     render_p0_mod.endPass(p0_state, render_api, render_pass);

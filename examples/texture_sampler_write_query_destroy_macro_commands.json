@@ -29,7 +29,6 @@
     "depthOrArrayLayers": 1,
     "format": "rgba8unorm",
     "dimension": "2d",
-    "viewDimension": "2d",
     "sampleCount": 1,
     "usage": 6
   },

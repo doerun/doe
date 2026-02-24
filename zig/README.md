@@ -99,6 +99,8 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 - `--trace` now emits trace rows conforming to `fawn/config/trace.schema.json`.
 - trace rows include `traceVersion`, `module`, `opCode`, deterministic `hash` and `previousHash`,
   and the full decision envelope used by Lean parity checks.
+- execution rows now include both human and machine status fields:
+  `executionStatusMessage` (raw detail) and `executionStatusCode` (normalized stable token).
 - `--trace-meta` execution timing now includes split fields:
   `executionSetupTotalNs`, `executionEncodeTotalNs`, `executionSubmitWaitTotalNs`, `executionDispatchCount`.
   Native execution metadata also records `queueSyncMode` when `--execute` is enabled.

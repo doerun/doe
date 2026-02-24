@@ -7,8 +7,6 @@ const types = @import("wgpu_types.zig");
 const ffi = @import("webgpu_ffi.zig");
 
 const Backend = ffi.WebGPUBackend;
-const RENDER_OCCLUSION_QUERY_COUNT: u32 = 1;
-const RENDER_TIMESTAMP_QUERY_COUNT: u32 = 2;
 const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
 
 pub const RenderP0State = struct {
@@ -26,36 +24,9 @@ pub fn prepare(
     indexed_draw: bool,
     indirect_buffer_handle: u64,
 ) RenderP0State {
+    _ = procs;
     var state = RenderP0State{ .p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib) };
     state.command_encoder_write_buffer = if (state.p0_procs) |loaded| loaded.command_encoder_write_buffer else null;
-
-    if (render_api.render_pass_encoder_begin_occlusion_query != null and render_api.render_pass_encoder_end_occlusion_query != null) {
-        state.occlusion_query_set = procs.wgpuDeviceCreateQuerySet(self.device.?, &types.WGPUQuerySetDescriptor{
-            .nextInChain = null,
-            .label = loader.emptyStringView(),
-            .@"type" = p0_procs_mod.QUERY_TYPE_OCCLUSION,
-            .count = RENDER_OCCLUSION_QUERY_COUNT,
-        });
-        if (state.occlusion_query_set != null and !p0_procs_mod.querySetMatches(state.p0_procs, state.occlusion_query_set, RENDER_OCCLUSION_QUERY_COUNT, p0_procs_mod.QUERY_TYPE_OCCLUSION)) {
-            p0_procs_mod.destroyQuerySet(state.p0_procs, state.occlusion_query_set);
-            procs.wgpuQuerySetRelease(state.occlusion_query_set);
-            state.occlusion_query_set = null;
-        }
-    }
-
-    if (render_api.render_pass_encoder_write_timestamp != null and self.has_timestamp_inside_passes) {
-        state.timestamp_query_set = procs.wgpuDeviceCreateQuerySet(self.device.?, &types.WGPUQuerySetDescriptor{
-            .nextInChain = null,
-            .label = loader.emptyStringView(),
-            .@"type" = types.WGPUQueryType_Timestamp,
-            .count = RENDER_TIMESTAMP_QUERY_COUNT,
-        });
-        if (state.timestamp_query_set != null and !p0_procs_mod.querySetMatches(state.p0_procs, state.timestamp_query_set, RENDER_TIMESTAMP_QUERY_COUNT, types.WGPUQueryType_Timestamp)) {
-            p0_procs_mod.destroyQuerySet(state.p0_procs, state.timestamp_query_set);
-            procs.wgpuQuerySetRelease(state.timestamp_query_set);
-            state.timestamp_query_set = null;
-        }
-    }
 
     if (self.has_multi_draw_indirect and
         state.command_encoder_write_buffer != null and
@@ -78,14 +49,8 @@ pub fn prepare(
 }
 
 pub fn deinit(state: RenderP0State, procs: types.Procs) void {
-    if (state.occlusion_query_set) |query_set| {
-        p0_procs_mod.destroyQuerySet(state.p0_procs, query_set);
-        procs.wgpuQuerySetRelease(query_set);
-    }
-    if (state.timestamp_query_set) |query_set| {
-        p0_procs_mod.destroyQuerySet(state.p0_procs, query_set);
-        procs.wgpuQuerySetRelease(query_set);
-    }
+    _ = state;
+    _ = procs;
 }
 
 pub fn beginPass(

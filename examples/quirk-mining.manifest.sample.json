@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-02-23T00:00:00Z",
+  "sourceRepo": "dawn/main",
+  "sourceCommit": "example-commit",
+  "sourceRoots": [
+    "bench/vendor/dawn/src/dawn/native/vulkan"
+  ],
+  "vendor": "amd",
+  "api": "vulkan",
+  "deviceFamily": "",
+  "driverRange": "",
+  "observedAt": "2026-02-23T00:00:00Z",
+  "allowedSuffixes": [
+    ".cc",
+    ".h"
+  ],
+  "scannedFileCount": 2,
+  "toggleHitCount": 1,
+  "candidateCount": 1,
+  "hashChain": {
+    "algorithm": "sha256",
+    "seedHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "finalHash": "1111111111111111111111111111111111111111111111111111111111111111",
+    "rowCount": 1,
+    "rows": [
+      {
+        "index": 0,
+        "quirkId": "auto.amd.vulkan.toggle.shaderrobustnessperf.2f6838e7ce",
+        "hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "toggleHits": [
+    {
+      "toggle": "ShaderRobustnessPerf",
+      "sourcePath": "src/dawn/native/vulkan/PhysicalDeviceVk.cpp",
+      "line": 42
+    }
+  ],
+  "candidateOutputPath": "examples/quirks/mined_toggle_sample.json"
+}

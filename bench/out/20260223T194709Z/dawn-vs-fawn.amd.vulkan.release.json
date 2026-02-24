@@ -1,0 +1,1746 @@
+{
+  "schemaVersion": 4,
+  "generatedAt": "2026-02-23T19:47:09.917257+00:00",
+  "outputTimestamp": "20260223T194709Z",
+  "outPath": "bench/out/20260223T194709Z/dawn-vs-fawn.amd.vulkan.release.json",
+  "workspacePath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release",
+  "left": {
+    "name": "fawn"
+  },
+  "right": {
+    "name": "dawn"
+  },
+  "deltaPercentConvention": {
+    "baseline": "right",
+    "formula": "((rightMs - leftMs) / rightMs) * 100",
+    "positive": "left faster",
+    "negative": "left slower",
+    "zero": "parity"
+  },
+  "comparabilityPolicy": {
+    "mode": "strict",
+    "requiredTimingClass": "operation",
+    "allowLeftNoExecution": false,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "requireNativeExecutionTimingForLeftOperation": true,
+    "dispatchWindowSelectionThresholds": {
+      "minDispatchWindowNsWithoutEncode": 100000,
+      "minDispatchWindowCoveragePercentWithoutEncode": 1.0
+    }
+  },
+  "claimabilityPolicy": {
+    "mode": "release",
+    "minTimedSamples": 15,
+    "requiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent",
+      "p99Percent"
+    ],
+    "defaults": {
+      "localMinTimedSamples": 7,
+      "releaseMinTimedSamples": 15
+    }
+  },
+  "benchmarkPolicy": {
+    "path": "config/benchmark-methodology-thresholds.json",
+    "schemaVersion": 1
+  },
+  "workloads": [
+    {
+      "id": "render_draw_throughput_proxy",
+      "name": "render draw throughput",
+      "description": "Native render/draw throughput workload aligned to Dawn DrawCallPerf base variant.",
+      "domain": "render",
+      "comparabilityNotes": "Both sides execute DrawCallPerf-style draw-call throughput against a 64x64 render target with static pipeline and bind-group defaults.",
+      "timingNormalization": {
+        "leftDivisor": 2000.0,
+        "rightDivisor": 1.0,
+        "leftCommandRepeat": 1,
+        "rightCommandRepeat": 1,
+        "leftIgnoreFirstOps": 0,
+        "rightIgnoreFirstOps": 0,
+        "leftUploadBufferUsage": "copy-dst-copy-src",
+        "rightUploadBufferUsage": "copy-dst-copy-src",
+        "leftUploadSubmitEvery": 1,
+        "rightUploadSubmitEvery": 1,
+        "note": "Dawn DrawCallPerf reports per draw (iterationsPerStep=2000); Fawn render_draw normalizes to per-draw units."
+      },
+      "workloadComparable": true,
+      "workloadAllowLeftNoExecution": false,
+      "workloadDefault": false,
+      "left": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH",
+              "zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "examples/draw_call_proxy_commands.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "amd",
+              "--api",
+              "vulkan",
+              "--family",
+              "gfx11",
+              "--driver",
+              "24.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run001.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run001.meta.json"
+            ],
+            "elapsedMs": 64.18751599267125,
+            "measuredRawMs": 0.097675,
+            "measuredMs": 4.88375e-05,
+            "timingSource": "fawn-execution-encode-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-encode-ns",
+              "traceMetaTimingMs": 0.097675,
+              "executionEncodeTotalNs": 97675,
+              "executionSubmitWaitTotalNs": 918031,
+              "executionDispatchCount": 2000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "wallTimeMs": 64.18751599267125,
+              "timingSelectionPolicy": "render-encode-only",
+              "renderEncodeTimingDomain": "render",
+              "renderEncodeTimingBaseSource": "fawn-execution-dispatch-window-ns",
+              "renderEncodeTotalNs": 97675,
+              "timingNormalizationDivisor": 2000.0,
+              "timingConfiguredDivisor": 2000.0,
+              "timingRawMs": 0.097675,
+              "timingNormalizedMs": 4.88375e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run001.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run001.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 2,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 64.18751599267125,
+              "processCpuMs": 38.55799999999999,
+              "processPeakRssKb": 78176,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 64.18751599267125,
+              "cpu_time": 38.55799999999999,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.032093757996335626,
+              "cpu_time": 0.019278999999999998,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 5735225,
+              "executionSetupTotalNs": 4693420,
+              "executionEncodeTotalNs": 97675,
+              "executionSubmitWaitTotalNs": 918031,
+              "executionDispatchCount": 2000,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0xde443a1dfd269197",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "per_command",
+              "profile": {
+                "vendor": "amd",
+                "api": "vulkan",
+                "deviceFamily": "gfx11",
+                "driver": "24.0.0"
+              }
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 2000.0
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH",
+              "zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "examples/draw_call_proxy_commands.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "amd",
+              "--api",
+              "vulkan",
+              "--family",
+              "gfx11",
+              "--driver",
+              "24.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run002.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run002.meta.json"
+            ],
+            "elapsedMs": 64.13828395307064,
+            "measuredRawMs": 0.098285,
+            "measuredMs": 4.91425e-05,
+            "timingSource": "fawn-execution-encode-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-encode-ns",
+              "traceMetaTimingMs": 0.098285,
+              "executionEncodeTotalNs": 98285,
+              "executionSubmitWaitTotalNs": 912331,
+              "executionDispatchCount": 2000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "wallTimeMs": 64.13828395307064,
+              "timingSelectionPolicy": "render-encode-only",
+              "renderEncodeTimingDomain": "render",
+              "renderEncodeTimingBaseSource": "fawn-execution-dispatch-window-ns",
+              "renderEncodeTotalNs": 98285,
+              "timingNormalizationDivisor": 2000.0,
+              "timingConfiguredDivisor": 2000.0,
+              "timingRawMs": 0.098285,
+              "timingNormalizedMs": 4.91425e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run002.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run002.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 2,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 64.13828395307064,
+              "processCpuMs": 38.843,
+              "processPeakRssKb": 78080,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 64.13828395307064,
+              "cpu_time": 38.843,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.03206914197653532,
+              "cpu_time": 0.0194215,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 6421989,
+              "executionSetupTotalNs": 5385776,
+              "executionEncodeTotalNs": 98285,
+              "executionSubmitWaitTotalNs": 912331,
+              "executionDispatchCount": 2000,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0xde443a1dfd269197",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "per_command",
+              "profile": {
+                "vendor": "amd",
+                "api": "vulkan",
+                "deviceFamily": "gfx11",
+                "driver": "24.0.0"
+              }
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 2000.0
+          },
+          {
+            "runIndex": 3,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH",
+              "zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "examples/draw_call_proxy_commands.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "amd",
+              "--api",
+              "vulkan",
+              "--family",
+              "gfx11",
+              "--driver",
+              "24.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run003.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run003.meta.json"
+            ],
+            "elapsedMs": 64.14105906151235,
+            "measuredRawMs": 0.099869,
+            "measuredMs": 4.99345e-05,
+            "timingSource": "fawn-execution-encode-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-encode-ns",
+              "traceMetaTimingMs": 0.099869,
+              "executionEncodeTotalNs": 99869,
+              "executionSubmitWaitTotalNs": 937958,
+              "executionDispatchCount": 2000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "wallTimeMs": 64.14105906151235,
+              "timingSelectionPolicy": "render-encode-only",
+              "renderEncodeTimingDomain": "render",
+              "renderEncodeTimingBaseSource": "fawn-execution-dispatch-window-ns",
+              "renderEncodeTotalNs": 99869,
+              "timingNormalizationDivisor": 2000.0,
+              "timingConfiguredDivisor": 2000.0,
+              "timingRawMs": 0.099869,
+              "timingNormalizedMs": 4.99345e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run003.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run003.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 2,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 64.14105906151235,
+              "processCpuMs": 39.103000000000016,
+              "processPeakRssKb": 77916,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 64.14105906151235,
+              "cpu_time": 39.103000000000016,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.032070529530756176,
+              "cpu_time": 0.019551500000000006,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 5873015,
+              "executionSetupTotalNs": 4808838,
+              "executionEncodeTotalNs": 99869,
+              "executionSubmitWaitTotalNs": 937958,
+              "executionDispatchCount": 2000,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0xde443a1dfd269197",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "per_command",
+              "profile": {
+                "vendor": "amd",
+                "api": "vulkan",
+                "deviceFamily": "gfx11",
+                "driver": "24.0.0"
+              }
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 2000.0
+          },
+          {
+            "runIndex": 4,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH",
+              "zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "examples/draw_call_proxy_commands.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "amd",
+              "--api",
+              "vulkan",
+              "--family",
+              "gfx11",
+              "--driver",
+              "24.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run004.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run004.meta.json"
+            ],
+            "elapsedMs": 64.06381377018988,
+            "measuredRawMs": 0.086954,
+            "measuredMs": 4.3477000000000004e-05,
+            "timingSource": "fawn-execution-encode-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-encode-ns",
+              "traceMetaTimingMs": 0.086954,
+              "executionEncodeTotalNs": 86954,
+              "executionSubmitWaitTotalNs": 921097,
+              "executionDispatchCount": 2000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "wallTimeMs": 64.06381377018988,
+              "timingSelectionPolicy": "render-encode-only",
+              "renderEncodeTimingDomain": "render",
+              "renderEncodeTimingBaseSource": "fawn-execution-dispatch-window-ns",
+              "renderEncodeTotalNs": 86954,
+              "timingNormalizationDivisor": 2000.0,
+              "timingConfiguredDivisor": 2000.0,
+              "timingRawMs": 0.086954,
+              "timingNormalizedMs": 4.3477000000000004e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run004.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run004.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 2,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 64.06381377018988,
+              "processCpuMs": 36.912,
+              "processPeakRssKb": 78328,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 64.06381377018988,
+              "cpu_time": 36.912,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.03203190688509494,
+              "cpu_time": 0.018456,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 5583990,
+              "executionSetupTotalNs": 4550912,
+              "executionEncodeTotalNs": 86954,
+              "executionSubmitWaitTotalNs": 921097,
+              "executionDispatchCount": 2000,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0xde443a1dfd269197",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "per_command",
+              "profile": {
+                "vendor": "amd",
+                "api": "vulkan",
+                "deviceFamily": "gfx11",
+                "driver": "24.0.0"
+              }
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 2000.0
+          },
+          {
+            "runIndex": 5,
+            "command": [
+              "env",
+              "LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH",
+              "zig/zig-out/bin/fawn-zig-runtime",
+              "--commands",
+              "examples/draw_call_proxy_commands.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "amd",
+              "--api",
+              "vulkan",
+              "--family",
+              "gfx11",
+              "--driver",
+              "24.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run005.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run005.meta.json"
+            ],
+            "elapsedMs": 64.15541609749198,
+            "measuredRawMs": 0.09043,
+            "measuredMs": 4.5215e-05,
+            "timingSource": "fawn-execution-encode-ns",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "fawn-execution-encode-ns",
+              "traceMetaTimingMs": 0.09043,
+              "executionEncodeTotalNs": 90430,
+              "executionSubmitWaitTotalNs": 917120,
+              "executionDispatchCount": 2000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "wallTimeMs": 64.15541609749198,
+              "timingSelectionPolicy": "render-encode-only",
+              "renderEncodeTimingDomain": "render",
+              "renderEncodeTimingBaseSource": "fawn-execution-dispatch-window-ns",
+              "renderEncodeTotalNs": 90430,
+              "timingNormalizationDivisor": 2000.0,
+              "timingConfiguredDivisor": 2000.0,
+              "timingRawMs": 0.09043,
+              "timingNormalizedMs": 4.5215e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run005.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/left/fawn.run005.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 2,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 64.15541609749198,
+              "processCpuMs": 39.07599999999997,
+              "processPeakRssKb": 78124,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 64.15541609749198,
+              "cpu_time": 39.07599999999997,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.03207770804874599,
+              "cpu_time": 0.019537999999999986,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "fawn-zig-runtime",
+              "seqMax": 0,
+              "rowCount": 1,
+              "commandCount": 1,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 5772385,
+              "executionSetupTotalNs": 4735039,
+              "executionEncodeTotalNs": 90430,
+              "executionSubmitWaitTotalNs": 917120,
+              "executionDispatchCount": 2000,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0xde443a1dfd269197",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "per_command",
+              "profile": {
+                "vendor": "amd",
+                "api": "vulkan",
+                "deviceFamily": "gfx11",
+                "driver": "24.0.0"
+              }
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 2000.0
+          }
+        ],
+        "stats": {
+          "count": 5,
+          "minMs": 4.3477000000000004e-05,
+          "maxMs": 4.99345e-05,
+          "p10Ms": 4.3477000000000004e-05,
+          "p50Ms": 4.88375e-05,
+          "p95Ms": 4.91425e-05,
+          "p99Ms": 4.91425e-05,
+          "meanMs": 4.73213e-05,
+          "stdevMs": 2.5163301969336207e-06
+        },
+        "timingsMs": [
+          4.88375e-05,
+          4.91425e-05,
+          4.99345e-05,
+          4.3477000000000004e-05,
+          4.5215e-05
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "fawn-zig-runtime",
+          "seqMax": 0,
+          "rowCount": 1,
+          "commandCount": 1,
+          "matchedCount": 0,
+          "blockingCount": 0,
+          "requiresLeanCount": 0,
+          "leanRequiredCount": 0,
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionSkippedCount": 0,
+          "executionUnsupportedCount": 0,
+          "executionTotalNs": 5772385,
+          "executionSetupTotalNs": 4735039,
+          "executionEncodeTotalNs": 90430,
+          "executionSubmitWaitTotalNs": 917120,
+          "executionDispatchCount": 2000,
+          "executionGpuTimestampTotalNs": 0,
+          "executionGpuTimestampAttemptedCount": 0,
+          "executionGpuTimestampValidCount": 0,
+          "hash": "0xde443a1dfd269197",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "executionBackend": "webgpu-ffi",
+          "queueSyncMode": "per_command",
+          "profile": {
+            "vendor": "amd",
+            "api": "vulkan",
+            "deviceFamily": "gfx11",
+            "driver": "24.0.0"
+          }
+        },
+        "timingSources": [
+          "fawn-execution-encode-ns"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "resourceStats": {
+          "gpuProbeModes": [
+            "none"
+          ],
+          "gpuProbeAvailableCount": 0,
+          "samplingTruncatedCount": 0,
+          "processPeakRssKb": {
+            "count": 5,
+            "min": 77916.0,
+            "max": 78328.0,
+            "p10": 77916.0,
+            "p50": 78124.0,
+            "p95": 78176.0,
+            "p99": 78176.0,
+            "mean": 78124.8,
+            "stdev": 133.80343792294727
+          },
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          }
+        },
+        "timingMetricsRawStatsMs": {
+          "wall_time": {
+            "count": 5,
+            "minMs": 64.06381377018988,
+            "maxMs": 64.18751599267125,
+            "p10Ms": 64.06381377018988,
+            "p50Ms": 64.14105906151235,
+            "p95Ms": 64.15541609749198,
+            "p99Ms": 64.15541609749198,
+            "meanMs": 64.13721777498722,
+            "stdevMs": 0.040657421911230125
+          },
+          "cpu_time": {
+            "count": 5,
+            "minMs": 36.912,
+            "maxMs": 39.103000000000016,
+            "p10Ms": 36.912,
+            "p50Ms": 38.843,
+            "p95Ms": 39.07599999999997,
+            "p99Ms": 39.07599999999997,
+            "meanMs": 38.4984,
+            "stdevMs": 0.8170837411183741
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "wall_time": {
+            "count": 5,
+            "minMs": 0.03203190688509494,
+            "maxMs": 0.032093757996335626,
+            "p10Ms": 0.03203190688509494,
+            "p50Ms": 0.032070529530756176,
+            "p95Ms": 0.03207770804874599,
+            "p99Ms": 0.03207770804874599,
+            "meanMs": 0.03206860888749361,
+            "stdevMs": 2.032871095561506e-05
+          },
+          "cpu_time": {
+            "count": 5,
+            "minMs": 0.018456,
+            "maxMs": 0.019551500000000006,
+            "p10Ms": 0.018456,
+            "p50Ms": 0.0194215,
+            "p95Ms": 0.019537999999999986,
+            "p99Ms": 0.019537999999999986,
+            "meanMs": 0.0192492,
+            "stdevMs": 0.00040854187055918654
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.amd.extended.json",
+              "--workload",
+              "render_draw_throughput_proxy",
+              "--dawn-extra-args=--backend=vulkan",
+              "--dawn-extra-args=--adapter-vendor-id=0x1002",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run001.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run001.meta.json"
+            ],
+            "elapsedMs": 6121.8505839351565,
+            "measuredRawMs": 9.1721516e-05,
+            "measuredMs": 9.1721516e-05,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 9.1721516e-05,
+              "wallTimeMs": 6121.8505839351565,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 9.1721516e-05,
+              "timingNormalizedMs": 9.1721516e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run001.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run001.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 62,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6121.8505839351565,
+              "processCpuMs": 3459.7239999999993,
+              "processPeakRssKb": 85644,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 9.1721516e-05,
+              "cpu_time": 5.0621484e-05,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 9.1721516e-05,
+              "cpu_time": 5.0621484e-05,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x2822eb3c011ba0ca",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "render_draw_throughput_proxy",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "filterResolution": "mapped",
+              "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run001.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 9.1721516e-05,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6069.045511074364,
+              "processWallMs": 6069.045511074364,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 9.1721516e-05,
+                "cpu_time": 5.0621484e-05
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 92,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  9.3241224e-05,
+                  9.1721516e-05,
+                  8.96339e-05
+                ],
+                "cpu_time": [
+                  5.1678133999999995e-05,
+                  5.0621484e-05,
+                  4.9131329e-05
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                9.3241224e-05,
+                9.1721516e-05,
+                8.96339e-05
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.amd.extended.json",
+              "--workload",
+              "render_draw_throughput_proxy",
+              "--dawn-extra-args=--backend=vulkan",
+              "--dawn-extra-args=--adapter-vendor-id=0x1002",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run002.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run002.meta.json"
+            ],
+            "elapsedMs": 6020.74820920825,
+            "measuredRawMs": 9.0570705e-05,
+            "measuredMs": 9.0570705e-05,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 9.0570705e-05,
+              "wallTimeMs": 6020.74820920825,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 9.0570705e-05,
+              "timingNormalizedMs": 9.0570705e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run002.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run002.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 61,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6020.74820920825,
+              "processCpuMs": 3420.1080000000006,
+              "processPeakRssKb": 85176,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 9.0570705e-05,
+              "cpu_time": 4.9769115999999995e-05,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 9.0570705e-05,
+              "cpu_time": 4.9769115999999995e-05,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x1b91c9474668b804",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "render_draw_throughput_proxy",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "filterResolution": "mapped",
+              "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run002.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 9.0570705e-05,
+              "timingMetric": "wall_time",
+              "elapsedMs": 5965.518353972584,
+              "processWallMs": 5965.518353972584,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 9.0570705e-05,
+                "cpu_time": 4.9769115999999995e-05
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 91,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  9.1829592e-05,
+                  9.0182641e-05,
+                  9.0570705e-05
+                ],
+                "cpu_time": [
+                  5.0621388000000003e-05,
+                  4.9355018999999996e-05,
+                  4.9769115999999995e-05
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                9.1829592e-05,
+                9.0182641e-05,
+                9.0570705e-05
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 3,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.amd.extended.json",
+              "--workload",
+              "render_draw_throughput_proxy",
+              "--dawn-extra-args=--backend=vulkan",
+              "--dawn-extra-args=--adapter-vendor-id=0x1002",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run003.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run003.meta.json"
+            ],
+            "elapsedMs": 6185.913356021047,
+            "measuredRawMs": 9.205980599999999e-05,
+            "measuredMs": 9.205980599999999e-05,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 9.205980599999999e-05,
+              "wallTimeMs": 6185.913356021047,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 9.205980599999999e-05,
+              "timingNormalizedMs": 9.205980599999999e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run003.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run003.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 63,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6185.913356021047,
+              "processCpuMs": 3520.510999999999,
+              "processPeakRssKb": 85700,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 9.205980599999999e-05,
+              "cpu_time": 5.0879987e-05,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 9.205980599999999e-05,
+              "cpu_time": 5.0879987e-05,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x8a5500e5b5f2a23f",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "render_draw_throughput_proxy",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "filterResolution": "mapped",
+              "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run003.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 9.205980599999999e-05,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6134.781858883798,
+              "processWallMs": 6134.781858883798,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 9.205980599999999e-05,
+                "cpu_time": 5.0879987e-05
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 92,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  9.205980599999999e-05,
+                  9.1673069e-05,
+                  9.271501899999999e-05
+                ],
+                "cpu_time": [
+                  5.0879987e-05,
+                  5.0753808e-05,
+                  5.1883719999999994e-05
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                9.205980599999999e-05,
+                9.1673069e-05,
+                9.271501899999999e-05
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 4,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.amd.extended.json",
+              "--workload",
+              "render_draw_throughput_proxy",
+              "--dawn-extra-args=--backend=vulkan",
+              "--dawn-extra-args=--adapter-vendor-id=0x1002",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run004.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run004.meta.json"
+            ],
+            "elapsedMs": 6219.929528888315,
+            "measuredRawMs": 9.1312146e-05,
+            "measuredMs": 9.1312146e-05,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 9.1312146e-05,
+              "wallTimeMs": 6219.929528888315,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 9.1312146e-05,
+              "timingNormalizedMs": 9.1312146e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run004.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run004.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 63,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6219.929528888315,
+              "processCpuMs": 3544.9019999999987,
+              "processPeakRssKb": 86088,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 9.1312146e-05,
+              "cpu_time": 4.9912854e-05,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 9.1312146e-05,
+              "cpu_time": 4.9912854e-05,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x0ad87ad75e6230c6",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "render_draw_throughput_proxy",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "filterResolution": "mapped",
+              "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run004.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 9.1312146e-05,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6153.394096065313,
+              "processWallMs": 6153.394096065313,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 9.1312146e-05,
+                "cpu_time": 4.9912854e-05
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 91,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  9.3900233e-05,
+                  9.1312146e-05,
+                  9.0206498e-05
+                ],
+                "cpu_time": [
+                  5.2674961999999996e-05,
+                  4.9912854e-05,
+                  4.973263699999999e-05
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                9.3900233e-05,
+                9.1312146e-05,
+                9.0206498e-05
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 5,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.amd.extended.json",
+              "--workload",
+              "render_draw_throughput_proxy",
+              "--dawn-extra-args=--backend=vulkan",
+              "--dawn-extra-args=--adapter-vendor-id=0x1002",
+              "--trace-jsonl",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run005.ndjson",
+              "--trace-meta",
+              "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run005.meta.json"
+            ],
+            "elapsedMs": 6120.335587998852,
+            "measuredRawMs": 9.102361e-05,
+            "measuredMs": 9.102361e-05,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 9.102361e-05,
+              "wallTimeMs": 6120.335587998852,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 9.102361e-05,
+              "timingNormalizedMs": 9.102361e-05,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run005.ndjson",
+            "traceMetaPath": "bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run005.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 62,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6120.335587998852,
+              "processCpuMs": 3485.7200000000007,
+              "processPeakRssKb": 85368,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 9.102361e-05,
+              "cpu_time": 5.0094017999999994e-05,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 9.102361e-05,
+              "cpu_time": 5.0094017999999994e-05,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xff2cf1b103d11f35",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "render_draw_throughput_proxy",
+              "gtestFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "selectedFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+              "filterResolution": "mapped",
+              "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run005.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 9.102361e-05,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6073.925004107878,
+              "processWallMs": 6073.925004107878,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 9.102361e-05,
+                "cpu_time": 5.0094017999999994e-05
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 91,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  9.102361e-05,
+                  9.1783416e-05,
+                  9.043918499999999e-05
+                ],
+                "cpu_time": [
+                  5.0094017999999994e-05,
+                  5.0844213e-05,
+                  4.997252e-05
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                9.102361e-05,
+                9.1783416e-05,
+                9.043918499999999e-05
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          }
+        ],
+        "stats": {
+          "count": 5,
+          "minMs": 9.0570705e-05,
+          "maxMs": 9.205980599999999e-05,
+          "p10Ms": 9.0570705e-05,
+          "p50Ms": 9.1312146e-05,
+          "p95Ms": 9.1721516e-05,
+          "p99Ms": 9.1721516e-05,
+          "meanMs": 9.133755659999999e-05,
+          "stdevMs": 5.208336700550724e-07
+        },
+        "timingsMs": [
+          9.1721516e-05,
+          9.0570705e-05,
+          9.205980599999999e-05,
+          9.1312146e-05,
+          9.102361e-05
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "dawn-perf-tests",
+          "schema": "adapter-meta",
+          "seqMax": 0,
+          "rowCount": 1,
+          "hash": "0xff2cf1b103d11f35",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "commandCount": 1,
+          "workload": "render_draw_throughput_proxy",
+          "gtestFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+          "selectedFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+          "filterResolution": "mapped",
+          "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260223T194709Z/runtime-comparisons.amd.vulkan.release/render_draw_throughput_proxy/right/dawn.run005.ndjson",
+          "timingSource": "dawn-perf-wall-time",
+          "timingClass": "operation",
+          "timingMs": 9.102361e-05,
+          "timingMetric": "wall_time",
+          "elapsedMs": 6073.925004107878,
+          "processWallMs": 6073.925004107878,
+          "dawnTimingMetricRequested": "wall_time",
+          "dawnMetricMediansMs": {
+            "wall_time": 9.102361e-05,
+            "cpu_time": 5.0094017999999994e-05
+          },
+          "executionBackend": "dawn-perf-tests",
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionTotalNs": 91,
+          "gtestFilterNoMatch": false,
+          "gtestSkippedCount": 0,
+          "gtestUnsupported": false,
+          "gtestRunningCount": 1,
+          "dawnMetricSamplesMs": {
+            "wall_time": [
+              9.102361e-05,
+              9.1783416e-05,
+              9.043918499999999e-05
+            ],
+            "cpu_time": [
+              5.0094017999999994e-05,
+              5.0844213e-05,
+              4.997252e-05
+            ],
+            "gpu_time": []
+          },
+          "benchmarkWallMsSamples": [
+            9.102361e-05,
+            9.1783416e-05,
+            9.043918499999999e-05
+          ]
+        },
+        "timingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "resourceStats": {
+          "gpuProbeModes": [
+            "none"
+          ],
+          "gpuProbeAvailableCount": 0,
+          "samplingTruncatedCount": 0,
+          "processPeakRssKb": {
+            "count": 5,
+            "min": 85176.0,
+            "max": 86088.0,
+            "p10": 85176.0,
+            "p50": 85644.0,
+            "p95": 85700.0,
+            "p99": 85700.0,
+            "mean": 85595.2,
+            "stdev": 310.98707368635115
+          },
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          }
+        },
+        "timingMetricsRawStatsMs": {
+          "wall_time": {
+            "count": 5,
+            "minMs": 9.0570705e-05,
+            "maxMs": 9.205980599999999e-05,
+            "p10Ms": 9.0570705e-05,
+            "p50Ms": 9.1312146e-05,
+            "p95Ms": 9.1721516e-05,
+            "p99Ms": 9.1721516e-05,
+            "meanMs": 9.133755659999999e-05,
+            "stdevMs": 5.208336700550724e-07
+          },
+          "cpu_time": {
+            "count": 5,
+            "minMs": 4.9769115999999995e-05,
+            "maxMs": 5.0879987e-05,
+            "p10Ms": 4.9769115999999995e-05,
+            "p50Ms": 5.0094017999999994e-05,
+            "p95Ms": 5.0621484e-05,
+            "p99Ms": 5.0621484e-05,
+            "meanMs": 5.02554918e-05,
+            "stdevMs": 4.252012262881666e-07
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "wall_time": {
+            "count": 5,
+            "minMs": 9.0570705e-05,
+            "maxMs": 9.205980599999999e-05,
+            "p10Ms": 9.0570705e-05,
+            "p50Ms": 9.1312146e-05,
+            "p95Ms": 9.1721516e-05,
+            "p99Ms": 9.1721516e-05,
+            "meanMs": 9.133755659999999e-05,
+            "stdevMs": 5.208336700550724e-07
+          },
+          "cpu_time": {
+            "count": 5,
+            "minMs": 4.9769115999999995e-05,
+            "maxMs": 5.0879987e-05,
+            "p10Ms": 4.9769115999999995e-05,
+            "p50Ms": 5.0094017999999994e-05,
+            "p95Ms": 5.0621484e-05,
+            "p99Ms": 5.0621484e-05,
+            "meanMs": 5.02554918e-05,
+            "stdevMs": 4.252012262881666e-07
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "deltaPercent": {
+        "p10Percent": 51.99661965753717,
+        "p50Percent": 46.51587752630411,
+        "p95Percent": 46.422058702126115,
+        "p99Percent": 46.422058702126115,
+        "meanPercent": 48.19075333136292
+      },
+      "comparability": {
+        "comparable": true,
+        "requiredTimingClass": "operation",
+        "leftTimingSources": [
+          "fawn-execution-encode-ns"
+        ],
+        "rightTimingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "leftTimingClass": "operation",
+        "rightTimingClass": "operation",
+        "resourceProbe": "none",
+        "leftResourceSampleMedian": 2,
+        "rightResourceSampleMedian": 62,
+        "leftResourceProbeAvailableCount": 0,
+        "rightResourceProbeAvailableCount": 0,
+        "resourceSampleTargetCount": 0,
+        "leftResourceSamplingTruncatedCount": 0,
+        "rightResourceSamplingTruncatedCount": 0,
+        "leftExecutionErrorSampleCount": 0,
+        "rightExecutionErrorSampleCount": 0,
+        "resourceReasons": [],
+        "reasons": []
+      },
+      "claimability": {
+        "mode": "release",
+        "evaluated": true,
+        "claimable": false,
+        "minTimedSamples": 15,
+        "requiredPositivePercentiles": [
+          "p50Percent",
+          "p95Percent",
+          "p99Percent"
+        ],
+        "leftTimedSamples": 5,
+        "rightTimedSamples": 5,
+        "reasons": [
+          "left timed sample count 5 is below claim floor 15",
+          "right timed sample count 5 is below claim floor 15"
+        ]
+      }
+    }
+  ],
+  "configPath": "bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json",
+  "overall": {
+    "left": {
+      "count": 5,
+      "minMs": 4.3477000000000004e-05,
+      "maxMs": 4.99345e-05,
+      "p10Ms": 4.3477000000000004e-05,
+      "p50Ms": 4.88375e-05,
+      "p95Ms": 4.91425e-05,
+      "p99Ms": 4.91425e-05,
+      "meanMs": 4.73213e-05,
+      "stdevMs": 2.5163301969336207e-06
+    },
+    "right": {
+      "count": 5,
+      "minMs": 9.0570705e-05,
+      "maxMs": 9.205980599999999e-05,
+      "p10Ms": 9.0570705e-05,
+      "p50Ms": 9.1312146e-05,
+      "p95Ms": 9.1721516e-05,
+      "p99Ms": 9.1721516e-05,
+      "meanMs": 9.133755659999999e-05,
+      "stdevMs": 5.208336700550724e-07
+    },
+    "deltaPercent": {
+      "p10Approx": 51.99661965753717,
+      "p50Approx": 46.51587752630411,
+      "p95Approx": 46.422058702126115,
+      "p99Approx": 46.422058702126115
+    }
+  },
+  "comparabilitySummary": {
+    "workloadCount": 1,
+    "nonComparableCount": 0,
+    "nonComparableWorkloads": []
+  },
+  "comparisonStatus": "comparable",
+  "claimabilitySummary": {
+    "workloadCount": 1,
+    "nonClaimableCount": 1,
+    "nonClaimableWorkloads": [
+      {
+        "workloadId": "render_draw_throughput_proxy",
+        "reasons": [
+          "left timed sample count 5 is below claim floor 15",
+          "right timed sample count 5 is below claim floor 15"
+        ]
+      }
+    ]
+  },
+  "claimStatus": "diagnostic"
+}

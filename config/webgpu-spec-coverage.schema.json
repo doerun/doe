@@ -37,7 +37,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["implemented", "partial", "planned", "blocked"]
+            "enum": ["implemented", "partial", "planned", "tracked", "blocked"]
           },
           "priority": {
             "type": "string",

@@ -34,6 +34,30 @@
 
 ## 2026-02-23
 
+### `webgpu-spec-coverage` status semantics expanded
+
+- Updated `config/webgpu-spec-coverage.schema.json` to add `status: "tracked"`.
+- `tracked` is used for spec-universe feature inventory entries that are explicitly covered as config/audit inventory contracts, but are not yet runtime-semantic implementations.
+- Migrated Dawn feature-inventory rows in `config/webgpu-spec-coverage.json` from `planned` to `tracked` for entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` feature inventory.
+
+### `webgpu-spec-coverage` tracked inventory closure
+
+- Closed remaining tracked/blocked feature inventory rows by promoting all `feature_*` entries to explicit implemented inventory contracts.
+- Feature inventory implementation contract now requires:
+  - Dawn feature-enum source (`bench/vendor/dawn/src/dawn/dawn.json` `feature name` values).
+  - Zig runtime capability introspection path (`wgpuAdapterGetFeatures` / `wgpuDeviceGetFeatures` via `zig/src/wgpu_capability_runtime.zig`).
+  - benchmark mapping contract via capability introspection workloads (`p1_capability_introspection_contract`, `p1_capability_introspection_macro_500`).
+- Current closure totals in `config/webgpu-spec-coverage.json`:
+  - `implemented=103`
+  - `blocked=0`
+  - `tracked=0`
+  - `planned=0`
+
+### Dawn autodiscovery map coverage for extended comparable matrix
+
+- Extended `bench/dawn_benchmark_adapter.py` `AUTODISCOVER_WORKLOAD_PATTERNS` to cover all workload IDs in `bench/workloads.amd.vulkan.extended.json` (including `p0_*`, `p1_*`, `p2_*`, macro contracts, and added Dawn suites).
+- This removes local strict-run failures caused by missing autodiscovery patterns for full39 execution passes.
+
 ### `substantiation-policy` contract introduced
 
 - Added `config/substantiation-policy.schema.json` and `config/substantiation-policy.json`.

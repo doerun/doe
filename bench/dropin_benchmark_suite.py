@@ -14,6 +14,10 @@ from typing import Any
 import output_paths
 
 
+DEFAULT_HARNESS_SOURCE = "bench/dropin_benchmark_harness.c"
+DEFAULT_OPS_SOURCE = "bench/dropin_benchmark_ops.c"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -23,13 +27,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--source",
-        default="bench/dropin_benchmark_harness.c",
-        help="C source file for benchmark harness.",
+        default=DEFAULT_HARNESS_SOURCE,
+        help=(
+            "Primary C source file for benchmark harness orchestration. "
+            "Compiled together with --ops-source."
+        ),
     )
     parser.add_argument(
         "--ops-source",
-        default="bench/dropin_benchmark_ops.c",
-        help="C source file for WebGPU benchmark operations.",
+        default=DEFAULT_OPS_SOURCE,
+        help="C source file for WebGPU benchmark operations (second translation unit).",
     )
     parser.add_argument(
         "--header-dir",
@@ -95,11 +102,24 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def dedupe_source_paths(paths: list[Path]) -> list[Path]:
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in paths:
+        key = str(candidate.resolve())
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(candidate)
+    return unique
+
+
 def main() -> int:
     args = parse_args()
     artifact_path = Path(args.artifact)
     source_path = Path(args.source)
     ops_source_path = Path(args.ops_source)
+    compile_sources = dedupe_source_paths([source_path, ops_source_path])
     header_dir = Path(args.header_dir)
     output_timestamp = (
         output_paths.resolve_timestamp(args.timestamp)
@@ -119,6 +139,7 @@ def main() -> int:
         "artifact": str(artifact_path),
         "source": str(source_path),
         "opsSource": str(ops_source_path),
+        "sources": [str(path) for path in compile_sources],
         "headerDir": str(header_dir),
         "microIterations": args.micro_iterations,
         "e2eIterations": args.e2e_iterations,
@@ -133,10 +154,14 @@ def main() -> int:
             raise ValueError("--e2e-iterations must be > 0")
         if not artifact_path.exists():
             raise FileNotFoundError(f"missing artifact: {artifact_path}")
-        if not source_path.exists():
-            raise FileNotFoundError(f"missing benchmark source: {source_path}")
-        if not ops_source_path.exists():
-            raise FileNotFoundError(f"missing benchmark ops source: {ops_source_path}")
+        if len(compile_sources) < 2:
+            raise ValueError(
+                "drop-in benchmark compile requires two distinct translation units; "
+                "provide both --source and --ops-source"
+            )
+        for compile_source in compile_sources:
+            if not compile_source.exists():
+                raise FileNotFoundError(f"missing benchmark source: {compile_source}")
         if not header_dir.exists():
             raise FileNotFoundError(f"missing header directory: {header_dir}")
 
@@ -154,8 +179,7 @@ def main() -> int:
                 "-Werror",
                 "-I",
                 str(header_dir.resolve()),
-                str(source_path.resolve()),
-                str(ops_source_path.resolve()),
+                *[str(path.resolve()) for path in compile_sources],
                 "-L",
                 str(artifact_dir),
                 f"-Wl,-rpath,{artifact_dir}",
@@ -205,6 +229,25 @@ def main() -> int:
         exit_code = 1
     finally:
         write_report(report_path, report)
+        output_paths.write_run_manifest_for_outputs(
+            [report_path],
+            {
+                "runType": "dropin_benchmark_suite",
+                "config": {
+                    "artifact": str(artifact_path),
+                    "source": str(source_path),
+                    "opsSource": str(ops_source_path),
+                    "headerDir": str(header_dir),
+                    "microIterations": args.micro_iterations,
+                    "e2eIterations": args.e2e_iterations,
+                },
+                "fullRun": True,
+                "claimGateRan": False,
+                "dropinGateRan": False,
+                "reportPath": str(report_path),
+                "status": "passed" if report.get("pass") else "failed",
+            },
+        )
 
     if report.get("pass"):
         print("PASS: drop-in benchmark suite")

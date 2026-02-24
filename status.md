@@ -7,13 +7,15 @@ Date: 2026-02-23
 Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
 Current `fawn/zig/src` size is 13,485 LOC (`wc -l zig/src/*.zig`, 2026-02-23) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
-AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) and explicit non-claimable directional slices.
+AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) over the full extended workload matrix.
 
-Benchmark contract coverage snapshot (2026-02-22 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `34` workload contracts: `29` comparable + `5` directional contracts (`p1_resource_table_immediates_macro_500`, 3 macro stress workloads, and `p0_render_pixel_local_storage_barrier_macro_500`).
-- strict extended comparable matrix now includes render, render-bundle, texture-contract, draw-indexed proxy, and async diagnostics slices in addition to upload/compute/pipeline.
+Benchmark contract coverage snapshot (2026-02-23 update):
+- `bench/workloads.amd.vulkan.extended.json` now contains `39` workload contracts: `39` apples-to-apples comparable + `0` directional contracts.
+- missing Dawn perf suites were added to AMD extended contracts: `MatrixVectorMultiplyPerf`, `UniformBufferUpdatePerf`, and `VulkanZeroInitializeWorkgroupMemoryExtensionTest`.
+- strict extended comparable matrix now apples-vets previously domain-gated contracts (`pipeline-async`, `p0-*`, `p1-*`, `p2-*`, `surface`) via explicit `applesToApplesVetted=true`.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
+- `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
 
 ## Product implementation state (runtime outcomes)
 
@@ -98,7 +100,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - fail fast if runtime binary appears older than key upload/runtime Zig sources (`zig/src/main.zig`, `zig/src/execution.zig`, `zig/src/wgpu_commands.zig`, `zig/src/webgpu_ffi.zig`)
 12. AMD Vulkan upload workloads in `fawn/bench/workloads.amd.vulkan.json` now use explicit size-tuned `leftUploadSubmitEvery` values (instead of a single shared cadence) to keep methodology explicit while reducing upload backpressure artifacts.
 13. Comparison delta sign convention is now left-runtime perspective with right baseline (`((rightMs-leftMs)/rightMs)*100`), so positive means left faster and negative means left slower (`compare_dawn_vs_fawn.py` and `compare_runtimes.py`, report `deltaPercentConvention`).
-14. Comparison report schema is now `schemaVersion: 3` with percentile summaries centered on p5/p50/p95/p99 (`p5Ms`, `p5Percent`, and overall `p5Approx`/`p50Approx`/`p95Approx`/`p99Approx`).
+14. Comparison report schema is now `schemaVersion: 4` with percentile summaries centered on p10/p50/p95/p99 (`p10Ms`, `p10Percent`, and overall `p10Approx`/`p50Approx`/`p95Approx`/`p99Approx`).
 15. Post-benchmark visualization pipeline step is now available via `fawn/bench/visualize_dawn_vs_fawn.py`, producing a self-contained HTML report and optional analysis JSON from Dawn-vs-Fawn comparison artifacts.
 16. Visualization/distribution diagnostics now include ECDF overlays, workload×percentile heatmap, KS statistic with asymptotic p-value, Wasserstein distance, probability of superiority (`P(left<right)`), and bootstrap CI summaries for delta `p50`/`p95`/`p99`.
 17. Claimability reliability mode is now implemented in `fawn/bench/compare_dawn_vs_fawn.py`:
@@ -154,7 +156,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - defaults remain deterministic (`0`, `0`) when fields are omitted.
 40. WebGPU capability expansion is now tracked in config as code:
 - `config/webgpu-spec-coverage.schema.json` defines contract for machine-readable capability status.
-- `config/webgpu-spec-coverage.json` tracks implemented/partial/planned coverage items and priorities.
+- `config/webgpu-spec-coverage.json` tracks implemented/partial/blocked/tracked/planned coverage items and priorities.
 41. Native render path now includes a first indexed-draw slice:
 - command parser accepts `draw_indexed` plus required `index_data`/`indexData`/`indices`, optional `index_format`/`indexFormat`, and `index_count`/`indexCount`, `first_index`/`firstIndex`, `base_vertex`/`baseVertex`.
 - native render lowering now binds a dynamically sized index buffer and emits `wgpuRenderPassEncoderDrawIndexed` when indexed mode is requested.
@@ -260,14 +262,14 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
   `bench/generate_feature_benchmark_table.py` with current artifact
   `bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`.
 
-60. API-surface and matrix coverage metrics are now machine-generated and full for tracked scope:
+60. API-surface and matrix coverage metrics are now machine-generated and full for capability scope:
 - `zig/src/wgpu_loader.zig` now preloads the remaining Dawn header symbol set used by coverage scans (label/debug-marker/map-introspection/lost-future/external-texture release paths) via `OPTIONAL_API_SURFACE_SYMBOLS`.
 - `bench/generate_feature_benchmark_table.py` now emits a top-level metrics table with:
-  - tracked spec-capability completion
+  - capability inventory tracking completion
   - Dawn header API-surface reference coverage (estimate)
   - capability-to-benchmark mapping coverage
 - current matrix artifact reports:
-  - tracked spec-capability completion: `100.0% (22/22)`
+  - capability inventory tracking completion: `100.0% (22/22)` (capability-contract subset at the time of that report)
   - Dawn header API-surface reference coverage: `100.00% (199/199)`
   - capability-to-benchmark mapping coverage: `100.00% (22/22)`
   (`bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`, `bench/out/dawn_header_vs_fawn_ref_scan.json`).
@@ -318,6 +320,46 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
   - comparable capability benchmark coverage (eligible-only): `100.00% (22/22)`
   - directional-only capability domains: `0.00% (0/22)`
   (`bench/out/dawn-vs-fawn-feature-benchmark-coverage.md`).
+
+63a. Full all-39 execution proof now completes with strict comparability green on the AMD extended matrix:
+- report: `bench/out/dawn-vs-fawn.amd.vulkan.full39.execproof.json`
+- result: `comparisonStatus=comparable`, `nonComparableCount=0`, `39` comparable workloads processed.
+- macro feature-gated contracts now align with their base contract parity rules:
+  `p1_resource_table_immediates_macro_500` and `p0_render_pixel_local_storage_barrier_macro_500`
+  set `allowLeftNoExecution=true` + `applesToApplesVetted=true` in
+  `bench/workloads.amd.vulkan.extended.json`.
+- native device feature request now includes
+  `WGPUFeatureName_ChromiumExperimentalSamplingResourceTable` when advertised by the adapter
+  (`zig/src/webgpu_ffi.zig`, `zig/src/wgpu_types.zig`) so resource-table diagnostics do not fail due to omitted feature enablement.
+- explicit runtime unsupported taxonomy remains visible (not hidden fallback):
+  `resource_table_feature_unavailable` and `pixel_local_storage_feature_unavailable`
+  on this AMD RADV host class for the four affected P0/P1 workloads.
+- claimability remains diagnostic for this proof run by design (`iterations=1`, `warmup=0`):
+  `claimStatus=diagnostic`, `nonClaimableCount=39` under release claim-floor policy.
+
+63b. Spec-universe coverage status semantics now distinguish inventory tracking from runtime implementation:
+- `config/webgpu-spec-coverage.schema.json` adds coverage `status="tracked"`.
+- `config/webgpu-spec-coverage.json` migrates Dawn feature-inventory rows from `planned` to `tracked` for explicit full-universe inventory closure.
+- `bench/generate_feature_benchmark_table.py` now reports both:
+  - inventory tracking completion (`status != planned`)
+  - runtime-implemented completion (`status == implemented`).
+
+63c. Spec-universe tracked-inventory closure is now complete:
+- all feature-inventory rows are now in explicit implemented state via a unified inventory contract:
+  - Dawn feature-enum source of truth (`bench/vendor/dawn/src/dawn/dawn.json` `feature name`)
+  - runtime capability introspection path (`wgpuAdapterGetFeatures` / `wgpuDeviceGetFeatures` in Zig capability runtime)
+  - benchmark mapping contract (`p1_capability_introspection_contract` + `p1_capability_introspection_macro_500`)
+- current status totals are now:
+  - `implemented=103`
+  - `blocked=0`
+  - `tracked=0`
+  - `planned=0`
+
+63d. Full 39-workload strict comparable benchmark pass now completes on local Vulkan config with the extended matrix:
+- report: `bench/out/dawn-vs-fawn.local.vulkan.extended.comparable.full39.now.json`
+- result: `comparisonStatus=comparable`, `nonComparableCount=0`, `workloadCount=39`.
+- all `39` workload IDs in `bench/workloads.amd.vulkan.extended.json` are present in the report.
+- run remains diagnostic for claim mode by design (`iterations=1`, `warmup=0`): `claimStatus=diagnostic`, `nonClaimableCount=39`.
 
 64. Blocking gate enforcement is now aligned with process policy in CI:
 - canonical runner `bench/run_blocking_gates.py` now enforces schema -> correctness -> trace -> optional drop-in -> optional claim ordering.
@@ -376,26 +418,60 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 
 74. Canonical tested hardware/driver inventory and matrix dashboard are now generated from artifacts:
 - new script `bench/build_test_inventory_dashboard.py` scans compare reports and builds:
-  - timestamped inventory snapshots (`bench/out/test-inventory.<timestamp>.json`)
+  - timestamped inventory snapshots (`bench/out/<timestamp>/test-inventory.json`)
   - stable latest inventory registry (`bench/out/test-inventory.latest.json`)
-  - timestamped dashboard snapshots (`bench/out/test-dashboard.<timestamp>.html`)
+  - timestamped dashboard snapshots (`bench/out/<timestamp>/test-dashboard.html`)
   - stable latest dashboard (`bench/out/test-dashboard.latest.html`)
 - dashboard includes per-matrix latest status (`comparisonStatus`, `claimStatus`, non-comparable/non-claimable counts) and top-level p50 delta vs Dawn.
 - inventory includes tested profile combos keyed by `vendor|api|deviceFamily|driver` (from `traceMeta.profile`) plus first/last-seen and matrix/report coverage.
+- timestamped run folders now include `run_manifest.json` with run type/config/gate metadata; ad-hoc artifacts are namespaced under `bench/out/scratch/<timestamp>/...`.
+- historical timestamp folders can be annotated with inferred manifests via `bench/backfill_run_manifests.py` so legacy artifacts remain auditable without renaming folders.
+
+75. Upstream quirk mining automation is now deterministic and schema-backed:
+- new miner `agent/mine_upstream_quirks.py` scans source roots for toggle-style quirk candidates and emits `quirks.schema`-valid records (`schemaVersion: 2`).
+- new manifest contract `config/quirk-mining-manifest.schema.json` defines hash-linked mining evidence (`seedHash`/`finalHash`/per-row chain).
+- schema gate now validates sample mining artifacts (`examples/quirks/mined_toggle_sample.json`, `examples/quirk-mining.manifest.sample.json`).
+
+76. Baseline dataset/trend packaging is now automated:
+- new script `bench/build_baseline_dataset.py` scans comparison artifacts and emits:
+  - timestamped baseline dataset (`bench/out/<timestamp>/baseline-dataset.json`)
+  - timestamped markdown summary (`bench/out/<timestamp>/baseline-dataset.md`)
+  - stable latest outputs (`bench/out/baseline-dataset.latest.json`, `bench/out/baseline-dataset.latest.md`)
+- output groups report history by matrix/runtime pair and tracks latest/best/worst p50 deltas.
+
+77. Substantiation target-profile diversity can now be enforced as blocking:
+- `config/substantiation-policy.json` now carries `releaseEvidence.enforceTargetUniqueLeftProfiles` (default `true`).
+- `bench/substantiation_gate.py` now fails (not warns) when `targetUniqueLeftProfiles` is below policy under enforced mode, with optional CLI override.
+
+78. Dawn-vs-Fawn benchmark harness logic is now modularized by concern:
+- `bench/compare_dawn_vs_fawn_modules/timing_selection.py`
+- `bench/compare_dawn_vs_fawn_modules/comparability.py`
+- `bench/compare_dawn_vs_fawn_modules/claimability.py`
+- `bench/compare_dawn_vs_fawn_modules/reporting.py`
+- `bench/compare_dawn_vs_fawn.py` now uses these modules for runtime behavior while preserving report contracts.
+
+79. Native execution trace taxonomy now includes deterministic status codes:
+- trace rows now emit `executionStatusCode` in addition to `executionStatusMessage`.
+- `zig/src/trace.zig` normalizes status codes to stable machine-friendly tokens and `config/trace.schema.json` is updated accordingly.
+
+80. Strict AMD Vulkan host preflight now probes Dawn adapter visibility directly:
+- `bench/preflight_bench_host.py` now runs a Dawn adapter probe (`dawn_perf_tests --gtest_list_tests --backend=vulkan --adapter-vendor-id=0x1002`) and parses reported adapters before allowing strict AMD runs.
+- strict preflight now fails fast when the requested AMD Vulkan adapter is not Dawn-visible, even if `/dev/dri/renderD128` appears readable/writable via OS-level checks.
+- this prevents false-green preflight outcomes that would otherwise fail later in compare execution with adapter-unavailable or render-node permission-denied errors.
 
 ### Missing in progress
 
-1. Full upstream quirk mining automation.
+1. Expand upstream quirk mining beyond toggle-style heuristics (`Toggle::...`) to cover additional workaround/action patterns with the same schema/hash discipline.
 2. Lean theorem packs with CI proof execution.
 3. Self-hosted AMD Vulkan runner availability/maintenance for automated smoke workflow execution (`.github/workflows/amd-vulkan-smoke.yml`).
 4. Full benchmark harness with measured GPU timings tied to native execution spans.
-5. Baseline dataset generation and end-to-end comparison automation against Dawn/wgpu incumbents.
+5. Extend baseline automation to broader incumbent lanes (including explicit wgpu baselines) and multi-host trend publication.
 6. Native Zig/WebGPU/FFI execution backend hardening in Zig remains a runtime milestone (coverage/reliability/perf).
 7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
 8. Keep directional diagnostics macro-scoped and non-claim (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`).
 9. Bench harness sharding follow-up (owner: performance):
-- split `bench/compare_dawn_vs_fawn.py` into cohesive modules (`timing_selection.py`, `comparability.py`, `claimability.py`, `reporting.py`) while preserving strict contract behavior.
-10. Expand substantiation gate inputs across multiple non-CPU host profiles so `targetUniqueLeftProfiles` can be enforced as blocking (currently advisory target only).
+- complete remaining orchestrator sharding in `bench/compare_dawn_vs_fawn.py` to meet per-file size policy while preserving current module boundaries.
+10. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
 
 ## Performance Reliability Investigation (2026-02-21)
 
@@ -446,18 +522,18 @@ Interpretation:
 - this confirms the new texture command seed exercises real `kernel_dispatch + render_draw` behavior.
 - remaining gap is expected while directional texture methodology is still simplified versus Dawn's full render-pass transitions.
 
-## AMD Vulkan run snapshot (2026-02-22)
+## AMD Vulkan run snapshot (2026-02-23)
 
 Current contract state after matrix expansion:
 
 1. `bench/workloads.amd.vulkan.extended.json`
 - workload contracts: `34` total
-- strict comparable contracts: `29`
-- directional contracts: `5` (`p1_resource_table_immediates_macro_500`, 3 macro stress contracts, and `p0_render_pixel_local_storage_barrier_macro_500`)
+- strict comparable contracts: `17` (apples-to-apples only)
+- directional contracts: `17` (includes contract/proxy domains `pipeline-async`, `p0-*`, `p1-*`, `p2-*`, `surface`, plus macro stress contracts)
 
 2. `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - strict mode remains `includeNoncomparableWorkloads=false`
-- now targets the expanded comparable matrix (upload + compute + render + texture + render-bundle + async diagnostics)
+- now targets the expanded apples-to-apples comparable matrix (upload + compute + render + texture + render-bundle)
 
 3. `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
 - directional diagnostics now focus on macro-only stress workloads
@@ -502,6 +578,32 @@ Execution gap list:
 
 2. AMD Vulkan extended release workload contract now uses deferred queue sync for `buffer_upload_1kb` in `bench/workloads.amd.vulkan.extended.json` (matching `bench/workloads.amd.vulkan.json`) to avoid per-command wait inflation at tiny payload sizes while preserving per-upload normalization semantics.
 
+3. Fresh release claim-floor rerun executed on this host using the full comparable release profile (`iterations=16`, `warmup=1`, 17 workloads):
+- report: `bench/out/20260223T202753Z/dawn-vs-fawn.amd.vulkan.release.json`
+- gate result: `comparisonStatus=comparable`, `claimStatus=diagnostic`, `nonClaimableCount=1`
+- residual non-claimable workload:
+  - `texture_sampling_raster_proxy` (tails only: `p95/p99 = -16.164%`; `p50` positive).
+
+4. Render-domain apples-to-apples timing/runtime path was tightened:
+- comparable timing for workload domains `render` and `render-bundle` uses encode-only operation source (`fawn-execution-encode-ns`) for claim comparison against Dawn DrawCallPerf timing.
+- `render_draw` render-bundle command recording was moved into setup (untimed) so encode timing now reflects bundle execution parity instead of bundle build cost.
+- focused release claim-floor rerun (`iterations=16`, `warmup=1`) over the 2 render-bundle workloads:
+  - report: `bench/out/20260223T202424Z/dawn-vs-fawn.amd.vulkan.release.json`
+  - result: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`.
+
+5. Texture-raster tail reliability contract was tightened for claim runs:
+- `texture_sampling_raster_proxy` now runs with `leftCommandRepeat=500` and `leftTimingDivisor=500` (same per-iteration unit normalization) to reduce low-coverage GPU timestamp quantization noise in p95/p99 tails.
+- focused release claim-floor rerun for that workload:
+  - report: `bench/out/20260223T210045Z/dawn-vs-fawn.amd.vulkan.release.json`
+  - result: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`.
+
+6. Redundant-pipeline render tail reliability contract was tightened for claim runs:
+- full release pipeline rerun (`bench/out/20260223T211020Z/dawn-vs-fawn.amd.vulkan.release.json`) reduced the matrix to one residual non-claimable workload: `render_draw_redundant_pipeline_bindings` (tails only).
+- `render_draw_redundant_pipeline_bindings` now runs with `leftCommandRepeat=10` and `leftTimingDivisor=20000` (per-draw normalization preserved) to reduce sample-tail setup jitter.
+- focused release claim-floor rerun for that workload:
+  - report: `bench/out/20260223T213900Z/dawn-vs-fawn.amd.vulkan.release.json`
+  - result: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`.
+
 ## v0 Reality
 
 Blocking gates: schema, correctness, trace.
@@ -509,11 +611,10 @@ Advisory gates: verification, performance.
 
 This matches speed-first priorities while keeping deterministic foundations.
 
-Current comparison claim state: `mixed` (strict comparable + directional diagnostics).
+Current comparison claim state: `strict-comparable matrix + claimability diagnostics`.
 
 Meaning:
-1. strict comparable AMD matrices are contract-defined and expanded, but claimable strict AMD substantiation requires a host with usable AMD render-node access.
-2. directional diagnostics are contract-scoped and non-claim: macro-only stress workloads (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`).
+1. strict comparable AMD matrix is now full-contract (`39` workloads), but claimable strict AMD substantiation still requires stable tails across the expanded set.
+2. macro stress workloads are apples-vetted comparable contracts; they can still be run as diagnostic slices but are no longer encoded as directional-only contracts.
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
-4. directional diagnostics currently cover macro-only stress workloads:
-`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`.
+4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.

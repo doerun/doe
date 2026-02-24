@@ -86,6 +86,7 @@ pub const WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses: WGPUFe
 pub const WGPUFeatureName_PixelLocalStorageCoherent: WGPUFeatureName = 0x0005000A;
 pub const WGPUFeatureName_PixelLocalStorageNonCoherent: WGPUFeatureName = 0x0005000B;
 pub const WGPUFeatureName_MultiDrawIndirect: WGPUFeatureName = 0x00050031;
+pub const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable: WGPUFeatureName = 0x0005003A;
 
 pub const WGPUQueryType = u32;
 pub const WGPUQueryType_Timestamp: WGPUQueryType = 0x00000002;

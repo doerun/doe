@@ -47,6 +47,14 @@ def parse_args() -> argparse.Namespace:
         help="Run claim_gate.py after schema/correctness/trace gates.",
     )
     parser.add_argument(
+        "--require-claim-gate",
+        action="store_true",
+        help=(
+            "Fail unless --with-claim-gate is set. "
+            "Use this when the run is intended as release-claim readiness evidence."
+        ),
+    )
+    parser.add_argument(
         "--trace-semantic-parity-mode",
         choices=["off", "auto", "required"],
         default="auto",
@@ -151,6 +159,9 @@ def main() -> int:
             f"{args.claim_require_min_timed_samples} expected >= 0"
         )
         return 1
+    if args.require_claim_gate and not args.with_claim_gate:
+        print("FAIL: --require-claim-gate requires --with-claim-gate")
+        return 1
     if args.dropin_micro_iterations < 0:
         print(
             "FAIL: invalid --dropin-micro-iterations="
@@ -176,6 +187,12 @@ def main() -> int:
     trace_gate = bench_dir / "trace_gate.py"
     dropin_gate = bench_dir / "dropin_gate.py"
     claim_gate = bench_dir / "claim_gate.py"
+
+    if not args.with_claim_gate:
+        print(
+            "INFO: claim gate not requested; this run validates blocking gates only "
+            "(schema/correctness/trace[/drop-in]) and is not release-claim readiness evidence."
+        )
 
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])

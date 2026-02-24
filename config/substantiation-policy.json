@@ -7,6 +7,7 @@
     "requiredClaimStatus": "claimable",
     "minUniqueLeftProfiles": 1,
     "targetUniqueLeftProfiles": 3,
-    "notes": "Blocking minimums are set for single-host CI; target profile diversity tracks broader device/driver confidence goals."
+    "enforceTargetUniqueLeftProfiles": true,
+    "notes": "Blocking minimums are set for single-host CI; target profile diversity is enforced by default and may be override-disabled via substantiation_gate CLI for diagnostic-only runs."
   }
 }

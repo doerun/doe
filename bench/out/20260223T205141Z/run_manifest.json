@@ -1,0 +1,23 @@
+{
+  "claimGateRan": false,
+  "compareAnalysisPath": "",
+  "compareHtmlPath": "bench/out/20260223T205141Z/dawn-vs-fawn.amd.vulkan.release.html",
+  "compareHtmlRan": false,
+  "compareRan": true,
+  "config": "bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json",
+  "createdAtUtc": "2026-02-23T20:51:43.571800Z",
+  "dropinGateRan": false,
+  "failedStep": "compare",
+  "fullRun": true,
+  "gatesRan": false,
+  "outputTimestamp": "20260223T205141Z",
+  "preflightRan": true,
+  "reportPath": "bench/out/20260223T205141Z/dawn-vs-fawn.amd.vulkan.release.json",
+  "runFolder": "bench/out/20260223T205141Z",
+  "runType": "release_pipeline",
+  "schemaVersion": 1,
+  "smokeVerifyRan": false,
+  "status": "failed",
+  "updatedAtUtc": "2026-02-23T20:51:43.571800Z",
+  "workspacePath": "bench/out/20260223T205141Z/runtime-comparisons.amd.vulkan.release"
+}

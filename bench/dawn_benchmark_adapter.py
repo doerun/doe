@@ -83,6 +83,41 @@ AUTODISCOVER_WORKLOAD_PATTERNS: dict[str, tuple[str, str | None]] = {
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
+    "p1_capability_introspection_contract": (
+        "ShaderRobustnessPerf",
+        "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
+    ),
+    "p1_resource_table_immediates_contract": ("DrawCallPerf", None),
+    "p2_lifecycle_refcount_contract": ("DrawCallPerf", None),
+    "p1_capability_introspection_macro_500": (
+        "ShaderRobustnessPerf",
+        "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
+    ),
+    "p1_resource_table_immediates_macro_500": ("DrawCallPerf", None),
+    "p2_lifecycle_refcount_macro_200": ("DrawCallPerf", None),
+    "render_draw_throughput_macro_200k": ("DrawCallPerf", None),
+    "draw_indexed_render_macro_200k": ("DrawCallPerf", "DynamicVertexBuffer"),
+    "texture_sampler_write_query_destroy_macro_500": (
+        "SubresourceTrackingPerf",
+        "arrayLayer_16_mipLevel_3",
+    ),
+    "p0_resource_lifecycle_contract": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
+    "p0_compute_indirect_timestamp_contract": (
+        "WorkgroupAtomicPerf",
+        "WorkgroupTypeAtomic",
+    ),
+    "p0_render_multidraw_contract": ("DrawCallPerf", None),
+    "p0_render_multidraw_indexed_contract": ("DrawCallPerf", "DynamicVertexBuffer"),
+    "p0_render_pixel_local_storage_barrier_contract": ("DrawCallPerf", None),
+    "p0_render_pixel_local_storage_barrier_macro_500": ("DrawCallPerf", None),
+    "uniform_buffer_update_writebuffer_partial_single": (
+        "UniformBufferUpdatePerf",
+        "WriteBuffer_PartialSize_SingleUniformBuffer",
+    ),
+    "zero_initialize_workgroup_memory_256": (
+        "VulkanZeroInitializeWorkgroupMemoryExtensionTest",
+        "workgroupSize_256",
+    ),
     "surface_presentation_contract": (
         "ConcurrentExecutionTest",
         "ConcurrentExecutionType_RunSingle",

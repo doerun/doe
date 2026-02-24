@@ -10,10 +10,10 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from glob import glob
-from html import escape
 from pathlib import Path
 from typing import Any
 
+import inventory_dashboard_html
 import output_paths
 
 
@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help=(
             "Glob for compare reports. "
-            "May be repeated. Default: bench/out/dawn-vs-fawn*.json"
+            "May be repeated. Default: bench/out/**/dawn-vs-fawn*.json"
         ),
     )
     parser.add_argument(
@@ -326,150 +326,6 @@ def count_non_claimable(payload: dict[str, Any]) -> int:
     return count
 
 
-def status_class(status: str, *, kind: str) -> str:
-    if kind == "comparison":
-        if status == "comparable":
-            return "good"
-        if status in {"unreliable", "non-comparable"}:
-            return "bad"
-        return "warn"
-    if kind == "claim":
-        if status == "claimable":
-            return "good"
-        if status == "diagnostic":
-            return "warn"
-        return "bad"
-    return "warn"
-
-
-def format_delta(value: float | None) -> str:
-    if value is None:
-        return "n/a"
-    return f"{value:+.2f}%"
-
-
-def build_dashboard_html(inventory: dict[str, Any], *, max_recent_reports: int) -> str:
-    summary = inventory.get("summary", {})
-    matrices = inventory.get("matrices", [])
-    profiles = inventory.get("profiles", [])
-    reports = inventory.get("reports", [])
-    generated_at = escape(str(inventory.get("generatedAtUtc", "")))
-    inventory_path = escape(str(inventory.get("inventoryPath", "")))
-
-    matrix_rows: list[str] = []
-    for matrix in matrices:
-        if not isinstance(matrix, dict):
-            continue
-        latest = matrix.get("latest", {})
-        if not isinstance(latest, dict):
-            latest = {}
-        comparison_status = str(latest.get("comparisonStatus", "unknown"))
-        claim_status = str(latest.get("claimStatus", "unknown"))
-        matrix_rows.append(
-            "<tr>"
-            f"<td><code>{escape(str(matrix.get('matrixId', 'unknown')))}</code></td>"
-            f"<td>{escape(str(latest.get('generatedAtUtc', '')))}</td>"
-            f"<td><span class='badge {status_class(comparison_status, kind='comparison')}'>{escape(comparison_status)}</span></td>"
-            f"<td><span class='badge {status_class(claim_status, kind='claim')}'>{escape(claim_status)}</span></td>"
-            f"<td>{escape(str(latest.get('workloadCount', 0)))}</td>"
-            f"<td>{escape(str(latest.get('nonComparableCount', 0)))}</td>"
-            f"<td>{escape(str(latest.get('nonClaimableCount', 0)))}</td>"
-            f"<td>{escape(format_delta(safe_float(latest.get('overallP50DeltaPercent'))))}</td>"
-            "</tr>"
-        )
-
-    profile_rows: list[str] = []
-    for profile in profiles:
-        if not isinstance(profile, dict):
-            continue
-        family = str(profile.get("deviceFamily", ""))
-        profile_rows.append(
-            "<tr>"
-            f"<td><code>{escape(str(profile.get('vendor', '')))} / {escape(str(profile.get('api', '')))}"
-            f" / {escape(family or '-')} / {escape(str(profile.get('driver', '')))}</code></td>"
-            f"<td>{escape(str(profile.get('reportCount', 0)))}</td>"
-            f"<td>{escape(str(profile.get('sampleCount', 0)))}</td>"
-            f"<td>{escape(', '.join(str(x) for x in profile.get('sides', [])))}</td>"
-            f"<td>{escape(str(profile.get('matrixCount', 0)))}</td>"
-            f"<td>{escape(str(profile.get('firstSeenUtc', '')))}</td>"
-            f"<td>{escape(str(profile.get('lastSeenUtc', '')))}</td>"
-            "</tr>"
-        )
-
-    recent_rows: list[str] = []
-    recent_count = 0
-    for report in reports:
-        if recent_count >= max_recent_reports:
-            break
-        if not isinstance(report, dict):
-            continue
-        comparison_status = str(report.get("comparisonStatus", "unknown"))
-        claim_status = str(report.get("claimStatus", "unknown"))
-        recent_rows.append(
-            "<tr>"
-            f"<td>{escape(str(report.get('generatedAtUtc', '')))}</td>"
-            f"<td><code>{escape(str(report.get('matrixId', 'unknown')))}</code></td>"
-            f"<td><span class='badge {status_class(comparison_status, kind='comparison')}'>{escape(comparison_status)}</span></td>"
-            f"<td><span class='badge {status_class(claim_status, kind='claim')}'>{escape(claim_status)}</span></td>"
-            f"<td>{escape(format_delta(safe_float(report.get('overallP50DeltaPercent'))))}</td>"
-            f"<td>{escape(str(report.get('workloadCount', 0)))}</td>"
-            f"<td><code>{escape(str(report.get('sourcePath', '')))}</code></td>"
-            "</tr>"
-        )
-        recent_count += 1
-
-    return (
-        "<!doctype html>"
-        "<html lang='en'>"
-        "<head>"
-        "<meta charset='utf-8'/>"
-        "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
-        "<title>Fawn Test Inventory Dashboard</title>"
-        "<style>"
-        "body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:24px;color:#0f172a;background:#f8fafc;}"
-        "h1,h2{margin:0 0 12px 0;} h2{margin-top:28px;}"
-        ".meta{color:#475569;font-size:14px;margin-bottom:16px;}"
-        ".cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}"
-        ".card{background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;}"
-        ".card .k{font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;}"
-        ".card .v{font-size:20px;font-weight:700;margin-top:6px;}"
-        "table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;}"
-        "th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13px;vertical-align:top;}"
-        "th{background:#f1f5f9;color:#334155;font-weight:600;}"
-        "tr:last-child td{border-bottom:none;}"
-        ".badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;}"
-        ".badge.good{background:#dcfce7;color:#166534;}"
-        ".badge.warn{background:#fef9c3;color:#854d0e;}"
-        ".badge.bad{background:#fee2e2;color:#991b1b;}"
-        "code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;}"
-        "</style>"
-        "</head>"
-        "<body>"
-        "<h1>Fawn Test Inventory Dashboard</h1>"
-        f"<div class='meta'>generated: {generated_at} | inventory: <code>{inventory_path}</code></div>"
-        "<div class='cards'>"
-        f"<div class='card'><div class='k'>Reports</div><div class='v'>{escape(str(summary.get('includedReports', 0)))}</div></div>"
-        f"<div class='card'><div class='k'>Matrices</div><div class='v'>{escape(str(summary.get('matrixCount', 0)))}</div></div>"
-        f"<div class='card'><div class='k'>Profiles</div><div class='v'>{escape(str(summary.get('uniqueProfileCount', 0)))}</div></div>"
-        f"<div class='card'><div class='k'>Comparable Reports</div><div class='v'>{escape(str(summary.get('comparableReportCount', 0)))}</div></div>"
-        f"<div class='card'><div class='k'>Claimable Reports</div><div class='v'>{escape(str(summary.get('claimableReportCount', 0)))}</div></div>"
-        "</div>"
-        "<h2>Matrix Status (Latest)</h2>"
-        "<table><thead><tr><th>Matrix</th><th>Latest UTC</th><th>Comparison</th><th>Claim</th><th>Workloads</th><th>Non-Comparable</th><th>Non-Claimable</th><th>p50 Delta</th></tr></thead><tbody>"
-        + ("".join(matrix_rows) if matrix_rows else "<tr><td colspan='8'>No matrix rows.</td></tr>")
-        + "</tbody></table>"
-        "<h2>Tested Hardware/Driver Profiles</h2>"
-        "<table><thead><tr><th>Profile</th><th>Reports</th><th>Samples</th><th>Sides</th><th>Matrices</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>"
-        + ("".join(profile_rows) if profile_rows else "<tr><td colspan='7'>No profile rows.</td></tr>")
-        + "</tbody></table>"
-        "<h2>Recent Reports</h2>"
-        "<table><thead><tr><th>Generated UTC</th><th>Matrix</th><th>Comparison</th><th>Claim</th><th>p50 Delta</th><th>Workloads</th><th>Source</th></tr></thead><tbody>"
-        + ("".join(recent_rows) if recent_rows else "<tr><td colspan='7'>No reports.</td></tr>")
-        + "</tbody></table>"
-        "</body></html>"
-    )
-
-
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -493,7 +349,7 @@ def collect_paths(patterns: list[str], explicit_paths: list[str]) -> list[Path]:
         candidates.append(path)
 
     for pattern in patterns:
-        for raw in sorted(glob(pattern)):
+        for raw in sorted(glob(pattern, recursive=True)):
             path = Path(raw)
             key = str(path)
             if key in seen:
@@ -504,13 +360,21 @@ def collect_paths(patterns: list[str], explicit_paths: list[str]) -> list[Path]:
     return candidates
 
 
+def is_scratch_namespace_path(path: Path) -> bool:
+    parts = path.parts
+    for idx in range(len(parts) - 2):
+        if parts[idx] == "bench" and parts[idx + 1] == "out" and parts[idx + 2] == "scratch":
+            return True
+    return False
+
+
 def main() -> int:
     args = parse_args()
     if args.max_recent_reports < 0:
         print(f"FAIL: --max-recent-reports must be >= 0 (received {args.max_recent_reports})")
         return 1
 
-    report_patterns = args.report_glob if args.report_glob else ["bench/out/dawn-vs-fawn*.json"]
+    report_patterns = args.report_glob if args.report_glob else ["bench/out/**/dawn-vs-fawn*.json"]
     sources = collect_paths(report_patterns, args.report)
     if not sources:
         print("FAIL: no report files matched")
@@ -524,6 +388,14 @@ def main() -> int:
     matrix_agg: dict[str, list[dict[str, Any]]] = {}
 
     for source_path in sources:
+        if is_scratch_namespace_path(source_path):
+            skipped_files.append(
+                {
+                    "path": str(source_path),
+                    "reason": "scratch namespace (excluded from canonical inventory)",
+                }
+            )
+            continue
         if not source_path.exists():
             skipped_files.append({"path": str(source_path), "reason": "missing"})
             continue
@@ -558,6 +430,7 @@ def main() -> int:
             "sourcePath": str(source_path),
             "outPath": payload.get("outPath", ""),
             "matrixId": matrix_id,
+            "lane": inventory_dashboard_html.infer_matrix_lane(matrix_id),
             "generatedAtUtc": generated_at_utc,
             "comparisonStatus": comparison_status,
             "claimStatus": claim_status,
@@ -626,6 +499,7 @@ def main() -> int:
         matrix_entries.append(
             {
                 "matrixId": matrix_id,
+                "lane": inventory_dashboard_html.infer_matrix_lane(matrix_id),
                 "reportCount": len(entries_sorted),
                 "comparisonStatusCounts": dict(sorted(comparison_counts.items())),
                 "claimStatusCounts": dict(sorted(claim_counts.items())),
@@ -662,6 +536,26 @@ def main() -> int:
 
     comparison_counter = Counter(str(item.get("comparisonStatus", "unknown")) for item in report_entries)
     claim_counter = Counter(str(item.get("claimStatus", "unknown")) for item in report_entries)
+    claimable_comparable_report_count = sum(
+        1
+        for item in report_entries
+        if str(item.get("comparisonStatus", "")) == "comparable"
+        and str(item.get("claimStatus", "")) == "claimable"
+    )
+    latest_comparable_matrix_count = sum(
+        1
+        for matrix in matrix_entries
+        if isinstance(matrix, dict)
+        and isinstance(matrix.get("latest"), dict)
+        and str(matrix["latest"].get("comparisonStatus", "")) == "comparable"
+    )
+    latest_claimable_matrix_count = sum(
+        1
+        for matrix in matrix_entries
+        if isinstance(matrix, dict)
+        and isinstance(matrix.get("latest"), dict)
+        and str(matrix["latest"].get("claimStatus", "")) == "claimable"
+    )
     summary = {
         "totalMatchedFiles": len(sources),
         "includedReports": len(report_entries),
@@ -670,6 +564,9 @@ def main() -> int:
         "uniqueProfileCount": len(profile_entries),
         "comparableReportCount": comparison_counter.get("comparable", 0),
         "claimableReportCount": claim_counter.get("claimable", 0),
+        "claimableComparableReportCount": claimable_comparable_report_count,
+        "latestComparableMatrixCount": latest_comparable_matrix_count,
+        "latestClaimableMatrixCount": latest_claimable_matrix_count,
         "comparisonStatusCounts": dict(sorted(comparison_counter.items())),
         "claimStatusCounts": dict(sorted(claim_counter.items())),
     }
@@ -708,7 +605,7 @@ def main() -> int:
         "reports": report_entries,
         "skippedFiles": skipped_files,
     }
-    dashboard_html = build_dashboard_html(
+    dashboard_html = inventory_dashboard_html.build_dashboard_html(
         inventory_payload,
         max_recent_reports=args.max_recent_reports,
     )
@@ -717,6 +614,22 @@ def main() -> int:
     write_text(dashboard_out, dashboard_html)
     write_json(latest_inventory, inventory_payload)
     write_text(latest_dashboard, dashboard_html)
+    output_paths.write_run_manifest_for_outputs(
+        [inventory_out, dashboard_out],
+        {
+            "runType": "inventory_dashboard",
+            "config": {
+                "reportGlobs": report_patterns,
+                "explicitReports": args.report,
+            },
+            "fullRun": True,
+            "claimGateRan": False,
+            "dropinGateRan": False,
+            "inventoryPath": str(inventory_out),
+            "dashboardPath": str(dashboard_out),
+            "status": "passed",
+        },
+    )
 
     print("PASS: built test inventory + dashboard")
     print(f"inventory: {inventory_out}")

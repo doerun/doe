@@ -46,6 +46,23 @@ const DIAGNOSTIC_PIXEL_LOCAL_SHADER_SOURCE =
     \\}
 ;
 
+const DIAGNOSTIC_PIXEL_LOCAL_EMULATED_SHADER_SOURCE =
+    \\@vertex
+    \\fn vs_main(@builtin(vertex_index) idx: u32) -> @builtin(position) vec4f {
+    \\  var p = array<vec2f, 3>(
+    \\    vec2f(0.0, 0.5),
+    \\    vec2f(-0.5, -0.5),
+    \\    vec2f(0.5, -0.5),
+    \\  );
+    \\  let pos = p[idx];
+    \\  return vec4f(pos, 0.0, 1.0);
+    \\}
+    \\@fragment
+    \\fn fs_main() -> @location(0) vec4f {
+    \\  return vec4f(0.0, 0.0, 0.0, 1.0);
+    \\}
+;
+
 pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
     const procs = self.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
@@ -164,6 +181,65 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
     procs.wgpuCommandBufferRelease(command_buffer);
 }
 
+pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+
+    const normalized_target_format = normalizeDiagnosticFormat(target_format);
+    const target_texture = try getOrCreateDiagnosticRenderTexture(self, normalized_target_format);
+    const target_view = try createRenderAttachmentTextureView(procs, target_texture, normalized_target_format);
+    defer procs.wgpuTextureViewRelease(target_view);
+
+    const render_pipeline = try createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(self, normalized_target_format);
+    defer render_api.render_pipeline_release(render_pipeline);
+
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+        .nextInChain = null,
+        .label = loader.emptyStringView(),
+    });
+    if (encoder == null) return error.CommandEncoderCreationFailed;
+    defer procs.wgpuCommandEncoderRelease(encoder);
+
+    var color_attachment = render_types_mod.RenderPassColorAttachment{
+        .nextInChain = null,
+        .view = target_view,
+        .depthSlice = std.math.maxInt(u32),
+        .resolveTarget = null,
+        .loadOp = RENDER_LOAD_OP_CLEAR,
+        .storeOp = RENDER_STORE_OP_STORE,
+        .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+    };
+    const render_pass = render_api.command_encoder_begin_render_pass(
+        encoder,
+        &render_types_mod.RenderPassDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+            .colorAttachmentCount = 1,
+            .colorAttachments = @ptrCast(&color_attachment),
+            .depthStencilAttachment = null,
+            .occlusionQuerySet = null,
+            .timestampWrites = null,
+        },
+    );
+    if (render_pass == null) return error.RenderPassCreationFailed;
+    defer render_api.render_pass_encoder_release(render_pass);
+
+    render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
+    render_api.render_pass_encoder_draw(render_pass, 3, 1, 0, 0);
+    render_api.render_pass_encoder_draw(render_pass, 3, 1, 0, 0);
+    render_api.render_pass_encoder_end(render_pass);
+
+    const command_buffer = procs.wgpuCommandEncoderFinish(
+        encoder,
+        &types.WGPUCommandBufferDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+        },
+    );
+    if (command_buffer == null) return error.CommandBufferFinishFailed;
+    procs.wgpuCommandBufferRelease(command_buffer);
+}
+
 fn createPixelLocalStorageRenderPipelineForDiagnostics(
     self: *Backend,
     target_format: types.WGPUTextureFormat,
@@ -217,6 +293,85 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
         .nextInChain = null,
         .label = loader.stringView("fawn.diag.pixel_local_storage"),
         .layout = pipeline_layout,
+        .vertex = .{
+            .nextInChain = null,
+            .module = shader_module,
+            .entryPoint = loader.stringView("vs_main"),
+            .constantCount = 0,
+            .constants = null,
+            .bufferCount = 0,
+            .buffers = null,
+        },
+        .primitive = .{
+            .nextInChain = null,
+            .topology = RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .stripIndexFormat = 0,
+            .frontFace = RENDER_FRONT_FACE_CCW,
+            .cullMode = RENDER_CULL_MODE_NONE,
+            .unclippedDepth = types.WGPU_FALSE,
+        },
+        .depthStencil = null,
+        .multisample = .{
+            .nextInChain = null,
+            .count = 1,
+            .mask = RENDER_MULTISAMPLE_MASK_ALL,
+            .alphaToCoverageEnabled = types.WGPU_FALSE,
+        },
+        .fragment = &fragment_state,
+    };
+    return async_procs_mod.createRenderPipelineAsyncAndWait(
+        async_procs,
+        self.instance.?,
+        procs,
+        self.device.?,
+        @ptrCast(&pipeline_desc),
+    ) catch error.DiagnosticPipelineCreationFailed;
+}
+
+fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
+    self: *Backend,
+    target_format: types.WGPUTextureFormat,
+) !types.WGPURenderPipeline {
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse return error.AsyncProcUnavailable;
+
+    const shader_module = resources.createShaderModule(self, DIAGNOSTIC_PIXEL_LOCAL_EMULATED_SHADER_SOURCE) catch |err| {
+        return switch (err) {
+            error.KernelModuleCreationFailed => error.DiagnosticShaderModuleCreationFailed,
+            else => error.DiagnosticShaderModuleCreationFailed,
+        };
+    };
+    defer procs.wgpuShaderModuleRelease(shader_module);
+
+    const compilation_state = async_procs_mod.requestShaderCompilationInfoAndWait(
+        async_procs,
+        self.instance.?,
+        procs,
+        shader_module,
+    ) catch return error.DiagnosticCompilationInfoFailed;
+    if (compilation_state.status != async_procs_mod.COMPILATION_INFO_STATUS_SUCCESS) {
+        return error.DiagnosticCompilationInfoFailed;
+    }
+
+    var color_target = render_types_mod.RenderColorTargetState{
+        .nextInChain = null,
+        .format = target_format,
+        .blend = null,
+        .writeMask = RENDER_COLOR_WRITE_MASK_ALL,
+    };
+    var fragment_state = render_types_mod.RenderFragmentState{
+        .nextInChain = null,
+        .module = shader_module,
+        .entryPoint = loader.stringView("fs_main"),
+        .constantCount = 0,
+        .constants = null,
+        .targetCount = 1,
+        .targets = @ptrCast(&color_target),
+    };
+    const pipeline_desc = render_types_mod.RenderPipelineDescriptor{
+        .nextInChain = null,
+        .label = loader.stringView("fawn.diag.pixel_local_storage.emulated"),
+        .layout = null,
         .vertex = .{
             .nextInChain = null,
             .module = shader_module,

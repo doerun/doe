@@ -1,0 +1,15 @@
+{
+  "claimGateRan": false,
+  "config": "bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json",
+  "createdAtUtc": "2026-02-23T19:43:27.410374Z",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "outputTimestamp": "20260223T194250Z",
+  "reportPath": "bench/out/20260223T194250Z/dawn-vs-fawn.amd.vulkan.release.json",
+  "runFolder": "bench/out/20260223T194250Z",
+  "runType": "compare_dawn_vs_fawn",
+  "schemaVersion": 1,
+  "status": "failed",
+  "updatedAtUtc": "2026-02-23T19:43:27.410374Z",
+  "workspacePath": "bench/out/20260223T194250Z/runtime-comparisons.amd.vulkan.release"
+}

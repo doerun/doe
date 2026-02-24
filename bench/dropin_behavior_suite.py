@@ -172,6 +172,22 @@ def main() -> int:
         exit_code = 1
     finally:
         write_report(report_path, report)
+        output_paths.write_run_manifest_for_outputs(
+            [report_path],
+            {
+                "runType": "dropin_behavior_suite",
+                "config": {
+                    "artifact": str(artifact_path),
+                    "source": str(source_path),
+                    "headerDir": str(header_dir),
+                },
+                "fullRun": True,
+                "claimGateRan": False,
+                "dropinGateRan": False,
+                "reportPath": str(report_path),
+                "status": "passed" if report.get("pass") else "failed",
+            },
+        )
 
     if report.get("pass"):
         print("PASS: drop-in behavior suite")

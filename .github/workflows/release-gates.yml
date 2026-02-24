@@ -33,6 +33,13 @@ jobs:
           name: fawn-release-gates-report
           path: |
             bench/out/dawn-vs-fawn.amd.vulkan.release*.json
+            bench/out/**/dawn-vs-fawn.amd.vulkan.release*.json
+            bench/out/dawn-vs-fawn.amd.vulkan.release*.html
+            bench/out/**/dawn-vs-fawn.amd.vulkan.release*.html
             bench/out/runtime-comparisons.amd.vulkan.release*
+            bench/out/**/runtime-comparisons.amd.vulkan.release*
+            bench/out/**/run_manifest.json
             bench/out/dropin_*.json
+            bench/out/**/dropin_*.json
             bench/out/dropin_*.html
+            bench/out/**/dropin_*.html

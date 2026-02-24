@@ -1,0 +1,18 @@
+{
+  "claimGateRan": false,
+  "config": {
+    "inferenceSignals": [
+      "dropin_report*.json"
+    ],
+    "inferred": true
+  },
+  "createdAtUtc": "2026-02-23T18:59:48.628286Z",
+  "dropinGateRan": false,
+  "fullRun": false,
+  "outputTimestamp": "20260223T164210Z",
+  "runFolder": "bench/out/20260223T164210Z",
+  "runType": "dropin_gate",
+  "schemaVersion": 1,
+  "status": "unknown_historical",
+  "updatedAtUtc": "2026-02-23T18:59:48.628286Z"
+}

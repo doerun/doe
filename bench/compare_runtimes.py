@@ -84,7 +84,7 @@ def summarize(name: str, command: str, iterations: int, warmup: int, meta_path: 
         "command": command,
         "iterations": iterations,
         "timingsMs": timings,
-        "p5Ms": percentile(timings, 0.05),
+        "p10Ms": percentile(timings, 0.10),
         "p50Ms": percentile(timings, 0.5),
         "p95Ms": percentile(timings, 0.95),
         "p99Ms": percentile(timings, 0.99),
@@ -106,8 +106,8 @@ def main() -> int:
     left = summarize(args.left_label, args.left_cmd, args.iterations, args.warmup, args.left_meta)
     right = summarize(args.right_label, args.right_cmd, args.iterations, args.warmup, args.right_meta)
 
-    left_p5 = left["p5Ms"] if isinstance(left["p5Ms"], float) else 0.0
-    right_p5 = right["p5Ms"] if isinstance(right["p5Ms"], float) else 0.0
+    left_p10 = left["p10Ms"] if isinstance(left["p10Ms"], float) else 0.0
+    right_p10 = right["p10Ms"] if isinstance(right["p10Ms"], float) else 0.0
     left_p50 = left["p50Ms"] if isinstance(left["p50Ms"], float) else 0.0
     right_p50 = right["p50Ms"] if isinstance(right["p50Ms"], float) else 0.0
     left_p95 = left["p95Ms"] if isinstance(left["p95Ms"], float) else 0.0
@@ -118,7 +118,7 @@ def main() -> int:
     right_mean = right["meanMs"] if isinstance(right["meanMs"], float) else 0.0
 
     report = {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "generatedAtUtc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "outputTimestamp": output_timestamp,
         "left": left,
@@ -131,7 +131,7 @@ def main() -> int:
             "zero": "parity",
         },
         "delta": {
-            "p5Percent": percent_delta(left_p5, right_p5),
+            "p10Percent": percent_delta(left_p10, right_p10),
             "p50Percent": percent_delta(left_p50, right_p50),
             "p95Percent": percent_delta(left_p95, right_p95),
             "p99Percent": percent_delta(left_p99, right_p99),
@@ -148,11 +148,30 @@ def main() -> int:
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    output_paths.write_run_manifest_for_outputs(
+        [out],
+        {
+            "runType": "compare_runtimes",
+            "config": {
+                "leftLabel": args.left_label,
+                "rightLabel": args.right_label,
+                "iterations": args.iterations,
+                "warmup": args.warmup,
+                "leftMeta": args.left_meta,
+                "rightMeta": args.right_meta,
+            },
+            "fullRun": True,
+            "claimGateRan": False,
+            "dropinGateRan": False,
+            "reportPath": str(out),
+            "status": "passed",
+        },
+    )
     print(
         json.dumps(
             {
                 "out": str(out),
-                "p5DeltaPercent": report["delta"]["p5Percent"],
+                "p10DeltaPercent": report["delta"]["p10Percent"],
                 "p50DeltaPercent": report["delta"]["p50Percent"],
                 "p95DeltaPercent": report["delta"]["p95Percent"],
                 "p99DeltaPercent": report["delta"]["p99Percent"],

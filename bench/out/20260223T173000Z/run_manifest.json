@@ -1,0 +1,18 @@
+{
+  "claimGateRan": false,
+  "config": {
+    "inferenceSignals": [
+      "release-claim-windows*.json"
+    ],
+    "inferred": true
+  },
+  "createdAtUtc": "2026-02-23T18:59:48.628697Z",
+  "dropinGateRan": false,
+  "fullRun": false,
+  "outputTimestamp": "20260223T173000Z",
+  "runFolder": "bench/out/20260223T173000Z",
+  "runType": "release_claim_windows",
+  "schemaVersion": 1,
+  "status": "unknown_historical",
+  "updatedAtUtc": "2026-02-23T18:59:48.628697Z"
+}
