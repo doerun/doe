@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x20c47ae12e30f2d9",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "zero_initialize_workgroup_memory_256",
+  "gtestFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256",
+  "selectedFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.negative12.fixprobe.fast3/zero_initialize_workgroup_memory_256/right/dawn.run004.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.014996586539999999,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6048.984810942784,
+  "processWallMs": 6048.984810942784,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.014996586539999999,
+    "cpu_time": 0.011828227982,
+    "gpu_time": 0.0034011095599999997
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 14997,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.015087040773999999,
+      0.014996586539999999,
+      0.014665708847
+    ],
+    "cpu_time": [
+      0.01185541258,
+      0.011828227982,
+      0.011524290454999999
+    ],
+    "gpu_time": [
+      0.0034011095599999997,
+      0.0034647560549999996,
+      0.0034011095599999997
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.015087040773999999,
+    0.014996586539999999,
+    0.014665708847
+  ]
+}

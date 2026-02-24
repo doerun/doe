@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xbec8e0894e02bfaf",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "workgroup_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260224T140709Z/runtime-comparisons.amd.vulkan.extended.comparable/workgroup_atomic_1024/right/dawn.run001.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.053736898796,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6173.864449141547,
+  "processWallMs": 6173.864449141547,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.053736898796,
+    "cpu_time": 0.05213522738199999,
+    "gpu_time": 0.046201164398
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 53737,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.054633695497,
+      0.053736898796,
+      0.053358352617999996
+    ],
+    "cpu_time": [
+      0.053028989058,
+      0.05213522738199999,
+      0.051762829267
+    ],
+    "gpu_time": [
+      0.046201164398,
+      0.046111953089,
+      0.046310962932
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.054633695497,
+    0.053736898796,
+    0.053358352617999996
+  ]
+}

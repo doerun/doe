@@ -18,6 +18,8 @@ These files define candidate module boundaries and promotion expectations before
    - Track B internal compute services contract.
 6. `fawn-resource-scheduler.contract.md`
    - Track B resource and submit-cadence scheduler contract.
+7. `module-contract-matrix.md`
+   - Cross-module input/output schema fields, required gates, and rollout KPIs.
 
 ## Contract Rules
 

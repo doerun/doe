@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x85bc19a756667b9e",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "zero_initialize_workgroup_memory_256",
+  "gtestFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256",
+  "selectedFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/runtime-comparisons.amd.vulkan.negative12.releaseprobe.final3/zero_initialize_workgroup_memory_256/right/dawn.run009.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.010049826864,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6071.839693933725,
+  "processWallMs": 6071.839693933725,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.010049826864,
+    "cpu_time": 0.007018400794,
+    "gpu_time": 0.0007528406829999999
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 10050,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.010050265778999999,
+      0.010049621748999999,
+      0.010049826864
+    ],
+    "cpu_time": [
+      0.006960192713999999,
+      0.007018400794,
+      0.007029524381999999
+    ],
+    "gpu_time": [
+      0.0007732589349999999,
+      0.0007528406829999999,
+      0.000750864724
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.010050265778999999,
+    0.010049621748999999,
+    0.010049826864
+  ]
+}

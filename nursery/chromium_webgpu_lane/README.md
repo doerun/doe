@@ -229,8 +229,10 @@ Current lane structure:
 4. `contracts/`
    - runtime selector contract and optional module contract drafts.
    - see `contracts/README.md` for index.
-5. `notes/` (future)
-   - findings, experiment logs, and promotion decisions.
+5. `notes/`
+   - findings, experiment logs, touchpoint mapping, and promotion decisions.
+6. `scripts/`
+   - lane-local bring-up helpers (`bootstrap-host-tools.sh`, `env.sh`).
 
 Any script/code added here must be non-production and must not alter core runtime behavior by default.
 
@@ -270,6 +272,6 @@ Cross-owner signoff is required before any promotion from nursery to core paths.
 
 ## Current Status
 
-This lane currently contains planning docs only.
+This lane currently contains planning docs and lane-local bring-up scripts.
 
 No runtime behavior is introduced by this directory.

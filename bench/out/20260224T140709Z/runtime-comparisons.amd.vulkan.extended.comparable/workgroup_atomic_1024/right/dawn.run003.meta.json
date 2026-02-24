@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xe1b87730d7aa18ff",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "workgroup_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260224T140709Z/runtime-comparisons.amd.vulkan.extended.comparable/workgroup_atomic_1024/right/dawn.run003.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.053138611915,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6075.2494698390365,
+  "processWallMs": 6075.2494698390365,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.053138611915,
+    "cpu_time": 0.051539671701999995,
+    "gpu_time": 0.04672228766
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 53139,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.053138611915,
+      0.05316478516,
+      0.053021136595999996
+    ],
+    "cpu_time": [
+      0.051539671701999995,
+      0.05156837329799999,
+      0.051435774574000004
+    ],
+    "gpu_time": [
+      0.04672228766,
+      0.0466944,
+      0.046774577021
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.053138611915,
+    0.05316478516,
+    0.053021136595999996
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x1c78fd791790df63",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "workgroup_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260224T140709Z/runtime-comparisons.amd.vulkan.extended.comparable/workgroup_atomic_1024/right/dawn.run004.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.054312702819,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6136.411506915465,
+  "processWallMs": 6136.411506915465,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.054312702819,
+    "cpu_time": 0.052712385638,
+    "gpu_time": 0.046324888510999994
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 54313,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.053748266329999995,
+      0.054312702819,
+      0.054463556861999995
+    ],
+    "cpu_time": [
+      0.052155603669999995,
+      0.052712385638,
+      0.052866907074
+    ],
+    "gpu_time": [
+      0.046575877446999994,
+      0.046324888510999994,
+      0.046279571064
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.053748266329999995,
+    0.054312702819,
+    0.054463556861999995
+  ]
+}

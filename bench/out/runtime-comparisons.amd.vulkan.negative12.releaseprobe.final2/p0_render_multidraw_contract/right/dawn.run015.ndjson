@@ -1,0 +1,1 @@
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1428730755525695, "hash": "0xbca8c95b49e01fcd", "previousHash": "0x9e3779b97f4a7c15", "command": "p0_render_multidraw_contract", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6052556267}

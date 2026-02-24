@@ -23,7 +23,9 @@ __pycache__/
 
 # Chromium WebGPU lane local artifacts (large and machine-specific)
 nursery/chromium_webgpu_lane/.gclient*
+nursery/chromium_webgpu_lane/.gcs_entries
 nursery/chromium_webgpu_lane/.cipd/
+nursery/chromium_webgpu_lane/_bad_scm/
 nursery/chromium_webgpu_lane/cache/
 nursery/chromium_webgpu_lane/depot_tools/
 nursery/chromium_webgpu_lane/src/

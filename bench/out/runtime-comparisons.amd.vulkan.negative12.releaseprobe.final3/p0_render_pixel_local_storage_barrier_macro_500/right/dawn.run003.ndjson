@@ -1,0 +1,1 @@
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1460374952289306, "hash": "0xc17c75f23e38c1f9", "previousHash": "0x9e3779b97f4a7c15", "command": "p0_render_pixel_local_storage_barrier_macro_500", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6137646511}

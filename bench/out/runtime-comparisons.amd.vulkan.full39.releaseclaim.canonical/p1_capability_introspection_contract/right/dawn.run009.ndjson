@@ -1,1 +1,1 @@
-{ "traceEvents": [{}
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1420836629333337, "hash": "0x81d8a33c5e0f30fb", "previousHash": "0x9e3779b97f4a7c15", "command": "p1_capability_introspection_contract", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6057477306}

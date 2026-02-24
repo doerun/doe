@@ -33,11 +33,15 @@ Establish unambiguous integration contracts and acceptance criteria before imple
    - interface assumptions,
    - symbol/export expectations,
    - fallback behavior.
-2. Gate mapping:
+2. Module contract matrix:
+   - exact input/output field sets,
+   - blocking/advisory gate mapping,
+   - KPI thresholds per module.
+3. Gate mapping:
    - blocking/advisory expectations aligned with `process.md`.
-3. Risk register:
+4. Risk register:
    - failure modes, mitigation, rollback.
-4. Experiment inventory:
+5. Experiment inventory:
    - target adapters and workload classes.
 
 ### Exit Criteria

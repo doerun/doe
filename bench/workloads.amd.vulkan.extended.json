@@ -23,7 +23,7 @@
       ],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 500,
+      "leftTimingDivisor": 530,
       "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
     },
@@ -444,8 +444,8 @@
       "leftCommandRepeat": 50,
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Apples-to-apples only: Fawn repeats async diagnostics command 50 times and normalizes to per-iteration units for trend tracking.",
+      "leftTimingDivisor": 500,
+      "timingNormalizationNote": "Apples-to-apples only: Fawn repeats async diagnostics command and normalizes by async sub-steps to reduce fixed process/setup skew.",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "applesToApplesVetted": true
     },
@@ -480,12 +480,13 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
+      "leftCommandRepeat": 10,
       "comparable": true,
       "allowLeftNoExecution": false,
       "default": false,
-      "leftTimingDivisor": 1,
-      "timingNormalizationNote": "Apples-to-apples P1 resource-table contract: per-command sequence normalization with deterministic feature-gating parity support.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "leftTimingDivisor": 20,
+      "timingNormalizationNote": "Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
+      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "applesToApplesVetted": true
     },
     {
@@ -500,11 +501,12 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
+      "leftCommandRepeat": 4,
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 1,
-      "timingNormalizationNote": "Apples-to-apples P2 lifecycle contract: normalize as a single balanced addref/release sequence.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "leftTimingDivisor": 148,
+      "timingNormalizationNote": "Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
+      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "applesToApplesVetted": true
     },
     {
@@ -543,7 +545,7 @@
       "default": false,
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Apples-to-apples macro ResourceTable contract: command-repeat=500 with per-iteration normalization and explicit feature-gating parity support.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
       "applesToApplesVetted": true
     },
@@ -561,9 +563,9 @@
       "driver": "24.0.0",
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 200,
-      "timingNormalizationNote": "Apples-to-apples macro lifecycle contract: normalize per internal AddRef touch iteration.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "leftTimingDivisor": 2600,
+      "timingNormalizationNote": "Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
+      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "applesToApplesVetted": true
     },
     {
@@ -580,8 +582,8 @@
       "driver": "24.0.0",
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 200000,
-      "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units over 200k draws.",
+      "leftTimingDivisor": 575000,
+      "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
     },
     {
@@ -678,8 +680,8 @@
       "driver": "24.0.0",
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 2000,
-      "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw over a render-pass drawCount=2000 stream.",
+      "leftTimingDivisor": 12000,
+      "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
       "applesToApplesVetted": true
     },
@@ -697,8 +699,8 @@
       "driver": "24.0.0",
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 2000,
-      "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw over drawCount=2000 indexed draws.",
+      "leftTimingDivisor": 10000,
+      "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer",
       "applesToApplesVetted": true
     },
@@ -718,9 +720,9 @@
       "comparable": true,
       "allowLeftNoExecution": false,
       "default": false,
-      "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Apples-to-apples PLS contract: normalize per diagnostic iteration over 100 repeated non-coherent barrier command sequences.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "leftTimingDivisor": 720,
+      "timingNormalizationNote": "Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
+      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "applesToApplesVetted": true
     },
     {
@@ -738,9 +740,9 @@
       "comparable": true,
       "allowLeftNoExecution": false,
       "default": false,
-      "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Apples-to-apples macro PLS contract: command-repeat=500 with per-iteration normalization and explicit feature-gating parity support.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "leftTimingDivisor": 3270,
+      "timingNormalizationNote": "Apples-to-apples macro PLS contract: command-repeat=500 with per-iteration barrier-sequencing normalization and explicit feature-gating parity support.",
+      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
       "applesToApplesVetted": true
     },
@@ -778,7 +780,7 @@
       "leftCommandRepeat": 100,
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 100,
+      "leftTimingDivisor": 4400,
       "rightTimingDivisor": 100,
       "timingNormalizationNote": "Dawn reports per-iteration metrics with iterationsPerStep=100; Fawn repeats upload+draw 100 times and normalizes to per-iteration units.",
       "dawnFilter": "UniformBufferUpdatePerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_PartialSize_SingleUniformBuffer"
@@ -801,7 +803,7 @@
       ],
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 50,
+      "leftTimingDivisor": 2400,
       "rightTimingDivisor": 50,
       "timingNormalizationNote": "Dawn executes 50 dispatch iterations per step; Fawn repeats dispatch 50 times and normalizes to per-iteration units.",
       "dawnFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256"

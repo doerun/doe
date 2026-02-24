@@ -25,6 +25,18 @@ All above are gitignored at repository root.
 2. `git`, Python 3, and standard Linux build toolchain.
 3. Network access to Chromium/depot_tools sources.
 
+## Lane-Local Helper Scripts
+
+Use lane-local scripts so bring-up does not depend on system package installs:
+
+1. `scripts/bootstrap-host-tools.sh`
+   - downloads and extracts missing host tools (`gperf`, `bison`, `flex`, `m4`)
+     into lane-local cache.
+2. `scripts/env.sh`
+   - prepends `depot_tools` and cached host-tool binaries to `PATH`.
+
+This keeps all setup isolated inside `nursery/chromium_webgpu_lane/`.
+
 ## Bring-Up Steps (Machine Commands)
 
 Example flow from `fawn/` root:
@@ -32,7 +44,8 @@ Example flow from `fawn/` root:
 ```bash
 cd nursery/chromium_webgpu_lane
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
-export PATH="$PWD/depot_tools:$PATH"
+./scripts/bootstrap-host-tools.sh
+source ./scripts/env.sh
 fetch --nohooks chromium
 cd src
 gclient sync
@@ -96,10 +109,33 @@ Store reports under lane-local ignored directories or canonical `fawn/bench/out/
 3. No claim language from non-comparable runs.
 4. No promotion from lane without schema/migration/process/status updates.
 
+## Troubleshooting Notes (Observed)
+
+1. If `gclient sync` repeatedly fails on
+   `src/content/test/data/gpu/meet_effects:meet-gpu-tests/873777508.tar.gz`
+   with checksum mismatch:
+   - this may block all GCS-backed dependency fetches.
+2. A local-only workaround for bring-up is to disable that single DEPS entry
+   in local `src/DEPS` and rerun sync, so required toolchains can still fetch.
+3. If `gn gen` fails with missing third-party checkouts where directories exist
+   but repo `HEAD` is absent, run targeted dependency repair on those repos
+   before attempting full build.
+4. If build fails on missing parser/generator tools (`gperf`, `bison`, `flex`,
+   `m4`) and root install is unavailable, run:
+
+```bash
+cd /home/x/deco/fawn/nursery/chromium_webgpu_lane
+./scripts/bootstrap-host-tools.sh
+source ./scripts/env.sh
+```
+
+Then rerun `autoninja`.
+
 ## Current Environment Note
 
 If Chromium tools are not currently installed on the machine path, start with:
 
 1. cloning `depot_tools`,
-2. exporting path,
-3. validating `fetch`, `gclient`, `gn`, `autoninja`.
+2. bootstrapping lane-local host tools,
+3. sourcing lane-local env path setup,
+4. validating `fetch`, `gclient`, `gn`, `autoninja`.
