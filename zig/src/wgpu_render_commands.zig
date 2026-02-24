@@ -735,10 +735,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const encode_end_ns = std.time.nanoTimestamp();
 
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
-    const submit_wait_start_ns = std.time.nanoTimestamp();
-    procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.syncAfterSubmit();
-    const submit_wait_end_ns = std.time.nanoTimestamp();
+    const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
 
     const setup_ns = if (setup_end_ns > setup_start_ns)
         @as(u64, @intCast(setup_end_ns - setup_start_ns))
@@ -746,10 +743,6 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         0;
     const encode_ns = if (encode_end_ns > encode_start_ns)
         @as(u64, @intCast(encode_end_ns - encode_start_ns))
-    else
-        0;
-    const submit_wait_ns = if (submit_wait_end_ns > submit_wait_start_ns)
-        @as(u64, @intCast(submit_wait_end_ns - submit_wait_start_ns))
     else
         0;
 

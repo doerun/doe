@@ -459,6 +459,12 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - strict preflight now fails fast when the requested AMD Vulkan adapter is not Dawn-visible, even if `/dev/dri/renderD128` appears readable/writable via OS-level checks.
 - this prevents false-green preflight outcomes that would otherwise fail later in compare execution with adapter-unavailable or render-node permission-denied errors.
 
+81. Native execution reliability hardening now includes explicit retry envelopes and stricter copy/kernel validation:
+- queue submission synchronization now routes through centralized backend submit helpers with bounded retry (`QUEUE_SYNC_RETRY_LIMIT`) for transient wait-path failures (`WaitTimedOut`, `QueueSubmitTimeout`, `WaitAnyIncomplete`) in `zig/src/webgpu_ffi.zig`.
+- GPU timestamp readback now retries map/read steps with bounded backoff (`TIMESTAMP_MAP_RETRY_LIMIT`) and preserves explicit taxonomy errors instead of one-shot map failures.
+- compute dispatch now fails with explicit `gpu timestamp ...` status taxonomy when timestamp readback errors occur, rather than silently flattening failures into a zero timestamp.
+- copy lowering now fails fast on invalid/non-matching texture extents for texture copy directions, and kernel source loading now rejects empty sources plus non-compute WGSL (`@compute` required) for `kernel_dispatch`.
+
 ### Missing in progress
 
 1. Expand upstream quirk mining beyond toggle-style heuristics (`Toggle::...`) to cover additional workaround/action patterns with the same schema/hash discipline.
@@ -559,8 +565,8 @@ Execution gap list:
 - typed discovery and adapter/device queue selection are implemented in WebGPU FFI bootstrap.
 - full dispatch/kernel lowering with shader/module/pipeline resolution for a complete kernel payload format and artifact-backed verification.
 - texture copy/materialization command modeling and lowering.
-- no deterministic GPU timing capture in the execution path.
-- robust retry/failure policy for GPU submission errors and mapped GPU status.
+- deterministic GPU timing capture remains partial (retry envelopes + explicit timestamp readback taxonomy are implemented, but full claim-grade deterministic capture policy is still in progress).
+- robust retry/failure policy is now bounded for queue wait and timestamp map paths; broader mapped GPU status policy hardening remains.
 - no release-ready benchmark baseline generated against native GPU backend.
 
 ### Explicit distinction

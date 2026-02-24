@@ -15,6 +15,10 @@ const env_flags = @import("env_flags.zig");
 
 pub const NativeExecutionStatus = types.NativeExecutionStatus;
 pub const NativeExecutionResult = types.NativeExecutionResult;
+const QUEUE_SYNC_RETRY_LIMIT: u32 = 3;
+const QUEUE_SYNC_RETRY_BACKOFF_NS: u64 = 1_000_000;
+const TIMESTAMP_MAP_RETRY_LIMIT: u32 = 3;
+const TIMESTAMP_MAP_RETRY_BACKOFF_NS: u64 = 1_000_000;
 pub const UploadBufferUsageMode = enum {
     copy_dst_copy_src,
     copy_dst,
@@ -404,6 +408,30 @@ pub const WebGPUBackend = struct {
         }
     }
 
+    pub fn submitEmpty(self: *Self) !u64 {
+        return try self.submitInternal(0, null);
+    }
+
+    pub fn submitCommandBuffers(self: *Self, command_buffers: []types.WGPUCommandBuffer) !u64 {
+        return try self.submitInternal(command_buffers.len, command_buffers.ptr);
+    }
+
+    fn submitInternal(
+        self: *Self,
+        command_count: usize,
+        command_ptr: ?[*]types.WGPUCommandBuffer,
+    ) !u64 {
+        const procs = self.procs orelse return error.ProceduralNotReady;
+        const submit_start_ns = std.time.nanoTimestamp();
+        procs.wgpuQueueSubmit(self.queue.?, command_count, if (command_count == 0) null else command_ptr.?);
+        try self.syncAfterSubmit();
+        const submit_end_ns = std.time.nanoTimestamp();
+        return if (submit_end_ns > submit_start_ns)
+            @as(u64, @intCast(submit_end_ns - submit_start_ns))
+        else
+            0;
+    }
+
     pub fn flushQueue(self: *Self) !u64 {
         const start = std.time.nanoTimestamp();
         try self.waitForQueue();
@@ -513,10 +541,36 @@ pub const WebGPUBackend = struct {
     }
 
     pub fn waitForQueue(self: *Self) !void {
-        switch (self.queue_wait_mode) {
-            .process_events => return self.waitForQueueProcessEvents(),
-            .wait_any => return self.waitForQueueWaitAny(),
+        var attempt: u32 = 0;
+        while (attempt < QUEUE_SYNC_RETRY_LIMIT) : (attempt += 1) {
+            if (self.waitForQueueOnce()) |_| {
+                return;
+            } else |err| {
+                if (attempt + 1 < QUEUE_SYNC_RETRY_LIMIT and shouldRetryQueueWait(err)) {
+                    std.Thread.sleep(QUEUE_SYNC_RETRY_BACKOFF_NS);
+                    continue;
+                }
+                return err;
+            }
         }
+        return error.QueueSubmitTimeout;
+    }
+
+    fn waitForQueueOnce(self: *Self) !void {
+        switch (self.queue_wait_mode) {
+            .process_events => try self.waitForQueueProcessEvents(),
+            .wait_any => try self.waitForQueueWaitAny(),
+        }
+    }
+
+    fn shouldRetryQueueWait(err: anyerror) bool {
+        return switch (err) {
+            error.WaitTimedOut,
+            error.QueueSubmitTimeout,
+            error.WaitAnyIncomplete,
+            => true,
+            else => false,
+        };
     }
 
     fn waitForQueueProcessEvents(self: *Self) !void {
@@ -590,6 +644,30 @@ pub const WebGPUBackend = struct {
 
     pub fn readTimestampBuffer(self: *Self, readback_buffer: types.WGPUBuffer) !u64 {
         const procs = self.procs orelse return error.ProceduralNotReady;
+        var attempt: u32 = 0;
+        while (attempt < TIMESTAMP_MAP_RETRY_LIMIT) : (attempt += 1) {
+            if (self.readTimestampBufferOnce(procs, readback_buffer)) |delta| {
+                return delta;
+            } else |err| {
+                if (attempt + 1 < TIMESTAMP_MAP_RETRY_LIMIT and shouldRetryTimestampMap(err)) {
+                    self.timestampLog(
+                        "timestamp_readback_retry attempt={} error={s}\n",
+                        .{ attempt + 1, @errorName(err) },
+                    );
+                    std.Thread.sleep(TIMESTAMP_MAP_RETRY_BACKOFF_NS);
+                    continue;
+                }
+                return err;
+            }
+        }
+        return error.BufferMapFailed;
+    }
+
+    fn readTimestampBufferOnce(
+        self: *Self,
+        procs: types.Procs,
+        readback_buffer: types.WGPUBuffer,
+    ) !u64 {
         var map_state = types.BufferMapState{};
         const map_callback_info = types.WGPUBufferMapCallbackInfo{
             .nextInChain = null,
@@ -635,6 +713,15 @@ pub const WebGPUBackend = struct {
         const delta = end_ts - begin_ts;
         self.timestampLog("mapped_begin={} mapped_end={} mapped_delta={}\n", .{ begin_ts, end_ts, delta });
         return delta;
+    }
+
+    fn shouldRetryTimestampMap(err: anyerror) bool {
+        return switch (err) {
+            error.BufferMapTimeout,
+            error.BufferMapFailed,
+            => true,
+            else => false,
+        };
     }
 
     fn processEventsUntil(self: *Self, done: *const bool, timeout_ns: u64) !void {

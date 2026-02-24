@@ -1,0 +1,59 @@
+{
+  "failures": [
+    "target unique left profile diversity not reached: target=3 actual=1"
+  ],
+  "generatedAtUtc": "2026-02-24T01:37:45.979259Z",
+  "outputTimestamp": "",
+  "pass": false,
+  "policy": {
+    "effectiveEnforceTargetUniqueLeftProfiles": true,
+    "enforceTargetUniqueLeftProfiles": true,
+    "minClaimableComparableReports": 3,
+    "minReports": 3,
+    "minUniqueLeftProfiles": 1,
+    "requiredClaimStatus": "claimable",
+    "requiredComparisonStatus": "comparable",
+    "targetUniqueLeftProfiles": 3
+  },
+  "policyPath": "config/substantiation-policy.json",
+  "qualifyingReportCount": 3,
+  "reportCount": 3,
+  "reports": [
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "leftProfileCount": 1,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "path": "bench/out/20260223T202424Z/dawn-vs-fawn.amd.vulkan.release.json",
+      "statusPass": true
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "leftProfileCount": 1,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "path": "bench/out/20260223T213900Z/dawn-vs-fawn.amd.vulkan.release.json",
+      "statusPass": true
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "leftProfileCount": 1,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "path": "bench/out/20260223T214116Z/dawn-vs-fawn.amd.vulkan.release.json",
+      "statusPass": true
+    }
+  ],
+  "schemaVersion": 1,
+  "uniqueLeftProfileCount": 1,
+  "uniqueLeftProfiles": [
+    "amd|vulkan|gfx11|24.0.0"
+  ],
+  "warnings": []
+}

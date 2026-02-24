@@ -1,0 +1,22 @@
+{
+  "claimGateRan": false,
+  "config": {
+    "explicitReports": [],
+    "reportGlobs": [
+      "bench/out/**/dawn-vs-fawn*.json"
+    ]
+  },
+  "createdAtUtc": "2026-02-24T01:35:47.675482Z",
+  "dashboardPath": "bench/out/20260224T013547Z/test-dashboard.html",
+  "datasetPath": "bench/out/20260224T013547Z/baseline-dataset.json",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "inventoryPath": "bench/out/20260224T013547Z/test-inventory.json",
+  "outputTimestamp": "20260224T013547Z",
+  "runFolder": "bench/out/20260224T013547Z",
+  "runType": "inventory_dashboard",
+  "schemaVersion": 1,
+  "status": "passed",
+  "summaryPath": "bench/out/20260224T013547Z/baseline-dataset.md",
+  "updatedAtUtc": "2026-02-24T01:35:47.681409Z"
+}

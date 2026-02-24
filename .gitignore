@@ -20,3 +20,13 @@ __pycache__/
 # Editor/temp artifacts
 *.swp
 *.tmp
+
+# Chromium WebGPU lane local artifacts (large and machine-specific)
+nursery/chromium_webgpu_lane/.gclient*
+nursery/chromium_webgpu_lane/.cipd/
+nursery/chromium_webgpu_lane/cache/
+nursery/chromium_webgpu_lane/depot_tools/
+nursery/chromium_webgpu_lane/src/
+nursery/chromium_webgpu_lane/chromium/
+nursery/chromium_webgpu_lane/out/
+nursery/chromium_webgpu_lane/artifacts/

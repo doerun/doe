@@ -9,7 +9,10 @@ const extended_commands = @import("wgpu_extended_commands.zig");
 const async_diagnostics_command = @import("wgpu_async_diagnostics_command.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
-const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB; const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA; const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
+const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB;
+const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA;
+const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
+const MAX_KERNEL_SOURCE_BYTES: usize = 4 * 1024 * 1024;
 
 pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecutionResult {
     if (!self.backendAvailable()) {
@@ -98,8 +101,7 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
 
 fn flushPendingUploads(self: *Backend) !void {
     if (self.upload_submit_pending == 0) return;
-    self.procs.?.wgpuQueueSubmit(self.queue.?, 0, null);
-    try self.syncAfterSubmit();
+    _ = try self.submitEmpty();
     self.upload_submit_pending = 0;
 }
 
@@ -136,14 +138,7 @@ fn executeUpload(self: *Backend, upload: model.UploadCommand) !types.NativeExecu
     self.upload_submit_pending += 1;
     var submit_wait_ns: u64 = 0;
     if (self.upload_submit_pending >= self.upload_submit_every) {
-        const submit_wait_start_ns = std.time.nanoTimestamp();
-        self.procs.?.wgpuQueueSubmit(self.queue.?, 0, null);
-        try self.syncAfterSubmit();
-        const submit_wait_end_ns = std.time.nanoTimestamp();
-        submit_wait_ns = if (submit_wait_end_ns > submit_wait_start_ns)
-            @as(u64, @intCast(submit_wait_end_ns - submit_wait_start_ns))
-        else
-            0;
+        submit_wait_ns = try self.submitEmpty();
         self.upload_submit_pending = 0;
     }
 
@@ -190,6 +185,27 @@ fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionRe
                 return .{ .status = .unsupported, .status_message = "texture_to_texture requires both source and destination textures" };
             }
         },
+    }
+    switch (copy.direction) {
+        .buffer_to_texture => {
+            if (!hasValidTextureExtent(copy.dst)) {
+                return .{ .status = .unsupported, .status_message = "buffer_to_texture requires non-zero texture extent" };
+            }
+        },
+        .texture_to_buffer => {
+            if (!hasValidTextureExtent(copy.src)) {
+                return .{ .status = .unsupported, .status_message = "texture_to_buffer requires non-zero texture extent" };
+            }
+        },
+        .texture_to_texture => {
+            if (!hasValidTextureExtent(copy.src) or !hasValidTextureExtent(copy.dst)) {
+                return .{ .status = .unsupported, .status_message = "texture_to_texture requires non-zero texture extents" };
+            }
+            if (!hasMatchingTextureExtent(copy.src, copy.dst)) {
+                return .{ .status = .unsupported, .status_message = "texture_to_texture requires matching source/destination extents" };
+            }
+        },
+        .buffer_to_buffer => {},
     }
 
     const procs = self.procs orelse return error.ProceduralNotReady;
@@ -301,8 +317,7 @@ fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionRe
     defer procs.wgpuCommandBufferRelease(command_buffer);
 
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
-    procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.syncAfterSubmit();
+    const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
 
     return .{
         .status = .ok,
@@ -312,6 +327,7 @@ fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionRe
             .texture_to_buffer => "copy-texture-to-buffer command submitted",
             .texture_to_texture => "copy-texture-to-texture command submitted",
         },
+        .submit_wait_ns = submit_wait_ns,
     };
 }
 
@@ -347,11 +363,11 @@ fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.NativeEx
     }
     defer procs.wgpuCommandBufferRelease(command_buffer);
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
-    procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.syncAfterSubmit();
+    const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
     return .{
         .status = .ok,
         .status_message = "barrier command lowered via commandEncoderClearBuffer",
+        .submit_wait_ns = submit_wait_ns,
     };
 }
 
@@ -414,6 +430,12 @@ fn executeKernelDispatchKernel(
 ) !types.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     defer if (source.owned) self.allocator.free(source.source);
+    if (!sourceContainsComputeStage(source.source)) {
+        return .{
+            .status = .unsupported,
+            .status_message = "kernel source missing @compute stage",
+        };
+    }
 
     const procs = self.procs orelse return error.ProceduralNotReady;
     const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
@@ -656,21 +678,7 @@ fn executeKernelDispatchKernel(
     const encode_end_ns = std.time.nanoTimestamp();
 
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
-    const submit_wait_start_ns = std.time.nanoTimestamp();
-    procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.syncAfterSubmit();
-    const submit_wait_end_ns = std.time.nanoTimestamp();
-
-    var gpu_timestamp_ns: u64 = 0;
-    var gpu_timestamp_valid = false;
-    if (timestamps_active) {
-        gpu_timestamp_ns = self.readTimestampBuffer(readback_buffer) catch |err| blk: {
-            self.timestampLog("timestamp_readback_error={s}\n", .{@errorName(err)});
-            break :blk 0;
-        };
-        gpu_timestamp_valid = gpu_timestamp_ns > 0;
-        self.timestampLog("timestamp_ns={}\n", .{gpu_timestamp_ns});
-    }
+    const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
 
     const setup_ns = if (setup_end_ns > setup_start_ns)
         @as(u64, @intCast(setup_end_ns - setup_start_ns))
@@ -680,10 +688,25 @@ fn executeKernelDispatchKernel(
         @as(u64, @intCast(encode_end_ns - encode_start_ns))
     else
         0;
-    const submit_wait_ns = if (submit_wait_end_ns > submit_wait_start_ns)
-        @as(u64, @intCast(submit_wait_end_ns - submit_wait_start_ns))
-    else
-        0;
+    var gpu_timestamp_ns: u64 = 0;
+    var gpu_timestamp_valid = false;
+    if (timestamps_active) {
+        gpu_timestamp_ns = self.readTimestampBuffer(readback_buffer) catch |err| {
+            self.timestampLog("timestamp_readback_error={s}\n", .{@errorName(err)});
+            return .{
+                .status = .@"error",
+                .status_message = timestampReadbackStatus(err),
+                .setup_ns = setup_ns,
+                .encode_ns = encode_ns,
+                .submit_wait_ns = submit_wait_ns,
+                .dispatch_count = repeat_count,
+                .gpu_timestamp_attempted = true,
+                .gpu_timestamp_valid = false,
+            };
+        };
+        gpu_timestamp_valid = gpu_timestamp_ns > 0;
+        self.timestampLog("timestamp_ns={}\n", .{gpu_timestamp_ns});
+    }
 
     return .{
         .status = .ok,
@@ -723,10 +746,23 @@ fn executeNoopCommand(self: *Backend, reason: []const u8) !types.NativeExecution
     defer procs.wgpuCommandBufferRelease(command_buffer);
 
     var commands = [_]types.WGPUCommandBuffer{command_buffer};
-    procs.wgpuQueueSubmit(self.queue.?, commands.len, commands[0..].ptr);
-    try self.syncAfterSubmit();
+    const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
 
-    return .{ .status = .ok, .status_message = reason };
+    return .{
+        .status = .ok,
+        .status_message = reason,
+        .submit_wait_ns = submit_wait_ns,
+    };
+}
+
+fn timestampReadbackStatus(err: anyerror) []const u8 {
+    return switch (err) {
+        error.BufferMapTimeout => "gpu timestamp map timeout",
+        error.BufferMapFailed => "gpu timestamp map failed",
+        error.TimestampRangeInvalid => "gpu timestamp range invalid",
+        error.WaitTimedOut => "gpu timestamp wait timed out",
+        else => "gpu timestamp readback failed",
+    };
 }
 
 fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !types.KernelSource {
@@ -756,7 +792,11 @@ fn openKernelFile(self: *Backend, path: []const u8) ?types.KernelSource {
         return null;
     };
     defer maybe_file.close();
-    const text = maybe_file.readToEndAlloc(self.allocator, 4 * 1024 * 1024) catch return null;
+    const text = maybe_file.readToEndAlloc(self.allocator, MAX_KERNEL_SOURCE_BYTES) catch return null;
+    if (text.len == 0) {
+        self.allocator.free(text);
+        return null;
+    }
     return .{ .source = text, .owned = true, .mode = .file };
 }
 
@@ -774,4 +814,18 @@ fn openKernelFromRoot(self: *Backend, kernel_name: []const u8, root: []const u8)
         if (openKernelFile(self, candidate)) |source| return source;
     }
     return null;
+}
+
+fn hasValidTextureExtent(resource: model.CopyTextureResource) bool {
+    return resource.width > 0 and resource.height > 0 and resource.depth_or_array_layers > 0;
+}
+
+fn hasMatchingTextureExtent(src: model.CopyTextureResource, dst: model.CopyTextureResource) bool {
+    return src.width == dst.width and
+        src.height == dst.height and
+        src.depth_or_array_layers == dst.depth_or_array_layers;
+}
+
+fn sourceContainsComputeStage(source: []const u8) bool {
+    return std.mem.indexOf(u8, source, "@compute") != null;
 }

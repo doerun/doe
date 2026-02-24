@@ -82,6 +82,11 @@ That document defines:
   - includes ECDF overlays, workload×percentile delta heatmap, KS statistic/p-value, Wasserstein distance, probability of superiority `P(left<right)`, and bootstrap CIs for delta `p50`/`p95`/`p99`.
 - `claim_gate.py`
   - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, and per-workload claimability) for blocking release CI gates.
+- `check_full39_claim_readiness.py`
+  - validates a full-matrix compare report against the strict done criteria (`39/39`, `comparisonStatus=comparable`, `claimStatus=claimable`, and zero left unsupported/error counters).
+  - prints worst p95/p99 tail regressions plus non-claimable workload reasons to accelerate tail-fix loops.
+- `run_full39_evidence_bundle.sh`
+  - post-run orchestrator for claim-grade artifacts: readiness check -> blocking gates (trace/correctness/schema + drop-in + claim) -> repeated claim windows + substantiation -> inventory and baseline refresh.
 - `generate_feature_benchmark_table.py`
   - builds a markdown table joining `config/webgpu-spec-coverage.json`, workload contracts, and Dawn filter mappings for Dawn-vs-Fawn feature/benchmark coverage auditing.
   - emits both overall comparable-coverage and eligible-only comparable-coverage metrics; eligibility is config-driven via `benchmarkClass` (`comparable` vs `directional`) in `config/webgpu-spec-coverage.json`.

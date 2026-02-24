@@ -1,0 +1,19 @@
+{
+  "claimGateRan": false,
+  "config": {
+    "effectiveEnforceTargetUniqueLeftProfiles": true,
+    "policy": "config/substantiation-policy.json",
+    "reportCount": 3,
+    "summaryCount": 0
+  },
+  "createdAtUtc": "2026-02-24T01:37:45.979539Z",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "outputTimestamp": "20260224T013800Z",
+  "reportPath": "bench/out/scratch/20260224T013800Z/substantiation_report.strictpolicy.json",
+  "runFolder": "bench/out/scratch/20260224T013800Z",
+  "runType": "substantiation_gate",
+  "schemaVersion": 1,
+  "status": "failed",
+  "updatedAtUtc": "2026-02-24T01:37:45.979539Z"
+}

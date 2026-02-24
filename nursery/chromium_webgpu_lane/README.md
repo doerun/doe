@@ -1,0 +1,275 @@
+# Chromium WebGPU Lane (Nursery)
+
+## Purpose
+
+`fawn/nursery/chromium_webgpu_lane` is an isolated, experimental planning lane for using Fawn as:
+
+1. A Dawn replacement path for `navigator.gpu` in Chromium.
+2. An optional execution substrate for selected Chromium-internal GPU modules.
+
+This lane is intentionally process-heavy and contract-first. It exists to prevent architectural drift and comparability debt before implementation.
+
+## Scope
+
+In scope:
+
+1. Integration architecture, contracts, and rollout policy.
+2. Test/gate/benchmark plans for Chromium-facing work.
+3. Optional internal module designs (`2D SDF`, `path`, `effects`, `compute services`, `resource scheduler`).
+
+Out of scope:
+
+1. Direct edits to core runtime execution in `fawn/zig/src`.
+2. Redefining Fawn stage order or existing gate precedence.
+3. Claims of browser-wide replacement semantics.
+
+## Isolation Contract
+
+This directory is isolated from core runtime development by policy:
+
+1. No production runtime behavior is enabled from files under `nursery/`.
+2. No hidden feature toggles are introduced in core runtime through this lane.
+3. Any future implementation promoted from this lane must:
+   - move to core module directories (`zig/`, `bench/`, `config/`, etc.),
+   - land with schema and migration updates,
+   - pass blocking gates defined in `fawn/process.md`.
+4. Nothing in this lane bypasses stage discipline:
+   - Mine -> Normalize -> Verify -> Bind -> Gate -> Benchmark -> Release.
+
+## Context Summary
+
+Fawn already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
+
+1. Drop-in artifact:
+   - `zig/zig-out/lib/libfawn_webgpu.so`
+2. Symbol contract and gate support:
+   - `config/dropin_abi.symbols.txt`
+   - `bench/dropin_symbol_gate.py`
+   - `bench/dropin_behavior_suite.py`
+   - `bench/dropin_benchmark_suite.py`
+   - `bench/dropin_gate.py`
+3. Existing trace/replay and claimability policy:
+   - `trace/replay.py`, `bench/trace_gate.py`, `bench/claim_gate.py`
+
+This lane extends those capabilities to Chromium integration planning without coupling directly to core runtime code yet.
+
+## Program Shape
+
+Use a two-track model to control risk:
+
+1. Track A:
+   - Dawn replacement path for `navigator.gpu` via Fawn.
+2. Track B:
+   - Optional Chromium-internal modules using WebGPU through Fawn.
+
+Track B is additive and cannot block Track A readiness.
+
+## Track A: Dawn Replacement Lane
+
+### Objective
+
+Swap the runtime implementation seam while keeping browser behavior and process topology stable.
+
+### Design Constraints
+
+1. Keep Chromium process model unchanged:
+   - renderer behavior unchanged,
+   - GPU process boundaries unchanged,
+   - sandbox model unchanged.
+2. Keep Dawn available as first-class fallback at every stage.
+3. Use explicit runtime selection flagging and kill switches.
+4. Preserve deterministic artifacts for all quality decisions.
+
+### Integration Principle
+
+Only replace the WebGPU runtime seam. Do not fuse this work with unrelated compositor/layout/media refactors.
+
+### Promotion Gates
+
+Before moving beyond experiment flags:
+
+1. ABI/symbol completeness gate passes.
+2. API behavior parity gate passes.
+3. Replay and deterministic trace parity checks pass.
+4. Crash/hang rate parity with fallback lane is established.
+5. Performance claimability gates pass for any "faster" statement.
+
+## Track B: Optional Chromium-Internal Modules
+
+Track B modules are explicitly optional and must preserve CPU ownership for engine semantics.
+
+### Candidate Modules
+
+1. `fawn_2d_sdf_renderer`
+   - GPU paint/raster path for vector/text primitives via SDF/MSDF.
+   - Inputs: shaped runs, path commands, paint state.
+   - Outputs: render targets or composited textures.
+2. `fawn_path_engine`
+   - Hybrid tessellation + SDF path for fills/strokes/clip masks.
+   - Includes explicit fallback for pathological geometry.
+3. `fawn_effects_pipeline`
+   - Compute/render effects (blur, color transforms, mask composition, filter chains).
+4. `fawn_compute_services`
+   - Shared compute kernels for selected internal tasks.
+5. `fawn_resource_scheduler`
+   - Shared resource pooling and submission cadence controls.
+
+### Non-Goals for Track B
+
+1. Replacing Blink layout/style/DOM semantics.
+2. Replacing V8 execution.
+3. Replacing OS compositor/scanout responsibilities.
+4. Replacing hardware codec control paths.
+
+## What WebGPU/Fawn Can and Cannot Replace
+
+Can replace or absorb:
+
+1. Many explicit GPU draw/compute operations.
+2. Significant portions of raster/effects work where command contracts are stable.
+3. Internal GPU utility workloads with deterministic contracts.
+
+Cannot replace by itself:
+
+1. HTML/CSS layout semantics and accessibility logic.
+2. Browser orchestration and process/security policy.
+3. OS-level presentation and protected path ownership.
+4. Hardware decoder control APIs.
+
+## Contract-First Policy for This Lane
+
+Every proposed feature in this lane must define:
+
+1. Input contract:
+   - schema-backed request shape.
+2. Output contract:
+   - result artifacts and traceability fields.
+3. Failure contract:
+   - explicit unsupported/error taxonomy.
+4. Methodology contract:
+   - timing source, normalization divisors, comparability mode.
+5. Fallback contract:
+   - deterministic fallback path and trigger reasons.
+
+No implicit behavior switching is allowed.
+
+## Config and Schema Expectations
+
+Future implementation promoted from this lane must use config-as-code:
+
+1. Config files in `fawn/config/*.json`.
+2. Schema files in `fawn/config/*schema*.json`.
+3. Migration notes in `fawn/config/migration-notes.md` for runtime-visible changes.
+4. Status tracking updates in `fawn/status.md` for temporary placeholders or staged methods.
+
+## Gate Policy Alignment
+
+This lane inherits Fawn v0 gate priorities:
+
+1. Blocking:
+   - schema,
+   - correctness,
+   - trace.
+2. Advisory (v0 global policy):
+   - verification,
+   - performance.
+3. Additional blocking when applicable:
+   - drop-in compatibility for artifact lanes,
+   - release claimability when promotion requires claim statements.
+
+## Reliability and Claimability Expectations
+
+No performance claim can be promoted without:
+
+1. strict comparability compliance,
+2. operation-scope timing consistency,
+3. minimum timed sample floors,
+4. positive percentile tails (`p50`, `p95`; `p99` for release claims),
+5. zero execution errors in selected claim workloads.
+
+Directional runs must be labeled non-claimable.
+
+## Observability Contract
+
+All promoted experiments must emit:
+
+1. run metadata (`run-metadata.schema.json`),
+2. row-level trace (`trace.schema.json`),
+3. run-level trace summary (`trace-meta.schema.json`),
+4. reproducible artifact hashes for replay and audit.
+
+Traceability fields must include module identity and hash chain continuity.
+
+## Risk Controls
+
+Primary risks:
+
+1. Hidden fallback behavior under incompatible adapters.
+2. Timing-scope mismatches generating false win claims.
+3. ABI drift from Chromium/Dawn evolution.
+4. Excessive platform divergence from driver-specific quirks.
+
+Mitigations:
+
+1. explicit unsupported taxonomy and fail-fast checks,
+2. strict comparability mode by default for claim lanes,
+3. symbol and behavior drop-in gates in CI,
+4. upstream quirk mining and deterministic normalization.
+
+## Directory Structure
+
+Current lane structure:
+
+1. `README.md`
+   - scope, policy, and contracts overview.
+2. `plan.md`
+   - milestone plan, exit criteria, dependencies.
+3. `chromium-bringup.md`
+   - practical local bring-up path and early integration sequence.
+4. `contracts/`
+   - runtime selector contract and optional module contract drafts.
+   - see `contracts/README.md` for index.
+5. `notes/` (future)
+   - findings, experiment logs, and promotion decisions.
+
+Any script/code added here must be non-production and must not alter core runtime behavior by default.
+
+## Decision Rules for Promotion Out of Nursery
+
+A design exits nursery only when all are true:
+
+1. Problem statement and success metric are explicit.
+2. Contract schema and migration impact are specified.
+3. Gate implications are mapped (blocking/advisory).
+4. Rollback and fallback behavior are explicit.
+5. Ownership and maintenance burden are assigned.
+
+If one is missing, keep the item in nursery.
+
+## Ownership Model
+
+Recommended ownership split:
+
+1. Runtime seam and ABI parity:
+   - runtime integration owner(s).
+2. Trace/replay and correctness gate policy:
+   - quality owner(s).
+3. Performance/claimability policy:
+   - benchmark methodology owner(s).
+4. Optional module incubation:
+   - module-specific owners.
+
+Cross-owner signoff is required before any promotion from nursery to core paths.
+
+## How to Use This Folder
+
+1. Read this file and `plan.md` before proposing Chromium integration changes.
+2. Add or update module proposals as contract documents first.
+3. Tie every proposal to gates and measurable exit criteria.
+4. Promote to core directories only after passing promotion rules.
+
+## Current Status
+
+This lane currently contains planning docs only.
+
+No runtime behavior is introduced by this directory.
