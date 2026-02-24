@@ -78,6 +78,29 @@
     - `gpu_unittests`:
       - `GpuPreferencesTest.EncodeDecode` passes
       - `WebGPURuntimeSelectionTest.*` passes
+31. Updated decoder creation flow to take explicit runtime enum (`kDawn|kFawn`) instead of assuming Dawn.
+32. Added concrete Fawn execution branch in `WebGPUDecoderImpl`:
+    - loads `libfawn_webgpu.so`,
+    - builds proc table via `wgpuGetProcAddress`,
+    - creates/injects `WGPUInstance`,
+    - scopes thread procs during execution/polling,
+    - releases instance/library at teardown.
+33. Added generated proc-surface include list:
+    - `gpu/command_buffer/service/webgpu_proc_table_entries.inc`
+34. Updated GPU process proc bootstrap for thread-dispatch mode with Dawn native as default thread procs.
+35. Added crash fix in `WebGPUCommandBufferStub` destructor:
+    - guard `decoder_context()` before `Destroy(false)` call.
+36. Revalidated decoder/proc-dispatch integration:
+    - `autoninja -C out/fawn_debug gpu_unittests` succeeds
+    - `autoninja -C out/fawn_debug chrome` succeeds
+    - `./out/fawn_debug/gpu_unittests --gtest_filter=WebGPURuntimeSelectionTest.*:GpuPreferencesTest.EncodeDecode` passes
+37. Forced-Fawn headless launch now fails cleanly (no GPU-process null-deref crash) when environment preconditions fail.
+38. Ran strict 3-workload comparison subset:
+    - `buffer_upload_64kb`
+    - `workgroup_atomic_1024`
+    - `texture_sampler_write_query_destroy_contract`
+39. Captured strict subset report with comparable + claimable classification:
+    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
 
 ## Current State
 
@@ -87,6 +110,34 @@
 4. `autoninja -C out/fawn_debug chrome` completes successfully.
 5. Chromium output binary is present and executable (`out/fawn_debug/chrome`).
 6. Prior `gperf` failure entry in `siso_output.1` is historical and superseded by current successful build state.
+7. Track A seam now includes real (partial) Fawn decoder/runtime execution wiring, not only selector telemetry.
+8. In this host's headless profile, forced Fawn is currently rejected as `profile_denylisted`; this is environment gating, not immediate proof of integration failure.
+
+## Smoke Evidence (2026-02-24)
+
+1. Forced-Fawn launch command shape:
+
+```bash
+out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-webgpu-runtime=fawn --fawn-webgpu-library-path=/home/x/deco/fawn/zig/zig-out/lib/libfawn_webgpu.so
+```
+
+2. Observed result:
+   - browser starts,
+   - adapter request path resolves null under denylisted profile,
+   - rejection reason is `profile_denylisted`,
+   - prior destructor crash is no longer observed.
+3. Strict comparison subset report:
+   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
+   - `comparisonStatus = comparable`
+   - `claimStatus = claimable`
+
+## Operational Cautions
+
+1. Chromium `src/` in this lane is intentionally dirty with in-flight Track A edits.
+2. Do not run destructive cleanup/reset in `src/` unless explicitly requested.
+3. A long-running benchmark process may already be active:
+   - `python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json ...`
+   - keep it running unless explicitly asked to stop it.
 
 ## Immediate Next Bring-Up Commands
 
@@ -132,4 +183,8 @@ autoninja -C out/fawn_debug chrome
 6. Track A Edit Set 2 is partially complete:
    - selector preconditions include denylist + runtime artifact probing with typed reasons.
 7. Track A Edit Set 3 has unit-test coverage for selector decision policy.
-8. Next milestone is adapter-level denylist detail propagation and actual Fawn runtime execution wiring (current seam still executes Dawn path).
+8. Runtime execution wiring is now partially landed in decoder/proc-dispatch path.
+9. Next milestones:
+   - validate forced-Fawn on non-denylisted GPU host/session,
+   - add direct tests for decoder Fawn init/teardown failure paths,
+   - continue adapter-level denylist detail propagation and Dawn-native dependency audit in Fawn path.

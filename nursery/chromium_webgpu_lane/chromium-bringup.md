@@ -91,6 +91,18 @@ Initial criterion is deterministic compatibility and observability, not performa
 5. `I4`:
    - run strict comparability benchmark lanes for claimable paths.
 
+## Current Snapshot (2026-02-24)
+
+1. `I0` and selector/fallback plumbing milestones are complete locally.
+2. Decoder/proc-dispatch seam has a concrete partial Fawn execution path:
+   - runtime enum threaded into decoder creation,
+   - Fawn proc table initialized from `wgpuGetProcAddress`,
+   - Fawn `WGPUInstance` created/injected into wire server,
+   - thread-proc scoping active in execution/polling path.
+3. Forced-Fawn in this host's headless profile currently rejects with `profile_denylisted`; treat as environment gating signal.
+4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
+   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
+
 ## Artifact Discipline
 
 For each integration run, capture:
@@ -108,6 +120,7 @@ Store reports under lane-local ignored directories or canonical `fawn/bench/out/
 2. No unsupported-capability silent fallback.
 3. No claim language from non-comparable runs.
 4. No promotion from lane without schema/migration/process/status updates.
+5. Forced `--use-webgpu-runtime=fawn` must hard-fail if runtime cannot initialize; no silent Dawn substitution.
 
 ## Troubleshooting Notes (Observed)
 
@@ -139,3 +152,9 @@ If Chromium tools are not currently installed on the machine path, start with:
 2. bootstrapping lane-local host tools,
 3. sourcing lane-local env path setup,
 4. validating `fetch`, `gclient`, `gn`, `autoninja`.
+
+## Next Continuation Targets
+
+1. Validate forced-Fawn adapter acquisition on non-denylisted GPU host/session.
+2. Add decoder-branch tests for Fawn init/load/proc-surface/instance failure and teardown paths.
+3. Continue adapter-level denylist detail propagation and Dawn-native dependency audit in `WebGPUDecoderImpl`.

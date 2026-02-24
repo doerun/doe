@@ -272,6 +272,6 @@ Cross-owner signoff is required before any promotion from nursery to core paths.
 
 ## Current Status
 
-This lane currently contains planning docs and lane-local bring-up scripts.
+This lane contains planning/contracts docs, lane-local bring-up scripts, and a lane-local Chromium workspace (`src/`) with in-flight Track A seam integration edits.
 
-No runtime behavior is introduced by this directory.
+No core `fawn/zig` production runtime behavior is introduced by this directory by default.

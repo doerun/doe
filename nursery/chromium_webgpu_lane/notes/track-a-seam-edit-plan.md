@@ -102,7 +102,7 @@ Implemented in local Chromium checkout:
 
 1. No process model changes.
 2. No compositor/Skia Graphite coupling.
-3. First pass may return Dawn only if Fawn branch is not ready, but selector telemetry path must be complete.
+3. Forced `fawn` mode must fail fast when branch/runtime preconditions are unmet; no silent Dawn substitution.
 
 ## Edit Set 2: Blocklist and Denylist Hook
 
@@ -161,6 +161,47 @@ Deferred for full Set 2:
 2. Selector-precedence test added:
    - denylist reason wins over kill-switch and artifact-unavailable reasons.
 3. End-to-end browser tests for forced-fawn init failure are still pending.
+
+## Edit Set 4: Decoder Runtime Execution Wiring
+
+## Candidate Files
+
+1. `src/gpu/command_buffer/service/webgpu_decoder.h`
+2. `src/gpu/command_buffer/service/webgpu_decoder.cc`
+3. `src/gpu/command_buffer/service/webgpu_decoder_impl.h`
+4. `src/gpu/command_buffer/service/webgpu_decoder_impl.cc`
+5. `src/gpu/command_buffer/service/webgpu_proc_table_entries.inc` (new)
+6. `src/gpu/ipc/service/gpu_init.cc`
+7. `src/gpu/ipc/service/webgpu_command_buffer_stub.cc`
+
+## Patch Intention
+
+1. Remove implicit Dawn-only assumptions in decoder startup path.
+2. Thread an explicit runtime enum into decoder creation.
+3. Enable concrete Fawn runtime execution path while preserving Dawn fallback behavior.
+4. Keep proc dispatch thread-scoped and deterministic.
+
+### Status (2026-02-24, landed with follow-ups)
+
+1. Decoder creation now receives explicit runtime enum (`kDawn|kFawn`).
+2. `WebGPUDecoderImpl` has Fawn branch that:
+   - loads `libfawn_webgpu.so`,
+   - populates proc table from `wgpuGetProcAddress`,
+   - creates `WGPUInstance`,
+   - injects instance into wire server,
+   - scopes thread procs during command execution/polling,
+   - releases instance/library during teardown.
+3. Fawn availability/surface probing moved to generated proc-table validation (`webgpu_proc_table_entries.inc`).
+4. GPU process proc bootstrap switched to thread-dispatch mode with Dawn-native default thread procs.
+5. Crash fix added in `WebGPUCommandBufferStub` destructor:
+   - guard `decoder_context()` before `Destroy(false)`.
+6. Revalidated:
+   - `autoninja -C out/fawn_debug gpu_unittests`
+   - `autoninja -C out/fawn_debug chrome`
+   - `out/fawn_debug/gpu_unittests --gtest_filter=WebGPURuntimeSelectionTest.*:GpuPreferencesTest.EncodeDecode`
+7. Remaining:
+   - direct unit/integration tests for decoder Fawn init/teardown failure branches,
+   - validation under non-denylisted GPU profile.
 
 ## Bring-Up Sequence for Edits
 
