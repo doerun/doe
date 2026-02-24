@@ -680,7 +680,7 @@
       "driver": "24.0.0",
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 12000,
+      "leftTimingDivisor": 15000,
       "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
       "applesToApplesVetted": true
