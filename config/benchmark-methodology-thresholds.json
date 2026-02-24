@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "timingSelection": {
-    "minDispatchWindowNsWithoutEncode": 100000,
+    "minDispatchWindowNsWithoutEncode": 500000,
     "minDispatchWindowCoveragePercentWithoutEncode": 1.0
   },
   "claimabilityDefaults": {

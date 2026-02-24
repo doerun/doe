@@ -20,6 +20,9 @@ These files define candidate module boundaries and promotion expectations before
    - Track B resource and submit-cadence scheduler contract.
 7. `module-contract-matrix.md`
    - Cross-module input/output schema fields, required gates, and rollout KPIs.
+8. `browser-benchmark-superset.contract.md`
+   - Layered browser benchmark superset contract (`L0`/`L1`/`L2`) and projection/gate rules.
+   - includes hash-synchronization, status-code taxonomy, cadence, and promotion-approval policy.
 
 ## Contract Rules
 

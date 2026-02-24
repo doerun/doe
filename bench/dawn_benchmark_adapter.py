@@ -145,14 +145,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dawn-filter", default="")
     parser.add_argument("--dawn-filter-map", default=None)
     parser.add_argument(
-        "--default-filter",
-        default="",
-        help=(
-            "Explicit fallback gtest filter when workload map has no match. "
-            "If omitted, adapter fails fast unless the map explicitly uses @autodiscover."
-        ),
-    )
-    parser.add_argument(
         "--dawn-extra-args",
         action="append",
         default=[],
@@ -189,7 +181,6 @@ def resolve_filter(
     workload: str,
     explicit: str,
     mapping_path: str,
-    fallback: str,
 ) -> tuple[str, str]:
     if explicit:
         return explicit, "explicit"
@@ -201,15 +192,6 @@ def resolve_filter(
         if selected:
             return selected, "mapped"
         return "", "missing"
-    if "default" in mapping:
-        selected = mapping["default"].strip()
-        if selected == AUTO_DISCOVER_TOKEN:
-            return "", "autodiscover"
-        if selected:
-            return selected, "mapped-default"
-        return "", "missing"
-    if fallback:
-        return fallback, "fallback"
     return "", "missing"
 
 
@@ -619,7 +601,6 @@ def main() -> int:
         args.workload,
         args.dawn_filter,
         args.dawn_filter_map or "",
-        args.default_filter,
     )
     dawn_binary = resolve_binary(args.dawn_binary, args.dawn_state)
     if not dawn_binary:
@@ -631,8 +612,7 @@ def main() -> int:
     if filter_resolution == "missing":
         raise SystemExit(
             "No Dawn gtest filter resolved for this workload. "
-            "Provide --dawn-filter, add a mapping entry, pass --default-filter explicitly, "
-            "or set the mapping value to @autodiscover."
+            "Provide --dawn-filter, add a mapping entry, or set that workload's map value to @autodiscover."
         )
     if filter_resolution == "autodiscover":
         if not args.dawn_filter_map:

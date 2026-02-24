@@ -26,6 +26,8 @@ Current formalization:
 - `Fawn/Runtime.lean` (deterministic matching + scoring + selector for quirk streams)
 - `Fawn/Runtime.lean` now includes driver-range matching and dispatch decision metadata (`DispatchDecision`) with proof obligations in the path.
 - `Fawn/Bridge.lean` (obligation gate evaluation from dispatch decisions)
+- `Fawn/Comparability.lean` (machine-checkable apples-to-apples comparability obligation model and blocking-failure semantics)
+- `Fawn/ComparabilityFixtures.lean` (fixed comparability-facts parity fixtures with expected blocking-obligation proofs)
 - `Fawn/Dispatch.lean` and `Fawn/Runtime.lean` now include `kernelDispatch` as a first-class command kind.
 
 Bridge layer contract:

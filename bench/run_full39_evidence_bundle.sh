@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "usage: $0 <full39_report_json> [windows]"
+  echo "usage: $0 <matrix_report_json> [windows]"
   exit 2
 fi
 
@@ -10,7 +10,7 @@ report="$1"
 windows="${2:-3}"
 dropin_artifact="zig/zig-out/lib/libfawn_webgpu.so"
 
-echo "[1/5] validating full39 readiness report: $report"
+echo "[1/5] validating matrix readiness report: $report"
 python3 bench/check_full39_claim_readiness.py --report "$report"
 
 echo "[2/5] running blocking gates + claim + drop-in"
@@ -23,7 +23,10 @@ python3 bench/run_blocking_gates.py \
   --claim-require-comparison-status comparable \
   --claim-require-claim-status claimable \
   --claim-require-claimability-mode release \
-  --claim-require-min-timed-samples 15
+  --claim-require-min-timed-samples 15 \
+  --claim-expected-workload-contract bench/workloads.amd.vulkan.extended.json \
+  --claim-require-workload-contract-hash \
+  --claim-require-workload-id-set-match
 
 echo "[3/5] running repeated release windows + substantiation gate"
 python3 bench/run_release_claim_windows.py \
@@ -40,4 +43,4 @@ python3 bench/build_test_inventory_dashboard.py --report-glob "bench/out/**/dawn
 echo "[5/5] refreshing baseline dataset package"
 python3 bench/build_baseline_dataset.py --report-glob "bench/out/**/dawn-vs-fawn*.json"
 
-echo "PASS: full39 evidence bundle complete"
+echo "PASS: matrix evidence bundle complete"

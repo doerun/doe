@@ -2,19 +2,23 @@
 
 ## Snapshot
 
-Date: 2026-02-23
+Date: 2026-02-24
 
 Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
 Current `fawn/zig/src` size is 13,485 LOC (`wc -l zig/src/*.zig`, 2026-02-23) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) over the full extended workload matrix.
 
-Benchmark contract coverage snapshot (2026-02-23 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `39` workload contracts: `39` apples-to-apples comparable + `0` directional contracts.
+Benchmark contract coverage snapshot (2026-02-24 update):
+- `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `23` strict apples-to-apples comparable + `17` directional contracts.
 - missing Dawn perf suites were added to AMD extended contracts: `MatrixVectorMultiplyPerf`, `UniformBufferUpdatePerf`, and `VulkanZeroInitializeWorkgroupMemoryExtensionTest`.
-- strict extended comparable matrix now apples-vets previously domain-gated contracts (`pipeline-async`, `p0-*`, `p1-*`, `p2-*`, `surface`) via explicit `applesToApplesVetted=true`.
+- strict comparable lanes now fail fast for directional/proxy-labeled contracts and upload mixed-scope ignore-first timing derivations.
+- Dawn adapter filter resolution is now explicit-only (no `filters.default` fallback); missing workload mappings fail fast unless that workload is explicitly `@autodiscover`.
+- report ingestion tools (`build_baseline_dataset.py`, `build_test_inventory_dashboard.py`) now require conformant compare reports with canonical comparability obligations and valid `workloadContract.path/sha256` hash consistency.
+- `surface_presentation_contract` is explicitly directional-only (`comparable=false`); strict comparable lanes use `concurrent_execution_single_contract` for Dawn `ConcurrentExecutionTest ... RunSingle` apples-to-apples coverage.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
+- claim-lane governance is now hash-locked and machine-checked via `config/claim-cycle.active.json` + `bench/cycle_gate.py`, with release pipeline default wiring when claim gate is enabled.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
 
 ## Product implementation state (runtime outcomes)
@@ -465,6 +469,49 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - compute dispatch now fails with explicit `gpu timestamp ...` status taxonomy when timestamp readback errors occur, rather than silently flattening failures into a zero timestamp.
 - copy lowering now fails fast on invalid/non-matching texture extents for texture copy directions, and kernel source loading now rejects empty sources plus non-compute WGSL (`@compute` required) for `kernel_dispatch`.
 
+82. Skeptical-claim hardening for strict comparable lanes:
+- timing-selection now rejects tiny dispatch-window measurements globally when both are true: dispatch window below `minDispatchWindowNsWithoutEncode` and coverage below `minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs` (thresholds from `config/benchmark-methodology-thresholds.json`), then falls back to `executionTotalNs`.
+- `surface_presentation_contract` is now directional-only (`comparable=false`) because Dawn `ConcurrentExecutionTest ... RunSingle` is not a matching create/release-surface benchmark contract.
+- new strict comparable replacement workload `concurrent_execution_single_contract` maps to Dawn `ConcurrentExecutionTest ... RunSingle` with a matched single-dispatch compute contract (`examples/concurrent_execution_single_commands.json`, `bench/kernels/concurrent_execution_runsingle_u32.wgsl`).
+
+83. Apples-to-apples contract enforcement hardening:
+- strict workload contract loader now rejects `comparable=true` entries with directional descriptions or explicit closest-proxy comparability notes.
+- AMD extended workload contract now classifies directional/proxy mappings as non-comparable (`benchmarkClass=directional`) so strict claim lanes include only strict apples-to-apples workloads.
+- upload ignore-first mixed-scope timing derivations (`base` source vs `adjusted` row-total source mismatch) now fail comparability and claimability checks.
+- compare reports now embed workload contract metadata (`workloadContract.path`, `workloadContract.sha256`) for anti-staleness auditing.
+- `bench/check_full39_claim_readiness.py` now validates exact comparable workload identity against the current workload contract and fails on stale/mismatched workload sets.
+
+84. Comparability obligations are now machine-checkable and gate-enforced:
+- `bench/compare_dawn_vs_fawn_modules/comparability.py` now emits per-workload obligation artifacts (`comparability.obligations`) with explicit `id`, `applicable`, `blocking`, and `passes` fields plus `blockingFailedObligations`.
+- workload comparability status now derives from blocking-obligation failures (deterministic contract), while preserving detailed human-readable reasons.
+- `bench/claim_gate.py` now validates comparability obligation schema/version and fails when claimable/comparable reports contain missing or failed blocking comparability obligations.
+- `bench/check_full39_claim_readiness.py` now fails readiness checks when workload comparability obligations are missing/invalid or have blocking failures.
+- Lean formalization now includes `lean/Fawn/Comparability.lean` for obligation IDs and blocking-failure semantics mirrored by bench gating.
+
+85. Lean/Python comparability parity fixtures are now wired:
+- canonical obligation IDs are config-backed (`config/comparability-obligations.json`) and validated by schema gate.
+- comparability fixture contract is now schema-backed (`config/comparability-obligation-fixtures.schema.json`) with fixture data in `bench/comparability_obligation_fixtures.json`.
+- parity verification script `bench/comparability_obligation_parity_gate.py` now checks:
+  - Python fixture evaluation via `evaluate_comparability_from_facts`
+  - Lean/Python obligation ID alignment (`lean/Fawn/Comparability.lean` constructors vs canonical config IDs).
+- Lean fixture proofs are now present in `lean/Fawn/ComparabilityFixtures.lean` and compiled in `lean/check.sh`.
+- gate orchestration now supports verification-lane wiring with `--with-comparability-parity-gate` in:
+  - `bench/run_blocking_gates.py`
+  - `bench/run_release_pipeline.py`
+  - `bench/run_release_claim_windows.py`.
+
+86. Track B claim-grade rehearsal artifacts and hash-linked claim rows are now hard-gated:
+- `bench/claim_gate.py` now validates claim-row hash linkage (`claimRowHash`, `claimRowHashChain`) against workload-contract hash, config-contract hash, benchmark-policy hash, and trace-meta hashes.
+- claim gate now independently enforces per-workload timed-sample floors plus required positive tails (`p50/p95/p99` in release mode), even if report-level claimability fields are present.
+- `bench/run_release_pipeline.py` now emits claim rehearsal artifacts by default when `--with-claim-gate` is enabled:
+  - claim gate result
+  - tail-health table
+  - timing-invariant audit
+  - contract-hash manifest
+  - rehearsal manifest linking these outputs
+- new standalone artifact builder is available in `bench/build_claim_rehearsal_artifacts.py`.
+- `bench/run_release_claim_windows.py` now forwards this rehearsal-artifact step per window by default.
+
 ### Missing in progress
 
 1. Expand upstream quirk mining beyond toggle-style heuristics (`Toggle::...`) to cover additional workaround/action patterns with the same schema/hash discipline.
@@ -620,7 +667,65 @@ This matches speed-first priorities while keeping deterministic foundations.
 Current comparison claim state: `strict-comparable matrix + claimability diagnostics`.
 
 Meaning:
-1. strict comparable AMD matrix is now full-contract (`39` workloads), but claimable strict AMD substantiation still requires stable tails across the expanded set.
-2. macro stress workloads are apples-vetted comparable contracts; they can still be run as diagnostic slices but are no longer encoded as directional-only contracts.
+1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`23` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
+2. macro stress workloads are directional diagnostics and must not be presented as strict apples-to-apples claims.
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
+
+## Track A Execution Plan (Finalized)
+
+Objective:
+- make runtime behavior contract-clean, deterministic, and performance-safe under one active contract hash.
+
+Two-week implementation focus:
+1. Week 1 closes the failure inventory:
+   - adapter selection mismatches
+   - device-init edge cases
+   - timestamp validity failures
+   - unexpected unsupported taxonomy rows
+   - timing-normalization drift
+2. Week 2 lands fixes with explicit config/schema representation only:
+   - no hidden runtime switches
+   - no undocumented fallback behavior
+   - runtime and Lean pair on hot paths to remove provable checks only after proof artifact generation and replay parity pass
+3. preserve apples-to-apples semantics for comparable workloads and explicit directional obligations (`allowLeftNoExecution` when declared).
+
+Execution cadence:
+- daily red-lane triage
+- twice-weekly stabilization cuts
+- weekly contract-hash rehearsal
+
+Required artifacts per stabilization cut:
+- strict comparable report for the active comparable subset
+- directional obligation report (including declared `allowLeftNoExecution` evidence)
+- unsupported taxonomy histogram (`expected` vs `unexpected`)
+- timestamp validity summary
+- replay trace-parity output
+- config/schema diff summary
+
+Required checks per PR:
+- unit tests for taxonomy/error paths
+- integration tests for adapter/device boundary behavior
+- regression tests for timing-source/timing-class invariants
+- replay parity checks
+- benchmark harness smoke
+
+Definition of done:
+1. all comparable workloads under the active hash pass strict comparability.
+2. directional workloads satisfy declared obligations.
+3. zero unexpected unsupported and zero unexpected errors.
+4. timestamp validity checks are green.
+5. normalization fields are schema-conformant.
+6. at least one Lean-driven hot-path branch elimination lands with measured perf impact and no correctness regression.
+
+Rollback triggers:
+- hidden toggle introduction
+- schema/runtime drift without migration note
+- replay mismatch
+- claim-lane comparability break
+- memory-safety regression (blocking defect under release policy)
+
+Ownership:
+- runtime lead owns Zig implementation and taxonomy outcomes
+- Lean lead owns proofs and branch-deletion proposals
+- coordinator owns contract-hash advancement decision after all Track A artifacts are green

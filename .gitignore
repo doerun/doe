@@ -28,6 +28,7 @@ nursery/chromium_webgpu_lane/.cipd/
 nursery/chromium_webgpu_lane/_bad_scm/
 nursery/chromium_webgpu_lane/cache/
 nursery/chromium_webgpu_lane/depot_tools/
+nursery/chromium_webgpu_lane/node_modules/
 nursery/chromium_webgpu_lane/src/
 nursery/chromium_webgpu_lane/chromium/
 nursery/chromium_webgpu_lane/out/

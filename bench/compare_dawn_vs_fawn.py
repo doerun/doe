@@ -9,6 +9,7 @@ timing traces where available, with wall-time as a fallback.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import statistics
 import subprocess
@@ -125,6 +126,45 @@ class BenchmarkMethodologyPolicy:
     min_dispatch_window_coverage_percent_without_encode: float
     local_claim_min_timed_samples: int
     release_claim_min_timed_samples: int
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def json_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def collect_trace_meta_hashes(command_samples: list[dict[str, Any]]) -> list[dict[str, str]]:
+    by_path: dict[str, str] = {}
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        raw_path = sample.get("traceMetaPath")
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            continue
+        path = raw_path.strip()
+        if path in by_path:
+            continue
+        trace_meta_path = Path(path)
+        if not trace_meta_path.exists():
+            continue
+        by_path[path] = file_sha256(trace_meta_path)
+    return [{"path": path, "sha256": by_path[path]} for path in sorted(by_path.keys())]
 
 
 def parse_args() -> argparse.Namespace:
@@ -1277,6 +1317,18 @@ def load_workloads(
                 f"invalid workload {workload.id}: domain={workload.domain} must be "
                 "directional (comparable=false) unless applesToApplesVetted=true"
             )
+        description_lower = workload.description.strip().lower()
+        notes_lower = workload.comparability_notes.strip().lower()
+        if workload.comparable and description_lower.startswith("directional "):
+            raise ValueError(
+                f"invalid workload {workload.id}: comparable=true conflicts with "
+                "directional description; mark comparable=false or provide an apples-to-apples description"
+            )
+        if workload.comparable and "closest draw-call throughput proxy" in notes_lower:
+            raise ValueError(
+                f"invalid workload {workload.id}: comparable=true conflicts with proxy mapping note "
+                "(closest draw-call throughput proxy); mark comparable=false"
+            )
         if selected and workload.id not in selected:
             continue
         if not selected and (not include_extended) and (not workload.include_by_default):
@@ -1329,8 +1381,9 @@ def main() -> int:
         )
     benchmark_policy = load_benchmark_methodology_policy(args.benchmark_policy)
 
+    workloads_path = Path(args.workloads)
     workloads = load_workloads(
-        Path(args.workloads),
+        workloads_path,
         args.workload_filter,
         include_noncomparable=bool(args.include_noncomparable_workloads),
         include_extended=bool(args.include_extended_workloads),
@@ -1383,6 +1436,10 @@ def main() -> int:
         "outputTimestamp": output_timestamp,
         "outPath": str(out),
         "workspacePath": str(workspace),
+        "runParameters": {
+            "iterations": args.iterations,
+            "warmup": args.warmup,
+        },
         "left": {"name": args.left_name},
         "right": {"name": args.right_name},
         "deltaPercentConvention": {
@@ -1402,6 +1459,10 @@ def main() -> int:
             "requireNativeExecutionTimingForLeftOperation": (
                 args.require_timing_class == "operation"
             ),
+            "obligationContract": {
+                "schemaVersion": comparability_mod.OBLIGATION_SCHEMA_VERSION,
+                "blockingFailureFailsComparability": True,
+            },
             "dispatchWindowSelectionThresholds": {
                 "minDispatchWindowNsWithoutEncode": benchmark_policy.min_dispatch_window_ns_without_encode,
                 "minDispatchWindowCoveragePercentWithoutEncode": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
@@ -1423,16 +1484,29 @@ def main() -> int:
         "benchmarkPolicy": {
             "path": benchmark_policy.source_path,
             "schemaVersion": 1,
+            "sha256": file_sha256(Path(benchmark_policy.source_path)),
+        },
+        "workloadContract": {
+            "path": str(workloads_path),
+            "sha256": file_sha256(workloads_path),
         },
         "workloads": [],
     }
     if args.config:
-        report["configPath"] = str(Path(args.config))
+        config_path = Path(args.config).resolve()
+        report["configPath"] = str(config_path)
+        if config_path.exists():
+            report["configContract"] = {
+                "path": str(config_path),
+                "sha256": file_sha256(config_path),
+            }
 
     overall_left = []
     overall_right = []
     comparability_failures: list[dict[str, Any]] = []
     claimability_failures: list[dict[str, Any]] = []
+    previous_claim_row_hash = "0" * 64
+    claim_row_hashes: list[str] = []
 
     for workload in workloads:
         validate_upload_apples_to_apples(
@@ -1498,6 +1572,7 @@ def main() -> int:
         }
         comparability = compare_assessment(
             workload_comparable=workload.comparable,
+            workload_domain=workload.domain,
             left=left,
             right=right,
             required_timing_class=args.require_timing_class,
@@ -1519,7 +1594,15 @@ def main() -> int:
             benchmark_policy=benchmark_policy,
         )
         if not comparability["comparable"]:
-            comparability_failures.append({"workloadId": workload.id, "reasons": comparability["reasons"]})
+            comparability_failures.append(
+                {
+                    "workloadId": workload.id,
+                    "failedBlockingObligations": comparability.get(
+                        "blockingFailedObligations", []
+                    ),
+                    "reasons": comparability["reasons"],
+                }
+            )
         if claimability.get("evaluated") is True and not claimability.get("claimable", False):
             claimability_failures.append(
                 {
@@ -1532,6 +1615,39 @@ def main() -> int:
             overall_left.extend([safe_float(v) for v in left_timings if safe_float(v) is not None])
         if right_stats["count"] > 0:
             overall_right.extend([safe_float(v) for v in right_timings if safe_float(v) is not None])
+
+        left_trace_meta_hashes = collect_trace_meta_hashes(left.get("commandSamples", []))
+        right_trace_meta_hashes = collect_trace_meta_hashes(right.get("commandSamples", []))
+        claim_row_context = {
+            "workloadId": workload.id,
+            "workloadContractSha256": report["workloadContract"]["sha256"],
+            "configContractSha256": (
+                report.get("configContract", {}).get("sha256", "")
+                if isinstance(report.get("configContract"), dict)
+                else ""
+            ),
+            "benchmarkPolicySha256": report["benchmarkPolicy"]["sha256"],
+            "leftTraceMetaSha256": [entry["sha256"] for entry in left_trace_meta_hashes],
+            "rightTraceMetaSha256": [entry["sha256"] for entry in right_trace_meta_hashes],
+            "deltaPercent": delta,
+            "comparability": {
+                "comparable": comparability.get("comparable"),
+                "blockingFailedObligations": comparability.get(
+                    "blockingFailedObligations", []
+                ),
+            },
+            "claimability": {
+                "evaluated": claimability.get("evaluated"),
+                "claimable": claimability.get("claimable"),
+                "reasons": claimability.get("reasons", []),
+            },
+        }
+        claim_row_hash = json_sha256(
+            {
+                "previousHash": previous_claim_row_hash,
+                "context": claim_row_context,
+            }
+        )
 
         report["workloads"].append(
             {
@@ -1561,8 +1677,20 @@ def main() -> int:
                 "deltaPercent": delta,
                 "comparability": comparability,
                 "claimability": claimability,
+                "traceMetaHashes": {
+                    "left": left_trace_meta_hashes,
+                    "right": right_trace_meta_hashes,
+                },
+                "claimRowHash": {
+                    "algorithm": "sha256",
+                    "previousHash": previous_claim_row_hash,
+                    "hash": claim_row_hash,
+                    "context": claim_row_context,
+                },
             }
         )
+        claim_row_hashes.append(claim_row_hash)
+        previous_claim_row_hash = claim_row_hash
 
     if overall_left and overall_right:
         overall_left_stats = format_stats(overall_left)
@@ -1590,16 +1718,35 @@ def main() -> int:
             },
         }
 
+    obligation_failure_counts: dict[str, int] = {}
+    for failure in comparability_failures:
+        failed_obligations = failure.get("failedBlockingObligations", [])
+        if not isinstance(failed_obligations, list):
+            continue
+        for obligation_id in failed_obligations:
+            if not isinstance(obligation_id, str) or not obligation_id:
+                continue
+            obligation_failure_counts[obligation_id] = (
+                obligation_failure_counts.get(obligation_id, 0) + 1
+            )
+
     report["comparabilitySummary"] = {
         "workloadCount": len(workloads),
         "nonComparableCount": len(comparability_failures),
         "nonComparableWorkloads": comparability_failures,
+        "failedBlockingObligationCounts": dict(sorted(obligation_failure_counts.items())),
     }
     report["comparisonStatus"] = "comparable" if not comparability_failures else "unreliable"
     report["claimabilitySummary"] = {
         "workloadCount": len(workloads),
         "nonClaimableCount": len(claimability_failures),
         "nonClaimableWorkloads": claimability_failures,
+    }
+    report["claimRowHashChain"] = {
+        "algorithm": "sha256",
+        "count": len(claim_row_hashes),
+        "startPreviousHash": "0" * 64,
+        "finalHash": claim_row_hashes[-1] if claim_row_hashes else "",
     }
     if args.claimability == "off":
         report["claimStatus"] = "not-evaluated"

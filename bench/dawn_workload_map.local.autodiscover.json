@@ -20,7 +20,6 @@
     "texture_sampler_write_query_destroy_contract": "@autodiscover",
     "texture_sampler_write_query_destroy_contract_mip8": "@autodiscover",
     "async_pipeline_diagnostics_contract": "@autodiscover",
-    "surface_presentation_contract": "@autodiscover",
-    "default": "@autodiscover"
+    "surface_presentation_contract": "@autodiscover"
   }
 }

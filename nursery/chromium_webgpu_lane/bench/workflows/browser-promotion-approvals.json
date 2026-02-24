@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "requiredApprovals": [
+    "track_b_contracts_owner",
+    "coordinator"
+  ],
+  "approvals": {
+    "track_b_contracts_owner": {
+      "approved": false,
+      "by": "",
+      "at": ""
+    },
+    "coordinator": {
+      "approved": false,
+      "by": "",
+      "at": ""
+    }
+  }
+}

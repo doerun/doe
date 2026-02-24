@@ -39,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         help="Semantic parity mode forwarded to each release pipeline window.",
     )
     parser.add_argument(
+        "--with-comparability-parity-gate",
+        action="store_true",
+        help="Forward comparability parity verification gate to each release pipeline window.",
+    )
+    parser.add_argument(
         "--compare-html-output",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -46,6 +51,53 @@ def parse_args() -> argparse.Namespace:
             "Forward compare HTML generation toggle to each release pipeline window "
             "(default: enabled)."
         ),
+    )
+    parser.add_argument(
+        "--with-claim-rehearsal-artifacts",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Forward claim rehearsal artifact generation toggle to each release pipeline window "
+            "(default: enabled)."
+        ),
+    )
+    parser.add_argument(
+        "--with-cycle-gate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Forward cycle gate execution toggle to each release pipeline window.",
+    )
+    parser.add_argument(
+        "--cycle-contract",
+        default="config/claim-cycle.active.json",
+        help="Cycle contract path forwarded to each release pipeline window.",
+    )
+    parser.add_argument(
+        "--cycle-gate-out",
+        default="bench/out/cycle_gate_report.json",
+        help="Cycle-gate report path forwarded to each release pipeline window.",
+    )
+    parser.add_argument(
+        "--cycle-artifact-class",
+        choices=["claim", "diagnostic"],
+        default="claim",
+        help="Artifact class forwarded to cycle gate in each release pipeline window.",
+    )
+    parser.add_argument(
+        "--cycle-comparability-obligations",
+        default="config/comparability-obligations.json",
+        help="Comparability-obligation contract path forwarded to cycle gate.",
+    )
+    parser.add_argument(
+        "--cycle-substantiation-report",
+        default="",
+        help="Optional substantiation report path forwarded to cycle gate.",
+    )
+    parser.add_argument(
+        "--cycle-enforce-rollbacks",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Forward rollback enforcement toggle to cycle gate in each window.",
     )
     parser.add_argument(
         "--with-dropin-gate",
@@ -233,6 +285,24 @@ def main() -> int:
     if args.with_substantiation_gate and not Path(args.substantiation_policy).exists():
         print(f"FAIL: missing --substantiation-policy: {args.substantiation_policy}")
         return 1
+    if args.with_cycle_gate and args.with_claim_gate and not args.dry_run:
+        if not Path(args.cycle_contract).exists():
+            print(f"FAIL: missing --cycle-contract: {args.cycle_contract}")
+            return 1
+        if not Path(args.cycle_comparability_obligations).exists():
+            print(
+                "FAIL: missing --cycle-comparability-obligations: "
+                f"{args.cycle_comparability_obligations}"
+            )
+            return 1
+        if args.cycle_substantiation_report.strip() and not Path(
+            args.cycle_substantiation_report.strip()
+        ).exists():
+            print(
+                "FAIL: missing --cycle-substantiation-report: "
+                f"{args.cycle_substantiation_report.strip()}"
+            )
+            return 1
 
     raw_report_path = resolve_config_report_path(config_path)
     base_timestamp = (
@@ -297,6 +367,8 @@ def main() -> int:
                 args.trace_semantic_parity_mode,
             ]
         )
+        if args.with_comparability_parity_gate:
+            command.append("--with-comparability-parity-gate")
         if args.with_dropin_gate:
             command.extend(
                 [
@@ -321,8 +393,35 @@ def main() -> int:
                     str(args.claim_require_min_timed_samples),
                 ]
             )
+        if args.with_cycle_gate:
+            command.extend(
+                [
+                    "--with-cycle-gate",
+                    "--cycle-contract",
+                    args.cycle_contract,
+                    "--cycle-gate-out",
+                    args.cycle_gate_out,
+                    "--cycle-artifact-class",
+                    args.cycle_artifact_class,
+                    "--cycle-comparability-obligations",
+                    args.cycle_comparability_obligations,
+                ]
+            )
+            if args.cycle_substantiation_report.strip():
+                command.extend(
+                    [
+                        "--cycle-substantiation-report",
+                        args.cycle_substantiation_report.strip(),
+                    ]
+                )
+            if not args.cycle_enforce_rollbacks:
+                command.append("--no-cycle-enforce-rollbacks")
+        else:
+            command.append("--no-with-cycle-gate")
         if not args.compare_html_output:
             command.append("--no-compare-html-output")
+        if not args.with_claim_rehearsal_artifacts:
+            command.append("--no-with-claim-rehearsal-artifacts")
         if args.timestamp_output:
             command.extend(["--timestamp", window_timestamp])
         else:
@@ -332,6 +431,20 @@ def main() -> int:
             "windowIndex": idx,
             "timestamp": window_timestamp,
             "reportPath": str(report_path),
+            "cycleGateReportPath": (
+                str(
+                    output_paths.with_timestamp(
+                        args.cycle_gate_out,
+                        window_timestamp,
+                        enabled=args.timestamp_output,
+                    )
+                )
+                if args.with_cycle_gate
+                else ""
+            ),
+            "claimRehearsalManifestPath": str(
+                Path(f"{report_path.with_suffix('')}.claim-rehearsal.manifest.json")
+            ),
             "command": command,
         }
 
@@ -376,6 +489,20 @@ def main() -> int:
         "withDropinGate": args.with_dropin_gate,
         "dropinArtifact": args.dropin_artifact if args.with_dropin_gate else "",
         "withClaimGate": args.with_claim_gate,
+        "withClaimRehearsalArtifacts": args.with_claim_rehearsal_artifacts,
+        "withCycleGate": args.with_cycle_gate,
+        "cycleContract": args.cycle_contract if args.with_cycle_gate else "",
+        "cycleGateOut": args.cycle_gate_out if args.with_cycle_gate else "",
+        "cycleArtifactClass": args.cycle_artifact_class if args.with_cycle_gate else "",
+        "cycleComparabilityObligations": (
+            args.cycle_comparability_obligations if args.with_cycle_gate else ""
+        ),
+        "cycleSubstantiationReport": (
+            args.cycle_substantiation_report if args.with_cycle_gate else ""
+        ),
+        "cycleEnforceRollbacks": (
+            bool(args.cycle_enforce_rollbacks) if args.with_cycle_gate else False
+        ),
         "withSubstantiationGate": args.with_substantiation_gate,
         "substantiationPolicy": args.substantiation_policy if args.with_substantiation_gate else "",
         "substantiationReport": str(substantiation_report_path) if args.with_substantiation_gate else "",

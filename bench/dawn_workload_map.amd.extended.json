@@ -39,8 +39,8 @@
     "p0_render_pixel_local_storage_barrier_contract": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
     "p0_render_pixel_local_storage_barrier_macro_500": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
     "surface_presentation_contract": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
+    "concurrent_execution_single_contract": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
     "uniform_buffer_update_writebuffer_partial_single": "UniformBufferUpdatePerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_PartialSize_SingleUniformBuffer",
-    "zero_initialize_workgroup_memory_256": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256",
-    "default": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
+    "zero_initialize_workgroup_memory_256": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256"
   }
 }

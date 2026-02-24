@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fawn.local/schemas/nursery/browser_workflow_manifest.schema.json",
+  "title": "BrowserWorkflowManifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "promotionGateRequiredApprovals",
+    "rows"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "promotionGateRequiredApprovals": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "string",
+        "enum": [
+          "track_b_contracts_owner",
+          "coordinator"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/workflowRow"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "workflowRow": {
+      "type": "object",
+      "required": [
+        "id",
+        "scenarioTemplate",
+        "description",
+        "metrics",
+        "comparabilityExpectation",
+        "required",
+        "requiredStatus",
+        "claimScope",
+        "claimLanguage"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenarioTemplate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metrics": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "comparabilityExpectation": {
+          "type": "string",
+          "enum": [
+            "component",
+            "none"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "requiredStatus": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "optional"
+          ]
+        },
+        "claimScope": {
+          "type": "string",
+          "enum": [
+            "l2_component_only",
+            "l2_diagnostic_only"
+          ]
+        },
+        "claimLanguage": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

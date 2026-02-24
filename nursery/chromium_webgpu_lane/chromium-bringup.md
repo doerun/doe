@@ -103,6 +103,44 @@ Initial criterion is deterministic compatibility and observability, not performa
 4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
 
+## Browser Smoke Harness
+
+A small Playwright harness now exists for real-browser WebGPU smoke + mini bench comparison:
+
+- `nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs`
+- classification: diagnostic browser evidence (`L1`), not a strict `L0` claim artifact
+- checks:
+  - `navigator.gpu` + adapter/device availability
+  - adapter features + selected limits capture
+  - compute correctness smoke (`[1,2,3,4] -> [2,3,4,5]`)
+  - render smoke (triangle draw + center pixel validation)
+  - mini timing probes (`queue.writeBuffer` 64KB and compute dispatch us/op)
+- output metadata now includes invocation + environment fields (`argv`, `cwd`, node/platform), browser/user-agent evidence, and hash-chain traceability over mode results.
+
+Run from repo root:
+
+```bash
+# install runtime dependency once (uses your Chromium binary, no Playwright browser download required)
+npm install --prefix nursery/chromium_webgpu_lane playwright-core
+
+# compare Dawn vs Fawn in one diagnostic report (positive delta => Fawn faster, diagnostic only)
+node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs \
+  --mode both \
+  --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
+  --fawn-lib /home/x/deco/fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --out /home/x/deco/fawn/nursery/chromium_webgpu_lane/artifacts/dawn-vs-fawn.tracka.playwright-smoke.diagnostic.json \
+  --chrome-arg=--ozone-platform=x11
+```
+
+By default the harness writes to timestamped lane-local artifacts:
+
+- `nursery/chromium_webgpu_lane/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-fawn.tracka.playwright-smoke.diagnostic.json`
+
+Guardrail:
+
+- writing under `bench/out` is blocked by default for this harness to avoid accidental claim-lane mixing.
+- if you intentionally need `bench/out`, pass `--allow-bench-out` explicitly and keep the artifact labeled diagnostic.
+
 ## Artifact Discipline
 
 For each integration run, capture:
@@ -112,7 +150,70 @@ For each integration run, capture:
 3. trace/meta artifacts,
 4. benchmark/correctness reports and gate outcomes.
 
-Store reports under lane-local ignored directories or canonical `fawn/bench/out/` flows as appropriate.
+Store this harness output under lane-local ignored directories by default.
+Only publish to canonical `fawn/bench/out/` flows after converting results into strict comparability/claim contracts.
+
+## Layered Browser Superset Harness
+
+The nursery lane now also includes a contract-driven layered harness (`L1` + `L2`) that is generated from the core workload source-of-truth:
+
+- generator: `nursery/chromium_webgpu_lane/scripts/generate-browser-projection-manifest.py`
+- runner: `nursery/chromium_webgpu_lane/scripts/webgpu-playwright-layered-bench.mjs`
+- checker: `nursery/chromium_webgpu_lane/scripts/check-browser-benchmark-superset.py`
+- orchestrator: `nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py`
+
+Artifacts and contracts:
+
+- `nursery/chromium_webgpu_lane/contracts/browser-benchmark-superset.contract.md`
+- `nursery/chromium_webgpu_lane/bench/projection-rules.json`
+- `nursery/chromium_webgpu_lane/bench/generated/browser_projection_manifest.json`
+- `nursery/chromium_webgpu_lane/bench/workflows/browser-workflow-manifest.json`
+
+Run from repo root:
+
+```bash
+python3 nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py \
+  --mode both \
+  --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
+  --fawn-lib /home/x/deco/fawn/zig/zig-out/lib/libfawn_webgpu.so
+```
+
+Environment note:
+
+- in restricted sandboxes where socket operations are blocked, browser launch can fail before tests run; in that case, run this command directly on the host session where Chromium normally runs.
+
+Default outputs are lane-local diagnostic artifacts under `nursery/chromium_webgpu_lane/artifacts/<timestamp>/...`.
+This includes:
+
+- layered report JSON,
+- checker JSON,
+- summary JSON.
+
+Writing to `bench/out` is blocked by default; pass `--allow-bench-out` only when intentionally publishing a diagnostic artifact path under `bench/out/scratch`.
+
+Runtime note:
+
+- local HTTP server bind is fail-fast by default (no implicit fallback).
+- use `--allow-data-url-fallback` only for explicitly diagnostic sandbox troubleshooting.
+
+Cadence:
+
+1. Daily browser smoke run.
+2. Twice-weekly layered benchmark run.
+3. Weekly promotion review.
+
+Promotion candidates:
+
+1. must keep projection hashes synchronized with active workloads/rules,
+2. must include explicit `status` + `statusCode` for required `L1/L2` rows,
+3. must carry approvals from `track_b_contracts_owner` and `coordinator`.
+
+Rollback triggers:
+
+1. hand-maintained scenario drift from source workloads,
+2. hidden toggles affecting comparability semantics,
+3. missing runtime-mode evidence,
+4. claim phrasing beyond scenario class.
 
 ## Guardrails
 

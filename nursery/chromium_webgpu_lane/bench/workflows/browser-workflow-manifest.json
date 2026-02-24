@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "promotionGateRequiredApprovals": [
+    "track_b_contracts_owner",
+    "coordinator"
+  ],
+  "rows": [
+    {
+      "id": "startup_adapter_device",
+      "scenarioTemplate": "startup_adapter_device",
+      "description": "Acquire adapter/device and validate minimal command submission after startup.",
+      "metrics": [
+        "startupMs",
+        "adapterAvailable"
+      ],
+      "comparabilityExpectation": "component",
+      "required": true,
+      "requiredStatus": "ok",
+      "claimScope": "l2_component_only",
+      "claimLanguage": "Workflow/component diagnostic claim only; never a substitute for L0 parity claims."
+    },
+    {
+      "id": "canvas_reconfigure_resize",
+      "scenarioTemplate": "canvas_reconfigure_resize",
+      "description": "Repeated OffscreenCanvas reconfigure/resize sequence with clear+submit at each step.",
+      "metrics": [
+        "resizeCount",
+        "totalMs",
+        "msPerResize"
+      ],
+      "comparabilityExpectation": "component",
+      "required": true,
+      "requiredStatus": "ok",
+      "claimScope": "l2_component_only",
+      "claimLanguage": "Workflow/component diagnostic claim only; never a substitute for L0 parity claims."
+    },
+    {
+      "id": "queue_submit_burst",
+      "scenarioTemplate": "queue_submit_burst",
+      "description": "Burst queue submissions to include browser scheduling and command serialization overhead.",
+      "metrics": [
+        "submitCount",
+        "totalMs",
+        "usPerSubmit"
+      ],
+      "comparabilityExpectation": "component",
+      "required": true,
+      "requiredStatus": "ok",
+      "claimScope": "l2_component_only",
+      "claimLanguage": "Workflow/component diagnostic claim only; never a substitute for L0 parity claims."
+    },
+    {
+      "id": "async_pipeline_burst",
+      "scenarioTemplate": "async_pipeline_burst",
+      "description": "Repeated async pipeline creation to surface event-loop and browser tasking behavior.",
+      "metrics": [
+        "pipelineCount",
+        "totalMs",
+        "msPerPipeline"
+      ],
+      "comparabilityExpectation": "component",
+      "required": false,
+      "requiredStatus": "optional",
+      "claimScope": "l2_component_only",
+      "claimLanguage": "Optional workflow diagnostic claim only; never a substitute for L0 parity claims."
+    }
+  ]
+}

@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "cycleId": "2026q1-amd-vulkan-release-claim-cycle",
+  "active": true,
+  "objective": "Move from strong local comparable results to repeatable, auditable incumbent-replacement confidence under one active contract hash.",
+  "contracts": {
+    "workloadContract": {
+      "path": "bench/workloads.amd.vulkan.extended.json",
+      "sha256": "78d8806fe889056924f6555ee29fd633e0b173122225ccd7602c5f25b1b4764d"
+    },
+    "benchmarkPolicy": {
+      "path": "config/benchmark-methodology-thresholds.json",
+      "sha256": "e50ef9f750667dfc1d6505a097db71be9322df24d099ef91a9e4f49fd3468152"
+    },
+    "compareConfig": {
+      "path": "bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json",
+      "sha256": "34e9141cda711755f3bdc2e2baed937bf99789cf07f1031bc045c8921fbb5c41"
+    },
+    "substantiationPolicy": {
+      "path": "config/substantiation-policy.json",
+      "sha256": "aeefc16b083ac1510964158e98957a440935627b4fb6da2aa97b0468767937dd"
+    }
+  },
+  "workloadSets": {
+    "comparableIds": [
+      "async_pipeline_diagnostics_contract",
+      "buffer_upload_16mb",
+      "buffer_upload_1kb",
+      "buffer_upload_1mb",
+      "buffer_upload_4mb",
+      "buffer_upload_64kb",
+      "concurrent_execution_single_contract",
+      "matrix_vector_multiply_32768x2048_f32",
+      "matrix_vector_multiply_32768x2048_f32_swizzle1",
+      "matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+      "render_bundle_dynamic_bindings",
+      "render_bundle_dynamic_pipeline_bindings",
+      "render_draw_redundant_pipeline_bindings",
+      "render_draw_state_bindings",
+      "render_draw_throughput_proxy",
+      "shader_compile_pipeline_stress",
+      "texture_sampler_write_query_destroy_contract",
+      "texture_sampler_write_query_destroy_contract_mip8",
+      "texture_sampling_raster_proxy",
+      "uniform_buffer_update_writebuffer_partial_single",
+      "workgroup_atomic_1024",
+      "workgroup_non_atomic_1024",
+      "zero_initialize_workgroup_memory_256"
+    ],
+    "directionalIds": [
+      "draw_indexed_render_macro_200k",
+      "draw_indexed_render_proxy",
+      "p0_compute_indirect_timestamp_contract",
+      "p0_render_multidraw_contract",
+      "p0_render_multidraw_indexed_contract",
+      "p0_render_pixel_local_storage_barrier_contract",
+      "p0_render_pixel_local_storage_barrier_macro_500",
+      "p0_resource_lifecycle_contract",
+      "p1_capability_introspection_contract",
+      "p1_capability_introspection_macro_500",
+      "p1_resource_table_immediates_contract",
+      "p1_resource_table_immediates_macro_500",
+      "p2_lifecycle_refcount_contract",
+      "p2_lifecycle_refcount_macro_200",
+      "render_draw_throughput_macro_200k",
+      "surface_presentation_contract",
+      "texture_sampler_write_query_destroy_macro_500"
+    ]
+  },
+  "methodology": {
+    "iterations": 16,
+    "warmup": 1,
+    "comparabilityMode": "strict",
+    "requireTimingClass": "operation",
+    "claimabilityMode": "release",
+    "minTimedSamples": 15,
+    "includeExtendedWorkloads": true,
+    "includeNoncomparableWorkloads": false
+  },
+  "milestones": [
+    {
+      "id": "track_a_runtime_closure",
+      "track": "A",
+      "owner": "runtime-lead",
+      "dueDate": "2026-03-10",
+      "kpis": [
+        {
+          "id": "unexpected_status_zero",
+          "metric": "unexpectedUnsupportedOrErrorCount",
+          "operator": "==",
+          "target": 0
+        },
+        {
+          "id": "comparable_pass_count",
+          "metric": "comparableWorkloadsPassCount",
+          "operator": "==",
+          "target": 23
+        }
+      ]
+    },
+    {
+      "id": "track_b_claim_stability",
+      "track": "B",
+      "owner": "bench-lead",
+      "dueDate": "2026-03-14",
+      "kpis": [
+        {
+          "id": "claim_status",
+          "metric": "claimStatus",
+          "operator": "==",
+          "target": "claimable"
+        },
+        {
+          "id": "non_claimable_zero",
+          "metric": "nonClaimableComparableCount",
+          "operator": "==",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": "track_c_substantiation_capacity",
+      "track": "C",
+      "owner": "infra-bench-lead",
+      "dueDate": "2026-03-21",
+      "kpis": [
+        {
+          "id": "substantiation_status",
+          "metric": "substantiationStatus",
+          "operator": "==",
+          "target": "passed"
+        },
+        {
+          "id": "unique_profiles",
+          "metric": "uniqueLeftProfiles",
+          "operator": ">=",
+          "target": 3
+        }
+      ]
+    },
+    {
+      "id": "track_d_browser_promotion_controls",
+      "track": "D",
+      "owner": "chromium-lane-lead",
+      "dueDate": "2026-03-21",
+      "kpis": [
+        {
+          "id": "diagnostic_scope",
+          "metric": "browserClaimScopeViolations",
+          "operator": "==",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": "track_e_contract_discipline",
+      "track": "E",
+      "owner": "config-process-lead",
+      "dueDate": "2026-03-10",
+      "kpis": [
+        {
+          "id": "schema_migration_status_process",
+          "metric": "schemaMigrationStatusProcessComplete",
+          "operator": "==",
+          "target": true
+        }
+      ]
+    },
+    {
+      "id": "track_f_lean_roi",
+      "track": "F",
+      "owner": "lean-runtime-lead",
+      "dueDate": "2026-03-21",
+      "kpis": [
+        {
+          "id": "branch_elimination_wins",
+          "metric": "leanBranchEliminationWins",
+          "operator": ">=",
+          "target": 1
+        }
+      ]
+    }
+  ],
+  "rollbackCriteria": {
+    "runtimeUnexpectedStatus": true,
+    "comparableNonClaimable": true,
+    "comparabilityMismatch": true,
+    "schemaMigrationStatusProcessMissing": true,
+    "substantiationWindowFailure": true,
+    "artifactNamespaceViolation": true,
+    "browserPromotionWithoutSchemaObligation": true
+  },
+  "artifactPolicy": {
+    "canonicalPrefix": "bench/out/",
+    "canonicalDisallowPrefixes": [
+      "bench/out/scratch/"
+    ],
+    "diagnosticAllowedPrefixes": [
+      "bench/out/scratch/",
+      "nursery/chromium_webgpu_lane/"
+    ]
+  },
+  "attestations": {
+    "schemaMigrationStatusProcessComplete": true
+  }
+}

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import output_paths
+import report_conformance
 
 
 TIMESTAMP_SUFFIX_RE = re.compile(r"\d{8}T\d{6}Z$")
@@ -68,6 +69,11 @@ def parse_args() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Stamp output artifact paths with a UTC timestamp suffix.",
+    )
+    parser.add_argument(
+        "--comparability-obligations",
+        default="config/comparability-obligations.json",
+        help="Canonical comparability-obligation contract used for report conformance checks.",
     )
     return parser.parse_args()
 
@@ -285,6 +291,19 @@ def main() -> int:
     if not sources:
         print("FAIL: no report files matched")
         return 1
+    bench_dir = Path(__file__).resolve().parent
+    repo_root = bench_dir.parent
+    obligations_path = Path(args.comparability_obligations)
+    if not obligations_path.is_absolute():
+        obligations_path = repo_root / obligations_path
+    try:
+        (
+            obligation_schema_version,
+            obligation_ids,
+        ) = report_conformance.load_obligation_contract(obligations_path)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        print(f"FAIL: invalid comparability obligations contract: {exc}")
+        return 1
 
     report_entries: list[dict[str, Any]] = []
     skipped_files: list[dict[str, str]] = []
@@ -311,12 +330,27 @@ def main() -> int:
             skipped_files.append({"path": str(source_path), "reason": f"parse failed: {exc}"})
             continue
 
+        conformant, reason = report_conformance.validate_report_conformance(
+            payload=payload,
+            report_path=source_path,
+            repo_root=repo_root,
+            expected_obligation_schema_version=obligation_schema_version,
+            expected_obligation_ids=obligation_ids,
+        )
+        if not conformant:
+            skipped_files.append(
+                {
+                    "path": str(source_path),
+                    "reason": f"non-conformant compare report: {reason}",
+                }
+            )
+            continue
         workloads = payload.get("workloads")
+        comparison_status = payload.get("comparisonStatus")
+        claim_status = payload.get("claimStatus")
         if not isinstance(workloads, list):
             skipped_files.append({"path": str(source_path), "reason": "missing workloads list"})
             continue
-        comparison_status = payload.get("comparisonStatus")
-        claim_status = payload.get("claimStatus")
         if not isinstance(comparison_status, str) or not comparison_status:
             skipped_files.append({"path": str(source_path), "reason": "missing comparisonStatus"})
             continue

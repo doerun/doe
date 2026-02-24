@@ -1,0 +1,20 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "concurrent_execution_runsingle_u32",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 9801,
+        "buffer_size": 4096,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

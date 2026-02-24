@@ -191,41 +191,26 @@ def pick_measured_timing_ms(
     if execution_encode_total_ns >= 0 and execution_submit_wait_total_ns >= 0:
         dispatch_window_ns = execution_encode_total_ns + execution_submit_wait_total_ns
         if dispatch_window_ns > 0 and has_execution_evidence:
-            if (
-                execution_dispatch_count == 0
-                and execution_encode_total_ns == 0
-                and execution_total_ns > 0
-            ):
+            coverage_percent = None
+            if execution_total_ns > 0:
                 coverage_percent = (
                     float(dispatch_window_ns) / float(execution_total_ns)
                 ) * 100.0
-                if (
-                    dispatch_window_ns
-                    < benchmark_policy.min_dispatch_window_ns_without_encode
-                    and coverage_percent
-                    < benchmark_policy.min_dispatch_window_coverage_percent_without_encode
-                ):
-                    dispatch_window_rejected = {
-                        "reason": "dispatch-window-too-small-without-encode",
-                        "dispatchWindowNs": dispatch_window_ns,
-                        "dispatchWindowCoveragePercentOfExecutionTotal": coverage_percent,
-                        "minDispatchWindowNs": benchmark_policy.min_dispatch_window_ns_without_encode,
-                        "minDispatchWindowCoveragePercentOfExecutionTotal": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
-                    }
-                else:
-                    measured_ms = float(dispatch_window_ns) / 1_000_000.0
-                    timing_meta = {
-                        "source": "trace-meta",
-                        "traceMetaSource": "fawn-execution-dispatch-window-ns",
-                        "traceMetaTimingMs": measured_ms,
-                        "executionEncodeTotalNs": execution_encode_total_ns,
-                        "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
-                        "executionDispatchCount": execution_dispatch_count,
-                        "executionRowCount": execution_row_count,
-                        "executionSuccessCount": execution_success_count,
-                        "wallTimeMs": wall_ms,
-                    }
-                    return measured_ms, "fawn-execution-dispatch-window-ns", timing_meta
+
+            if (
+                coverage_percent is not None
+                and dispatch_window_ns
+                < benchmark_policy.min_dispatch_window_ns_without_encode
+                and coverage_percent
+                < benchmark_policy.min_dispatch_window_coverage_percent_without_encode
+            ):
+                dispatch_window_rejected = {
+                    "reason": "dispatch-window-too-small-without-encode",
+                    "dispatchWindowNs": dispatch_window_ns,
+                    "dispatchWindowCoveragePercentOfExecutionTotal": coverage_percent,
+                    "minDispatchWindowNs": benchmark_policy.min_dispatch_window_ns_without_encode,
+                    "minDispatchWindowCoveragePercentOfExecutionTotal": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
+                }
             else:
                 measured_ms = float(dispatch_window_ns) / 1_000_000.0
                 timing_meta = {

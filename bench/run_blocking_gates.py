@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical entrypoint for blocking schema/correctness/trace/drop-in/claim gates."""
+"""Canonical entrypoint for schema/correctness/trace/drop-in/claim gates with optional parity verification."""
 
 from __future__ import annotations
 
@@ -40,6 +40,14 @@ def parse_args() -> argparse.Namespace:
         "--quirk",
         default="examples/quirks/intel_gen12_temp_buffer.json",
         help="Reference quirk path passed to check_correctness.py",
+    )
+    parser.add_argument(
+        "--with-comparability-parity-gate",
+        action="store_true",
+        help=(
+            "Run comparability_obligation_parity_gate.py as a verification-lane gate "
+            "before correctness/trace."
+        ),
     )
     parser.add_argument(
         "--with-claim-gate",
@@ -138,6 +146,24 @@ def parse_args() -> argparse.Namespace:
         default=15,
         help="Required claimabilityPolicy.minTimedSamples lower bound when --with-claim-gate is set.",
     )
+    parser.add_argument(
+        "--claim-expected-workload-contract",
+        default="",
+        help=(
+            "Optional workload contract path forwarded to claim_gate.py "
+            "for workload hash/ID-set checks."
+        ),
+    )
+    parser.add_argument(
+        "--claim-require-workload-contract-hash",
+        action="store_true",
+        help="Forward --require-workload-contract-hash to claim_gate.py.",
+    )
+    parser.add_argument(
+        "--claim-require-workload-id-set-match",
+        action="store_true",
+        help="Forward --require-workload-id-set-match to claim_gate.py.",
+    )
     return parser.parse_args()
 
 
@@ -183,6 +209,7 @@ def main() -> int:
 
     bench_dir = Path(__file__).resolve().parent
     schema_gate = bench_dir / "schema_gate.py"
+    comparability_parity_gate = bench_dir / "comparability_obligation_parity_gate.py"
     correctness_gate = bench_dir / "check_correctness.py"
     trace_gate = bench_dir / "trace_gate.py"
     dropin_gate = bench_dir / "dropin_gate.py"
@@ -193,9 +220,16 @@ def main() -> int:
             "INFO: claim gate not requested; this run validates blocking gates only "
             "(schema/correctness/trace[/drop-in]) and is not release-claim readiness evidence."
         )
+    if not args.with_comparability_parity_gate:
+        print(
+            "INFO: comparability parity gate not requested; verification-lane Lean/Python "
+            "fixture parity is not checked in this run."
+        )
 
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])
+        if args.with_comparability_parity_gate:
+            run_gate("comparability-parity", [sys.executable, str(comparability_parity_gate)])
         run_gate(
             "correctness",
             [
@@ -285,23 +319,32 @@ def main() -> int:
             run_gate("dropin", dropin_command)
 
         if args.with_claim_gate:
-            run_gate(
-                "claim",
-                [
-                    sys.executable,
-                    str(claim_gate),
-                    "--report",
-                    str(report_path),
-                    "--require-comparison-status",
-                    args.claim_require_comparison_status,
-                    "--require-claim-status",
-                    args.claim_require_claim_status,
-                    "--require-claimability-mode",
-                    args.claim_require_claimability_mode,
-                    "--require-min-timed-samples",
-                    str(args.claim_require_min_timed_samples),
-                ],
-            )
+            claim_command = [
+                sys.executable,
+                str(claim_gate),
+                "--report",
+                str(report_path),
+                "--require-comparison-status",
+                args.claim_require_comparison_status,
+                "--require-claim-status",
+                args.claim_require_claim_status,
+                "--require-claimability-mode",
+                args.claim_require_claimability_mode,
+                "--require-min-timed-samples",
+                str(args.claim_require_min_timed_samples),
+            ]
+            if args.claim_expected_workload_contract.strip():
+                claim_command.extend(
+                    [
+                        "--expected-workload-contract",
+                        args.claim_expected_workload_contract,
+                    ]
+                )
+            if args.claim_require_workload_contract_hash:
+                claim_command.append("--require-workload-contract-hash")
+            if args.claim_require_workload_id_set_match:
+                claim_command.append("--require-workload-id-set-match")
+            run_gate("claim", claim_command)
     except subprocess.CalledProcessError as exc:
         print(f"FAIL: gate command failed with return code {exc.returncode}")
         return exc.returncode

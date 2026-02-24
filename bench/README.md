@@ -28,24 +28,36 @@ That document defines:
 - `check_correctness.py`
   - runs deterministic contract-level correctness checks
 - `schema_gate.py`
-  - validates schema-backed benchmark/config contracts as blocking release checks (`webgpu-spec-coverage`, benchmark methodology thresholds, substantiation policy, and all quirk examples).
+  - validates schema-backed benchmark/config contracts as blocking release checks (`claim-cycle`, `webgpu-spec-coverage`, benchmark methodology thresholds, substantiation policy, comparability obligation contracts, and all quirk examples).
 - `run_blocking_gates.py`
   - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional drop-in -> optional claim gate.
   - release-claim readiness evidence requires claim gate enabled (`--with-claim-gate`), and can be enforced with `--require-claim-gate`.
+  - can run comparability verification parity fixtures with `--with-comparability-parity-gate`.
+- `comparability_obligation_parity_gate.py`
+  - validates comparability obligation parity fixtures against Python evaluation and Lean obligation ID set alignment.
+  - verifies fixture expectations (`expectedBlockingFailedObligations`, `expectedComparable`) from `bench/comparability_obligation_fixtures.json`.
 - `run_release_pipeline.py`
   - canonical entrypoint for CI/local release orchestration: preflight -> compare report generation -> compare HTML visualization (default on) -> optional smoke verification -> blocking gates (optional drop-in + optional claim gate).
+  - when claim gate is enabled, it also emits claim rehearsal artifacts by default:
+    claim gate result, tail-health table, timing-invariant audit, and contract-hash manifest.
+  - when claim gate is enabled, cycle-lock/rollback enforcement runs by default via `cycle_gate.py` (disable only for diagnostics with `--no-with-cycle-gate`).
 - `run_release_claim_windows.py`
   - runs repeated release pipeline windows and emits a trend summary (`comparisonStatus`, `claimStatus`, non-claimable/non-comparable workload IDs per window); can run `substantiation_gate.py` over that summary in one command.
   - forwards compare HTML generation per window by default; use `--no-compare-html-output` to disable.
+  - forwards claim rehearsal artifact generation per window by default; use `--no-with-claim-rehearsal-artifacts` to disable.
+  - forwards cycle-lock/rollback gate execution per window by default; use `--no-with-cycle-gate` to disable.
+  - can forward optional substantiation status into cycle-gate evaluation via `--cycle-substantiation-report`.
 - `build_test_inventory_dashboard.py`
   - scans Dawn-vs-Fawn compare reports and emits:
     - canonical tested-profile inventory JSON (`vendor/api/deviceFamily/driver` coverage, matrix status history, report-level status rollups)
     - simple HTML dashboard for matrix status + performance delta vs Dawn
+  - only includes conformant compare reports (`schemaVersion=4`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
   - profile combos are sourced from per-sample `traceMeta.profile` fields; sides without profile metadata are tracked as report status only (not hardware-profile coverage).
   - also writes stable latest paths (`bench/out/test-inventory.latest.json`, `bench/out/test-dashboard.latest.html`) for a single canonical source of truth.
   - excludes `bench/out/scratch/**` from canonical inventory aggregation.
 - `build_baseline_dataset.py`
   - builds a canonical baseline trend package from historical comparison artifacts.
+  - only includes conformant compare reports (`schemaVersion=4`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
   - emits timestamped JSON trend dataset + markdown summary plus stable latest outputs.
   - groups history by matrix/runtime pair and tracks latest/best/worst p50 delta snapshots.
 - `substantiation_gate.py`
@@ -81,9 +93,18 @@ That document defines:
   - reads a `compare_dawn_vs_fawn.py` report and writes a self-contained HTML visualization plus optional analysis JSON.
   - includes ECDF overlays, workload×percentile delta heatmap, KS statistic/p-value, Wasserstein distance, probability of superiority `P(left<right)`, and bootstrap CIs for delta `p50`/`p95`/`p99`.
 - `claim_gate.py`
-  - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, and per-workload claimability) for blocking release CI gates.
+  - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, per-workload claimability, and comparability-obligation schema/blocking-pass state) for blocking release CI gates.
+  - validates comparability obligation IDs against the canonical contract in `config/comparability-obligations.json`.
+  - validates claim-row hash linkage (`claimRowHash` + `claimRowHashChain`) across workload contract hash, config hash, benchmark policy hash, and trace-meta hash lists.
+  - for claimable lanes, independently enforces positive required tail deltas (`p50`/`p95`/`p99` in release mode) and timed-sample floors per workload.
+- `build_claim_rehearsal_artifacts.py`
+  - builds machine-readable claim rehearsal artifacts from a compare report:
+    claim gate result, tail-health table, timing-invariant audit, contract-hash manifest, and a rehearsal manifest linking all outputs.
+- `cycle_gate.py`
+  - validates active cycle contract hash locks (`workloadContract`, benchmark policy, compare config, substantiation policy), methodology invariants, and comparable/directional workload partition.
+  - validates claim-lane report conformance + hash-link invariants, evaluates rollback criteria, and enforces artifact namespace policy (`bench/out/...` canonical vs `bench/out/scratch/...` diagnostics).
 - `check_full39_claim_readiness.py`
-  - validates a full-matrix compare report against the strict done criteria (`39/39`, `comparisonStatus=comparable`, `claimStatus=claimable`, and zero left unsupported/error counters).
+  - validates a full-matrix compare report against strict done criteria (exact comparable workload identity from contract, `comparisonStatus=comparable`, `claimStatus=claimable`, and zero left unsupported/error counters).
   - prints worst p95/p99 tail regressions plus non-claimable workload reasons to accelerate tail-fix loops.
 - `run_full39_evidence_bundle.sh`
   - post-run orchestrator for claim-grade artifacts: readiness check -> blocking gates (trace/correctness/schema + drop-in + claim) -> repeated claim windows + substantiation -> inventory and baseline refresh.
@@ -197,6 +218,7 @@ python3 fawn/bench/compare_dawn_vs_fawn.py \
 
 - `--comparability strict` (default): exit non-zero when timing classes are mixed or mismatched.
 - strict mode also exits non-zero when a selected workload contract is explicitly marked non-comparable (`comparable=false`).
+- comparability evaluation is emitted as machine-checkable obligations per workload (`comparability.obligations` with `blockingFailedObligations`), and comparability status is derived from blocking-obligation pass/fail (not only free-form reason text).
 - `--require-timing-class operation` (default): require operation-level timings on both sides.
 - `--allow-left-no-execution`: opt out if left trace-meta has no `executionSuccessCount`/`executionRowCount`.
 - workload-level `allowLeftNoExecution: true` provides the same opt-out per workload contract and still requires explicit unsupported/skipped execution evidence when no successful execution samples are present.
@@ -233,7 +255,7 @@ Reliability guardrails for performance claims:
 - speed claims must be positive in tails, not only median:
   require positive `deltaPercent` at least for `p50` and `p95` (and `p99` for release/CI claims).
 - if percentile signs are mixed or tails are negative, classify as diagnostic even when comparability is green.
-- for upload claims, avoid mixed-scope derived timing sources; if timing selection and ignore-first adjustment measure different scopes, treat result as diagnostic.
+- for upload claims, mixed-scope derived timing sources are not apples-to-apples; strict comparability now marks these runs non-comparable and claimability marks them diagnostic.
 
 Quick reliability recheck pattern:
 
@@ -285,7 +307,7 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   with fallback to trace-window/wall-time when required fields are unavailable.
   In strict operation mode, webgpu-ffi execution samples must resolve to native execution-span timing
   sources (`fawn-execution-*`); fallback timing is treated as non-comparable.
-  if encode/dispatch are both absent, tiny submit-only dispatch windows (`<100us` and `<1%` of `executionTotalNs`) are rejected as bookkeeping noise and `executionTotalNs` is used instead (`dispatchWindowSelectionRejected` in timing metadata).
+  tiny dispatch-window timings (`<minDispatchWindowNsWithoutEncode` and `<minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs`) are rejected as bookkeeping noise whenever `executionTotalNs` is available, and `executionTotalNs` is used instead (`dispatchWindowSelectionRejected` in timing metadata).
   when ignore-first is enabled and applied, source is reported as `fawn-execution-row-total-ns+ignore-first-ops`.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
   in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=100` to report per-dispatch units).
@@ -296,7 +318,9 @@ Extended workload domains now include:
 - render/draw throughput and state-set variants (`DrawCallPerf` mappings for base, dynamic bind-group, redundant pipeline/bind-group, draw-indexed proxy, and render-bundle dynamic variants).
 - shader compile/pipeline stress (`ShaderRobustnessPerf` mapping, comparable, fixed single-test filter + per-step normalization).
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
-- async pipeline diagnostics, P0/P1/P2 API contracts, surface lifecycle contracts, and macro stress workloads are apples-vetted in the AMD extended matrix (`applesToApplesVetted=true` where required by strict domain policy) and can participate in strict comparable lanes.
+- async pipeline diagnostics, P0/P1/P2 API contracts, and macro stress workloads are directional-only in the AMD extended matrix unless/until a directly matched Dawn contract is available.
+- `surface_presentation_contract` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
+- `concurrent_execution_single_contract` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:
   `matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
@@ -322,6 +346,8 @@ python3 fawn/bench/run_release_pipeline.py \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-claim-gate
+# emits claim rehearsal artifacts next to the report by default:
+# <report>.claim-rehearsal.{claim-gate-result,tail-health,timing-invariant-audit,contract-hash-manifest,manifest}.json
 
 # drop-in compatibility + benchmark suite against a built shared-library artifact:
 python3 fawn/bench/dropin_gate.py \
@@ -352,6 +378,8 @@ python3 fawn/bench/run_release_claim_windows.py \
   --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so \
   --with-substantiation-gate \
   --substantiation-policy fawn/config/substantiation-policy.json
+# disable per-window claim rehearsal artifacts only when intentionally running diagnostics:
+#   --no-with-claim-rehearsal-artifacts
 
 # optional standalone substantiation gate from existing window summaries/reports:
 python3 fawn/bench/substantiation_gate.py \
@@ -481,7 +509,7 @@ They are expanded into real GPU benchmark/test runners as implementation matures
 `dawn_benchmark_adapter.py` now treats filter selection as an explicit contract:
 
 - Explicit `--dawn-filter` always wins.
-- Otherwise the adapter reads `--dawn-filter-map` (`filters.<workload>` then `filters.default`).
+- Otherwise the adapter reads `--dawn-filter-map` at `filters.<workload>` only (no implicit default key fallback).
 - Autodiscovery is **disabled by default**.
 - Autodiscovery runs only when the selected map value is the literal token `@autodiscover`.
 - If no filter is resolved and autodiscovery was not explicitly requested, the adapter exits non-zero.
@@ -496,8 +524,7 @@ Use `@autodiscover` in your map only where you want dynamic filter selection:
 {
   "schemaVersion": 1,
   "filters": {
-    "buffer_upload_1kb": "@autodiscover",
-    "default": "@autodiscover"
+    "buffer_upload_1kb": "@autodiscover"
   }
 }
 ```
@@ -582,7 +609,7 @@ A ready-to-run AMD Vulkan preset is now included:
 
 Additional AMD Vulkan presets:
 
-- release claim mode on extended apples-to-apples comparable matrix (39 comparable workloads, release sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
+- release claim mode on extended apples-to-apples comparable matrix (current strict comparable subset from `bench/workloads.amd.vulkan.extended.json`, release sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
 - extended comparable matrix local-claim preset (same workload family, lower sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
 - directional diagnostics (macro-only non-claim stress set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
 - directional macro diagnostics (high-volume render/texture + P0 PLS stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`

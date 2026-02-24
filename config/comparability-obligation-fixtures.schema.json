@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Comparability Obligation Parity Fixtures",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "fixtures"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "facts",
+          "expectedComparable",
+          "expectedBlockingFailedObligations"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_\\-]+$"
+          },
+          "facts": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workload_marked_comparable",
+              "left_samples_present",
+              "right_samples_present",
+              "left_single_timing_class",
+              "right_single_timing_class",
+              "required_timing_class_applies",
+              "left_required_timing_class",
+              "right_required_timing_class",
+              "timing_class_match_applies",
+              "left_right_timing_class_match",
+              "operation_timing_class_required",
+              "left_native_operation_timing_for_webgpu_ffi",
+              "upload_domain",
+              "left_upload_ignore_first_scope_consistent",
+              "right_upload_ignore_first_scope_consistent",
+              "allow_left_no_execution",
+              "left_execution_evidence_present",
+              "left_successful_execution_present",
+              "left_success_or_unsupported_or_skipped",
+              "left_execution_errors_absent",
+              "right_execution_errors_absent",
+              "resource_probe_enabled",
+              "left_resource_probe_available",
+              "right_resource_probe_available",
+              "strict_comparability",
+              "resource_sample_target_positive",
+              "left_resource_sample_target_match",
+              "right_resource_sample_target_match",
+              "left_resource_sampling_not_truncated",
+              "right_resource_sampling_not_truncated",
+              "left_resource_sample_density_sufficient",
+              "right_resource_sample_density_sufficient"
+            ],
+            "properties": {
+              "workload_marked_comparable": { "type": "boolean" },
+              "left_samples_present": { "type": "boolean" },
+              "right_samples_present": { "type": "boolean" },
+              "left_single_timing_class": { "type": "boolean" },
+              "right_single_timing_class": { "type": "boolean" },
+              "required_timing_class_applies": { "type": "boolean" },
+              "left_required_timing_class": { "type": "boolean" },
+              "right_required_timing_class": { "type": "boolean" },
+              "timing_class_match_applies": { "type": "boolean" },
+              "left_right_timing_class_match": { "type": "boolean" },
+              "operation_timing_class_required": { "type": "boolean" },
+              "left_native_operation_timing_for_webgpu_ffi": { "type": "boolean" },
+              "upload_domain": { "type": "boolean" },
+              "left_upload_ignore_first_scope_consistent": { "type": "boolean" },
+              "right_upload_ignore_first_scope_consistent": { "type": "boolean" },
+              "allow_left_no_execution": { "type": "boolean" },
+              "left_execution_evidence_present": { "type": "boolean" },
+              "left_successful_execution_present": { "type": "boolean" },
+              "left_success_or_unsupported_or_skipped": { "type": "boolean" },
+              "left_execution_errors_absent": { "type": "boolean" },
+              "right_execution_errors_absent": { "type": "boolean" },
+              "resource_probe_enabled": { "type": "boolean" },
+              "left_resource_probe_available": { "type": "boolean" },
+              "right_resource_probe_available": { "type": "boolean" },
+              "strict_comparability": { "type": "boolean" },
+              "resource_sample_target_positive": { "type": "boolean" },
+              "left_resource_sample_target_match": { "type": "boolean" },
+              "right_resource_sample_target_match": { "type": "boolean" },
+              "left_resource_sampling_not_truncated": { "type": "boolean" },
+              "right_resource_sampling_not_truncated": { "type": "boolean" },
+              "left_resource_sample_density_sufficient": { "type": "boolean" },
+              "right_resource_sample_density_sufficient": { "type": "boolean" }
+            }
+          },
+          "expectedComparable": { "type": "boolean" },
+          "expectedBlockingFailedObligations": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "obligationIds": [
+    "workload_marked_comparable",
+    "left_samples_present",
+    "right_samples_present",
+    "left_single_timing_class",
+    "right_single_timing_class",
+    "left_required_timing_class",
+    "right_required_timing_class",
+    "left_right_timing_class_match",
+    "left_native_operation_timing_for_webgpu_ffi",
+    "left_upload_ignore_first_scope_consistent",
+    "right_upload_ignore_first_scope_consistent",
+    "left_execution_evidence_present",
+    "left_successful_execution_present",
+    "left_success_or_unsupported_or_skipped",
+    "left_execution_errors_absent",
+    "right_execution_errors_absent",
+    "left_resource_probe_available",
+    "right_resource_probe_available",
+    "strict_resource_sample_target_positive",
+    "left_resource_sample_target_match",
+    "right_resource_sample_target_match",
+    "left_resource_sampling_not_truncated",
+    "right_resource_sampling_not_truncated",
+    "left_resource_sample_density_sufficient",
+    "right_resource_sample_density_sufficient"
+  ]
+}

@@ -70,3 +70,146 @@
   - optional `targetUniqueLeftProfiles`
 - `bench/substantiation_gate.py` consumes this policy for repeated-window/report substantiation checks.
 - `bench/schema_gate.py` now validates the substantiation policy contract as part of blocking schema checks.
+
+## 2026-02-24
+
+### Dispatch-window timing selection hardening
+
+- `bench/compare_dawn_vs_fawn_modules/timing_selection.py` now applies tiny dispatch-window rejection globally (not only submit-only/no-dispatch traces) when both are true:
+  - dispatch window `< timingSelection.minDispatchWindowNsWithoutEncode`
+  - dispatch-window coverage `< timingSelection.minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs`
+- when rejected, timing selection falls back to `fawn-execution-total-ns` and records `dispatchWindowSelectionRejected` metadata.
+
+### AMD extended workload contract correction for concurrent execution
+
+- `bench/workloads.amd.vulkan.extended.json` was updated to keep strict claim lanes apples-to-apples:
+  - `surface_presentation_contract` is now directional-only (`comparable=false`)
+  - added `concurrent_execution_single_contract` as the strict comparable mapping for Dawn `ConcurrentExecutionTest ... RunSingle`
+- new command/kernel artifacts were added for the replacement comparable contract:
+  - `examples/concurrent_execution_single_commands.json`
+  - `bench/kernels/concurrent_execution_runsingle_u32.wgsl`
+- `bench/dawn_workload_map.amd.extended.json` now includes filter mapping for `concurrent_execution_single_contract`.
+
+### Apples-to-apples enforcement hardening
+
+- `bench/workloads.amd.vulkan.extended.json` now reclassifies directional/proxy mappings as non-comparable (`comparable=false`, `benchmarkClass=directional`) for strict claim lanes.
+- `bench/compare_dawn_vs_fawn.py` now rejects workload contract entries that set `comparable=true` while:
+  - description is directional (`description` starts with `Directional`)
+  - comparability notes explicitly declare closest-proxy mapping (`closest draw-call throughput proxy`)
+- strict comparable runs now fail fast when those contract invariants are violated.
+
+### Upload ignore-first scope enforcement
+
+- `bench/compare_dawn_vs_fawn_modules/comparability.py` and `bench/compare_dawn_vs_fawn_modules/claimability.py` now enforce ignore-first timing scope consistency:
+  - `uploadIgnoreFirstAdjustedTimingSource` must resolve to `fawn-execution-row-total-ns`
+  - base and adjusted ignore-first canonical timing sources must match
+- mixed-scope derived upload timings now fail strict comparability and claimability checks.
+
+### Machine-checkable comparability obligations
+
+- `bench/compare_dawn_vs_fawn_modules/comparability.py` now emits machine-checkable obligation artifacts per workload in report field `comparability`:
+  - `obligationSchemaVersion`
+  - `obligations[]` entries (`id`, `blocking`, `applicable`, `passes`, `details`)
+  - `blockingFailedObligations` / `advisoryFailedObligations`
+- workload comparability is now computed from blocking-obligation failures (`blockingFailedObligations`), preserving legacy `reasons` as human-readable diagnostics.
+- `bench/claim_gate.py` and `bench/check_full39_claim_readiness.py` now require valid comparability obligation artifacts and fail when blocking obligations fail in claim/comparable lanes.
+
+### Comparability obligation contract + parity fixtures
+
+- Added canonical obligation-ID contract:
+  - `config/comparability-obligations.schema.json`
+  - `config/comparability-obligations.json`
+- Added comparability parity fixture contract and data:
+  - `config/comparability-obligation-fixtures.schema.json`
+  - `bench/comparability_obligation_fixtures.json`
+- `bench/schema_gate.py` now validates both contracts as part of blocking schema checks.
+- Added verification-lane parity gate:
+  - `bench/comparability_obligation_parity_gate.py`
+  - validates Python fixture evaluation (`evaluate_comparability_from_facts`) and Lean/Python obligation ID alignment.
+- Added Lean parity fixture proofs:
+  - `lean/Fawn/ComparabilityFixtures.lean`
+  - compiled by `lean/check.sh`.
+- `bench/claim_gate.py` now validates report obligation IDs against `config/comparability-obligations.json` (canonical ID contract) in addition to schema-version checks.
+- `bench/run_blocking_gates.py` and release orchestrators now support `--with-comparability-parity-gate` to wire this verification step into automated gate runs.
+
+### Report anti-staleness metadata
+
+- `bench/compare_dawn_vs_fawn.py` now emits workload contract metadata in reports:
+  - `workloadContract.path`
+  - `workloadContract.sha256`
+- `bench/check_full39_claim_readiness.py` now verifies:
+  - exact comparable workload ID set against current workload contract
+  - workload contract hash match when report metadata is present
+
+### Dawn filter-map fallback removal
+
+- `bench/dawn_benchmark_adapter.py` no longer accepts implicit/default workload
+  map fallback resolution for Dawn gtest filters.
+- `--dawn-filter-map` now resolves only explicit `filters.<workload>` entries or
+  explicit `--dawn-filter`; unresolved workloads fail fast.
+- `bench/dawn_workload_map*.json` contract files were updated to remove
+  `filters.default` fallback entries.
+
+### Report conformance + workload-hash enforcement hardening
+
+- `bench/claim_gate.py` now enforces canonical obligation contract IDs from
+  `config/comparability-obligations.json` plus optional strict
+  workload-contract hash/path and comparable workload ID-set checks.
+- `bench/run_release_pipeline.py` and `bench/run_blocking_gates.py` now pass
+  strict workload contract hash/ID requirements into claim-gate release lanes.
+- `bench/build_baseline_dataset.py` and
+  `bench/build_test_inventory_dashboard.py` now include only conformant compare
+  reports (`schemaVersion=4`, canonical comparability obligations, and
+  workload-contract hash/path consistency).
+- `bench/report_conformance.py` was added as the shared conformance/hash
+  validation module for report-ingestion tooling.
+
+### Track B claim-row hash-link and rehearsal artifact enforcement
+
+- `bench/compare_dawn_vs_fawn.py` claim-row linkage fields are now validated by
+  gate logic, not report-emission only:
+  - per-workload `claimRowHash`
+  - report-level `claimRowHashChain`
+- `bench/report_conformance.py` now includes claim-row hash-link validation helpers:
+  - validates chain continuity (`previousHash` -> `hash`)
+  - recomputes row hashes deterministically from canonical JSON context
+  - verifies context linkage to:
+    - `workloadContract.sha256`
+    - `configContract.sha256`
+    - `benchmarkPolicy.sha256`
+    - workload `traceMetaHashes` (`left`/`right`)
+- `bench/claim_gate.py` now enforces those hash-link invariants and fails
+  claim lanes when linkage is missing/invalid.
+- `bench/claim_gate.py` now independently validates claim tails and floors for
+  claimable release lanes:
+  - per-workload timed sample floors
+  - required positive deltas from policy (`p50/p95/p99` for release)
+- Added `bench/build_claim_rehearsal_artifacts.py` to emit required
+  machine-readable rehearsal artifacts from a compare report:
+  - claim gate result
+  - tail-health table
+  - timing-invariant audit
+  - contract-hash manifest
+  - rehearsal manifest linking all artifact paths
+- `bench/run_release_pipeline.py` now runs this artifact builder by default when
+  `--with-claim-gate` is enabled (disable with
+  `--no-with-claim-rehearsal-artifacts`).
+- `bench/run_release_claim_windows.py` now forwards that release-pipeline
+  rehearsal-artifact behavior per window by default.
+
+### Claim cycle contract + rollback gate enforcement
+
+- Added active cycle-lock contract and schema:
+  - `config/claim-cycle.schema.json`
+  - `config/claim-cycle.active.json`
+- `bench/schema_gate.py` now validates the active cycle contract as a blocking schema target.
+- Added `bench/cycle_gate.py` for claim-lane governance checks:
+  - validates cycle contract hash locks against on-disk contracts
+  - validates comparable/directional workload partition against active workload contract
+  - validates claim report conformance and hash-link consistency
+  - evaluates rollback criteria and artifact namespace policy
+- `bench/run_release_pipeline.py` now runs `cycle_gate.py` by default when
+  `--with-claim-gate` is enabled (disable only for diagnostics via
+  `--no-with-cycle-gate`).
+- `bench/run_release_claim_windows.py` now forwards cycle-gate controls per
+  window by default.

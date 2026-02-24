@@ -113,6 +113,10 @@ def validate_target(root: Path, target: ValidationTarget) -> list[str]:
 def collect_targets(root: Path) -> list[ValidationTarget]:
     targets = [
         ValidationTarget(
+            schema_rel="config/claim-cycle.schema.json",
+            data_rel="config/claim-cycle.active.json",
+        ),
+        ValidationTarget(
             schema_rel="config/webgpu-spec-coverage.schema.json",
             data_rel="config/webgpu-spec-coverage.json",
         ),
@@ -123,6 +127,14 @@ def collect_targets(root: Path) -> list[ValidationTarget]:
         ValidationTarget(
             schema_rel="config/substantiation-policy.schema.json",
             data_rel="config/substantiation-policy.json",
+        ),
+        ValidationTarget(
+            schema_rel="config/comparability-obligations.schema.json",
+            data_rel="config/comparability-obligations.json",
+        ),
+        ValidationTarget(
+            schema_rel="config/comparability-obligation-fixtures.schema.json",
+            data_rel="bench/comparability_obligation_fixtures.json",
         ),
         ValidationTarget(
             schema_rel="config/quirk-mining-manifest.schema.json",

@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "defaultRule": {
+    "projectionClass": "medium",
+    "layerTarget": "l1_browser_api",
+    "scenarioTemplate": "generic_webgpu_api",
+    "comparabilityExpectation": "component",
+    "requiredStatus": "ok",
+    "claimScope": "l1_component_only",
+    "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+    "projectionNote": "Default browser API projection with declared browser-layer overhead."
+  },
+  "domainRules": {
+    "upload": {
+      "projectionClass": "high",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "write_buffer_upload",
+      "comparabilityExpectation": "strict",
+      "requiredStatus": "ok",
+      "claimScope": "l1_strict_candidate",
+      "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+      "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
+    },
+    "compute": {
+      "projectionClass": "high",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "comparabilityExpectation": "strict",
+      "requiredStatus": "ok",
+      "claimScope": "l1_strict_candidate",
+      "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+      "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
+    },
+    "pipeline": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "pipeline_compile_stress",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level pipeline behavior only; no L0 parity claim language.",
+      "projectionNote": "Pipeline creation remains comparable but includes browser-side scheduling overhead."
+    },
+    "render": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "render_triangle_readback",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+      "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
+    },
+    "render-bundle": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "render_bundle_replay",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level render-bundle behavior only; no L0 parity claim language.",
+      "projectionNote": "Render bundle throughput projected with browser submission overhead."
+    },
+    "texture-raster": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "texture_sample_raster",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level texture raster behavior only; no L0 parity claim language.",
+      "projectionNote": "Texture sampling+raster projection includes browser canvas integration costs."
+    },
+    "texture-contract": {
+      "projectionClass": "high",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "texture_write_query_destroy",
+      "comparabilityExpectation": "strict",
+      "requiredStatus": "ok",
+      "claimScope": "l1_strict_candidate",
+      "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+      "projectionNote": "Texture write/query/destroy semantics map directly to browser WebGPU APIs."
+    },
+    "pipeline-async": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "async_pipeline_diagnostics",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level async pipeline behavior only; no L0 parity claim language.",
+      "projectionNote": "Async pipeline APIs are comparable but sensitive to browser event-loop scheduling."
+    },
+    "render-macro": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "render_bundle_replay",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level macro render behavior only; no L0 parity claim language.",
+      "projectionNote": "Macro render loops are projected as component-level browser runs."
+    },
+    "texture-macro": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "texture_write_query_destroy",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level macro texture behavior only; no L0 parity claim language.",
+      "projectionNote": "Texture macro loops project to browser API with non-trivial event-loop overhead."
+    },
+    "surface": {
+      "projectionClass": "medium",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "surface_present_basic",
+      "comparabilityExpectation": "component",
+      "requiredStatus": "ok",
+      "claimScope": "l1_component_only",
+      "claimLanguage": "Component-level presentation behavior only; no L0 parity claim language.",
+      "projectionNote": "Surface presentation can be measured in browser, but includes presentation stack overhead."
+    },
+    "p0-resource": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
+    },
+    "p0-compute": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
+    },
+    "p0-render": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
+    },
+    "p0-render-macro": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Runtime contract macro lane; keep in core engine benchmarks only."
+    },
+    "p1-capability": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Internal capability contract lane; not a browser API parity signal."
+    },
+    "p1-resource-table": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Internal resource-table contract lane; keep in core engine benchmarks only."
+    },
+    "p2-lifecycle": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Internal lifecycle/refcount contract lane; keep in core engine benchmarks only."
+    },
+    "p1-capability-macro": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Internal capability macro lane; keep in core engine benchmarks only."
+    },
+    "p1-resource-table-macro": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Internal resource-table macro lane; keep in core engine benchmarks only."
+    },
+    "p2-lifecycle-macro": {
+      "projectionClass": "non_projectable",
+      "layerTarget": "l0_only",
+      "scenarioTemplate": "none",
+      "comparabilityExpectation": "none",
+      "requiredStatus": "not_applicable",
+      "claimScope": "l0_only_no_claim",
+      "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+      "projectionNote": "Internal lifecycle macro lane; keep in core engine benchmarks only."
+    }
+  }
+}

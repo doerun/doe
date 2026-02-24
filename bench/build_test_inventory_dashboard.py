@@ -15,6 +15,7 @@ from typing import Any
 
 import inventory_dashboard_html
 import output_paths
+import report_conformance
 
 
 TIMESTAMP_SUFFIX_RE = re.compile(r"\d{8}T\d{6}Z$")
@@ -85,6 +86,11 @@ def parse_args() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Stamp inventory/dashboard output paths with a UTC timestamp suffix.",
+    )
+    parser.add_argument(
+        "--comparability-obligations",
+        default="config/comparability-obligations.json",
+        help="Canonical comparability-obligation contract used for report conformance checks.",
     )
     return parser.parse_args()
 
@@ -163,17 +169,21 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
-def should_include_report(payload: dict[str, Any]) -> tuple[bool, str]:
-    workloads = payload.get("workloads")
-    if not isinstance(workloads, list):
-        return False, "missing workloads list"
-    comparison_status = payload.get("comparisonStatus")
-    claim_status = payload.get("claimStatus")
-    if not isinstance(comparison_status, str) or not comparison_status:
-        return False, "missing comparisonStatus"
-    if not isinstance(claim_status, str) or not claim_status:
-        return False, "missing claimStatus"
-    return True, ""
+def should_include_report(
+    *,
+    payload: dict[str, Any],
+    source_path: Path,
+    repo_root: Path,
+    obligation_schema_version: int,
+    obligation_ids: set[str],
+) -> tuple[bool, str]:
+    return report_conformance.validate_report_conformance(
+        payload=payload,
+        report_path=source_path,
+        repo_root=repo_root,
+        expected_obligation_schema_version=obligation_schema_version,
+        expected_obligation_ids=obligation_ids,
+    )
 
 
 def side_name(payload: dict[str, Any], side: str) -> str:
@@ -379,6 +389,19 @@ def main() -> int:
     if not sources:
         print("FAIL: no report files matched")
         return 1
+    bench_dir = Path(__file__).resolve().parent
+    repo_root = bench_dir.parent
+    obligations_path = Path(args.comparability_obligations)
+    if not obligations_path.is_absolute():
+        obligations_path = repo_root / obligations_path
+    try:
+        (
+            obligation_schema_version,
+            obligation_ids,
+        ) = report_conformance.load_obligation_contract(obligations_path)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        print(f"FAIL: invalid comparability obligations contract: {exc}")
+        return 1
 
     meta_cache: dict[str, dict[str, Any] | None] = {}
     skipped_files: list[dict[str, str]] = []
@@ -405,9 +428,20 @@ def main() -> int:
             skipped_files.append({"path": str(source_path), "reason": f"parse failed: {exc}"})
             continue
 
-        include, reason = should_include_report(payload)
+        include, reason = should_include_report(
+            payload=payload,
+            source_path=source_path,
+            repo_root=repo_root,
+            obligation_schema_version=obligation_schema_version,
+            obligation_ids=obligation_ids,
+        )
         if not include:
-            skipped_files.append({"path": str(source_path), "reason": reason})
+            skipped_files.append(
+                {
+                    "path": str(source_path),
+                    "reason": f"non-conformant compare report: {reason}",
+                }
+            )
             continue
 
         generated_at = parse_report_timestamp(payload, source_path)

@@ -73,6 +73,31 @@ def assess_upload_timing_scope_consistency(
                 f"{side_name} {run_label} uses ignore-first with non-row timing source "
                 f"({canonical}); require fawn-execution-row-total-ns"
             )
+        if ignore_applied:
+            base_source_raw = timing.get("uploadIgnoreFirstBaseTimingSource")
+            adjusted_source_raw = timing.get("uploadIgnoreFirstAdjustedTimingSource")
+            base_source = (
+                str(base_source_raw) if isinstance(base_source_raw, str) else ""
+            )
+            adjusted_source = (
+                str(adjusted_source_raw) if isinstance(adjusted_source_raw, str) else ""
+            )
+            canonical_base = canonical_timing_source(base_source)
+            canonical_adjusted = canonical_timing_source(adjusted_source)
+            if not canonical_base:
+                reasons.append(
+                    f"{side_name} {run_label} missing uploadIgnoreFirstBaseTimingSource while ignore-first is applied"
+                )
+            if canonical_adjusted != "fawn-execution-row-total-ns":
+                reasons.append(
+                    f"{side_name} {run_label} uses ignore-first adjusted source "
+                    f"({canonical_adjusted}); require fawn-execution-row-total-ns"
+                )
+            if canonical_base and canonical_adjusted and canonical_base != canonical_adjusted:
+                reasons.append(
+                    f"{side_name} {run_label} uses mixed-scope ignore-first sources "
+                    f"(base={canonical_base}, adjusted={canonical_adjusted})"
+                )
         if "ignore-first-ops" in timing_source and not ignore_applied:
             reasons.append(
                 f"{side_name} {run_label} timing source marks ignore-first but uploadIgnoreFirstApplied=false"

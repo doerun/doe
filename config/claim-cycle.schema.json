@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fawn.local/schemas/claim-cycle.schema.json",
+  "title": "ClaimCycleContract",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "cycleId",
+    "active",
+    "objective",
+    "contracts",
+    "workloadSets",
+    "methodology",
+    "milestones",
+    "rollbackCriteria",
+    "artifactPolicy",
+    "attestations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "cycleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contracts": {
+      "$ref": "#/$defs/contracts"
+    },
+    "workloadSets": {
+      "$ref": "#/$defs/workloadSets"
+    },
+    "methodology": {
+      "$ref": "#/$defs/methodology"
+    },
+    "milestones": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/milestone"
+      }
+    },
+    "rollbackCriteria": {
+      "$ref": "#/$defs/rollbackCriteria"
+    },
+    "artifactPolicy": {
+      "$ref": "#/$defs/artifactPolicy"
+    },
+    "attestations": {
+      "$ref": "#/$defs/attestations"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "hashRef": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "contracts": {
+      "type": "object",
+      "required": [
+        "workloadContract",
+        "benchmarkPolicy",
+        "compareConfig",
+        "substantiationPolicy"
+      ],
+      "properties": {
+        "workloadContract": {
+          "$ref": "#/$defs/hashRef"
+        },
+        "benchmarkPolicy": {
+          "$ref": "#/$defs/hashRef"
+        },
+        "compareConfig": {
+          "$ref": "#/$defs/hashRef"
+        },
+        "substantiationPolicy": {
+          "$ref": "#/$defs/hashRef"
+        }
+      },
+      "additionalProperties": false
+    },
+    "workloadSets": {
+      "type": "object",
+      "required": [
+        "comparableIds",
+        "directionalIds"
+      ],
+      "properties": {
+        "comparableIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "directionalIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "methodology": {
+      "type": "object",
+      "required": [
+        "iterations",
+        "warmup",
+        "comparabilityMode",
+        "requireTimingClass",
+        "claimabilityMode",
+        "minTimedSamples",
+        "includeExtendedWorkloads",
+        "includeNoncomparableWorkloads"
+      ],
+      "properties": {
+        "iterations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "warmup": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "comparabilityMode": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "warn",
+            "off"
+          ]
+        },
+        "requireTimingClass": {
+          "type": "string",
+          "enum": [
+            "any",
+            "operation",
+            "process-wall"
+          ]
+        },
+        "claimabilityMode": {
+          "type": "string",
+          "enum": [
+            "off",
+            "local",
+            "release"
+          ]
+        },
+        "minTimedSamples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "includeExtendedWorkloads": {
+          "type": "boolean"
+        },
+        "includeNoncomparableWorkloads": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "kpi": {
+      "type": "object",
+      "required": [
+        "id",
+        "metric",
+        "operator",
+        "target"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "==",
+            ">=",
+            "<=",
+            ">",
+            "<"
+          ]
+        },
+        "target": {
+          "type": [
+            "number",
+            "string",
+            "boolean"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "milestone": {
+      "type": "object",
+      "required": [
+        "id",
+        "track",
+        "owner",
+        "dueDate",
+        "kpis"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "track": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "kpis": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/kpi"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "rollbackCriteria": {
+      "type": "object",
+      "required": [
+        "runtimeUnexpectedStatus",
+        "comparableNonClaimable",
+        "comparabilityMismatch",
+        "schemaMigrationStatusProcessMissing",
+        "substantiationWindowFailure",
+        "artifactNamespaceViolation",
+        "browserPromotionWithoutSchemaObligation"
+      ],
+      "properties": {
+        "runtimeUnexpectedStatus": {
+          "type": "boolean"
+        },
+        "comparableNonClaimable": {
+          "type": "boolean"
+        },
+        "comparabilityMismatch": {
+          "type": "boolean"
+        },
+        "schemaMigrationStatusProcessMissing": {
+          "type": "boolean"
+        },
+        "substantiationWindowFailure": {
+          "type": "boolean"
+        },
+        "artifactNamespaceViolation": {
+          "type": "boolean"
+        },
+        "browserPromotionWithoutSchemaObligation": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactPolicy": {
+      "type": "object",
+      "required": [
+        "canonicalPrefix",
+        "canonicalDisallowPrefixes",
+        "diagnosticAllowedPrefixes"
+      ],
+      "properties": {
+        "canonicalPrefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonicalDisallowPrefixes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "diagnosticAllowedPrefixes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "attestations": {
+      "type": "object",
+      "required": [
+        "schemaMigrationStatusProcessComplete"
+      ],
+      "properties": {
+        "schemaMigrationStatusProcessComplete": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
