@@ -67,6 +67,7 @@ zig build run -- --commands ../../examples/kernel_dispatch_commands.json --trace
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --emit-normalized
 zig build test
 zig build dropin
+zig build app
 ```
 
 When `--quirks` is provided, JSON file values are loaded directly and validated before transform.
@@ -87,6 +88,11 @@ Drop-in shared library artifact:
 - resolver error state can be queried with:
   - `doeWgpuDropinLastErrorCode()`
   - `doeWgpuDropinClearLastError()`
+
+macOS app bundle artifact:
+- `zig build app` installs `zig/zig-out/app/Doe Runtime.app`
+- the build deterministically generates `Contents/Resources/DoeRuntime.icns`
+  during bundle assembly (host target must be macOS)
 
 Timestamp debug mode (for zero/empty GPU timestamp investigation):
 
@@ -183,6 +189,8 @@ Reference commands:
 
 - `kernel_dispatch` with `kernel` label and dispatch dimensions: `fawn/examples/kernel_dispatch_commands.json`
 - `kernel_dispatch` accepts optional `repeat` (aliases: `dispatch_count`, `dispatchCount`), default `1`.
+- `kernel_dispatch` accepts optional `warmup_dispatch_count` (`warmupDispatchCount`) to run untimed warmup dispatches before timed dispatch execution, default `0`.
+- `kernel_dispatch` accepts optional `initialize_buffers_on_create` (`initializeBuffersOnCreate`) to zero-fill newly created bound buffers before first use, default `false`.
 - `render_draw` supports repeated draw-call submission via `draw_count`/`drawCount`,
   optional `first_vertex`/`firstVertex` and `first_instance`/`firstInstance`,
   indexed mode via `draw_indexed` with required `index_data`/`indexData`/`indices`,

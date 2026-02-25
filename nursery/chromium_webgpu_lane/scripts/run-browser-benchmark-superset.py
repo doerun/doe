@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -21,14 +22,74 @@ DEFAULT_MANIFEST = (
 DEFAULT_WORKFLOWS = (
     REPO_ROOT / "nursery/chromium_webgpu_lane/bench/workflows/browser-workflow-manifest.json"
 )
-DEFAULT_CHROME = REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome"
-DEFAULT_DOE_LIB = REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.so"
 BENCH_OUT_ROOT = REPO_ROOT / "bench/out"
 BENCH_OUT_SCRATCH_ROOT = REPO_ROOT / "bench/out/scratch"
 ARTIFACTS_ROOT = REPO_ROOT / "nursery/chromium_webgpu_lane/artifacts"
 DEFAULT_REPORT_FILE = "dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json"
 DEFAULT_SUMMARY_FILE = "dawn-vs-doe.tracka.browser-layered.superset.summary.json"
 DEFAULT_CHECK_FILE = "dawn-vs-doe.tracka.browser-layered.superset.check.json"
+
+
+def host_doe_lib_extension() -> str:
+    if sys.platform == "darwin":
+        return "dylib"
+    if sys.platform in {"win32", "cygwin"}:
+        return "dll"
+    return "so"
+
+
+def default_doe_lib() -> Path:
+    preferred_ext = host_doe_lib_extension()
+    candidates: list[Path] = []
+    env_doe_lib = os.getenv("FAWN_DOE_LIB")
+    if env_doe_lib:
+        candidates.append(Path(env_doe_lib))
+    candidates.extend(
+        [
+            REPO_ROOT / f"zig/zig-out/lib/libdoe_webgpu.{preferred_ext}",
+            REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.so",
+            REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.dylib",
+            REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.dll",
+        ]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def default_chrome_binary() -> Path:
+    release_local_out = Path(
+        os.getenv(
+            "FAWN_CHROMIUM_RELEASE_LOCAL_OUT",
+            str(REPO_ROOT / "nursery/chromium_webgpu_lane/out/fawn_release_local"),
+        )
+    )
+    candidates: list[Path] = []
+    env_chrome = os.getenv("FAWN_CHROME_BIN")
+    if env_chrome:
+        candidates.append(Path(env_chrome))
+    candidates.extend(
+        [
+            release_local_out / "chrome",
+            release_local_out / "Fawn.app/Contents/MacOS/Chromium",
+            release_local_out / "Chromium.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_debug/chrome",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium",
+        ]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+DEFAULT_CHROME = default_chrome_binary()
+DEFAULT_DOE_LIB = default_doe_lib()
 
 
 def parse_args() -> argparse.Namespace:
@@ -298,6 +359,14 @@ def main() -> int:
     except ValueError as exc:
         print(f"FAIL: {exc}")
         return 2
+
+    if not args.skip_run:
+        if not chrome.exists():
+            print(f"FAIL: chrome binary not found: {chrome}")
+            return 2
+        if args.mode in {"doe", "both"} and not doe_lib.exists():
+            print(f"FAIL: doe runtime library not found: {doe_lib}")
+            return 2
 
     generate_command = [
         sys.executable,

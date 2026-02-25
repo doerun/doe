@@ -27,7 +27,8 @@
       "priority": "p0",
       "owner": "runtime-core",
       "contract": "RenderDrawCommand index_data/index_format/index_count/first_index/base_vertex + native DrawIndexed lowering",
-      "notes": "draw_indexed consumes command-provided index data with explicit or inferred index format and dynamic index-buffer sizing."
+      "benchmarkClass": "comparable",
+      "notes": "draw_indexed consumes command-provided index data with explicit or inferred index format and dynamic index-buffer sizing. Dawn DrawCallPerf includes DynamicVertexBuffer_DrawIndexed coverage for strict indexed comparability."
     },
     {
       "capabilityId": "render_core_api_surface",

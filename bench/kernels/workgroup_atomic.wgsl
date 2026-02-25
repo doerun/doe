@@ -12,13 +12,8 @@ fn main(
   atomicStore(&wg[local_id.x], accum + global_id.x);
   workgroupBarrier();
 
-  var i : u32 = 0u;
-  loop {
-    if (i >= kWorkgroupSize) {
-      break;
-    }
+  for (var i : u32 = 0u; i < kWorkgroupSize; i = i + 1u) {
     accum = atomicLoad(&wg[(i + accum) % kWorkgroupSize]);
-    i = i + 1u;
   }
 
   workgroupBarrier();

@@ -6,6 +6,7 @@ dawn-research/data/raw_changes.ndjson
 .tooling/
 .zig-global-cache/
 zig/.zig-cache/
+zig/.zig-cache-global/
 zig/.zig-cache-test/
 zig/.zig-cache-sandbox/
 zig/.zig-global-cache-sandbox/
@@ -17,6 +18,11 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Local benchmark outputs and overrides
+bench/compare_dawn_vs_doe.config.local.*.json
+bench/out/20??????T??????Z
+bench/out/20??????T??????Z/
+
 # Editor/temp artifacts
 *.swp
 *.tmp
@@ -24,12 +30,22 @@ __pycache__/
 # Chromium WebGPU lane local artifacts (large and machine-specific)
 nursery/chromium_webgpu_lane/.gclient*
 nursery/chromium_webgpu_lane/.gcs_entries
+nursery/chromium_webgpu_lane/.cipd
 nursery/chromium_webgpu_lane/.cipd/
+nursery/chromium_webgpu_lane/.cipd.local_backup.*/
+nursery/chromium_webgpu_lane/.local_volume/
 nursery/chromium_webgpu_lane/_bad_scm/
 nursery/chromium_webgpu_lane/cache/
+nursery/chromium_webgpu_lane/cache
 nursery/chromium_webgpu_lane/depot_tools/
+nursery/chromium_webgpu_lane/depot_tools
 nursery/chromium_webgpu_lane/node_modules/
 nursery/chromium_webgpu_lane/src/
+nursery/chromium_webgpu_lane/src
 nursery/chromium_webgpu_lane/chromium/
 nursery/chromium_webgpu_lane/out/
 nursery/chromium_webgpu_lane/artifacts/
+nursery/chromium_webgpu_lane/.external-macos.env
+
+# Nested mirror artifacts (accidental local copies)
+fawn/bench/vendor/

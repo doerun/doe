@@ -396,7 +396,7 @@ fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.Nativ
             .status_message = "dispatch dimensions must be non-zero",
         };
     }
-    return executeKernelDispatchKernel(self, "builtin:noop", "main", dispatch.x, dispatch.y, dispatch.z, 1, .{
+    return executeKernelDispatchKernel(self, "builtin:noop", "main", dispatch.x, dispatch.y, dispatch.z, 1, 0, false, .{
         .source = loader.BUILTIN_KERNEL_DEFAULT_SOURCE,
         .owned = false,
         .mode = .fallback,
@@ -420,7 +420,19 @@ fn executeKernelDispatch(self: *Backend, kernel: model.KernelDispatchCommand) !t
         return .{ .status = .unsupported, .status_message = message };
     };
     const entry_point = kernel.entry_point orelse "main";
-    return executeKernelDispatchKernel(self, kernel.kernel, entry_point, kernel.x, kernel.y, kernel.z, kernel.repeat, source, kernel.bindings);
+    return executeKernelDispatchKernel(
+        self,
+        kernel.kernel,
+        entry_point,
+        kernel.x,
+        kernel.y,
+        kernel.z,
+        kernel.repeat,
+        kernel.warmup_dispatch_count,
+        kernel.initialize_buffers_on_create,
+        source,
+        kernel.bindings,
+    );
 }
 
 fn pipelineCacheKey(source_bytes: []const u8, entry_point: []const u8) u64 {
@@ -443,6 +455,8 @@ fn executeKernelDispatchKernel(
     y: u32,
     z: u32,
     repeat_count: u32,
+    warmup_dispatch_count: u32,
+    initialize_buffers_on_create: bool,
     source: types.KernelSource,
     bindings: ?[]const model.KernelBinding,
 ) !types.NativeExecutionResult {
@@ -470,7 +484,7 @@ fn executeKernelDispatchKernel(
                     .status_message = status_message,
                 };
             }
-            artifacts = try resources.buildDispatchPassGroups(self, bound);
+            artifacts = try resources.buildDispatchPassGroups(self, bound, initialize_buffers_on_create);
         }
     }
     defer {
@@ -545,7 +559,7 @@ fn executeKernelDispatchKernel(
         query_set = procs.wgpuDeviceCreateQuerySet(self.device.?, &types.WGPUQuerySetDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
-            .@"type" = types.WGPUQueryType_Timestamp,
+            .type = types.WGPUQueryType_Timestamp,
             .count = 2,
         });
         if (query_set != null) {

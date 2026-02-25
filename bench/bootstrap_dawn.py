@@ -67,6 +67,8 @@ def probe_executable(path: str) -> tuple[bool, str]:
         )
     except FileNotFoundError:
         return False, "not-found"
+    except OSError as exc:
+        return False, str(exc)
 
     out = f"{proc.stdout}\n{proc.stderr}".strip()
     if proc.returncode != 0:
@@ -176,7 +178,14 @@ def gn_buildtools_path(source_dir: Path) -> Path:
         platform_dir = "mac"
     if not platform_dir:
         raise RuntimeError(f"unsupported platform for GN buildtools path: {sys.platform}")
-    return source_dir / "buildtools" / platform_dir / "gn" / "gn"
+    buildtools_platform_dir = source_dir / "buildtools" / platform_dir
+    flat = buildtools_platform_dir / "gn"
+    nested = buildtools_platform_dir / "gn" / "gn"
+    if flat.is_file():
+        return flat
+    if nested.is_file():
+        return nested
+    return nested
 
 
 def bootstrap_dawn_buildtools(source_dir: Path) -> None:
@@ -293,12 +302,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repo-url", default=DAWN_REPO_URL)
     parser.add_argument(
         "--source-dir",
-        default="fawn/bench/vendor/dawn",
+        default="bench/vendor/dawn",
         help="Where to place the Dawn git checkout.",
     )
     parser.add_argument(
         "--build-dir",
-        default="fawn/bench/vendor/dawn/out/Release",
+        default="bench/vendor/dawn/out/Release",
         help="Build directory used by the selected build-system.",
     )
     parser.add_argument(
@@ -371,7 +380,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-state",
-        default="fawn/bench/dawn_runtime_state.json",
+        default="bench/dawn_runtime_state.json",
         help="Output path for build metadata.",
     )
     parser.add_argument(
@@ -458,7 +467,7 @@ def configure_build_gn(
         install_gn_from_cipd(source_dir)
 
     buildtools_gn = gn_buildtools_path(source_dir)
-    preferred_path = str(buildtools_gn) if buildtools_gn.exists() else None
+    preferred_path = buildtools_gn if buildtools_gn.exists() else None
 
     if gn_path:
         gn = resolve_gn_binary(gn_path, fallback_to_depot=not skip_gn_bootstrap)
@@ -466,7 +475,7 @@ def configure_build_gn(
             # We can still proceed if this is only source, but capture and report quickly if it fails.
             pass
     elif preferred_path and preferred_path.exists():
-        gn = preferred_path
+        gn = preferred_path.as_posix()
     else:
         gn = resolve_gn_binary(None)
         if skip_gn_bootstrap:
@@ -485,10 +494,10 @@ def configure_build_gn(
         if "Unable to find gn in your $PATH" in message and "depot_tools" in Path(gn).as_posix():
             if not skip_gn_bootstrap:
                 install_gn_from_cipd(source_dir)
-                if preferred_path and preferred_path != gn and Path(preferred_path).exists():
+                if preferred_path and preferred_path.as_posix() != gn and preferred_path.exists():
                     run(
                         [
-                            preferred_path,
+                            preferred_path.as_posix(),
                             "gen",
                             str(build_dir),
                             f"--args={normalize_gn_args(gn_args, build_type)}",
@@ -549,6 +558,13 @@ def find_binaries(build_dir: Path, targets: Iterable[str]) -> dict[str, str]:
     return binaries
 
 
+def expanded_gn_targets(requested_targets: list[str]) -> list[str]:
+    targets = list(dict.fromkeys(requested_targets))
+    if sys.platform == "darwin" and "dawn_perf_tests" in targets and "webgpu_dawn_shared" not in targets:
+        targets.append("webgpu_dawn_shared")
+    return targets
+
+
 def main() -> int:
     args = parse_args()
     source_dir = Path(args.source_dir).resolve()
@@ -578,6 +594,11 @@ def main() -> int:
             configure_build(source_dir, build_dir, args.build_type, args.generator)
             build_targets_cmake(build_dir, args.targets, args.parallel)
         else:
+            gn_targets = expanded_gn_targets(args.targets)
+            if gn_targets != args.targets:
+                print(
+                    "info: adding GN target webgpu_dawn_shared for macOS native runtime library loading"
+                )
             configure_build_gn(
                 source_dir,
                 build_dir,
@@ -586,7 +607,7 @@ def main() -> int:
                 args.gn_bin,
                 args.skip_gn_bootstrap,
             )
-            build_targets_gn(build_dir, args.targets, args.parallel, args.ninja_bin)
+            build_targets_gn(build_dir, gn_targets, args.parallel, args.ninja_bin)
     elif args.manifest_only and not build_dir.exists():
         raise RuntimeError("manifest-only requested but build directory does not exist")
 

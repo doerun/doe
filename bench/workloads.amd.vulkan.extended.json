@@ -715,7 +715,7 @@
       "name": "p0 render multidraw indexed contract",
       "description": "Apples-to-apples indexed render-pass workload for indexed multidraw API path parity and query wiring.",
       "domain": "p0-render",
-      "comparabilityNotes": "Apples-to-apples indexed contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
+      "comparabilityNotes": "Apples-to-apples indexed contract. Dawn DrawCallPerf now includes DynamicVertexBuffer_DrawIndexed coverage, so filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
       "commandsPath": "examples/p0_render_multidraw_indexed_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -726,7 +726,7 @@
       "default": false,
       "leftTimingDivisor": 10000,
       "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer",
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer_DrawIndexed",
       "applesToApplesVetted": true,
       "benchmarkClass": "comparable"
     },

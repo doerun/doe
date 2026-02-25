@@ -232,6 +232,8 @@ pub const KernelDispatchCommand = struct {
     y: u32,
     z: u32,
     repeat: u32 = 1,
+    warmup_dispatch_count: u32 = 0,
+    initialize_buffers_on_create: bool = false,
     bindings: ?[]const KernelBinding = null,
 };
 

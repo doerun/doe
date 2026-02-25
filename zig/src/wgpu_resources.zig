@@ -7,12 +7,32 @@ const render_types_mod = @import("wgpu_render_types.zig");
 const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
+const BUFFER_ZERO_INIT_CHUNK_BYTES: usize = 64 * 1024;
 
 pub fn getOrCreateBuffer(
     self: *Backend,
     handle: u64,
     requested_size: u64,
     required_usage: types.WGPUBufferUsage,
+) !types.WGPUBuffer {
+    return getOrCreateBufferWithOptions(self, handle, requested_size, required_usage, false);
+}
+
+pub fn getOrCreateBufferInitialized(
+    self: *Backend,
+    handle: u64,
+    requested_size: u64,
+    required_usage: types.WGPUBufferUsage,
+) !types.WGPUBuffer {
+    return getOrCreateBufferWithOptions(self, handle, requested_size, required_usage, true);
+}
+
+fn getOrCreateBufferWithOptions(
+    self: *Backend,
+    handle: u64,
+    requested_size: u64,
+    required_usage: types.WGPUBufferUsage,
+    initialize_on_create: bool,
 ) !types.WGPUBuffer {
     const procs = self.procs orelse return error.ProceduralNotReady;
     const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
@@ -38,12 +58,50 @@ pub fn getOrCreateBuffer(
     if (buffer == null) {
         return error.BufferAllocationFailed;
     }
+    errdefer procs.wgpuBufferRelease(buffer);
+    if (initialize_on_create) {
+        try zeroInitializeBuffer(self, buffer, size);
+    }
     try self.buffers.put(handle, .{
         .buffer = buffer,
         .size = size,
         .usage = required_usage,
     });
     return buffer;
+}
+
+fn zeroInitializeBuffer(self: *Backend, buffer: types.WGPUBuffer, size: u64) !void {
+    if (size == 0) return;
+    const procs = self.procs orelse return error.ProceduralNotReady;
+    const queue = self.queue orelse return error.ProceduralNotReady;
+    const zero_chunk = try ensureZeroScratchBytes(self, BUFFER_ZERO_INIT_CHUNK_BYTES);
+
+    var offset: u64 = 0;
+    while (offset < size) {
+        const remaining = size - offset;
+        const write_len_u64 = @min(remaining, @as(u64, zero_chunk.len));
+        const write_len = @as(usize, @intCast(write_len_u64));
+        procs.wgpuQueueWriteBuffer(
+            queue,
+            buffer,
+            offset,
+            @ptrCast(zero_chunk.ptr),
+            write_len,
+        );
+        offset += write_len_u64;
+    }
+}
+
+fn ensureZeroScratchBytes(self: *Backend, required_len: usize) ![]u8 {
+    if (self.upload_scratch.len < required_len) {
+        if (self.upload_scratch.len > 0) {
+            self.allocator.free(self.upload_scratch);
+        }
+        self.upload_scratch = try self.allocator.alloc(u8, required_len);
+    }
+    const chunk = self.upload_scratch[0..required_len];
+    @memset(chunk, 0);
+    return chunk;
 }
 
 pub fn requiredBytes(bytes: u64, offset: u64) !u64 {
@@ -205,7 +263,11 @@ pub fn createTextureViewForBinding(self: *Backend, texture: types.WGPUTexture, b
     return view;
 }
 
-pub fn buildDispatchPassGroups(self: *Backend, bindings: []const model.KernelBinding) !types.DispatchPassArtifacts {
+pub fn buildDispatchPassGroups(
+    self: *Backend,
+    bindings: []const model.KernelBinding,
+    initialize_buffers_on_create: bool,
+) !types.DispatchPassArtifacts {
     const procs = self.procs orelse return error.ProceduralNotReady;
     var max_group: u32 = 0;
     for (bindings) |binding| {
@@ -261,7 +323,7 @@ pub fn buildDispatchPassGroups(self: *Backend, bindings: []const model.KernelBin
         if (binding.group >= group_count_u32) return error.InvalidKernelDispatchBinding;
         var group = &groups[@as(usize, binding.group)];
         try group.layout_entries.append(dispatchPassLayoutEntry(binding));
-        try group.bind_entries.append(try dispatchPassBindEntry(self, binding, &texture_views));
+        try group.bind_entries.append(try dispatchPassBindEntry(self, binding, &texture_views, initialize_buffers_on_create));
     }
 
     for (groups, 0..) |*group, index| {
@@ -351,7 +413,12 @@ fn dispatchPassLayoutEntry(binding: model.KernelBinding) types.WGPUBindGroupLayo
     return layout_entry;
 }
 
-fn dispatchPassBindEntry(self: *Backend, binding: model.KernelBinding, texture_views: *std.ArrayList(types.WGPUTextureView)) !types.WGPUBindGroupEntry {
+fn dispatchPassBindEntry(
+    self: *Backend,
+    binding: model.KernelBinding,
+    texture_views: *std.ArrayList(types.WGPUTextureView),
+    initialize_buffers_on_create: bool,
+) !types.WGPUBindGroupEntry {
     var bind_entry = types.WGPUBindGroupEntry{
         .nextInChain = null,
         .binding = binding.binding,
@@ -369,7 +436,10 @@ fn dispatchPassBindEntry(self: *Backend, binding: model.KernelBinding, texture_v
                 try requiredBytes(4, binding.buffer_offset)
             else
                 try requiredBytes(binding.buffer_size, binding.buffer_offset);
-            const buffer = try getOrCreateBuffer(self, binding.resource_handle, requested_size, usage);
+            const buffer = if (initialize_buffers_on_create)
+                try getOrCreateBufferInitialized(self, binding.resource_handle, requested_size, usage)
+            else
+                try getOrCreateBuffer(self, binding.resource_handle, requested_size, usage);
             bind_entry.buffer = buffer;
             bind_entry.size = binding.buffer_size;
         },

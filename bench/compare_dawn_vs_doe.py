@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import functools
 import statistics
 import subprocess
 import time
@@ -21,6 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import shlex
+import shutil
 import output_paths
 
 from compare_dawn_vs_doe_modules import claimability as claimability_mod
@@ -919,6 +921,33 @@ def command_for(
     return shlex.split(resolved)
 
 
+@functools.lru_cache(maxsize=1)
+def max_rss_time_prefix() -> tuple[str, ...]:
+    gtime_bin = shutil.which("gtime")
+    if gtime_bin:
+        return (gtime_bin, "-f", f"{MAX_RSS_MARKER}%M")
+
+    time_bin = Path("/usr/bin/time")
+    if not time_bin.exists():
+        return ()
+
+    # GNU time supports "-f". BSD time on macOS does not.
+    probe = [str(time_bin), "-f", "%M", "/usr/bin/true"]
+    try:
+        result = subprocess.run(
+            probe,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError:
+        return ()
+
+    if result.returncode != 0:
+        return ()
+    return (str(time_bin), "-f", f"{MAX_RSS_MARKER}%M")
+
+
 def run_once(
     command: list[str],
     *,
@@ -926,10 +955,8 @@ def run_once(
     resource_sample_ms: int,
     resource_sample_target_count: int,
 ) -> tuple[float, float, int, dict[str, Any]]:
-    wrapped_command = command
-    time_bin = Path("/usr/bin/time")
-    if time_bin.exists():
-        wrapped_command = [str(time_bin), "-f", f"{MAX_RSS_MARKER}%M", *command]
+    time_prefix = max_rss_time_prefix()
+    wrapped_command = [*time_prefix, *command] if time_prefix else command
 
     cpu_usage_before = py_resource.getrusage(py_resource.RUSAGE_CHILDREN)
     start = time.perf_counter()

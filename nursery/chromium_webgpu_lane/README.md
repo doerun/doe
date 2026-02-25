@@ -41,7 +41,7 @@ This directory is isolated from core runtime development by policy:
 Fawn already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
 
 1. Drop-in artifact:
-   - `zig/zig-out/lib/libdoe_webgpu.so`
+   - `zig/zig-out/lib/libdoe_webgpu.{so,dylib}`
 2. Symbol contract and gate support:
    - `config/dropin_abi.symbols.txt`
    - `bench/dropin_symbol_gate.py`
@@ -232,7 +232,8 @@ Current lane structure:
 5. `notes/`
    - findings, experiment logs, touchpoint mapping, and promotion decisions.
 6. `scripts/`
-   - lane-local bring-up helpers (`bootstrap-host-tools.sh`, `env.sh`).
+   - lane-local helpers (`bootstrap-host-tools.sh`, `env.sh`, `preflight.sh`,
+     `bringup-linux.sh`, `run-smoke.sh`, `run-bench.sh`).
 
 Any script/code added here must be non-production and must not alter core runtime behavior by default.
 

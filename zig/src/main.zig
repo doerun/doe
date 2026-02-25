@@ -154,7 +154,7 @@ pub fn main() !void {
     const argv = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, argv);
 
-    const stdout = std.io.getStdOut().writer();
+    const stdout = std.fs.File.stdout().deprecatedWriter();
 
     var quirks_text: ?[]const u8 = null;
     var commands_text: ?[]const u8 = null;

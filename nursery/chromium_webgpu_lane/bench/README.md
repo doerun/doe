@@ -52,9 +52,7 @@ From `fawn/` root:
 
 ```bash
 npm install --prefix nursery/chromium_webgpu_lane playwright-core
-python3 nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py \
-  --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
-  --doe-lib /home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so
+./nursery/chromium_webgpu_lane/scripts/run-bench.sh
 ```
 
 Default outputs are lane-local diagnostic artifacts under:

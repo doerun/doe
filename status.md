@@ -16,6 +16,7 @@ AMD Vulkan comparison presets now include claimable comparable slices (local + r
 
 Benchmark contract coverage snapshot (2026-02-25 update):
 - `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `31` strict apples-to-apples comparable + `9` directional contracts.
+- Dawn DrawCallPerf now includes indexed coverage (`DynamicVertexBuffer_DrawIndexed`), and `p0_render_multidraw_indexed_contract` is restored to strict comparable (`comparable=true`).
 - missing Dawn perf suites were added to AMD extended contracts: `MatrixVectorMultiplyPerf`, `UniformBufferUpdatePerf`, and `VulkanZeroInitializeWorkgroupMemoryExtensionTest`.
 - strict comparable lanes now fail fast for directional/proxy-labeled contracts and upload mixed-scope ignore-first timing derivations.
 - Dawn adapter filter resolution is now explicit-only (no `filters.default` fallback); missing workload mappings fail fast unless that workload is explicitly `@autodiscover`.

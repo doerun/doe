@@ -55,6 +55,44 @@ autoninja -C out/fawn_debug chrome
 
 If `fetch`/`gclient` are unavailable, confirm `depot_tools` is on `PATH`.
 
+## macOS External Volume Workflow (APFS)
+
+When local disk is constrained, keep Chromium checkout/build state on an APFS
+external volume and sync only release artifacts back to local disk.
+
+From `fawn/` root:
+
+```bash
+cd nursery/chromium_webgpu_lane
+./scripts/setup-macos-external-lane.sh /Volumes/fawn
+source ./scripts/env.sh
+
+# one-time checkout and sync (runs on external volume via lane symlinks)
+fetch --nohooks chromium
+cd src
+gclient sync --nohooks --no-history --jobs 1
+gclient runhooks
+gn gen out/fawn_release --args='is_debug=false'
+autoninja -C out/fawn_release chrome
+
+# copy runnable release artifacts to local lane output
+cd ..
+./scripts/sync-release-artifacts-local.sh
+```
+
+For incremental rebuilds after initial setup:
+
+```bash
+cd nursery/chromium_webgpu_lane
+./scripts/build-release-external.sh
+```
+
+Default local release artifact path:
+
+- `nursery/chromium_webgpu_lane/out/fawn_release_local`
+- local app bundle is synchronized as canonical `Fawn.app`
+- if upstream still emits `Chromium.app`, sync maps it into local `Fawn.app` during artifact copy
+
 ## Integration Starting Point
 
 Start with Track A seam-only work:
@@ -73,7 +111,7 @@ Do not begin with compositor/layout/media refactors.
 
 Use existing drop-in artifact lane as initial test substrate:
 
-1. `zig/zig-out/lib/libdoe_webgpu.so`
+1. `zig/zig-out/lib/libdoe_webgpu.{so,dylib}`
 2. symbol and behavior gate tools in `bench/`.
 
 Initial criterion is deterministic compatibility and observability, not performance.
@@ -101,7 +139,20 @@ Initial criterion is deterministic compatibility and observability, not performa
    - thread-proc scoping active in execution/polling path.
 3. Forced-Doe in this host's headless profile currently rejects with `profile_denylisted`; treat as environment gating signal.
 4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
-   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
+   - `bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
+
+## Common Wrapper Scripts
+
+Use wrappers under `nursery/chromium_webgpu_lane/scripts` to avoid hardcoded paths:
+
+1. `preflight.sh`
+   - checks host dependencies and resolves default Chrome + Doe library paths.
+2. `bringup-linux.sh`
+   - Linux bring-up wrapper for bootstrap -> fetch -> sync -> hooks -> build.
+3. `run-smoke.sh`
+   - runs Playwright smoke harness with resolved `--chrome` and `--doe-lib`.
+4. `run-bench.sh`
+   - runs layered superset orchestrator with resolved `--chrome` and `--doe-lib`.
 
 ## Browser Smoke Harness
 
@@ -124,11 +175,9 @@ Run from repo root:
 npm install --prefix nursery/chromium_webgpu_lane playwright-core
 
 # compare Dawn vs Doe in one diagnostic report (positive delta => Doe faster, diagnostic only)
-node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs \
+./nursery/chromium_webgpu_lane/scripts/run-smoke.sh \
   --mode both \
-  --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
-  --doe-lib /home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so \
-  --out /home/x/deco/fawn/nursery/chromium_webgpu_lane/artifacts/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json \
+  --out nursery/chromium_webgpu_lane/artifacts/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json \
   --chrome-arg=--ozone-platform=x11
 ```
 
@@ -172,10 +221,7 @@ Artifacts and contracts:
 Run from repo root:
 
 ```bash
-python3 nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py \
-  --mode both \
-  --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
-  --doe-lib /home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so
+./nursery/chromium_webgpu_lane/scripts/run-bench.sh --mode both
 ```
 
 Environment note:
@@ -238,7 +284,7 @@ Rollback triggers:
    `m4`) and root install is unavailable, run:
 
 ```bash
-cd /home/x/deco/fawn/nursery/chromium_webgpu_lane
+cd nursery/chromium_webgpu_lane
 ./scripts/bootstrap-host-tools.sh
 source ./scripts/env.sh
 ```

@@ -120,6 +120,10 @@ const RawCommand = struct {
     y: ?u32 = null,
     z: ?u32 = null,
     repeat: ?u32 = null,
+    warmup_dispatch_count: ?u32 = null,
+    warmupDispatchCount: ?u32 = null,
+    initialize_buffers_on_create: ?bool = null,
+    initializeBuffersOnCreate: ?bool = null,
     iterations: ?u32 = null,
     feature_policy: ?[]const u8 = null,
     featurePolicy: ?[]const u8 = null,
@@ -635,6 +639,8 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
                 .y = dispatch.y,
                 .z = dispatch.z,
                 .repeat = repeat_count,
+                .warmup_dispatch_count = raw.warmup_dispatch_count orelse raw.warmupDispatchCount orelse 0,
+                .initialize_buffers_on_create = raw.initialize_buffers_on_create orelse raw.initializeBuffersOnCreate orelse false,
                 .bindings = kernel_bindings,
             } };
         }

@@ -1,18 +1,60 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import http from "node:http";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
-const DEFAULT_CHROME = resolve(
-  ROOT,
-  "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome",
-);
-const DEFAULT_DOE_LIB = resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.so");
+
+function defaultChromePath() {
+  const releaseLocalOut =
+    process.env.FAWN_CHROMIUM_RELEASE_LOCAL_OUT ??
+    resolve(ROOT, "nursery/chromium_webgpu_lane/out/fawn_release_local");
+  const envChrome = process.env.FAWN_CHROME_BIN;
+  const candidates = [
+    envChrome,
+    resolve(releaseLocalOut, "chrome"),
+    resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+  ].filter((value) => typeof value === "string" && value.length > 0);
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0];
+}
+
+function defaultDoeLibPath() {
+  const preferredExt = process.platform === "darwin" ? "dylib" : "so";
+  const envDoeLib = process.env.FAWN_DOE_LIB;
+  const candidates = [
+    envDoeLib,
+    resolve(ROOT, `zig/zig-out/lib/libdoe_webgpu.${preferredExt}`),
+    resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.so"),
+    resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.dylib"),
+  ].filter((value) => typeof value === "string" && value.length > 0);
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0];
+}
+
+const DEFAULT_CHROME = defaultChromePath();
+const DEFAULT_DOE_LIB = defaultDoeLibPath();
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const DEFAULT_OUT_FILE = "dawn-vs-doe.tracka.playwright-smoke.diagnostic.json";
 const DEFAULT_UPLOAD_ITERS = 500;
@@ -60,7 +102,7 @@ function usage() {
 Options:
   --mode dawn|doe|both      Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
-  --doe-lib PATH            libdoe_webgpu.so path (for doe mode)
+  --doe-lib PATH            libdoe_webgpu.{so,dylib} path (for doe mode)
   --out PATH                JSON report output path (default: nursery/chromium_webgpu_lane/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out
   --headless true|false     Launch headless (default: true)
@@ -273,6 +315,12 @@ function parseArgs(argv) {
     throw new Error("--mode must be one of dawn, doe, both");
   }
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
+  if (!existsSync(args.chromePath)) {
+    throw new Error(`chrome binary not found: ${args.chromePath}`);
+  }
+  if (args.mode !== "dawn" && !existsSync(args.doeLibPath)) {
+    throw new Error(`doe runtime library not found: ${args.doeLibPath}`);
+  }
   return args;
 }
 

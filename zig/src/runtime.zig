@@ -602,6 +602,8 @@ fn applyAction(quirk: model.Quirk, command: model.Command) model.Command {
                         .y = kernel_command.y,
                         .z = kernel_command.z,
                         .repeat = kernel_command.repeat,
+                        .warmup_dispatch_count = kernel_command.warmup_dispatch_count,
+                        .initialize_buffers_on_create = kernel_command.initialize_buffers_on_create,
                         .bindings = kernel_command.bindings,
                     },
                 },

@@ -2,6 +2,20 @@
 
 ## 2026-02-25
 
+### Indexed P0 render comparability promotion
+
+- `bench/vendor/dawn/src/dawn/tests/perf_tests/DrawCallPerf.cpp` now includes an
+  indexed draw variant (`DynamicVertexBuffer_DrawIndexed`) in Dawn perf coverage.
+- `bench/workloads.amd.vulkan.extended.json` restores
+  `p0_render_multidraw_indexed_contract` to strict comparable:
+  - `comparable=true`
+  - `benchmarkClass=comparable`
+  - `applesToApplesVetted=true`
+- Dawn filter contracts now map indexed workloads to the indexed variant:
+  - `bench/dawn_workload_map.amd.extended.json`
+  - `bench/dawn_benchmark_adapter.py` autodiscovery patterns (`DynamicVertexBuffer_DrawIndexed`)
+- strict apples-to-apples lanes now run indexed-vs-indexed for this contract.
+
 ### Directional comparability-candidate cohort contract
 
 - `bench/workloads.amd.vulkan.extended.json` now supports optional workload field

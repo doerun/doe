@@ -6,6 +6,8 @@
     "y": 1,
     "z": 1,
     "repeat": 100,
+    "warmup_dispatch_count": 1,
+    "initialize_buffers_on_create": true,
     "bindings": [
       {
         "binding": 0,
