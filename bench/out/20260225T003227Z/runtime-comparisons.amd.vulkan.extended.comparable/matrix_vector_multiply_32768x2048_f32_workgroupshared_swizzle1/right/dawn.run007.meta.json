@@ -1,0 +1,58 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x428dbd37e27e3450",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+  "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
+  "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
+  "filterResolution": "mapped",
+  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/20260225T003227Z/runtime-comparisons.amd.vulkan.extended.comparable/matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1/right/dawn.run007.ndjson",
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 1.76923974,
+  "timingMetric": "wall_time",
+  "elapsedMs": 5750.325527973473,
+  "processWallMs": 5750.325527973473,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 1.76923974,
+    "cpu_time": 1.768920856,
+    "gpu_time": 1.759510528
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 1769240,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      1.7686255260000001,
+      1.76923974,
+      1.769315116
+    ],
+    "cpu_time": [
+      1.768306462,
+      1.768920856,
+      1.769001002
+    ],
+    "gpu_time": [
+      1.75898624,
+      1.759510528,
+      1.7596416
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    1.7686255260000001,
+    1.76923974,
+    1.769315116
+  ]
+}

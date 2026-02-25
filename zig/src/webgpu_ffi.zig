@@ -85,6 +85,11 @@ pub const WebGPUBackend = struct {
     has_multi_draw_indirect: bool = false,
     has_pixel_local_storage_coherent: bool = false,
     has_pixel_local_storage_non_coherent: bool = false,
+    has_adapter_limits: bool = false,
+    has_device_limits: bool = false,
+    adapter_limits: types.WGPULimits = std.mem.zeroes(types.WGPULimits),
+    device_limits: types.WGPULimits = std.mem.zeroes(types.WGPULimits),
+    uncaptured_error_state: types.UncapturedErrorState = .{},
     timestamp_debug: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !Self {
@@ -140,6 +145,7 @@ pub const WebGPUBackend = struct {
             self.adapter_has_multi_draw_indirect = adapter_probe.adapter_has_multi_draw_indirect;
             self.adapter_has_pixel_local_storage_coherent = adapter_probe.adapter_has_pixel_local_storage_coherent;
             self.adapter_has_pixel_local_storage_non_coherent = adapter_probe.adapter_has_pixel_local_storage_non_coherent;
+            try self.captureAdapterLimits();
             self.device = try self.requestDevice();
             if (procs.wgpuDeviceHasFeature) |device_has_feature| {
                 self.has_timestamp_query = device_has_feature(self.device.?, types.WGPUFeatureName_TimestampQuery) != types.WGPU_FALSE;
@@ -162,6 +168,7 @@ pub const WebGPUBackend = struct {
             self.has_multi_draw_indirect = device_probe.has_multi_draw_indirect;
             self.has_pixel_local_storage_coherent = device_probe.has_pixel_local_storage_coherent;
             self.has_pixel_local_storage_non_coherent = device_probe.has_pixel_local_storage_non_coherent;
+            try self.captureDeviceLimits();
             self.queue = procs.wgpuDeviceGetQueue(self.device.?);
             if (self.queue == null) return error.NativeQueueUnavailable;
             capability_runtime_mod.touchPrimaryObjectRefs(
@@ -374,6 +381,8 @@ pub const WebGPUBackend = struct {
         self.has_multi_draw_indirect = device_probe.has_multi_draw_indirect;
         self.has_pixel_local_storage_coherent = device_probe.has_pixel_local_storage_coherent;
         self.has_pixel_local_storage_non_coherent = device_probe.has_pixel_local_storage_non_coherent;
+        try self.captureAdapterLimits();
+        try self.captureDeviceLimits();
     }
 
     pub fn getResourceTableProcs(self: Self) ?p1_resource_table_procs_mod.ResourceTableProcs {
@@ -400,6 +409,33 @@ pub const WebGPUBackend = struct {
 
     pub fn setQueueSyncMode(self: *Self, sync_mode: QueueSyncMode) void {
         self.queue_sync_mode = sync_mode;
+    }
+
+    pub fn clearUncapturedError(self: *Self) void {
+        self.uncaptured_error_state.error_type.store(@intFromEnum(types.WGPUErrorType.noError), .release);
+        self.uncaptured_error_state.pending.store(0, .release);
+    }
+
+    pub fn takeUncapturedError(self: *Self) ?types.WGPUErrorType {
+        if (self.uncaptured_error_state.pending.swap(0, .acq_rel) == 0) return null;
+        const raw = self.uncaptured_error_state.error_type.load(.acquire);
+        return @enumFromInt(raw);
+    }
+
+    pub fn uncapturedErrorStatusMessage(error_type: types.WGPUErrorType) []const u8 {
+        return switch (error_type) {
+            .validation => "uncaptured WebGPU validation error",
+            .outOfMemory => "uncaptured WebGPU out-of-memory error",
+            .internal => "uncaptured WebGPU internal error",
+            .unknown => "uncaptured WebGPU unknown error",
+            else => "uncaptured WebGPU error",
+        };
+    }
+
+    pub fn effectiveLimits(self: *const Self) ?*const types.WGPULimits {
+        if (self.has_device_limits) return &self.device_limits;
+        if (self.has_adapter_limits) return &self.adapter_limits;
+        return null;
     }
 
     pub fn syncAfterSubmit(self: *Self) !void {
@@ -738,6 +774,30 @@ pub const WebGPUBackend = struct {
         }
     }
 
+    fn captureAdapterLimits(self: *Self) !void {
+        self.has_adapter_limits = false;
+        self.adapter_limits = types.initLimits();
+        const cap = self.capability_procs orelse return;
+        const get_limits = cap.adapter_get_limits orelse return;
+        if (self.adapter == null) return;
+        if (get_limits(self.adapter.?, &self.adapter_limits) != types.WGPUStatus_Success) {
+            return error.AdapterLimitsQueryFailed;
+        }
+        self.has_adapter_limits = true;
+    }
+
+    fn captureDeviceLimits(self: *Self) !void {
+        self.has_device_limits = false;
+        self.device_limits = types.initLimits();
+        const cap = self.capability_procs orelse return;
+        const get_limits = cap.device_get_limits orelse return;
+        if (self.device == null) return;
+        if (get_limits(self.device.?, &self.device_limits) != types.WGPUStatus_Success) {
+            return error.DeviceLimitsQueryFailed;
+        }
+        self.has_device_limits = true;
+    }
+
     fn requestAdapter(self: *Self) !types.WGPUAdapter {
         var state = types.RequestState{};
         const request_info = types.WGPURequestAdapterCallbackInfo{
@@ -778,6 +838,7 @@ pub const WebGPUBackend = struct {
     }
 
     fn requestDevice(self: *Self) !types.WGPUDevice {
+        self.clearUncapturedError();
         var state = types.DeviceRequestState{};
         const request_info = types.WGPURequestDeviceCallbackInfo{
             .nextInChain = null,
@@ -804,13 +865,25 @@ pub const WebGPUBackend = struct {
         if (self.has_pixel_local_storage_coherent) { required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageCoherent; feature_count += 1; }
         if (self.has_pixel_local_storage_non_coherent) { required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageNonCoherent; feature_count += 1; }
         if (has_resource_table_feature) { required_features[feature_count] = types.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable; feature_count += 1; }
-        self.timestampLog("request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} resource_table={} count={}\n", .{ self.has_timestamp_query, self.has_timestamp_inside_passes, self.has_multi_draw_indirect, self.has_pixel_local_storage_coherent, self.has_pixel_local_storage_non_coherent, has_resource_table_feature, feature_count });
+        self.timestampLog("request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} resource_table={} count={} adapter_limits={} max_storage_binding={} max_uniform_binding={} max_buffer={}\n", .{
+            self.has_timestamp_query,
+            self.has_timestamp_inside_passes,
+            self.has_multi_draw_indirect,
+            self.has_pixel_local_storage_coherent,
+            self.has_pixel_local_storage_non_coherent,
+            has_resource_table_feature,
+            feature_count,
+            self.has_adapter_limits,
+            self.adapter_limits.maxStorageBufferBindingSize,
+            self.adapter_limits.maxUniformBufferBindingSize,
+            self.adapter_limits.maxBufferSize,
+        });
         const device_desc = types.WGPUDeviceDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
             .requiredFeatureCount = feature_count,
             .requiredFeatures = if (feature_count > 0) required_features[0..].ptr else null,
-            .requiredLimits = null,
+            .requiredLimits = if (self.has_adapter_limits) &self.adapter_limits else null,
             .defaultQueue = .{ .nextInChain = null, .label = loader.emptyStringView() },
             .deviceLostCallbackInfo = .{
                 .nextInChain = null,
@@ -822,7 +895,7 @@ pub const WebGPUBackend = struct {
             .uncapturedErrorCallbackInfo = .{
                 .nextInChain = null,
                 .callback = loader.uncapturedErrorCallback,
-                .userdata1 = null,
+                .userdata1 = &self.uncaptured_error_state,
                 .userdata2 = null,
             },
         };

@@ -53,41 +53,7 @@ pub const InstanceLimits = extern struct {
     timedWaitAnyMaxCount: usize,
 };
 
-pub const Limits = extern struct {
-    nextInChain: ?*anyopaque,
-    maxTextureDimension1D: u32,
-    maxTextureDimension2D: u32,
-    maxTextureDimension3D: u32,
-    maxTextureArrayLayers: u32,
-    maxBindGroups: u32,
-    maxBindGroupsPlusVertexBuffers: u32,
-    maxBindingsPerBindGroup: u32,
-    maxDynamicUniformBuffersPerPipelineLayout: u32,
-    maxDynamicStorageBuffersPerPipelineLayout: u32,
-    maxSampledTexturesPerShaderStage: u32,
-    maxSamplersPerShaderStage: u32,
-    maxStorageBuffersPerShaderStage: u32,
-    maxStorageTexturesPerShaderStage: u32,
-    maxUniformBuffersPerShaderStage: u32,
-    maxUniformBufferBindingSize: u64,
-    maxStorageBufferBindingSize: u64,
-    minUniformBufferOffsetAlignment: u32,
-    minStorageBufferOffsetAlignment: u32,
-    maxVertexBuffers: u32,
-    maxBufferSize: u64,
-    maxVertexAttributes: u32,
-    maxVertexBufferArrayStride: u32,
-    maxInterStageShaderVariables: u32,
-    maxColorAttachments: u32,
-    maxColorAttachmentBytesPerSample: u32,
-    maxComputeWorkgroupStorageSize: u32,
-    maxComputeInvocationsPerWorkgroup: u32,
-    maxComputeWorkgroupSizeX: u32,
-    maxComputeWorkgroupSizeY: u32,
-    maxComputeWorkgroupSizeZ: u32,
-    maxComputeWorkgroupsPerDimension: u32,
-    maxImmediateSize: u32,
-};
+pub const Limits = types.WGPULimits;
 
 pub const AdapterPropertiesMemoryHeaps = extern struct {
     chain: types.WGPUChainedStruct,
@@ -226,9 +192,7 @@ pub fn initInstanceLimits() InstanceLimits {
 }
 
 pub fn initLimits() Limits {
-    var limits = std.mem.zeroes(Limits);
-    limits.nextInChain = null;
-    return limits;
+    return types.initLimits();
 }
 
 pub fn initAdapterInfo(next_in_chain: ?*anyopaque) AdapterInfo {

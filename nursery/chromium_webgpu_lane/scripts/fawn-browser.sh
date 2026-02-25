@@ -15,8 +15,11 @@ if [[ ! -f "$FAWN_LIB" ]]; then
   exit 1
 fi
 
-exec "$CHROME_BIN" \
+export CHROME_DESKTOP="fawn.desktop"
+
+exec -a fawn "$CHROME_BIN" \
   --no-sandbox \
+  --class=fawn \
   --use-webgpu-runtime=fawn \
   --fawn-webgpu-library-path="$FAWN_LIB" \
   "$@"

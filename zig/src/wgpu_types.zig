@@ -537,16 +537,58 @@ pub const WGPUQueueDescriptor = extern struct {
     label: WGPUStringView,
 };
 
+pub const WGPULimits = extern struct {
+    nextInChain: ?*anyopaque,
+    maxTextureDimension1D: u32,
+    maxTextureDimension2D: u32,
+    maxTextureDimension3D: u32,
+    maxTextureArrayLayers: u32,
+    maxBindGroups: u32,
+    maxBindGroupsPlusVertexBuffers: u32,
+    maxBindingsPerBindGroup: u32,
+    maxDynamicUniformBuffersPerPipelineLayout: u32,
+    maxDynamicStorageBuffersPerPipelineLayout: u32,
+    maxSampledTexturesPerShaderStage: u32,
+    maxSamplersPerShaderStage: u32,
+    maxStorageBuffersPerShaderStage: u32,
+    maxStorageTexturesPerShaderStage: u32,
+    maxUniformBuffersPerShaderStage: u32,
+    maxUniformBufferBindingSize: u64,
+    maxStorageBufferBindingSize: u64,
+    minUniformBufferOffsetAlignment: u32,
+    minStorageBufferOffsetAlignment: u32,
+    maxVertexBuffers: u32,
+    maxBufferSize: u64,
+    maxVertexAttributes: u32,
+    maxVertexBufferArrayStride: u32,
+    maxInterStageShaderVariables: u32,
+    maxColorAttachments: u32,
+    maxColorAttachmentBytesPerSample: u32,
+    maxComputeWorkgroupStorageSize: u32,
+    maxComputeInvocationsPerWorkgroup: u32,
+    maxComputeWorkgroupSizeX: u32,
+    maxComputeWorkgroupSizeY: u32,
+    maxComputeWorkgroupSizeZ: u32,
+    maxComputeWorkgroupsPerDimension: u32,
+    maxImmediateSize: u32,
+};
+
 pub const WGPUDeviceDescriptor = extern struct {
     nextInChain: ?*anyopaque,
     label: WGPUStringView,
     requiredFeatureCount: usize,
     requiredFeatures: ?[*]const WGPUFeatureName,
-    requiredLimits: ?*anyopaque,
+    requiredLimits: ?*const WGPULimits,
     defaultQueue: WGPUQueueDescriptor,
     deviceLostCallbackInfo: WGPUDeviceLostCallbackInfo,
     uncapturedErrorCallbackInfo: WGPUUncapturedErrorCallbackInfo,
 };
+
+pub fn initLimits() WGPULimits {
+    var limits = std.mem.zeroes(WGPULimits);
+    limits.nextInChain = null;
+    return limits;
+}
 
 pub const FnWgpuCreateInstance = *const fn (?*anyopaque) callconv(.c) WGPUInstance;
 pub const FnWgpuInstanceRequestAdapter = *const fn (WGPUInstance, ?*const WGPURequestAdapterOptions, WGPURequestAdapterCallbackInfo) callconv(.c) WGPUFuture;
@@ -746,6 +788,11 @@ pub const QueueSubmitState = struct {
 pub const BufferMapState = struct {
     done: bool = false,
     status: WGPUMapAsyncStatus = 0,
+};
+
+pub const UncapturedErrorState = struct {
+    pending: std.atomic.Value(u32) = std.atomic.Value(u32).init(0),
+    error_type: std.atomic.Value(u32) = std.atomic.Value(u32).init(@intFromEnum(WGPUErrorType.noError)),
 };
 
 pub const KernelSource = struct {

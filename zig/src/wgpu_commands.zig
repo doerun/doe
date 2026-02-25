@@ -13,6 +13,7 @@ const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB;
 const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA;
 const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
 const MAX_KERNEL_SOURCE_BYTES: usize = 4 * 1024 * 1024;
+const WHOLE_BUFFER_BINDING_MIN_BYTES: u64 = 4;
 
 pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecutionResult {
     if (!self.backendAvailable()) {
@@ -22,7 +23,8 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
         };
     }
 
-    return switch (command) {
+    self.clearUncapturedError();
+    const result = try switch (command) {
         .upload => |upload| executeUpload(self, upload),
         .copy_buffer_to_texture => |copy| blk: {
             try flushPendingUploads(self);
@@ -97,6 +99,22 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
             break :blk async_diagnostics_command.executeAsyncDiagnostics(self, diagnostics);
         },
     };
+
+    if (self.takeUncapturedError()) |error_type| {
+        return .{
+            .status = .@"error",
+            .status_message = Backend.uncapturedErrorStatusMessage(error_type),
+            .setup_ns = result.setup_ns,
+            .encode_ns = result.encode_ns,
+            .submit_wait_ns = result.submit_wait_ns,
+            .dispatch_count = result.dispatch_count,
+            .gpu_timestamp_ns = result.gpu_timestamp_ns,
+            .gpu_timestamp_attempted = result.gpu_timestamp_attempted,
+            .gpu_timestamp_valid = result.gpu_timestamp_valid,
+        };
+    }
+
+    return result;
 }
 
 fn flushPendingUploads(self: *Backend) !void {
@@ -446,6 +464,12 @@ fn executeKernelDispatchKernel(
     var artifacts: ?types.DispatchPassArtifacts = null;
     if (bindings) |bound| {
         if (bound.len > 0) {
+            if (validateKernelBindingsAgainstLimits(self, bound)) |status_message| {
+                return .{
+                    .status = .@"error",
+                    .status_message = status_message,
+                };
+            }
             artifacts = try resources.buildDispatchPassGroups(self, bound);
         }
     }
@@ -706,6 +730,19 @@ fn executeKernelDispatchKernel(
         };
         gpu_timestamp_valid = gpu_timestamp_ns > 0;
         self.timestampLog("timestamp_ns={}\n", .{gpu_timestamp_ns});
+        if (!gpu_timestamp_valid) {
+            return .{
+                .status = .@"error",
+                .status_message = "gpu timestamp invalid (zero delta)",
+                .setup_ns = setup_ns,
+                .encode_ns = encode_ns,
+                .submit_wait_ns = submit_wait_ns,
+                .dispatch_count = repeat_count,
+                .gpu_timestamp_ns = gpu_timestamp_ns,
+                .gpu_timestamp_attempted = true,
+                .gpu_timestamp_valid = false,
+            };
+        }
     }
 
     return .{
@@ -753,6 +790,68 @@ fn executeNoopCommand(self: *Backend, reason: []const u8) !types.NativeExecution
         .status_message = reason,
         .submit_wait_ns = submit_wait_ns,
     };
+}
+
+fn validateKernelBindingsAgainstLimits(self: *Backend, bindings: []const model.KernelBinding) ?[]const u8 {
+    const limits_ptr = self.effectiveLimits() orelse {
+        return "kernel_dispatch requires negotiated WebGPU limits for binding validation";
+    };
+    const limits = limits_ptr.*;
+    if (limits.maxBufferSize == 0) {
+        return "kernel_dispatch received invalid maxBufferSize limit";
+    }
+
+    for (bindings) |binding| {
+        if (binding.resource_kind != .buffer) continue;
+
+        const range_size = bindingRangeSize(self, binding);
+        if (range_size == 0) {
+            return "kernel_dispatch buffer binding size must be non-zero";
+        }
+        if (range_size > limits.maxBufferSize) {
+            return "kernel_dispatch binding range exceeds maxBufferSize";
+        }
+        if (binding.buffer_offset > limits.maxBufferSize - range_size) {
+            return "kernel_dispatch binding offset+size exceeds maxBufferSize";
+        }
+
+        const binding_limit = bindingBufferLimit(binding, limits);
+        if (binding_limit > 0 and range_size > binding_limit) {
+            return switch (binding.buffer_type) {
+                model.WGPUBufferBindingType_Uniform => "kernel_dispatch uniform binding exceeds maxUniformBufferBindingSize",
+                else => "kernel_dispatch storage binding exceeds maxStorageBufferBindingSize",
+            };
+        }
+    }
+    return null;
+}
+
+fn bindingRangeSize(self: *Backend, binding: model.KernelBinding) u64 {
+    if (binding.buffer_size == 0) return 0;
+    if (binding.buffer_size == types.WGPU_WHOLE_SIZE) {
+        if (self.buffers.get(binding.resource_handle)) |record| {
+            if (record.size <= binding.buffer_offset) return 0;
+            return record.size - binding.buffer_offset;
+        }
+        return WHOLE_BUFFER_BINDING_MIN_BYTES;
+    }
+    return binding.buffer_size;
+}
+
+fn bindingBufferLimit(binding: model.KernelBinding, limits: types.WGPULimits) u64 {
+    return switch (binding.buffer_type) {
+        model.WGPUBufferBindingType_Uniform => limits.maxUniformBufferBindingSize,
+        model.WGPUBufferBindingType_Storage,
+        model.WGPUBufferBindingType_ReadOnlyStorage,
+        => limits.maxStorageBufferBindingSize,
+        else => minPositiveLimit(limits.maxStorageBufferBindingSize, limits.maxUniformBufferBindingSize),
+    };
+}
+
+fn minPositiveLimit(a: u64, b: u64) u64 {
+    if (a == 0) return b;
+    if (b == 0) return a;
+    return @min(a, b);
 }
 
 fn timestampReadbackStatus(err: anyerror) []const u8 {

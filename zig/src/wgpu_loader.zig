@@ -3,6 +3,15 @@ const builtin = @import("builtin");
 const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 
+const DlInfo = extern struct {
+    dli_fname: [*c]const u8,
+    dli_fbase: ?*anyopaque,
+    dli_sname: [*c]const u8,
+    dli_saddr: ?*anyopaque,
+};
+
+extern fn dladdr(addr: *const anyopaque, info: *DlInfo) c_int;
+
 pub const native_library_names = blk: {
     switch (builtin.os.tag) {
         .windows => break :blk &[_][]const u8{
@@ -76,6 +85,40 @@ pub const BUILTIN_KERNEL_DEFAULT_SOURCE =
     \\fn main() {}
 ;
 
+fn currentModuleDirectory(buffer: *[std.fs.max_path_bytes]u8) ?[]const u8 {
+    if (builtin.os.tag == .windows) return null;
+
+    var info: DlInfo = std.mem.zeroes(DlInfo);
+    const symbol_addr: *const anyopaque = @ptrCast(&openLibrary);
+    if (dladdr(symbol_addr, &info) == 0) return null;
+
+    const module_path_ptr = info.dli_fname;
+    if (module_path_ptr == null) return null;
+    const module_path = std.mem.span(module_path_ptr);
+    const dir = std.fs.path.dirname(module_path) orelse return null;
+    if (dir.len > buffer.len) return null;
+    @memcpy(buffer[0..dir.len], dir);
+    return buffer[0..dir.len];
+}
+
+fn openLibraryRelativeToModule() ?std.DynLib {
+    var module_dir_buf: [std.fs.max_path_bytes]u8 = undefined;
+    const module_dir = currentModuleDirectory(&module_dir_buf) orelse return null;
+
+    var candidate_path_buf: [std.fs.max_path_bytes]u8 = undefined;
+    for (native_library_names) |candidate| {
+        const full_path = std.fmt.bufPrint(
+            &candidate_path_buf,
+            "{s}" ++ std.fs.path.sep_str ++ "{s}",
+            .{ module_dir, candidate },
+        ) catch continue;
+        const lib = std.DynLib.open(full_path) catch continue;
+        return lib;
+    }
+
+    return null;
+}
+
 pub fn openLibrary() !std.DynLib {
     var last_err: ?anyerror = null;
 
@@ -84,6 +127,10 @@ pub fn openLibrary() !std.DynLib {
             last_err = err;
             continue;
         };
+        return lib;
+    }
+
+    if (openLibraryRelativeToModule()) |lib| {
         return lib;
     }
 
@@ -248,11 +295,14 @@ pub fn uncapturedErrorCallback(
     _: ?*const anyopaque,
     error_type: types.WGPUErrorType,
     message: types.WGPUStringView,
-    _: ?*anyopaque,
+    userdata1: ?*anyopaque,
     _: ?*anyopaque,
 ) callconv(.c) void {
-    _ = error_type;
     _ = message;
+    const state_ptr = userdata1 orelse return;
+    const state = @as(*types.UncapturedErrorState, @ptrCast(@alignCast(state_ptr)));
+    state.error_type.store(@intFromEnum(error_type), .release);
+    state.pending.store(1, .release);
 }
 
 pub fn alignTo(value: u64, alignment: u64) u64 {
