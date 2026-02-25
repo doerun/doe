@@ -52,6 +52,7 @@ fn printUsage(stdout: anytype) !void {
         \\fawn-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
         \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
+        \\ [--gpu-timestamp-mode auto|off]
         \\ [--queue-wait-mode process-events|wait-any]
         \\ [--queue-sync-mode per-command|deferred]
         \\ [--kernel-root <path>]
@@ -93,6 +94,9 @@ fn printUsage(stdout: anytype) !void {
         \\  copy-dst-copy-src: create upload buffers with CopyDst|CopySrc (default).
         \\  copy-dst: create upload buffers with CopyDst only.
         \\--upload-submit-every submits and waits after every N upload commands (default: 1).
+        \\--gpu-timestamp-mode controls native GPU timestamp query usage for kernel dispatch timings.
+        \\  auto: use GPU timestamps when feature/query artifacts are available (default).
+        \\  off: disable GPU timestamp attempts and rely on non-timestamp operation timing sources.
         \\--queue-wait-mode controls queue completion waiting strategy for native execution.
         \\  process-events: callback + process-events loop (default).
         \\  wait-any: callback + wgpuInstanceWaitAny wait path (fails explicitly when unsupported).
@@ -124,6 +128,7 @@ fn optionExpectsValue(option: []const u8) bool {
         std.mem.eql(u8, option, "--backend") or
         std.mem.eql(u8, option, "--upload-buffer-usage") or
         std.mem.eql(u8, option, "--upload-submit-every") or
+        std.mem.eql(u8, option, "--gpu-timestamp-mode") or
         std.mem.eql(u8, option, "--queue-wait-mode") or
         std.mem.eql(u8, option, "--queue-sync-mode") or
         std.mem.eql(u8, option, "--replay");
@@ -167,6 +172,7 @@ pub fn main() !void {
     var kernel_root: ?[]const u8 = null;
     var upload_buffer_usage_mode: execution.UploadBufferUsageMode = .copy_dst_copy_src;
     var upload_submit_every: u32 = 1;
+    var gpu_timestamp_mode: execution.GpuTimestampMode = .auto;
     var queue_wait_mode: execution.QueueWaitMode = .process_events;
     var queue_sync_mode: execution.QueueSyncMode = .per_command;
 
@@ -234,6 +240,18 @@ pub fn main() !void {
                 return;
             }
             upload_submit_every = parsed;
+        } else if (std.mem.eql(u8, argv[i], "--gpu-timestamp-mode") and i + 1 < argv.len) {
+            i += 1;
+            if (execution.parseGpuTimestampMode(argv[i])) |mode| {
+                gpu_timestamp_mode = mode;
+            } else {
+                try trace.writef(
+                    stdout,
+                    "invalid --gpu-timestamp-mode value: {s} (expected auto|off)\n",
+                    .{argv[i]},
+                );
+                return;
+            }
         } else if (std.mem.eql(u8, argv[i], "--queue-wait-mode") and i + 1 < argv.len) {
             i += 1;
             if (execution.parseQueueWaitMode(argv[i])) |mode| {
@@ -336,6 +354,7 @@ pub fn main() !void {
         execution_context = try execution.ExecutionContext.init(allocator, backend_mode, profile, kernel_root);
         if (execution_context) |*ctx| {
             ctx.configureUploadBehavior(upload_buffer_usage_mode, upload_submit_every);
+            ctx.configureGpuTimestampMode(gpu_timestamp_mode);
             ctx.configureQueueWaitMode(queue_wait_mode);
             ctx.configureQueueSyncMode(queue_sync_mode);
             const max_upload_bytes = maxUploadBytes(commands);

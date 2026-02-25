@@ -21,6 +21,8 @@ Benchmark contract coverage snapshot (2026-02-24 update):
 - claim-lane governance is now hash-locked and machine-checked via `config/claim-cycle.active.json` + `bench/cycle_gate.py`, with release pipeline default wiring when claim gate is enabled.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
 - drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libfawn_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
+- upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`fawn-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
+- native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `texture_sampling_raster_proxy` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
 
 ## Product implementation state (runtime outcomes)
 

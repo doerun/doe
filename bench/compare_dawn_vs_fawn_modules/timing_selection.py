@@ -80,17 +80,24 @@ def maybe_adjust_timing_for_ignored_first_ops(
             ),
         }
 
+    # Upload ignore-first must stay in a single operation scope. Derive both the
+    # pre/post values from row-total execution durations to avoid mixed-scope
+    # adjustments when primary timing selection used a different source.
+    base_row_total_ns = sum(durations_ns)
+    base_row_total_ms = float(base_row_total_ns) / 1_000_000.0
     adjusted_ns = sum(durations_ns[ignore_first_ops:])
     adjusted_ms = float(adjusted_ns) / 1_000_000.0
     adjusted_source = "fawn-execution-row-total-ns+ignore-first-ops"
     return adjusted_ms, adjusted_source, {
         "uploadIgnoreFirstOps": ignore_first_ops,
         "uploadIgnoreFirstApplied": True,
-        "uploadIgnoreFirstBaseTimingSource": measured_source,
+        "uploadIgnoreFirstBaseTimingSource": "fawn-execution-row-total-ns",
         "uploadIgnoreFirstAdjustedTimingSource": "fawn-execution-row-total-ns",
         "uploadRowsTotal": len(durations_ns),
         "uploadRowsIncluded": len(durations_ns) - ignore_first_ops,
-        "uploadTimingRawMsBeforeIgnore": measured_ms,
+        "uploadTimingRawMsBeforeIgnore": base_row_total_ms,
+        "uploadTimingMeasuredMsBeforeIgnore": measured_ms,
+        "uploadTimingMeasuredSourceBeforeIgnore": measured_source,
         "uploadTimingRawMsAfterIgnore": adjusted_ms,
     }
 

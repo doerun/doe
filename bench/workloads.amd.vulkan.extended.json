@@ -383,13 +383,15 @@
       "driver": "24.0.0",
       "extraArgs": [
         "--kernel-root",
-        "bench/kernels"
+        "bench/kernels",
+        "--gpu-timestamp-mode",
+        "off"
       ],
       "comparable": true,
       "default": false,
       "leftCommandRepeat": 500,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Dawn SubresourceTrackingPerf reports per iteration (iterationsPerStep=50); Fawn repeats the combined compute+render path 500 times and normalizes to per-iteration units to reduce low-coverage GPU-timestamp quantization noise in claim tails.",
+      "timingNormalizationNote": "Dawn SubresourceTrackingPerf reports per iteration (iterationsPerStep=50); Fawn repeats the combined compute+render path 500 times, disables kernel GPU timestamp queries for this lane (`--gpu-timestamp-mode off`), and normalizes to per-iteration units.",
       "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3"
     },
     {
@@ -801,8 +803,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 1,
-      "rightTimingDivisor": 1,
-      "timingNormalizationNote": "Single-dispatch contract: both sides report one operation per step with no repeat/divisor asymmetry.",
+      "rightTimingDivisor": 0.2,
+      "timingNormalizationNote": "Dawn ConcurrentExecutionTest RunSingle reports per-iteration wall time with iterationsPerStep=5; rightTimingDivisor=0.2 rescales Dawn timings to per-dispatch step units for apples-to-apples comparison.",
       "dawnFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle"
     },
     {

@@ -153,6 +153,8 @@ Execution capabilities:
 - native queue waiting is configurable via `--queue-wait-mode process-events|wait-any` (default: `process-events`; `wait-any` fails explicitly when unsupported).
 - queue synchronization timing is configurable via `--queue-sync-mode per-command|deferred` (default: `per-command`);
   deferred mode skips per-submit waits and performs one final queue flush after the command loop.
+- kernel-dispatch GPU timestamp querying is configurable via `--gpu-timestamp-mode auto|off` (default: `auto`);
+  `off` disables GPU timestamp attempts and forces non-timestamp operation timing selection.
 - `kernel_dispatch` runs through full compute pipeline lowering with bind groups and optional GPU timestamp queries.
 - render core APIs (`DeviceCreateRenderPipeline`, `CommandEncoderBeginRenderPass`, and `RenderPassEncoder*` state/draw/end/release calls) are wired through the shared `wgpu_types.zig` proc table and loaded in `wgpu_loader.zig`.
 - render-pass state coverage includes bind-group, viewport, scissor, blend-constant, stencil-reference, and render-pipeline bind-group-layout query calls.

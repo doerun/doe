@@ -188,6 +188,16 @@ pub const ExecutionContext = struct {
         }
     }
 
+    pub fn configureGpuTimestampMode(
+        self: *ExecutionContext,
+        timestamp_mode: GpuTimestampMode,
+    ) void {
+        if (self.mode != .native) return;
+        if (self.backend) |*backend| {
+            backend.setGpuTimestampMode(timestamp_mode);
+        }
+    }
+
     pub fn flushQueue(self: *ExecutionContext) !u64 {
         if (self.mode != .native) return 0;
         if (self.backend) |*backend| {
@@ -210,6 +220,7 @@ pub const ExecutionContext = struct {
 pub const UploadBufferUsageMode = webgpu.UploadBufferUsageMode;
 pub const QueueWaitMode = webgpu.QueueWaitMode;
 pub const QueueSyncMode = webgpu.QueueSyncMode;
+pub const GpuTimestampMode = webgpu.GpuTimestampMode;
 
 pub fn parseUploadBufferUsage(raw: []const u8) ?UploadBufferUsageMode {
     if (std.ascii.eqlIgnoreCase(raw, "copy-dst-copy-src")) return .copy_dst_copy_src;
@@ -226,6 +237,12 @@ pub fn parseQueueWaitMode(raw: []const u8) ?QueueWaitMode {
 pub fn parseQueueSyncMode(raw: []const u8) ?QueueSyncMode {
     if (std.ascii.eqlIgnoreCase(raw, "per-command")) return .per_command;
     if (std.ascii.eqlIgnoreCase(raw, "deferred")) return .deferred;
+    return null;
+}
+
+pub fn parseGpuTimestampMode(raw: []const u8) ?GpuTimestampMode {
+    if (std.ascii.eqlIgnoreCase(raw, "auto")) return .auto;
+    if (std.ascii.eqlIgnoreCase(raw, "off")) return .off;
     return null;
 }
 

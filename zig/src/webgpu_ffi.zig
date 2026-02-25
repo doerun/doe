@@ -34,6 +34,11 @@ pub const QueueSyncMode = enum {
     deferred,
 };
 
+pub const GpuTimestampMode = enum {
+    auto,
+    off,
+};
+
 pub const ManagedSurface = struct {
     surface: surface_procs_mod.Surface,
     configured: bool = false,
@@ -73,6 +78,7 @@ pub const WebGPUBackend = struct {
     upload_submit_pending: u32 = 0,
     queue_wait_mode: QueueWaitMode = .process_events,
     queue_sync_mode: QueueSyncMode = .per_command,
+    gpu_timestamp_mode: GpuTimestampMode = .auto,
     kernel_root: ?[]const u8 = null,
     library_error: []const u8 = "",
     requested_backend_type: types.WGPUBackendType = .undefined,
@@ -409,6 +415,14 @@ pub const WebGPUBackend = struct {
 
     pub fn setQueueSyncMode(self: *Self, sync_mode: QueueSyncMode) void {
         self.queue_sync_mode = sync_mode;
+    }
+
+    pub fn setGpuTimestampMode(self: *Self, timestamp_mode: GpuTimestampMode) void {
+        self.gpu_timestamp_mode = timestamp_mode;
+    }
+
+    pub fn gpuTimestampsEnabled(self: *const Self) bool {
+        return self.has_timestamp_query and self.gpu_timestamp_mode == .auto;
     }
 
     pub fn clearUncapturedError(self: *Self) void {

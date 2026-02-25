@@ -528,7 +528,7 @@ fn executeKernelDispatchKernel(
         }) catch {};
     }
 
-    const use_timestamps = self.has_timestamp_query;
+    const use_timestamps = self.gpuTimestampsEnabled();
     self.timestampLog(
         "dispatch kernel={s} repeat={} adapter_timestamp_query={} device_timestamp_query={}\n",
         .{ kernel_name, repeat_count, self.adapter_has_timestamp_query, self.has_timestamp_query },
