@@ -149,8 +149,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Fawn and Dawn matvec variants execute 100 dispatches per benchmark step; normalize both sides to per-dispatch units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
       "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0"
     },
     {
@@ -172,8 +172,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Fawn and Dawn matvec variants execute 100 dispatches per benchmark step; normalize both sides to per-dispatch units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
       "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1"
     },
     {
@@ -195,8 +195,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Fawn and Dawn matvec variants execute 100 dispatches per benchmark step; normalize both sides to per-dispatch units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
       "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1"
     },
     {

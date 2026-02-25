@@ -182,8 +182,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Fawn and Dawn matvec variants execute 100 dispatches per benchmark step; normalize both sides to per-dispatch units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
       "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0"
     },
     {
@@ -205,8 +205,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Fawn and Dawn matvec variants execute 100 dispatches per benchmark step; normalize both sides to per-dispatch units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
       "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1"
     },
     {
@@ -228,8 +228,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Fawn and Dawn matvec variants execute 100 dispatches per benchmark step; normalize both sides to per-dispatch units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
       "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1"
     },
     {
@@ -821,8 +821,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 4400,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Dawn reports per-iteration metrics with iterationsPerStep=100; Fawn repeats upload+draw 100 times and normalizes to per-iteration units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn UniformBufferUpdatePerf already reports per-iteration metrics (iterationsPerStep=100 internal normalization). Fawn repeats upload+draw 100 times and applies leftTimingDivisor normalization only.",
       "dawnFilter": "UniformBufferUpdatePerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_PartialSize_SingleUniformBuffer"
     },
     {
@@ -844,8 +844,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 2400,
-      "rightTimingDivisor": 50,
-      "timingNormalizationNote": "Dawn executes 50 dispatch iterations per step; Fawn repeats dispatch 50 times and normalizes to per-iteration units.",
+      "rightTimingDivisor": 1,
+      "timingNormalizationNote": "Dawn VulkanZeroInitializeWorkgroupMemoryExtensionTest already reports per-iteration metrics (iterationsPerStep=50 internal normalization). Fawn repeats dispatch 50 times and applies leftTimingDivisor normalization only.",
       "dawnFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256"
     }
   ]

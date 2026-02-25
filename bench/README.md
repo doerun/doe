@@ -310,7 +310,7 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   tiny dispatch-window timings (`<minDispatchWindowNsWithoutEncode` and `<minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs`) are rejected as bookkeeping noise whenever `executionTotalNs` is available, and `executionTotalNs` is used instead (`dispatchWindowSelectionRejected` in timing metadata).
   when ignore-first is enabled and applied, source is reported as `fawn-execution-row-total-ns+ignore-first-ops`.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
-  in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=100` to report per-dispatch units).
+  in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=1` because Dawn already reports per-dispatch via `iterationsPerStep=100`).
 - non-comparable mappings can be explicitly flagged in workload contracts and excluded by default.
 
 Extended workload domains now include:
