@@ -2,15 +2,15 @@
 
 ## Snapshot
 
-Date: 2026-02-24
+Date: 2026-02-25
 
 Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
 Current `fawn/zig/src` size is 13,485 LOC (`wc -l zig/src/*.zig`, 2026-02-23) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) over the full extended workload matrix.
 
-Benchmark contract coverage snapshot (2026-02-24 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `23` strict apples-to-apples comparable + `17` directional contracts.
+Benchmark contract coverage snapshot (2026-02-25 update):
+- `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `27` strict apples-to-apples comparable + `13` directional contracts.
 - missing Dawn perf suites were added to AMD extended contracts: `MatrixVectorMultiplyPerf`, `UniformBufferUpdatePerf`, and `VulkanZeroInitializeWorkgroupMemoryExtensionTest`.
 - strict comparable lanes now fail fast for directional/proxy-labeled contracts and upload mixed-scope ignore-first timing derivations.
 - Dawn adapter filter resolution is now explicit-only (no `filters.default` fallback); missing workload mappings fail fast unless that workload is explicitly `@autodiscover`.
@@ -524,7 +524,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 5. Extend baseline automation to broader incumbent lanes (including explicit wgpu baselines) and multi-host trend publication.
 6. Native Zig/WebGPU/FFI execution backend hardening in Zig remains a runtime milestone (coverage/reliability/perf).
 7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
-8. Keep directional diagnostics macro-scoped and non-claim (`render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, `p0_render_pixel_local_storage_barrier_macro_500`).
+8. Keep remaining directional diagnostics macro-scoped and non-claim (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`).
 9. Bench harness sharding follow-up (owner: performance):
 - complete remaining orchestrator sharding in `bench/compare_dawn_vs_fawn.py` to meet per-file size policy while preserving current module boundaries.
 10. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
@@ -660,6 +660,14 @@ Execution gap list:
   - report: `bench/out/20260223T213900Z/dawn-vs-fawn.amd.vulkan.release.json`
   - result: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`.
 
+7. Macro contract promotion refresh (2026-02-25):
+- promoted to strict comparable in `bench/workloads.amd.vulkan.extended.json`:
+  `render_draw_throughput_macro_200k`,
+  `texture_sampler_write_query_destroy_macro_500`,
+  `p1_resource_table_immediates_macro_500`,
+  `p0_render_pixel_local_storage_barrier_macro_500`.
+- matrix split is now `27` comparable + `13` directional.
+
 ## v0 Reality
 
 Blocking gates: schema, correctness, trace.
@@ -670,8 +678,8 @@ This matches speed-first priorities while keeping deterministic foundations.
 Current comparison claim state: `strict-comparable matrix + claimability diagnostics`.
 
 Meaning:
-1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`23` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
-2. macro stress workloads are directional diagnostics and must not be presented as strict apples-to-apples claims.
+1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`27` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
+2. remaining directional macro workloads (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
 

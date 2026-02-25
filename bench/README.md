@@ -227,9 +227,10 @@ python3 fawn/bench/compare_dawn_vs_fawn.py \
 - non-comparable workload mappings are excluded by default using `workloads.json` `comparable: false`.
 - use `--include-noncomparable-workloads` only for directional investigation runs.
 - non-default workload entries are excluded unless `--include-extended-workloads` is set.
-- strict mode now rejects contract-domain workloads as comparable unless explicitly marked
-  `applesToApplesVetted=true` in workload config; domains `pipeline-async`, `p0-*`, `p1-*`, `p2-*`, and `surface`
-  are directional by default to prevent mapping debt from entering claimable lanes.
+- strict mode now rejects contract-domain workloads as comparable unless explicitly promoted by contract policy.
+  for guarded contract domains (`pipeline-async`, `p0-resource`, `p0-compute`, `p0-render`, `p1-capability`,
+  `p1-resource-table`, `p1-capability-macro`, `p2-lifecycle`, `p2-lifecycle-macro`, `surface`), promotion
+  requires `applesToApplesVetted=true` in workload config.
 - strict upload comparability now preflights the executed `fawn-zig-runtime` binary:
   it must expose `--upload-buffer-usage` and `--upload-submit-every`, reject invalid values for both flags, and not be older than key upload/runtime Zig sources (`zig/src/main.zig`, `zig/src/execution.zig`, `zig/src/wgpu_commands.zig`, `zig/src/webgpu_ffi.zig`).
   when a workload contract sets `--queue-wait-mode`, strict preflight also requires runtime support and validation for `--queue-wait-mode process-events|wait-any`.
@@ -318,7 +319,8 @@ Extended workload domains now include:
 - render/draw throughput and state-set variants (`DrawCallPerf` mappings for base, dynamic bind-group, redundant pipeline/bind-group, draw-indexed proxy, and render-bundle dynamic variants).
 - shader compile/pipeline stress (`ShaderRobustnessPerf` mapping, comparable, fixed single-test filter + per-step normalization).
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
-- async pipeline diagnostics, P0/P1/P2 API contracts, and macro stress workloads are directional-only in the AMD extended matrix unless/until a directly matched Dawn contract is available.
+- async pipeline diagnostics and most P0/P1/P2 API contracts are directional-only in the AMD extended matrix unless/until a directly matched Dawn contract is available.
+- promoted macro contracts now treated as strict comparable include `render_draw_throughput_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, and `p0_render_pixel_local_storage_barrier_macro_500`.
 - `surface_presentation_contract` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
 - `concurrent_execution_single_contract` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
@@ -611,8 +613,8 @@ Additional AMD Vulkan presets:
 
 - release claim mode on extended apples-to-apples comparable matrix (current strict comparable subset from `bench/workloads.amd.vulkan.extended.json`, release sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
 - extended comparable matrix local-claim preset (same workload family, lower sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
-- directional diagnostics (macro-only non-claim stress set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
-- directional macro diagnostics (high-volume render/texture + P0 PLS stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
+- directional diagnostics (macro-skewed diagnostic set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
+- directional macro diagnostics (focused macro diagnostics set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
 - strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json`
 - adapter-agnostic local comparable matrix (no fixed AMD vendor-id requirement): `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`
 
