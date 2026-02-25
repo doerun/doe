@@ -22,7 +22,7 @@ DEFAULT_WORKFLOWS = (
     REPO_ROOT / "nursery/chromium_webgpu_lane/bench/workflows/browser-workflow-manifest.json"
 )
 DEFAULT_CHROME = REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome"
-DEFAULT_FAWN_LIB = REPO_ROOT / "zig/zig-out/lib/libfawn_webgpu.so"
+DEFAULT_DOE_LIB = REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.so"
 BENCH_OUT_ROOT = REPO_ROOT / "bench/out"
 BENCH_OUT_SCRATCH_ROOT = REPO_ROOT / "bench/out/scratch"
 ARTIFACTS_ROOT = REPO_ROOT / "nursery/chromium_webgpu_lane/artifacts"
@@ -38,8 +38,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest-out", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--workflows", default=str(DEFAULT_WORKFLOWS))
     parser.add_argument("--chrome", default=str(DEFAULT_CHROME))
-    parser.add_argument("--fawn-lib", default=str(DEFAULT_FAWN_LIB))
-    parser.add_argument("--mode", choices=["dawn", "fawn", "both"], default="both")
+    parser.add_argument("--doe-lib", default=str(DEFAULT_DOE_LIB))
+    parser.add_argument("--mode", choices=["dawn", "doe", "both"], default="both")
     parser.add_argument("--headless", default="true", choices=["true", "false"])
     parser.add_argument("--chrome-arg", action="append", default=[])
     parser.add_argument(
@@ -222,7 +222,7 @@ def summarize_layered_report(report_payload: dict[str, Any], mode: str) -> dict[
 
     mode_order = report_payload.get("modeOrder")
     if not isinstance(mode_order, list) or not mode_order:
-        mode_order = [mode] if mode in {"dawn", "fawn"} else ["dawn", "fawn"]
+        mode_order = [mode] if mode in {"dawn", "doe"} else ["dawn", "doe"]
 
     def count(rows: list[Any], required_predicate) -> dict[str, dict[str, int]]:
         per_mode: dict[str, dict[str, int]] = {}
@@ -285,7 +285,7 @@ def main() -> int:
     manifest_out = Path(args.manifest_out).resolve()
     workflows = Path(args.workflows).resolve()
     chrome = Path(args.chrome).resolve()
-    fawn_lib = Path(args.fawn_lib).resolve()
+    doe_lib = Path(args.doe_lib).resolve()
     promotion_approvals = Path(args.promotion_approvals).resolve()
     default_out, default_summary, default_check = default_output_paths()
     out = Path(args.out).resolve() if args.out else default_out
@@ -320,8 +320,8 @@ def main() -> int:
             args.mode,
             "--chrome",
             str(chrome),
-            "--fawn-lib",
-            str(fawn_lib),
+            "--doe-lib",
+            str(doe_lib),
             "--manifest",
             str(manifest_out),
             "--workflows",
@@ -356,7 +356,7 @@ def main() -> int:
     if out.exists() and not args.dry_run:
         check_command.extend(["--report", str(out)])
         if args.mode == "both":
-            check_command.extend(["--require-modes", "dawn,fawn"])
+            check_command.extend(["--require-modes", "dawn,doe"])
         else:
             check_command.extend(["--require-modes", args.mode])
     if args.require_promotion_approvals:
@@ -406,7 +406,7 @@ def main() -> int:
             "manifest": str(manifest_out),
             "workflows": str(workflows),
             "chrome": str(chrome),
-            "fawnLib": str(fawn_lib),
+            "doeLib": str(doe_lib),
             "mode": args.mode,
             "promotionApprovals": str(promotion_approvals),
         },

@@ -26,13 +26,13 @@ jobs:
             --parallel 8
           cd zig
           zig build dropin -Doptimize=ReleaseFast
-          test -f zig-out/lib/libfawn_webgpu.so
+          test -f zig-out/lib/libdoe_webgpu.so
       - name: Upload candidate artifact
         uses: actions/upload-artifact@v4
         with:
           name: dropin-artifact
           path: |
-            zig/zig-out/lib/libfawn_webgpu.so
+            zig/zig-out/lib/libdoe_webgpu.so
             zig/zig-out/lib/libwebgpu_dawn.so
             zig/zig-out/lib/libwebgpu.so
             zig/zig-out/lib/libwgpu_native.so
@@ -53,7 +53,7 @@ jobs:
       - name: Run drop-in compatibility + benchmark suite
         run: |
           python3 bench/dropin_gate.py \
-            --artifact bench/out/dropin-artifact/libfawn_webgpu.so \
+            --artifact bench/out/dropin-artifact/libdoe_webgpu.so \
             --symbol-report bench/out/dropin_symbol_report.ci.json \
             --behavior-report bench/out/dropin_behavior_report.ci.json \
             --benchmark-report bench/out/dropin_benchmark_report.ci.json \

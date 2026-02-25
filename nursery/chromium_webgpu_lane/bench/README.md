@@ -40,7 +40,7 @@ This module implements a layered browser benchmark superset for Chromium Track A
 1. `scripts/generate-browser-projection-manifest.py`
    - emits generated manifest from core workload source.
 2. `scripts/webgpu-playwright-layered-bench.mjs`
-   - runs `L1` and `L2` browser benchmark layers for dawn/fawn.
+   - runs `L1` and `L2` browser benchmark layers for dawn/doe.
 3. `scripts/check-browser-benchmark-superset.py`
    - validates projection completeness/hash sync, optional report coverage, and optional promotion approvals.
 4. `scripts/run-browser-benchmark-superset.py`
@@ -54,7 +54,7 @@ From `fawn/` root:
 npm install --prefix nursery/chromium_webgpu_lane playwright-core
 python3 nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py \
   --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
-  --fawn-lib /home/x/deco/fawn/zig/zig-out/lib/libfawn_webgpu.so
+  --doe-lib /home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so
 ```
 
 Default outputs are lane-local diagnostic artifacts under:

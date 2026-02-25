@@ -79,8 +79,8 @@ No free-form fallback reasons in reporting; reasons must be typed from this taxo
 
 Per runtime session:
 
-1. `selectionMode` (`dawn|fawn|auto`)
-2. `selectedRuntime` (`dawn|fawn`)
+1. `selectionMode` (`dawn|doe|auto`)
+2. `selectedRuntime` (`dawn|doe`)
 3. `fallbackApplied` (boolean)
 4. `fallbackReasonCode` (taxonomy value or empty when not applicable)
 5. `profile`:
@@ -101,7 +101,7 @@ Per runtime session:
 ## Failure Policy
 
 1. Selector failures must fail closed to `dawn` unless explicit forced mode says otherwise.
-2. Forced `fawn` mode must fail fast with actionable error if runtime cannot initialize.
+2. Forced `doe` mode must fail fast with actionable error if runtime cannot initialize.
 3. No silent mode mutation after first successful runtime selection in a session.
 
 ## Gating Requirements

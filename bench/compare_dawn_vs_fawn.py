@@ -33,7 +33,7 @@ DEFAULT_WORKLOADS_PATH = "fawn/bench/workloads.json"
 DEFAULT_LEFT_NAME = "fawn"
 DEFAULT_RIGHT_NAME = "dawn"
 DEFAULT_LEFT_COMMAND_TEMPLATE = (
-    "fawn/zig/zig-out/bin/fawn-zig-runtime "
+    "fawn/zig/zig-out/bin/doe-zig-runtime "
     "--commands {commands} --quirks {quirks} "
     "--vendor {vendor} --api {api} --family {family} --driver {driver} "
     "--trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
@@ -43,6 +43,7 @@ DEFAULT_WARMUP = 1
 DEFAULT_OUT_PATH = "fawn/bench/out/dawn-vs-fawn.json"
 DEFAULT_WORKSPACE_PATH = "fawn/bench/out/runtime-comparisons"
 DEFAULT_WORKLOAD_FILTER = ""
+DEFAULT_WORKLOAD_COHORT = "all"
 DEFAULT_COMPARABILITY_MODE = "strict"
 DEFAULT_REQUIRED_TIMING_CLASS = "operation"
 DEFAULT_RESOURCE_PROBE = "none"
@@ -60,6 +61,7 @@ VALID_REQUIRED_TIMING_CLASSES = {"any", "operation", "process-wall"}
 VALID_RESOURCE_PROBES = {"none", "rocm-smi"}
 VALID_CLAIMABILITY_MODES = {"off", "local", "release"}
 VALID_UPLOAD_BUFFER_USAGES = {"copy-dst-copy-src", "copy-dst"}
+VALID_WORKLOAD_COHORTS = {"all", "comparability-candidates"}
 NON_APPLES_TO_APPLES_DOMAINS = {
     "pipeline-async",
     "p1-capability",
@@ -117,6 +119,9 @@ class Workload:
     left_timing_divisor: float
     right_timing_divisor: float
     timing_normalization_note: str
+    comparability_candidate: bool
+    comparability_candidate_tier: str
+    comparability_candidate_notes: str
 
 
 @dataclass(frozen=True)
@@ -214,6 +219,16 @@ def parse_args() -> argparse.Namespace:
         "--workload-filter",
         default=DEFAULT_WORKLOAD_FILTER,
         help="Comma-separated workload IDs to include",
+    )
+    parser.add_argument(
+        "--workload-cohort",
+        choices=("all", "comparability-candidates"),
+        default=DEFAULT_WORKLOAD_COHORT,
+        help=(
+            "Optional workload cohort selector. "
+            "'comparability-candidates' keeps workloads marked "
+            "comparabilityCandidate.enabled=true."
+        ),
     )
     parser.add_argument(
         "--include-extended-workloads",
@@ -411,6 +426,16 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
         value = first_config_value(payload, ["run.workloadFilter", "workloadFilter"])
         if value is not None:
             args.workload_filter = as_str(value, field="run.workloadFilter")
+    if args.workload_cohort == DEFAULT_WORKLOAD_COHORT:
+        value = first_config_value(payload, ["run.workloadCohort", "workloadCohort"])
+        if value is not None:
+            candidate = as_str(value, field="run.workloadCohort")
+            if candidate not in VALID_WORKLOAD_COHORTS:
+                raise ValueError(
+                    "invalid config run.workloadCohort="
+                    f"{candidate}, expected one of {sorted(VALID_WORKLOAD_COHORTS)}"
+                )
+            args.workload_cohort = candidate
 
     if args.include_extended_workloads is False:
         value = first_config_value(
@@ -663,6 +688,41 @@ def parse_int(value: Any) -> int | None:
             except ValueError:
                 return None
     return None
+
+
+def parse_comparability_candidate(
+    value: Any,
+    *,
+    workload_id: str,
+) -> tuple[bool, str, str]:
+    if value is None:
+        return False, "", ""
+    if not isinstance(value, dict):
+        raise ValueError(
+            f"invalid workload {workload_id}: comparabilityCandidate must be an object"
+        )
+    enabled = value.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError(
+            f"invalid workload {workload_id}: comparabilityCandidate.enabled must be boolean"
+        )
+    raw_tier = value.get("tier", "")
+    raw_notes = value.get("notes", "")
+    if not isinstance(raw_tier, str):
+        raise ValueError(
+            f"invalid workload {workload_id}: comparabilityCandidate.tier must be string"
+        )
+    if not isinstance(raw_notes, str):
+        raise ValueError(
+            f"invalid workload {workload_id}: comparabilityCandidate.notes must be string"
+        )
+    tier = raw_tier.strip()
+    notes = raw_notes.strip()
+    if enabled and not tier:
+        raise ValueError(
+            f"invalid workload {workload_id}: comparabilityCandidate.enabled=true requires non-empty comparabilityCandidate.tier"
+        )
+    return enabled, tier, notes
 
 
 def dawn_metric_median_ms(trace_meta: dict[str, Any], metric_name: str) -> float | None:
@@ -1046,7 +1106,7 @@ def run_workload(
         trace_jsonl = out_dir / f"{name}.run{run_idx:03d}.ndjson"
         trace_meta = out_dir / f"{name}.run{run_idx:03d}.meta.json"
         effective_extra_args = list(workload.extra_args)
-        if inject_upload_runtime_flags and workload.domain == "upload" and "fawn-zig-runtime" in template:
+        if inject_upload_runtime_flags and workload.domain == "upload" and "doe-zig-runtime" in template:
             effective_extra_args.extend(
                 [
                     "--upload-buffer-usage",
@@ -1212,7 +1272,12 @@ def load_workloads(
     workload_filter: str,
     include_noncomparable: bool,
     include_extended: bool,
+    workload_cohort: str,
 ) -> list[Workload]:
+    if workload_cohort not in VALID_WORKLOAD_COHORTS:
+        raise ValueError(
+            f"invalid workload cohort {workload_cohort!r}: expected one of {sorted(VALID_WORKLOAD_COHORTS)}"
+        )
     cfg = load_json(path)
     if not isinstance(cfg, dict):
         raise ValueError(f"invalid workload file: expected top-level object at {path}")
@@ -1224,10 +1289,21 @@ def load_workloads(
     for item in raw_workloads:
         if not isinstance(item, dict):
             raise ValueError(f"invalid workload entry in {path}: expected object")
+        workload_id = str(item.get("id", "")).strip()
+        if not workload_id:
+            raise ValueError(f"invalid workload entry in {path}: missing id")
+        (
+            comparability_candidate,
+            comparability_candidate_tier,
+            comparability_candidate_notes,
+        ) = parse_comparability_candidate(
+            item.get("comparabilityCandidate"),
+            workload_id=workload_id,
+        )
         apples_to_apples_vetted = bool(item.get("applesToApplesVetted", False))
         workload = Workload(
-            id=item["id"],
-            name=item.get("name", item["id"]),
+            id=workload_id,
+            name=item.get("name", workload_id),
             description=item.get("description", ""),
             domain=item.get("domain", "uncategorized"),
             comparability_notes=item.get("comparabilityNotes", ""),
@@ -1265,6 +1341,9 @@ def load_workloads(
             left_timing_divisor=float(item.get("leftTimingDivisor", 1.0)),
             right_timing_divisor=float(item.get("rightTimingDivisor", 1.0)),
             timing_normalization_note=item.get("timingNormalizationNote", ""),
+            comparability_candidate=comparability_candidate,
+            comparability_candidate_tier=comparability_candidate_tier,
+            comparability_candidate_notes=comparability_candidate_notes,
         )
         if workload.left_timing_divisor <= 0.0:
             raise ValueError(
@@ -1329,9 +1408,16 @@ def load_workloads(
                 f"invalid workload {workload.id}: comparable=true conflicts with proxy mapping note "
                 "(closest draw-call throughput proxy); mark comparable=false"
             )
+        if workload.comparability_candidate and workload.comparable:
+            raise ValueError(
+                f"invalid workload {workload.id}: comparabilityCandidate.enabled=true "
+                "requires comparable=false until parity promotion is complete"
+            )
         if selected and workload.id not in selected:
             continue
         if not selected and (not include_extended) and (not workload.include_by_default):
+            continue
+        if workload_cohort == "comparability-candidates" and (not workload.comparability_candidate):
             continue
         if (not include_noncomparable) and (not workload.comparable):
             continue
@@ -1379,6 +1465,14 @@ def main() -> int:
             "missing right command template: pass --right-command-template or "
             "--config with right.commandTemplate"
         )
+    if (
+        args.workload_cohort == "comparability-candidates"
+        and (not args.include_noncomparable_workloads)
+    ):
+        raise ValueError(
+            "workload cohort comparability-candidates requires "
+            "--include-noncomparable-workloads (or run.includeNoncomparableWorkloads=true)"
+        )
     benchmark_policy = load_benchmark_methodology_policy(args.benchmark_policy)
 
     workloads_path = Path(args.workloads)
@@ -1387,6 +1481,7 @@ def main() -> int:
         args.workload_filter,
         include_noncomparable=bool(args.include_noncomparable_workloads),
         include_extended=bool(args.include_extended_workloads),
+        workload_cohort=args.workload_cohort,
     )
     if not workloads:
         hint = ""
@@ -1394,6 +1489,11 @@ def main() -> int:
             hint = (
                 " (selected workloads may be filtered by comparable=false/default=false; "
                 "use --include-noncomparable-workloads and/or --include-extended-workloads)"
+            )
+        if args.workload_cohort == "comparability-candidates":
+            hint += (
+                " (workload cohort comparability-candidates requires "
+                "comparabilityCandidate.enabled=true entries)"
             )
         print(f"FAIL: no workloads selected{hint}")
         return 1
@@ -1456,6 +1556,7 @@ def main() -> int:
             "resourceProbe": args.resource_probe,
             "resourceSampleMs": args.resource_sample_ms,
             "resourceSampleTargetCount": args.resource_sample_target_count,
+            "workloadCohort": args.workload_cohort,
             "requireNativeExecutionTimingForLeftOperation": (
                 args.require_timing_class == "operation"
             ),
@@ -1670,6 +1771,11 @@ def main() -> int:
                     "note": workload.timing_normalization_note,
                 },
                 "workloadComparable": workload.comparable,
+                "comparabilityCandidate": {
+                    "enabled": workload.comparability_candidate,
+                    "tier": workload.comparability_candidate_tier,
+                    "notes": workload.comparability_candidate_notes,
+                },
                 "workloadAllowLeftNoExecution": workload.allow_left_no_execution,
                 "workloadDefault": workload.include_by_default,
                 "left": left,

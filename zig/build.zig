@@ -10,7 +10,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const dropin_lib = b.addSharedLibrary(.{
-        .name = "fawn_webgpu",
+        .name = "doe_webgpu",
         .root_source_file = b.path("src/wgpu_dropin_lib.zig"),
         .target = target,
         .optimize = optimize,
@@ -63,7 +63,7 @@ pub fn build(b: *std.Build) void {
     }
 
     const exe = b.addExecutable(.{
-        .name = "fawn-zig-runtime",
+        .name = "doe-zig-runtime",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,

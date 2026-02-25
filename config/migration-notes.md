@@ -1,5 +1,54 @@
 # Config Migration Notes
 
+## 2026-02-25
+
+### Directional comparability-candidate cohort contract
+
+- `bench/workloads.amd.vulkan.extended.json` now supports optional workload field
+  `comparabilityCandidate`:
+  - `enabled` (bool)
+  - `tier` (string)
+  - `notes` (string)
+- this field marks directional workloads that are isolated as likely parity-promotion
+  targets; it does not change strict comparability status by itself.
+- `bench/compare_dawn_vs_fawn.py` now supports:
+  - CLI: `--workload-cohort all|comparability-candidates`
+  - config: `run.workloadCohort`
+- cohort `comparability-candidates` is fail-fast gated to directional lanes and
+  requires `includeNoncomparableWorkloads=true`.
+- reports now record both:
+  - top-level `comparabilityPolicy.workloadCohort`
+  - per-workload `comparabilityCandidate` metadata.
+- added directional preset for the current 8 candidate workloads:
+  `bench/compare_dawn_vs_fawn.config.amd.vulkan.comparability-candidates.directional.json`.
+
+### Doe backend identity cutover (phase 1-3 completed)
+
+- Backend runtime identity is now Doe-only across runtime-visible surfaces.
+- Canonical artifacts are:
+  - runtime binary: `doe-zig-runtime`
+  - drop-in shared library: `libdoe_webgpu.so`
+- Chromium Track-A runtime controls now use Doe names only:
+  - selector value: `--use-webgpu-runtime=doe`
+  - kill switch: `--disable-webgpu-doe`
+  - runtime library path: `--doe-webgpu-library-path=<path>`
+- Chromium GPU preference fields and mojom wiring were renamed to Doe equivalents:
+  - `disable_webgpu_doe`
+  - `doe_webgpu_library_path`
+  - enum/runtime variants `kDoe`
+- Legacy backend aliases (`fawn` runtime selector/backend library flag names) were removed.
+- Product/report naming remains unchanged (`dawn-vs-fawn`) to preserve existing report families.
+
+### Doe backend identity cleanup (phase 4 completed)
+
+- Drop-in diagnostic helper exports are now Doe-named:
+  - `doeWgpuDropinLastErrorCode()`
+  - `doeWgpuDropinClearLastError()`
+- Drop-in panic/error text now reports `doe drop-in ...` taxonomy.
+- Runtime timestamp debug env flag is now Doe-named:
+  - `DOE_WGPU_TIMESTAMP_DEBUG=1`
+- Trace gate semantic-parity eligibility now matches Doe runtime module identity (`module` starts with `doe-`) and rejects non-Doe runtime module pairs in `required` mode.
+
 ## 2026-02-22
 
 ### `benchmark-methodology-thresholds` contract enforcement

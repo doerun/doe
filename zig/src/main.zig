@@ -49,7 +49,7 @@ const default_commands = [_]model.Command{
 
 fn printUsage(stdout: anytype) !void {
     try stdout.print(
-        \\fawn-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
+        \\doe-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
         \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
         \\ [--gpu-timestamp-mode auto|off]
@@ -377,7 +377,7 @@ pub fn main() !void {
 
     var trace_summary = trace.TraceRunSummary{
         .trace_version = 1,
-        .module_name = "fawn-zig-runtime",
+        .module_name = "doe-zig-runtime",
         .seq_max = 0,
         .row_count = 0,
         .command_count = @intCast(commands.len),

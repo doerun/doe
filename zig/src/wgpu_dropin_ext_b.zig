@@ -16,7 +16,7 @@ fn symbolView(comptime name: []const u8) types.WGPUStringView {
 
 fn resolveRequiredProc(comptime FnType: type, comptime symbol_name: []const u8) FnType {
     const proc = wgpuGetProcAddress(symbolView(symbol_name)) orelse
-        @panic("fawn drop-in missing symbol: " ++ symbol_name);
+        @panic("doe drop-in missing symbol: " ++ symbol_name);
     return @as(FnType, @ptrCast(proc));
 }
 

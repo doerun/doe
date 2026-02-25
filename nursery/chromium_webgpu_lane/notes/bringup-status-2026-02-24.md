@@ -39,8 +39,8 @@
 19. Verified built browser binary:
     - `out/fawn_debug/chrome --version` -> `Chromium 147.0.7701.0`
 20. Implemented Track A Edit Set 0 scaffolding in local Chromium source:
-    - added `--use-webgpu-runtime=auto|dawn|fawn`
-    - added `--disable-webgpu-fawn`
+    - added `--use-webgpu-runtime=auto|dawn|doe`
+    - added `--disable-webgpu-doe`
     - added `GpuPreferences` fields for runtime selection and kill switch
     - added mojom + traits serialization wiring and preference parse wiring
 21. Revalidated after Edit Set 0:
@@ -51,7 +51,7 @@
     - `gpu/ipc/service/webgpu_command_buffer_stub.cc`
     - typed runtime selection decision and fallback reason mapping
     - trace telemetry event for selection decision
-    - forced `fawn` mode now fails fast when unavailable/disabled
+    - forced `doe` mode now fails fast when unavailable/disabled
 23. Revalidated after Edit Set 1:
     - `autoninja -C out/fawn_debug chrome` succeeds
 24. Added Set 2-lite denylist precondition in selector bridge:
@@ -60,8 +60,8 @@
 25. Revalidated after Set 2-lite:
     - `autoninja -C out/fawn_debug chrome` succeeds
 26. Added Track A runtime artifact path plumbing:
-    - new switch `--fawn-webgpu-library-path`
-    - new `GpuPreferences` field `fawn_webgpu_library_path`
+    - new switch `--doe-webgpu-library-path`
+    - new `GpuPreferences` field `doe_webgpu_library_path`
     - mojom/traits/parse/unittest wiring updated
 27. Expanded runtime probe fallback taxonomy in selector seam:
     - `runtime_artifact_missing`
@@ -78,9 +78,9 @@
     - `gpu_unittests`:
       - `GpuPreferencesTest.EncodeDecode` passes
       - `WebGPURuntimeSelectionTest.*` passes
-31. Updated decoder creation flow to take explicit runtime enum (`kDawn|kFawn`) instead of assuming Dawn.
-32. Added concrete Fawn execution branch in `WebGPUDecoderImpl`:
-    - loads `libfawn_webgpu.so`,
+31. Updated decoder creation flow to take explicit runtime enum (`kDawn|kDoe`) instead of assuming Dawn.
+32. Added concrete Doe execution branch in `WebGPUDecoderImpl`:
+    - loads `libdoe_webgpu.so`,
     - builds proc table via `wgpuGetProcAddress`,
     - creates/injects `WGPUInstance`,
     - scopes thread procs during execution/polling,
@@ -94,7 +94,7 @@
     - `autoninja -C out/fawn_debug gpu_unittests` succeeds
     - `autoninja -C out/fawn_debug chrome` succeeds
     - `./out/fawn_debug/gpu_unittests --gtest_filter=WebGPURuntimeSelectionTest.*:GpuPreferencesTest.EncodeDecode` passes
-37. Forced-Fawn headless launch now fails cleanly (no GPU-process null-deref crash) when environment preconditions fail.
+37. Forced-Doe headless launch now fails cleanly (no GPU-process null-deref crash) when environment preconditions fail.
 38. Ran strict 3-workload comparison subset:
     - `buffer_upload_64kb`
     - `workgroup_atomic_1024`
@@ -110,15 +110,15 @@
 4. `autoninja -C out/fawn_debug chrome` completes successfully.
 5. Chromium output binary is present and executable (`out/fawn_debug/chrome`).
 6. Prior `gperf` failure entry in `siso_output.1` is historical and superseded by current successful build state.
-7. Track A seam now includes real (partial) Fawn decoder/runtime execution wiring, not only selector telemetry.
-8. In this host's headless profile, forced Fawn is currently rejected as `profile_denylisted`; this is environment gating, not immediate proof of integration failure.
+7. Track A seam now includes real (partial) Doe decoder/runtime execution wiring, not only selector telemetry.
+8. In this host's headless profile, forced Doe is currently rejected as `profile_denylisted`; this is environment gating, not immediate proof of integration failure.
 
 ## Smoke Evidence (2026-02-24)
 
-1. Forced-Fawn launch command shape:
+1. Forced-Doe launch command shape:
 
 ```bash
-out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-webgpu-runtime=fawn --fawn-webgpu-library-path=/home/x/deco/fawn/zig/zig-out/lib/libfawn_webgpu.so
+out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-webgpu-runtime=doe --doe-webgpu-library-path=/home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so
 ```
 
 2. Observed result:
@@ -185,6 +185,6 @@ autoninja -C out/fawn_debug chrome
 7. Track A Edit Set 3 has unit-test coverage for selector decision policy.
 8. Runtime execution wiring is now partially landed in decoder/proc-dispatch path.
 9. Next milestones:
-   - validate forced-Fawn on non-denylisted GPU host/session,
-   - add direct tests for decoder Fawn init/teardown failure paths,
-   - continue adapter-level denylist detail propagation and Dawn-native dependency audit in Fawn path.
+   - validate forced-Doe on non-denylisted GPU host/session,
+   - add direct tests for decoder Doe init/teardown failure paths,
+   - continue adapter-level denylist detail propagation and Dawn-native dependency audit in Doe path.

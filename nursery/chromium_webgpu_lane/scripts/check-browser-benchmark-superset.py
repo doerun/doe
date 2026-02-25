@@ -67,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-modes",
         default="",
-        help="Comma-separated runtime modes required in report coverage checks (e.g. dawn,fawn).",
+        help="Comma-separated runtime modes required in report coverage checks (e.g. dawn,doe).",
     )
     parser.add_argument(
         "--promotion-approvals",
@@ -537,7 +537,7 @@ def parse_required_modes(value: str) -> list[str]:
         return []
     modes = [segment.strip() for segment in value.split(",") if segment.strip()]
     for mode in modes:
-        if mode not in {"dawn", "fawn"}:
+        if mode not in {"dawn", "doe"}:
             raise ValueError(f"invalid mode in --require-modes: {mode}")
     return modes
 
@@ -593,7 +593,7 @@ def check_report_coverage(
         mode_order = []
     else:
         for index, mode in enumerate(mode_order):
-            if mode not in {"dawn", "fawn"}:
+            if mode not in {"dawn", "doe"}:
                 errors.append(f"modeOrder[{index}] invalid mode: {mode}")
 
     for mode in required_modes:
@@ -610,7 +610,7 @@ def check_report_coverage(
                 errors.append(f"modeRunDetails[{index}] is not an object")
                 continue
             detail_mode = detail.get("mode")
-            if detail_mode not in {"dawn", "fawn"}:
+            if detail_mode not in {"dawn", "doe"}:
                 errors.append(f"modeRunDetails[{index}] has invalid mode: {detail_mode}")
                 continue
             mode_run_details[str(detail_mode)] = detail

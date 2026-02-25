@@ -77,7 +77,7 @@ That document defines:
 - `compare_runtimes.py`
   - runs two runtime commands repeatedly (left/right), captures wall-time quantiles, and writes a comparison artifact.
 - `compare_dawn_vs_fawn.py`
-  - executes shared workload files against two explicit command templates (default Fawn runtime + configurable Dawn/competitor runtime).
+  - executes shared workload files against two explicit command templates (default Doe backend runtime on the Fawn side + configurable Dawn/competitor runtime).
   - outputs per-run trace artifacts (`--trace-jsonl` and `--trace-meta` when templates provide these placeholders) plus workload-level and overall quantile summaries.
   - core logic is now split into dedicated helper modules under `bench/compare_dawn_vs_fawn_modules/`:
     `timing_selection.py`, `comparability.py`, `claimability.py`, `reporting.py`.
@@ -158,6 +158,8 @@ python3 fawn/bench/cleanup_out.py --retention-days 14
 - workloads may set `allowLeftNoExecution: true` to allow strict comparability for deterministic feature-gated paths when left runtime reports unsupported/skipped execution evidence and zero execution errors.
 - each workload can include `default: false`; these extended workloads are skipped unless `--include-extended-workloads` or explicit `--workload-filter` is provided.
 - workloads are tagged with `domain` and `comparabilityNotes` for report transparency.
+- directional workloads that are likely parity-promotion targets can declare `comparabilityCandidate` metadata.
+- use `--workload-cohort comparability-candidates` to isolate that candidate set for directional parity work (requires `--include-noncomparable-workloads`).
 - current comparable default matrix is upload scaling: `buffer_upload_{1kb,64kb,1mb,4mb,16mb}`.
 - extended domains include render/draw, shader/pipeline, texture-raster, and compute suites.
 
@@ -180,7 +182,7 @@ python3 fawn/bench/bootstrap_dawn.py \
 
 ```bash
 python3 fawn/bench/compare_dawn_vs_fawn.py \
-  --left-command-template "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/fawn-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}" \
+  --left-command-template "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}" \
   --right-command-template "python3 fawn/bench/dawn_benchmark_adapter.py --dawn-state fawn/bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map fawn/bench/dawn_workload_map.json --workload {workload} --dawn-extra-args --backend=vulkan --dawn-extra-args --adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
   --comparability strict \
   --require-timing-class operation \
@@ -226,12 +228,20 @@ python3 fawn/bench/compare_dawn_vs_fawn.py \
 - Dawn adapter now fails fast when a gtest filter matches zero tests (`Running 0 tests` / filter no-match warning) so startup-only runs cannot be reported as comparable timings.
 - non-comparable workload mappings are excluded by default using `workloads.json` `comparable: false`.
 - use `--include-noncomparable-workloads` only for directional investigation runs.
+- `--workload-cohort comparability-candidates` filters to workloads with `comparabilityCandidate.enabled=true`; this does not promote those workloads to strict comparable lanes.
 - non-default workload entries are excluded unless `--include-extended-workloads` is set.
+<<<<<<< Updated upstream
 - strict mode now rejects contract-domain workloads as comparable unless explicitly promoted by contract policy.
   for guarded contract domains (`pipeline-async`, `p0-resource`, `p0-compute`, `p0-render`, `p1-capability`,
   `p1-resource-table`, `p1-capability-macro`, `p2-lifecycle`, `p2-lifecycle-macro`, `surface`), promotion
   requires `applesToApplesVetted=true` in workload config.
 - strict upload comparability now preflights the executed `fawn-zig-runtime` binary:
+=======
+- strict mode now rejects contract-domain workloads as comparable unless explicitly marked
+  `applesToApplesVetted=true` in workload config; domains `pipeline-async`, `p0-*`, `p1-*`, `p2-*`, and `surface`
+  are directional by default to prevent mapping debt from entering claimable lanes.
+- strict upload comparability now preflights the executed `doe-zig-runtime` binary:
+>>>>>>> Stashed changes
   it must expose `--upload-buffer-usage` and `--upload-submit-every`, reject invalid values for both flags, and not be older than key upload/runtime Zig sources (`zig/src/main.zig`, `zig/src/execution.zig`, `zig/src/wgpu_commands.zig`, `zig/src/webgpu_ffi.zig`).
   when a workload contract sets `--queue-wait-mode`, strict preflight also requires runtime support and validation for `--queue-wait-mode process-events|wait-any`.
 - strict render comparability now selects encode-only operation timing on the Fawn side for workload domains
@@ -353,7 +363,7 @@ python3 fawn/bench/run_release_pipeline.py \
 
 # drop-in compatibility + benchmark suite against a built shared-library artifact:
 python3 fawn/bench/dropin_gate.py \
-  --artifact fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --artifact fawn/zig/zig-out/lib/libdoe_webgpu.so \
   --report fawn/bench/out/dropin_report.json
 
 # optional standalone drop-in benchmark visualization (micro vs end-to-end sections):
@@ -367,7 +377,7 @@ python3 fawn/bench/run_release_pipeline.py \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so \
   --with-claim-gate
 
 # optional repeated release windows for trend evidence:
@@ -377,7 +387,7 @@ python3 fawn/bench/run_release_claim_windows.py \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so \
   --with-substantiation-gate \
   --substantiation-policy fawn/config/substantiation-policy.json
 # disable per-window claim rehearsal artifacts only when intentionally running diagnostics:
@@ -569,7 +579,7 @@ Config fields (CLI-compatible, config-first):
   "workloads": "fawn/bench/workloads.json",
   "left": {
     "name": "fawn",
-    "commandTemplate": "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/fawn-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+    "commandTemplate": "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
   },
   "right": {
     "name": "dawn",
@@ -579,7 +589,8 @@ Config fields (CLI-compatible, config-first):
     "iterations": 3,
     "warmup": 1,
     "out": "fawn/bench/out/dawn-vs-fawn.ryzen.json",
-    "workspace": "fawn/bench/out/runtime-comparisons.ryzen"
+    "workspace": "fawn/bench/out/runtime-comparisons.ryzen",
+    "workloadCohort": "all"
   },
   "comparability": {
     "mode": "strict",
@@ -613,19 +624,25 @@ Additional AMD Vulkan presets:
 
 - release claim mode on extended apples-to-apples comparable matrix (current strict comparable subset from `bench/workloads.amd.vulkan.extended.json`, release sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json`
 - extended comparable matrix local-claim preset (same workload family, lower sample floor): `bench/compare_dawn_vs_fawn.config.amd.vulkan.extended.comparable.json`
+<<<<<<< Updated upstream
 - directional diagnostics (macro-skewed diagnostic set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
 - directional macro diagnostics (focused macro diagnostics set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
+=======
+- directional diagnostics (macro-only non-claim stress set): `bench/compare_dawn_vs_fawn.config.amd.vulkan.directional.json`
+- directional macro diagnostics (high-volume render/texture + P0 PLS stress): `bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json`
+- directional comparability-candidate cohort (8 likely parity-promotion targets): `bench/compare_dawn_vs_fawn.config.amd.vulkan.comparability-candidates.directional.json`
+>>>>>>> Stashed changes
 - strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json`
 - adapter-agnostic local comparable matrix (no fixed AMD vendor-id requirement): `bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json`
 
 Preset behavior:
 
-- Fawn side is AMD-profiled in workload fields (`vendor=amd`, `api=vulkan`, `family=gfx11`, `driver=24.0.0`). The Fawn runtime currently expects `driver` to be a semver string.
+- Fawn side is AMD-profiled in workload fields (`vendor=amd`, `api=vulkan`, `family=gfx11`, `driver=24.0.0`). The default Doe runtime currently expects `driver` to be a semver string.
 - Dawn side is constrained to Vulkan + AMD vendor id (`--backend=vulkan`, `--adapter-vendor-id=0x1002`).
 - Dawn filter selection is config-controlled and explicit via `@autodiscover` in the map.
 - Autodiscovery is opt-in only (from map token `@autodiscover`); otherwise adapter fails fast.
 - Comparability policy is strict operation-level timing (`mode=strict`, `requireTimingClass=operation`).
-- strict mode will fail fast if the configured Fawn runtime binary does not support upload knobs or appears stale relative to upload/runtime Zig sources.
+- strict mode will fail fast if the configured Doe runtime binary does not support upload knobs or appears stale relative to upload/runtime Zig sources.
 - Upload workloads are configured for strict apples-to-apples matching against Dawn `BufferUploadPerf WriteBuffer`:
   `leftUploadBufferUsage=copy-dst`, `leftIgnoreFirstOps=1`, and explicit per-size
   `leftCommandRepeat`/`leftTimingDivisor`/`leftUploadSubmitEvery` values in
@@ -651,6 +668,9 @@ python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config
 
 # diagnostic macro slice (high-volume render/texture + P0 PLS stress)
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.macro.directional.json
+
+# directional comparability-candidate cohort (8 targeted Dawn parity candidates)
+python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.comparability-candidates.directional.json
 
 # strict AMD smoke + GPU probe evidence check
 python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json

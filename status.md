@@ -8,9 +8,28 @@ Fawn is in active implementation phase. Runtime behavior is operational for disp
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
 Current `fawn/zig/src` size is 13,485 LOC (`wc -l zig/src/*.zig`, 2026-02-23) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) over the full extended workload matrix.
+- Backend naming cutover is complete for runtime-visible surfaces: Doe is now the only backend identity (`doe-zig-runtime`, `libdoe_webgpu.so`, Chromium `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path`).
+- Doe identity cleanup for runtime-visible diagnostics is complete:
+  - drop-in helper exports are now `doeWgpuDropinLastErrorCode` / `doeWgpuDropinClearLastError`
+  - runtime timestamp debug env flag is now `DOE_WGPU_TIMESTAMP_DEBUG`
+  - trace semantic-parity eligibility now keys on Doe module identity (`module` starts with `doe-`)
 
+<<<<<<< Updated upstream
 Benchmark contract coverage snapshot (2026-02-25 update):
 - `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `27` strict apples-to-apples comparable + `13` directional contracts.
+=======
+Benchmark contract coverage snapshot (2026-02-24 update):
+- `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `23` strict apples-to-apples comparable + `17` directional contracts.
+- directional comparability-candidate cohort is now explicitly tagged and toggleable (`comparabilityCandidate` + `--workload-cohort comparability-candidates`) for 8 likely parity-promotion workloads:
+  `draw_indexed_render_proxy`,
+  `render_draw_throughput_macro_200k`,
+  `draw_indexed_render_macro_200k`,
+  `p0_render_multidraw_contract`,
+  `p0_render_multidraw_indexed_contract`,
+  `p0_compute_indirect_timestamp_contract`,
+  `p0_resource_lifecycle_contract`,
+  `texture_sampler_write_query_destroy_macro_500`.
+>>>>>>> Stashed changes
 - missing Dawn perf suites were added to AMD extended contracts: `MatrixVectorMultiplyPerf`, `UniformBufferUpdatePerf`, and `VulkanZeroInitializeWorkgroupMemoryExtensionTest`.
 - strict comparable lanes now fail fast for directional/proxy-labeled contracts and upload mixed-scope ignore-first timing derivations.
 - Dawn adapter filter resolution is now explicit-only (no `filters.default` fallback); missing workload mappings fail fast unless that workload is explicitly `@autodiscover`.
@@ -20,7 +39,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
 - claim-lane governance is now hash-locked and machine-checked via `config/claim-cycle.active.json` + `bench/cycle_gate.py`, with release pipeline default wiring when claim gate is enabled.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
-- drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libfawn_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
+- drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libdoe_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`fawn-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `texture_sampling_raster_proxy` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
 
@@ -31,7 +50,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 1. v0 runtime prototype in `fawn/zig/src`:
 - typed model and JSON ingestion
 - deterministic matcher + selector + action application
-- runnable `fawn-zig-runtime` entry path
+- runnable `doe-zig-runtime` entry path
 - dispatch/trace/replay now work; execution is native for implemented command classes with explicit unsupported taxonomy on unimplemented paths
 2. Lean contract sources in `fawn/lean/Fawn` (`Model.lean`, `Dispatch.lean`).
 - runtime command stream parser in `fawn/zig/src/command_json.zig`
@@ -102,7 +121,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 9. Added hard release gate command path in docs/process via `fawn/bench/trace_gate.py` for replay artifact validation.
 10. Release gating is explicit in process/docs and enforced in `.github/workflows/release-gates.yml`.
 11. Strict Dawn-vs-Fawn upload comparability preflight is now enforced in `fawn/bench/compare_dawn_vs_fawn.py`:
-- fail fast if executed `fawn-zig-runtime` does not expose upload knobs (`--upload-buffer-usage`, `--upload-submit-every`)
+- fail fast if executed `doe-zig-runtime` does not expose upload knobs (`--upload-buffer-usage`, `--upload-submit-every`)
 - fail fast if upload knob validation probes are not recognized
 - fail fast if runtime binary appears older than key upload/runtime Zig sources (`zig/src/main.zig`, `zig/src/execution.zig`, `zig/src/wgpu_commands.zig`, `zig/src/webgpu_ffi.zig`)
 12. AMD Vulkan upload workloads in `fawn/bench/workloads.amd.vulkan.json` now use explicit size-tuned `leftUploadSubmitEvery` values (instead of a single shared cadence) to keep methodology explicit while reducing upload backpressure artifacts.
@@ -147,14 +166,14 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - new validator `bench/claim_gate.py` enforces report contract (`claimabilityPolicy.mode`, `claimStatus`, `comparisonStatus`, minimum timed-sample floor, workload-level claimability fields)
 - `.github/workflows/release-gates.yml` now runs `bench/schema_gate.py`, `bench/check_correctness.py`, `bench/trace_gate.py`, and `bench/claim_gate.py` as blocking gates on the report artifact.
 36. Native runtime now exposes explicit queue wait behavior control:
-- `--queue-wait-mode process-events|wait-any` in `fawn-zig-runtime`
+- `--queue-wait-mode process-events|wait-any` in `doe-zig-runtime`
 - default remains `process-events`; `wait-any` is available for targeted wait-path diagnostics/tuning and now fails explicitly with runtime taxonomy errors when unsupported or timed out.
 37. AMD Vulkan 64KB upload workload cadence is retuned from `leftUploadSubmitEvery=50` to `leftUploadSubmitEvery=100` (with `leftCommandRepeat=500`, `leftTimingDivisor=500`) in:
 - `bench/workloads.amd.vulkan.json`
 - `bench/workloads.amd.vulkan.extended.json`
 - local operation-scope A/B artifact: `bench/out/upload_64kb_submit_wait_100_vs_50.local.json` (`executionSubmitWaitTotalNs`, `n=30` per side): `submit100` faster at `p50 +19.52%`, `p95 +14.21%`.
 38. Native runtime now exposes explicit queue synchronization mode control:
-- `--queue-sync-mode per-command|deferred` in `fawn-zig-runtime` (`per-command` default preserves existing behavior).
+- `--queue-sync-mode per-command|deferred` in `doe-zig-runtime` (`per-command` default preserves existing behavior).
 - deferred mode skips `waitForQueue` after individual submits and performs a single final queue flush after the command loop.
 - `trace-meta` now records `queueSyncMode` for native execution runs (`config/trace-meta.schema.json` updated).
 39. Native `render_draw` command contract now includes explicit draw-offset support:
@@ -401,9 +420,9 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - release CI (`.github/workflows/release-gates.yml`) continues to invoke the same release config entrypoint, but now evaluates all comparable AMD Vulkan contracts from the extended matrix under release claimability policy.
 
 69. Drop-in artifact lane now defaults to Fawn-produced shared-library outputs:
-- `bench/run_release_pipeline.py`, `bench/run_blocking_gates.py`, and `bench/dropin_gate.py` now default `--dropin-artifact` to `zig/zig-out/lib/libfawn_webgpu.so` and fail fast when a configured artifact is missing.
-- release CI now builds `zig build dropin` and passes `zig/zig-out/lib/libfawn_webgpu.so` to drop-in gates.
-- drop-in compatibility CI now publishes and gates `libfawn_webgpu.so` plus required sidecars (`libwebgpu_dawn.so`, `libwebgpu.so`, `libwgpu_native.so`) from `zig/zig-out/lib/`.
+- `bench/run_release_pipeline.py`, `bench/run_blocking_gates.py`, and `bench/dropin_gate.py` now default `--dropin-artifact` to `zig/zig-out/lib/libdoe_webgpu.so` and fail fast when a configured artifact is missing.
+- release CI now builds `zig build dropin` and passes `zig/zig-out/lib/libdoe_webgpu.so` to drop-in gates.
+- drop-in compatibility CI now publishes and gates `libdoe_webgpu.so` plus required sidecars (`libwebgpu_dawn.so`, `libwebgpu.so`, `libwgpu_native.so`) from `zig/zig-out/lib/`.
 
 70. Queue wait-mode fallback behavior is now explicit-taxonomy only:
 - native `--queue-wait-mode wait-any` no longer silently mutates to `process-events` on unsupported/timeout paths.

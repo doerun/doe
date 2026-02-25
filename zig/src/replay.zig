@@ -91,7 +91,7 @@ pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![
         if (trimmed.len == 0) continue;
         const parsed = try std.json.parseFromSlice(RawReplayRow, allocator, trimmed, .{ .ignore_unknown_fields = true });
         defer parsed.deinit();
-        const validated = try parseReplayLine(allocator, "fawn-zig-runtime", &parsed.value);
+        const validated = try parseReplayLine(allocator, "doe-zig-runtime", &parsed.value);
         errdefer freeReplayExpectation(allocator, validated);
         try expectations.append(validated);
     }

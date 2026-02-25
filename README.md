@@ -2,6 +2,11 @@
 
 A performance-first WebGPU runtime in Zig and Lean 4.
 
+## Naming contract
+
+- Product and browser distribution: `Fawn`
+- Backend/runtime implementation identity: `Doe` (`doe-zig-runtime`, `libdoe_webgpu.so`)
+
 ## The problem
 
 WebGPU runtimes like Dawn (C++) and wgpu (Rust) spend most of their CPU time on work that isn't submitting commands to the GPU. Repeated runtime validation, abstraction layering, IPC serialization, and driver workaround branching dominate high-frequency small-dispatch workloads. These costs are structural. You can optimize them within the existing architecture, but you can't eliminate them without changing the architecture.

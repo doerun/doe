@@ -12,11 +12,14 @@ const DEFAULT_CHROME = resolve(
   ROOT,
   "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome",
 );
-const DEFAULT_FAWN_LIB = resolve(ROOT, "zig/zig-out/lib/libfawn_webgpu.so");
+const DEFAULT_DOE_LIB = resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.so");
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const DEFAULT_OUT_FILE = "dawn-vs-fawn.tracka.playwright-smoke.diagnostic.json";
 const DEFAULT_UPLOAD_ITERS = 500;
 const DEFAULT_DISPATCH_ITERS = 200;
+const DEFAULT_SUITE_TIMEOUT_MS = 120000;
+const DEFAULT_OPERATION_TIMEOUT_MS = 30000;
+const DEFAULT_BROWSER_CLOSE_TIMEOUT_MS = 10000;
 const REPORT_SCHEMA_VERSION = 1;
 const REPORT_KIND = "chromium-webgpu-playwright-smoke";
 const BENCHMARK_CLASS = "diagnostic";
@@ -55,15 +58,17 @@ function usage() {
   node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs [options]
 
 Options:
-  --mode dawn|fawn|both     Runtime mode to run (default: both)
+  --mode dawn|doe|both      Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
-  --fawn-lib PATH           libfawn_webgpu.so path (for fawn mode)
+  --doe-lib PATH            libdoe_webgpu.so path (for doe mode)
   --out PATH                JSON report output path (default: nursery/chromium_webgpu_lane/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out
   --headless true|false     Launch headless (default: true)
   --chrome-arg ARG          Extra Chromium arg (repeatable)
   --upload-iters N          queue.writeBuffer timed iterations (default: 500)
   --dispatch-iters N        compute dispatch timed iterations (default: 200)
+  --suite-timeout-ms N      Max time for one mode suite run (default: 120000)
+  --op-timeout-ms N         Max time for one async WebGPU wait op (default: 30000)
   --strict                  Exit non-zero if any smoke test fails
   --help                    Show this message
 `);
@@ -81,6 +86,54 @@ function parsePositiveInt(text, flag) {
     throw new Error(`${flag} must be a positive integer`);
   }
   return value;
+}
+
+function timeoutError(label, timeoutMs) {
+  return new Error(`${label} timed out after ${timeoutMs}ms`);
+}
+
+async function withTimeout(promise, timeoutMs, label) {
+  let timeoutId = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(timeoutError(label, timeoutMs)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error) {
+  const errorText = String(error?.stack ?? error);
+  return {
+    mode,
+    runtimeArgs: runtimeArgs(mode, args.doeLibPath),
+    launchArgs,
+    browserVersion,
+    elapsedMs: Date.now() - startMs,
+    webgpuAvailable: false,
+    adapterAvailable: false,
+    adapterInfo: null,
+    features: [],
+    limits: {},
+    wgslLanguageFeatures: [],
+    smoke: {
+      computeIncrement: { pass: false, actual: null, expected: [2, 3, 4, 5], error: errorText },
+      renderTriangle: { pass: false, centerRgba: null, error: errorText },
+    },
+    benches: {
+      writeBuffer64kbUsPerOp: null,
+      computeDispatchUsPerOp: null,
+      iterations: { upload: args.uploadIters, dispatch: args.dispatchIters },
+      errors: [errorText],
+    },
+    errors: [errorText],
+  };
 }
 
 function timestampId() {
@@ -151,13 +204,15 @@ function parseArgs(argv) {
   const args = {
     mode: "both",
     chromePath: DEFAULT_CHROME,
-    fawnLibPath: DEFAULT_FAWN_LIB,
+    doeLibPath: DEFAULT_DOE_LIB,
     outPath: defaultOutPath(),
     allowBenchOut: false,
     headless: true,
     chromeArgs: [],
     uploadIters: DEFAULT_UPLOAD_ITERS,
     dispatchIters: DEFAULT_DISPATCH_ITERS,
+    suiteTimeoutMs: DEFAULT_SUITE_TIMEOUT_MS,
+    opTimeoutMs: DEFAULT_OPERATION_TIMEOUT_MS,
     strict: false,
   };
 
@@ -176,8 +231,8 @@ function parseArgs(argv) {
     } else if (token === "--chrome") {
       args.chromePath = readOptionValue(argv, i, "--chrome");
       i += 1;
-    } else if (token === "--fawn-lib") {
-      args.fawnLibPath = readOptionValue(argv, i, "--fawn-lib");
+    } else if (token === "--doe-lib") {
+      args.doeLibPath = readOptionValue(argv, i, "--doe-lib");
       i += 1;
     } else if (token === "--out") {
       args.outPath = readOptionValue(argv, i, "--out");
@@ -197,13 +252,25 @@ function parseArgs(argv) {
         "--dispatch-iters",
       );
       i += 1;
+    } else if (token === "--suite-timeout-ms") {
+      args.suiteTimeoutMs = parsePositiveInt(
+        readOptionValue(argv, i, "--suite-timeout-ms"),
+        "--suite-timeout-ms",
+      );
+      i += 1;
+    } else if (token === "--op-timeout-ms") {
+      args.opTimeoutMs = parsePositiveInt(
+        readOptionValue(argv, i, "--op-timeout-ms"),
+        "--op-timeout-ms",
+      );
+      i += 1;
     } else {
       throw new Error(`unknown argument: ${token}`);
     }
   }
 
-  if (!["dawn", "fawn", "both"].includes(args.mode)) {
-    throw new Error("--mode must be one of dawn, fawn, both");
+  if (!["dawn", "doe", "both"].includes(args.mode)) {
+    throw new Error("--mode must be one of dawn, doe, both");
   }
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
   return args;
@@ -230,7 +297,7 @@ async function loadChromiumDriver() {
 }
 
 function startLocalServer() {
-  const html = "<!doctype html><meta charset='utf-8'><title>fawn-webgpu-smoke</title>";
+  const html = "<!doctype html><meta charset='utf-8'><title>doe-webgpu-smoke</title>";
   const server = http.createServer((_, res) => {
     res.statusCode = 200;
     res.setHeader("content-type", "text/html; charset=utf-8");
@@ -265,21 +332,21 @@ function baseLaunchArgs(port) {
   ];
 }
 
-function runtimeArgs(mode, fawnLibPath) {
+function runtimeArgs(mode, doeLibPath) {
   if (mode === "dawn") {
     return ["--use-webgpu-runtime=dawn"];
   }
   return [
-    "--use-webgpu-runtime=fawn",
-    `--fawn-webgpu-library-path=${fawnLibPath}`,
+    "--use-webgpu-runtime=doe",
+    `--doe-webgpu-library-path=${doeLibPath}`,
   ];
 }
 
-function safeDeltaPercent(dawnValue, fawnValue) {
-  if (!Number.isFinite(dawnValue) || !Number.isFinite(fawnValue) || dawnValue === 0) {
+function safeDeltaPercent(dawnValue, doeValue) {
+  if (!Number.isFinite(dawnValue) || !Number.isFinite(doeValue) || dawnValue === 0) {
     return null;
   }
-  return ((dawnValue - fawnValue) / dawnValue) * 100;
+  return ((dawnValue - doeValue) / dawnValue) * 100;
 }
 
 function extractModeResult(modeResults, mode) {
@@ -290,30 +357,53 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
   const launchArgs = [
     ...baseLaunchArgs(localPort),
     ...args.chromeArgs,
-    ...runtimeArgs(mode, args.fawnLibPath),
+    ...runtimeArgs(mode, args.doeLibPath),
   ];
   const startMs = Date.now();
-  const browser = await chromium.launch({
-    executablePath: args.chromePath,
-    headless: args.headless,
-    args: launchArgs,
-    timeout: 120000,
-  });
-  const browserVersion = browser.version();
+  let browser = null;
+  let browserVersion = null;
 
   try {
+    browser = await chromium.launch({
+      executablePath: args.chromePath,
+      headless: args.headless,
+      args: launchArgs,
+      timeout: 120000,
+    });
+    browserVersion = browser.version();
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(localUrl, { waitUntil: "load", timeout: 120000 });
 
-    const suite = await page.evaluate(
-      async ({
-        uploadIters,
-        dispatchIters,
-        uploadWarmupIters,
-        dispatchWarmupIters,
-        adapterLimitKeys,
-      }) => {
+    const suite = await withTimeout(
+      page.evaluate(
+        async ({
+          uploadIters,
+          dispatchIters,
+          uploadWarmupIters,
+          dispatchWarmupIters,
+          adapterLimitKeys,
+          opTimeoutMs,
+        }) => {
+          const withOpTimeout = async (label, promiseFactory) => {
+            let timeoutId = null;
+            try {
+              return await Promise.race([
+                promiseFactory(),
+                new Promise((_, reject) => {
+                  timeoutId = setTimeout(
+                    () => reject(new Error(`${label} timed out after ${opTimeoutMs}ms`)),
+                    opTimeoutMs,
+                  );
+                }),
+              ]);
+            } finally {
+              if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+              }
+            }
+          };
+
         const result = {
           userAgent: navigator.userAgent,
           webgpuAvailable: typeof navigator.gpu !== "undefined",
@@ -343,7 +433,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
         let adapter = null;
         let device = null;
         try {
-          adapter = await navigator.gpu.requestAdapter();
+          adapter = await withOpTimeout("requestAdapter", () => navigator.gpu.requestAdapter());
           if (!adapter) {
             result.errors.push("requestAdapter returned null");
             return result;
@@ -362,7 +452,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           if ("wgslLanguageFeatures" in navigator.gpu) {
             result.wgslLanguageFeatures = Array.from(navigator.gpu.wgslLanguageFeatures).sort();
           }
-          device = await adapter.requestDevice();
+          device = await withOpTimeout("requestDevice", () => adapter.requestDevice());
         } catch (error) {
           result.errors.push(`adapter/device init failed: ${String(error)}`);
           return result;
@@ -410,7 +500,9 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           pass.end();
           encoder.copyBufferToBuffer(storage, 0, readback, 0, input.byteLength);
           device.queue.submit([encoder.finish()]);
-          await readback.mapAsync(GPUMapMode.READ);
+          await withOpTimeout("computeIncrement readback mapAsync", () =>
+            readback.mapAsync(GPUMapMode.READ),
+          );
           const actual = Array.from(new Uint32Array(readback.getMappedRange()));
           readback.unmap();
           result.smoke.computeIncrement.actual = actual;
@@ -491,7 +583,9 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             { width, height, depthOrArrayLayers: 1 },
           );
           device.queue.submit([encoder.finish()]);
-          await readback.mapAsync(GPUMapMode.READ);
+          await withOpTimeout("renderTriangle readback mapAsync", () =>
+            readback.mapAsync(GPUMapMode.READ),
+          );
           const data = new Uint8Array(readback.getMappedRange());
           const centerOffset = Math.floor(height / 2) * bytesPerRow + Math.floor(width / 2) * 4;
           const centerRgba = Array.from(data.slice(centerOffset, centerOffset + 4));
@@ -515,12 +609,16 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           for (let i = 0; i < uploadWarmupIters; i += 1) {
             device.queue.writeBuffer(uploadBuffer, 0, payload);
           }
-          await device.queue.onSubmittedWorkDone();
+          await withOpTimeout("writeBuffer warmup onSubmittedWorkDone", () =>
+            device.queue.onSubmittedWorkDone(),
+          );
           const uploadStart = performance.now();
           for (let i = 0; i < uploadIters; i += 1) {
             device.queue.writeBuffer(uploadBuffer, 0, payload);
           }
-          await device.queue.onSubmittedWorkDone();
+          await withOpTimeout("writeBuffer timed onSubmittedWorkDone", () =>
+            device.queue.onSubmittedWorkDone(),
+          );
           const uploadEnd = performance.now();
           result.benches.writeBuffer64kbUsPerOp =
             ((uploadEnd - uploadStart) * 1000) / uploadIters;
@@ -547,7 +645,9 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             pass.end();
             device.queue.submit([encoder.finish()]);
           }
-          await device.queue.onSubmittedWorkDone();
+          await withOpTimeout("dispatch warmup onSubmittedWorkDone", () =>
+            device.queue.onSubmittedWorkDone(),
+          );
           const dispatchStart = performance.now();
           for (let i = 0; i < dispatchIters; i += 1) {
             const encoder = device.createCommandEncoder();
@@ -557,7 +657,9 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             pass.end();
             device.queue.submit([encoder.finish()]);
           }
-          await device.queue.onSubmittedWorkDone();
+          await withOpTimeout("dispatch timed onSubmittedWorkDone", () =>
+            device.queue.onSubmittedWorkDone(),
+          );
           const dispatchEnd = performance.now();
           result.benches.computeDispatchUsPerOp =
             ((dispatchEnd - dispatchStart) * 1000) / dispatchIters;
@@ -567,45 +669,57 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
 
         return result;
       },
-      {
-        uploadIters: args.uploadIters,
-        dispatchIters: args.dispatchIters,
-        uploadWarmupIters: UPLOAD_WARMUP_ITERS,
-        dispatchWarmupIters: DISPATCH_WARMUP_ITERS,
-        adapterLimitKeys: ADAPTER_LIMIT_KEYS,
-      },
+        {
+          uploadIters: args.uploadIters,
+          dispatchIters: args.dispatchIters,
+          uploadWarmupIters: UPLOAD_WARMUP_ITERS,
+          dispatchWarmupIters: DISPATCH_WARMUP_ITERS,
+          adapterLimitKeys: ADAPTER_LIMIT_KEYS,
+          opTimeoutMs: args.opTimeoutMs,
+        },
+      ),
+      args.suiteTimeoutMs,
+      `${mode} smoke suite`,
     );
 
     return {
       mode,
-      runtimeArgs: runtimeArgs(mode, args.fawnLibPath),
+      runtimeArgs: runtimeArgs(mode, args.doeLibPath),
       launchArgs,
       browserVersion,
       elapsedMs: Date.now() - startMs,
       ...suite,
     };
+  } catch (error) {
+    return makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error);
   } finally {
-    await browser.close();
+    if (browser) {
+      try {
+        await withTimeout(browser.close(), DEFAULT_BROWSER_CLOSE_TIMEOUT_MS, `${mode} browser close`);
+      } catch (closeError) {
+        console.warn(`[WARN] ${mode}: browser close failed: ${String(closeError)}`);
+      }
+    }
   }
 }
 
 function computeComparison(modeResults) {
   const dawn = extractModeResult(modeResults, "dawn");
-  const fawn = extractModeResult(modeResults, "fawn");
-  if (!dawn || !fawn) return null;
+  const doe = extractModeResult(modeResults, "doe");
+  if (!dawn || !doe) return null;
 
   return {
     writeBuffer64kbDeltaPercent: safeDeltaPercent(
       dawn.benches.writeBuffer64kbUsPerOp,
-      fawn.benches.writeBuffer64kbUsPerOp,
+      doe.benches.writeBuffer64kbUsPerOp,
     ),
     computeDispatchDeltaPercent: safeDeltaPercent(
       dawn.benches.computeDispatchUsPerOp,
-      fawn.benches.computeDispatchUsPerOp,
+      doe.benches.computeDispatchUsPerOp,
     ),
     bothComputeSmokePass:
-      dawn.smoke.computeIncrement.pass && fawn.smoke.computeIncrement.pass,
-    bothRenderSmokePass: dawn.smoke.renderTriangle.pass && fawn.smoke.renderTriangle.pass,
+      dawn.smoke.computeIncrement.pass && doe.smoke.computeIncrement.pass,
+    bothRenderSmokePass: dawn.smoke.renderTriangle.pass && doe.smoke.renderTriangle.pass,
   };
 }
 
@@ -621,7 +735,7 @@ async function main() {
   const chromium = await loadChromiumDriver();
   const { server, url, port } = await startLocalServer();
 
-  const modes = args.mode === "both" ? ["dawn", "fawn"] : [args.mode];
+  const modes = args.mode === "both" ? ["dawn", "doe"] : [args.mode];
   const modeResults = [];
   let failed = false;
 
@@ -669,6 +783,8 @@ async function main() {
       dispatchIterations: args.dispatchIters,
       uploadWarmupIterations: UPLOAD_WARMUP_ITERS,
       dispatchWarmupIterations: DISPATCH_WARMUP_ITERS,
+      suiteTimeoutMs: args.suiteTimeoutMs,
+      operationTimeoutMs: args.opTimeoutMs,
       strictMode: args.strict,
       notes: [
         "Browser harness output is diagnostic and not a strict L0 apples-to-apples claim artifact.",
@@ -684,7 +800,7 @@ async function main() {
   console.log(`report written: ${args.outPath}`);
   if (report.comparison) {
     console.log(
-      `delta (diagnostic only; positive=fawn faster): writeBuffer64kb=${report.comparison.writeBuffer64kbDeltaPercent?.toFixed(2) ?? "n/a"}% dispatch=${report.comparison.computeDispatchDeltaPercent?.toFixed(2) ?? "n/a"}%`,
+      `delta (diagnostic only; positive=doe faster): writeBuffer64kb=${report.comparison.writeBuffer64kbDeltaPercent?.toFixed(2) ?? "n/a"}% dispatch=${report.comparison.computeDispatchDeltaPercent?.toFixed(2) ?? "n/a"}%`,
     );
   }
 

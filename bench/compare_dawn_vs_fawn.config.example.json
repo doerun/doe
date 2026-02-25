@@ -2,7 +2,7 @@
   "workloads": "fawn/bench/workloads.json",
   "left": {
     "name": "fawn",
-    "commandTemplate": "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/fawn-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+    "commandTemplate": "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
   },
   "right": {
     "name": "dawn",
@@ -14,6 +14,7 @@
     "out": "fawn/bench/out/dawn-vs-fawn.ryzen.json",
     "workspace": "fawn/bench/out/runtime-comparisons.ryzen",
     "workloadFilter": "",
+    "workloadCohort": "all",
     "includeExtendedWorkloads": false,
     "includeNoncomparableWorkloads": false,
     "emitShell": false

@@ -31,11 +31,11 @@ fn setLastError(code: DropinErrorCode) void {
     g_last_error_code.store(@intFromEnum(code), .monotonic);
 }
 
-pub export fn fawnWgpuDropinLastErrorCode() callconv(.c) u32 {
+pub export fn doeWgpuDropinLastErrorCode() callconv(.c) u32 {
     return g_last_error_code.load(.monotonic);
 }
 
-pub export fn fawnWgpuDropinClearLastError() callconv(.c) void {
+pub export fn doeWgpuDropinClearLastError() callconv(.c) void {
     setLastError(.ok);
 }
 
@@ -59,7 +59,7 @@ fn ensureNativeLibrary() bool {
 
 fn unsupportedSymbol(comptime symbol_name: []const u8) noreturn {
     setLastError(.symbol_missing);
-    @panic("fawn drop-in missing native symbol: " ++ symbol_name);
+    @panic("doe drop-in missing native symbol: " ++ symbol_name);
 }
 
 fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) FnType {

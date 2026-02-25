@@ -114,7 +114,7 @@ pub const WebGPUBackend = struct {
             .requested_backend_type = preferredBackendType(profile),
         };
         errdefer self.deinit();
-        self.timestamp_debug = env_flags.enabled(allocator, "FAWN_WGPU_TIMESTAMP_DEBUG");
+        self.timestamp_debug = env_flags.enabled(allocator, "DOE_WGPU_TIMESTAMP_DEBUG");
         self.dyn_lib = try loader.openLibrary();
         self.procs = try loader.loadProcs(self.dyn_lib.?);
         self.capability_procs = p1_capability_procs_mod.loadCapabilityProcs(self.dyn_lib);

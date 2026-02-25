@@ -228,7 +228,7 @@ pub fn printTraceLine(
 ) !void {
     try writef(
         stdout,
-        "{{\"traceVersion\":1,\"module\":\"fawn-zig-runtime\",\"opCode\":\"dispatch\",\"seq\":{},\"timestampMonoNs\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",\"command\":",
+        "{{\"traceVersion\":1,\"module\":\"doe-zig-runtime\",\"opCode\":\"dispatch\",\"seq\":{},\"timestampMonoNs\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",\"command\":",
         .{
             seq,
             timestamp_ns,

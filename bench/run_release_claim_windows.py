@@ -106,7 +106,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--dropin-artifact",
-        default="zig/zig-out/lib/libfawn_webgpu.so",
+        default="zig/zig-out/lib/libdoe_webgpu.so",
         help="Shared library artifact path when --with-dropin-gate is set.",
     )
     parser.add_argument(

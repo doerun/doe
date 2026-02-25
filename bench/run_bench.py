@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workloads", default="fawn/bench/workloads.json")
     parser.add_argument("--workload-id", default="kernel_dispatch_100")
     parser.add_argument("--command-template", default=(
-        "fawn/zig/zig-out/bin/fawn-zig-runtime"
+        "fawn/zig/zig-out/bin/doe-zig-runtime"
         " --commands {commands}"
         " --quirks {quirks}"
         " --vendor {vendor}"

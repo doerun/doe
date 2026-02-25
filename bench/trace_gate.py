@@ -18,7 +18,7 @@ from typing import Any
 
 REPLAY_SCRIPT = Path(__file__).resolve().parents[1] / "trace" / "replay.py"
 COMPARE_SCRIPT = Path(__file__).resolve().parents[1] / "trace" / "compare_dispatch_traces.py"
-FAWN_MODULE_PREFIX = "fawn-"
+DOE_MODULE_PREFIX = "doe-"
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         help=(
             "Semantic parity check mode for left/right trace pairs. "
-            "off: skip parity checks, auto: compare only when both sides are fawn traces, "
+            "off: skip parity checks, auto: compare only when both sides are doe runtime traces, "
             "required: fail when no semantic-eligible pairs are found."
         ),
     )
@@ -131,8 +131,8 @@ def semantic_pair_eligible(left_sample: dict[str, Any], right_sample: dict[str, 
     right_module = sample_module_name(right_sample)
     if not left_module or not right_module:
         return False, "missing trace meta module"
-    if not left_module.startswith(FAWN_MODULE_PREFIX) or not right_module.startswith(FAWN_MODULE_PREFIX):
-        return False, f"non-fawn modules left={left_module or 'unknown'} right={right_module or 'unknown'}"
+    if not left_module.startswith(DOE_MODULE_PREFIX) or not right_module.startswith(DOE_MODULE_PREFIX):
+        return False, f"non-doe-runtime modules left={left_module or 'unknown'} right={right_module or 'unknown'}"
 
     left_trace = sample_trace_path(left_sample)
     right_trace = sample_trace_path(right_sample)

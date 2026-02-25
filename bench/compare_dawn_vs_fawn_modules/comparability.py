@@ -374,7 +374,7 @@ def validate_upload_apples_to_apples(
 
 def find_fawn_runtime_index(command: list[str]) -> int | None:
     for idx, token in enumerate(command):
-        if Path(token).name == "fawn-zig-runtime":
+        if Path(token).name == "doe-zig-runtime":
             return idx
     return None
 
@@ -400,7 +400,7 @@ def assert_runtime_not_stale(
     ]
     if stale_sources:
         raise ValueError(
-            "strict upload comparability requires a rebuilt fawn-zig-runtime binary; "
+            "strict upload comparability requires a rebuilt doe-zig-runtime binary; "
             "binary appears older than runtime sources: "
             + ", ".join(stale_sources)
         )
@@ -475,7 +475,7 @@ def verify_fawn_upload_runtime_contract(
     if missing_flags:
         raise ValueError(
             "strict upload comparability requires runtime upload knobs to be supported by the "
-            f"executed fawn-zig-runtime binary; missing help flags: {', '.join(missing_flags)}"
+            f"executed doe-zig-runtime binary; missing help flags: {', '.join(missing_flags)}"
         )
 
     capability_checks = [

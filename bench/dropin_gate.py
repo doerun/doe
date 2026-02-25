@@ -18,7 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--artifact",
-        default="zig/zig-out/lib/libfawn_webgpu.so",
+        default="zig/zig-out/lib/libdoe_webgpu.so",
         help="Path to candidate drop-in shared library artifact.",
     )
     parser.add_argument(

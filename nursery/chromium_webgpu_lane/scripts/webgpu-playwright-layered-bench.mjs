@@ -12,7 +12,7 @@ const DEFAULT_CHROME = resolve(
   ROOT,
   "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome",
 );
-const DEFAULT_FAWN_LIB = resolve(ROOT, "zig/zig-out/lib/libfawn_webgpu.so");
+const DEFAULT_DOE_LIB = resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.so");
 const DEFAULT_MANIFEST = resolve(
   ROOT,
   "nursery/chromium_webgpu_lane/bench/generated/browser_projection_manifest.json",
@@ -53,9 +53,9 @@ function usage() {
   node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-layered-bench.mjs [options]
 
 Options:
-  --mode dawn|fawn|both     Runtime mode to run (default: both)
+  --mode dawn|doe|both      Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
-  --fawn-lib PATH           libfawn_webgpu.so path (for fawn mode)
+  --doe-lib PATH            libdoe_webgpu.so path (for doe mode)
   --manifest PATH           Projection manifest JSON path
   --workflows PATH          Browser workflow manifest JSON path
   --out PATH                Output report JSON path (default: nursery/chromium_webgpu_lane/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
@@ -164,7 +164,7 @@ function parseArgs(argv) {
   const args = {
     mode: "both",
     chromePath: DEFAULT_CHROME,
-    fawnLibPath: DEFAULT_FAWN_LIB,
+    doeLibPath: DEFAULT_DOE_LIB,
     manifestPath: DEFAULT_MANIFEST,
     workflowsPath: DEFAULT_WORKFLOWS,
     outPath: defaultOutPath(),
@@ -193,8 +193,8 @@ function parseArgs(argv) {
     } else if (token === "--chrome") {
       args.chromePath = readOptionValue(argv, i, "--chrome");
       i += 1;
-    } else if (token === "--fawn-lib") {
-      args.fawnLibPath = readOptionValue(argv, i, "--fawn-lib");
+    } else if (token === "--doe-lib") {
+      args.doeLibPath = readOptionValue(argv, i, "--doe-lib");
       i += 1;
     } else if (token === "--manifest") {
       args.manifestPath = readOptionValue(argv, i, "--manifest");
@@ -252,8 +252,8 @@ function parseArgs(argv) {
     }
   }
 
-  if (!["dawn", "fawn", "both"].includes(args.mode)) {
-    throw new Error("--mode must be one of dawn, fawn, both");
+  if (!["dawn", "doe", "both"].includes(args.mode)) {
+    throw new Error("--mode must be one of dawn, doe, both");
   }
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
   return args;
@@ -430,7 +430,7 @@ async function loadChromiumDriver() {
 
 function startLocalServer() {
   const html =
-    "<!doctype html><meta charset='utf-8'><title>fawn-webgpu-layered-bench</title>";
+    "<!doctype html><meta charset='utf-8'><title>doe-webgpu-layered-bench</title>";
   const server = http.createServer((_, res) => {
     res.statusCode = 200;
     res.setHeader("content-type", "text/html; charset=utf-8");
@@ -456,7 +456,7 @@ function startLocalServer() {
 
 function makeDataPageUrl() {
   const html =
-    "<!doctype html><meta charset='utf-8'><title>fawn-webgpu-layered-bench</title>";
+    "<!doctype html><meta charset='utf-8'><title>doe-webgpu-layered-bench</title>";
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
 }
 
@@ -506,13 +506,13 @@ function baseLaunchArgs(port) {
   return args;
 }
 
-function runtimeArgs(mode, fawnLibPath) {
+function runtimeArgs(mode, doeLibPath) {
   if (mode === "dawn") {
     return ["--use-webgpu-runtime=dawn"];
   }
   return [
-    "--use-webgpu-runtime=fawn",
-    `--fawn-webgpu-library-path=${fawnLibPath}`,
+    "--use-webgpu-runtime=doe",
+    `--doe-webgpu-library-path=${doeLibPath}`,
   ];
 }
 
@@ -1247,7 +1247,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows) {
   const launchArgs = [
     ...baseLaunchArgs(pageTarget.port),
     ...args.chromeArgs,
-    ...runtimeArgs(mode, args.fawnLibPath),
+    ...runtimeArgs(mode, args.doeLibPath),
   ];
   const startMs = Date.now();
   const rowResultsById = new Map();
@@ -1438,7 +1438,7 @@ async function main() {
   const l1Rows = projectionManifest.rows;
   const l2Rows = workflowManifest.rows;
 
-  const modes = args.mode === "both" ? ["dawn", "fawn"] : [args.mode];
+  const modes = args.mode === "both" ? ["dawn", "doe"] : [args.mode];
   const modeRunDetails = [];
 
   const pageTarget = await resolvePageTarget(args.allowDataUrlFallback);
@@ -1577,7 +1577,7 @@ async function main() {
       arch: process.arch,
     },
     chromePath: args.chromePath,
-    fawnLibPath: args.fawnLibPath,
+    doeLibPath: args.doeLibPath,
     mode: args.mode,
     modeOrder: modes,
     headless: args.headless,

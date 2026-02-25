@@ -8,7 +8,7 @@
 
 Start Chromium-side integration with minimal, reversible edits:
 
-1. add selector control (`dawn|fawn|auto`),
+1. add selector control (`dawn|doe|auto`),
 2. keep Dawn default,
 3. add explicit fallback reason plumbing,
 4. keep all logic scoped to WebGPU seam.
@@ -33,11 +33,11 @@ Start Chromium-side integration with minimal, reversible edits:
 Implemented in local Chromium checkout:
 
 1. Added WebGPU runtime selector switches:
-   - `--use-webgpu-runtime=auto|dawn|fawn`
-   - `--disable-webgpu-fawn`
+   - `--use-webgpu-runtime=auto|dawn|doe`
+   - `--disable-webgpu-doe`
 2. Added GPU preference fields:
-   - `webgpu_runtime_selection` (`kAuto|kDawn|kFawn`)
-   - `disable_webgpu_fawn` (`bool`)
+   - `webgpu_runtime_selection` (`kAuto|kDawn|kDoe`)
+   - `disable_webgpu_doe` (`bool`)
 3. Wired fields through GPU preference parsing and mojo serialization:
    - `service_utils.cc`
    - `gpu_preferences.mojom`
@@ -67,7 +67,7 @@ Implemented in local Chromium checkout:
    - input: preferences + adapter/profile + runtime availability
    - output: selected runtime + fallback reason
 2. Keep existing Dawn proc path untouched as baseline branch.
-3. Add Fawn branch behind selector contract with immediate Dawn fallback on any precondition failure.
+3. Add Doe branch behind selector contract with immediate Dawn fallback on any precondition failure.
 
 ### Status (2026-02-24)
 
@@ -76,7 +76,7 @@ Implemented in local Chromium checkout:
 1. Added a runtime-selection bridge in:
    - `src/gpu/ipc/service/webgpu_command_buffer_stub.cc`
 2. Added typed selection/fallback decision model:
-   - selected runtime: `dawn|fawn`
+   - selected runtime: `dawn|doe`
    - fallback reasons:
      - `none`
      - `global_disable_active`
@@ -87,7 +87,7 @@ Implemented in local Chromium checkout:
 3. Added selection telemetry emission:
    - trace event `WebGPU.RuntimeSelection` with mode, selected runtime, and fallback reason.
 4. Enforced forced-runtime fail-fast behavior:
-   - `--use-webgpu-runtime=fawn` now returns fatal failure if Fawn is unavailable or globally disabled.
+   - `--use-webgpu-runtime=doe` now returns fatal failure if Doe is unavailable or globally disabled.
 5. Preserved Dawn-default behavior:
    - `auto` and `dawn` continue to run on Dawn path.
 6. Verified compile after bridge edits:
@@ -96,13 +96,13 @@ Implemented in local Chromium checkout:
    - `src/gpu/ipc/service/webgpu_runtime_selection.{h,cc}`
 8. Added selector policy unit tests:
    - `src/gpu/ipc/service/webgpu_runtime_selection_unittest.cc`
-   - verifies decision outcomes for `dawn|auto|fawn` and fallback precedence
+   - verifies decision outcomes for `dawn|auto|doe` and fallback precedence
 
 ## Guardrails
 
 1. No process model changes.
 2. No compositor/Skia Graphite coupling.
-3. Forced `fawn` mode must fail fast when branch/runtime preconditions are unmet; no silent Dawn substitution.
+3. Forced `doe` mode must fail fast when branch/runtime preconditions are unmet; no silent Dawn substitution.
 
 ## Edit Set 2: Blocklist and Denylist Hook
 
@@ -121,11 +121,11 @@ Implemented in local Chromium checkout:
 Implemented as a precondition inside the Set 1 runtime selector bridge:
 
 1. Selector now checks `gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_WEBGPU]`.
-2. `kGpuFeatureStatusSoftware` is treated as denylisted profile for Fawn selection preconditions.
+2. `kGpuFeatureStatusSoftware` is treated as denylisted profile for Doe selection preconditions.
 3. Typed fallback reason emitted as:
    - `profile_denylisted`
 4. Selector now probes configured/default runtime artifact and symbol availability:
-   - `--fawn-webgpu-library-path`
+   - `--doe-webgpu-library-path`
    - `runtime_artifact_missing`
    - `runtime_artifact_load_failed`
    - `symbol_surface_incomplete`
@@ -153,14 +153,14 @@ Deferred for full Set 2:
 2. Symbol mismatch -> `symbol_surface_incomplete`
 3. Denylist hit -> `profile_denylisted`
 4. Global disable -> `global_disable_active`
-5. Forced `fawn` init failure -> hard error (no silent Dawn fallback)
+5. Forced `doe` init failure -> hard error (no silent Dawn fallback)
 
 ### Status (2026-02-24, partial)
 
 1. Decision-policy unit tests now cover denylist/global-disable/unavailable/available cases.
 2. Selector-precedence test added:
    - denylist reason wins over kill-switch and artifact-unavailable reasons.
-3. End-to-end browser tests for forced-fawn init failure are still pending.
+3. End-to-end browser tests for forced-doe init failure are still pending.
 
 ## Edit Set 4: Decoder Runtime Execution Wiring
 
@@ -178,20 +178,20 @@ Deferred for full Set 2:
 
 1. Remove implicit Dawn-only assumptions in decoder startup path.
 2. Thread an explicit runtime enum into decoder creation.
-3. Enable concrete Fawn runtime execution path while preserving Dawn fallback behavior.
+3. Enable concrete Doe runtime execution path while preserving Dawn fallback behavior.
 4. Keep proc dispatch thread-scoped and deterministic.
 
 ### Status (2026-02-24, landed with follow-ups)
 
-1. Decoder creation now receives explicit runtime enum (`kDawn|kFawn`).
-2. `WebGPUDecoderImpl` has Fawn branch that:
-   - loads `libfawn_webgpu.so`,
+1. Decoder creation now receives explicit runtime enum (`kDawn|kDoe`).
+2. `WebGPUDecoderImpl` has Doe branch that:
+   - loads `libdoe_webgpu.so`,
    - populates proc table from `wgpuGetProcAddress`,
    - creates `WGPUInstance`,
    - injects instance into wire server,
    - scopes thread procs during command execution/polling,
    - releases instance/library during teardown.
-3. Fawn availability/surface probing moved to generated proc-table validation (`webgpu_proc_table_entries.inc`).
+3. Doe availability/surface probing moved to generated proc-table validation (`webgpu_proc_table_entries.inc`).
 4. GPU process proc bootstrap switched to thread-dispatch mode with Dawn-native default thread procs.
 5. Crash fix added in `WebGPUCommandBufferStub` destructor:
    - guard `decoder_context()` before `Destroy(false)`.
@@ -200,7 +200,7 @@ Deferred for full Set 2:
    - `autoninja -C out/fawn_debug chrome`
    - `out/fawn_debug/gpu_unittests --gtest_filter=WebGPURuntimeSelectionTest.*:GpuPreferencesTest.EncodeDecode`
 7. Remaining:
-   - direct unit/integration tests for decoder Fawn init/teardown failure branches,
+   - direct unit/integration tests for decoder Doe init/teardown failure branches,
    - validation under non-denylisted GPU profile.
 
 ## Bring-Up Sequence for Edits

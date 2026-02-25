@@ -62,7 +62,7 @@ Start with Track A seam-only work:
 1. Keep Chromium behavior identical with default Dawn path.
 2. Add explicit runtime selector policy:
    - `dawn`,
-   - `fawn`,
+   - `doe`,
    - `auto`.
 3. Add kill switch and adapter denylist controls.
 4. Add structured fallback reason telemetry.
@@ -73,7 +73,7 @@ Do not begin with compositor/layout/media refactors.
 
 Use existing drop-in artifact lane as initial test substrate:
 
-1. `zig/zig-out/lib/libfawn_webgpu.so`
+1. `zig/zig-out/lib/libdoe_webgpu.so`
 2. symbol and behavior gate tools in `bench/`.
 
 Initial criterion is deterministic compatibility and observability, not performance.
@@ -94,12 +94,12 @@ Initial criterion is deterministic compatibility and observability, not performa
 ## Current Snapshot (2026-02-24)
 
 1. `I0` and selector/fallback plumbing milestones are complete locally.
-2. Decoder/proc-dispatch seam has a concrete partial Fawn execution path:
+2. Decoder/proc-dispatch seam has a concrete partial Doe execution path:
    - runtime enum threaded into decoder creation,
-   - Fawn proc table initialized from `wgpuGetProcAddress`,
-   - Fawn `WGPUInstance` created/injected into wire server,
+   - Doe proc table initialized from `wgpuGetProcAddress`,
+   - Doe `WGPUInstance` created/injected into wire server,
    - thread-proc scoping active in execution/polling path.
-3. Forced-Fawn in this host's headless profile currently rejects with `profile_denylisted`; treat as environment gating signal.
+3. Forced-Doe in this host's headless profile currently rejects with `profile_denylisted`; treat as environment gating signal.
 4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
 
@@ -127,7 +127,7 @@ npm install --prefix nursery/chromium_webgpu_lane playwright-core
 node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs \
   --mode both \
   --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
-  --fawn-lib /home/x/deco/fawn/zig/zig-out/lib/libfawn_webgpu.so \
+  --doe-lib /home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so \
   --out /home/x/deco/fawn/nursery/chromium_webgpu_lane/artifacts/dawn-vs-fawn.tracka.playwright-smoke.diagnostic.json \
   --chrome-arg=--ozone-platform=x11
 ```
@@ -175,7 +175,7 @@ Run from repo root:
 python3 nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py \
   --mode both \
   --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
-  --fawn-lib /home/x/deco/fawn/zig/zig-out/lib/libfawn_webgpu.so
+  --doe-lib /home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so
 ```
 
 Environment note:
@@ -221,7 +221,7 @@ Rollback triggers:
 2. No unsupported-capability silent fallback.
 3. No claim language from non-comparable runs.
 4. No promotion from lane without schema/migration/process/status updates.
-5. Forced `--use-webgpu-runtime=fawn` must hard-fail if runtime cannot initialize; no silent Dawn substitution.
+5. Forced `--use-webgpu-runtime=doe` must hard-fail if runtime cannot initialize; no silent Dawn substitution.
 
 ## Troubleshooting Notes (Observed)
 
@@ -256,6 +256,6 @@ If Chromium tools are not currently installed on the machine path, start with:
 
 ## Next Continuation Targets
 
-1. Validate forced-Fawn adapter acquisition on non-denylisted GPU host/session.
-2. Add decoder-branch tests for Fawn init/load/proc-surface/instance failure and teardown paths.
+1. Validate forced-Doe adapter acquisition on non-denylisted GPU host/session.
+2. Add decoder-branch tests for Doe init/load/proc-surface/instance failure and teardown paths.
 3. Continue adapter-level denylist detail propagation and Dawn-native dependency audit in `WebGPUDecoderImpl`.

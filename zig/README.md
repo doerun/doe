@@ -76,7 +76,7 @@ Quirk records now use schemaVersion `2` with strict action payloads:
 - `no_op` does not accept params
 
 Drop-in shared library artifact:
-- `zig build dropin` installs `zig/zig-out/lib/libfawn_webgpu.so`
+- `zig build dropin` installs `zig/zig-out/lib/libdoe_webgpu.so`
 - when Dawn sidecars are present at `bench/vendor/dawn/out/Release/libwebgpu_dawn.so`,
   `zig build dropin` co-installs:
   - `zig/zig-out/lib/libwebgpu_dawn.so`
@@ -85,13 +85,13 @@ Drop-in shared library artifact:
 - exported core WebGPU symbols are forwarded through deterministic resolver logic
 - `wgpuGetProcAddress` returns local exported wrappers first, then resolves from the native backend
 - resolver error state can be queried with:
-  - `fawnWgpuDropinLastErrorCode()`
-  - `fawnWgpuDropinClearLastError()`
+  - `doeWgpuDropinLastErrorCode()`
+  - `doeWgpuDropinClearLastError()`
 
 Timestamp debug mode (for zero/empty GPU timestamp investigation):
 
 ```bash
-FAWN_WGPU_TIMESTAMP_DEBUG=1 zig build run -- --commands path/to/commands.json --backend native --execute --trace --trace-meta run.meta.json
+DOE_WGPU_TIMESTAMP_DEBUG=1 zig build run -- --commands path/to/commands.json --backend native --execute --trace --trace-meta run.meta.json
 ```
 
 This emits timestamp-path diagnostics to stderr, including adapter/device feature state, query artifact creation, write mode, map status, and begin/end readback values.

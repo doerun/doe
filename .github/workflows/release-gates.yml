@@ -16,14 +16,14 @@ jobs:
       - amd-vulkan
     env:
       CONFIG_PATH: bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json
-      DROPIN_ARTIFACT: zig/zig-out/lib/libfawn_webgpu.so
+      DROPIN_ARTIFACT: zig/zig-out/lib/libdoe_webgpu.so
     steps:
       - uses: actions/checkout@v4
       - name: Build Fawn drop-in artifact
         run: |
           cd zig
           zig build dropin -Doptimize=ReleaseFast
-          test -f zig-out/lib/libfawn_webgpu.so
+          test -f zig-out/lib/libdoe_webgpu.so
       - name: Run canonical release pipeline
         run: |
           python3 bench/run_release_pipeline.py --config "$CONFIG_PATH" --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact "$DROPIN_ARTIFACT" --with-claim-gate

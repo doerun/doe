@@ -367,7 +367,12 @@
       "leftTimingDivisor": 20000,
       "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "targeted-dawn-parity",
+        "notes": "Promotable once Dawn-side draw-indexed variant and command-shape normalization are contract-equivalent."
+      }
     },
     {
       "id": "texture_sampling_raster_proxy",
@@ -594,7 +599,16 @@
       "leftTimingDivisor": 575000,
       "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+<<<<<<< Updated upstream
       "benchmarkClass": "comparable"
+=======
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "targeted-dawn-parity",
+        "notes": "Promotable with matched Dawn macro draw volume and explicit per-draw normalization parity."
+      }
+>>>>>>> Stashed changes
     },
     {
       "id": "draw_indexed_render_macro_200k",
@@ -617,7 +631,12 @@
       "leftTimingDivisor": 200000,
       "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "targeted-dawn-parity",
+        "notes": "Promotable when Dawn mapping gains a contract-equivalent indexed macro benchmark path."
+      }
     },
     {
       "id": "texture_sampler_write_query_destroy_macro_500",
@@ -636,7 +655,16 @@
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
       "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3",
+<<<<<<< Updated upstream
       "benchmarkClass": "comparable"
+=======
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "requires-custom-dawn-benchmark",
+        "notes": "Promotable after adding Dawn coverage for full sampler/write/query/destroy lifecycle sequencing."
+      }
+>>>>>>> Stashed changes
     },
     {
       "id": "p0_resource_lifecycle_contract",
@@ -657,7 +685,12 @@
       "timingNormalizationNote": "Directional-only: Apples-to-apples lifecycle contract: normalize per command-sequence iteration over upload resize + barrier operations.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "applesToApplesVetted": false,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "requires-custom-dawn-benchmark",
+        "notes": "Promotable after Dawn-side resource-lifecycle benchmark contract exists for resize+barrier semantics."
+      }
     },
     {
       "id": "p0_compute_indirect_timestamp_contract",
@@ -678,7 +711,12 @@
       "timingNormalizationNote": "Directional-only: Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
       "applesToApplesVetted": false,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "requires-custom-dawn-benchmark",
+        "notes": "Promotable after Dawn benchmark coverage matches indirect-dispatch + timestamp/query contract shape."
+      }
     },
     {
       "id": "p0_render_multidraw_contract",
@@ -698,7 +736,12 @@
       "timingNormalizationNote": "Directional-only: Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
       "applesToApplesVetted": false,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "targeted-dawn-parity",
+        "notes": "Promotable when Dawn-side multidraw render contract and repeat accounting are explicitly matched."
+      }
     },
     {
       "id": "p0_render_multidraw_indexed_contract",
@@ -718,7 +761,12 @@
       "timingNormalizationNote": "Directional-only: Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer",
       "applesToApplesVetted": false,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "comparabilityCandidate": {
+        "enabled": true,
+        "tier": "targeted-dawn-parity",
+        "notes": "Promotable when Dawn indexed multidraw parity path is available with matched normalization."
+      }
     },
     {
       "id": "p0_render_pixel_local_storage_barrier_contract",

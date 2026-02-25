@@ -43,7 +43,7 @@
   CI must run without `--skip-missing` and fail hard if any sample is missing or fails replay checks.
   For runtime-to-runtime oracle lanes (for example Zig vs Lean trace parity), run with `--semantic-parity-mode required` so the gate fails unless semantic parity checks execute and pass.
 - run drop-in compatibility hard gate from a built shared-library artifact:
-  `python3 fawn/bench/dropin_gate.py --artifact fawn/zig/zig-out/lib/libfawn_webgpu.so --report fawn/bench/out/dropin_report.json`
+  `python3 fawn/bench/dropin_gate.py --artifact fawn/zig/zig-out/lib/libdoe_webgpu.so --report fawn/bench/out/dropin_report.json`
   CI must fail hard if symbol completeness, black-box behavior, or drop-in benchmark execution fails, and must emit a drop-in report on every run.
 - run release claimability hard gate from comparison report artifacts:
   `python3 fawn/bench/claim_gate.py --report fawn/bench/out/dawn-vs-fawn.json --require-claimability-mode release --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15`
@@ -55,10 +55,10 @@
 - each timestamped run folder emits `run_manifest.json` (`runType`, `config`, `fullRun`, `claimGateRan`, `dropinGateRan`, and status metadata) for quick human+automation audit.
 - ad-hoc/manual artifact names are routed under `fawn/bench/out/scratch/<timestamp>/...` to keep canonical run folders and dashboard inputs clean.
 - canonical CI/script entrypoint for blocking gate sequence:
-  `python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --trace-semantic-parity-mode auto --with-comparability-parity-gate --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
+  `python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-fawn.json --trace-semantic-parity-mode auto --with-comparability-parity-gate --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
   runs without `--with-claim-gate` validate blocking quality gates but are not release-claim readiness evidence; use `--require-claim-gate` to enforce this contract in local automation.
 - canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
-  `python3 fawn/bench/run_release_pipeline.py --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libfawn_webgpu.so --with-claim-gate`
+  `python3 fawn/bench/run_release_pipeline.py --config fawn/bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so --with-claim-gate`
   the release config now targets the AMD Vulkan extended comparable matrix (all comparable workload contracts), not only the default 7-workload subset.
   when `--with-claim-gate` is enabled, the pipeline now emits claim rehearsal artifacts by default:
   claim gate result, tail-health table, timing-invariant audit, and contract-hash manifest
@@ -72,7 +72,7 @@
   this emits a timestamped window summary, per-window claim rehearsal artifacts (default-on), and a substantiation report with policy-backed report-count and profile-diversity checks.
 - substantiation policy can enforce target profile diversity as a hard failure:
   `releaseEvidence.enforceTargetUniqueLeftProfiles=true` makes `targetUniqueLeftProfiles` blocking (not warning-only).
-- for strict Dawn-vs-Fawn upload comparability, fail fast if the executed `fawn-zig-runtime` binary does not expose/validate upload knobs or appears older than key upload/runtime Zig sources.
+- for strict Dawn-vs-Fawn upload comparability, fail fast if the executed `doe-zig-runtime` binary does not expose/validate upload knobs or appears older than key upload/runtime Zig sources.
 - comparability decisions must be emitted as machine-checkable per-workload obligations in benchmark reports; release claim gates must validate obligation schema + blocking-pass status, not only summary strings.
 
 6. Benchmark

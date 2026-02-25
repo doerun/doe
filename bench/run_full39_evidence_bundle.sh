@@ -8,7 +8,7 @@ fi
 
 report="$1"
 windows="${2:-3}"
-dropin_artifact="zig/zig-out/lib/libfawn_webgpu.so"
+dropin_artifact="zig/zig-out/lib/libdoe_webgpu.so"
 
 echo "[1/5] validating matrix readiness report: $report"
 python3 bench/check_full39_claim_readiness.py --report "$report"

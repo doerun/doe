@@ -38,7 +38,7 @@ These files define core WebGPU stub/decoder wiring in GPU process and in-process
 3. `src/gpu/config/gpu_switches.cc`
 4. `src/gpu/ipc/common/gpu_preferences_mojom_traits.h`
 
-These are candidate surfaces for explicit `dawn|fawn|auto` selector controls and telemetry fields.
+These are candidate surfaces for explicit `dawn|doe|auto` selector controls and telemetry fields.
 
 ## Blocklist and Adapter Policy
 
@@ -65,7 +65,7 @@ Track A should avoid coupling to Graphite behavior changes unless explicitly req
 
 ## Initial Integration Sequence (Code-Facing)
 
-1. Add selector enum/control surface (`dawn|fawn|auto`) in GPU preference flow.
+1. Add selector enum/control surface (`dawn|doe|auto`) in GPU preference flow.
 2. Add kill switch and denylist checks at runtime selection point.
 3. Add typed fallback reason telemetry in run/session reporting surfaces.
 4. Keep Dawn path default and fallback-ready.

@@ -23,8 +23,8 @@ Required fields for every module run artifact:
 3. `moduleId` (string)
 4. `moduleVersion` (string)
 5. `selectorVersion` (string, Track A required)
-6. `selectionMode` (`dawn|fawn|auto`, Track A required)
-7. `selectedRuntime` (`dawn|fawn`, Track A required)
+6. `selectionMode` (`dawn|doe|auto`, Track A required)
+7. `selectedRuntime` (`dawn|doe`, Track A required)
 8. `fallbackApplied` (boolean)
 9. `fallbackReasonCode` (enum string, empty when none)
 10. `profile.vendor` (string)
@@ -40,9 +40,9 @@ Required fields for every module run artifact:
 
 ### Input Contract
 
-1. `mode` (`dawn|fawn|auto`)
+1. `mode` (`dawn|doe|auto`)
 2. `globalDisable` (boolean)
-3. `forcedRuntime` (`none|dawn|fawn`)
+3. `forcedRuntime` (`none|dawn|doe`)
 4. `denylistProfileMatch` (boolean)
 5. `requiredSymbolSurfacePresent` (boolean)
 6. `requiredCapabilitiesPresent` (boolean)
