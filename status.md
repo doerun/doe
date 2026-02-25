@@ -15,7 +15,7 @@ AMD Vulkan comparison presets now include claimable comparable slices (local + r
   - trace semantic-parity eligibility now keys on Doe module identity (`module` starts with `doe-`)
 
 Benchmark contract coverage snapshot (2026-02-25 update):
-- `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `29` strict apples-to-apples comparable + `11` directional contracts.
+- `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `31` strict apples-to-apples comparable + `9` directional contracts.
 - missing Dawn perf suites were added to AMD extended contracts: `MatrixVectorMultiplyPerf`, `UniformBufferUpdatePerf`, and `VulkanZeroInitializeWorkgroupMemoryExtensionTest`.
 - strict comparable lanes now fail fast for directional/proxy-labeled contracts and upload mixed-scope ignore-first timing derivations.
 - Dawn adapter filter resolution is now explicit-only (no `filters.default` fallback); missing workload mappings fail fast unless that workload is explicitly `@autodiscover`.
@@ -672,8 +672,10 @@ Execution gap list:
   `p1_resource_table_immediates_macro_500`,
   `p0_render_pixel_local_storage_barrier_macro_500`,
   `p0_render_multidraw_contract`,
-  `p0_render_multidraw_indexed_contract`.
-- matrix split is now `29` comparable + `11` directional.
+  `p0_render_multidraw_indexed_contract`,
+  `p0_resource_lifecycle_contract`,
+  `p0_compute_indirect_timestamp_contract`.
+- matrix split is now `31` comparable + `9` directional.
 
 ## v0 Reality
 
@@ -685,7 +687,7 @@ This matches speed-first priorities while keeping deterministic foundations.
 Current comparison claim state: `strict-comparable matrix + claimability diagnostics`.
 
 Meaning:
-1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`29` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
+1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`31` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
 2. remaining directional macro workloads (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.

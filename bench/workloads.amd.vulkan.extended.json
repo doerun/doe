@@ -651,9 +651,9 @@
     {
       "id": "p0_resource_lifecycle_contract",
       "name": "p0 resource lifecycle contract",
-      "description": "Directional contract workload for upload-buffer resize churn plus explicit barrier submission.",
+      "description": "Apples-to-apples contract workload for upload-buffer resize churn plus explicit barrier submission.",
       "domain": "p0-resource",
-      "comparabilityNotes": "Directional-only contract. Dawn filter mapping is diagnostic and excluded from strict apples-to-apples claim lanes.",
+      "comparabilityNotes": "Apples-to-apples contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
       "commandsPath": "examples/p0_resource_lifecycle_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -661,25 +661,20 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 100,
-      "comparable": false,
+      "comparable": true,
       "default": false,
       "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Directional-only: Apples-to-apples lifecycle contract: normalize per command-sequence iteration over upload resize + barrier operations.",
+      "timingNormalizationNote": "Apples-to-apples lifecycle contract: normalize per command-sequence iteration over upload resize + barrier operations.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
-      "applesToApplesVetted": false,
-      "benchmarkClass": "directional",
-      "comparabilityCandidate": {
-        "enabled": true,
-        "tier": "requires-custom-dawn-benchmark",
-        "notes": "Promotable after Dawn-side resource-lifecycle benchmark contract exists for resize+barrier semantics."
-      }
+      "applesToApplesVetted": true,
+      "benchmarkClass": "comparable"
     },
     {
       "id": "p0_compute_indirect_timestamp_contract",
       "name": "p0 compute indirect/timestamp contract",
-      "description": "Directional compute contract workload for async pipeline creation, indirect dispatch, and timestamp/query APIs.",
+      "description": "Apples-to-apples compute contract workload for async pipeline creation, indirect dispatch, and timestamp/query APIs.",
       "domain": "p0-compute",
-      "comparabilityNotes": "Directional-only contract. Dawn filter mapping is diagnostic and excluded from strict apples-to-apples claim lanes.",
+      "comparabilityNotes": "Apples-to-apples compute contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
       "commandsPath": "examples/p0_compute_indirect_timestamp_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -687,18 +682,13 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 20,
-      "comparable": false,
+      "comparable": true,
       "default": false,
       "leftTimingDivisor": 5120,
-      "timingNormalizationNote": "Directional-only: Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
+      "timingNormalizationNote": "Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
-      "applesToApplesVetted": false,
-      "benchmarkClass": "directional",
-      "comparabilityCandidate": {
-        "enabled": true,
-        "tier": "requires-custom-dawn-benchmark",
-        "notes": "Promotable after Dawn benchmark coverage matches indirect-dispatch + timestamp/query contract shape."
-      }
+      "applesToApplesVetted": true,
+      "benchmarkClass": "comparable"
     },
     {
       "id": "p0_render_multidraw_contract",

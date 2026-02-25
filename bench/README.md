@@ -325,6 +325,7 @@ Extended workload domains now include:
 - async pipeline diagnostics and most P0/P1/P2 API contracts are directional-only in the AMD extended matrix unless/until a directly matched Dawn contract is available.
 - promoted macro contracts now treated as strict comparable include `render_draw_throughput_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, and `p0_render_pixel_local_storage_barrier_macro_500`.
 - hard-gated pilot promotions now treated as strict comparable include `p0_render_multidraw_contract` and `p0_render_multidraw_indexed_contract` (`applesToApplesVetted=true`).
+- hard-gated contract promotions now also include `p0_resource_lifecycle_contract` and `p0_compute_indirect_timestamp_contract` (`applesToApplesVetted=true`).
 - `surface_presentation_contract` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
 - `concurrent_execution_single_contract` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
