@@ -2,7 +2,7 @@
 """
 Release hard-gate for claimability and comparability status.
 
-Validates that a compare_dawn_vs_fawn.py report is explicitly release-claimable.
+Validates that a compare_dawn_vs_doe.py report is explicitly release-claimable.
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--report",
-        default="bench/out/dawn-vs-fawn.json",
-        help="Comparison report produced by compare_dawn_vs_fawn.py",
+        default="bench/out/dawn-vs-doe.json",
+        help="Comparison report produced by compare_dawn_vs_doe.py",
     )
     parser.add_argument(
         "--require-comparison-status",

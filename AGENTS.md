@@ -34,7 +34,7 @@ Before changing Fawn behavior, read:
 
 If a change affects runtime-visible behavior and any mandatory doc above has not been read in the current task, stop and read it before editing code.
 
-For Dawn-vs-Fawn performance work, also read:
+For Dawn-vs-Doe performance work, also read:
 
 - `fawn/performance-strategy.md`
 
@@ -81,7 +81,7 @@ For Dawn-vs-Fawn performance work, also read:
 - release only when blocking gates are green.
 
 6. Dawn apples-to-apples discipline
-- all Dawn-vs-Fawn performance claims must be apples-to-apples by default.
+- all Dawn-vs-Doe performance claims must be apples-to-apples by default.
 - strict comparability is required for claimable results; directional runs must be explicitly labeled non-comparable.
 - benchmark methodology knobs that affect comparability must be explicit in config/workload contracts, never hidden in code.
 - fail fast on comparability mismatch instead of reporting timings.
@@ -183,8 +183,8 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - comparisons require matched workloads: same dispatch geometry, same repeat count, same sampling settings
 - report deviations from baseline methodology explicitly in comparison notes
 - regression thresholds belong in config, not hardcoded in harness code
-- Dawn-vs-Fawn upload benchmarking must explicitly specify and report: first-op handling, upload buffer usage flags, submit cadence, and per-op normalization divisors.
-- Dawn-vs-Fawn strict mode must fail when apples-to-apples requirements are not met.
+- Dawn-vs-Doe upload benchmarking must explicitly specify and report: first-op handling, upload buffer usage flags, submit cadence, and per-op normalization divisors.
+- Dawn-vs-Doe strict mode must fail when apples-to-apples requirements are not met.
 - Claimable "faster" results require reliability checks in addition to strict comparability:
   minimum timed-sample floor and positive tails (`p50` + `p95`; include `p99` for release claims).
 - Upload claim runs must use timing-source semantics that stay consistent with the measured operation scope.
@@ -198,5 +198,5 @@ For each change set, verify:
 - docs under `fawn/` reflect behavior
 - gate expectations were updated or confirmed in `fawn/process.md`
 - trace/replay outputs are consistent with the changed behavior
-- if Dawn-vs-Fawn benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
+- if Dawn-vs-Doe benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
 - `fawn/status.md` records remaining placeholders, temporary methodology choices, and follow-up work

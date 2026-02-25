@@ -100,7 +100,7 @@
     - `workgroup_atomic_1024`
     - `texture_sampler_write_query_destroy_contract`
 39. Captured strict subset report with comparable + claimable classification:
-    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
+    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
 
 ## Current State
 
@@ -127,7 +127,7 @@ out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-
    - rejection reason is `profile_denylisted`,
    - prior destructor crash is no longer observed.
 3. Strict comparison subset report:
-   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
+   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
    - `comparisonStatus = comparable`
    - `claimStatus = claimable`
 
@@ -136,7 +136,7 @@ out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-
 1. Chromium `src/` in this lane is intentionally dirty with in-flight Track A edits.
 2. Do not run destructive cleanup/reset in `src/` unless explicitly requested.
 3. A long-running benchmark process may already be active:
-   - `python3 bench/compare_dawn_vs_fawn.py --config bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json ...`
+   - `python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json ...`
    - keep it running unless explicitly asked to stop it.
 
 ## Immediate Next Bring-Up Commands

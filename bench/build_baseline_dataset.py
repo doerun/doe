@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help=(
             "Glob for compare reports. May be repeated. "
-            "Default: bench/out/**/dawn-vs-fawn*.json"
+            "Default: bench/out/**/dawn-vs-doe*.json"
         ),
     )
     parser.add_argument(
@@ -286,7 +286,7 @@ def build_markdown_summary(payload: dict[str, Any]) -> str:
 
 def main() -> int:
     args = parse_args()
-    patterns = args.report_glob if args.report_glob else ["bench/out/**/dawn-vs-fawn*.json"]
+    patterns = args.report_glob if args.report_glob else ["bench/out/**/dawn-vs-doe*.json"]
     sources = collect_paths(patterns, args.report)
     if not sources:
         print("FAIL: no report files matched")

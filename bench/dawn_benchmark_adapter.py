@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dawn benchmark adapter for compare_dawn_vs_fawn.py.
+"""Dawn benchmark adapter for compare_dawn_vs_doe.py.
 
 This script maps a fawn workload id to a GoogleTest filter for `dawn_perf_tests`
 and runs the selected test while keeping a minimal JSONL trace and compact meta

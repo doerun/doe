@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Local Vulkan map for adapter-agnostic Dawn/Fawn comparability using explicit autodiscovery.",
+  "description": "Local Vulkan map for adapter-agnostic Dawn/Doe comparability using explicit autodiscovery.",
   "filters": {
     "buffer_upload_1kb": "@autodiscover",
     "buffer_upload_64kb": "@autodiscover",

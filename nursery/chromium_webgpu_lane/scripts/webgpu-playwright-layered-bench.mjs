@@ -24,7 +24,7 @@ const DEFAULT_WORKFLOWS = resolve(
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const BENCH_OUT_SCRATCH_ROOT = resolve(ROOT, "bench/out/scratch");
 const ARTIFACTS_ROOT = resolve(ROOT, "nursery/chromium_webgpu_lane/artifacts");
-const DEFAULT_OUT_FILE = "dawn-vs-fawn.tracka.browser-layered.diagnostic.json";
+const DEFAULT_OUT_FILE = "dawn-vs-doe.tracka.browser-layered.diagnostic.json";
 const HASH_ALGORITHM = "sha256";
 
 const DEFAULT_ITERATIONS = {

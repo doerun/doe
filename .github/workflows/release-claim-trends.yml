@@ -12,7 +12,7 @@ jobs:
       - linux
       - amd-vulkan
     env:
-      CONFIG_PATH: bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json
+      CONFIG_PATH: bench/compare_dawn_vs_doe.config.amd.vulkan.release.json
       SUBSTANTIATION_POLICY: config/substantiation-policy.json
       WINDOWS: "3"
     steps:
@@ -30,7 +30,7 @@ jobs:
       - name: Build tested-profile inventory + dashboard
         run: |
           python3 bench/build_test_inventory_dashboard.py \
-            --report-glob "bench/out/**/dawn-vs-fawn*.json"
+            --report-glob "bench/out/**/dawn-vs-doe*.json"
       - name: Upload release trend artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -44,10 +44,10 @@ jobs:
             bench/out/**/test-inventory*.json
             bench/out/test-dashboard*.html
             bench/out/**/test-dashboard*.html
-            bench/out/dawn-vs-fawn.amd.vulkan.release*.json
-            bench/out/**/dawn-vs-fawn.amd.vulkan.release*.json
-            bench/out/dawn-vs-fawn.amd.vulkan.release*.html
-            bench/out/**/dawn-vs-fawn.amd.vulkan.release*.html
+            bench/out/dawn-vs-doe.amd.vulkan.release*.json
+            bench/out/**/dawn-vs-doe.amd.vulkan.release*.json
+            bench/out/dawn-vs-doe.amd.vulkan.release*.html
+            bench/out/**/dawn-vs-doe.amd.vulkan.release*.html
             bench/out/runtime-comparisons.amd.vulkan.release*
             bench/out/**/runtime-comparisons.amd.vulkan.release*
             bench/out/**/run_manifest.json

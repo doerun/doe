@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local host preflight for Dawn-vs-Fawn benchmark execution."""
+"""Local host preflight for Dawn-vs-Doe benchmark execution."""
 
 from __future__ import annotations
 
@@ -147,7 +147,7 @@ def main() -> int:
     lib_wgpu_native = Path("bench/vendor/dawn/out/Release/libwgpu_native.so")
 
     for name, path in (
-        ("fawnRuntime", runtime_bin),
+        ("doeRuntime", runtime_bin),
         ("dawnPerfTests", dawn_bin),
         ("libwebgpu", lib_webgpu),
         ("libwgpuNative", lib_wgpu_native),
@@ -214,7 +214,7 @@ def main() -> int:
         "recommendations": [
             "Set LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH for native Fawn runs.",
             "If /dev/dri/renderD128 is denied, add your user to group render and re-login.",
-            "Use bench/compare_dawn_vs_fawn.config.local.vulkan.extended.comparable.json when AMD adapter constraints are unavailable.",
+            "Use bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json when AMD adapter constraints are unavailable.",
         ],
     }
 

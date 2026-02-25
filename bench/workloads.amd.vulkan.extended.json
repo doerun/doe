@@ -599,16 +599,7 @@
       "leftTimingDivisor": 575000,
       "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-<<<<<<< Updated upstream
       "benchmarkClass": "comparable"
-=======
-      "benchmarkClass": "directional",
-      "comparabilityCandidate": {
-        "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable with matched Dawn macro draw volume and explicit per-draw normalization parity."
-      }
->>>>>>> Stashed changes
     },
     {
       "id": "draw_indexed_render_macro_200k",
@@ -655,16 +646,7 @@
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
       "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3",
-<<<<<<< Updated upstream
       "benchmarkClass": "comparable"
-=======
-      "benchmarkClass": "directional",
-      "comparabilityCandidate": {
-        "enabled": true,
-        "tier": "requires-custom-dawn-benchmark",
-        "notes": "Promotable after adding Dawn coverage for full sampler/write/query/destroy lifecycle sequencing."
-      }
->>>>>>> Stashed changes
     },
     {
       "id": "p0_resource_lifecycle_contract",
@@ -721,52 +703,42 @@
     {
       "id": "p0_render_multidraw_contract",
       "name": "p0 render multidraw contract",
-      "description": "Directional render-pass workload focused on occlusion/timestamp query wiring and multidraw API path gating.",
+      "description": "Apples-to-apples render-pass workload focused on occlusion/timestamp query wiring and multidraw API path parity.",
       "domain": "p0-render",
-      "comparabilityNotes": "Directional-only contract. Dawn filter mapping is diagnostic and excluded from strict apples-to-apples claim lanes.",
+      "comparabilityNotes": "Apples-to-apples contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
       "commandsPath": "examples/p0_render_multidraw_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": false,
+      "comparable": true,
       "default": false,
       "leftTimingDivisor": 15000,
-      "timingNormalizationNote": "Directional-only: Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
+      "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-      "applesToApplesVetted": false,
-      "benchmarkClass": "directional",
-      "comparabilityCandidate": {
-        "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable when Dawn-side multidraw render contract and repeat accounting are explicitly matched."
-      }
+      "applesToApplesVetted": true,
+      "benchmarkClass": "comparable"
     },
     {
       "id": "p0_render_multidraw_indexed_contract",
       "name": "p0 render multidraw indexed contract",
-      "description": "Directional indexed render-pass workload for indexed multidraw API path gating and query wiring.",
+      "description": "Apples-to-apples indexed render-pass workload for indexed multidraw API path parity and query wiring.",
       "domain": "p0-render",
-      "comparabilityNotes": "Directional-only contract. Dawn filter mapping is diagnostic and excluded from strict apples-to-apples claim lanes.",
+      "comparabilityNotes": "Apples-to-apples indexed contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
       "commandsPath": "examples/p0_render_multidraw_indexed_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": false,
+      "comparable": true,
       "default": false,
       "leftTimingDivisor": 10000,
-      "timingNormalizationNote": "Directional-only: Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
+      "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer",
-      "applesToApplesVetted": false,
-      "benchmarkClass": "directional",
-      "comparabilityCandidate": {
-        "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable when Dawn indexed multidraw parity path is available with matched normalization."
-      }
+      "applesToApplesVetted": true,
+      "benchmarkClass": "comparable"
     },
     {
       "id": "p0_render_pixel_local_storage_barrier_contract",

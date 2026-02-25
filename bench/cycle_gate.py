@@ -23,7 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="",
-        help="Optional compare_dawn_vs_fawn report path.",
+        help="Optional compare_dawn_vs_doe report path.",
     )
     parser.add_argument(
         "--substantiation-report",

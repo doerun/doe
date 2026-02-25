@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from compare_dawn_vs_fawn_modules import comparability as comparability_mod
+from compare_dawn_vs_doe_modules import comparability as comparability_mod
 
 
 def parse_args() -> argparse.Namespace:

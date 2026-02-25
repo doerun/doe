@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared conformance checks for compare_dawn_vs_fawn report artifacts."""
+"""Shared conformance checks for compare_dawn_vs_doe report artifacts."""
 
 from __future__ import annotations
 

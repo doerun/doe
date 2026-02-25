@@ -68,7 +68,7 @@ The incumbent runtimes were built for correctness and portability first. The spe
 
 ## Where we are faster today
 
-Measured on AMD Vulkan (RADV, GFX11), Fawn vs Dawn, with strict apples-to-apples comparability enforcement. All results use operation-level timing, are replay-validated via deterministic hash-chain trace artifacts, and pass claimability checks at both local (7+ samples) and release (15+ samples) thresholds.
+Measured on AMD Vulkan (RADV, GFX11), Doe vs Dawn, with strict apples-to-apples comparability enforcement. All results use operation-level timing, are replay-validated via deterministic hash-chain trace artifacts, and pass claimability checks at both local (7+ samples) and release (15+ samples) thresholds.
 
 ### Buffer upload throughput
 
@@ -95,7 +95,7 @@ Measured on AMD Vulkan (RADV, GFX11), Fawn vs Dawn, with strict apples-to-apples
 
 ### How we measure
 
-- Delta: `((dawn_ms - fawn_ms) / dawn_ms) * 100` — positive means Fawn is faster
+- Delta: `((dawn_ms - doe_ms) / dawn_ms) * 100` — positive means Doe is faster
 - Timing: operation-level from execution trace metadata, not wall-clock
 - Comparability: strict mode with fail-fast on mismatched workload contracts
 - Claimability: positive deltas required at p50, p95, and p99 for release claims
@@ -150,9 +150,9 @@ Requires Zig 0.14+. From `fawn/zig/`:
 zig build run -- --commands path/to/commands.json --backend native --execute --trace
 ```
 
-Run Dawn-vs-Fawn comparison (requires Dawn build, see `bench/README.md`):
+Run Dawn-vs-Doe comparison (requires Dawn build, see `bench/README.md`):
 
 ```bash
-python3 bench/compare_dawn_vs_fawn.py \
-  --config bench/compare_dawn_vs_fawn.config.amd.vulkan.json
+python3 bench/compare_dawn_vs_doe.py \
+  --config bench/compare_dawn_vs_doe.config.amd.vulkan.json
 ```

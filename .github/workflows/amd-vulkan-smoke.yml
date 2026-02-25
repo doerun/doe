@@ -12,8 +12,8 @@ jobs:
       - linux
       - amd-vulkan
     env:
-      CONFIG_PATH: bench/compare_dawn_vs_fawn.config.amd.vulkan.smoke.gpu.json
-      REPORT_PATH: bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json
+      CONFIG_PATH: bench/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json
+      REPORT_PATH: bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json
       WORKSPACE_PATH: bench/out/runtime-comparisons.amd.vulkan.smoke.gpu.16mb
     steps:
       - uses: actions/checkout@v4
@@ -26,8 +26,8 @@ jobs:
           name: amd-vulkan-smoke-report
           path: |
             ${{ env.REPORT_PATH }}
-            bench/out/**/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb*.json
-            bench/out/**/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb*.html
+            bench/out/**/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb*.json
+            bench/out/**/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb*.html
             ${{ env.WORKSPACE_PATH }}
             bench/out/**/runtime-comparisons.amd.vulkan.smoke.gpu.16mb*
             bench/out/**/run_manifest.json

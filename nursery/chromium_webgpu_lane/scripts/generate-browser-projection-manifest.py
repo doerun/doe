@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate browser projection manifest from core Dawn-vs-Fawn workloads."""
+"""Generate browser projection manifest from core Dawn-vs-Doe workloads."""
 
 from __future__ import annotations
 

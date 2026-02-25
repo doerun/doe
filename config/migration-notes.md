@@ -11,7 +11,7 @@
   - `notes` (string)
 - this field marks directional workloads that are isolated as likely parity-promotion
   targets; it does not change strict comparability status by itself.
-- `bench/compare_dawn_vs_fawn.py` now supports:
+- `bench/compare_dawn_vs_doe.py` now supports:
   - CLI: `--workload-cohort all|comparability-candidates`
   - config: `run.workloadCohort`
 - cohort `comparability-candidates` is fail-fast gated to directional lanes and
@@ -20,7 +20,7 @@
   - top-level `comparabilityPolicy.workloadCohort`
   - per-workload `comparabilityCandidate` metadata.
 - added directional preset for the current 8 candidate workloads:
-  `bench/compare_dawn_vs_fawn.config.amd.vulkan.comparability-candidates.directional.json`.
+  `bench/compare_dawn_vs_doe.config.amd.vulkan.comparability-candidates.directional.json`.
 
 ### Doe backend identity cutover (phase 1-3 completed)
 
@@ -37,7 +37,7 @@
   - `doe_webgpu_library_path`
   - enum/runtime variants `kDoe`
 - Legacy backend aliases (`fawn` runtime selector/backend library flag names) were removed.
-- Product/report naming remains unchanged (`dawn-vs-fawn`) to preserve existing report families.
+- Doe-specific compare/report families now use `dawn-vs-doe` naming.
 
 ### Doe backend identity cleanup (phase 4 completed)
 
@@ -56,7 +56,7 @@
 - `config/benchmark-methodology-thresholds.schema.json` and
   `config/benchmark-methodology-thresholds.json` are now enforced inputs for
   benchmark comparability/claimability threshold selection.
-- `bench/compare_dawn_vs_fawn.py` now reads:
+- `bench/compare_dawn_vs_doe.py` now reads:
   - `timingSelection.minDispatchWindowNsWithoutEncode`
   - `timingSelection.minDispatchWindowCoveragePercentWithoutEncode`
   - `claimabilityDefaults.localMinTimedSamples`
@@ -124,10 +124,10 @@
 
 ### Dispatch-window timing selection hardening
 
-- `bench/compare_dawn_vs_fawn_modules/timing_selection.py` now applies tiny dispatch-window rejection globally (not only submit-only/no-dispatch traces) when both are true:
+- `bench/compare_dawn_vs_doe_modules/timing_selection.py` now applies tiny dispatch-window rejection globally (not only submit-only/no-dispatch traces) when both are true:
   - dispatch window `< timingSelection.minDispatchWindowNsWithoutEncode`
   - dispatch-window coverage `< timingSelection.minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs`
-- when rejected, timing selection falls back to `fawn-execution-total-ns` and records `dispatchWindowSelectionRejected` metadata.
+- when rejected, timing selection falls back to `doe-execution-total-ns` and records `dispatchWindowSelectionRejected` metadata.
 
 ### AMD extended workload contract correction for concurrent execution
 
@@ -142,21 +142,21 @@
 ### Apples-to-apples enforcement hardening
 
 - `bench/workloads.amd.vulkan.extended.json` now reclassifies directional/proxy mappings as non-comparable (`comparable=false`, `benchmarkClass=directional`) for strict claim lanes.
-- `bench/compare_dawn_vs_fawn.py` now rejects workload contract entries that set `comparable=true` while:
+- `bench/compare_dawn_vs_doe.py` now rejects workload contract entries that set `comparable=true` while:
   - description is directional (`description` starts with `Directional`)
   - comparability notes explicitly declare closest-proxy mapping (`closest draw-call throughput proxy`)
 - strict comparable runs now fail fast when those contract invariants are violated.
 
 ### Upload ignore-first scope enforcement
 
-- `bench/compare_dawn_vs_fawn_modules/comparability.py` and `bench/compare_dawn_vs_fawn_modules/claimability.py` now enforce ignore-first timing scope consistency:
-  - `uploadIgnoreFirstAdjustedTimingSource` must resolve to `fawn-execution-row-total-ns`
+- `bench/compare_dawn_vs_doe_modules/comparability.py` and `bench/compare_dawn_vs_doe_modules/claimability.py` now enforce ignore-first timing scope consistency:
+  - `uploadIgnoreFirstAdjustedTimingSource` must resolve to `doe-execution-row-total-ns`
   - base and adjusted ignore-first canonical timing sources must match
 - mixed-scope derived upload timings now fail strict comparability and claimability checks.
 
 ### Machine-checkable comparability obligations
 
-- `bench/compare_dawn_vs_fawn_modules/comparability.py` now emits machine-checkable obligation artifacts per workload in report field `comparability`:
+- `bench/compare_dawn_vs_doe_modules/comparability.py` now emits machine-checkable obligation artifacts per workload in report field `comparability`:
   - `obligationSchemaVersion`
   - `obligations[]` entries (`id`, `blocking`, `applicable`, `passes`, `details`)
   - `blockingFailedObligations` / `advisoryFailedObligations`
@@ -183,7 +183,7 @@
 
 ### Report anti-staleness metadata
 
-- `bench/compare_dawn_vs_fawn.py` now emits workload contract metadata in reports:
+- `bench/compare_dawn_vs_doe.py` now emits workload contract metadata in reports:
   - `workloadContract.path`
   - `workloadContract.sha256`
 - `bench/check_full39_claim_readiness.py` now verifies:
@@ -215,7 +215,7 @@
 
 ### Track B claim-row hash-link and rehearsal artifact enforcement
 
-- `bench/compare_dawn_vs_fawn.py` claim-row linkage fields are now validated by
+- `bench/compare_dawn_vs_doe.py` claim-row linkage fields are now validated by
   gate logic, not report-emission only:
   - per-workload `claimRowHash`
   - report-level `claimRowHashChain`

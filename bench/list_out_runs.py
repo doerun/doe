@@ -68,8 +68,8 @@ def read_manifest(path: Path) -> dict[str, Any]:
 
 def summarize_files(path: Path) -> str:
     names = sorted(item.name for item in path.iterdir())
-    compare_reports = [name for name in names if name.startswith("dawn-vs-fawn") and name.endswith(".json")]
-    compare_html = [name for name in names if name.startswith("dawn-vs-fawn") and name.endswith(".html")]
+    compare_reports = [name for name in names if name.startswith("dawn-vs-doe") and name.endswith(".json")]
+    compare_html = [name for name in names if name.startswith("dawn-vs-doe") and name.endswith(".html")]
     release_windows = [name for name in names if name.startswith("release-claim-windows") and name.endswith(".json")]
     dropin_reports = [name for name in names if name.startswith("dropin_report") and name.endswith(".json")]
 

@@ -38,7 +38,7 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help=(
             "Glob for compare reports. "
-            "May be repeated. Default: bench/out/**/dawn-vs-fawn*.json"
+            "May be repeated. Default: bench/out/**/dawn-vs-doe*.json"
         ),
     )
     parser.add_argument(
@@ -384,7 +384,7 @@ def main() -> int:
         print(f"FAIL: --max-recent-reports must be >= 0 (received {args.max_recent_reports})")
         return 1
 
-    report_patterns = args.report_glob if args.report_glob else ["bench/out/**/dawn-vs-fawn*.json"]
+    report_patterns = args.report_glob if args.report_glob else ["bench/out/**/dawn-vs-doe*.json"]
     sources = collect_paths(report_patterns, args.report)
     if not sources:
         print("FAIL: no report files matched")

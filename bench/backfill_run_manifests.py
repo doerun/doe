@@ -53,9 +53,9 @@ def infer_run_type(folder: Path) -> tuple[str, list[str]]:
     files = [path.name for path in folder.glob("*") if path.is_file()]
     dirs = [path.name for path in folder.glob("*") if path.is_dir()]
 
-    if any(name.startswith("dawn-vs-fawn") and name.endswith(".json") for name in files):
-        signals.append("dawn-vs-fawn*.json")
-        return "compare_dawn_vs_fawn", signals
+    if any(name.startswith("dawn-vs-doe") and name.endswith(".json") for name in files):
+        signals.append("dawn-vs-doe*.json")
+        return "compare_dawn_vs_doe", signals
     if any(name.startswith("release-claim-windows") and name.endswith(".json") for name in files):
         signals.append("release-claim-windows*.json")
         return "release_claim_windows", signals

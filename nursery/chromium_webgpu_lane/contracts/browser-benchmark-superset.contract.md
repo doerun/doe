@@ -14,7 +14,7 @@ Define a low-maintenance browser benchmark superset that:
 ## Layer Model
 
 1. `L0 engine`
-   - canonical Dawn-vs-Fawn runtime benchmark layer (`full39` strict comparable).
+   - canonical Dawn-vs-Doe runtime benchmark layer (`full39` strict comparable).
 2. `L1 browser-api`
    - browser-executed WebGPU API scenarios projected from `L0` workload contracts.
 3. `L2 browser-workflow`

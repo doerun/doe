@@ -16,8 +16,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json",
-        help="compare_dawn_vs_fawn.py config path for this pipeline run.",
+        default="bench/compare_dawn_vs_doe.config.amd.vulkan.release.json",
+        help="compare_dawn_vs_doe.py config path for this pipeline run.",
     )
     parser.add_argument(
         "--report",
@@ -125,7 +125,7 @@ def parse_args() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=True,
         help=(
-            "Generate Dawn-vs-Fawn visualization HTML from the compare report. "
+            "Generate Dawn-vs-Doe visualization HTML from the compare report. "
             "Enabled by default."
         ),
     )
@@ -138,7 +138,7 @@ def parse_args() -> argparse.Namespace:
         "--compare-analysis-out",
         default="",
         help=(
-            "Optional distribution-analysis JSON path for visualize_dawn_vs_fawn.py "
+            "Optional distribution-analysis JSON path for visualize_dawn_vs_doe.py "
             "(default: disabled)."
         ),
     )
@@ -230,7 +230,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-compare",
         action="store_true",
-        help="Skip compare_dawn_vs_fawn.py execution.",
+        help="Skip compare_dawn_vs_doe.py execution.",
     )
     parser.add_argument(
         "--skip-gates",
@@ -441,8 +441,8 @@ def main() -> int:
     bench_dir = Path(__file__).resolve().parent
     python_exe = sys.executable
     preflight = bench_dir / "preflight_bench_host.py"
-    compare = bench_dir / "compare_dawn_vs_fawn.py"
-    visualize = bench_dir / "visualize_dawn_vs_fawn.py"
+    compare = bench_dir / "compare_dawn_vs_doe.py"
+    visualize = bench_dir / "visualize_dawn_vs_doe.py"
     smoke_verify = bench_dir / "verify_smoke_gpu_usage.py"
     gates = bench_dir / "run_blocking_gates.py"
     claim_rehearsal = bench_dir / "build_claim_rehearsal_artifacts.py"

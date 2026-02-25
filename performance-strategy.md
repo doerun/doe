@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how to pursue and communicate Dawn-vs-Fawn performance work without creating comparability debt.
+This document defines how to pursue and communicate Dawn-vs-Doe performance work without creating comparability debt.
 
 Use this for:
 
@@ -49,7 +49,7 @@ Recommended distribution-comparison stack for claim support:
 
 Use two labels only:
 
-- `claimable`: can be used for "Fawn is faster" statements.
+- `claimable`: can be used for "Doe is faster" statements.
 - `diagnostic`: useful for engineering direction, not for claims.
 
 `claimable` faster requires all of the following:
@@ -60,7 +60,7 @@ Use two labels only:
 - local: `delta p50 > 0` and `delta p95 > 0`
 - release/CI: `delta p50 > 0`, `delta p95 > 0`, `delta p99 > 0`
 4. timing-scope consistency:
-- do not treat mixed-source derived timings as claimable (example: `fawn-execution-dispatch-window-ns+ignore-first-ops` where base and adjustment measure different scopes)
+- do not treat mixed-source derived timings as claimable (example: `doe-execution-dispatch-window-ns+ignore-first-ops` where base and adjustment measure different scopes)
 - for upload claims, use a single operation-scope timing method consistently and document it in workload/report artifacts
 5. no execution errors and no filter/adapter validity failures.
 
@@ -68,7 +68,7 @@ If any condition fails, classify the run as `diagnostic`.
 
 Harness support:
 
-- `compare_dawn_vs_fawn.py --claimability local|release` enforces this contract and emits `claimStatus`.
+- `compare_dawn_vs_doe.py --claimability local|release` enforces this contract and emits `claimStatus`.
 
 ## Delta Sign Convention
 
@@ -79,10 +79,10 @@ Performance delta percent is reported from left-runtime perspective with right b
 - negative: left runtime slower
 - zero: parity
 
-For default Dawn-vs-Fawn runs (`left=fawn`, `right=dawn`):
+For default Dawn-vs-Doe runs (`left=doe`, `right=dawn`):
 
-- positive: Fawn faster than Dawn
-- negative: Fawn slower than Dawn
+- positive: Doe faster than Dawn
+- negative: Doe slower than Dawn
 
 ## Near-Term Optimization Priorities
 

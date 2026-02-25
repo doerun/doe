@@ -59,9 +59,9 @@ python3 nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py \
 
 Default outputs are lane-local diagnostic artifacts under:
 
-- `nursery/chromium_webgpu_lane/artifacts/<timestamp>/dawn-vs-fawn.tracka.browser-layered.superset.diagnostic.json`
-- `nursery/chromium_webgpu_lane/artifacts/<timestamp>/dawn-vs-fawn.tracka.browser-layered.superset.check.json`
-- `nursery/chromium_webgpu_lane/artifacts/<timestamp>/dawn-vs-fawn.tracka.browser-layered.superset.summary.json`
+- `nursery/chromium_webgpu_lane/artifacts/<timestamp>/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json`
+- `nursery/chromium_webgpu_lane/artifacts/<timestamp>/dawn-vs-doe.tracka.browser-layered.superset.check.json`
+- `nursery/chromium_webgpu_lane/artifacts/<timestamp>/dawn-vs-doe.tracka.browser-layered.superset.summary.json`
 
 If you intentionally need `bench/out`, pass `--allow-bench-out` explicitly.
 Diagnostic outputs under `bench/out` are restricted to `bench/out/scratch`.

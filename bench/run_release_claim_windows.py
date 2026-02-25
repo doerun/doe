@@ -18,8 +18,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json",
-        help="compare_dawn_vs_fawn release config path.",
+        default="bench/compare_dawn_vs_doe.config.amd.vulkan.release.json",
+        help="compare_dawn_vs_doe release config path.",
     )
     parser.add_argument(
         "--windows",

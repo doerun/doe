@@ -28,5 +28,5 @@
 ## Scope Preserved
 
 1. Repository/product naming remains `fawn`.
-2. Performance report family naming remains `dawn-vs-fawn`.
+2. Performance report family naming now uses `dawn-vs-doe`.
 3. Historical artifacts were not rewritten.

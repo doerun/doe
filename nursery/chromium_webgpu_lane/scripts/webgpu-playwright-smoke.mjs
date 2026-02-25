@@ -14,7 +14,7 @@ const DEFAULT_CHROME = resolve(
 );
 const DEFAULT_DOE_LIB = resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.so");
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
-const DEFAULT_OUT_FILE = "dawn-vs-fawn.tracka.playwright-smoke.diagnostic.json";
+const DEFAULT_OUT_FILE = "dawn-vs-doe.tracka.playwright-smoke.diagnostic.json";
 const DEFAULT_UPLOAD_ITERS = 500;
 const DEFAULT_DISPATCH_ITERS = 200;
 const DEFAULT_SUITE_TIMEOUT_MS = 120000;

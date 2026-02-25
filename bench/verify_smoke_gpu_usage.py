@@ -13,8 +13,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--report",
-        default="bench/out/dawn-vs-fawn.amd.vulkan.smoke.gpu.16mb.json",
-        help="Path to compare_dawn_vs_fawn report JSON.",
+        default="bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json",
+        help="Path to compare_dawn_vs_doe report JSON.",
     )
     parser.add_argument(
         "--require-comparable",

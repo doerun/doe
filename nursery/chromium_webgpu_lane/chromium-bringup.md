@@ -101,7 +101,7 @@ Initial criterion is deterministic compatibility and observability, not performa
    - thread-proc scoping active in execution/polling path.
 3. Forced-Doe in this host's headless profile currently rejects with `profile_denylisted`; treat as environment gating signal.
 4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
-   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-fawn.tracka.smoke3.json`
+   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
 
 ## Browser Smoke Harness
 
@@ -123,18 +123,18 @@ Run from repo root:
 # install runtime dependency once (uses your Chromium binary, no Playwright browser download required)
 npm install --prefix nursery/chromium_webgpu_lane playwright-core
 
-# compare Dawn vs Fawn in one diagnostic report (positive delta => Fawn faster, diagnostic only)
+# compare Dawn vs Doe in one diagnostic report (positive delta => Doe faster, diagnostic only)
 node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs \
   --mode both \
   --chrome /home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome \
   --doe-lib /home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so \
-  --out /home/x/deco/fawn/nursery/chromium_webgpu_lane/artifacts/dawn-vs-fawn.tracka.playwright-smoke.diagnostic.json \
+  --out /home/x/deco/fawn/nursery/chromium_webgpu_lane/artifacts/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json \
   --chrome-arg=--ozone-platform=x11
 ```
 
 By default the harness writes to timestamped lane-local artifacts:
 
-- `nursery/chromium_webgpu_lane/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-fawn.tracka.playwright-smoke.diagnostic.json`
+- `nursery/chromium_webgpu_lane/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json`
 
 Guardrail:
 

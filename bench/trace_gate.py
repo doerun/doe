@@ -2,7 +2,7 @@
 """
 Release hard-gate for trace replay validity.
 
-Validates every successful trace artifact in a dawn-vs-fawn comparison report
+Validates every successful trace artifact in a dawn-vs-doe comparison report
 with the replay checker.
 """
 
@@ -25,8 +25,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--report",
-        default="fawn/bench/out/dawn-vs-fawn.json",
-        help="Comparison report produced by compare_dawn_vs_fawn.py",
+        default="fawn/bench/out/dawn-vs-doe.json",
+        help="Comparison report produced by compare_dawn_vs_doe.py",
     )
     parser.add_argument(
         "--semantic-parity-mode",

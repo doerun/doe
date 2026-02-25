@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Dawn-vs-Fawn feature and benchmark coverage markdown table."""
+"""Generate Dawn-vs-Doe feature and benchmark coverage markdown table."""
 
 from __future__ import annotations
 
@@ -114,7 +114,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--out",
-        default="bench/out/dawn-vs-fawn-feature-benchmark-coverage.md",
+        default="bench/out/dawn-vs-doe-feature-benchmark-coverage.md",
         help="Output markdown file path.",
     )
     return parser.parse_args()
@@ -252,7 +252,7 @@ def main() -> int:
     dawn_header_covered, dawn_header_total, dawn_header_percent = _measure_dawn_header_api_surface_coverage()
 
     output = [
-        "# Dawn vs Fawn Feature + Benchmark Coverage",
+        "# Dawn vs Doe Feature + Benchmark Coverage",
         "",
         "| Metric | % | How it was measured |",
         "|---|---:|---|",

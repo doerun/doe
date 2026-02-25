@@ -30,7 +30,7 @@ python3 bench/run_blocking_gates.py \
 
 echo "[3/5] running repeated release windows + substantiation gate"
 python3 bench/run_release_claim_windows.py \
-  --config bench/compare_dawn_vs_fawn.config.amd.vulkan.release.json \
+  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --windows "$windows" \
   --strict-amd-vulkan \
   --with-dropin-gate \
@@ -38,9 +38,9 @@ python3 bench/run_release_claim_windows.py \
   --with-substantiation-gate
 
 echo "[4/5] refreshing test inventory dashboard"
-python3 bench/build_test_inventory_dashboard.py --report-glob "bench/out/**/dawn-vs-fawn*.json"
+python3 bench/build_test_inventory_dashboard.py --report-glob "bench/out/**/dawn-vs-doe*.json"
 
 echo "[5/5] refreshing baseline dataset package"
-python3 bench/build_baseline_dataset.py --report-glob "bench/out/**/dawn-vs-fawn*.json"
+python3 bench/build_baseline_dataset.py --report-glob "bench/out/**/dawn-vs-doe*.json"
 
 echo "PASS: matrix evidence bundle complete"

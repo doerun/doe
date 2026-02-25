@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate full-matrix claim readiness from a compare_dawn_vs_fawn report."""
+"""Validate full-matrix claim readiness from a compare_dawn_vs_doe report."""
 
 from __future__ import annotations
 
@@ -306,7 +306,7 @@ def main() -> int:
         if not report_contract_hash:
             if not args.allow_missing_workload_contract_hash:
                 failures.append(
-                    "report missing workloadContract.sha256; rerun compare_dawn_vs_fawn.py with workload contract metadata"
+                    "report missing workloadContract.sha256; rerun compare_dawn_vs_doe.py with workload contract metadata"
                 )
         elif report_contract_hash != expected_contract_hash:
             failures.append(
