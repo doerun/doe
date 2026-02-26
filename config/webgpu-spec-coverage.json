@@ -82,6 +82,7 @@
       "priority": "p1",
       "owner": "runtime-core",
       "contract": "zig/src/wgpu_surface_procs.zig + zig/src/webgpu_ffi.zig surface methods",
+      "benchmarkClass": "comparable",
       "notes": "surface creation, capabilities, configure/get-current-texture/present/unconfigure/release wrappers are now implemented as explicit backend methods."
     },
     {
