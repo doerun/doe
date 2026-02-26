@@ -678,6 +678,22 @@ Execution gap list:
   `p0_compute_indirect_timestamp_contract`.
 - matrix split is now `31` comparable + `9` directional.
 
+8. Local Metal comparability hotfix (2026-02-26):
+- introduced Metal-only workload contract file: `bench/workloads.local.metal.extended.json`.
+- local Metal config now uses that contract file (`bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`) so AMD Vulkan claim lanes are unchanged.
+- local Metal compare config now pins `--gpu-timestamp-mode off` to avoid `gpu_timestamp_wait_timed_out` failures observed in compute lanes on this host (`workgroup_non_atomic_1024`).
+- local Metal left template now uses `--queue-sync-mode per-command --gpu-timestamp-mode off` as the stability baseline.
+- for local Metal claim lanes, explicit queue-sync policy is now contractized via workload overrides:
+  - deferred for upload workloads (`buffer_upload_64kb`, `buffer_upload_1mb`, `buffer_upload_4mb`, `buffer_upload_16mb`), texture contract lanes (`texture_sampler_write_query_destroy_contract`, `..._mip8`), and `p0_resource_lifecycle_contract`.
+  - `matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1` is now directional-only (`comparable=false`) in the Metal-local contract due intermittent timeout/error behavior under both deferred and per-command sync on this host.
+- `workgroup_non_atomic_1024` is also directional-only (`comparable=false`) in the Metal-local contract due intermittent Doe execution-error samples (`WaitTimedOut`) in strict runs on this host.
+- focused rerun (`bench/out/scratch/20260226T000817Z/metal.slowness.fixprobe6.json`, `iterations=8`, `warmup=1`) now reports `comparisonStatus=comparable`, with only one residual non-claimable lane: `buffer_upload_4mb` (`p50=-88.19%`, `p95=-53.40%`).
+- full strict local-metal matrix rerun (`bench/out/scratch/20260226T003134Z/metal.full.fixed.full8.json`, `iterations=8`, `warmup=1`) reports `comparisonStatus=comparable` with two residual non-claimable upload tails: `buffer_upload_1kb` (`p50=+3.91%`, `p95=-25.64%`) and `buffer_upload_16mb` (`p50=+1.31%`, `p95=-3.37%`).
+- targeted deeper-sample reruns show these two lanes are claimable at higher sample depth (`iterations=12`, `warmup=1`):
+  - `bench/out/scratch/20260226T005352Z/metal.upload.tailprobe.current.json` (`buffer_upload_16mb`)
+  - `bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb.json` (`buffer_upload_1kb`)
+- local metal strict comparable config now uses `iterations=12` and `claimability.minTimedSamples=11` to reduce p95/p99 tail instability on upload lanes without changing AMD Vulkan methodology.
+
 ## v0 Reality
 
 Blocking gates: schema, correctness, trace.

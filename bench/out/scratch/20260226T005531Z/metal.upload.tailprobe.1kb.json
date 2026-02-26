@@ -1,0 +1,3663 @@
+{
+  "schemaVersion": 4,
+  "generatedAt": "2026-02-26T00:55:31.029117+00:00",
+  "outputTimestamp": "20260226T005531Z",
+  "outPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb.json",
+  "workspacePath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb",
+  "runParameters": {
+    "iterations": 12,
+    "warmup": 1
+  },
+  "left": {
+    "name": "doe"
+  },
+  "right": {
+    "name": "dawn"
+  },
+  "deltaPercentConvention": {
+    "baseline": "right",
+    "formula": "((rightMs - leftMs) / rightMs) * 100",
+    "positive": "left faster",
+    "negative": "left slower",
+    "zero": "parity"
+  },
+  "comparabilityPolicy": {
+    "mode": "strict",
+    "requiredTimingClass": "operation",
+    "allowLeftNoExecution": false,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "workloadCohort": "all",
+    "requireNativeExecutionTimingForLeftOperation": true,
+    "obligationContract": {
+      "schemaVersion": 1,
+      "blockingFailureFailsComparability": true
+    },
+    "dispatchWindowSelectionThresholds": {
+      "minDispatchWindowNsWithoutEncode": 500000,
+      "minDispatchWindowCoveragePercentWithoutEncode": 1.0
+    }
+  },
+  "claimabilityPolicy": {
+    "mode": "local",
+    "minTimedSamples": 7,
+    "requiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent"
+    ],
+    "defaults": {
+      "localMinTimedSamples": 7,
+      "releaseMinTimedSamples": 15
+    }
+  },
+  "benchmarkPolicy": {
+    "path": "config/benchmark-methodology-thresholds.json",
+    "schemaVersion": 1,
+    "sha256": "e50ef9f750667dfc1d6505a097db71be9322df24d099ef91a9e4f49fd3468152"
+  },
+  "workloadContract": {
+    "path": "bench/workloads.local.metal.extended.json",
+    "sha256": "a7fbf683399e4cda637a46dc80ee3df0078522f6849a0a176e3c87436ad67c42"
+  },
+  "workloads": [
+    {
+      "id": "buffer_upload_1kb",
+      "name": "buffer-upload 1KB",
+      "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB.",
+      "domain": "upload",
+      "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
+      "timingNormalization": {
+        "leftDivisor": 500.0,
+        "rightDivisor": 1.0,
+        "leftCommandRepeat": 500,
+        "rightCommandRepeat": 1,
+        "leftIgnoreFirstOps": 1,
+        "rightIgnoreFirstOps": 0,
+        "leftUploadBufferUsage": "copy-dst",
+        "rightUploadBufferUsage": "copy-dst-copy-src",
+        "leftUploadSubmitEvery": 50,
+        "rightUploadSubmitEvery": 1,
+        "note": "Upload microbenchmark mode: run 500 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units."
+      },
+      "workloadComparable": true,
+      "comparabilityCandidate": {
+        "enabled": false,
+        "tier": "",
+        "notes": ""
+      },
+      "workloadAllowLeftNoExecution": false,
+      "workloadDefault": true,
+      "left": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run001.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run001.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1043.3359160088003,
+            "measuredRawMs": 10.426,
+            "measuredMs": 0.020852,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 13.603,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 13603000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1043.3359160088003,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 10.426,
+              "timingNormalizedMs": 0.020852,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 12.415,
+              "uploadTimingMeasuredMsBeforeIgnore": 13.603,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 10.426
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run001.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run001.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 11,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1043.3359160088003,
+              "processCpuMs": 592.292,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1043.3359160088003,
+              "cpu_time": 592.292,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.0866718320176005,
+              "cpu_time": 1.184584,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 12415000,
+              "executionSetupTotalNs": 11313000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 13603000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run002.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run002.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1045.4162079840899,
+            "measuredRawMs": 11.5,
+            "measuredMs": 0.023,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 7.063,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 7063000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1045.4162079840899,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 11.5,
+              "timingNormalizedMs": 0.023,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 14.035,
+              "uploadTimingMeasuredMsBeforeIgnore": 7.063,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 11.5
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run002.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run002.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 11,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1045.4162079840899,
+              "processCpuMs": 595.5319999999999,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1045.4162079840899,
+              "cpu_time": 595.5319999999999,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.0908324159681797,
+              "cpu_time": 1.191064,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 14035000,
+              "executionSetupTotalNs": 12328000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 7063000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 3,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run003.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run003.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1121.0762920090929,
+            "measuredRawMs": 24.693,
+            "measuredMs": 0.049386,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 15.571,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 15571000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1121.0762920090929,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 24.693,
+              "timingNormalizedMs": 0.049386,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 27.465,
+              "uploadTimingMeasuredMsBeforeIgnore": 15.571,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 24.693
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run003.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run003.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 12,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1121.0762920090929,
+              "processCpuMs": 612.3910000000001,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1121.0762920090929,
+              "cpu_time": 612.3910000000001,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.2421525840181857,
+              "cpu_time": 1.2247820000000003,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 27465000,
+              "executionSetupTotalNs": 21493000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 15571000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 4,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run004.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run004.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1054.7935420181602,
+            "measuredRawMs": 33.71,
+            "measuredMs": 0.06742000000000001,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 6.291,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 6291000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1054.7935420181602,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 33.71,
+              "timingNormalizedMs": 0.06742000000000001,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 35.841,
+              "uploadTimingMeasuredMsBeforeIgnore": 6.291,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 33.71
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run004.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run004.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 11,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1054.7935420181602,
+              "processCpuMs": 610.3759999999996,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1054.7935420181602,
+              "cpu_time": 610.3759999999996,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.1095870840363204,
+              "cpu_time": 1.2207519999999992,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 35841000,
+              "executionSetupTotalNs": 33000000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 6291000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 5,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run005.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run005.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1086.6514580557123,
+            "measuredRawMs": 23.507,
+            "measuredMs": 0.047014,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 20.75,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 20750000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1086.6514580557123,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 23.507,
+              "timingNormalizedMs": 0.047014,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 25.772,
+              "uploadTimingMeasuredMsBeforeIgnore": 20.75,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 23.507
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run005.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run005.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 12,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1086.6514580557123,
+              "processCpuMs": 599.1830000000004,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1086.6514580557123,
+              "cpu_time": 599.1830000000004,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.1733029161114246,
+              "cpu_time": 1.198366000000001,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 25772000,
+              "executionSetupTotalNs": 24116000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 20750000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 6,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run006.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run006.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1091.3347080349922,
+            "measuredRawMs": 12.14,
+            "measuredMs": 0.02428,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 13.664,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 13664000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1091.3347080349922,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 12.14,
+              "timingNormalizedMs": 0.02428,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 14.365,
+              "uploadTimingMeasuredMsBeforeIgnore": 13.664,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 12.14
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run006.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run006.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 12,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1091.3347080349922,
+              "processCpuMs": 605.267,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1091.3347080349922,
+              "cpu_time": 605.267,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.1826694160699844,
+              "cpu_time": 1.210534,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 14365000,
+              "executionSetupTotalNs": 12368000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 13664000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 7,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run007.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run007.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1125.95495802816,
+            "measuredRawMs": 11.972,
+            "measuredMs": 0.023944,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 10.529,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 10529000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1125.95495802816,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 11.972,
+              "timingNormalizedMs": 0.023944,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 15.052,
+              "uploadTimingMeasuredMsBeforeIgnore": 10.529,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 11.972
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run007.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run007.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 12,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1125.95495802816,
+              "processCpuMs": 606.3519999999993,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1125.95495802816,
+              "cpu_time": 606.3519999999993,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.25190991605632,
+              "cpu_time": 1.2127039999999987,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 15052000,
+              "executionSetupTotalNs": 13937000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 10529000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 8,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run008.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run008.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1153.7328340345994,
+            "measuredRawMs": 12.211,
+            "measuredMs": 0.024422,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 12.366,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 12366000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1153.7328340345994,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 12.211,
+              "timingNormalizedMs": 0.024422,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 15.066,
+              "uploadTimingMeasuredMsBeforeIgnore": 12.366,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 12.211
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run008.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run008.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 12,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1153.7328340345994,
+              "processCpuMs": 610.9900000000001,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1153.7328340345994,
+              "cpu_time": 610.9900000000001,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.3074656680691987,
+              "cpu_time": 1.2219800000000003,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 15066000,
+              "executionSetupTotalNs": 13499000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 12366000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 9,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run009.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run009.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1101.6241670586169,
+            "measuredRawMs": 20.799,
+            "measuredMs": 0.041597999999999996,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 17.695,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 17695000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1101.6241670586169,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 20.799,
+              "timingNormalizedMs": 0.041597999999999996,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 23.313,
+              "uploadTimingMeasuredMsBeforeIgnore": 17.695,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 20.799
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run009.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run009.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 12,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1101.6241670586169,
+              "processCpuMs": 624.1740000000009,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1101.6241670586169,
+              "cpu_time": 624.1740000000009,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.2032483341172338,
+              "cpu_time": 1.2483480000000018,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 23313000,
+              "executionSetupTotalNs": 15587000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 17695000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 10,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run010.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run010.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1017.5987080438063,
+            "measuredRawMs": 11.341,
+            "measuredMs": 0.022681999999999997,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 13.423,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 13423000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1017.5987080438063,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 11.341,
+              "timingNormalizedMs": 0.022681999999999997,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 14.432,
+              "uploadTimingMeasuredMsBeforeIgnore": 13.423,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 11.341
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run010.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run010.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 11,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1017.5987080438063,
+              "processCpuMs": 604.9659999999992,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1017.5987080438063,
+              "cpu_time": 604.9659999999992,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.0351974160876125,
+              "cpu_time": 1.2099319999999985,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 14432000,
+              "executionSetupTotalNs": 13199000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 13423000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          },
+          {
+            "runIndex": 11,
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.commands.repeat500.json",
+              "--quirks",
+              "examples/quirks/amd_radv_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--execute",
+              "--trace",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run011.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run011.meta.json",
+              "--queue-sync-mode",
+              "per-command",
+              "--gpu-timestamp-mode",
+              "off",
+              "--queue-sync-mode",
+              "deferred",
+              "--upload-buffer-usage",
+              "copy-dst",
+              "--upload-submit-every",
+              "50"
+            ],
+            "elapsedMs": 1066.4654170395806,
+            "measuredRawMs": 10.947,
+            "measuredMs": 0.021893999999999997,
+            "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "doe-execution-dispatch-window-ns",
+              "traceMetaTimingMs": 15.785,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 15785000,
+              "executionDispatchCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "wallTimeMs": 1066.4654170395806,
+              "timingNormalizationDivisor": 500.0,
+              "timingConfiguredDivisor": 500.0,
+              "timingRawMs": 10.947,
+              "timingNormalizedMs": 0.021893999999999997,
+              "uploadBufferUsage": "copy-dst",
+              "uploadSubmitEvery": 50,
+              "uploadIgnoreFirstOps": 1,
+              "uploadIgnoreFirstApplied": true,
+              "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+              "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+              "uploadRowsTotal": 500,
+              "uploadRowsIncluded": 499,
+              "uploadTimingRawMsBeforeIgnore": 13.005,
+              "uploadTimingMeasuredMsBeforeIgnore": 15.785,
+              "uploadTimingMeasuredSourceBeforeIgnore": "doe-execution-dispatch-window-ns",
+              "uploadTimingRawMsAfterIgnore": 10.947
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run011.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run011.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 12,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 1066.4654170395806,
+              "processCpuMs": 612.3019999999997,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 1066.4654170395806,
+              "cpu_time": 612.3019999999997,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 2.1329308340791613,
+              "cpu_time": 1.2246039999999994,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "doe-zig-runtime",
+              "seqMax": 499,
+              "rowCount": 500,
+              "commandCount": 500,
+              "matchedCount": 0,
+              "blockingCount": 0,
+              "requiresLeanCount": 0,
+              "leanRequiredCount": 0,
+              "executionRowCount": 500,
+              "executionSuccessCount": 500,
+              "executionErrorCount": 0,
+              "executionSkippedCount": 0,
+              "executionUnsupportedCount": 0,
+              "executionTotalNs": 13005000,
+              "executionSetupTotalNs": 11898000,
+              "executionEncodeTotalNs": 0,
+              "executionSubmitWaitTotalNs": 15785000,
+              "executionDispatchCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampValidCount": 0,
+              "hash": "0x4e0030d71fdb6ff5",
+              "previousHash": "0x2c29f7224f3885ed",
+              "executionBackend": "webgpu-ffi",
+              "queueSyncMode": "deferred",
+              "profile": {
+                "vendor": "apple",
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0"
+              }
+            },
+            "commandRepeat": 500,
+            "uploadIgnoreFirstOps": 1,
+            "uploadBufferUsage": "copy-dst",
+            "uploadSubmitEvery": 50,
+            "timingNormalizationDivisor": 500.0
+          }
+        ],
+        "stats": {
+          "count": 11,
+          "minMs": 0.020852,
+          "maxMs": 0.06742000000000001,
+          "p10Ms": 0.021893999999999997,
+          "p50Ms": 0.02428,
+          "p95Ms": 0.049386,
+          "p99Ms": 0.049386,
+          "meanMs": 0.033317454545454546,
+          "stdevMs": 0.014867464565673944
+        },
+        "timingsMs": [
+          0.020852,
+          0.023,
+          0.049386,
+          0.06742000000000001,
+          0.047014,
+          0.02428,
+          0.023944,
+          0.024422,
+          0.041597999999999996,
+          0.022681999999999997,
+          0.021893999999999997
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "doe-zig-runtime",
+          "seqMax": 499,
+          "rowCount": 500,
+          "commandCount": 500,
+          "matchedCount": 0,
+          "blockingCount": 0,
+          "requiresLeanCount": 0,
+          "leanRequiredCount": 0,
+          "executionRowCount": 500,
+          "executionSuccessCount": 500,
+          "executionErrorCount": 0,
+          "executionSkippedCount": 0,
+          "executionUnsupportedCount": 0,
+          "executionTotalNs": 13005000,
+          "executionSetupTotalNs": 11898000,
+          "executionEncodeTotalNs": 0,
+          "executionSubmitWaitTotalNs": 15785000,
+          "executionDispatchCount": 0,
+          "executionGpuTimestampTotalNs": 0,
+          "executionGpuTimestampAttemptedCount": 0,
+          "executionGpuTimestampValidCount": 0,
+          "hash": "0x4e0030d71fdb6ff5",
+          "previousHash": "0x2c29f7224f3885ed",
+          "executionBackend": "webgpu-ffi",
+          "queueSyncMode": "deferred",
+          "profile": {
+            "vendor": "apple",
+            "api": "metal",
+            "deviceFamily": "m3",
+            "driver": "1.0.0"
+          }
+        },
+        "timingSources": [
+          "doe-execution-row-total-ns+ignore-first-ops"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "resourceStats": {
+          "gpuProbeModes": [
+            "none"
+          ],
+          "gpuProbeAvailableCount": 0,
+          "samplingTruncatedCount": 0,
+          "processPeakRssKb": {
+            "count": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          }
+        },
+        "timingMetricsRawStatsMs": {
+          "wall_time": {
+            "count": 11,
+            "minMs": 1017.5987080438063,
+            "maxMs": 1153.7328340345994,
+            "p10Ms": 1043.3359160088003,
+            "p50Ms": 1086.6514580557123,
+            "p95Ms": 1125.95495802816,
+            "p99Ms": 1125.95495802816,
+            "meanMs": 1082.5440189377828,
+            "stdevMs": 39.378750517770534
+          },
+          "cpu_time": {
+            "count": 11,
+            "minMs": 592.292,
+            "maxMs": 624.1740000000009,
+            "p10Ms": 595.5319999999999,
+            "p50Ms": 606.3519999999993,
+            "p95Ms": 612.3910000000001,
+            "p99Ms": 612.3910000000001,
+            "meanMs": 606.7113636363636,
+            "stdevMs": 8.501484055181074
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "wall_time": {
+            "count": 11,
+            "minMs": 2.0351974160876125,
+            "maxMs": 2.3074656680691987,
+            "p10Ms": 2.0866718320176005,
+            "p50Ms": 2.1733029161114246,
+            "p95Ms": 2.25190991605632,
+            "p99Ms": 2.25190991605632,
+            "meanMs": 2.1650880378755657,
+            "stdevMs": 0.07875750103554106
+          },
+          "cpu_time": {
+            "count": 11,
+            "minMs": 1.184584,
+            "maxMs": 1.2483480000000018,
+            "p10Ms": 1.191064,
+            "p50Ms": 1.2127039999999987,
+            "p95Ms": 1.2247820000000003,
+            "p99Ms": 1.2247820000000003,
+            "meanMs": 1.2134227272727272,
+            "stdevMs": 0.017002968110362143
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "runIndex": 1,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run001.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run001.meta.json"
+            ],
+            "elapsedMs": 5513.727582991123,
+            "measuredRawMs": 0.21823656926399998,
+            "measuredMs": 0.21823656926399998,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.21823656926399998,
+              "wallTimeMs": 5513.727582991123,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.21823656926399998,
+              "timingNormalizedMs": 0.21823656926399998,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run001.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run001.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 54,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 5513.727582991123,
+              "processCpuMs": 543.1159999999995,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.21823656926399998,
+              "cpu_time": 0.002287489177,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.21823656926399998,
+              "cpu_time": 0.002287489177,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xada595a02db6c356",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run001.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.21823656926399998,
+              "timingMetric": "wall_time",
+              "elapsedMs": 5242.959166993387,
+              "processWallMs": 5242.959166993387,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.21823656926399998,
+                "cpu_time": 0.002287489177
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 218237,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.21823656926399998,
+                  0.168090281385,
+                  0.23260895021599998
+                ],
+                "cpu_time": [
+                  0.002144393939,
+                  0.002287489177,
+                  0.005035519481
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.21823656926399998,
+                0.168090281385,
+                0.23260895021599998
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 2,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run002.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run002.meta.json"
+            ],
+            "elapsedMs": 6716.524334042333,
+            "measuredRawMs": 0.236094853952,
+            "measuredMs": 0.236094853952,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.236094853952,
+              "wallTimeMs": 6716.524334042333,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.236094853952,
+              "timingNormalizedMs": 0.236094853952,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run002.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run002.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 66,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6716.524334042333,
+              "processCpuMs": 609.4369999999998,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.236094853952,
+              "cpu_time": 0.002683453608,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.236094853952,
+              "cpu_time": 0.002683453608,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x087ebf9d4dea35e6",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run002.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.236094853952,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6511.475333943963,
+              "processWallMs": 6511.475333943963,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.236094853952,
+                "cpu_time": 0.002683453608
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 236095,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.236094853952,
+                  0.23456600515499998,
+                  0.244085274914
+                ],
+                "cpu_time": [
+                  0.002387164948,
+                  0.002683453608,
+                  0.0041592353949999996
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.236094853952,
+                0.23456600515499998,
+                0.244085274914
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 3,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run003.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run003.meta.json"
+            ],
+            "elapsedMs": 6493.865999975242,
+            "measuredRawMs": 0.256991882716,
+            "measuredMs": 0.256991882716,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.256991882716,
+              "wallTimeMs": 6493.865999975242,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.256991882716,
+              "timingNormalizedMs": 0.256991882716,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run003.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run003.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 64,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6493.865999975242,
+              "processCpuMs": 572.5049999999997,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.256991882716,
+              "cpu_time": 0.002471080247,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.256991882716,
+              "cpu_time": 0.002471080247,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x4daed997db1865fb",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run003.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.256991882716,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6228.589290985838,
+              "processWallMs": 6228.589290985838,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.256991882716,
+                "cpu_time": 0.002471080247
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 256992,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.256991882716,
+                  0.242810658436,
+                  0.278431244856
+                ],
+                "cpu_time": [
+                  0.0024338786009999998,
+                  0.0031006172839999997,
+                  0.002471080247
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.256991882716,
+                0.242810658436,
+                0.278431244856
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 4,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run004.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run004.meta.json"
+            ],
+            "elapsedMs": 5845.035249949433,
+            "measuredRawMs": 0.198582600733,
+            "measuredMs": 0.198582600733,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.198582600733,
+              "wallTimeMs": 5845.035249949433,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.198582600733,
+              "timingNormalizedMs": 0.198582600733,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run004.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run004.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 58,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 5845.035249949433,
+              "processCpuMs": 595.7390000000019,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.198582600733,
+              "cpu_time": 0.002347188645,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.198582600733,
+              "cpu_time": 0.002347188645,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x41b183b8df01b56f",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run004.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.198582600733,
+              "timingMetric": "wall_time",
+              "elapsedMs": 5661.139166913927,
+              "processWallMs": 5661.139166913927,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.198582600733,
+                "cpu_time": 0.002347188645
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 198583,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.163726904762,
+                  0.198582600733,
+                  0.219408937729
+                ],
+                "cpu_time": [
+                  0.0021930586079999996,
+                  0.002347188645,
+                  0.003003617216
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.163726904762,
+                0.198582600733,
+                0.219408937729
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 5,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run005.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run005.meta.json"
+            ],
+            "elapsedMs": 5581.30933297798,
+            "measuredRawMs": 0.237982892157,
+            "measuredMs": 0.237982892157,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.237982892157,
+              "wallTimeMs": 5581.30933297798,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.237982892157,
+              "timingNormalizedMs": 0.237982892157,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run005.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run005.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 55,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 5581.30933297798,
+              "processCpuMs": 546.5419999999988,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.237982892157,
+              "cpu_time": 0.002921789216,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.237982892157,
+              "cpu_time": 0.002921789216,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x5e08ef88c50417ae",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run005.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.237982892157,
+              "timingMetric": "wall_time",
+              "elapsedMs": 5276.071166037582,
+              "processWallMs": 5276.071166037582,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.237982892157,
+                "cpu_time": 0.002921789216
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 237983,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.237982892157,
+                  0.143355404412,
+                  0.241065821078
+                ],
+                "cpu_time": [
+                  0.005647806373,
+                  0.002921789216,
+                  0.0023787745100000003
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.237982892157,
+                0.143355404412,
+                0.241065821078
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 6,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run006.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run006.meta.json"
+            ],
+            "elapsedMs": 5957.946624956094,
+            "measuredRawMs": 0.24313841111099999,
+            "measuredMs": 0.24313841111099999,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.24313841111099999,
+              "wallTimeMs": 5957.946624956094,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.24313841111099999,
+              "timingNormalizedMs": 0.24313841111099999,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run006.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run006.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 58,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 5957.946624956094,
+              "processCpuMs": 551.2280000000001,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.24313841111099999,
+              "cpu_time": 0.002423644444,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.24313841111099999,
+              "cpu_time": 0.002423644444,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xa1d0a6235585605c",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run006.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.24313841111099999,
+              "timingMetric": "wall_time",
+              "elapsedMs": 5651.746415998787,
+              "processWallMs": 5651.746415998787,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.24313841111099999,
+                "cpu_time": 0.002423644444
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 243138,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.24313841111099999,
+                  0.27057008888899997,
+                  0.22213479999999997
+                ],
+                "cpu_time": [
+                  0.002494422222,
+                  0.002423644444,
+                  0.0023204111109999996
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.24313841111099999,
+                0.27057008888899997,
+                0.22213479999999997
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 7,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run007.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run007.meta.json"
+            ],
+            "elapsedMs": 6773.541416972876,
+            "measuredRawMs": 0.241293553114,
+            "measuredMs": 0.241293553114,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.241293553114,
+              "wallTimeMs": 6773.541416972876,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.241293553114,
+              "timingNormalizedMs": 0.241293553114,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run007.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run007.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 67,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6773.541416972876,
+              "processCpuMs": 617.1419999999994,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.241293553114,
+              "cpu_time": 0.002455576923,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.241293553114,
+              "cpu_time": 0.002455576923,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x515e798d50c14c3f",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run007.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.241293553114,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6566.728750010952,
+              "processWallMs": 6566.728750010952,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.241293553114,
+                "cpu_time": 0.002455576923
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 241294,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.28261266483499997,
+                  0.241293553114,
+                  0.238810677656
+                ],
+                "cpu_time": [
+                  0.0024910989009999996,
+                  0.0023976465199999995,
+                  0.002455576923
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.28261266483499997,
+                0.241293553114,
+                0.238810677656
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 8,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run008.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run008.meta.json"
+            ],
+            "elapsedMs": 4844.525125110522,
+            "measuredRawMs": 0.16368179223699997,
+            "measuredMs": 0.16368179223699997,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.16368179223699997,
+              "wallTimeMs": 4844.525125110522,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.16368179223699997,
+              "timingNormalizedMs": 0.16368179223699997,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run008.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run008.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 49,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 4844.525125110522,
+              "processCpuMs": 518.5390000000006,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.16368179223699997,
+              "cpu_time": 0.002936175799,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.16368179223699997,
+              "cpu_time": 0.002936175799,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0xc20c84da181a435e",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run008.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.16368179223699997,
+              "timingMetric": "wall_time",
+              "elapsedMs": 4652.84195903223,
+              "processWallMs": 4652.84195903223,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.16368179223699997,
+                "cpu_time": 0.002936175799
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 163682,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.188746187215,
+                  0.157370958904,
+                  0.16368179223699997
+                ],
+                "cpu_time": [
+                  0.002395593607,
+                  0.0033563356159999995,
+                  0.002936175799
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.188746187215,
+                0.157370958904,
+                0.16368179223699997
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 9,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run009.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run009.meta.json"
+            ],
+            "elapsedMs": 6439.588374923915,
+            "measuredRawMs": 0.15991331349199997,
+            "measuredMs": 0.15991331349199997,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.15991331349199997,
+              "wallTimeMs": 6439.588374923915,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.15991331349199997,
+              "timingNormalizedMs": 0.15991331349199997,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run009.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run009.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 64,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 6439.588374923915,
+              "processCpuMs": 683.2840000000004,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.15991331349199997,
+              "cpu_time": 0.003382222222,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.15991331349199997,
+              "cpu_time": 0.003382222222,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x2b44639e4cd6b2ab",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run009.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.15991331349199997,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6179.960333975032,
+              "processWallMs": 6179.960333975032,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.15991331349199997,
+                "cpu_time": 0.003382222222
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 159913,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.16141953042299997,
+                  0.15991331349199997,
+                  0.158601415344
+                ],
+                "cpu_time": [
+                  0.00228630291,
+                  0.004356329365,
+                  0.003382222222
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.16141953042299997,
+                0.15991331349199997,
+                0.158601415344
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 10,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run010.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run010.meta.json"
+            ],
+            "elapsedMs": 7077.68133294303,
+            "measuredRawMs": 0.286976166667,
+            "measuredMs": 0.286976166667,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.286976166667,
+              "wallTimeMs": 7077.68133294303,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.286976166667,
+              "timingNormalizedMs": 0.286976166667,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run010.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run010.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 69,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 7077.68133294303,
+              "processCpuMs": 643.9100000000018,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.286976166667,
+              "cpu_time": 0.0060298859650000005,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.286976166667,
+              "cpu_time": 0.0060298859650000005,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x3737139ad279c15e",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run010.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.286976166667,
+              "timingMetric": "wall_time",
+              "elapsedMs": 6894.428208936006,
+              "processWallMs": 6894.428208936006,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.286976166667,
+                "cpu_time": 0.0060298859650000005
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 286976,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.245625061404,
+                  0.286976166667,
+                  0.28796794736799997
+                ],
+                "cpu_time": [
+                  0.00573522807,
+                  0.006476201754,
+                  0.0060298859650000005
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.245625061404,
+                0.286976166667,
+                0.28796794736799997
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          },
+          {
+            "runIndex": 11,
+            "command": [
+              "python3",
+              "bench/dawn_benchmark_adapter.py",
+              "--dawn-state",
+              "bench/dawn_runtime_state.json",
+              "--dawn-filter-map",
+              "bench/dawn_workload_map.local.autodiscover.json",
+              "--workload",
+              "buffer_upload_1kb",
+              "--dawn-extra-args=--backend=metal",
+              "--trace-jsonl",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run011.ndjson",
+              "--trace-meta",
+              "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run011.meta.json"
+            ],
+            "elapsedMs": 5236.778750084341,
+            "measuredRawMs": 0.195102136364,
+            "measuredMs": 0.195102136364,
+            "timingSource": "dawn-perf-wall-time",
+            "timing": {
+              "source": "trace-meta",
+              "traceMetaSource": "dawn-perf-wall-time",
+              "traceMetaTimingMs": 0.195102136364,
+              "wallTimeMs": 5236.778750084341,
+              "timingNormalizationDivisor": 1.0,
+              "timingConfiguredDivisor": 1.0,
+              "timingRawMs": 0.195102136364,
+              "timingNormalizedMs": 0.195102136364,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceJsonlPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run011.ndjson",
+            "traceMetaPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run011.meta.json",
+            "returnCode": 0,
+            "resource": {
+              "resourceSampleMs": 100,
+              "resourceSampleCount": 52,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false,
+              "processWallMs": 5236.778750084341,
+              "processCpuMs": 521.6589999999997,
+              "processPeakRssKb": 0,
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false
+            },
+            "timingMetricsRawMs": {
+              "wall_time": 0.195102136364,
+              "cpu_time": 0.005857727273,
+              "gpu_time": null
+            },
+            "timingMetricsNormalizedMs": {
+              "wall_time": 0.195102136364,
+              "cpu_time": 0.005857727273,
+              "gpu_time": null
+            },
+            "traceMeta": {
+              "traceVersion": 1,
+              "module": "dawn-perf-tests",
+              "schema": "adapter-meta",
+              "seqMax": 0,
+              "rowCount": 1,
+              "hash": "0x439071728180df50",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "commandCount": 1,
+              "workload": "buffer_upload_1kb",
+              "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+              "filterResolution": "autodiscover",
+              "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run011.ndjson",
+              "timingSource": "dawn-perf-wall-time",
+              "timingClass": "operation",
+              "timingMs": 0.195102136364,
+              "timingMetric": "wall_time",
+              "elapsedMs": 4815.068833064288,
+              "processWallMs": 4815.068833064288,
+              "dawnTimingMetricRequested": "wall_time",
+              "dawnMetricMediansMs": {
+                "wall_time": 0.195102136364,
+                "cpu_time": 0.005857727273
+              },
+              "executionBackend": "dawn-perf-tests",
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "executionErrorCount": 0,
+              "executionTotalNs": 195102,
+              "gtestFilterNoMatch": false,
+              "gtestSkippedCount": 0,
+              "gtestUnsupported": false,
+              "gtestRunningCount": 1,
+              "dawnMetricSamplesMs": {
+                "wall_time": [
+                  0.228376409091,
+                  0.176727545455,
+                  0.195102136364
+                ],
+                "cpu_time": [
+                  0.0030081363639999996,
+                  0.005857727273,
+                  0.006170166667
+                ],
+                "gpu_time": []
+              },
+              "benchmarkWallMsSamples": [
+                0.228376409091,
+                0.176727545455,
+                0.195102136364
+              ]
+            },
+            "commandRepeat": 1,
+            "uploadIgnoreFirstOps": 0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadSubmitEvery": 1,
+            "timingNormalizationDivisor": 1.0
+          }
+        ],
+        "stats": {
+          "count": 11,
+          "minMs": 0.15991331349199997,
+          "maxMs": 0.286976166667,
+          "p10Ms": 0.16368179223699997,
+          "p50Ms": 0.236094853952,
+          "p95Ms": 0.256991882716,
+          "p99Ms": 0.256991882716,
+          "meanMs": 0.22163583380063637,
+          "stdevMs": 0.03724595125642679
+        },
+        "timingsMs": [
+          0.21823656926399998,
+          0.236094853952,
+          0.256991882716,
+          0.198582600733,
+          0.237982892157,
+          0.24313841111099999,
+          0.241293553114,
+          0.16368179223699997,
+          0.15991331349199997,
+          0.286976166667,
+          0.195102136364
+        ],
+        "lastMeta": {
+          "traceVersion": 1,
+          "module": "dawn-perf-tests",
+          "schema": "adapter-meta",
+          "seqMax": 0,
+          "rowCount": 1,
+          "hash": "0x439071728180df50",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "commandCount": 1,
+          "workload": "buffer_upload_1kb",
+          "gtestFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+          "selectedFilter": "BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB",
+          "filterResolution": "autodiscover",
+          "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Metal_Apple_M3_WriteBuffer_BufferSize_1KB --backend=metal --trace-file=bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run011.ndjson",
+          "timingSource": "dawn-perf-wall-time",
+          "timingClass": "operation",
+          "timingMs": 0.195102136364,
+          "timingMetric": "wall_time",
+          "elapsedMs": 4815.068833064288,
+          "processWallMs": 4815.068833064288,
+          "dawnTimingMetricRequested": "wall_time",
+          "dawnMetricMediansMs": {
+            "wall_time": 0.195102136364,
+            "cpu_time": 0.005857727273
+          },
+          "executionBackend": "dawn-perf-tests",
+          "executionRowCount": 1,
+          "executionSuccessCount": 1,
+          "executionErrorCount": 0,
+          "executionTotalNs": 195102,
+          "gtestFilterNoMatch": false,
+          "gtestSkippedCount": 0,
+          "gtestUnsupported": false,
+          "gtestRunningCount": 1,
+          "dawnMetricSamplesMs": {
+            "wall_time": [
+              0.228376409091,
+              0.176727545455,
+              0.195102136364
+            ],
+            "cpu_time": [
+              0.0030081363639999996,
+              0.005857727273,
+              0.006170166667
+            ],
+            "gpu_time": []
+          },
+          "benchmarkWallMsSamples": [
+            0.228376409091,
+            0.176727545455,
+            0.195102136364
+          ]
+        },
+        "timingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "resourceStats": {
+          "gpuProbeModes": [
+            "none"
+          ],
+          "gpuProbeAvailableCount": 0,
+          "samplingTruncatedCount": 0,
+          "processPeakRssKb": {
+            "count": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0
+          }
+        },
+        "timingMetricsRawStatsMs": {
+          "wall_time": {
+            "count": 11,
+            "minMs": 0.15991331349199997,
+            "maxMs": 0.286976166667,
+            "p10Ms": 0.16368179223699997,
+            "p50Ms": 0.236094853952,
+            "p95Ms": 0.256991882716,
+            "p99Ms": 0.256991882716,
+            "meanMs": 0.22163583380063637,
+            "stdevMs": 0.03724595125642679
+          },
+          "cpu_time": {
+            "count": 11,
+            "minMs": 0.002287489177,
+            "maxMs": 0.0060298859650000005,
+            "p10Ms": 0.002347188645,
+            "p50Ms": 0.002683453608,
+            "p95Ms": 0.005857727273,
+            "p99Ms": 0.005857727273,
+            "meanMs": 0.003254203047181818,
+            "stdevMs": 0.001305048296011968
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "wall_time": {
+            "count": 11,
+            "minMs": 0.15991331349199997,
+            "maxMs": 0.286976166667,
+            "p10Ms": 0.16368179223699997,
+            "p50Ms": 0.236094853952,
+            "p95Ms": 0.256991882716,
+            "p99Ms": 0.256991882716,
+            "meanMs": 0.22163583380063637,
+            "stdevMs": 0.03724595125642679
+          },
+          "cpu_time": {
+            "count": 11,
+            "minMs": 0.002287489177,
+            "maxMs": 0.0060298859650000005,
+            "p10Ms": 0.002347188645,
+            "p50Ms": 0.002683453608,
+            "p95Ms": 0.005857727273,
+            "p99Ms": 0.005857727273,
+            "meanMs": 0.003254203047181818,
+            "stdevMs": 0.001305048296011968
+          },
+          "gpu_time": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "deltaPercent": {
+        "p10Percent": 86.62404675512167,
+        "p50Percent": 89.7159977892037,
+        "p95Percent": 80.78305062476386,
+        "p99Percent": 80.78305062476386,
+        "meanPercent": 84.96747841983715
+      },
+      "comparability": {
+        "comparable": true,
+        "requiredTimingClass": "operation",
+        "obligationSchemaVersion": 1,
+        "obligations": [
+          {
+            "id": "workload_marked_comparable",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "workloadComparable": true
+            }
+          },
+          {
+            "id": "left_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftSampleCount": 11
+            }
+          },
+          {
+            "id": "right_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightSampleCount": 11
+            }
+          },
+          {
+            "id": "left_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftTimingClasses": [
+                "operation"
+              ]
+            }
+          },
+          {
+            "id": "right_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightTimingClasses": [
+                "operation"
+              ]
+            }
+          },
+          {
+            "id": "left_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "requiredTimingClass": "operation",
+              "leftTimingClass": "operation"
+            }
+          },
+          {
+            "id": "right_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "requiredTimingClass": "operation",
+              "rightTimingClass": "operation"
+            }
+          },
+          {
+            "id": "left_right_timing_class_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftTimingClass": "operation",
+              "rightTimingClass": "operation"
+            }
+          },
+          {
+            "id": "left_native_operation_timing_for_webgpu_ffi",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "invalidCanonicalSources": []
+            }
+          },
+          {
+            "id": "left_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "right_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "left_execution_evidence_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "allowLeftNoExecution": false,
+              "leftHasExecutionEvidence": true
+            }
+          },
+          {
+            "id": "left_successful_execution_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftSuccessfulExecution": true
+            }
+          },
+          {
+            "id": "left_success_or_unsupported_or_skipped",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftSuccessfulExecution": true,
+              "leftHasUnsupportedOrSkippedEvidence": false
+            }
+          },
+          {
+            "id": "left_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftExecutionErrorSampleCount": 0,
+              "leftSampleCount": 11
+            }
+          },
+          {
+            "id": "right_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightExecutionErrorSampleCount": 0,
+              "rightSampleCount": 11
+            }
+          },
+          {
+            "id": "left_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftResourceProbeAvailableCount": 0
+            }
+          },
+          {
+            "id": "right_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "rightResourceProbeAvailableCount": 0
+            }
+          }
+        ],
+        "blockingFailedObligations": [],
+        "advisoryFailedObligations": [],
+        "leftTimingSources": [
+          "doe-execution-row-total-ns+ignore-first-ops"
+        ],
+        "rightTimingSources": [
+          "dawn-perf-wall-time"
+        ],
+        "leftTimingClass": "operation",
+        "rightTimingClass": "operation",
+        "resourceProbe": "none",
+        "leftResourceSampleMedian": 12,
+        "rightResourceSampleMedian": 58,
+        "leftResourceProbeAvailableCount": 0,
+        "rightResourceProbeAvailableCount": 0,
+        "resourceSampleTargetCount": 0,
+        "leftResourceSamplingTruncatedCount": 0,
+        "rightResourceSamplingTruncatedCount": 0,
+        "leftExecutionErrorSampleCount": 0,
+        "rightExecutionErrorSampleCount": 0,
+        "resourceReasons": [],
+        "reasons": []
+      },
+      "claimability": {
+        "mode": "local",
+        "evaluated": true,
+        "claimable": true,
+        "minTimedSamples": 7,
+        "requiredPositivePercentiles": [
+          "p50Percent",
+          "p95Percent"
+        ],
+        "leftTimedSamples": 11,
+        "rightTimedSamples": 11,
+        "reasons": []
+      },
+      "traceMetaHashes": {
+        "left": [
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run001.meta.json",
+            "sha256": "da9c613d8baafdc66aa367596c3871f8cdda0301abbddded078dbd82719933b1"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run002.meta.json",
+            "sha256": "02a52a7a6976a5e962dd903731e9cc0ace2ee50b24cd9ed447727dc5527d1fc3"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run003.meta.json",
+            "sha256": "6427fd71f8ceb2580cd70c5c666648d3ab74a180cf2a43c1afde4df604a1981b"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run004.meta.json",
+            "sha256": "5550d784353956426adc6fa56ec52a505e11cf7edb1cd1f19d7b5654fdc0ae26"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run005.meta.json",
+            "sha256": "1f67a74e612221d8049da2565de97f48f8c555804a693df7a201e93dedf358cf"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run006.meta.json",
+            "sha256": "a95a47e0758ce10300ab54542447c74331cf35b46161c597dd33679da0389448"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run007.meta.json",
+            "sha256": "976b1f048d5181cdb1d446791dd1654c70826b7d8e5e7b3b4619c9b3a537ed86"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run008.meta.json",
+            "sha256": "b281feab14e094285badb778fa0bf429e3af4bc6d317728527724b32193199a6"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run009.meta.json",
+            "sha256": "578fc38abd233c7e8f59082406bc6dbc59ef8f139747fa12670440c0a94fc630"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run010.meta.json",
+            "sha256": "d514db24fd7b4c4eca6c6073d94e9dc4cc74b67e67cab3332fd992f3d65c6855"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/left/doe.run011.meta.json",
+            "sha256": "f04c69b42dd5550155353c1f7a51e207874fa79cede3a108f27f7fafefbe25ca"
+          }
+        ],
+        "right": [
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run001.meta.json",
+            "sha256": "d3f1f884c0a46019e24a97cf76fc3fd1a15f246fa39bb377f495950943f942a2"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run002.meta.json",
+            "sha256": "c4bdacd0bf63281867e5bcdfb193077190f8281d91a7e4939d452b84bc47a755"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run003.meta.json",
+            "sha256": "76e740d722780858a689eea420a050be788db6eb3cd3f26001ca1bc83233005c"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run004.meta.json",
+            "sha256": "5cf96539597abdab9c935de684cdef5bfb5d6d8e82a0a3ddb2840c1923a37ed9"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run005.meta.json",
+            "sha256": "d06833d83ca3eec31a74de1280a63a5ff3f7a7a8dfc0b271ed3fbc22d9000d17"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run006.meta.json",
+            "sha256": "6c17f876edc2ea40f61be061c75d98ab09e379b8d434accdb581d1d4c600f94a"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run007.meta.json",
+            "sha256": "6f5e30839fbdddc0b45725c43ef46b267c703ef9f5ee39644436dc0201c94e0c"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run008.meta.json",
+            "sha256": "a971e00ee653fe55806abcc0bc6075fa0bda4f2dcccd028cf37faa1447667815"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run009.meta.json",
+            "sha256": "2ada0ab6b5b1f92898968d814ce441615af37ce8f4520725657a9e45622fa29e"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run010.meta.json",
+            "sha256": "80795e0e2ca0d3f4954594d4e4d25e0d67197d4e086191d4bd8a3b47a072d3fb"
+          },
+          {
+            "path": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb/buffer_upload_1kb/right/dawn.run011.meta.json",
+            "sha256": "c9f703f7be6a8ae95e2f558fe2c610b8d9229f3c6b3f00451ad603afa02aee32"
+          }
+        ]
+      },
+      "claimRowHash": {
+        "algorithm": "sha256",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "d4bd93f29cb27402f2625afacfb597380391663fd9b370aafde92f067a4e6bcb",
+        "context": {
+          "workloadId": "buffer_upload_1kb",
+          "workloadContractSha256": "a7fbf683399e4cda637a46dc80ee3df0078522f6849a0a176e3c87436ad67c42",
+          "configContractSha256": "b3d74fa5bc64451a628112e3f1fab337ebbce6f76a1f952e7aaa44aab50392da",
+          "benchmarkPolicySha256": "e50ef9f750667dfc1d6505a097db71be9322df24d099ef91a9e4f49fd3468152",
+          "leftTraceMetaSha256": [
+            "da9c613d8baafdc66aa367596c3871f8cdda0301abbddded078dbd82719933b1",
+            "02a52a7a6976a5e962dd903731e9cc0ace2ee50b24cd9ed447727dc5527d1fc3",
+            "6427fd71f8ceb2580cd70c5c666648d3ab74a180cf2a43c1afde4df604a1981b",
+            "5550d784353956426adc6fa56ec52a505e11cf7edb1cd1f19d7b5654fdc0ae26",
+            "1f67a74e612221d8049da2565de97f48f8c555804a693df7a201e93dedf358cf",
+            "a95a47e0758ce10300ab54542447c74331cf35b46161c597dd33679da0389448",
+            "976b1f048d5181cdb1d446791dd1654c70826b7d8e5e7b3b4619c9b3a537ed86",
+            "b281feab14e094285badb778fa0bf429e3af4bc6d317728527724b32193199a6",
+            "578fc38abd233c7e8f59082406bc6dbc59ef8f139747fa12670440c0a94fc630",
+            "d514db24fd7b4c4eca6c6073d94e9dc4cc74b67e67cab3332fd992f3d65c6855",
+            "f04c69b42dd5550155353c1f7a51e207874fa79cede3a108f27f7fafefbe25ca"
+          ],
+          "rightTraceMetaSha256": [
+            "d3f1f884c0a46019e24a97cf76fc3fd1a15f246fa39bb377f495950943f942a2",
+            "c4bdacd0bf63281867e5bcdfb193077190f8281d91a7e4939d452b84bc47a755",
+            "76e740d722780858a689eea420a050be788db6eb3cd3f26001ca1bc83233005c",
+            "5cf96539597abdab9c935de684cdef5bfb5d6d8e82a0a3ddb2840c1923a37ed9",
+            "d06833d83ca3eec31a74de1280a63a5ff3f7a7a8dfc0b271ed3fbc22d9000d17",
+            "6c17f876edc2ea40f61be061c75d98ab09e379b8d434accdb581d1d4c600f94a",
+            "6f5e30839fbdddc0b45725c43ef46b267c703ef9f5ee39644436dc0201c94e0c",
+            "a971e00ee653fe55806abcc0bc6075fa0bda4f2dcccd028cf37faa1447667815",
+            "2ada0ab6b5b1f92898968d814ce441615af37ce8f4520725657a9e45622fa29e",
+            "80795e0e2ca0d3f4954594d4e4d25e0d67197d4e086191d4bd8a3b47a072d3fb",
+            "c9f703f7be6a8ae95e2f558fe2c610b8d9229f3c6b3f00451ad603afa02aee32"
+          ],
+          "deltaPercent": {
+            "p10Percent": 86.62404675512167,
+            "p50Percent": 89.7159977892037,
+            "p95Percent": 80.78305062476386,
+            "p99Percent": 80.78305062476386,
+            "meanPercent": 84.96747841983715
+          },
+          "comparability": {
+            "comparable": true,
+            "blockingFailedObligations": []
+          },
+          "claimability": {
+            "evaluated": true,
+            "claimable": true,
+            "reasons": []
+          }
+        }
+      }
+    }
+  ],
+  "configPath": "/Users/xyz/deco/fawn/bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+  "configContract": {
+    "path": "/Users/xyz/deco/fawn/bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+    "sha256": "b3d74fa5bc64451a628112e3f1fab337ebbce6f76a1f952e7aaa44aab50392da"
+  },
+  "overall": {
+    "left": {
+      "count": 11,
+      "minMs": 0.020852,
+      "maxMs": 0.06742000000000001,
+      "p10Ms": 0.021893999999999997,
+      "p50Ms": 0.02428,
+      "p95Ms": 0.049386,
+      "p99Ms": 0.049386,
+      "meanMs": 0.033317454545454546,
+      "stdevMs": 0.014867464565673944
+    },
+    "right": {
+      "count": 11,
+      "minMs": 0.15991331349199997,
+      "maxMs": 0.286976166667,
+      "p10Ms": 0.16368179223699997,
+      "p50Ms": 0.236094853952,
+      "p95Ms": 0.256991882716,
+      "p99Ms": 0.256991882716,
+      "meanMs": 0.22163583380063637,
+      "stdevMs": 0.03724595125642679
+    },
+    "deltaPercent": {
+      "p10Approx": 86.62404675512167,
+      "p50Approx": 89.7159977892037,
+      "p95Approx": 80.78305062476386,
+      "p99Approx": 80.78305062476386
+    }
+  },
+  "comparabilitySummary": {
+    "workloadCount": 1,
+    "nonComparableCount": 0,
+    "nonComparableWorkloads": [],
+    "failedBlockingObligationCounts": {}
+  },
+  "comparisonStatus": "comparable",
+  "claimabilitySummary": {
+    "workloadCount": 1,
+    "nonClaimableCount": 0,
+    "nonClaimableWorkloads": []
+  },
+  "claimRowHashChain": {
+    "algorithm": "sha256",
+    "count": 1,
+    "startPreviousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "finalHash": "d4bd93f29cb27402f2625afacfb597380391663fd9b370aafde92f067a4e6bcb"
+  },
+  "claimStatus": "claimable"
+}

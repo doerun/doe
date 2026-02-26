@@ -485,7 +485,7 @@ pub fn main() !void {
                 );
             }
             if (trace_jsonl_file) |*file| {
-                const trace_writer = file.writer();
+                const trace_writer = file.deprecatedWriter();
                 try trace.printTraceLine(
                     trace_writer,
                     idx,

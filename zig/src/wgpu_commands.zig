@@ -616,6 +616,72 @@ fn executeKernelDispatchKernel(
         if (readback_buffer) |buf| procs.wgpuBufferRelease(buf);
     }
 
+    if (warmup_dispatch_count > 0) {
+        const warmup_encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+        });
+        if (warmup_encoder == null) {
+            return .{ .status = .@"error", .status_message = "warmup deviceCreateCommandEncoder returned null" };
+        }
+        defer procs.wgpuCommandEncoderRelease(warmup_encoder);
+
+        if (dispatch_indirect_proc != null and command_encoder_write_buffer != null and dispatch_indirect_buffer != null) {
+            const dispatch_args = [3]u32{ x, y, z };
+            const dispatch_args_bytes = std.mem.asBytes(&dispatch_args);
+            command_encoder_write_buffer.?(warmup_encoder, dispatch_indirect_buffer, 0, dispatch_args_bytes.ptr, @as(u64, dispatch_args_bytes.len));
+        }
+
+        const warmup_pass = procs.wgpuCommandEncoderBeginComputePass(
+            warmup_encoder,
+            &types.WGPUComputePassDescriptor{
+                .nextInChain = null,
+                .label = loader.emptyStringView(),
+                .timestampWrites = null,
+            },
+        );
+        if (warmup_pass == null) {
+            return .{ .status = .@"error", .status_message = "warmup commandEncoderBeginComputePass returned null" };
+        }
+        defer procs.wgpuComputePassEncoderRelease(warmup_pass);
+
+        procs.wgpuComputePassEncoderSetPipeline(warmup_pass, pipeline);
+        if (artifacts) |dispatch_artifacts| {
+            for (dispatch_artifacts.pass_bind_groups, 0..) |bind_group, group| {
+                if (bind_group) |actual_bind_group| {
+                    procs.wgpuComputePassEncoderSetBindGroup(
+                        warmup_pass,
+                        @as(u32, @intCast(group)),
+                        actual_bind_group,
+                        0,
+                        null,
+                    );
+                }
+            }
+        }
+        var warmup_dispatch_index: u32 = 0;
+        while (warmup_dispatch_index < warmup_dispatch_count) : (warmup_dispatch_index += 1) {
+            if (dispatch_indirect_proc != null and dispatch_indirect_buffer != null) {
+                dispatch_indirect_proc.?(warmup_pass, dispatch_indirect_buffer, 0);
+            } else {
+                procs.wgpuComputePassEncoderDispatchWorkgroups(warmup_pass, x, y, z);
+            }
+        }
+        procs.wgpuComputePassEncoderEnd(warmup_pass);
+
+        const warmup_command_buffer = procs.wgpuCommandEncoderFinish(warmup_encoder, &types.WGPUCommandBufferDescriptor{
+            .nextInChain = null,
+            .label = loader.emptyStringView(),
+        });
+        if (warmup_command_buffer == null) {
+            return .{ .status = .@"error", .status_message = "warmup commandEncoderFinish returned null" };
+        }
+        defer procs.wgpuCommandBufferRelease(warmup_command_buffer);
+
+        var warmup_commands = [_]types.WGPUCommandBuffer{warmup_command_buffer};
+        _ = try self.submitCommandBuffers(warmup_commands[0..]);
+    }
+
     const setup_end_ns = std.time.nanoTimestamp();
 
     const encode_start_ns = std.time.nanoTimestamp();

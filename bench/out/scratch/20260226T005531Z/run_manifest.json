@@ -1,0 +1,15 @@
+{
+  "claimGateRan": false,
+  "config": "bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+  "createdAtUtc": "2026-02-26T00:56:57.622903Z",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "outputTimestamp": "20260226T005531Z",
+  "reportPath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb.json",
+  "runFolder": "bench/out/scratch/20260226T005531Z",
+  "runType": "compare_dawn_vs_doe",
+  "schemaVersion": 1,
+  "status": "passed",
+  "updatedAtUtc": "2026-02-26T00:56:57.622903Z",
+  "workspacePath": "bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb"
+}
