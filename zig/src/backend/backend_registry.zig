@@ -4,6 +4,7 @@ const backend_ids = @import("backend_ids.zig");
 const backend_iface = @import("backend_iface.zig");
 const dawn_oracle_backend = @import("dawn_oracle_backend.zig");
 const metal_mod = @import("metal/mod.zig");
+const vulkan_mod = @import("vulkan/mod.zig");
 
 pub fn init_backend(
     allocator: std.mem.Allocator,
@@ -20,6 +21,10 @@ pub fn init_backend(
         },
         .zig_metal => blk: {
             const backend = try metal_mod.ZigMetalBackend.init(allocator, profile, kernel_root);
+            break :blk try backend.as_iface(allocator, reason, policy_hash);
+        },
+        .zig_vulkan => blk: {
+            const backend = try vulkan_mod.ZigVulkanBackend.init(allocator, profile, kernel_root);
             break :blk try backend.as_iface(allocator, reason, policy_hash);
         },
     };

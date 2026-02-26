@@ -18,7 +18,7 @@
   ],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
-    "backendId": { "type": "string", "enum": ["zig_metal"] },
+    "backendId": { "type": "string", "enum": ["zig_metal", "zig_vulkan"] },
     "module": { "type": "string", "minLength": 1 },
     "pipelineHash": { "type": "string", "minLength": 1 },
     "wgslSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },

@@ -13,7 +13,7 @@
         "additionalProperties": false,
         "required": ["backendId", "requiredFeatures", "unsupportedErrorCode"],
         "properties": {
-          "backendId": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] },
+          "backendId": { "type": "string", "enum": ["dawn_oracle", "zig_metal", "zig_vulkan"] },
           "requiredFeatures": {
             "type": "array",
             "items": { "type": "string", "minLength": 1 },

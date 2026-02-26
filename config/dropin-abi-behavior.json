@@ -4,7 +4,10 @@
   "laneModes": {
     "local_metal_directional": "mixed_ownership",
     "local_metal_comparable": "zig_metal_ownership",
-    "local_metal_release": "zig_metal_ownership"
+    "local_metal_release": "zig_metal_ownership",
+    "local_vulkan_directional": "mixed_ownership",
+    "local_vulkan_comparable": "zig_metal_ownership",
+    "local_vulkan_release": "zig_metal_ownership"
   },
   "strictFallbackForbidden": true
 }

@@ -19,6 +19,15 @@
         "operation_timing"
       ],
       "unsupportedErrorCode": "backend_zig_metal_unsupported"
+    },
+    {
+      "backendId": "zig_vulkan",
+      "requiredFeatures": [
+        "queue_completion",
+        "shader_artifact_manifest",
+        "operation_timing"
+      ],
+      "unsupportedErrorCode": "backend_zig_vulkan_unsupported"
     }
   ]
 }

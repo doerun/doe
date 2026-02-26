@@ -223,6 +223,7 @@ def main() -> int:
                     if module_name.startswith(DOE_MODULE_PREFIX) and execution_backend in {
                         "dawn_oracle",
                         "zig_metal",
+                        "zig_vulkan",
                     }:
                         backend_id = meta_payload.get("backendId")
                         if not isinstance(backend_id, str) or not backend_id:

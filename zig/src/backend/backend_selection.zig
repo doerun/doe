@@ -9,6 +9,14 @@ pub const Selection = struct {
 };
 
 pub fn select_backend(profile: model.DeviceProfile, policy: backend_policy.SelectionPolicy) Selection {
+    if (policy.default_backend == .zig_vulkan) {
+        return .{
+            .backend_id = .zig_vulkan,
+            .reason = "policy_lane_prefers_zig_vulkan",
+            .fallback_used = false,
+        };
+    }
+
     if (profile.api == .metal and policy.default_backend == .zig_metal) {
         return .{
             .backend_id = .zig_metal,

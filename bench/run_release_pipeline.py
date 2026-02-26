@@ -75,6 +75,46 @@ def parse_args() -> argparse.Namespace:
         help="Optional local-metal lane override for local-metal gate execution.",
     )
     parser.add_argument(
+        "--with-local-vulkan-gates",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Run local-vulkan-specific blocking gates (backend selection/shader artifacts/"
+            "sync/timing contracts) when a local-vulkan config is detected."
+        ),
+    )
+    parser.add_argument(
+        "--with-local-vulkan-preflight",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Run preflight_vulkan_host.py when a local-vulkan config is detected.",
+    )
+    parser.add_argument(
+        "--local-vulkan-backend-policy",
+        default="config/backend-runtime-policy.json",
+        help="Backend runtime policy path for local-vulkan gate execution.",
+    )
+    parser.add_argument(
+        "--local-vulkan-timing-policy",
+        default="config/backend-timing-policy.json",
+        help="Backend timing policy path for local-vulkan gate execution.",
+    )
+    parser.add_argument(
+        "--local-vulkan-shader-artifact-schema",
+        default="config/shader-artifact.schema.json",
+        help="Shader artifact schema path for local-vulkan gate execution.",
+    )
+    parser.add_argument(
+        "--local-vulkan-symbol-ownership",
+        default="config/dropin-symbol-ownership.json",
+        help="Drop-in symbol ownership contract passed to local-vulkan proc-resolution checks.",
+    )
+    parser.add_argument(
+        "--local-vulkan-lane",
+        default="",
+        help="Optional local-vulkan lane override for local-vulkan gate execution.",
+    )
+    parser.add_argument(
         "--verify-smoke-report",
         default="",
         help="Optional smoke report path to validate with verify_smoke_gpu_usage.py.",
@@ -356,6 +396,10 @@ def is_local_metal_config(config_path: Path) -> bool:
     return ".local.metal" in str(config_path).lower()
 
 
+def is_local_vulkan_config(config_path: Path) -> bool:
+    return ".local.vulkan" in str(config_path).lower()
+
+
 def infer_local_metal_lane(config_path: Path, explicit_lane: str) -> str:
     if explicit_lane.strip():
         return explicit_lane.strip()
@@ -369,10 +413,30 @@ def infer_local_metal_lane(config_path: Path, explicit_lane: str) -> str:
     return ""
 
 
+def infer_local_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
+    if explicit_lane.strip():
+        return explicit_lane.strip()
+    config_name = str(config_path).lower()
+    if ".local.vulkan.release" in config_name:
+        return "local_vulkan_release"
+    if ".local.vulkan.directional" in config_name:
+        return "local_vulkan_directional"
+    if ".local.vulkan.extended" in config_name or ".local.vulkan.comparable" in config_name:
+        return "local_vulkan_comparable"
+    return ""
+
+
 def local_metal_requires_shader_manifest(lane: str) -> bool:
     if not lane:
         return False
-    strict_lanes = {"local_metal_release", "macos_app"}
+    strict_lanes = {"local_metal_comparable", "local_metal_release", "macos_app"}
+    return lane in strict_lanes
+
+
+def local_vulkan_requires_shader_manifest(lane: str) -> bool:
+    if not lane:
+        return False
+    strict_lanes = {"local_vulkan_comparable", "local_vulkan_release"}
     return lane in strict_lanes
 
 
@@ -418,7 +482,13 @@ def main() -> int:
             print(f"FAIL: missing --dropin-artifact: {artifact_path}")
             return 1
     is_local_metal = is_local_metal_config(config_path)
+    is_local_vulkan = is_local_vulkan_config(config_path)
     local_metal_lane = infer_local_metal_lane(config_path, args.local_metal_lane) if is_local_metal else ""
+    local_vulkan_lane = (
+        infer_local_vulkan_lane(config_path, args.local_vulkan_lane)
+        if is_local_vulkan
+        else ""
+    )
     if is_local_metal and args.with_local_metal_gates:
         local_runtime_policy_path = Path(args.local_metal_backend_policy)
         local_timing_policy_path = Path(args.local_metal_timing_policy)
@@ -440,11 +510,39 @@ def main() -> int:
                 "Set --local-metal-lane explicitly."
             )
             return 1
+    if is_local_vulkan and args.with_local_vulkan_gates:
+        local_runtime_policy_path = Path(args.local_vulkan_backend_policy)
+        local_timing_policy_path = Path(args.local_vulkan_timing_policy)
+        local_shader_schema_path = Path(args.local_vulkan_shader_artifact_schema)
+        if not local_runtime_policy_path.exists():
+            print(f"FAIL: missing --local-vulkan-backend-policy: {local_runtime_policy_path}")
+            return 1
+        if not local_timing_policy_path.exists():
+            print(f"FAIL: missing --local-vulkan-timing-policy: {local_timing_policy_path}")
+            return 1
+        if not local_shader_schema_path.exists():
+            print(
+                f"FAIL: missing --local-vulkan-shader-artifact-schema: {local_shader_schema_path}"
+            )
+            return 1
+        if args.with_local_vulkan_gates and not local_vulkan_lane:
+            print(
+                "FAIL: unable to infer local-vulkan lane from --config. "
+                "Set --local-vulkan-lane explicitly."
+            )
+            return 1
     if is_local_metal and args.with_local_metal_gates and args.with_dropin_gate:
         local_symbol_ownership_path = Path(args.local_metal_symbol_ownership)
         if not local_symbol_ownership_path.exists():
             print(
                 f"FAIL: missing --local-metal-symbol-ownership: {local_symbol_ownership_path}"
+            )
+            return 1
+    if is_local_vulkan and args.with_local_vulkan_gates and args.with_dropin_gate:
+        local_symbol_ownership_path = Path(args.local_vulkan_symbol_ownership)
+        if not local_symbol_ownership_path.exists():
+            print(
+                f"FAIL: missing --local-vulkan-symbol-ownership: {local_symbol_ownership_path}"
             )
             return 1
     cycle_contract_path = Path(args.cycle_contract)
@@ -536,6 +634,7 @@ def main() -> int:
     python_exe = sys.executable
     preflight = bench_dir / "preflight_bench_host.py"
     preflight_metal = bench_dir / "preflight_metal_host.py"
+    preflight_vulkan = bench_dir / "preflight_vulkan_host.py"
     compare = bench_dir / "compare_dawn_vs_doe.py"
     visualize = bench_dir / "visualize_dawn_vs_doe.py"
     smoke_verify = bench_dir / "verify_smoke_gpu_usage.py"
@@ -567,6 +666,14 @@ def main() -> int:
             run_step(
                 "preflight-metal",
                 [python_exe, str(preflight_metal)],
+                dry_run=args.dry_run,
+            )
+        if is_local_vulkan and args.with_local_vulkan_preflight and not args.skip_preflight:
+            preflight_ran = True
+            current_step = "preflight-vulkan"
+            run_step(
+                "preflight-vulkan",
+                [python_exe, str(preflight_vulkan)],
                 dry_run=args.dry_run,
             )
 
@@ -657,6 +764,33 @@ def main() -> int:
                             args.local_metal_symbol_ownership,
                         ]
                     )
+            if is_local_vulkan and args.with_local_vulkan_gates:
+                gates_cmd.extend(
+                    [
+                        "--with-backend-selection-gate",
+                        "--backend-runtime-policy",
+                        args.local_vulkan_backend_policy,
+                        "--backend-selection-lane",
+                        local_vulkan_lane,
+                        "--with-shader-artifact-gate",
+                        "--shader-artifact-schema",
+                        args.local_vulkan_shader_artifact_schema,
+                        "--with-vulkan-sync-conformance-gate",
+                        "--with-vulkan-timing-policy-gate",
+                        "--backend-timing-policy",
+                        args.local_vulkan_timing_policy,
+                    ]
+                )
+                if local_vulkan_requires_shader_manifest(local_vulkan_lane):
+                    gates_cmd.append("--shader-artifact-require-manifest")
+                if args.with_dropin_gate:
+                    gates_cmd.extend(
+                        [
+                            "--with-dropin-proc-resolution-gate",
+                            "--dropin-symbol-ownership",
+                            args.local_vulkan_symbol_ownership,
+                        ]
+                    )
             if args.with_dropin_gate:
                 gates_cmd.extend(
                     [
@@ -711,6 +845,18 @@ def main() -> int:
                             "--claim-require-backend-telemetry",
                             "--claim-expected-backend-id",
                             "zig_metal",
+                        ]
+                    )
+                if (
+                    is_local_vulkan
+                    and args.with_local_vulkan_gates
+                    and local_vulkan_requires_shader_manifest(local_vulkan_lane)
+                ):
+                    gates_cmd.extend(
+                        [
+                            "--claim-require-backend-telemetry",
+                            "--claim-expected-backend-id",
+                            "zig_vulkan",
                         ]
                     )
             run_step("gates", gates_cmd, dry_run=args.dry_run)
@@ -799,11 +945,19 @@ def main() -> int:
                 "config": str(config_path),
                 "localMetal": is_local_metal,
                 "localMetalLane": local_metal_lane if is_local_metal else "",
+                "localVulkan": is_local_vulkan,
+                "localVulkanLane": local_vulkan_lane if is_local_vulkan else "",
                 "fullRun": (
                     (not args.skip_compare)
                     and (not args.skip_gates)
                     and (
-                        (not (args.strict_amd_vulkan or (is_local_metal and args.with_local_metal_preflight)))
+                        (
+                            not (
+                                args.strict_amd_vulkan
+                                or (is_local_metal and args.with_local_metal_preflight)
+                                or (is_local_vulkan and args.with_local_vulkan_preflight)
+                            )
+                        )
                         or (not args.skip_preflight)
                     )
                 ),
@@ -851,17 +1005,25 @@ def main() -> int:
     if not args.dry_run:
         manifest_payload = {
             "runType": "release_pipeline",
-            "config": str(config_path),
-            "localMetal": is_local_metal,
-            "localMetalLane": local_metal_lane if is_local_metal else "",
-            "fullRun": (
-                (not args.skip_compare)
-                and (not args.skip_gates)
-                and (
-                    (not (args.strict_amd_vulkan or (is_local_metal and args.with_local_metal_preflight)))
-                    or (not args.skip_preflight)
-                )
-            ),
+                "config": str(config_path),
+                "localMetal": is_local_metal,
+                "localMetalLane": local_metal_lane if is_local_metal else "",
+                "localVulkan": is_local_vulkan,
+                "localVulkanLane": local_vulkan_lane if is_local_vulkan else "",
+                "fullRun": (
+                    (not args.skip_compare)
+                    and (not args.skip_gates)
+                    and (
+                        (
+                            not (
+                                args.strict_amd_vulkan
+                                or (is_local_metal and args.with_local_metal_preflight)
+                                or (is_local_vulkan and args.with_local_vulkan_preflight)
+                            )
+                        )
+                        or (not args.skip_preflight)
+                    )
+                ),
             "claimGateRan": bool(args.with_claim_gate and gates_ran),
             "dropinGateRan": bool(args.with_dropin_gate and gates_ran),
             "compareHtmlRan": bool(compare_html_ran),

@@ -80,11 +80,13 @@ def main() -> int:
             samples = side.get("commandSamples")
             if not isinstance(samples, list):
                 continue
+            successful_samples = 0
             for sample in samples:
                 if not isinstance(sample, dict):
                     continue
                 if sample.get("returnCode") != 0:
                     continue
+                successful_samples += 1
                 source = canonical(str(sample.get("timingSource", "")))
                 if allowed_sources and source not in allowed_sources:
                     failures.append(
@@ -102,6 +104,10 @@ def main() -> int:
                         failures.append(
                             f"{workload_id}: {side_name} upload ignore-first adjusted source {adjusted!r} expected {require_upload_source!r}"
                         )
+            if successful_samples == 0:
+                failures.append(
+                    f"{workload_id}: {side_name} has no successful command samples for timing-policy validation"
+                )
 
     if failures:
         print("FAIL: metal timing policy gate")

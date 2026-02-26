@@ -100,6 +100,16 @@ def parse_args() -> argparse.Namespace:
         help="Run metal_timing_policy_gate.py after trace gate.",
     )
     parser.add_argument(
+        "--with-vulkan-sync-conformance-gate",
+        action="store_true",
+        help="Run vulkan_sync_conformance.py after trace gate.",
+    )
+    parser.add_argument(
+        "--with-vulkan-timing-policy-gate",
+        action="store_true",
+        help="Run vulkan_timing_policy_gate.py after trace gate.",
+    )
+    parser.add_argument(
         "--with-dropin-proc-resolution-gate",
         action="store_true",
         help="Run dropin_proc_resolution_tests.py in the drop-in phase.",
@@ -281,6 +291,8 @@ def main() -> int:
     shader_artifact_gate = bench_dir / "shader_artifact_gate.py"
     metal_sync_conformance = bench_dir / "metal_sync_conformance.py"
     metal_timing_policy_gate = bench_dir / "metal_timing_policy_gate.py"
+    vulkan_sync_conformance = bench_dir / "vulkan_sync_conformance.py"
+    vulkan_timing_policy_gate = bench_dir / "vulkan_timing_policy_gate.py"
     dropin_gate = bench_dir / "dropin_gate.py"
     dropin_proc_resolution_tests = bench_dir / "dropin_proc_resolution_tests.py"
     claim_gate = bench_dir / "claim_gate.py"
@@ -388,6 +400,40 @@ def main() -> int:
                 [
                     sys.executable,
                     str(metal_timing_policy_gate),
+                    "--report",
+                    str(report_path),
+                    "--timing-policy",
+                    str(timing_policy_path),
+                ],
+            )
+
+        if args.with_vulkan_sync_conformance_gate:
+            timing_policy_path = Path(args.backend_timing_policy)
+            if not timing_policy_path.exists():
+                print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
+                return 1
+            run_gate(
+                "vulkan-sync",
+                [
+                    sys.executable,
+                    str(vulkan_sync_conformance),
+                    "--report",
+                    str(report_path),
+                    "--timing-policy",
+                    str(timing_policy_path),
+                ],
+            )
+
+        if args.with_vulkan_timing_policy_gate:
+            timing_policy_path = Path(args.backend_timing_policy)
+            if not timing_policy_path.exists():
+                print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
+                return 1
+            run_gate(
+                "vulkan-timing-policy",
+                [
+                    sys.executable,
+                    str(vulkan_timing_policy_gate),
                     "--report",
                     str(report_path),
                     "--timing-policy",

@@ -692,6 +692,30 @@ def parse_int(value: Any) -> int | None:
     return None
 
 
+def parse_extra_args(value: Any, *, workload_id: str) -> list[str]:
+    if isinstance(value, list):
+        args: list[str] = []
+        for index, item in enumerate(value):
+            if not isinstance(item, str):
+                raise ValueError(
+                    f"invalid workload {workload_id}: extraArgs[{index}] must be a string"
+                )
+            text = item.strip()
+            if text:
+                args.append(text)
+        return args
+
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return []
+        return shlex.split(text)
+
+    raise ValueError(
+        f"invalid workload {workload_id}: extraArgs must be a string or string[]"
+    )
+
+
 def parse_comparability_candidate(
     value: Any,
     *,
@@ -1340,7 +1364,7 @@ def load_workloads(
             api=item.get("api", "vulkan"),
             family=item.get("family", "gen12"),
             driver=item.get("driver", "31.0.101"),
-            extra_args=item.get("extraArgs", []),
+            extra_args=parse_extra_args(item.get("extraArgs", []), workload_id=workload_id),
             left_command_repeat=parse_int(item.get("leftCommandRepeat")) or 1,
             right_command_repeat=parse_int(item.get("rightCommandRepeat")) or 1,
             left_ignore_first_ops=parse_int(item.get("leftIgnoreFirstOps")) or 0,

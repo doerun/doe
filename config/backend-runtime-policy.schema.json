@@ -15,7 +15,7 @@
       "required": ["name", "forceBackend"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "forceBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] }
+        "forceBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal", "zig_vulkan"] }
       }
     },
     "lanes": {
@@ -25,7 +25,7 @@
         "additionalProperties": false,
         "required": ["defaultBackend", "allowFallback", "strictNoFallback"],
         "properties": {
-          "defaultBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] },
+          "defaultBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal", "zig_vulkan"] },
           "allowFallback": { "type": "boolean" },
           "strictNoFallback": { "type": "boolean" },
           "notes": { "type": "string" }

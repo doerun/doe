@@ -50,7 +50,7 @@ const default_commands = [_]model.Command{
 fn printUsage(stdout: anytype) !void {
     try stdout.print(
         \\doe-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
-        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane amd_vulkan_release|local_metal_directional|local_metal_comparable|local_metal_release|macos_app]
+        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane amd_vulkan_release|local_metal_directional|local_metal_comparable|local_metal_release|local_vulkan_directional|local_vulkan_comparable|local_vulkan_release|macos_app]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
         \\ [--gpu-timestamp-mode auto|off]
         \\ [--queue-wait-mode process-events|wait-any]
@@ -91,7 +91,7 @@ fn printUsage(stdout: anytype) !void {
         \\  trace: do not execute commands (trace-only mode)
         \\  native: execute through webgpu-native; dispatch/kernel_dispatch lower to compute passes, render_draw lowers to render-pass or render-bundle mode, and sampler/texture/surface/async diagnostics commands run through explicit WebGPU API contracts.
         \\--backend-lane selects backend selection policy lane when native execution is enabled.
-        \\  amd_metal_release, local_metal_directional, local_metal_comparable, local_metal_release, macos_app
+        \\  amd_vulkan_release, local_metal_directional, local_metal_comparable, local_metal_release, local_vulkan_directional, local_vulkan_comparable, local_vulkan_release, macos_app
         \\--upload-buffer-usage selects upload buffer usage when --execute is enabled.
         \\  copy-dst-copy-src: create upload buffers with CopyDst|CopySrc (default).
         \\  copy-dst: create upload buffers with CopyDst only.

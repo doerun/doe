@@ -32,6 +32,24 @@
       "strictNoFallback": true,
       "notes": "Strict release lane"
     },
+    "local_vulkan_directional": {
+      "defaultBackend": "dawn_oracle",
+      "allowFallback": true,
+      "strictNoFallback": false,
+      "notes": "Vulkan diagnostics lane"
+    },
+    "local_vulkan_comparable": {
+      "defaultBackend": "zig_vulkan",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Strict comparable Vulkan lane"
+    },
+    "local_vulkan_release": {
+      "defaultBackend": "zig_vulkan",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Strict Vulkan release lane"
+    },
     "macos_app": {
       "defaultBackend": "zig_metal",
       "allowFallback": false,

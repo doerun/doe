@@ -1,0 +1,10 @@
+const vulkan_errors = @import("vulkan_errors.zig");
+const vulkan_runtime_state = @import("vulkan_runtime_state.zig");
+
+pub fn submit() vulkan_errors.VulkanError!void {
+    return try vulkan_runtime_state.submit();
+}
+
+pub fn wait_for_completion() vulkan_errors.VulkanError!void {
+    return try vulkan_runtime_state.wait_for_completion();
+}

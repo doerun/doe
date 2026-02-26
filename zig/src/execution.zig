@@ -314,6 +314,12 @@ pub fn parseBackendLane(raw: []const u8) ?backend_policy.BackendLane {
         return .local_metal_comparable;
     if (std.ascii.eqlIgnoreCase(raw, "local_metal_release") or std.ascii.eqlIgnoreCase(raw, "local-metal-release"))
         return .local_metal_release;
+    if (std.ascii.eqlIgnoreCase(raw, "local_vulkan_directional") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-directional"))
+        return .local_vulkan_directional;
+    if (std.ascii.eqlIgnoreCase(raw, "local_vulkan_comparable") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-comparable"))
+        return .local_vulkan_comparable;
+    if (std.ascii.eqlIgnoreCase(raw, "local_vulkan_release") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-release"))
+        return .local_vulkan_release;
     if (std.ascii.eqlIgnoreCase(raw, "macos_app") or std.ascii.eqlIgnoreCase(raw, "macos-app"))
         return .macos_app;
     return null;
@@ -332,6 +338,9 @@ pub fn backendLaneName(lane: backend_policy.BackendLane) []const u8 {
         .local_metal_directional => "local_metal_directional",
         .local_metal_comparable => "local_metal_comparable",
         .local_metal_release => "local_metal_release",
+        .local_vulkan_directional => "local_vulkan_directional",
+        .local_vulkan_comparable => "local_vulkan_comparable",
+        .local_vulkan_release => "local_vulkan_release",
         .macos_app => "macos_app",
     };
 }

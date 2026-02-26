@@ -623,6 +623,9 @@ Additional AMD Vulkan presets:
 - directional macro diagnostics (focused non-claim macro subset): `bench/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json`
 - strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json`
 - adapter-agnostic local comparable matrix (no fixed AMD vendor-id requirement): `bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json`
+- local Vulkan directional diagnostics: `bench/compare_dawn_vs_doe.config.local.vulkan.directional.json`
+- local Vulkan comparable matrix (legacy alias): `bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json`
+- local Vulkan release claim mode: `bench/compare_dawn_vs_doe.config.local.vulkan.release.json`
 
 Preset behavior:
 
@@ -673,6 +676,11 @@ python3 bench/run_release_pipeline.py --config bench/compare_dawn_vs_doe.config.
 
 # local adapter-agnostic comparable matrix (strict, no vendor-id pin)
 python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json
+
+# local Vulkan lanes
+python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
+python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
+python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.local.vulkan.release.json
 ```
 
 If Dawn cannot access an AMD Vulkan adapter on the host (for example, missing `/dev/dri` access),

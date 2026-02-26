@@ -5,6 +5,9 @@ pub const BackendLane = enum {
     local_metal_directional,
     local_metal_comparable,
     local_metal_release,
+    local_vulkan_directional,
+    local_vulkan_comparable,
+    local_vulkan_release,
     macos_app,
 };
 
@@ -35,6 +38,20 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
         .local_metal_comparable, .local_metal_release, .macos_app => .{
             .lane = lane,
             .default_backend = .zig_metal,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = "backend-runtime-policy-v1",
+        },
+        .local_vulkan_directional => .{
+            .lane = lane,
+            .default_backend = .dawn_oracle,
+            .allow_fallback = true,
+            .strict_no_fallback = false,
+            .policy_hash = "backend-runtime-policy-v1",
+        },
+        .local_vulkan_comparable, .local_vulkan_release => .{
+            .lane = lane,
+            .default_backend = .zig_vulkan,
             .allow_fallback = false,
             .strict_no_fallback = true,
             .policy_hash = "backend-runtime-policy-v1",

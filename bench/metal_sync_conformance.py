@@ -57,6 +57,7 @@ def main() -> int:
         samples = left.get("commandSamples")
         if not isinstance(samples, list):
             continue
+        validated_samples = 0
         for sample in samples:
             if not isinstance(sample, dict):
                 continue
@@ -65,8 +66,13 @@ def main() -> int:
             trace_meta = sample.get("traceMeta")
             if not isinstance(trace_meta, dict):
                 continue
+            validated_samples += 1
             for err in metal_sync_contract.evaluate_sync_meta(trace_meta, expected):
                 failures.append(f"{workload_id}: {err}")
+        if validated_samples == 0:
+            failures.append(
+                f"{workload_id}: no successful left command samples with traceMeta for sync validation"
+            )
 
     if failures:
         print("FAIL: metal sync conformance")

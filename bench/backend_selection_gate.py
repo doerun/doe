@@ -36,6 +36,12 @@ def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
         return "local_metal_comparable"
     if ".metal.directional" in config_path:
         return "local_metal_directional"
+    if ".local.vulkan.release" in config_path:
+        return "local_vulkan_release"
+    if ".local.vulkan.comparable" in config_path or ".local.vulkan.extended.comparable" in config_path:
+        return "local_vulkan_comparable"
+    if ".local.vulkan.directional" in config_path:
+        return "local_vulkan_directional"
     return "amd_vulkan_release"
 
 

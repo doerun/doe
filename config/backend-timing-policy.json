@@ -5,7 +5,11 @@
       "requiredTimingClass": "operation",
       "allowedTimingSources": [
         "doe-execution-row-total-ns",
-        "doe-execution-row-total-ns+ignore-first-ops"
+        "doe-execution-row-total-ns+ignore-first-ops",
+        "dawn-perf-wall-time",
+        "dawn-perf-cpu-time",
+        "dawn-perf-gpu-time",
+        "dawn-perf-wall-ns"
       ],
       "requiredSyncModel": "deferred",
       "requireUploadIgnoreFirstSource": "doe-execution-row-total-ns"
@@ -15,7 +19,11 @@
       "allowedTimingSources": [
         "doe-execution-dispatch-window-ns",
         "doe-execution-total-ns",
-        "doe-execution-gpu-timestamp-ns"
+        "doe-execution-gpu-timestamp-ns",
+        "dawn-perf-wall-time",
+        "dawn-perf-cpu-time",
+        "dawn-perf-gpu-time",
+        "dawn-perf-wall-ns"
       ],
       "requiredSyncModel": "per-command"
     },
@@ -23,14 +31,22 @@
       "requiredTimingClass": "operation",
       "allowedTimingSources": [
         "doe-execution-dispatch-window-ns",
-        "doe-execution-total-ns"
+        "doe-execution-total-ns",
+        "dawn-perf-wall-time",
+        "dawn-perf-cpu-time",
+        "dawn-perf-gpu-time",
+        "dawn-perf-wall-ns"
       ],
       "requiredSyncModel": "per-command"
     },
     "surface": {
       "requiredTimingClass": "operation",
       "allowedTimingSources": [
-        "doe-execution-total-ns"
+        "doe-execution-total-ns",
+        "dawn-perf-wall-time",
+        "dawn-perf-cpu-time",
+        "dawn-perf-gpu-time",
+        "dawn-perf-wall-ns"
       ],
       "requiredSyncModel": "per-command"
     }
