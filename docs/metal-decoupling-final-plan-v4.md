@@ -213,7 +213,7 @@ zig/tests/metal/
 ### Phase 6: Strict Metal bench/gate integration
 
 1. Add local Metal compare configs and workload maps.
-2. Add Metal preflight script and pipeline flags.
+2. Add local Metal preflight script and pipeline flags.
 3. Keep AMD Vulkan strict as default; Metal runs are additive.
 4. Wire strict Metal through same comparability + claimability path.
 5. Exit: metal comparable lanes run end-to-end without weakening AMD lanes.
@@ -318,5 +318,3 @@ zig/tests/metal/
 - [ ] Default backend flip scoped to macOS app lane only.
 - [ ] Dawn oracle lane preserved for comparative benchmarking.
 - [ ] Rollback config switch validated pre- and post-cutover in CI.
-- [ ] Cutover artifacts and audit trail attached in release evidence.
-

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "codes": [
+    {
+      "code": "wgsl_parse_failed",
+      "stage": "wgsl_ingest",
+      "severity": "error",
+      "description": "WGSL source failed deterministic parse"
+    },
+    {
+      "code": "wgsl_to_msl_failed",
+      "stage": "wgsl_to_msl",
+      "severity": "error",
+      "description": "WGSL to MSL transformation failed"
+    },
+    {
+      "code": "msl_compile_failed",
+      "stage": "msl_compile",
+      "severity": "error",
+      "description": "MSL compilation to metallib failed"
+    },
+    {
+      "code": "shader_manifest_hash_mismatch",
+      "stage": "manifest",
+      "severity": "error",
+      "description": "Manifest hash chain mismatch"
+    }
+  ]
+}

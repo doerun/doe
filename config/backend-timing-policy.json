@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "domains": {
+    "upload": {
+      "requiredTimingClass": "operation",
+      "allowedTimingSources": [
+        "doe-execution-row-total-ns",
+        "doe-execution-row-total-ns+ignore-first-ops"
+      ],
+      "requiredSyncModel": "deferred",
+      "requireUploadIgnoreFirstSource": "doe-execution-row-total-ns"
+    },
+    "compute": {
+      "requiredTimingClass": "operation",
+      "allowedTimingSources": [
+        "doe-execution-dispatch-window-ns",
+        "doe-execution-total-ns",
+        "doe-execution-gpu-timestamp-ns"
+      ],
+      "requiredSyncModel": "per-command"
+    },
+    "render": {
+      "requiredTimingClass": "operation",
+      "allowedTimingSources": [
+        "doe-execution-dispatch-window-ns",
+        "doe-execution-total-ns"
+      ],
+      "requiredSyncModel": "per-command"
+    },
+    "surface": {
+      "requiredTimingClass": "operation",
+      "allowedTimingSources": [
+        "doe-execution-total-ns"
+      ],
+      "requiredSyncModel": "per-command"
+    }
+  }
+}

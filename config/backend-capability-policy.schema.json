@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Backend Capability Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "backends"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "backends": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["backendId", "requiredFeatures", "unsupportedErrorCode"],
+        "properties": {
+          "backendId": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] },
+          "requiredFeatures": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "unsupportedErrorCode": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

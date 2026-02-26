@@ -1,5 +1,58 @@
 # Config Migration Notes
 
+## 2026-02-26
+
+### Metal execution lane control and trace telemetry
+
+- `doe-zig-runtime` now supports explicit backend-lane selection via `--backend-lane`:
+  - `amd_vulkan_release`
+  - `local_metal_directional`
+  - `local_metal_comparable`
+  - `local_metal_release`
+  - `macos_app`
+- Native execution uses the backend runtime selection pipeline through lane resolution; this metadata is now emitted through execution summaries and trace metadata when `--trace-meta` is requested.
+  - `backendLane`
+  - `backendSelectionReason`
+  - `fallbackUsed`
+  - `selectionPolicyHash`
+  - `shaderArtifactManifestPath`
+  - `shaderArtifactManifestHash`
+- `bench/schema_gate.py` is now driven from `config/schema-targets.json` instead of a hardcoded target list.
+- Added local Metal compare preset configs to run comparable, directional, and release lanes against Dawn via Metal autodescovery:
+  - `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
+  - `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+
+### Backend/runtime contract expansion and strict-lane hardening
+
+- Added backend contracts:
+  - `config/backend-runtime-policy.schema.json` + `config/backend-runtime-policy.json`
+  - `config/backend-capability-policy.schema.json` + `config/backend-capability-policy.json`
+  - `config/backend-timing-policy.schema.json` + `config/backend-timing-policy.json`
+  - `config/backend-cutover-policy.schema.json` + `config/backend-cutover-policy.json`
+- Added shader contracts:
+  - `config/shader-toolchain.schema.json` + `config/shader-toolchain.json`
+  - `config/shader-error-taxonomy.schema.json` + `config/shader-error-taxonomy.json`
+  - `config/shader-artifact.schema.json`
+- Added drop-in ownership contracts:
+  - `config/dropin-abi-behavior.schema.json` + `config/dropin-abi-behavior.json`
+  - `config/dropin-symbol-ownership.schema.json` + `config/dropin-symbol-ownership.json`
+- Added local-Metal hardening gates and helper modules:
+  - `bench/backend_selection_gate.py`
+  - `bench/shader_artifact_gate.py`
+  - `bench/metal_sync_conformance.py`
+  - `bench/metal_timing_policy_gate.py`
+  - `bench/preflight_metal_host.py`
+  - `bench/dropin_proc_resolution_tests.py`
+  - `bench/compare_dawn_vs_doe_modules/backend_contract.py`
+  - `bench/compare_dawn_vs_doe_modules/shader_contract.py`
+  - `bench/compare_dawn_vs_doe_modules/metal_sync_contract.py`
+- `config/benchmark-methodology-thresholds.schema.json` + `config/benchmark-methodology-thresholds.json` now include reliability policy fields:
+  - positive-tail percentile sets for local/release lanes
+  - flake budget
+  - retry policy taxonomy
+- `config/toolchains.json` now records shader toolchain contract identity (`toolchains.shaderMetal.contract`).
+
 ## 2026-02-25
 
 ### Indexed P0 render comparability promotion

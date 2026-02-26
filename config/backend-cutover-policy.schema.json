@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Backend Cutover Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "cutover", "rollback"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "cutover": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetLane", "defaultBackend", "requiredComparablePasses", "requiredClaimablePasses"],
+      "properties": {
+        "targetLane": { "type": "string", "minLength": 1 },
+        "defaultBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] },
+        "requiredComparablePasses": { "type": "integer", "minimum": 1 },
+        "requiredClaimablePasses": { "type": "integer", "minimum": 1 },
+        "requireRollbackRehearsal": { "type": "boolean" }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["switchName", "switchBackend", "requiredCiValidation"],
+      "properties": {
+        "switchName": { "type": "string", "minLength": 1 },
+        "switchBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] },
+        "requiredCiValidation": { "type": "boolean" }
+      }
+    }
+  }
+}

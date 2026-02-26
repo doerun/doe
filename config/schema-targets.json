@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "targets": [
+    {
+      "schema": "config/schema-targets.schema.json",
+      "data": "config/schema-targets.json"
+    },
+    {
+      "schema": "config/claim-cycle.schema.json",
+      "data": "config/claim-cycle.active.json"
+    },
+    {
+      "schema": "config/webgpu-spec-coverage.schema.json",
+      "data": "config/webgpu-spec-coverage.json"
+    },
+    {
+      "schema": "config/benchmark-methodology-thresholds.schema.json",
+      "data": "config/benchmark-methodology-thresholds.json"
+    },
+    {
+      "schema": "config/substantiation-policy.schema.json",
+      "data": "config/substantiation-policy.json"
+    },
+    {
+      "schema": "config/comparability-obligations.schema.json",
+      "data": "config/comparability-obligations.json"
+    },
+    {
+      "schema": "config/comparability-obligation-fixtures.schema.json",
+      "data": "bench/comparability_obligation_fixtures.json"
+    },
+    {
+      "schema": "config/quirk-mining-manifest.schema.json",
+      "data": "examples/quirk-mining.manifest.sample.json"
+    },
+    {
+      "schema": "config/backend-runtime-policy.schema.json",
+      "data": "config/backend-runtime-policy.json"
+    },
+    {
+      "schema": "config/backend-capability-policy.schema.json",
+      "data": "config/backend-capability-policy.json"
+    },
+    {
+      "schema": "config/backend-timing-policy.schema.json",
+      "data": "config/backend-timing-policy.json"
+    },
+    {
+      "schema": "config/backend-cutover-policy.schema.json",
+      "data": "config/backend-cutover-policy.json"
+    },
+    {
+      "schema": "config/shader-toolchain.schema.json",
+      "data": "config/shader-toolchain.json"
+    },
+    {
+      "schema": "config/shader-error-taxonomy.schema.json",
+      "data": "config/shader-error-taxonomy.json"
+    },
+    {
+      "schema": "config/dropin-abi-behavior.schema.json",
+      "data": "config/dropin-abi-behavior.json"
+    },
+    {
+      "schema": "config/dropin-symbol-ownership.schema.json",
+      "data": "config/dropin-symbol-ownership.json"
+    }
+  ],
+  "globTargets": [
+    {
+      "schema": "config/quirks.schema.json",
+      "glob": "examples/quirks/*.json"
+    }
+  ]
+}

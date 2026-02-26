@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Schema Target Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "targets", "globTargets"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema", "data"],
+        "properties": {
+          "schema": { "type": "string", "minLength": 1 },
+          "data": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "globTargets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema", "glob"],
+        "properties": {
+          "schema": { "type": "string", "minLength": 1 },
+          "glob": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

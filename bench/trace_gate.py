@@ -216,6 +216,29 @@ def main() -> int:
                     failures.append(
                         f"{workload_id}/{side} sample {sample_idx} trace replay check failed:\n{output}"
                     )
+                meta_payload = sample_trace_meta(sample)
+                if isinstance(meta_payload, dict):
+                    module_name = str(meta_payload.get("module", ""))
+                    execution_backend = str(meta_payload.get("executionBackend", ""))
+                    if module_name.startswith(DOE_MODULE_PREFIX) and execution_backend in {
+                        "dawn_oracle",
+                        "zig_metal",
+                    }:
+                        backend_id = meta_payload.get("backendId")
+                        if not isinstance(backend_id, str) or not backend_id:
+                            failures.append(
+                                f"{workload_id}/{side} sample {sample_idx} missing backendId in trace meta"
+                            )
+                        selection_reason = meta_payload.get("backendSelectionReason")
+                        if selection_reason is not None and not isinstance(selection_reason, str):
+                            failures.append(
+                                f"{workload_id}/{side} sample {sample_idx} backendSelectionReason must be string"
+                            )
+                        fallback_used = meta_payload.get("fallbackUsed")
+                        if fallback_used is not None and not isinstance(fallback_used, bool):
+                            failures.append(
+                                f"{workload_id}/{side} sample {sample_idx} fallbackUsed must be bool"
+                            )
 
         if args.semantic_parity_mode == "off":
             continue

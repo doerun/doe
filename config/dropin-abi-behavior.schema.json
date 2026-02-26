@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Drop-in ABI Behavior Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "defaultMode", "laneModes", "strictFallbackForbidden"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "defaultMode": { "type": "string", "enum": ["dawn_ownership", "mixed_ownership", "zig_metal_ownership"] },
+    "laneModes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["dawn_ownership", "mixed_ownership", "zig_metal_ownership"]
+      }
+    },
+    "strictFallbackForbidden": { "type": "boolean" }
+  }
+}

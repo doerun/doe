@@ -20,8 +20,8 @@ pub const native_library_names = blk: {
             "wgpu_native.dll",
         },
         .macos => break :blk &[_][]const u8{
-            "libwebgpu.dylib",
             "libwebgpu_dawn.dylib",
+            "libwebgpu.dylib",
             "webgpu.dylib",
             "libwgpu_native.dylib",
         },

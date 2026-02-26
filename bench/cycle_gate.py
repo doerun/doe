@@ -42,6 +42,11 @@ def parse_args() -> argparse.Namespace:
         help="Canonical comparability-obligation contract path.",
     )
     parser.add_argument(
+        "--backend-cutover-policy",
+        default="config/backend-cutover-policy.json",
+        help="Backend cutover policy path for rollback/cutover contract checks.",
+    )
+    parser.add_argument(
         "--out",
         default="bench/out/cycle_gate_report.json",
         help="Output gate report path.",
@@ -592,6 +597,10 @@ def main() -> int:
     if not cycle_path.exists():
         print(f"FAIL: missing cycle contract: {cycle_path}")
         return 1
+    backend_cutover_policy_path = resolve_path(repo_root, args.backend_cutover_policy)
+    if not backend_cutover_policy_path.exists():
+        print(f"FAIL: missing backend cutover policy: {backend_cutover_policy_path}")
+        return 1
 
     output_timestamp = output_paths.resolve_timestamp(args.timestamp) if args.timestamp_output else ""
     out_path = output_paths.with_timestamp(args.out, output_timestamp, enabled=args.timestamp_output)
@@ -604,6 +613,26 @@ def main() -> int:
     )
     failures.extend(cycle_failures)
     warnings.extend(cycle_warnings)
+    try:
+        backend_cutover_policy = load_json(backend_cutover_policy_path)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        print(f"FAIL: invalid backend cutover policy: {exc}")
+        return 1
+    if parse_int(backend_cutover_policy.get("schemaVersion")) != 1:
+        failures.append("backend cutover policy schemaVersion must be 1")
+    checks["backendCutoverPolicy"] = {
+        "path": normalize_rel(repo_root, backend_cutover_policy_path),
+        "cutoverTargetLane": (
+            backend_cutover_policy.get("cutover", {}).get("targetLane")
+            if isinstance(backend_cutover_policy.get("cutover"), dict)
+            else ""
+        ),
+        "rollbackSwitchName": (
+            backend_cutover_policy.get("rollback", {}).get("switchName")
+            if isinstance(backend_cutover_policy.get("rollback"), dict)
+            else ""
+        ),
+    }
 
     artifact_path: Path | None = None
     artifact_policy = cycle_payload.get("artifactPolicy") if isinstance(cycle_payload, dict) else {}

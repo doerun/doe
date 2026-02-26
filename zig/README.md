@@ -185,6 +185,24 @@ Reference commands:
 - API, vendor, and command names are matched case-insensitively where practical.
 - malformed payload fields fail fast rather than injecting placeholder strings.
 
+## Backend lane selection
+
+Native execution now supports explicit backend selection lanes:
+
+```bash
+zig build run -- --backend native --execute --backend-lane amd_vulkan_release
+zig build run -- --backend native --execute --backend-lane local_metal_comparable
+zig build run -- --backend native --execute --backend-lane local_metal_release
+```
+
+Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metadata records:
+
+- `backendId`
+- `backendSelectionReason`
+- `fallbackUsed`
+- `selectionPolicyHash`
+- `backendLane`
+
 ### Command replay examples for Doppler-style command derivatives
 
 - `kernel_dispatch` with `kernel` label and dispatch dimensions: `fawn/examples/kernel_dispatch_commands.json`

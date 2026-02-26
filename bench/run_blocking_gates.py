@@ -55,6 +55,61 @@ def parse_args() -> argparse.Namespace:
         help="Run claim_gate.py after schema/correctness/trace gates.",
     )
     parser.add_argument(
+        "--with-backend-selection-gate",
+        action="store_true",
+        help="Run backend_selection_gate.py after trace gate.",
+    )
+    parser.add_argument(
+        "--backend-runtime-policy",
+        default="config/backend-runtime-policy.json",
+        help="Backend runtime policy path passed to backend_selection_gate.py.",
+    )
+    parser.add_argument(
+        "--backend-selection-lane",
+        default="",
+        help="Optional lane override passed to backend_selection_gate.py.",
+    )
+    parser.add_argument(
+        "--with-shader-artifact-gate",
+        action="store_true",
+        help="Run shader_artifact_gate.py after trace gate.",
+    )
+    parser.add_argument(
+        "--shader-artifact-schema",
+        default="config/shader-artifact.schema.json",
+        help="Shader artifact schema path passed to shader_artifact_gate.py.",
+    )
+    parser.add_argument(
+        "--shader-artifact-require-manifest",
+        action="store_true",
+        help="Pass --require-manifest to shader_artifact_gate.py.",
+    )
+    parser.add_argument(
+        "--with-metal-sync-conformance-gate",
+        action="store_true",
+        help="Run metal_sync_conformance.py after trace gate.",
+    )
+    parser.add_argument(
+        "--backend-timing-policy",
+        default="config/backend-timing-policy.json",
+        help="Backend timing policy path passed to sync/timing gates.",
+    )
+    parser.add_argument(
+        "--with-metal-timing-policy-gate",
+        action="store_true",
+        help="Run metal_timing_policy_gate.py after trace gate.",
+    )
+    parser.add_argument(
+        "--with-dropin-proc-resolution-gate",
+        action="store_true",
+        help="Run dropin_proc_resolution_tests.py in the drop-in phase.",
+    )
+    parser.add_argument(
+        "--dropin-symbol-ownership",
+        default="config/dropin-symbol-ownership.json",
+        help="Drop-in symbol ownership contract for proc-resolution checks.",
+    )
+    parser.add_argument(
         "--require-claim-gate",
         action="store_true",
         help=(
@@ -164,6 +219,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Forward --require-workload-id-set-match to claim_gate.py.",
     )
+    parser.add_argument(
+        "--claim-require-backend-telemetry",
+        action="store_true",
+        help="Forward --require-backend-telemetry to claim_gate.py.",
+    )
+    parser.add_argument(
+        "--claim-expected-backend-id",
+        default="",
+        help="Forward --expected-backend-id to claim_gate.py.",
+    )
     return parser.parse_args()
 
 
@@ -212,7 +277,12 @@ def main() -> int:
     comparability_parity_gate = bench_dir / "comparability_obligation_parity_gate.py"
     correctness_gate = bench_dir / "check_correctness.py"
     trace_gate = bench_dir / "trace_gate.py"
+    backend_selection_gate = bench_dir / "backend_selection_gate.py"
+    shader_artifact_gate = bench_dir / "shader_artifact_gate.py"
+    metal_sync_conformance = bench_dir / "metal_sync_conformance.py"
+    metal_timing_policy_gate = bench_dir / "metal_timing_policy_gate.py"
     dropin_gate = bench_dir / "dropin_gate.py"
+    dropin_proc_resolution_tests = bench_dir / "dropin_proc_resolution_tests.py"
     claim_gate = bench_dir / "claim_gate.py"
 
     if not args.with_claim_gate:
@@ -254,6 +324,76 @@ def main() -> int:
                 args.trace_semantic_parity_mode,
             ],
         )
+
+        if args.with_backend_selection_gate:
+            backend_policy_path = Path(args.backend_runtime_policy)
+            if not backend_policy_path.exists():
+                print(f"FAIL: missing --backend-runtime-policy: {backend_policy_path}")
+                return 1
+            backend_selection_command = [
+                sys.executable,
+                str(backend_selection_gate),
+                "--report",
+                str(report_path),
+                "--policy",
+                str(backend_policy_path),
+            ]
+            if args.backend_selection_lane.strip():
+                backend_selection_command.extend(
+                    ["--lane", args.backend_selection_lane.strip()]
+                )
+            run_gate("backend-selection", backend_selection_command)
+
+        if args.with_shader_artifact_gate:
+            shader_schema_path = Path(args.shader_artifact_schema)
+            if not shader_schema_path.exists():
+                print(f"FAIL: missing --shader-artifact-schema: {shader_schema_path}")
+                return 1
+            shader_artifact_command = [
+                sys.executable,
+                str(shader_artifact_gate),
+                "--report",
+                str(report_path),
+                "--schema",
+                str(shader_schema_path),
+            ]
+            if args.shader_artifact_require_manifest:
+                shader_artifact_command.append("--require-manifest")
+            run_gate("shader-artifact", shader_artifact_command)
+
+        if args.with_metal_sync_conformance_gate:
+            timing_policy_path = Path(args.backend_timing_policy)
+            if not timing_policy_path.exists():
+                print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
+                return 1
+            run_gate(
+                "metal-sync",
+                [
+                    sys.executable,
+                    str(metal_sync_conformance),
+                    "--report",
+                    str(report_path),
+                    "--timing-policy",
+                    str(timing_policy_path),
+                ],
+            )
+
+        if args.with_metal_timing_policy_gate:
+            timing_policy_path = Path(args.backend_timing_policy)
+            if not timing_policy_path.exists():
+                print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
+                return 1
+            run_gate(
+                "metal-timing-policy",
+                [
+                    sys.executable,
+                    str(metal_timing_policy_gate),
+                    "--report",
+                    str(report_path),
+                    "--timing-policy",
+                    str(timing_policy_path),
+                ],
+            )
 
         if args.with_dropin_gate:
             if not args.dropin_artifact.strip():
@@ -316,7 +456,43 @@ def main() -> int:
                 dropin_command.append("--no-timestamp-output")
             if args.dropin_skip_benchmarks:
                 dropin_command.append("--skip-benchmarks")
+            if args.with_dropin_proc_resolution_gate:
+                ownership_path = Path(args.dropin_symbol_ownership)
+                if not ownership_path.exists():
+                    print(f"FAIL: missing --dropin-symbol-ownership: {ownership_path}")
+                    return 1
+                dropin_command.extend(
+                    [
+                        "--with-proc-resolution-gate",
+                        "--symbol-ownership",
+                        str(ownership_path),
+                    ]
+                )
             run_gate("dropin", dropin_command)
+
+        elif args.with_dropin_proc_resolution_gate:
+            if not args.dropin_artifact.strip():
+                print("FAIL: --with-dropin-proc-resolution-gate requires --dropin-artifact")
+                return 1
+            artifact_path = Path(args.dropin_artifact)
+            if not artifact_path.exists():
+                print(f"FAIL: missing --dropin-artifact: {artifact_path}")
+                return 1
+            ownership_path = Path(args.dropin_symbol_ownership)
+            if not ownership_path.exists():
+                print(f"FAIL: missing --dropin-symbol-ownership: {ownership_path}")
+                return 1
+            run_gate(
+                "dropin-proc-resolution",
+                [
+                    sys.executable,
+                    str(dropin_proc_resolution_tests),
+                    "--artifact",
+                    str(artifact_path),
+                    "--ownership",
+                    str(ownership_path),
+                ],
+            )
 
         if args.with_claim_gate:
             claim_command = [
@@ -344,6 +520,12 @@ def main() -> int:
                 claim_command.append("--require-workload-contract-hash")
             if args.claim_require_workload_id_set_match:
                 claim_command.append("--require-workload-id-set-match")
+            if args.claim_require_backend_telemetry:
+                claim_command.append("--require-backend-telemetry")
+            if args.claim_expected_backend_id.strip():
+                claim_command.extend(
+                    ["--expected-backend-id", args.claim_expected_backend_id.strip()]
+                )
             run_gate("claim", claim_command)
     except subprocess.CalledProcessError as exc:
         print(f"FAIL: gate command failed with return code {exc.returncode}")

@@ -1,6 +1,10 @@
 const std = @import("std");
 const model = @import("model.zig");
 const webgpu = @import("webgpu_ffi.zig");
+const backend_runtime = @import("backend/backend_runtime.zig");
+const backend_ids = @import("backend/backend_ids.zig");
+const backend_policy = @import("backend/backend_policy.zig");
+const backend_telemetry = @import("backend/backend_telemetry.zig");
 
 pub const BackendMode = enum {
     trace,
@@ -26,32 +30,42 @@ pub const ExecutionResult = struct {
     gpu_timestamp_ns: u64,
     gpu_timestamp_attempted: bool,
     gpu_timestamp_valid: bool,
+    backend_selection_reason: ?[]const u8,
+    fallback_used: ?bool,
+    selection_policy_hash: ?[]const u8,
+    shader_artifact_manifest_path: ?[]const u8,
+    shader_artifact_manifest_hash: ?[]const u8,
+    backend_lane: ?[]const u8,
 };
 
 pub const ExecutionContext = struct {
     allocator: std.mem.Allocator,
     mode: BackendMode,
-    backend: ?webgpu.WebGPUBackend,
+    backend_lane: backend_policy.BackendLane,
+    backend: ?backend_runtime.BackendRuntime,
 
     pub fn init(
         allocator: std.mem.Allocator,
         mode: BackendMode,
         profile: model.DeviceProfile,
         kernel_root: ?[]const u8,
+        lane: backend_policy.BackendLane,
     ) !ExecutionContext {
         switch (mode) {
             .trace => {
                 return .{
                     .allocator = allocator,
                     .mode = .trace,
+                    .backend_lane = lane,
                     .backend = null,
                 };
             },
             .native => {
-                const native_backend = try webgpu.WebGPUBackend.init(allocator, profile, kernel_root);
+                const native_backend = try backend_runtime.BackendRuntime.init(allocator, profile, kernel_root, lane);
                 return .{
                     .allocator = allocator,
                     .mode = .native,
+                    .backend_lane = lane,
                     .backend = native_backend,
                 };
             },
@@ -66,9 +80,16 @@ pub const ExecutionContext = struct {
         self.backend = null;
     }
 
+    pub fn telemetry(self: *ExecutionContext) ?backend_telemetry.BackendTelemetry {
+        if (self.backend) |*backend| {
+            return backend.telemetry();
+        }
+        return null;
+    }
+
     pub fn execute(self: *ExecutionContext, command: model.Command) !ExecutionResult {
         const mode_name = executionModeName(self.mode);
-        const fallback = ExecutionResult{
+        const mode_result = ExecutionResult{
             .backend = mode_name,
             .status = .skipped,
             .status_code = "disabled",
@@ -80,9 +101,15 @@ pub const ExecutionContext = struct {
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
+            .backend_selection_reason = null,
+            .fallback_used = null,
+            .selection_policy_hash = null,
+            .shader_artifact_manifest_path = null,
+            .shader_artifact_manifest_hash = null,
+            .backend_lane = null,
         };
 
-        if (self.mode == .trace) return fallback;
+        if (self.mode == .trace) return mode_result;
         if (self.backend == null) {
             return .{
                 .backend = mode_name,
@@ -96,19 +123,26 @@ pub const ExecutionContext = struct {
                 .gpu_timestamp_ns = 0,
                 .gpu_timestamp_attempted = false,
                 .gpu_timestamp_valid = false,
+                .backend_selection_reason = null,
+                .fallback_used = null,
+                .selection_policy_hash = null,
+                .shader_artifact_manifest_path = null,
+                .shader_artifact_manifest_hash = null,
+                .backend_lane = backendLaneName(self.backend_lane),
             };
         }
 
         const command_start = std.time.nanoTimestamp();
         if (self.backend) |*backend| {
-            const status = backend.executeCommand(command) catch |err| {
+            const telemetry = backend.telemetry();
+            const status = backend.execute_command(command) catch |err| {
                 const command_end = std.time.nanoTimestamp();
                 const elapsed_ns = if (command_end > command_start)
                     @as(u64, @intCast(command_end - command_start))
                 else
                     0;
                 return .{
-                    .backend = mode_name,
+                    .backend = backendIdName(telemetry.backend_id),
                     .status = .@"error",
                     .status_code = @errorName(err),
                     .duration_ns = elapsed_ns,
@@ -119,6 +153,12 @@ pub const ExecutionContext = struct {
                     .gpu_timestamp_ns = 0,
                     .gpu_timestamp_attempted = false,
                     .gpu_timestamp_valid = false,
+                    .backend_selection_reason = telemetry.backend_selection_reason,
+                    .fallback_used = telemetry.fallback_used,
+                    .selection_policy_hash = telemetry.selection_policy_hash,
+                    .shader_artifact_manifest_path = telemetry.shader_artifact_manifest_path,
+                    .shader_artifact_manifest_hash = telemetry.shader_artifact_manifest_hash,
+                    .backend_lane = backendLaneName(self.backend_lane),
                 };
             };
             const command_end = std.time.nanoTimestamp();
@@ -128,7 +168,7 @@ pub const ExecutionContext = struct {
                 0;
 
             return .{
-                .backend = mode_name,
+                .backend = backendIdName(telemetry.backend_id),
                 .status = if (status.status == .ok) .ok else if (status.status == .@"error") .@"error" else .unsupported,
                 .status_code = status.status_message,
                 .duration_ns = elapsed_ns,
@@ -139,6 +179,12 @@ pub const ExecutionContext = struct {
                 .gpu_timestamp_ns = status.gpu_timestamp_ns,
                 .gpu_timestamp_attempted = status.gpu_timestamp_attempted,
                 .gpu_timestamp_valid = status.gpu_timestamp_valid,
+                .backend_selection_reason = telemetry.backend_selection_reason,
+                .fallback_used = telemetry.fallback_used,
+                .selection_policy_hash = telemetry.selection_policy_hash,
+                .shader_artifact_manifest_path = telemetry.shader_artifact_manifest_path,
+                .shader_artifact_manifest_hash = telemetry.shader_artifact_manifest_hash,
+                .backend_lane = backendLaneName(self.backend_lane),
             };
         }
 
@@ -154,6 +200,12 @@ pub const ExecutionContext = struct {
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
+            .backend_selection_reason = null,
+            .fallback_used = null,
+            .selection_policy_hash = null,
+            .shader_artifact_manifest_path = null,
+            .shader_artifact_manifest_hash = null,
+            .backend_lane = backendLaneName(self.backend_lane),
         };
     }
 
@@ -164,7 +216,7 @@ pub const ExecutionContext = struct {
     ) void {
         if (self.mode != .native) return;
         if (self.backend) |*backend| {
-            backend.setUploadBehavior(usage_mode, submit_every);
+            backend.set_upload_behavior(usage_mode, submit_every);
         }
     }
 
@@ -174,7 +226,7 @@ pub const ExecutionContext = struct {
     ) void {
         if (self.mode != .native) return;
         if (self.backend) |*backend| {
-            backend.setQueueWaitMode(wait_mode);
+            backend.set_queue_wait_mode(wait_mode);
         }
     }
 
@@ -184,7 +236,7 @@ pub const ExecutionContext = struct {
     ) void {
         if (self.mode != .native) return;
         if (self.backend) |*backend| {
-            backend.setQueueSyncMode(sync_mode);
+            backend.set_queue_sync_mode(sync_mode);
         }
     }
 
@@ -194,14 +246,14 @@ pub const ExecutionContext = struct {
     ) void {
         if (self.mode != .native) return;
         if (self.backend) |*backend| {
-            backend.setGpuTimestampMode(timestamp_mode);
+            backend.set_gpu_timestamp_mode(timestamp_mode);
         }
     }
 
     pub fn flushQueue(self: *ExecutionContext) !u64 {
         if (self.mode != .native) return 0;
         if (self.backend) |*backend| {
-            return try backend.flushQueue();
+            return try backend.flush_queue();
         }
         return 0;
     }
@@ -212,7 +264,7 @@ pub const ExecutionContext = struct {
     ) !void {
         if (self.mode != .native) return;
         if (self.backend) |*backend| {
-            try backend.prewarmUploadPath(max_upload_bytes);
+            try backend.prewarm_upload_path(max_upload_bytes);
         }
     }
 };
@@ -251,6 +303,41 @@ pub fn parseBackend(raw: []const u8) ?BackendMode {
     if (std.ascii.eqlIgnoreCase(raw, "native")) return .native;
     if (std.ascii.eqlIgnoreCase(raw, "webgpu")) return .native;
     return null;
+}
+
+pub fn parseBackendLane(raw: []const u8) ?backend_policy.BackendLane {
+    if (std.ascii.eqlIgnoreCase(raw, "amd_vulkan_release") or std.ascii.eqlIgnoreCase(raw, "amd-vulkan-release"))
+        return .amd_vulkan_release;
+    if (std.ascii.eqlIgnoreCase(raw, "local_metal_directional") or std.ascii.eqlIgnoreCase(raw, "local-metal-directional"))
+        return .local_metal_directional;
+    if (std.ascii.eqlIgnoreCase(raw, "local_metal_comparable") or std.ascii.eqlIgnoreCase(raw, "local-metal-comparable"))
+        return .local_metal_comparable;
+    if (std.ascii.eqlIgnoreCase(raw, "local_metal_release") or std.ascii.eqlIgnoreCase(raw, "local-metal-release"))
+        return .local_metal_release;
+    if (std.ascii.eqlIgnoreCase(raw, "macos_app") or std.ascii.eqlIgnoreCase(raw, "macos-app"))
+        return .macos_app;
+    return null;
+}
+
+pub fn defaultBackendLane(profile: model.DeviceProfile) backend_policy.BackendLane {
+    return switch (profile.api) {
+        .metal => .local_metal_comparable,
+        else => .amd_vulkan_release,
+    };
+}
+
+pub fn backendLaneName(lane: backend_policy.BackendLane) []const u8 {
+    return switch (lane) {
+        .amd_vulkan_release => "amd_vulkan_release",
+        .local_metal_directional => "local_metal_directional",
+        .local_metal_comparable => "local_metal_comparable",
+        .local_metal_release => "local_metal_release",
+        .macos_app => "macos_app",
+    };
+}
+
+pub fn backendIdName(id: backend_ids.BackendId) []const u8 {
+    return backend_ids.backendIdName(id);
 }
 
 pub fn executionModeName(mode: BackendMode) []const u8 {

@@ -169,3 +169,28 @@ Upgrade flow:
 3. run blocking + advisory gates
 4. compare delta reports
 5. merge only if blocking gates pass
+
+## 8. Local Metal Hardening Flow (Additive)
+
+Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
+
+1. preflight
+- run `python3 fawn/bench/preflight_metal_host.py`
+
+2. compare
+- use local Metal config presets:
+  - `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
+  - `bench/compare_dawn_vs_doe.config.local.metal.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+
+3. blocking gates
+- run backend/timing/sync/shader checks through `run_blocking_gates.py`:
+  - `--with-backend-selection-gate`
+  - `--with-metal-sync-conformance-gate`
+  - `--with-metal-timing-policy-gate`
+  - `--with-shader-artifact-gate`
+
+4. strict lane policy
+- strict local Metal lanes must fail on fallback (`fallbackUsed=true`)
+- strict release claims should require backend telemetry and backend identity `zig_metal`
+- shader manifest checks may be required per lane (`local_metal_release`, `macos_app`)

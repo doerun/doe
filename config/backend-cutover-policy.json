@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "cutover": {
+    "targetLane": "macos_app",
+    "defaultBackend": "zig_metal",
+    "requiredComparablePasses": 5,
+    "requiredClaimablePasses": 3,
+    "requireRollbackRehearsal": true
+  },
+  "rollback": {
+    "switchName": "force_dawn_oracle",
+    "switchBackend": "dawn_oracle",
+    "requiredCiValidation": true
+  }
+}

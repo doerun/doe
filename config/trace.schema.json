@@ -35,6 +35,7 @@
     "action": { "type": "string" },
     "toggle": { "type": "string" },
     "executionBackend": { "type": "string" },
+    "backendId": { "type": "string" },
     "executionStatus": { "type": "string", "enum": ["ok", "skipped", "unsupported", "error"] },
     "executionStatusCode": { "type": "string" },
     "executionStatusMessage": { "type": "string" },

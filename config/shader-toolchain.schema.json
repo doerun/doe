@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Shader Toolchain Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "platforms"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "platforms": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["wgslToMsl", "mslToMetallib"],
+        "properties": {
+          "wgslToMsl": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["tool", "version", "args"],
+            "properties": {
+              "tool": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 },
+              "args": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "mslToMetallib": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["tool", "version", "args"],
+            "properties": {
+              "tool": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 },
+              "args": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

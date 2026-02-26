@@ -35,6 +35,13 @@
       }
     },
     "executionBackend": { "type": "string" },
+    "backendId": { "type": "string" },
+    "backendSelectionReason": { "type": "string" },
+    "backendLane": { "type": "string" },
+    "fallbackUsed": { "type": "boolean" },
+    "selectionPolicyHash": { "type": "string" },
+    "shaderArtifactManifestPath": { "type": "string" },
+    "shaderArtifactManifestHash": { "type": "string" },
     "queueSyncMode": { "type": "string" },
     "executionRowCount": { "type": "integer", "minimum": 0 },
     "executionSuccessCount": { "type": "integer", "minimum": 0 },

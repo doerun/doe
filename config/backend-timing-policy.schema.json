@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Backend Timing Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "domains"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "domains": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requiredTimingClass", "allowedTimingSources", "requiredSyncModel"],
+        "properties": {
+          "requiredTimingClass": { "type": "string", "enum": ["operation", "process-wall", "any"] },
+          "allowedTimingSources": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "minItems": 1
+          },
+          "requiredSyncModel": { "type": "string", "enum": ["per-command", "deferred", "either"] },
+          "requireUploadIgnoreFirstSource": { "type": "string" }
+        }
+      }
+    }
+  }
+}

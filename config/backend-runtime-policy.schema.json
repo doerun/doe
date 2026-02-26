@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Backend Runtime Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "defaultLane", "lanes", "rollbackSwitch"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "defaultLane": { "type": "string", "minLength": 1 },
+    "selectionPolicyHashSeed": { "type": "string" },
+    "cutoverPolicyPath": { "type": "string", "minLength": 1 },
+    "rollbackSwitch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "forceBackend"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "forceBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] }
+      }
+    },
+    "lanes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["defaultBackend", "allowFallback", "strictNoFallback"],
+        "properties": {
+          "defaultBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal"] },
+          "allowFallback": { "type": "boolean" },
+          "strictNoFallback": { "type": "boolean" },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

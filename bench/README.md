@@ -770,3 +770,43 @@ Historical note:
 - `schemaVersion: 3` used p5-oriented floor fields and is superseded.
 - `schemaVersion: 2` uses the same sign convention but does not include the full percentile summary fields above.
 - `schemaVersion: 1` used the inverse sign convention.
+
+## Local Metal strict lanes
+
+Additive local-metal presets:
+
+- `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
+- `bench/compare_dawn_vs_doe.config.local.metal.comparable.json`
+- `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+
+Host preflight:
+
+```bash
+python3 bench/preflight_metal_host.py
+```
+
+Blocking gate sequence for strict local-metal comparable/release lanes:
+
+```bash
+python3 bench/run_blocking_gates.py \
+  --report bench/out/dawn-vs-doe.local.metal.comparable.json \
+  --with-backend-selection-gate \
+  --with-shader-artifact-gate \
+  --with-metal-sync-conformance-gate \
+  --with-metal-timing-policy-gate \
+  --backend-runtime-policy config/backend-runtime-policy.json \
+  --backend-timing-policy config/backend-timing-policy.json
+```
+
+For release claims, enforce backend telemetry in claim gate:
+
+```bash
+python3 bench/claim_gate.py \
+  --report bench/out/dawn-vs-doe.local.metal.release.json \
+  --require-comparison-status comparable \
+  --require-claim-status claimable \
+  --require-claimability-mode release \
+  --require-min-timed-samples 15 \
+  --require-backend-telemetry \
+  --expected-backend-id zig_metal
+```

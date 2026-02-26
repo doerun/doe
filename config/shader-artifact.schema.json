@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Shader Artifact Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "backendId",
+    "module",
+    "pipelineHash",
+    "wgslSha256",
+    "mslSha256",
+    "metallibSha256",
+    "toolchainSha256",
+    "taxonomyCode",
+    "previousHash",
+    "hash"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "backendId": { "type": "string", "enum": ["zig_metal"] },
+    "module": { "type": "string", "minLength": 1 },
+    "pipelineHash": { "type": "string", "minLength": 1 },
+    "wgslSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "mslSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "metallibSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "toolchainSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "taxonomyCode": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "previousHash": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "minLength": 1 }
+  }
+}

@@ -79,6 +79,19 @@ def parse_args() -> argparse.Namespace:
             "--expected-workload-contract."
         ),
     )
+    parser.add_argument(
+        "--require-backend-telemetry",
+        action="store_true",
+        help="Require backend selection telemetry on successful left-side samples.",
+    )
+    parser.add_argument(
+        "--expected-backend-id",
+        default="",
+        help=(
+            "Expected left-side backendId for successful samples when "
+            "--require-backend-telemetry is set."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -537,6 +550,49 @@ def main() -> int:
                     failures.append(
                         f"{workload_id}: comparable workload must not have blockingFailedObligations"
                     )
+            if args.require_backend_telemetry and args.require_claim_status == "claimable":
+                left_payload = workload.get("left")
+                if not isinstance(left_payload, dict):
+                    failures.append(f"{workload_id}: missing left payload for backend telemetry checks")
+                    continue
+                command_samples = left_payload.get("commandSamples")
+                if not isinstance(command_samples, list) or not command_samples:
+                    failures.append(f"{workload_id}: missing left.commandSamples for backend telemetry checks")
+                    continue
+                for sample_idx, sample in enumerate(command_samples):
+                    if not isinstance(sample, dict):
+                        continue
+                    if sample.get("returnCode") != 0:
+                        continue
+                    trace_meta = sample.get("traceMeta")
+                    if not isinstance(trace_meta, dict):
+                        failures.append(
+                            f"{workload_id}: sample {sample_idx} missing traceMeta for backend telemetry checks"
+                        )
+                        continue
+                    backend_id = trace_meta.get("backendId")
+                    if not isinstance(backend_id, str) or not backend_id:
+                        failures.append(f"{workload_id}: sample {sample_idx} missing backendId")
+                    elif args.expected_backend_id and backend_id != args.expected_backend_id:
+                        failures.append(
+                            f"{workload_id}: sample {sample_idx} backendId mismatch "
+                            f"expected={args.expected_backend_id} got={backend_id}"
+                        )
+                    selection_reason = trace_meta.get("backendSelectionReason")
+                    if not isinstance(selection_reason, str) or not selection_reason:
+                        failures.append(
+                            f"{workload_id}: sample {sample_idx} missing backendSelectionReason"
+                        )
+                    selection_policy_hash = trace_meta.get("selectionPolicyHash")
+                    if not isinstance(selection_policy_hash, str) or not selection_policy_hash:
+                        failures.append(
+                            f"{workload_id}: sample {sample_idx} missing selectionPolicyHash"
+                        )
+                    fallback_used = trace_meta.get("fallbackUsed")
+                    if not isinstance(fallback_used, bool):
+                        failures.append(
+                            f"{workload_id}: sample {sample_idx} missing fallbackUsed bool"
+                        )
 
     if args.require_workload_contract_hash:
         if not isinstance(workload_contract, dict):

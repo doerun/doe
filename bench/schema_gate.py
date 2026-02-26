@@ -110,56 +110,72 @@ def validate_target(root: Path, target: ValidationTarget) -> list[str]:
     return failures
 
 
-def collect_targets(root: Path) -> list[ValidationTarget]:
-    targets = [
-        ValidationTarget(
-            schema_rel="config/claim-cycle.schema.json",
-            data_rel="config/claim-cycle.active.json",
-        ),
-        ValidationTarget(
-            schema_rel="config/webgpu-spec-coverage.schema.json",
-            data_rel="config/webgpu-spec-coverage.json",
-        ),
-        ValidationTarget(
-            schema_rel="config/benchmark-methodology-thresholds.schema.json",
-            data_rel="config/benchmark-methodology-thresholds.json",
-        ),
-        ValidationTarget(
-            schema_rel="config/substantiation-policy.schema.json",
-            data_rel="config/substantiation-policy.json",
-        ),
-        ValidationTarget(
-            schema_rel="config/comparability-obligations.schema.json",
-            data_rel="config/comparability-obligations.json",
-        ),
-        ValidationTarget(
-            schema_rel="config/comparability-obligation-fixtures.schema.json",
-            data_rel="bench/comparability_obligation_fixtures.json",
-        ),
-        ValidationTarget(
-            schema_rel="config/quirk-mining-manifest.schema.json",
-            data_rel="examples/quirk-mining.manifest.sample.json",
-        ),
-    ]
+def load_schema_target_registry(root: Path) -> list[ValidationTarget]:
+    registry_path = root / "config" / "schema-targets.json"
+    if not registry_path.exists():
+        raise ValueError(f"missing schema target registry: {registry_path}")
+    registry_payload = load_json(registry_path)
 
-    quirks = sorted((root / "examples/quirks").glob("*.json"))
-    for quirk in quirks:
+    schema_path = root / "config" / "schema-targets.schema.json"
+    if not schema_path.exists():
+        raise ValueError(f"missing schema target registry schema: {schema_path}")
+    schema_payload = load_json(schema_path)
+    registry_validator = jsonschema.Draft202012Validator(schema_payload)
+
+    registry_errors = sorted(
+        registry_validator.iter_errors(registry_payload),
+        key=lambda item: tuple(str(part) for part in item.absolute_path),
+    )
+    if registry_errors:
+        messages = [f"{format_error_path(error)}: {error.message}" for error in registry_errors]
+        raise ValueError("schema-targets.json is invalid: " + "; ".join(messages))
+
+    targets: list[ValidationTarget] = []
+    for target in registry_payload.get("targets", []):
+        schema_rel = target.get("schema")
+        data_rel = target.get("data")
+        if not isinstance(schema_rel, str) or not isinstance(data_rel, str):
+            raise ValueError(f"invalid registry target entry: {target}")
         targets.append(
             ValidationTarget(
-                schema_rel="config/quirks.schema.json",
-                data_rel=str(quirk.relative_to(root)),
+                schema_rel=schema_rel,
+                data_rel=data_rel,
             )
         )
+
+    for glob_target in registry_payload.get("globTargets", []):
+        schema_rel = glob_target.get("schema")
+        glob_pattern = glob_target.get("glob")
+        if not isinstance(schema_rel, str) or not isinstance(glob_pattern, str):
+            raise ValueError(f"invalid registry glob target entry: {glob_target}")
+        var_found = False
+        for data_path in sorted(root.glob(glob_pattern)):
+            if not data_path.is_file():
+                continue
+            var_found = True
+            targets.append(
+                ValidationTarget(
+                    schema_rel=schema_rel,
+                    data_rel=str(data_path.relative_to(root)),
+                )
+            )
+        if not var_found:
+            raise ValueError(f"schema target glob has no matches: {glob_pattern}")
+
     return targets
+
+
+def collect_targets(root: Path) -> list[ValidationTarget]:
+    return load_schema_target_registry(root)
 
 
 def main() -> int:
     args = parse_args()
-    root = detect_repo_root(args.root)
-
-    targets = collect_targets(root)
-    if not targets:
-        print("FAIL: no schema targets configured")
+    try:
+        root = detect_repo_root(args.root)
+        targets = collect_targets(root)
+    except (ValueError, OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"FAIL: {exc}")
         return 1
 
     failures: list[str] = []

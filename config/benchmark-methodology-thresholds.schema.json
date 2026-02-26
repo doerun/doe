@@ -3,7 +3,7 @@
   "title": "Fawn Benchmark Methodology Thresholds",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "timingSelection", "claimabilityDefaults"],
+  "required": ["schemaVersion", "timingSelection", "claimabilityDefaults", "reliability"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "timingSelection": {
@@ -25,6 +25,41 @@
       "properties": {
         "localMinTimedSamples": { "type": "integer", "minimum": 0 },
         "releaseMinTimedSamples": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "reliability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "localRequiredPositivePercentiles",
+        "releaseRequiredPositivePercentiles",
+        "flakeBudgetPercent",
+        "retryPolicy"
+      ],
+      "properties": {
+        "localRequiredPositivePercentiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "releaseRequiredPositivePercentiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "flakeBudgetPercent": { "type": "number", "minimum": 0.0 },
+        "retryPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxRetries", "retryOn"],
+          "properties": {
+            "maxRetries": { "type": "integer", "minimum": 0 },
+            "retryOn": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
       }
     }
   }

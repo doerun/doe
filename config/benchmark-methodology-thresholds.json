@@ -7,5 +7,25 @@
   "claimabilityDefaults": {
     "localMinTimedSamples": 7,
     "releaseMinTimedSamples": 15
+  },
+  "reliability": {
+    "localRequiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent"
+    ],
+    "releaseRequiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent",
+      "p99Percent"
+    ],
+    "flakeBudgetPercent": 5.0,
+    "retryPolicy": {
+      "maxRetries": 2,
+      "retryOn": [
+        "execution_error",
+        "timing_policy_mismatch",
+        "shader_artifact_missing"
+      ]
+    }
   }
 }

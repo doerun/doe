@@ -5,11 +5,23 @@ const p1_capability_procs = @import("wgpu_p1_capability_procs.zig");
 const dropin_ext_a = @import("wgpu_dropin_ext_a.zig");
 const dropin_ext_b = @import("wgpu_dropin_ext_b.zig");
 const dropin_ext_c = @import("wgpu_dropin_ext_c.zig");
+const dropin_behavior_policy = @import("dropin/dropin_behavior_policy.zig");
+const dropin_symbol_ownership = @import("dropin/dropin_symbol_ownership.zig");
+const dropin_router = @import("dropin/dropin_router.zig");
+const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
 
 comptime {
     _ = dropin_ext_a;
     _ = dropin_ext_b;
     _ = dropin_ext_c;
+    _ = dropin_behavior_policy;
+    _ = dropin_symbol_ownership;
+    _ = dropin_router;
+    _ = dropin_diagnostics;
+}
+
+fn activeBehaviorMode() dropin_behavior_policy.BehaviorMode {
+    return .dawn_ownership;
 }
 
 pub const DropinErrorCode = enum(u32) {
@@ -40,6 +52,7 @@ pub export fn doeWgpuDropinClearLastError() callconv(.c) void {
 }
 
 fn ensureNativeLibraryLocked() bool {
+    _ = activeBehaviorMode();
     if (g_library_ready) return !g_library_failed;
     g_library_ready = true;
     g_native_lib = loader.openLibrary() catch {

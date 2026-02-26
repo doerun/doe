@@ -709,6 +709,30 @@ Meaning:
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
 
+## 2026-02-26 backend/metal hardening update
+
+1. backend decoupling scaffold landed
+- new backend runtime tree under `zig/src/backend` with explicit identities:
+  - `dawn_oracle`
+  - `zig_metal`
+- execution path now carries backend lane and selection telemetry through trace metadata.
+
+2. strict local-metal gate stack landed
+- new gates:
+  - `bench/backend_selection_gate.py`
+  - `bench/shader_artifact_gate.py`
+  - `bench/metal_sync_conformance.py`
+  - `bench/metal_timing_policy_gate.py`
+- release/blocking orchestration now supports local-metal additive enforcement while preserving AMD Vulkan default strict behavior.
+
+3. contract surface expanded
+- new config/schema contracts added for backend runtime/capability/timing/cutover, shader toolchain/taxonomy/artifact, and drop-in behavior/symbol ownership.
+- schema gate target selection is now registry-driven through `config/schema-targets.json`.
+
+4. open hardening gaps
+- metal shader artifact emission is still incomplete for strict manifest-required lanes.
+- metal modules outside delegated runtime paths intentionally return explicit unsupported taxonomy until fully implemented.
+
 ## Track A Execution Plan (Finalized)
 
 Objective:

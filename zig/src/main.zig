@@ -50,7 +50,7 @@ const default_commands = [_]model.Command{
 fn printUsage(stdout: anytype) !void {
     try stdout.print(
         \\doe-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
-        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native]
+        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane amd_vulkan_release|local_metal_directional|local_metal_comparable|local_metal_release|macos_app]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
         \\ [--gpu-timestamp-mode auto|off]
         \\ [--queue-wait-mode process-events|wait-any]
@@ -90,6 +90,8 @@ fn printUsage(stdout: anytype) !void {
         \\--backend chooses execution backend when --execute is enabled.
         \\  trace: do not execute commands (trace-only mode)
         \\  native: execute through webgpu-native; dispatch/kernel_dispatch lower to compute passes, render_draw lowers to render-pass or render-bundle mode, and sampler/texture/surface/async diagnostics commands run through explicit WebGPU API contracts.
+        \\--backend-lane selects backend selection policy lane when native execution is enabled.
+        \\  amd_metal_release, local_metal_directional, local_metal_comparable, local_metal_release, macos_app
         \\--upload-buffer-usage selects upload buffer usage when --execute is enabled.
         \\  copy-dst-copy-src: create upload buffers with CopyDst|CopySrc (default).
         \\  copy-dst: create upload buffers with CopyDst only.
@@ -126,6 +128,7 @@ fn optionExpectsValue(option: []const u8) bool {
         std.mem.eql(u8, option, "--trace-meta") or
         std.mem.eql(u8, option, "--kernel-root") or
         std.mem.eql(u8, option, "--backend") or
+        std.mem.eql(u8, option, "--backend-lane") or
         std.mem.eql(u8, option, "--upload-buffer-usage") or
         std.mem.eql(u8, option, "--upload-submit-every") or
         std.mem.eql(u8, option, "--gpu-timestamp-mode") or
@@ -169,6 +172,7 @@ pub fn main() !void {
     var replay_path: ?[]const u8 = null;
     var execute = false;
     var backend_mode: execution.BackendMode = .trace;
+    var backend_lane_value: ?[]const u8 = null;
     var kernel_root: ?[]const u8 = null;
     var upload_buffer_usage_mode: execution.UploadBufferUsageMode = .copy_dst_copy_src;
     var upload_submit_every: u32 = 1;
@@ -217,6 +221,9 @@ pub fn main() !void {
                 try trace.writef(stdout, "invalid --backend value: {s}\n", .{argv[i]});
                 return;
             }
+        } else if (std.mem.eql(u8, argv[i], "--backend-lane") and i + 1 < argv.len) {
+            i += 1;
+            backend_lane_value = argv[i];
         } else if (std.mem.eql(u8, argv[i], "--upload-buffer-usage") and i + 1 < argv.len) {
             i += 1;
             if (execution.parseUploadBufferUsage(argv[i])) |mode| {
@@ -332,6 +339,14 @@ pub fn main() !void {
         .driver_version = try model.SemVer.parse(profile_driver),
     };
 
+    const backend_lane = if (backend_lane_value) |raw_lane| blk: {
+        if (execution.parseBackendLane(raw_lane)) |lane| {
+            break :blk lane;
+        }
+        try trace.writef(stdout, "invalid --backend-lane value: {s}\n", .{raw_lane});
+        return;
+    } else execution.defaultBackendLane(profile);
+
     if (emit_normalized) {
         var normalized_idx: usize = 0;
         while (normalized_idx < commands.len) : (normalized_idx += 1) {
@@ -351,7 +366,7 @@ pub fn main() !void {
 
     var execution_context: ?execution.ExecutionContext = null;
     if (execute) {
-        execution_context = try execution.ExecutionContext.init(allocator, backend_mode, profile, kernel_root);
+        execution_context = try execution.ExecutionContext.init(allocator, backend_mode, profile, kernel_root, backend_lane);
         if (execution_context) |*ctx| {
             ctx.configureUploadBehavior(upload_buffer_usage_mode, upload_submit_every);
             ctx.configureGpuTimestampMode(gpu_timestamp_mode);
@@ -405,10 +420,24 @@ pub fn main() !void {
         .profile_api = trace.apiName(profile.api),
         .profile_family = profile_family,
         .profile_driver = profile_driver,
+        .backend_selection_reason = null,
+        .fallback_used = null,
+        .selection_policy_hash = null,
+        .shader_artifact_manifest_path = null,
+        .shader_artifact_manifest_hash = null,
+        .backend_lane = execution.backendLaneName(backend_lane),
         .queue_sync_mode = if (execution_context != null) @tagName(queue_sync_mode) else null,
     };
-    if (execution_context != null) {
-        trace_summary.execution_backend = execution.executionModeName(backend_mode);
+
+    if (execution_context) |*ctx| {
+        if (ctx.telemetry()) |selection| {
+            trace_summary.execution_backend = execution.backendIdName(selection.backend_id);
+            trace_summary.backend_selection_reason = selection.backend_selection_reason;
+            trace_summary.fallback_used = selection.fallback_used;
+            trace_summary.selection_policy_hash = selection.selection_policy_hash;
+            trace_summary.shader_artifact_manifest_path = selection.shader_artifact_manifest_path;
+            trace_summary.shader_artifact_manifest_hash = selection.shader_artifact_manifest_hash;
+        }
     }
 
     var idx: usize = 0;
@@ -435,6 +464,12 @@ pub fn main() !void {
             if (executed.gpu_timestamp_attempted) trace_summary.execution_gpu_timestamp_attempted_count += 1;
             if (executed.gpu_timestamp_valid) trace_summary.execution_gpu_timestamp_valid_count += 1;
             trace_summary.execution_backend = executed.backend;
+            if (executed.backend_selection_reason) |reason| trace_summary.backend_selection_reason = reason;
+            if (executed.fallback_used) |fallback| trace_summary.fallback_used = fallback;
+            if (executed.selection_policy_hash) |hash| trace_summary.selection_policy_hash = hash;
+            if (executed.shader_artifact_manifest_path) |path| trace_summary.shader_artifact_manifest_path = path;
+            if (executed.shader_artifact_manifest_hash) |hash| trace_summary.shader_artifact_manifest_hash = hash;
+            if (executed.backend_lane) |lane| trace_summary.backend_lane = lane;
             switch (executed.status) {
                 .ok => trace_summary.execution_success_count += 1,
                 .@"error" => trace_summary.execution_error_count += 1,

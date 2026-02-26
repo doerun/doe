@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "platforms": {
+    "macos": {
+      "wgslToMsl": {
+        "tool": "xcrun",
+        "version": "15.x",
+        "args": [
+          "metal",
+          "-std=metal3.1"
+        ]
+      },
+      "mslToMetallib": {
+        "tool": "xcrun",
+        "version": "15.x",
+        "args": [
+          "metallib"
+        ]
+      }
+    }
+  }
+}

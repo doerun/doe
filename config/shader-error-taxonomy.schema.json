@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Shader Error Taxonomy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "codes"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "stage", "severity"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "stage": { "type": "string", "enum": ["wgsl_ingest", "wgsl_to_msl", "msl_compile", "manifest"] },
+          "severity": { "type": "string", "enum": ["error", "warning"] },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -30,6 +30,12 @@ pub const TraceRunSummary = struct {
     execution_gpu_timestamp_attempted_count: u64,
     execution_gpu_timestamp_valid_count: u64,
     execution_backend: ?[]const u8,
+    backend_selection_reason: ?[]const u8,
+    fallback_used: ?bool,
+    selection_policy_hash: ?[]const u8,
+    shader_artifact_manifest_path: ?[]const u8,
+    shader_artifact_manifest_hash: ?[]const u8,
+    backend_lane: ?[]const u8,
     final_hash: u64,
     final_previous_hash: u64,
     profile_vendor: []const u8,
@@ -285,6 +291,8 @@ pub fn printTraceLine(
         );
         try stdout.writeAll(",\"executionBackend\":");
         try writeJsonString(stdout, exec.backend);
+        try stdout.writeAll(",\"backendId\":");
+        try writeJsonString(stdout, exec.backend);
         try stdout.writeAll(",\"executionStatus\":");
         try writeJsonString(stdout, status_name);
         try stdout.writeAll(",\"executionStatusCode\":");
@@ -344,6 +352,37 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     if (summary.execution_backend) |backend| {
         try writer.writeAll("\"executionBackend\":");
         try writeJsonString(&writer, backend);
+        try writer.writeAll(",");
+        try writer.writeAll("\"backendId\":");
+        try writeJsonString(&writer, backend);
+        try writer.writeAll(",");
+    }
+    if (summary.backend_selection_reason) |reason| {
+        try writer.writeAll("\"backendSelectionReason\":");
+        try writeJsonString(&writer, reason);
+        try writer.writeAll(",");
+    }
+    if (summary.fallback_used) |fallback| {
+        try writef(writer, "\"fallbackUsed\":{},", .{fallback});
+    }
+    if (summary.selection_policy_hash) |hash| {
+        try writer.writeAll("\"selectionPolicyHash\":");
+        try writeJsonString(&writer, hash);
+        try writer.writeAll(",");
+    }
+    if (summary.shader_artifact_manifest_path) |path| {
+        try writer.writeAll("\"shaderArtifactManifestPath\":");
+        try writeJsonString(&writer, path);
+        try writer.writeAll(",");
+    }
+    if (summary.shader_artifact_manifest_hash) |hash| {
+        try writer.writeAll("\"shaderArtifactManifestHash\":");
+        try writeJsonString(&writer, hash);
+        try writer.writeAll(",");
+    }
+    if (summary.backend_lane) |lane| {
+        try writer.writeAll("\"backendLane\":");
+        try writeJsonString(&writer, lane);
         try writer.writeAll(",");
     }
     if (summary.queue_sync_mode) |sync_mode| {

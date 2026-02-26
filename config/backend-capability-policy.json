@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "backends": [
+    {
+      "backendId": "dawn_oracle",
+      "requiredFeatures": [
+        "queue_submit",
+        "compute_dispatch",
+        "trace_meta"
+      ],
+      "unsupportedErrorCode": "backend_dawn_oracle_unsupported"
+    },
+    {
+      "backendId": "zig_metal",
+      "requiredFeatures": [
+        "metal_queue_completion",
+        "wgsl_to_msl",
+        "shader_artifact_manifest",
+        "operation_timing"
+      ],
+      "unsupportedErrorCode": "backend_zig_metal_unsupported"
+    }
+  ]
+}

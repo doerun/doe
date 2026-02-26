@@ -638,7 +638,8 @@ def compare_assessment(
         trace_meta = sample.get("traceMeta", {})
         if not isinstance(trace_meta, dict):
             continue
-        if str(trace_meta.get("executionBackend", "")) != "webgpu-ffi":
+        execution_backend = str(trace_meta.get("executionBackend", ""))
+        if execution_backend not in {"webgpu-ffi", "dawn_oracle", "zig_metal"}:
             continue
         execution_dispatch = safe_int(trace_meta.get("executionDispatchCount"), default=0)
         execution_success = safe_int(trace_meta.get("executionSuccessCount"), default=0)
@@ -660,7 +661,7 @@ def compare_assessment(
         applicable=required_timing_class == "operation",
         passes=len(invalid_native_execution_sources) == 0,
         failure_reason=(
-            "left side uses non-native operation timing source(s) for webgpu-ffi execution: "
+            "left side uses non-native operation timing source(s) for native execution: "
             + ", ".join(sorted(invalid_native_execution_sources))
         ),
         details={

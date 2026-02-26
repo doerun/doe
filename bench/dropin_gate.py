@@ -69,6 +69,16 @@ def parse_args() -> argparse.Namespace:
         help="Skip drop-in benchmark suite execution.",
     )
     parser.add_argument(
+        "--with-proc-resolution-gate",
+        action="store_true",
+        help="Run proc-resolution ownership checks against loaded symbols.",
+    )
+    parser.add_argument(
+        "--symbol-ownership",
+        default="config/dropin-symbol-ownership.json",
+        help="Symbol ownership contract path passed to proc-resolution checks.",
+    )
+    parser.add_argument(
         "--timestamp",
         default="",
         help=(
@@ -137,6 +147,8 @@ def main() -> int:
     benchmark_report = Path(args.benchmark_report)
     benchmark_html = Path(args.benchmark_html)
     report_path = Path(args.report)
+    ownership_path = Path(args.symbol_ownership)
+    ownership_arg = str(ownership_path) if ownership_path.exists() else ""
     output_timestamp = (
         output_paths.resolve_timestamp(args.timestamp)
         if args.timestamp_output
@@ -154,6 +166,7 @@ def main() -> int:
     behavior_suite = bench_dir / "dropin_behavior_suite.py"
     benchmark_suite = bench_dir / "dropin_benchmark_suite.py"
     benchmark_visualize = bench_dir / "visualize_dropin_benchmark.py"
+    proc_resolution_tests = bench_dir / "dropin_proc_resolution_tests.py"
     child_time_args: list[str] = []
     if args.timestamp_output:
         child_time_args = ["--timestamp", output_timestamp]
@@ -169,6 +182,8 @@ def main() -> int:
         str(artifact_path),
         "--symbols",
         str(symbols_path),
+        "--ownership",
+        ownership_arg,
         "--report",
         str(symbol_report),
     ]
@@ -185,6 +200,20 @@ def main() -> int:
     ]
     behavior_command.extend(child_time_args)
     steps.append(run_step("behavior_suite", behavior_command, behavior_report))
+
+    if args.with_proc_resolution_gate:
+        if not ownership_path.exists():
+            print(f"FAIL: missing --symbol-ownership: {ownership_path}")
+            return 1
+        proc_resolution_command = [
+            sys.executable,
+            str(proc_resolution_tests),
+            "--artifact",
+            str(artifact_path),
+            "--ownership",
+            str(ownership_path),
+        ]
+        steps.append(run_step("proc_resolution", proc_resolution_command))
 
     if not args.skip_benchmarks:
         benchmark_command = [

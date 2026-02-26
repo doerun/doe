@@ -31,6 +31,11 @@ def parse_args() -> argparse.Namespace:
         help="Required symbol list (one symbol per line).",
     )
     parser.add_argument(
+        "--ownership",
+        default="",
+        help="Optional drop-in symbol ownership contract path.",
+    )
+    parser.add_argument(
         "--report",
         default="bench/out/dropin_symbol_report.json",
         help="JSON report output path.",
@@ -121,6 +126,7 @@ def main() -> int:
     args = parse_args()
     artifact_path = Path(args.artifact)
     symbols_path = Path(args.symbols)
+    ownership_path = Path(args.ownership) if args.ownership else None
     output_timestamp = (
         output_paths.resolve_timestamp(args.timestamp)
         if args.timestamp_output
@@ -147,6 +153,27 @@ def main() -> int:
             raise FileNotFoundError(f"missing artifact: {artifact_path}")
 
         required_symbols = read_required_symbols(symbols_path)
+        if ownership_path is not None:
+            ownership_payload = json.loads(ownership_path.read_text(encoding="utf-8"))
+            symbols_payload = ownership_payload.get("symbols", []) if isinstance(ownership_payload, dict) else []
+            if not isinstance(symbols_payload, list):
+                raise ValueError(f"invalid ownership contract symbols list: {ownership_path}")
+            strict_owned = sorted(
+                {
+                    str(entry.get("symbol"))
+                    for entry in symbols_payload
+                    if isinstance(entry, dict)
+                    and bool(entry.get("requiredInStrict", False))
+                    and isinstance(entry.get("symbol"), str)
+                    and entry.get("symbol")
+                }
+            )
+            missing_required_in_symbol_list = sorted(set(strict_owned) - set(required_symbols))
+            if missing_required_in_symbol_list:
+                raise ValueError(
+                    "ownership contract strict symbols missing from ABI symbol list: "
+                    + ", ".join(missing_required_in_symbol_list)
+                )
         attempted, exported_symbols, command_used = export_symbols_from_artifact(artifact_path)
 
         required_set = set(required_symbols)
@@ -162,6 +189,7 @@ def main() -> int:
                 "extraSymbolCount": len(extras),
                 "toolCommandUsed": command_used,
                 "toolAttempts": attempted,
+                "ownershipPath": str(ownership_path) if ownership_path is not None else "",
             }
         )
 

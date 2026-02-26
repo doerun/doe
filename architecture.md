@@ -151,3 +151,29 @@ Fawn only claims advantage over C++/Rust incumbents when all are true:
 4. comparison status is not `scaffold`
 
 If these are not met, claims are directional only, not substantiated.
+
+## 11. Backend Runtime Decoupling Contract
+
+Backend selection is now represented as a first-class runtime contract:
+
+1. backend identities
+- `dawn_oracle`
+- `zig_metal`
+
+2. policy contracts
+- `config/backend-runtime-policy.json`
+- `config/backend-capability-policy.json`
+- `config/backend-timing-policy.json`
+- `config/backend-cutover-policy.json`
+
+3. telemetry surface
+- trace metadata carries backend-lane and selection context:
+  - `backendId`
+  - `backendSelectionReason`
+  - `fallbackUsed`
+  - `selectionPolicyHash`
+  - optional shader artifact references
+
+4. strict-lane rule
+- strict local Metal lanes and cutover lanes are no-fallback by contract
+- fallback must be explicit, policy-encoded, and auditable via trace artifacts

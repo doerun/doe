@@ -211,6 +211,16 @@ pub const WebGPUBackend = struct {
         };
     }
 
+    fn backendTypeName(backend_type: types.WGPUBackendType) []const u8 {
+        return switch (backend_type) {
+            .vulkan => "vulkan",
+            .metal => "metal",
+            .d3d12 => "d3d12",
+            .webgpu => "webgpu",
+            else => "undefined",
+        };
+    }
+
     pub fn deinit(self: *Self) void {
         const procs = self.procs orelse return;
         const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
@@ -829,7 +839,10 @@ pub const WebGPUBackend = struct {
             .backendType = self.requested_backend_type,
             .compatibleSurface = null,
         };
-        self.timestampLog("request_adapter backend_type={}\n", .{@intFromEnum(self.requested_backend_type)});
+        self.timestampLog(
+            "request_adapter backend_type={s}\n",
+            .{backendTypeName(self.requested_backend_type)},
+        );
 
         const adapter_request_info = request_info;
         const future = self.procs.?.wgpuInstanceRequestAdapter(

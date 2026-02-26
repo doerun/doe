@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "defaultLane": "amd_vulkan_release",
+  "selectionPolicyHashSeed": "backend-runtime-policy-v1",
+  "cutoverPolicyPath": "config/backend-cutover-policy.json",
+  "rollbackSwitch": {
+    "name": "force_dawn_oracle",
+    "forceBackend": "dawn_oracle"
+  },
+  "lanes": {
+    "amd_vulkan_release": {
+      "defaultBackend": "dawn_oracle",
+      "allowFallback": true,
+      "strictNoFallback": false,
+      "notes": "Incumbent claim lane remains default until explicit cutover"
+    },
+    "local_metal_directional": {
+      "defaultBackend": "dawn_oracle",
+      "allowFallback": true,
+      "strictNoFallback": false,
+      "notes": "Directional diagnostics lane"
+    },
+    "local_metal_comparable": {
+      "defaultBackend": "zig_metal",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Strict comparable lane"
+    },
+    "local_metal_release": {
+      "defaultBackend": "zig_metal",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Strict release lane"
+    },
+    "macos_app": {
+      "defaultBackend": "zig_metal",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Controlled cutover target"
+    }
+  }
+}
