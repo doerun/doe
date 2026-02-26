@@ -127,25 +127,25 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
     self.inner.setUploadBehavior(mode, submit_every);
-    vulkan_resource_table.lookup_resource() catch {};
+    vulkan_resource_table.lookup_resource() catch unreachable;
 }
 
 fn set_queue_wait_mode(ctx: *anyopaque, mode: webgpu.QueueWaitMode) void {
     const self = cast(ctx);
     self.inner.setQueueWaitMode(mode);
-    vulkan_queue.wait_for_completion() catch {};
+    vulkan_queue.wait_for_completion() catch unreachable;
 }
 
 fn set_queue_sync_mode(ctx: *anyopaque, mode: webgpu.QueueSyncMode) void {
     const self = cast(ctx);
     self.inner.setQueueSyncMode(mode);
-    vulkan_queue.submit() catch {};
+    vulkan_queue.submit() catch unreachable;
 }
 
 fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
     const self = cast(ctx);
     self.inner.setGpuTimestampMode(mode);
-    vulkan_timing.operation_timing_ns() catch {};
+    vulkan_timing.operation_timing_ns() catch unreachable;
 }
 
 fn flush_queue(ctx: *anyopaque) anyerror!u64 {

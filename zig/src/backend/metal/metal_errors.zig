@@ -1,4 +1,5 @@
 pub const MetalError = error{
+    InvalidState,
     Unsupported,
     UnsupportedFeature,
     ShaderToolchainUnavailable,

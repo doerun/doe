@@ -1,3 +1,4 @@
+const std = @import("std");
 const vulkan_timing = @import("../../src/backend/vulkan/vulkan_timing.zig");
 
 test "vulkan timing source query succeeds" {
