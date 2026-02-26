@@ -33,7 +33,7 @@
       "id": "workgroup_atomic_1024",
       "name": "workgroup-atomic-smoke",
       "description": "Local Vulkan compute smoke",
-      "commandsPath": "examples/dispatch_commands.json",
+      "commandsPath": "examples/workgroup_atomic_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",

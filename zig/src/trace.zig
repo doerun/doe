@@ -321,7 +321,7 @@ pub fn printTraceLine(
 pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     const file = try std.fs.cwd().createFile(path, .{});
     defer file.close();
-    var writer = file.deprecatedWriter();
+    var writer = file.writer();
 
     try writef(writer, "{{\"traceVersion\":{},\"module\":", .{summary.trace_version});
     try writeJsonString(&writer, summary.module_name);
@@ -370,9 +370,9 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
         try writeJsonString(&writer, hash);
         try writer.writeAll(",");
     }
-    if (summary.shader_artifact_manifest_path) |path| {
+    if (summary.shader_artifact_manifest_path) |manifest_path| {
         try writer.writeAll("\"shaderArtifactManifestPath\":");
-        try writeJsonString(&writer, path);
+        try writeJsonString(&writer, manifest_path);
         try writer.writeAll(",");
     }
     if (summary.shader_artifact_manifest_hash) |hash| {

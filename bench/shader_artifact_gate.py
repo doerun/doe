@@ -35,6 +35,13 @@ def main() -> int:
     report = load_json(Path(args.report))
     schema = shader_contract.load_schema(Path(args.schema))
 
+    shader_commands = {
+        "dispatch",
+        "kernel_dispatch",
+        "render_draw",
+        "async_diagnostics",
+    }
+
     failures: list[str] = []
     validated = 0
 
@@ -61,6 +68,11 @@ def main() -> int:
             trace_meta = sample.get("traceMeta")
             if not isinstance(trace_meta, dict):
                 continue
+
+            command = str(trace_meta.get("command", "")).strip()
+            if command and command not in shader_commands:
+                continue
+
             manifest_path_raw = trace_meta.get("shaderArtifactManifestPath")
             if not isinstance(manifest_path_raw, str) or not manifest_path_raw:
                 if args.require_manifest:

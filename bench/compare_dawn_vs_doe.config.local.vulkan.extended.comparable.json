@@ -2,11 +2,11 @@
   "workloads": "bench/workloads.local.vulkan.extended.json",
   "left": {
     "name": "doe",
-    "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane local_vulkan_comparable --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+    "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane vulkan_local_comparable --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
   },
   "right": {
     "name": "dawn",
-    "commandTemplate": "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter-map bench/dawn_workload_map.local.vulkan.json --workload {workload} --dawn-extra-args=--backend=vulkan --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
+    "commandTemplate": "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter-map bench/dawn_workload_map.local.vulkan.json --workload {workload} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
   },
   "run": {
     "iterations": 8,

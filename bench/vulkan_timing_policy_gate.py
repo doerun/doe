@@ -35,6 +35,39 @@ def domain_policy(policy: dict[str, Any], domain: str) -> dict[str, Any]:
     return entry if isinstance(entry, dict) else {}
 
 
+def sample_backend_id(sample: dict[str, Any]) -> str:
+    trace_meta = sample.get("traceMeta")
+    if isinstance(trace_meta, dict):
+        backend_id = trace_meta.get("backendId")
+        if isinstance(backend_id, str) and backend_id:
+            return backend_id
+
+    backend_id = sample.get("backendId")
+    if isinstance(backend_id, str) and backend_id:
+        return backend_id
+
+    backend_selection = sample.get("backendSelection")
+    if isinstance(backend_selection, dict):
+        selected = backend_selection.get("selectedBackend")
+        if isinstance(selected, dict):
+            selected_id = selected.get("backendId")
+            if isinstance(selected_id, str) and selected_id:
+                return selected_id
+    return ""
+
+
+def backend_allowed_sources(policy_entry: dict[str, Any], backend_id: str) -> set[str]:
+    if not backend_id:
+        return set()
+    by_backend = policy_entry.get("allowedTimingSourcesByBackendId")
+    if not isinstance(by_backend, dict):
+        return set()
+    backend_sources = by_backend.get(backend_id)
+    if not isinstance(backend_sources, list):
+        return set()
+    return {canonical(str(item)) for item in backend_sources if isinstance(item, str)}
+
+
 def main() -> int:
     args = parse_args()
     report = load_json(Path(args.report))
@@ -86,9 +119,13 @@ def main() -> int:
                 if sample.get("returnCode") != 0:
                     continue
                 source = canonical(str(sample.get("timingSource", "")))
-                if allowed_sources and source not in allowed_sources:
+                sample_allowed_sources = set(allowed_sources)
+                sample_allowed_sources.update(
+                    backend_allowed_sources(policy_entry, sample_backend_id(sample))
+                )
+                if sample_allowed_sources and source not in sample_allowed_sources:
                     failures.append(
-                        f"{workload_id}: {side_name} timingSource {source!r} not in allowed set {sorted(allowed_sources)}"
+                        f"{workload_id}: {side_name} timingSource {source!r} not in allowed set {sorted(sample_allowed_sources)}"
                     )
                 timing = sample.get("timing")
                 if (

@@ -1,0 +1,35 @@
+{
+  "workloads": "bench/workloads.amd.vulkan.extended.doe-vs-doe.json",
+  "left": {
+    "name": "zig_vulkan",
+    "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane vulkan_app --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+  },
+  "right": {
+    "name": "dawn_oracle",
+    "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane vulkan_oracle --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+  },
+  "run": {
+    "iterations": 8,
+    "warmup": 1,
+    "out": "bench/out/vulkan.strict.zig_vs_oracle.fullsuite.apples.json",
+    "workspace": "bench/out/runtime-comparisons.vulkan.strict.zig_vs_oracle.fullsuite.apples",
+    "workloadFilter": "",
+    "includeExtendedWorkloads": true,
+    "includeNoncomparableWorkloads": false,
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowLeftNoExecution": false
+  },
+  "claimability": {
+    "mode": "local",
+    "minTimedSamples": 7
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  }
+}

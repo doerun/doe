@@ -4,3 +4,11 @@ const policy = @import("../../src/dropin/dropin_behavior_policy.zig");
 test "behavior mode parser accepts strict mode" {
     try std.testing.expect(policy.parse_behavior_mode("zig_metal_ownership") != null);
 }
+
+test "behavior mode parser accepts strict vulkan mode" {
+    try std.testing.expect(policy.parse_behavior_mode("zig_vulkan_ownership") != null);
+}
+
+test "behavior mode parser rejects unknown mode" {
+    try std.testing.expect(policy.parse_behavior_mode("no_such_mode") == null);
+}

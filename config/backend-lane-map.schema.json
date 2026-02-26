@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Backend Lane Map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourcePolicyPath",
+    "laneToBackend",
+    "backendToLanes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "sourcePolicyPath": {
+      "type": "string",
+      "const": "config/backend-runtime-policy.json"
+    },
+    "laneToBackend": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": [
+          "dawn_oracle",
+          "zig_metal",
+          "zig_vulkan"
+        ]
+      }
+    },
+    "backendToLanes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dawn_oracle",
+        "zig_metal",
+        "zig_vulkan"
+      ],
+      "properties": {
+        "dawn_oracle": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "zig_metal": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "zig_vulkan": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

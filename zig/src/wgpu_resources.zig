@@ -279,8 +279,8 @@ pub fn buildDispatchPassGroups(
 
     var groups = try self.allocator.alloc(types.DispatchPassGroup, group_count);
     for (groups) |*group| {
-        group.layout_entries = std.ArrayList(types.WGPUBindGroupLayoutEntry).empty;
-        group.bind_entries = std.ArrayList(types.WGPUBindGroupEntry).empty;
+        group.layout_entries = std.ArrayList(types.WGPUBindGroupLayoutEntry).init(self.allocator);
+        group.bind_entries = std.ArrayList(types.WGPUBindGroupEntry).init(self.allocator);
     }
 
     var pending_group_layouts = try self.allocator.alloc(?types.WGPUBindGroupLayout, group_count);
@@ -288,7 +288,7 @@ pub fn buildDispatchPassGroups(
     for (pending_group_layouts) |*pending| pending.* = null;
     for (pass_bind_groups) |*pending| pending.* = null;
 
-    var texture_views = std.ArrayList(types.WGPUTextureView).empty;
+    var texture_views = std.ArrayList(types.WGPUTextureView).init(self.allocator);
     var clean_after = true;
     defer {
         if (clean_after) {
@@ -309,11 +309,11 @@ pub fn buildDispatchPassGroups(
             for (texture_views.items) |texture_view| {
                 procs.wgpuTextureViewRelease(texture_view);
             }
-            texture_views.deinit(self.allocator);
+            texture_views.deinit();
 
             for (groups) |*group| {
-                group.layout_entries.deinit(self.allocator);
-                group.bind_entries.deinit(self.allocator);
+                group.layout_entries.deinit();
+                group.bind_entries.deinit();
             }
             self.allocator.free(groups);
         }
@@ -322,8 +322,8 @@ pub fn buildDispatchPassGroups(
     for (bindings) |binding| {
         if (binding.group >= group_count_u32) return error.InvalidKernelDispatchBinding;
         var group = &groups[@as(usize, binding.group)];
-        try group.layout_entries.append(self.allocator, dispatchPassLayoutEntry(binding));
-        try group.bind_entries.append(self.allocator, try dispatchPassBindEntry(self, binding, &texture_views, initialize_buffers_on_create));
+        try group.layout_entries.append(dispatchPassLayoutEntry(binding));
+        try group.bind_entries.append(try dispatchPassBindEntry(self, binding, &texture_views, initialize_buffers_on_create));
     }
 
     for (groups, 0..) |*group, index| {
@@ -340,10 +340,10 @@ pub fn buildDispatchPassGroups(
         group_layouts[index] = maybe_layout orelse return error.InvalidKernelDispatchBinding;
     }
 
-    const views = try texture_views.toOwnedSlice(self.allocator);
+    const views = try texture_views.toOwnedSlice();
     for (groups) |*group| {
-        group.layout_entries.deinit(self.allocator);
-        group.bind_entries.deinit(self.allocator);
+        group.layout_entries.deinit();
+        group.bind_entries.deinit();
     }
     self.allocator.free(groups);
     self.allocator.free(pending_group_layouts);
@@ -450,7 +450,7 @@ fn dispatchPassBindEntry(
                 (types.WGPUTextureUsage_TextureBinding | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst);
             const texture = try getOrCreateTextureFromBinding(self, binding, required_usage);
             const view = try createTextureViewForBinding(self, texture, binding);
-            try texture_views.append(self.allocator, view);
+            try texture_views.append(view);
             bind_entry.textureView = view;
         },
     }

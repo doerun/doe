@@ -1,0 +1,60 @@
+{
+  "inputs": {
+    "jsonl": [],
+    "pair_file_count": 16,
+    "source_langs": [
+      "ar",
+      "de",
+      "fr",
+      "hi",
+      "it",
+      "ja",
+      "pt",
+      "zh"
+    ],
+    "target_langs": [
+      "en",
+      "es"
+    ]
+  },
+  "kept_pairs": {
+    "ar-en": 1000,
+    "ar-es": 1000,
+    "de-en": 1000,
+    "de-es": 1000,
+    "fr-en": 1000,
+    "fr-es": 1000,
+    "hi-en": 1000,
+    "hi-es": 1000,
+    "it-en": 1000,
+    "it-es": 1000,
+    "ja-en": 1000,
+    "ja-es": 1000,
+    "pt-en": 1000,
+    "pt-es": 1000,
+    "zh-en": 1000,
+    "zh-es": 1000
+  },
+  "kept_target_langs": {
+    "en": 8000,
+    "es": 8000
+  },
+  "output_path": "/home/x/deco/fawn/projects/distillation/translation/training_data/translate_distill_pairs.jsonl",
+  "output_rows": 16000,
+  "params": {
+    "add_lang_tags": false,
+    "hard_neg_pool": 128,
+    "max_rows_per_input": 0,
+    "min_chars": 8,
+    "neg_strategy": "lexical_hard",
+    "pairs_per_pair": 1000,
+    "seed": 42
+  },
+  "stats": {
+    "dedup_dropped": 0,
+    "loaded_raw": 24000,
+    "skipped_lang_filter": 0,
+    "skipped_no_negative": 0,
+    "skipped_short": 0
+  }
+}

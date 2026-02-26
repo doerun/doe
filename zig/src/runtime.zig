@@ -88,107 +88,107 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
         .driver_version = .{ .major = 9999, .minor = 9999, .patch = 9999 },
     };
 
-    var upload = std.ArrayList(ScoredQuirk).empty;
-    var copy_buffer_to_texture = std.ArrayList(ScoredQuirk).empty;
-    var barrier = std.ArrayList(ScoredQuirk).empty;
-    var dispatch_commands = std.ArrayList(ScoredQuirk).empty;
-    var kernel_dispatch = std.ArrayList(ScoredQuirk).empty;
-    var render_draw = std.ArrayList(ScoredQuirk).empty;
-    var sampler_create = std.ArrayList(ScoredQuirk).empty;
-    var sampler_destroy = std.ArrayList(ScoredQuirk).empty;
-    var texture_write = std.ArrayList(ScoredQuirk).empty;
-    var texture_query = std.ArrayList(ScoredQuirk).empty;
-    var texture_destroy = std.ArrayList(ScoredQuirk).empty;
-    var surface_create = std.ArrayList(ScoredQuirk).empty;
-    var surface_capabilities = std.ArrayList(ScoredQuirk).empty;
-    var surface_configure = std.ArrayList(ScoredQuirk).empty;
-    var surface_acquire = std.ArrayList(ScoredQuirk).empty;
-    var surface_present = std.ArrayList(ScoredQuirk).empty;
-    var surface_unconfigure = std.ArrayList(ScoredQuirk).empty;
-    var surface_release = std.ArrayList(ScoredQuirk).empty;
-    var async_diagnostics = std.ArrayList(ScoredQuirk).empty;
+    var upload = std.ArrayList(ScoredQuirk).init(allocator);
+    var copy_buffer_to_texture = std.ArrayList(ScoredQuirk).init(allocator);
+    var barrier = std.ArrayList(ScoredQuirk).init(allocator);
+    var dispatch_commands = std.ArrayList(ScoredQuirk).init(allocator);
+    var kernel_dispatch = std.ArrayList(ScoredQuirk).init(allocator);
+    var render_draw = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_write = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_query = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_capabilities = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_configure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_acquire = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_present = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_unconfigure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_release = std.ArrayList(ScoredQuirk).init(allocator);
+    var async_diagnostics = std.ArrayList(ScoredQuirk).init(allocator);
 
     for (quirks) |quirk| {
         if (supportsCommand(quirk.scope, .upload)) {
-            try appendScored(&upload, allocator, quirk, .upload, scoring_profile);
+            try appendScored(&upload, quirk, .upload, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .copy_buffer_to_texture)) {
-            try appendScored(&copy_buffer_to_texture, allocator, quirk, .copy_buffer_to_texture, scoring_profile);
+            try appendScored(&copy_buffer_to_texture, quirk, .copy_buffer_to_texture, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .barrier)) {
-            try appendScored(&barrier, allocator, quirk, .barrier, scoring_profile);
+            try appendScored(&barrier, quirk, .barrier, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .dispatch)) {
-            try appendScored(&dispatch_commands, allocator, quirk, .dispatch, scoring_profile);
+            try appendScored(&dispatch_commands, quirk, .dispatch, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .kernel_dispatch)) {
-            try appendScored(&kernel_dispatch, allocator, quirk, .kernel_dispatch, scoring_profile);
+            try appendScored(&kernel_dispatch, quirk, .kernel_dispatch, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .render_draw)) {
-            try appendScored(&render_draw, allocator, quirk, .render_draw, scoring_profile);
+            try appendScored(&render_draw, quirk, .render_draw, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .sampler_create)) {
-            try appendScored(&sampler_create, allocator, quirk, .sampler_create, scoring_profile);
+            try appendScored(&sampler_create, quirk, .sampler_create, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .sampler_destroy)) {
-            try appendScored(&sampler_destroy, allocator, quirk, .sampler_destroy, scoring_profile);
+            try appendScored(&sampler_destroy, quirk, .sampler_destroy, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .texture_write)) {
-            try appendScored(&texture_write, allocator, quirk, .texture_write, scoring_profile);
+            try appendScored(&texture_write, quirk, .texture_write, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .texture_query)) {
-            try appendScored(&texture_query, allocator, quirk, .texture_query, scoring_profile);
+            try appendScored(&texture_query, quirk, .texture_query, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .texture_destroy)) {
-            try appendScored(&texture_destroy, allocator, quirk, .texture_destroy, scoring_profile);
+            try appendScored(&texture_destroy, quirk, .texture_destroy, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .surface_create)) {
-            try appendScored(&surface_create, allocator, quirk, .surface_create, scoring_profile);
+            try appendScored(&surface_create, quirk, .surface_create, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .surface_capabilities)) {
-            try appendScored(&surface_capabilities, allocator, quirk, .surface_capabilities, scoring_profile);
+            try appendScored(&surface_capabilities, quirk, .surface_capabilities, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .surface_configure)) {
-            try appendScored(&surface_configure, allocator, quirk, .surface_configure, scoring_profile);
+            try appendScored(&surface_configure, quirk, .surface_configure, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .surface_acquire)) {
-            try appendScored(&surface_acquire, allocator, quirk, .surface_acquire, scoring_profile);
+            try appendScored(&surface_acquire, quirk, .surface_acquire, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .surface_present)) {
-            try appendScored(&surface_present, allocator, quirk, .surface_present, scoring_profile);
+            try appendScored(&surface_present, quirk, .surface_present, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .surface_unconfigure)) {
-            try appendScored(&surface_unconfigure, allocator, quirk, .surface_unconfigure, scoring_profile);
+            try appendScored(&surface_unconfigure, quirk, .surface_unconfigure, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .surface_release)) {
-            try appendScored(&surface_release, allocator, quirk, .surface_release, scoring_profile);
+            try appendScored(&surface_release, quirk, .surface_release, scoring_profile);
         }
         if (supportsCommand(quirk.scope, .async_diagnostics)) {
-            try appendScored(&async_diagnostics, allocator, quirk, .async_diagnostics, scoring_profile);
+            try appendScored(&async_diagnostics, quirk, .async_diagnostics, scoring_profile);
         }
     }
 
     return DispatchContext{
         .allocator = allocator,
-        .upload = finalizeBucket(&upload, allocator),
-        .copy_buffer_to_texture = finalizeBucket(&copy_buffer_to_texture, allocator),
-        .barrier = finalizeBucket(&barrier, allocator),
-        .dispatch = finalizeBucket(&dispatch_commands, allocator),
-        .kernel_dispatch = finalizeBucket(&kernel_dispatch, allocator),
-        .render_draw = finalizeBucket(&render_draw, allocator),
-        .sampler_create = finalizeBucket(&sampler_create, allocator),
-        .sampler_destroy = finalizeBucket(&sampler_destroy, allocator),
-        .texture_write = finalizeBucket(&texture_write, allocator),
-        .texture_query = finalizeBucket(&texture_query, allocator),
-        .texture_destroy = finalizeBucket(&texture_destroy, allocator),
-        .surface_create = finalizeBucket(&surface_create, allocator),
-        .surface_capabilities = finalizeBucket(&surface_capabilities, allocator),
-        .surface_configure = finalizeBucket(&surface_configure, allocator),
-        .surface_acquire = finalizeBucket(&surface_acquire, allocator),
-        .surface_present = finalizeBucket(&surface_present, allocator),
-        .surface_unconfigure = finalizeBucket(&surface_unconfigure, allocator),
-        .surface_release = finalizeBucket(&surface_release, allocator),
-        .async_diagnostics = finalizeBucket(&async_diagnostics, allocator),
+        .upload = finalizeBucket(&upload),
+        .copy_buffer_to_texture = finalizeBucket(&copy_buffer_to_texture),
+        .barrier = finalizeBucket(&barrier),
+        .dispatch = finalizeBucket(&dispatch_commands),
+        .kernel_dispatch = finalizeBucket(&kernel_dispatch),
+        .render_draw = finalizeBucket(&render_draw),
+        .sampler_create = finalizeBucket(&sampler_create),
+        .sampler_destroy = finalizeBucket(&sampler_destroy),
+        .texture_write = finalizeBucket(&texture_write),
+        .texture_query = finalizeBucket(&texture_query),
+        .texture_destroy = finalizeBucket(&texture_destroy),
+        .surface_create = finalizeBucket(&surface_create),
+        .surface_capabilities = finalizeBucket(&surface_capabilities),
+        .surface_configure = finalizeBucket(&surface_configure),
+        .surface_acquire = finalizeBucket(&surface_acquire),
+        .surface_present = finalizeBucket(&surface_present),
+        .surface_unconfigure = finalizeBucket(&surface_unconfigure),
+        .surface_release = finalizeBucket(&surface_release),
+        .async_diagnostics = finalizeBucket(&async_diagnostics),
     };
 }
 
@@ -197,109 +197,109 @@ pub fn buildProfileDispatchContext(
     profile: model.DeviceProfile,
     quirks: []const model.Quirk,
 ) !DispatchContext {
-    var upload = std.ArrayList(ScoredQuirk).empty;
-    var copy_buffer_to_texture = std.ArrayList(ScoredQuirk).empty;
-    var barrier = std.ArrayList(ScoredQuirk).empty;
-    var dispatch_commands = std.ArrayList(ScoredQuirk).empty;
-    var kernel_dispatch = std.ArrayList(ScoredQuirk).empty;
-    var render_draw = std.ArrayList(ScoredQuirk).empty;
-    var sampler_create = std.ArrayList(ScoredQuirk).empty;
-    var sampler_destroy = std.ArrayList(ScoredQuirk).empty;
-    var texture_write = std.ArrayList(ScoredQuirk).empty;
-    var texture_query = std.ArrayList(ScoredQuirk).empty;
-    var texture_destroy = std.ArrayList(ScoredQuirk).empty;
-    var surface_create = std.ArrayList(ScoredQuirk).empty;
-    var surface_capabilities = std.ArrayList(ScoredQuirk).empty;
-    var surface_configure = std.ArrayList(ScoredQuirk).empty;
-    var surface_acquire = std.ArrayList(ScoredQuirk).empty;
-    var surface_present = std.ArrayList(ScoredQuirk).empty;
-    var surface_unconfigure = std.ArrayList(ScoredQuirk).empty;
-    var surface_release = std.ArrayList(ScoredQuirk).empty;
-    var async_diagnostics = std.ArrayList(ScoredQuirk).empty;
+    var upload = std.ArrayList(ScoredQuirk).init(allocator);
+    var copy_buffer_to_texture = std.ArrayList(ScoredQuirk).init(allocator);
+    var barrier = std.ArrayList(ScoredQuirk).init(allocator);
+    var dispatch_commands = std.ArrayList(ScoredQuirk).init(allocator);
+    var kernel_dispatch = std.ArrayList(ScoredQuirk).init(allocator);
+    var render_draw = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var sampler_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_write = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_query = std.ArrayList(ScoredQuirk).init(allocator);
+    var texture_destroy = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_create = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_capabilities = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_configure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_acquire = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_present = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_unconfigure = std.ArrayList(ScoredQuirk).init(allocator);
+    var surface_release = std.ArrayList(ScoredQuirk).init(allocator);
+    var async_diagnostics = std.ArrayList(ScoredQuirk).init(allocator);
 
     for (quirks) |quirk| {
         if (!matchesProfile(profile, quirk)) continue;
 
         if (supportsCommand(quirk.scope, .upload)) {
-            try appendScored(&upload, allocator, quirk, .upload, profile);
+            try appendScored(&upload, quirk, .upload, profile);
         }
         if (supportsCommand(quirk.scope, .copy_buffer_to_texture)) {
-            try appendScored(&copy_buffer_to_texture, allocator, quirk, .copy_buffer_to_texture, profile);
+            try appendScored(&copy_buffer_to_texture, quirk, .copy_buffer_to_texture, profile);
         }
         if (supportsCommand(quirk.scope, .barrier)) {
-            try appendScored(&barrier, allocator, quirk, .barrier, profile);
+            try appendScored(&barrier, quirk, .barrier, profile);
         }
         if (supportsCommand(quirk.scope, .dispatch)) {
-            try appendScored(&dispatch_commands, allocator, quirk, .dispatch, profile);
+            try appendScored(&dispatch_commands, quirk, .dispatch, profile);
         }
         if (supportsCommand(quirk.scope, .kernel_dispatch)) {
-            try appendScored(&kernel_dispatch, allocator, quirk, .kernel_dispatch, profile);
+            try appendScored(&kernel_dispatch, quirk, .kernel_dispatch, profile);
         }
         if (supportsCommand(quirk.scope, .render_draw)) {
-            try appendScored(&render_draw, allocator, quirk, .render_draw, profile);
+            try appendScored(&render_draw, quirk, .render_draw, profile);
         }
         if (supportsCommand(quirk.scope, .sampler_create)) {
-            try appendScored(&sampler_create, allocator, quirk, .sampler_create, profile);
+            try appendScored(&sampler_create, quirk, .sampler_create, profile);
         }
         if (supportsCommand(quirk.scope, .sampler_destroy)) {
-            try appendScored(&sampler_destroy, allocator, quirk, .sampler_destroy, profile);
+            try appendScored(&sampler_destroy, quirk, .sampler_destroy, profile);
         }
         if (supportsCommand(quirk.scope, .texture_write)) {
-            try appendScored(&texture_write, allocator, quirk, .texture_write, profile);
+            try appendScored(&texture_write, quirk, .texture_write, profile);
         }
         if (supportsCommand(quirk.scope, .texture_query)) {
-            try appendScored(&texture_query, allocator, quirk, .texture_query, profile);
+            try appendScored(&texture_query, quirk, .texture_query, profile);
         }
         if (supportsCommand(quirk.scope, .texture_destroy)) {
-            try appendScored(&texture_destroy, allocator, quirk, .texture_destroy, profile);
+            try appendScored(&texture_destroy, quirk, .texture_destroy, profile);
         }
         if (supportsCommand(quirk.scope, .surface_create)) {
-            try appendScored(&surface_create, allocator, quirk, .surface_create, profile);
+            try appendScored(&surface_create, quirk, .surface_create, profile);
         }
         if (supportsCommand(quirk.scope, .surface_capabilities)) {
-            try appendScored(&surface_capabilities, allocator, quirk, .surface_capabilities, profile);
+            try appendScored(&surface_capabilities, quirk, .surface_capabilities, profile);
         }
         if (supportsCommand(quirk.scope, .surface_configure)) {
-            try appendScored(&surface_configure, allocator, quirk, .surface_configure, profile);
+            try appendScored(&surface_configure, quirk, .surface_configure, profile);
         }
         if (supportsCommand(quirk.scope, .surface_acquire)) {
-            try appendScored(&surface_acquire, allocator, quirk, .surface_acquire, profile);
+            try appendScored(&surface_acquire, quirk, .surface_acquire, profile);
         }
         if (supportsCommand(quirk.scope, .surface_present)) {
-            try appendScored(&surface_present, allocator, quirk, .surface_present, profile);
+            try appendScored(&surface_present, quirk, .surface_present, profile);
         }
         if (supportsCommand(quirk.scope, .surface_unconfigure)) {
-            try appendScored(&surface_unconfigure, allocator, quirk, .surface_unconfigure, profile);
+            try appendScored(&surface_unconfigure, quirk, .surface_unconfigure, profile);
         }
         if (supportsCommand(quirk.scope, .surface_release)) {
-            try appendScored(&surface_release, allocator, quirk, .surface_release, profile);
+            try appendScored(&surface_release, quirk, .surface_release, profile);
         }
         if (supportsCommand(quirk.scope, .async_diagnostics)) {
-            try appendScored(&async_diagnostics, allocator, quirk, .async_diagnostics, profile);
+            try appendScored(&async_diagnostics, quirk, .async_diagnostics, profile);
         }
     }
 
     return DispatchContext{
         .allocator = allocator,
-        .upload = finalizeBucket(&upload, allocator),
-        .copy_buffer_to_texture = finalizeBucket(&copy_buffer_to_texture, allocator),
-        .barrier = finalizeBucket(&barrier, allocator),
-        .dispatch = finalizeBucket(&dispatch_commands, allocator),
-        .kernel_dispatch = finalizeBucket(&kernel_dispatch, allocator),
-        .render_draw = finalizeBucket(&render_draw, allocator),
-        .sampler_create = finalizeBucket(&sampler_create, allocator),
-        .sampler_destroy = finalizeBucket(&sampler_destroy, allocator),
-        .texture_write = finalizeBucket(&texture_write, allocator),
-        .texture_query = finalizeBucket(&texture_query, allocator),
-        .texture_destroy = finalizeBucket(&texture_destroy, allocator),
-        .surface_create = finalizeBucket(&surface_create, allocator),
-        .surface_capabilities = finalizeBucket(&surface_capabilities, allocator),
-        .surface_configure = finalizeBucket(&surface_configure, allocator),
-        .surface_acquire = finalizeBucket(&surface_acquire, allocator),
-        .surface_present = finalizeBucket(&surface_present, allocator),
-        .surface_unconfigure = finalizeBucket(&surface_unconfigure, allocator),
-        .surface_release = finalizeBucket(&surface_release, allocator),
-        .async_diagnostics = finalizeBucket(&async_diagnostics, allocator),
+        .upload = finalizeBucket(&upload),
+        .copy_buffer_to_texture = finalizeBucket(&copy_buffer_to_texture),
+        .barrier = finalizeBucket(&barrier),
+        .dispatch = finalizeBucket(&dispatch_commands),
+        .kernel_dispatch = finalizeBucket(&kernel_dispatch),
+        .render_draw = finalizeBucket(&render_draw),
+        .sampler_create = finalizeBucket(&sampler_create),
+        .sampler_destroy = finalizeBucket(&sampler_destroy),
+        .texture_write = finalizeBucket(&texture_write),
+        .texture_query = finalizeBucket(&texture_query),
+        .texture_destroy = finalizeBucket(&texture_destroy),
+        .surface_create = finalizeBucket(&surface_create),
+        .surface_capabilities = finalizeBucket(&surface_capabilities),
+        .surface_configure = finalizeBucket(&surface_configure),
+        .surface_acquire = finalizeBucket(&surface_acquire),
+        .surface_present = finalizeBucket(&surface_present),
+        .surface_unconfigure = finalizeBucket(&surface_unconfigure),
+        .surface_release = finalizeBucket(&surface_release),
+        .async_diagnostics = finalizeBucket(&async_diagnostics),
     };
 }
 
@@ -355,20 +355,19 @@ pub fn dispatch(profile: model.DeviceProfile, context: DispatchContext, command:
 
 fn appendScored(
     storage: *std.ArrayList(ScoredQuirk),
-    allocator: std.mem.Allocator,
     quirk: model.Quirk,
     command_kind: model.CommandKind,
     profile: model.DeviceProfile,
 ) !void {
-    try storage.append(allocator, .{
+    try storage.append(.{
         .quirk = quirk,
         .score = scoreRule(quirk, command_kind, profile),
     });
 }
 
-fn finalizeBucket(storage: *std.ArrayList(ScoredQuirk), allocator: std.mem.Allocator) CommandDispatchBucket {
+fn finalizeBucket(storage: *std.ArrayList(ScoredQuirk)) CommandDispatchBucket {
     if (storage.items.len == 0) {
-        storage.deinit(allocator);
+        storage.deinit();
         return CommandDispatchBucket{};
     }
 
@@ -382,7 +381,7 @@ fn finalizeBucket(storage: *std.ArrayList(ScoredQuirk), allocator: std.mem.Alloc
         .requires_lean = requires_lean,
         .is_blocking = requires_lean and best.quirk.proof_level != .proven,
     };
-    storage.deinit(allocator);
+    storage.deinit();
     return result;
 }
 

@@ -132,20 +132,21 @@ pub const ExecutionContext = struct {
             };
         }
 
-        const command_start = std.time.nanoTimestamp();
-        if (self.backend) |*backend| {
-            const telemetry = backend.telemetry();
-            const status = backend.execute_command(command) catch |err| {
-                const command_end = std.time.nanoTimestamp();
-                const elapsed_ns = if (command_end > command_start)
-                    @as(u64, @intCast(command_end - command_start))
+    const command_start = std.time.nanoTimestamp();
+    if (self.backend) |*backend| {
+        const backend_telemetry_snapshot = backend.telemetry();
+        const status = backend.execute_command(command) catch |err| {
+            const command_end = std.time.nanoTimestamp();
+            const elapsed_ns = if (command_end > command_start)
+                @as(u64, @intCast(command_end - command_start))
                 else
                     0;
-                return .{
-                    .backend = backendIdName(telemetry.backend_id),
-                    .status = .@"error",
-                    .status_code = @errorName(err),
-                    .duration_ns = elapsed_ns,
+            const command_telemetry = backend.telemetry();
+            return .{
+                .backend = backendIdName(backend_telemetry_snapshot.backend_id),
+                .status = .@"error",
+                .status_code = @errorName(err),
+                .duration_ns = elapsed_ns,
                     .setup_ns = 0,
                     .encode_ns = 0,
                     .submit_wait_ns = 0,
@@ -153,24 +154,25 @@ pub const ExecutionContext = struct {
                     .gpu_timestamp_ns = 0,
                     .gpu_timestamp_attempted = false,
                     .gpu_timestamp_valid = false,
-                    .backend_selection_reason = telemetry.backend_selection_reason,
-                    .fallback_used = telemetry.fallback_used,
-                    .selection_policy_hash = telemetry.selection_policy_hash,
-                    .shader_artifact_manifest_path = telemetry.shader_artifact_manifest_path,
-                    .shader_artifact_manifest_hash = telemetry.shader_artifact_manifest_hash,
-                    .backend_lane = backendLaneName(self.backend_lane),
-                };
+                .backend_selection_reason = command_telemetry.backend_selection_reason,
+                .fallback_used = command_telemetry.fallback_used,
+                .selection_policy_hash = command_telemetry.selection_policy_hash,
+                .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
+                .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
+                .backend_lane = backendLaneName(self.backend_lane),
             };
-            const command_end = std.time.nanoTimestamp();
-            const elapsed_ns = if (command_end > command_start)
-                @as(u64, @intCast(command_end - command_start))
+        };
+        const command_end = std.time.nanoTimestamp();
+        const elapsed_ns = if (command_end > command_start)
+            @as(u64, @intCast(command_end - command_start))
             else
                 0;
+        const command_telemetry = backend.telemetry();
 
-            return .{
-                .backend = backendIdName(telemetry.backend_id),
-                .status = if (status.status == .ok) .ok else if (status.status == .@"error") .@"error" else .unsupported,
-                .status_code = status.status_message,
+        return .{
+            .backend = backendIdName(backend_telemetry_snapshot.backend_id),
+            .status = if (status.status == .ok) .ok else if (status.status == .@"error") .@"error" else .unsupported,
+            .status_code = status.status_message,
                 .duration_ns = elapsed_ns,
                 .setup_ns = status.setup_ns,
                 .encode_ns = status.encode_ns,
@@ -179,13 +181,13 @@ pub const ExecutionContext = struct {
                 .gpu_timestamp_ns = status.gpu_timestamp_ns,
                 .gpu_timestamp_attempted = status.gpu_timestamp_attempted,
                 .gpu_timestamp_valid = status.gpu_timestamp_valid,
-                .backend_selection_reason = telemetry.backend_selection_reason,
-                .fallback_used = telemetry.fallback_used,
-                .selection_policy_hash = telemetry.selection_policy_hash,
-                .shader_artifact_manifest_path = telemetry.shader_artifact_manifest_path,
-                .shader_artifact_manifest_hash = telemetry.shader_artifact_manifest_hash,
-                .backend_lane = backendLaneName(self.backend_lane),
-            };
+            .backend_selection_reason = command_telemetry.backend_selection_reason,
+            .fallback_used = command_telemetry.fallback_used,
+            .selection_policy_hash = command_telemetry.selection_policy_hash,
+            .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
+            .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
+            .backend_lane = backendLaneName(self.backend_lane),
+        };
         }
 
         return .{
@@ -306,42 +308,48 @@ pub fn parseBackend(raw: []const u8) ?BackendMode {
 }
 
 pub fn parseBackendLane(raw: []const u8) ?backend_policy.BackendLane {
-    if (std.ascii.eqlIgnoreCase(raw, "amd_vulkan_release") or std.ascii.eqlIgnoreCase(raw, "amd-vulkan-release"))
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_oracle") or std.ascii.eqlIgnoreCase(raw, "vulkan-oracle") or std.ascii.eqlIgnoreCase(raw, "amd_vulkan_release") or std.ascii.eqlIgnoreCase(raw, "amd-vulkan-release"))
         return .amd_vulkan_release;
-    if (std.ascii.eqlIgnoreCase(raw, "local_metal_directional") or std.ascii.eqlIgnoreCase(raw, "local-metal-directional"))
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_app") or std.ascii.eqlIgnoreCase(raw, "vulkan-app") or std.ascii.eqlIgnoreCase(raw, "amd_vulkan_app") or std.ascii.eqlIgnoreCase(raw, "amd-vulkan-app"))
+        return .amd_vulkan_app;
+    if (std.ascii.eqlIgnoreCase(raw, "metal_local_directional") or std.ascii.eqlIgnoreCase(raw, "metal-local-directional") or std.ascii.eqlIgnoreCase(raw, "local_metal_directional") or std.ascii.eqlIgnoreCase(raw, "local-metal-directional"))
         return .local_metal_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "local_metal_comparable") or std.ascii.eqlIgnoreCase(raw, "local-metal-comparable"))
+    if (std.ascii.eqlIgnoreCase(raw, "metal_local_comparable") or std.ascii.eqlIgnoreCase(raw, "metal-local-comparable") or std.ascii.eqlIgnoreCase(raw, "local_metal_comparable") or std.ascii.eqlIgnoreCase(raw, "local-metal-comparable"))
         return .local_metal_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "local_metal_release") or std.ascii.eqlIgnoreCase(raw, "local-metal-release"))
+    if (std.ascii.eqlIgnoreCase(raw, "metal_local_release") or std.ascii.eqlIgnoreCase(raw, "metal-local-release") or std.ascii.eqlIgnoreCase(raw, "local_metal_release") or std.ascii.eqlIgnoreCase(raw, "local-metal-release"))
         return .local_metal_release;
-    if (std.ascii.eqlIgnoreCase(raw, "local_vulkan_directional") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-directional"))
+    if (std.ascii.eqlIgnoreCase(raw, "metal_oracle") or std.ascii.eqlIgnoreCase(raw, "metal-oracle"))
+        return .metal_oracle;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_local_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan-local-directional") or std.ascii.eqlIgnoreCase(raw, "local_vulkan_directional") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-directional"))
         return .local_vulkan_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "local_vulkan_comparable") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-comparable"))
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_local_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan-local-comparable") or std.ascii.eqlIgnoreCase(raw, "local_vulkan_comparable") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-comparable"))
         return .local_vulkan_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "local_vulkan_release") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-release"))
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_local_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-local-release") or std.ascii.eqlIgnoreCase(raw, "local_vulkan_release") or std.ascii.eqlIgnoreCase(raw, "local-vulkan-release"))
         return .local_vulkan_release;
-    if (std.ascii.eqlIgnoreCase(raw, "macos_app") or std.ascii.eqlIgnoreCase(raw, "macos-app"))
+    if (std.ascii.eqlIgnoreCase(raw, "metal_app") or std.ascii.eqlIgnoreCase(raw, "metal-app") or std.ascii.eqlIgnoreCase(raw, "macos_app") or std.ascii.eqlIgnoreCase(raw, "macos-app"))
         return .macos_app;
     return null;
 }
 
 pub fn defaultBackendLane(profile: model.DeviceProfile) backend_policy.BackendLane {
     return switch (profile.api) {
-        .metal => .local_metal_comparable,
-        else => .amd_vulkan_release,
+        .metal => .macos_app,
+        else => .amd_vulkan_app,
     };
 }
 
 pub fn backendLaneName(lane: backend_policy.BackendLane) []const u8 {
     return switch (lane) {
-        .amd_vulkan_release => "amd_vulkan_release",
-        .local_metal_directional => "local_metal_directional",
-        .local_metal_comparable => "local_metal_comparable",
-        .local_metal_release => "local_metal_release",
-        .local_vulkan_directional => "local_vulkan_directional",
-        .local_vulkan_comparable => "local_vulkan_comparable",
-        .local_vulkan_release => "local_vulkan_release",
-        .macos_app => "macos_app",
+        .amd_vulkan_release => "vulkan_oracle",
+        .amd_vulkan_app => "vulkan_app",
+        .local_metal_directional => "metal_local_directional",
+        .local_metal_comparable => "metal_local_comparable",
+        .local_metal_release => "metal_local_release",
+        .metal_oracle => "metal_oracle",
+        .local_vulkan_directional => "vulkan_local_directional",
+        .local_vulkan_comparable => "vulkan_local_comparable",
+        .local_vulkan_release => "vulkan_local_release",
+        .macos_app => "metal_app",
     };
 }
 

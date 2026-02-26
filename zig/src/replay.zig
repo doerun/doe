@@ -78,12 +78,12 @@ pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![
     const artifact_text = try readFileAlloc(allocator, path);
     defer allocator.free(artifact_text);
 
-    var expectations = std.ArrayList(ReplayExpectation).empty;
+    var expectations = std.ArrayList(ReplayExpectation).init(allocator);
     errdefer {
         for (expectations.items) |expectation| {
             freeReplayExpectation(allocator, expectation);
         }
-        expectations.deinit(allocator);
+        expectations.deinit();
     }
     var it = std.mem.splitScalar(u8, artifact_text, '\n');
     while (it.next()) |line| {
@@ -93,10 +93,10 @@ pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![
         defer parsed.deinit();
         const validated = try parseReplayLine(allocator, "doe-zig-runtime", &parsed.value);
         errdefer freeReplayExpectation(allocator, validated);
-        try expectations.append(allocator, validated);
+        try expectations.append(validated);
     }
 
-    return expectations.toOwnedSlice(allocator);
+    return expectations.toOwnedSlice();
 }
 
 pub fn freeReplayExpectations(allocator: std.mem.Allocator, expectations: []ReplayExpectation) void {

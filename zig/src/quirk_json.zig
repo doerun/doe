@@ -41,23 +41,48 @@ const RawQuirk = struct {
 };
 
 pub fn parseQuirks(allocator: Allocator, text: []const u8) ![]model.Quirk {
-    const parsed = try std.json.parseFromSlice([]const RawQuirk, allocator, text, .{ .ignore_unknown_fields = false });
+    const parsed = std.json.parseFromSlice([]const RawQuirk, allocator, text, .{
+        .ignore_unknown_fields = false,
+    }) catch |err| switch (err) {
+        error.UnexpectedToken => return parseSingleQuirk(allocator, text),
+        else => return err,
+    };
     defer parsed.deinit();
 
-    var list = std.ArrayList(model.Quirk).empty;
+    var list = std.ArrayList(model.Quirk).init(allocator);
     errdefer {
         for (list.items) |quirk| {
             freeQuirkFields(allocator, quirk);
         }
-        list.deinit(allocator);
+        list.deinit();
     }
-    try list.ensureTotalCapacity(allocator, parsed.value.len);
+    try list.ensureTotalCapacity(parsed.value.len);
 
     for (parsed.value) |raw| {
         const q = try materializeQuirk(allocator, raw);
         list.appendAssumeCapacity(q);
     }
-    return list.toOwnedSlice(allocator);
+    return list.toOwnedSlice();
+}
+
+fn parseSingleQuirk(allocator: Allocator, text: []const u8) ![]model.Quirk {
+    const parsed = try std.json.parseFromSlice(RawQuirk, allocator, text, .{
+        .ignore_unknown_fields = false,
+    });
+    defer parsed.deinit();
+
+    var list = std.ArrayList(model.Quirk).init(allocator);
+    errdefer {
+        for (list.items) |quirk| {
+            freeQuirkFields(allocator, quirk);
+        }
+        list.deinit();
+    }
+
+    try list.ensureTotalCapacity(1);
+    const q = try materializeQuirk(allocator, parsed.value);
+    list.appendAssumeCapacity(q);
+    return list.toOwnedSlice();
 }
 
 pub fn freeQuirks(allocator: Allocator, quirks: []model.Quirk) void {

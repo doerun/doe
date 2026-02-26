@@ -50,7 +50,7 @@ const default_commands = [_]model.Command{
 fn printUsage(stdout: anytype) !void {
     try stdout.print(
         \\doe-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
-        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane amd_vulkan_release|local_metal_directional|local_metal_comparable|local_metal_release|local_vulkan_directional|local_vulkan_comparable|local_vulkan_release|macos_app]
+        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane vulkan_oracle|vulkan_app|metal_local_directional|metal_local_comparable|metal_local_release|metal_oracle|vulkan_local_directional|vulkan_local_comparable|vulkan_local_release|metal_app]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
         \\ [--gpu-timestamp-mode auto|off]
         \\ [--queue-wait-mode process-events|wait-any]
@@ -91,7 +91,7 @@ fn printUsage(stdout: anytype) !void {
         \\  trace: do not execute commands (trace-only mode)
         \\  native: execute through webgpu-native; dispatch/kernel_dispatch lower to compute passes, render_draw lowers to render-pass or render-bundle mode, and sampler/texture/surface/async diagnostics commands run through explicit WebGPU API contracts.
         \\--backend-lane selects backend selection policy lane when native execution is enabled.
-        \\  amd_vulkan_release, local_metal_directional, local_metal_comparable, local_metal_release, local_vulkan_directional, local_vulkan_comparable, local_vulkan_release, macos_app
+        \\  vulkan_oracle, vulkan_app, metal_local_directional, metal_local_comparable, metal_local_release, metal_oracle, vulkan_local_directional, vulkan_local_comparable, vulkan_local_release, metal_app
         \\--upload-buffer-usage selects upload buffer usage when --execute is enabled.
         \\  copy-dst-copy-src: create upload buffers with CopyDst|CopySrc (default).
         \\  copy-dst: create upload buffers with CopyDst only.
@@ -157,7 +157,7 @@ pub fn main() !void {
     const argv = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, argv);
 
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    const stdout = std.io.getStdOut().writer();
 
     var quirks_text: ?[]const u8 = null;
     var commands_text: ?[]const u8 = null;
@@ -426,7 +426,13 @@ pub fn main() !void {
         .shader_artifact_manifest_path = null,
         .shader_artifact_manifest_hash = null,
         .backend_lane = execution.backendLaneName(backend_lane),
-        .queue_sync_mode = if (execution_context != null) @tagName(queue_sync_mode) else null,
+        .queue_sync_mode = if (execution_context != null)
+            switch (queue_sync_mode) {
+                .per_command => "per-command",
+                .deferred => "deferred",
+            }
+        else
+            null,
     };
 
     if (execution_context) |*ctx| {
@@ -520,7 +526,7 @@ pub fn main() !void {
                 );
             }
             if (trace_jsonl_file) |*file| {
-                const trace_writer = file.deprecatedWriter();
+                const trace_writer = file.writer();
                 try trace.printTraceLine(
                     trace_writer,
                     idx,

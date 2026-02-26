@@ -134,6 +134,7 @@ def pick_measured_timing_ms(
     trace_jsonl: Path,
     required_timing_class: str,
     benchmark_policy: Any,
+    workload_domain: str = "",
 ) -> tuple[float, str, dict[str, Any]]:
     if required_timing_class == "process-wall":
         timing_meta = {
@@ -193,45 +194,25 @@ def pick_measured_timing_ms(
         or execution_row_count > 0
         or execution_success_count > 0
     )
-    dispatch_window_ns = -1
-    dispatch_window_rejected: dict[str, Any] | None = None
-    if execution_encode_total_ns >= 0 and execution_submit_wait_total_ns >= 0:
-        dispatch_window_ns = execution_encode_total_ns + execution_submit_wait_total_ns
-        if dispatch_window_ns > 0 and has_execution_evidence:
-            coverage_percent = None
-            if execution_total_ns > 0:
-                coverage_percent = (
-                    float(dispatch_window_ns) / float(execution_total_ns)
-                ) * 100.0
-
-            if (
-                coverage_percent is not None
-                and dispatch_window_ns
-                < benchmark_policy.min_dispatch_window_ns_without_encode
-                and coverage_percent
-                < benchmark_policy.min_dispatch_window_coverage_percent_without_encode
-            ):
-                dispatch_window_rejected = {
-                    "reason": "dispatch-window-too-small-without-encode",
-                    "dispatchWindowNs": dispatch_window_ns,
-                    "dispatchWindowCoveragePercentOfExecutionTotal": coverage_percent,
-                    "minDispatchWindowNs": benchmark_policy.min_dispatch_window_ns_without_encode,
-                    "minDispatchWindowCoveragePercentOfExecutionTotal": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
-                }
-            else:
-                measured_ms = float(dispatch_window_ns) / 1_000_000.0
+    if workload_domain == "upload" and has_execution_evidence:
+        row_durations_ns = parse_execution_duration_ns_rows(trace_jsonl)
+        if row_durations_ns:
+            row_total_ns = sum(row_durations_ns)
+            if row_total_ns > 0:
+                measured_ms = float(row_total_ns) / 1_000_000.0
                 timing_meta = {
                     "source": "trace-meta",
-                    "traceMetaSource": "doe-execution-dispatch-window-ns",
+                    "traceMetaSource": "doe-execution-row-total-ns",
                     "traceMetaTimingMs": measured_ms,
-                    "executionEncodeTotalNs": execution_encode_total_ns,
-                    "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
+                    "executionRowTotalNs": row_total_ns,
+                    "executionRowDurationCount": len(row_durations_ns),
                     "executionDispatchCount": execution_dispatch_count,
                     "executionRowCount": execution_row_count,
                     "executionSuccessCount": execution_success_count,
                     "wallTimeMs": wall_ms,
+                    "timingSelectionPolicy": "upload-row-total-preferred",
                 }
-                return measured_ms, "doe-execution-dispatch-window-ns", timing_meta
+                return measured_ms, "doe-execution-row-total-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
         measured_ms = float(execution_total_ns) / 1_000_000.0
@@ -244,9 +225,25 @@ def pick_measured_timing_ms(
             "executionSuccessCount": execution_success_count,
             "wallTimeMs": wall_ms,
         }
-        if dispatch_window_rejected is not None:
-            timing_meta["dispatchWindowSelectionRejected"] = dispatch_window_rejected
         return measured_ms, "doe-execution-total-ns", timing_meta
+
+    dispatch_window_ns = -1
+    if execution_encode_total_ns >= 0 and execution_submit_wait_total_ns >= 0:
+        dispatch_window_ns = execution_encode_total_ns + execution_submit_wait_total_ns
+        if dispatch_window_ns > 0 and has_execution_evidence:
+            measured_ms = float(dispatch_window_ns) / 1_000_000.0
+            timing_meta = {
+                "source": "trace-meta",
+                "traceMetaSource": "doe-execution-dispatch-window-ns",
+                "traceMetaTimingMs": measured_ms,
+                "executionEncodeTotalNs": execution_encode_total_ns,
+                "executionSubmitWaitTotalNs": execution_submit_wait_total_ns,
+                "executionDispatchCount": execution_dispatch_count,
+                "executionRowCount": execution_row_count,
+                "executionSuccessCount": execution_success_count,
+                "wallTimeMs": wall_ms,
+            }
+            return measured_ms, "doe-execution-dispatch-window-ns", timing_meta
 
     trace_rows = parse_trace_rows(trace_jsonl)
     timing_meta: dict[str, Any] = {

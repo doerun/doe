@@ -11,6 +11,9 @@ This module is self-contained and does not depend on external runtime code.
 Before running or interpreting Dawn-vs-Doe performance results, read:
 
 - `fawn/performance-strategy.md`
+- `bench/benchmark-writing-guide.md`
+
+If you're adding or changing workloads/commands, treat the benchmark writing guide as the required authoring contract.
 
 That document defines:
 

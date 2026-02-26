@@ -11,6 +11,14 @@
         "dawn-perf-gpu-time",
         "dawn-perf-wall-ns"
       ],
+      "allowedTimingSourcesByBackendId": {
+        "zig_vulkan": [
+          "doe-execution-dispatch-window-ns"
+        ],
+        "dawn_oracle": [
+          "doe-execution-dispatch-window-ns"
+        ]
+      },
       "requiredSyncModel": "deferred",
       "requireUploadIgnoreFirstSource": "doe-execution-row-total-ns"
     },
@@ -37,6 +45,11 @@
         "dawn-perf-gpu-time",
         "dawn-perf-wall-ns"
       ],
+      "allowedTimingSourcesByBackendId": {
+        "dawn_oracle": [
+          "doe-execution-encode-ns"
+        ]
+      },
       "requiredSyncModel": "per-command"
     },
     "surface": {

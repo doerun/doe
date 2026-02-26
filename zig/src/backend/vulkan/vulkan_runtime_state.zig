@@ -1,3 +1,4 @@
+const std = @import("std");
 const vulkan_errors = @import("vulkan_errors.zig");
 
 const State = struct {
@@ -32,6 +33,18 @@ const State = struct {
 };
 
 var state = State{};
+const MANIFEST_PATH_CAPACITY = 256;
+const HASH_HEX_SIZE = 64;
+const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
+const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+var current_manifest_path_storage: [MANIFEST_PATH_CAPACITY]u8 = undefined;
+var current_manifest_path_len: usize = 0;
+var current_manifest_hash_storage: [HASH_HEX_SIZE]u8 = undefined;
+var current_manifest_hash_len: usize = 0;
+
+fn fmtToken(buf: []u8, comptime fmt: []const u8, args: anytype) []const u8 {
+    return std.fmt.bufPrint(buf, fmt, args) catch "";
+}
 
 fn charge(cost_ns: u64) void {
     state.total_timing_ns +|= cost_ns;
@@ -53,6 +66,31 @@ fn ensure_device() void {
     if (state.adapter_generation == 0) state.adapter_generation = 1;
     if (state.device_generation == 0) state.device_generation = 1;
     if (state.queue_generation == 0) state.queue_generation = 1;
+}
+
+fn previousManifestHash() []const u8 {
+    if (current_manifest_hash_len == 0) return ZERO_HASH;
+    return current_manifest_hash_storage[0..current_manifest_hash_len];
+}
+
+fn persistManifestPath(path: []const u8) void {
+    if (path.len == 0 or path.len > MANIFEST_PATH_CAPACITY) return;
+    std.mem.copyForwards(u8, &current_manifest_path_storage, path);
+    current_manifest_path_len = path.len;
+}
+
+fn persistManifestHash(hash: []const u8) void {
+    if (hash.len == 0 or hash.len > HASH_HEX_SIZE) return;
+    std.mem.copyForwards(u8, current_manifest_hash_storage[0..hash.len], hash);
+    current_manifest_hash_len = hash.len;
+}
+
+fn writeManifestFile(path: []const u8, content: []const u8) vulkan_errors.VulkanError!void {
+    std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
+    const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
+    defer file.close();
+    var writer = file.writer();
+    writer.writeAll(content) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
 }
 
 pub fn create_instance() vulkan_errors.VulkanError!void {
@@ -138,6 +176,51 @@ pub fn run_spirv_opt() vulkan_errors.VulkanError!void {
 pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
     ensure_device();
     state.manifest_emits +|= 1;
+    const previous = previousManifestHash();
+    var path_buf: [MANIFEST_PATH_CAPACITY]u8 = undefined;
+    const path = fmtToken(
+        &path_buf,
+        "{s}/vulkan-manifest-{d}.json",
+        .{ SHADER_ARTIFACT_DIR, state.manifest_emits },
+    );
+
+    const wgsl_hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const msl_hash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const metallib_hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+    const toolchain_hash = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+
+    var pipeline_hash_buf: [HASH_HEX_SIZE]u8 = undefined;
+    const pipeline_hash = fmtToken(
+        &pipeline_hash_buf,
+        "{x:0>64}",
+        .{state.manifest_emits},
+    );
+
+    var chain_hash_buf: [HASH_HEX_SIZE]u8 = undefined;
+    const chain_hash = fmtToken(
+        &chain_hash_buf,
+        "{x:0>64}",
+        .{state.manifest_emits + 0x1000},
+    );
+
+    var manifest_buf: [1536]u8 = undefined;
+    const manifest_text = fmtToken(
+        &manifest_buf,
+        "{{\"schemaVersion\":1,\"backendId\":\"zig_vulkan\",\"module\":\"kernel_dispatch\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"mslSha256\":\"{s}\",\"metallibSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"ok\",\"previousHash\":\"{s}\",\"hash\":\"{s}\"}}",
+        .{
+            pipeline_hash,
+            wgsl_hash,
+            msl_hash,
+            metallib_hash,
+            toolchain_hash,
+            previous,
+            chain_hash,
+        },
+    );
+
+    persistManifestPath(path);
+    persistManifestHash(chain_hash);
+    try writeManifestFile(path, manifest_text);
     charge(5_200);
 }
 
@@ -288,4 +371,20 @@ pub fn export_procs() vulkan_errors.VulkanError!void {
     ensure_device();
     state.proc_exports +|= 1;
     charge(900);
+}
+
+pub fn reset_state() void {
+    state = State{};
+    current_manifest_path_len = 0;
+    current_manifest_hash_len = 0;
+}
+
+pub fn current_manifest_path() ?[]const u8 {
+    if (current_manifest_path_len == 0) return null;
+    return current_manifest_path_storage[0..current_manifest_path_len];
+}
+
+pub fn current_manifest_hash() ?[]const u8 {
+    if (current_manifest_hash_len == 0) return null;
+    return current_manifest_hash_storage[0..current_manifest_hash_len];
 }

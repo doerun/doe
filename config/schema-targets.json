@@ -38,6 +38,10 @@
       "data": "config/backend-runtime-policy.json"
     },
     {
+      "schema": "config/backend-lane-map.schema.json",
+      "data": "config/backend-lane-map.json"
+    },
+    {
       "schema": "config/backend-capability-policy.schema.json",
       "data": "config/backend-capability-policy.json"
     },

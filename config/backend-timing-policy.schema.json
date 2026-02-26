@@ -19,6 +19,14 @@
             "items": { "type": "string", "minLength": 1 },
             "minItems": 1
           },
+          "allowedTimingSourcesByBackendId": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1
+            }
+          },
           "requiredSyncModel": { "type": "string", "enum": ["per-command", "deferred", "either"] },
           "requireUploadIgnoreFirstSource": { "type": "string" }
         }

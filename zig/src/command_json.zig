@@ -264,20 +264,20 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
     const parsed = try std.json.parseFromSlice([]const RawCommand, allocator, text, .{ .ignore_unknown_fields = true });
     defer parsed.deinit();
 
-    var list = std.ArrayList(model.Command).empty;
+    var list = std.ArrayList(model.Command).init(allocator);
     errdefer {
         for (list.items) |command| {
             freeCommandPayload(allocator, command);
         }
-        list.deinit(allocator);
+        list.deinit();
     }
-    try list.ensureTotalCapacity(allocator, parsed.value.len);
+    try list.ensureTotalCapacity(parsed.value.len);
 
     for (parsed.value) |raw| {
         list.appendAssumeCapacity(try parseOne(allocator, raw));
     }
 
-    return list.toOwnedSlice(allocator);
+    return list.toOwnedSlice();
 }
 
 pub fn freeCommands(allocator: Allocator, commands: []model.Command) void {
@@ -554,7 +554,7 @@ fn parseDispatchDimensions(raw: RawCommand) !model.DispatchCommand {
 
 fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBinding) ![]const model.KernelBinding {
     var bindings = try std.ArrayList(model.KernelBinding).initCapacity(allocator, raw_bindings.len);
-    errdefer bindings.deinit(allocator);
+    errdefer bindings.deinit();
 
     for (raw_bindings) |raw_binding| {
         const binding_index = raw_binding.binding orelse return ParseError.InvalidCommandPayload;
@@ -565,7 +565,7 @@ fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBind
         const buffer_offset = raw_binding.buffer_offset orelse raw_binding.bufferOffset orelse 0;
         const buffer_size = raw_binding.buffer_size orelse raw_binding.bufferSize orelse model.WGPUWholeSize;
 
-        try bindings.append(allocator, .{
+        try bindings.append(.{
             .binding = binding_index,
             .group = group,
             .resource_kind = kind,
@@ -586,7 +586,7 @@ fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBind
         });
     }
 
-    return bindings.toOwnedSlice(allocator);
+    return bindings.toOwnedSlice();
 }
 
 fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {

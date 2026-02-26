@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "cutover": {
-    "targetLane": "macos_app",
+    "targetLane": "metal_app",
     "defaultBackend": "zig_metal",
     "requiredComparablePasses": 5,
     "requiredClaimablePasses": 3,

@@ -626,34 +626,10 @@ def maybe_override_render_encode_timing(
     trace_meta: dict[str, Any],
     required_timing_class: str,
 ) -> tuple[float, str, dict[str, Any]]:
-    if required_timing_class == "process-wall":
-        return measured_ms, measured_source, measured_meta
-    if workload.domain not in RENDER_ENCODE_TIMING_DOMAINS:
-        return measured_ms, measured_source, measured_meta
-    if measured_source not in (
-        "doe-execution-dispatch-window-ns",
-        "doe-execution-total-ns",
-        "doe-execution-row-total-ns",
-    ):
-        return measured_ms, measured_source, measured_meta
-    execution_encode_total_ns = safe_int(trace_meta.get("executionEncodeTotalNs"), default=-1)
-    execution_dispatch_count = safe_int(trace_meta.get("executionDispatchCount"), default=0)
-    if execution_encode_total_ns <= 0 or execution_dispatch_count <= 0:
-        return measured_ms, measured_source, measured_meta
-
-    encode_ms = float(execution_encode_total_ns) / 1_000_000.0
-    timing_meta = dict(measured_meta)
-    timing_meta.update(
-        {
-            "timingSelectionPolicy": "render-encode-only",
-            "renderEncodeTimingDomain": workload.domain,
-            "renderEncodeTimingBaseSource": measured_source,
-            "renderEncodeTotalNs": execution_encode_total_ns,
-            "traceMetaSource": "doe-execution-encode-ns",
-            "traceMetaTimingMs": encode_ms,
-        }
-    )
-    return encode_ms, "doe-execution-encode-ns", timing_meta
+    _ = workload
+    _ = trace_meta
+    _ = required_timing_class
+    return measured_ms, measured_source, measured_meta
 
 
 def safe_int(value: Any, default: int = 0) -> int:
@@ -665,9 +641,9 @@ def safe_int(value: Any, default: int = 0) -> int:
 
 
 def percent_delta(left: float, right: float) -> float:
-    if right == 0.0:
+    if left <= 0.0:
         return 0.0
-    return ((right - left) / right) * 100.0
+    return ((right / left) - 1.0) * 100.0
 
 
 def safe_float(value: Any) -> float | None:
@@ -1211,6 +1187,7 @@ def run_workload(
             trace_jsonl=trace_jsonl,
             required_timing_class=required_timing_class,
             benchmark_policy=benchmark_policy,
+            workload_domain=workload.domain,
         )
         measured_ms, measured_source, measured_meta = maybe_override_render_encode_timing(
             workload=workload,
@@ -1477,6 +1454,60 @@ def load_workloads(
     return result
 
 
+def template_uses_doe_runtime(template: str) -> bool:
+    return "doe-zig-runtime" in template
+
+
+def enforce_strict_doe_runtime_normalization_symmetry(
+    workloads: list[Workload],
+    left_command_template: str,
+    right_command_template: str,
+    comparability_mode: str,
+) -> None:
+    if comparability_mode != "strict":
+        return
+    if not template_uses_doe_runtime(left_command_template):
+        return
+    if not template_uses_doe_runtime(right_command_template):
+        return
+
+    failures: list[str] = []
+    for workload in workloads:
+        if not workload.comparable:
+            continue
+        mismatches: list[str] = []
+        if workload.left_command_repeat != workload.right_command_repeat:
+            mismatches.append(
+                f"commandRepeat left={workload.left_command_repeat} right={workload.right_command_repeat}"
+            )
+        if workload.left_ignore_first_ops != workload.right_ignore_first_ops:
+            mismatches.append(
+                f"ignoreFirstOps left={workload.left_ignore_first_ops} right={workload.right_ignore_first_ops}"
+            )
+        if workload.left_upload_buffer_usage != workload.right_upload_buffer_usage:
+            mismatches.append(
+                "uploadBufferUsage "
+                f"left={workload.left_upload_buffer_usage} right={workload.right_upload_buffer_usage}"
+            )
+        if workload.left_upload_submit_every != workload.right_upload_submit_every:
+            mismatches.append(
+                f"uploadSubmitEvery left={workload.left_upload_submit_every} right={workload.right_upload_submit_every}"
+            )
+        if workload.left_timing_divisor != workload.right_timing_divisor:
+            mismatches.append(
+                f"timingDivisor left={workload.left_timing_divisor} right={workload.right_timing_divisor}"
+            )
+        if mismatches:
+            failures.append(f"{workload.id}: " + ", ".join(mismatches))
+
+    if failures:
+        details = "; ".join(failures)
+        raise ValueError(
+            "strict doe-vs-doe apples-to-apples requires symmetric workload normalization "
+            f"(left==right) for comparable workloads: {details}"
+        )
+
+
 format_stats = reporting_mod.format_stats
 format_distribution = reporting_mod.format_distribution
 summarize_timing_metric_stats = reporting_mod.summarize_timing_metric_stats
@@ -1548,6 +1579,12 @@ def main() -> int:
             )
         print(f"FAIL: no workloads selected{hint}")
         return 1
+    enforce_strict_doe_runtime_normalization_symmetry(
+        workloads=workloads,
+        left_command_template=args.left_command_template,
+        right_command_template=args.right_command_template,
+        comparability_mode=args.comparability,
+    )
 
     if (
         not args.emit_shell
@@ -1594,8 +1631,8 @@ def main() -> int:
         "left": {"name": args.left_name},
         "right": {"name": args.right_name},
         "deltaPercentConvention": {
-            "baseline": "right",
-            "formula": "((rightMs - leftMs) / rightMs) * 100",
+            "baseline": "left",
+            "formula": "((rightMs / leftMs) - 1) * 100",
             "positive": "left faster",
             "negative": "left slower",
             "zero": "parity",

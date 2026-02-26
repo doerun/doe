@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "sourcePolicyPath": "config/backend-runtime-policy.json",
+  "laneToBackend": {
+    "metal_app": "zig_metal",
+    "metal_local_comparable": "zig_metal",
+    "metal_local_directional": "zig_metal",
+    "metal_local_release": "zig_metal",
+    "metal_oracle": "dawn_oracle",
+    "vulkan_app": "zig_vulkan",
+    "vulkan_local_comparable": "zig_vulkan",
+    "vulkan_local_directional": "dawn_oracle",
+    "vulkan_local_release": "zig_vulkan",
+    "vulkan_oracle": "dawn_oracle"
+  },
+  "backendToLanes": {
+    "dawn_oracle": [
+      "metal_oracle",
+      "vulkan_local_directional",
+      "vulkan_oracle"
+    ],
+    "zig_metal": [
+      "metal_app",
+      "metal_local_comparable",
+      "metal_local_directional",
+      "metal_local_release"
+    ],
+    "zig_vulkan": [
+      "vulkan_app",
+      "vulkan_local_comparable",
+      "vulkan_local_release"
+    ]
+  }
+}

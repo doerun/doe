@@ -190,9 +190,10 @@ Reference commands:
 Native execution now supports explicit backend selection lanes:
 
 ```bash
-zig build run -- --backend native --execute --backend-lane amd_vulkan_release
-zig build run -- --backend native --execute --backend-lane local_metal_comparable
-zig build run -- --backend native --execute --backend-lane local_metal_release
+zig build run -- --backend native --execute --backend-lane vulkan_oracle
+zig build run -- --backend native --execute --backend-lane metal_local_comparable
+zig build run -- --backend native --execute --backend-lane metal_local_release
+zig build run -- --backend native --execute --backend-lane metal_oracle
 ```
 
 Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metadata records:

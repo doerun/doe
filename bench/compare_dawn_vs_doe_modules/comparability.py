@@ -154,6 +154,26 @@ def evaluate_comparability_from_facts(
             fact_bool("timing_class_match_applies"),
             fact_bool("left_right_timing_class_match"),
         ),
+        "left_right_trace_meta_source_match": (
+            True,
+            fact_bool("trace_meta_source_match_applies"),
+            fact_bool("left_right_trace_meta_source_match"),
+        ),
+        "left_right_timing_selection_policy_match": (
+            True,
+            fact_bool("timing_selection_policy_match_applies"),
+            fact_bool("left_right_timing_selection_policy_match"),
+        ),
+        "left_right_queue_sync_mode_match": (
+            True,
+            fact_bool("queue_sync_mode_match_applies"),
+            fact_bool("left_right_queue_sync_mode_match"),
+        ),
+        "left_right_execution_shape_match": (
+            True,
+            fact_bool("execution_shape_match_applies"),
+            fact_bool("left_right_execution_shape_match"),
+        ),
         "left_native_operation_timing_for_webgpu_ffi": (
             True,
             fact_bool("operation_timing_class_required"),
@@ -534,6 +554,100 @@ def compare_assessment(
     right_classes = sorted({classify_timing_source(source) for source in right_sources if source})
     left_class = left_classes[0] if len(left_classes) == 1 else "mixed"
     right_class = right_classes[0] if len(right_classes) == 1 else "mixed"
+    left_trace_meta_sources = sorted(
+        {
+            canonical_timing_source(str(timing.get("traceMetaSource", "")))
+            for sample in left_samples
+            if isinstance(sample, dict)
+            for timing in [sample.get("timing", {})]
+            if isinstance(timing, dict) and str(timing.get("traceMetaSource", ""))
+        }
+    )
+    right_trace_meta_sources = sorted(
+        {
+            canonical_timing_source(str(timing.get("traceMetaSource", "")))
+            for sample in right_samples
+            if isinstance(sample, dict)
+            for timing in [sample.get("timing", {})]
+            if isinstance(timing, dict) and str(timing.get("traceMetaSource", ""))
+        }
+    )
+    left_timing_selection_policies = sorted(
+        {
+            (
+                str(timing.get("timingSelectionPolicy"))
+                if timing.get("timingSelectionPolicy") is not None
+                else "<none>"
+            )
+            for sample in left_samples
+            if isinstance(sample, dict)
+            for timing in [sample.get("timing", {})]
+            if isinstance(timing, dict)
+        }
+    )
+    right_timing_selection_policies = sorted(
+        {
+            (
+                str(timing.get("timingSelectionPolicy"))
+                if timing.get("timingSelectionPolicy") is not None
+                else "<none>"
+            )
+            for sample in right_samples
+            if isinstance(sample, dict)
+            for timing in [sample.get("timing", {})]
+            if isinstance(timing, dict)
+        }
+    )
+    left_queue_sync_modes = sorted(
+        {
+            str(trace_meta.get("queueSyncMode"))
+            for sample in left_samples
+            if isinstance(sample, dict)
+            for trace_meta in [sample.get("traceMeta", {})]
+            if isinstance(trace_meta, dict) and trace_meta.get("queueSyncMode") is not None
+        }
+    )
+    right_queue_sync_modes = sorted(
+        {
+            str(trace_meta.get("queueSyncMode"))
+            for sample in right_samples
+            if isinstance(sample, dict)
+            for trace_meta in [sample.get("traceMeta", {})]
+            if isinstance(trace_meta, dict) and trace_meta.get("queueSyncMode") is not None
+        }
+    )
+    def collect_execution_shapes(samples: list[dict[str, Any]]) -> list[dict[str, int]]:
+        shape_set: set[tuple[int, int, int]] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            dispatch_count = safe_int(trace_meta.get("executionDispatchCount"), default=-1)
+            row_count = safe_int(trace_meta.get("executionRowCount"), default=-1)
+            success_count = safe_int(trace_meta.get("executionSuccessCount"), default=-1)
+            if dispatch_count < 0 and row_count < 0 and success_count < 0:
+                continue
+            shape_set.add((dispatch_count, row_count, success_count))
+        return [
+            {
+                "executionDispatchCount": shape[0],
+                "executionRowCount": shape[1],
+                "executionSuccessCount": shape[2],
+            }
+            for shape in sorted(shape_set)
+        ]
+
+    left_execution_shapes = collect_execution_shapes(left_samples)
+    right_execution_shapes = collect_execution_shapes(right_samples)
+    normalized_domain = workload_domain.strip().lower()
+    dispatch_shape_domain = (
+        normalized_domain == "compute"
+        or normalized_domain.startswith("compute-")
+        or normalized_domain.endswith("-compute")
+        or normalized_domain in {"pipeline", "p0-compute"}
+    )
 
     reasons: list[str] = []
     resource_reasons: list[str] = []
@@ -630,6 +744,72 @@ def compare_assessment(
         details={
             "leftTimingClass": left_class,
             "rightTimingClass": right_class,
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_trace_meta_source_match",
+        blocking=True,
+        applicable=len(left_samples) > 0 and len(right_samples) > 0,
+        passes=left_trace_meta_sources == right_trace_meta_sources,
+        failure_reason=(
+            "left/right trace meta timing source mismatch: "
+            f"{left_trace_meta_sources} vs {right_trace_meta_sources}"
+        ),
+        details={
+            "leftTraceMetaSources": left_trace_meta_sources,
+            "rightTraceMetaSources": right_trace_meta_sources,
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_timing_selection_policy_match",
+        blocking=True,
+        applicable=len(left_samples) > 0 and len(right_samples) > 0,
+        passes=left_timing_selection_policies == right_timing_selection_policies,
+        failure_reason=(
+            "left/right timing selection policy mismatch: "
+            f"{left_timing_selection_policies} vs {right_timing_selection_policies}"
+        ),
+        details={
+            "leftTimingSelectionPolicies": left_timing_selection_policies,
+            "rightTimingSelectionPolicies": right_timing_selection_policies,
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_queue_sync_mode_match",
+        blocking=True,
+        applicable=len(left_samples) > 0 and len(right_samples) > 0,
+        passes=left_queue_sync_modes == right_queue_sync_modes,
+        failure_reason=(
+            "left/right queue sync mode mismatch: "
+            f"{left_queue_sync_modes} vs {right_queue_sync_modes}"
+        ),
+        details={
+            "leftQueueSyncModes": left_queue_sync_modes,
+            "rightQueueSyncModes": right_queue_sync_modes,
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_execution_shape_match",
+        blocking=True,
+        applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0,
+        passes=left_execution_shapes == right_execution_shapes,
+        failure_reason=(
+            "left/right execution shape mismatch (dispatch/row/success counts): "
+            f"{left_execution_shapes} vs {right_execution_shapes}"
+        ),
+        details={
+            "workloadDomain": workload_domain,
+            "dispatchShapeDomain": dispatch_shape_domain,
+            "leftExecutionShapes": left_execution_shapes,
+            "rightExecutionShapes": right_execution_shapes,
         },
     )
 
@@ -1019,6 +1199,14 @@ def compare_assessment(
         "advisoryFailedObligations": advisory_failed_obligations,
         "leftTimingSources": left_sources,
         "rightTimingSources": right_sources,
+        "leftTraceMetaSources": left_trace_meta_sources,
+        "rightTraceMetaSources": right_trace_meta_sources,
+        "leftTimingSelectionPolicies": left_timing_selection_policies,
+        "rightTimingSelectionPolicies": right_timing_selection_policies,
+        "leftQueueSyncModes": left_queue_sync_modes,
+        "rightQueueSyncModes": right_queue_sync_modes,
+        "leftExecutionShapes": left_execution_shapes,
+        "rightExecutionShapes": right_execution_shapes,
         "leftTimingClass": left_class,
         "rightTimingClass": right_class,
         "resourceProbe": resource_probe,

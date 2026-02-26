@@ -26,23 +26,42 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def normalize_lane_alias(raw_lane: str) -> str:
+    aliases = {
+        "amd_vulkan_release": "vulkan_oracle",
+        "amd_vulkan_app": "vulkan_app",
+        "local_vulkan_directional": "vulkan_local_directional",
+        "local_vulkan_comparable": "vulkan_local_comparable",
+        "local_vulkan_release": "vulkan_local_release",
+        "local_metal_directional": "metal_local_directional",
+        "local_metal_comparable": "metal_local_comparable",
+        "local_metal_release": "metal_local_release",
+        "macos_app": "metal_app",
+    }
+    return aliases.get(raw_lane, raw_lane)
+
+
 def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
     if explicit_lane:
-        return explicit_lane
+        return normalize_lane_alias(explicit_lane)
     config_path = str(report.get("configPath", ""))
+    if "metal_app" in config_path or "macos_app" in config_path or "macos-app" in config_path:
+        return "metal_app"
+    if ".metal.oracle" in config_path:
+        return "metal_oracle"
     if ".metal.release" in config_path:
-        return "local_metal_release"
+        return "metal_local_release"
     if ".metal.comparable" in config_path or ".metal.extended.comparable" in config_path:
-        return "local_metal_comparable"
+        return "metal_local_comparable"
     if ".metal.directional" in config_path:
-        return "local_metal_directional"
+        return "metal_local_directional"
     if ".local.vulkan.release" in config_path:
-        return "local_vulkan_release"
+        return "vulkan_local_release"
     if ".local.vulkan.comparable" in config_path or ".local.vulkan.extended.comparable" in config_path:
-        return "local_vulkan_comparable"
+        return "vulkan_local_comparable"
     if ".local.vulkan.directional" in config_path:
-        return "local_vulkan_directional"
-    return "amd_vulkan_release"
+        return "vulkan_local_directional"
+    return "vulkan_oracle"
 
 
 def main() -> int:

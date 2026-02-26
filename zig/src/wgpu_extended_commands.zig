@@ -332,11 +332,11 @@ fn textureBytesPerTexel(format: types.WGPUTextureFormat) !u64 {
 fn removeTextureViewsForTexture(self: *Backend, texture: types.WGPUTexture) void {
     const procs = self.procs orelse return;
 
-    var target_keys = std.ArrayList(u64).empty;
-    defer target_keys.deinit(self.allocator);
+    var target_keys = std.ArrayList(u64).init(self.allocator);
+    defer target_keys.deinit();
     var target_it = self.render_target_view_cache.iterator();
     while (target_it.next()) |entry| {
-        if (entry.value_ptr.texture == texture) target_keys.append(self.allocator, entry.key_ptr.*) catch return;
+        if (entry.value_ptr.texture == texture) target_keys.append(entry.key_ptr.*) catch return;
     }
     for (target_keys.items) |key| {
         if (self.render_target_view_cache.fetchRemove(key)) |removed| {
@@ -344,11 +344,11 @@ fn removeTextureViewsForTexture(self: *Backend, texture: types.WGPUTexture) void
         }
     }
 
-    var depth_keys = std.ArrayList(u64).empty;
-    defer depth_keys.deinit(self.allocator);
+    var depth_keys = std.ArrayList(u64).init(self.allocator);
+    defer depth_keys.deinit();
     var depth_it = self.render_depth_view_cache.iterator();
     while (depth_it.next()) |entry| {
-        if (entry.value_ptr.texture == texture) depth_keys.append(self.allocator, entry.key_ptr.*) catch return;
+        if (entry.value_ptr.texture == texture) depth_keys.append(entry.key_ptr.*) catch return;
     }
     for (depth_keys.items) |key| {
         if (self.render_depth_view_cache.fetchRemove(key)) |removed| {

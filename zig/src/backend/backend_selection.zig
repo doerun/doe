@@ -1,3 +1,4 @@
+const std = @import("std");
 const model = @import("../model.zig");
 const backend_ids = @import("backend_ids.zig");
 const backend_policy = @import("backend_policy.zig");
@@ -8,7 +9,27 @@ pub const Selection = struct {
     fallback_used: bool,
 };
 
+fn is_apple_vendor(vendor: []const u8) bool {
+    return std.ascii.eqlIgnoreCase(vendor, "apple");
+}
+
 pub fn select_backend(profile: model.DeviceProfile, policy: backend_policy.SelectionPolicy) Selection {
+    if (policy.default_backend == .dawn_oracle) {
+        return .{
+            .backend_id = .dawn_oracle,
+            .reason = "policy_lane_prefers_dawn_oracle",
+            .fallback_used = false,
+        };
+    }
+
+    if (policy.default_backend == .zig_metal and profile.api == .metal and is_apple_vendor(profile.vendor)) {
+        return .{
+            .backend_id = .zig_metal,
+            .reason = "apple_chip_prefers_zig_metal",
+            .fallback_used = false,
+        };
+    }
+
     if (policy.default_backend == .zig_vulkan) {
         return .{
             .backend_id = .zig_vulkan,
@@ -34,8 +55,8 @@ pub fn select_backend(profile: model.DeviceProfile, policy: backend_policy.Selec
     }
 
     return .{
-        .backend_id = .dawn_oracle,
-        .reason = "default_dawn_oracle",
+        .backend_id = policy.default_backend,
+        .reason = "policy_lane_default",
         .fallback_used = false,
     };
 }

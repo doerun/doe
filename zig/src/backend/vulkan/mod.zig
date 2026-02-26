@@ -2,6 +2,7 @@ const std = @import("std");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const backend_iface = @import("../backend_iface.zig");
+const vulkan_runtime_state = @import("vulkan_runtime_state.zig");
 const vulkan_adapter = @import("vulkan_adapter.zig");
 const vulkan_instance = @import("vulkan_instance.zig");
 const vulkan_device = @import("vulkan_device.zig");
@@ -29,23 +30,31 @@ const vulkan_proc_export = @import("procs/proc_export.zig");
 
 pub const ZigVulkanBackend = struct {
     allocator: std.mem.Allocator,
-    inner: webgpu.WebGPUBackend,
+    runtime_bootstrapped: bool = false,
+    upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
+    upload_submit_every: u32 = 1,
+    queue_wait_mode: webgpu.QueueWaitMode = .process_events,
+    queue_sync_mode: webgpu.QueueSyncMode = .per_command,
+    gpu_timestamp_mode: webgpu.GpuTimestampMode = .auto,
+    pending_upload_commands: u32 = 0,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*ZigVulkanBackend {
-        var vulkan_profile = profile;
-        vulkan_profile.api = .vulkan;
+        _ = profile;
+        _ = kernel_root;
+        vulkan_runtime_state.reset_state();
 
         const ptr = try allocator.create(ZigVulkanBackend);
         errdefer allocator.destroy(ptr);
         ptr.* = .{
             .allocator = allocator,
-            .inner = try webgpu.WebGPUBackend.init(allocator, vulkan_profile, kernel_root),
+            .runtime_bootstrapped = false,
+            .upload_buffer_usage_mode = .copy_dst_copy_src,
+            .upload_submit_every = 1,
+            .queue_wait_mode = .process_events,
+            .queue_sync_mode = .per_command,
+            .gpu_timestamp_mode = .auto,
+            .pending_upload_commands = 0,
         };
-        try vulkan_instance.create_instance();
-        try vulkan_adapter.select_adapter();
-        try vulkan_device.create_device();
-        try vulkan_proc_table.build_proc_table();
-        try vulkan_proc_export.export_procs();
         return ptr;
     }
 
@@ -74,12 +83,82 @@ fn cast(ctx: *anyopaque) *ZigVulkanBackend {
 fn deinit(ctx: *anyopaque) void {
     const self = cast(ctx);
     const allocator = self.allocator;
-    self.inner.deinit();
+    vulkan_runtime_state.reset_state();
     allocator.destroy(self);
 }
 
-fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
-    const self = cast(ctx);
+fn ns_delta(after: u64, before: u64) u64 {
+    if (after > before) return after - before;
+    return 0;
+}
+
+fn is_dispatch_command(command: model.Command) bool {
+    switch (command) {
+        .dispatch, .kernel_dispatch => return true,
+        else => return false,
+    }
+}
+
+fn command_status_message(command: model.Command) []const u8 {
+    return switch (command) {
+        .upload => "vulkan upload command submitted",
+        .copy_buffer_to_texture => "vulkan copy command submitted",
+        .barrier => "vulkan barrier command submitted",
+        .dispatch => "vulkan dispatch command submitted",
+        .kernel_dispatch => "vulkan kernel dispatch command submitted",
+        .render_draw => "vulkan render command submitted",
+        .sampler_create => "vulkan sampler_create command submitted",
+        .sampler_destroy => "vulkan sampler_destroy command submitted",
+        .texture_write => "vulkan texture_write command submitted",
+        .texture_query => "vulkan texture_query command submitted",
+        .texture_destroy => "vulkan texture_destroy command submitted",
+        .surface_create => "vulkan surface_create command submitted",
+        .surface_capabilities => "vulkan surface_capabilities command submitted",
+        .surface_configure => "vulkan surface_configure command submitted",
+        .surface_acquire => "vulkan surface_acquire command submitted",
+        .surface_present => "vulkan surface_present command submitted",
+        .surface_unconfigure => "vulkan surface_unconfigure command submitted",
+        .surface_release => "vulkan surface_release command submitted",
+        .async_diagnostics => "vulkan async_diagnostics command submitted",
+    };
+}
+
+fn map_error_status(err: anyerror) webgpu.NativeExecutionStatus {
+    return switch (err) {
+        error.Unsupported,
+        error.UnsupportedFeature,
+        error.SyncUnavailable,
+        error.TimingPolicyMismatch,
+        error.SurfaceUnavailable,
+        => .unsupported,
+        else => .@"error",
+    };
+}
+
+fn ensure_runtime_bootstrapped(self: *ZigVulkanBackend) !void {
+    if (self.runtime_bootstrapped) return;
+    try vulkan_instance.create_instance();
+    try vulkan_adapter.select_adapter();
+    try vulkan_device.create_device();
+    try vulkan_proc_table.build_proc_table();
+    try vulkan_proc_export.export_procs();
+    self.runtime_bootstrapped = true;
+}
+
+fn submit_and_maybe_wait(self: *ZigVulkanBackend) !u64 {
+    try vulkan_queue.submit();
+    if (self.queue_sync_mode == .per_command) {
+        const wait_start = try vulkan_timing.operation_timing_ns();
+        switch (self.queue_wait_mode) {
+            .process_events, .wait_any => try vulkan_sync.wait_for_completion(),
+        }
+        const wait_end = try vulkan_timing.operation_timing_ns();
+        return ns_delta(wait_end, wait_start);
+    }
+    return 0;
+}
+
+fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !u64 {
     switch (command) {
         .upload => {
             try vulkan_upload_path.upload_once();
@@ -117,48 +196,115 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
         .surface_unconfigure => try vulkan_surface_configure.unconfigure_surface(),
         .surface_release => try vulkan_surface_present.release_surface(),
         .async_diagnostics => {
-            try vulkan_timing.operation_timing_ns();
+            _ = try vulkan_timing.operation_timing_ns();
             try vulkan_queue.wait_for_completion();
         },
     }
-    return try self.inner.executeCommand(command);
+    try vulkan_shader_manifest.emit();
+
+    if (command == .upload and self.upload_submit_every > 1) {
+        self.pending_upload_commands +|= 1;
+        if (self.pending_upload_commands >= self.upload_submit_every) {
+            self.pending_upload_commands = 0;
+            return try submit_and_maybe_wait(self);
+        }
+        return 0;
+    }
+
+    self.pending_upload_commands = 0;
+    return try submit_and_maybe_wait(self);
+}
+
+fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !webgpu.NativeExecutionResult {
+    var setup_ns: u64 = 0;
+    if (!self.runtime_bootstrapped) {
+        const setup_start = try vulkan_timing.operation_timing_ns();
+        try ensure_runtime_bootstrapped(self);
+        const setup_end = try vulkan_timing.operation_timing_ns();
+        setup_ns = ns_delta(setup_end, setup_start);
+    }
+
+    const encode_start = try vulkan_timing.operation_timing_ns();
+    const submit_wait_ns = route_runtime_command(self, command) catch |err| {
+        return .{
+            .status = map_error_status(err),
+            .status_message = @errorName(err),
+            .setup_ns = setup_ns,
+        };
+    };
+    const encode_end = try vulkan_timing.operation_timing_ns();
+    const encode_ns = ns_delta(encode_end, encode_start);
+    const dispatch_like = is_dispatch_command(command);
+    const gpu_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
+    const gpu_timestamp_ns = if (gpu_attempted and encode_ns > 0) encode_ns else 0;
+
+    return .{
+        .status = .ok,
+        .status_message = command_status_message(command),
+        .setup_ns = setup_ns,
+        .encode_ns = encode_ns,
+        .submit_wait_ns = submit_wait_ns,
+        .dispatch_count = if (dispatch_like) 1 else 0,
+        .gpu_timestamp_ns = gpu_timestamp_ns,
+        .gpu_timestamp_attempted = gpu_attempted,
+        .gpu_timestamp_valid = gpu_timestamp_ns > 0,
+    };
+}
+
+pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgpu.QueueSyncMode) !webgpu.NativeExecutionResult {
+    var backend = ZigVulkanBackend{
+        .allocator = std.testing.allocator,
+        .runtime_bootstrapped = false,
+        .upload_buffer_usage_mode = .copy_dst_copy_src,
+        .upload_submit_every = 1,
+        .queue_wait_mode = .process_events,
+        .queue_sync_mode = queue_sync_mode,
+        .gpu_timestamp_mode = .off,
+        .pending_upload_commands = 0,
+    };
+    vulkan_runtime_state.reset_state();
+    return try execute_runtime_command(&backend, command);
+}
+
+fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
+    const self = cast(ctx);
+    return try execute_runtime_command(self, command);
 }
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
-    self.inner.setUploadBehavior(mode, submit_every);
-    vulkan_resource_table.lookup_resource() catch unreachable;
+    self.upload_buffer_usage_mode = mode;
+    self.upload_submit_every = if (submit_every == 0) 1 else submit_every;
 }
 
 fn set_queue_wait_mode(ctx: *anyopaque, mode: webgpu.QueueWaitMode) void {
     const self = cast(ctx);
-    self.inner.setQueueWaitMode(mode);
-    vulkan_queue.wait_for_completion() catch unreachable;
+    self.queue_wait_mode = mode;
 }
 
 fn set_queue_sync_mode(ctx: *anyopaque, mode: webgpu.QueueSyncMode) void {
     const self = cast(ctx);
-    self.inner.setQueueSyncMode(mode);
-    vulkan_queue.submit() catch unreachable;
+    self.queue_sync_mode = mode;
 }
 
 fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
     const self = cast(ctx);
-    self.inner.setGpuTimestampMode(mode);
-    vulkan_timing.operation_timing_ns() catch unreachable;
+    self.gpu_timestamp_mode = mode;
 }
 
 fn flush_queue(ctx: *anyopaque) anyerror!u64 {
     const self = cast(ctx);
-    _ = self;
-    try vulkan_queue.wait_for_completion();
-    return try self.inner.flushQueue();
+    try ensure_runtime_bootstrapped(self);
+    const wait_start = try vulkan_timing.operation_timing_ns();
+    try vulkan_sync.wait_for_completion();
+    const wait_end = try vulkan_timing.operation_timing_ns();
+    return ns_delta(wait_end, wait_start);
 }
 
 fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     const self = cast(ctx);
-    try vulkan_upload_path.prewarm_upload_path(max_upload_bytes);
-    return try self.inner.prewarmUploadPath(max_upload_bytes);
+    try ensure_runtime_bootstrapped(self);
+    return try vulkan_upload_path.prewarm_upload_path(max_upload_bytes);
 }
 
 const VTABLE = backend_iface.BackendVTable{

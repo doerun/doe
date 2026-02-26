@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "chromium-webgpu-playwright-smoke",
+  "benchmarkClass": "diagnostic",
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "diagnostic",
+  "timingClass": "browser-operation-proxy",
+  "timingSource": "performance.now",
+  "generatedAt": "2026-02-26T19:32:59.670Z",
+  "hashAlgorithm": "sha256",
+  "invocation": {
+    "argv": [
+      "--mode",
+      "both",
+      "--allow-bench-out",
+      "--out",
+      "bench/out/chromium-playwright-smoke.recheck2.json"
+    ],
+    "cwd": "/home/x/deco/fawn",
+    "nodeVersion": "v20.18.1",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "chromePath": "/home/x/deco/fawn/nursery/chromium_webgpu_lane/src/out/fawn_release/chrome",
+  "headless": true,
+  "chromeArgs": [],
+  "mode": "both",
+  "methodology": {
+    "uploadIterations": 500,
+    "dispatchIterations": 200,
+    "uploadWarmupIterations": 50,
+    "dispatchWarmupIterations": 20,
+    "suiteTimeoutMs": 120000,
+    "operationTimeoutMs": 30000,
+    "strictMode": false,
+    "notes": [
+      "Browser harness output is diagnostic and not a strict L0 apples-to-apples claim artifact."
+    ]
+  },
+  "modeResults": [
+    {
+      "mode": "dawn",
+      "runtimeArgs": [
+        "--use-webgpu-runtime=dawn"
+      ],
+      "launchArgs": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--ignore-gpu-blocklist",
+        "--enable-unsafe-webgpu",
+        "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:37097",
+        "--use-webgpu-runtime=dawn"
+      ],
+      "browserVersion": "147.0.7701.0",
+      "elapsedMs": 414,
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.0.0 Safari/537.36",
+      "webgpuAvailable": true,
+      "adapterAvailable": true,
+      "adapterInfo": {},
+      "features": [
+        "bgra8unorm-storage",
+        "chromium-experimental-timestamp-query-inside-passes",
+        "clip-distances",
+        "core-features-and-limits",
+        "depth-clip-control",
+        "depth32float-stencil8",
+        "float32-blendable",
+        "float32-filterable",
+        "indirect-first-instance",
+        "rg11b10ufloat-renderable",
+        "subgroups",
+        "texture-component-swizzle",
+        "texture-compression-astc",
+        "texture-compression-astc-sliced-3d",
+        "texture-compression-bc",
+        "texture-compression-bc-sliced-3d",
+        "texture-compression-etc2",
+        "timestamp-query"
+      ],
+      "limits": {
+        "maxTextureDimension1D": 8192,
+        "maxTextureDimension2D": 8192,
+        "maxTextureDimension3D": 2048,
+        "maxTextureArrayLayers": 256,
+        "maxBindGroups": 4,
+        "maxBindingsPerBindGroup": 1000,
+        "maxDynamicUniformBuffersPerPipelineLayout": 8,
+        "maxDynamicStorageBuffersPerPipelineLayout": 4,
+        "maxSampledTexturesPerShaderStage": 16,
+        "maxSamplersPerShaderStage": 16,
+        "maxStorageBuffersPerShaderStage": 10,
+        "maxStorageTexturesPerShaderStage": 4,
+        "maxUniformBuffersPerShaderStage": 12,
+        "maxUniformBufferBindingSize": 65536,
+        "maxStorageBufferBindingSize": 1073741824,
+        "maxBufferSize": 1073741824,
+        "maxComputeInvocationsPerWorkgroup": 256,
+        "maxComputeWorkgroupSizeX": 256,
+        "maxComputeWorkgroupSizeY": 256,
+        "maxComputeWorkgroupSizeZ": 64,
+        "maxComputeWorkgroupsPerDimension": 65535,
+        "maxComputeWorkgroupStorageSize": 32768
+      },
+      "wgslLanguageFeatures": [
+        "packed_4x8_integer_dot_product",
+        "pointer_composite_access",
+        "readonly_and_readwrite_storage_textures",
+        "subgroup_id",
+        "subgroup_uniformity",
+        "swizzle_assignment",
+        "texture_and_sampler_let",
+        "uniform_buffer_standard_layout",
+        "unrestricted_pointer_parameters"
+      ],
+      "smoke": {
+        "computeIncrement": {
+          "pass": true,
+          "actual": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "expected": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "error": null
+        },
+        "renderTriangle": {
+          "pass": true,
+          "centerRgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "error": null
+        }
+      },
+      "benches": {
+        "writeBuffer64kbUsPerOp": 15.199999809265137,
+        "computeDispatchUsPerOp": 21.49999976158142,
+        "iterations": {
+          "upload": 500,
+          "dispatch": 200
+        },
+        "errors": []
+      },
+      "errors": [],
+      "previousHash": null,
+      "hash": "eb74011bf2a3d63e55f13aef486df9b02182ce7216d4e52e3c20a595e0c11832"
+    },
+    {
+      "mode": "doe",
+      "runtimeArgs": [
+        "--use-webgpu-runtime=doe",
+        "--doe-webgpu-library-path=/home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so"
+      ],
+      "launchArgs": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--ignore-gpu-blocklist",
+        "--enable-unsafe-webgpu",
+        "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:37097",
+        "--use-webgpu-runtime=doe",
+        "--doe-webgpu-library-path=/home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so"
+      ],
+      "browserVersion": "147.0.7701.0",
+      "elapsedMs": 332,
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.0.0 Safari/537.36",
+      "webgpuAvailable": true,
+      "adapterAvailable": true,
+      "adapterInfo": {},
+      "features": [
+        "bgra8unorm-storage",
+        "chromium-experimental-timestamp-query-inside-passes",
+        "clip-distances",
+        "core-features-and-limits",
+        "depth-clip-control",
+        "depth32float-stencil8",
+        "float32-blendable",
+        "float32-filterable",
+        "indirect-first-instance",
+        "rg11b10ufloat-renderable",
+        "subgroups",
+        "texture-component-swizzle",
+        "texture-compression-astc",
+        "texture-compression-astc-sliced-3d",
+        "texture-compression-bc",
+        "texture-compression-bc-sliced-3d",
+        "texture-compression-etc2",
+        "timestamp-query"
+      ],
+      "limits": {
+        "maxTextureDimension1D": 8192,
+        "maxTextureDimension2D": 8192,
+        "maxTextureDimension3D": 2048,
+        "maxTextureArrayLayers": 256,
+        "maxBindGroups": 4,
+        "maxBindingsPerBindGroup": 1000,
+        "maxDynamicUniformBuffersPerPipelineLayout": 8,
+        "maxDynamicStorageBuffersPerPipelineLayout": 4,
+        "maxSampledTexturesPerShaderStage": 16,
+        "maxSamplersPerShaderStage": 16,
+        "maxStorageBuffersPerShaderStage": 10,
+        "maxStorageTexturesPerShaderStage": 4,
+        "maxUniformBuffersPerShaderStage": 12,
+        "maxUniformBufferBindingSize": 65536,
+        "maxStorageBufferBindingSize": 1073741824,
+        "maxBufferSize": 1073741824,
+        "maxComputeInvocationsPerWorkgroup": 256,
+        "maxComputeWorkgroupSizeX": 256,
+        "maxComputeWorkgroupSizeY": 256,
+        "maxComputeWorkgroupSizeZ": 64,
+        "maxComputeWorkgroupsPerDimension": 65535,
+        "maxComputeWorkgroupStorageSize": 32768
+      },
+      "wgslLanguageFeatures": [
+        "packed_4x8_integer_dot_product",
+        "pointer_composite_access",
+        "readonly_and_readwrite_storage_textures",
+        "subgroup_id",
+        "subgroup_uniformity",
+        "swizzle_assignment",
+        "texture_and_sampler_let",
+        "uniform_buffer_standard_layout",
+        "unrestricted_pointer_parameters"
+      ],
+      "smoke": {
+        "computeIncrement": {
+          "pass": true,
+          "actual": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "expected": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "error": null
+        },
+        "renderTriangle": {
+          "pass": true,
+          "centerRgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "error": null
+        }
+      },
+      "benches": {
+        "writeBuffer64kbUsPerOp": 16.200000286102295,
+        "computeDispatchUsPerOp": 19.499999284744263,
+        "iterations": {
+          "upload": 500,
+          "dispatch": 200
+        },
+        "errors": []
+      },
+      "errors": [],
+      "previousHash": "eb74011bf2a3d63e55f13aef486df9b02182ce7216d4e52e3c20a595e0c11832",
+      "hash": "fee2c6543c84e8f6104a15942b36380b4391b08eaf70c4c950be2c577bc1e698"
+    }
+  ],
+  "comparison": {
+    "writeBuffer64kbDeltaPercent": -6.578950588062569,
+    "computeDispatchDeltaPercent": 9.302327902398307,
+    "bothComputeSmokePass": true,
+    "bothRenderSmokePass": true
+  },
+  "reportHash": "e79e61ac380616ecf9f1004e7eadb38cf5192f0dc885e87109a70a93dc66b0b4"
+}

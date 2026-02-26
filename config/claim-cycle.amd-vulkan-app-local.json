@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "cycleId": "2026q1-amd-vulkan-app-local-claim-cycle",
+  "active": true,
+  "objective": "Produce auditable vulkan_app strict-comparable claim/cycle evidence with matched contract hashes and rollback controls.",
+  "contracts": {
+    "workloadContract": {
+      "path": "bench/workloads.amd.vulkan.app.claim.json",
+      "sha256": "9c6889d4b8d022fa4f2e3f1fb3f97181499f504c12a7c1c7f75b7cfea9f7a351"
+    },
+    "benchmarkPolicy": {
+      "path": "config/benchmark-methodology-thresholds.json",
+      "sha256": "2984aaf379ddf1973edb5a0214fc84b826e3fffca4a9cc796a85a7b609f43b11"
+    },
+    "compareConfig": {
+      "path": "bench/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json",
+      "sha256": "2eaf549cfcad8af46a694dfa7158b24a89015c150dab7c0bd2a379a9f35e6d13"
+    },
+    "substantiationPolicy": {
+      "path": "config/substantiation-policy.json",
+      "sha256": "aeefc16b083ac1510964158e98957a440935627b4fb6da2aa97b0468767937dd"
+    }
+  },
+  "workloadSets": {
+    "comparableIds": [
+      "p1_resource_table_immediates_macro_500"
+    ],
+    "directionalIds": [
+      "render_draw_throughput_proxy"
+    ]
+  },
+  "methodology": {
+    "iterations": 8,
+    "warmup": 1,
+    "comparabilityMode": "strict",
+    "requireTimingClass": "operation",
+    "claimabilityMode": "local",
+    "minTimedSamples": 7,
+    "includeExtendedWorkloads": false,
+    "includeNoncomparableWorkloads": false
+  },
+  "milestones": [
+    {
+      "id": "track_b_local_claim_stability",
+      "track": "B",
+      "owner": "bench-lead",
+      "dueDate": "2026-03-21",
+      "kpis": [
+        {
+          "id": "claim_status",
+          "metric": "claimStatus",
+          "operator": "==",
+          "target": "claimable"
+        },
+        {
+          "id": "non_claimable_zero",
+          "metric": "nonClaimableComparableCount",
+          "operator": "==",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": "track_e_contract_discipline",
+      "track": "E",
+      "owner": "config-process-lead",
+      "dueDate": "2026-03-21",
+      "kpis": [
+        {
+          "id": "schema_migration_status_process",
+          "metric": "schemaMigrationStatusProcessComplete",
+          "operator": "==",
+          "target": true
+        }
+      ]
+    }
+  ],
+  "rollbackCriteria": {
+    "runtimeUnexpectedStatus": true,
+    "comparableNonClaimable": false,
+    "comparabilityMismatch": true,
+    "schemaMigrationStatusProcessMissing": true,
+    "substantiationWindowFailure": true,
+    "artifactNamespaceViolation": true,
+    "browserPromotionWithoutSchemaObligation": false
+  },
+  "artifactPolicy": {
+    "canonicalPrefix": "bench/out/",
+    "canonicalDisallowPrefixes": [
+      "bench/out/scratch/"
+    ],
+    "diagnosticAllowedPrefixes": [
+      "bench/out/scratch/",
+      "nursery/chromium_webgpu_lane/"
+    ]
+  },
+  "attestations": {
+    "schemaMigrationStatusProcessComplete": true
+  }
+}

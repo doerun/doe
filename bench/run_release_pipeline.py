@@ -77,7 +77,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--with-local-vulkan-gates",
         action=argparse.BooleanOptionalAction,
-        default=False,
+        default=True,
         help=(
             "Run local-vulkan-specific blocking gates (backend selection/shader artifacts/"
             "sync/timing contracts) when a local-vulkan config is detected."
@@ -86,7 +86,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--with-local-vulkan-preflight",
         action=argparse.BooleanOptionalAction,
-        default=False,
+        default=True,
         help="Run preflight_vulkan_host.py when a local-vulkan config is detected.",
     )
     parser.add_argument(
@@ -404,12 +404,16 @@ def infer_local_metal_lane(config_path: Path, explicit_lane: str) -> str:
     if explicit_lane.strip():
         return explicit_lane.strip()
     config_name = str(config_path).lower()
+    if ".local.metal.oracle" in config_name or ".metal.oracle" in config_name:
+        return "metal_oracle"
     if ".local.metal.release" in config_name:
-        return "local_metal_release"
+        return "metal_local_release"
     if ".local.metal.directional" in config_name:
-        return "local_metal_directional"
+        return "metal_local_directional"
     if ".local.metal.extended" in config_name or ".local.metal.comparable" in config_name:
-        return "local_metal_comparable"
+        return "metal_local_comparable"
+    if "metal_app" in config_name or "macos_app" in config_name or "macos-app" in config_name:
+        return "metal_app"
     return ""
 
 
@@ -418,25 +422,25 @@ def infer_local_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
         return explicit_lane.strip()
     config_name = str(config_path).lower()
     if ".local.vulkan.release" in config_name:
-        return "local_vulkan_release"
+        return "vulkan_local_release"
     if ".local.vulkan.directional" in config_name:
-        return "local_vulkan_directional"
+        return "vulkan_local_directional"
     if ".local.vulkan.extended" in config_name or ".local.vulkan.comparable" in config_name:
-        return "local_vulkan_comparable"
+        return "vulkan_local_comparable"
     return ""
 
 
 def local_metal_requires_shader_manifest(lane: str) -> bool:
     if not lane:
         return False
-    strict_lanes = {"local_metal_comparable", "local_metal_release", "macos_app"}
+    strict_lanes = {"metal_local_comparable", "metal_local_release", "metal_app"}
     return lane in strict_lanes
 
 
 def local_vulkan_requires_shader_manifest(lane: str) -> bool:
     if not lane:
         return False
-    strict_lanes = {"local_vulkan_comparable", "local_vulkan_release"}
+    strict_lanes = {"vulkan_local_comparable", "vulkan_local_release"}
     return lane in strict_lanes
 
 

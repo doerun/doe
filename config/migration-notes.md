@@ -6,9 +6,13 @@
 
 - `doe-zig-runtime` now supports explicit backend-lane selection via `--backend-lane`:
   - `amd_vulkan_release`
+  - `amd_vulkan_app`
   - `local_metal_directional`
   - `local_metal_comparable`
   - `local_metal_release`
+  - `local_vulkan_directional`
+  - `local_vulkan_comparable`
+  - `local_vulkan_release`
   - `macos_app`
 - Native execution uses the backend runtime selection pipeline through lane resolution; this metadata is now emitted through execution summaries and trace metadata when `--trace-meta` is requested.
   - `backendLane`
@@ -17,11 +21,21 @@
   - `selectionPolicyHash`
   - `shaderArtifactManifestPath`
   - `shaderArtifactManifestHash`
+- `zig/src/backend/backend_runtime.zig` now loads lane policy from `config/backend-runtime-policy.json` at runtime (`schemaVersion=1`, `selectionPolicyHashSeed`, lane `defaultBackend`/`allowFallback`/`strictNoFallback`).
+  - missing/invalid policy contract entries now fail fast during runtime initialization (no implicit compile-time lane fallback in this path).
 - `bench/schema_gate.py` is now driven from `config/schema-targets.json` instead of a hardcoded target list.
 - Added local Metal compare preset configs to run comparable, directional, and release lanes against Dawn via Metal autodescovery:
   - `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
   - `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
   - `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+
+### Metal app-lane cutover closure
+
+- `config/backend-cutover-policy.json` now sets `targetLane` to `macos_app` and `defaultBackend` to `zig_metal` for the app lane cutover path.
+- `config/backend-runtime-policy.json` keeps `macos_app` as strict (`allowFallback=false`, `strictNoFallback=true`) and leaves `force_dawn_oracle` as the explicit rollback switch.
+- `zig/src/execution.zig` now routes implicit Metal profile lane selection to `macos_app` by default.
+- Metal strict gate execution now supports cutover validation by passing `macos_app` as `--local-metal-lane` where required and using release-cycle enforcement (`cycle_gate.py` with rollback criteria enabled).
+- rollback switch rehearsal remains available through existing `backend-runtime-policy.json` switch definitions, preserving deterministic oracle fallback during incident response.
 
 ### Backend/runtime contract expansion and strict-lane hardening
 
@@ -329,3 +343,156 @@
   `--no-with-cycle-gate`).
 - `bench/run_release_claim_windows.py` now forwards cycle-gate controls per
   window by default.
+
+### Vulkan app lane runtime routing update (2026-02-26)
+
+- Added backend lane `amd_vulkan_app` to the backend policy contract.
+- Updated implicit native Vulkan lane selection to `amd_vulkan_app` in `zig/src/execution.zig`.
+- Extended `config/backend-runtime-policy.json` with `amd_vulkan_app` as `zig_vulkan` with `allowFallback=false` and `strictNoFallback=true`.
+- `config/backend-cutover-policy.json` remains targeted to Metal app cutover (`macos_app` -> `zig_metal`); Vulkan app routing is controlled by runtime lane policy.
+- Kept `amd_vulkan_release` as the Dawn-oracle benchmark/claim lane for apples-to-apples comparative evidence.
+- All Vulkan compare config command templates now pin an explicit `--backend-lane` so strict AMD oracle reports remain on `amd_vulkan_release` while local Vulkan presets remain on their intended local lanes.
+- Vulkan backend execution no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `zig/src/backend/vulkan/mod.zig` now runs through Vulkan module contracts and emits native execution results directly.
+- Added Vulkan shader-manifest telemetry path/hash emission in `zig/src/backend/vulkan/vulkan_runtime_state.zig` and backend telemetry refresh in `zig/src/backend/backend_runtime.zig` for strict shader-artifact gate coverage.
+- Added rollback switch activation in backend policy loading: set `FAWN_BACKEND_SWITCH=force_dawn_oracle` to force the runtime policy rollback backend contract.
+
+### Metal end-to-end runtime closure (2026-02-26)
+
+- `zig/src/backend/metal/mod.zig` no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `zig_metal` now executes through metal module contracts and returns native execution results directly.
+- Removed `catch unreachable` behavior from Metal backend wrappers; queue/upload/timestamp policy knobs are now explicit backend fields.
+- Metal shader manifest emission is now enforced on successful command routing paths so strict shader artifact gates can validate manifest linkage in strict lanes.
+- `bench/workloads.local.metal.smoke.json` `workgroup_atomic_1024.commandsPath` corrected from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
+- Backend selection now honors policy-forced backend first (`policy_lane_prefers_dawn_oracle`) before Apple-chip preference, enabling rollback switch enforcement.
+
+### Backend lane canonical rename (2026-02-26)
+
+Canonical lane names are now:
+
+- `vulkan_oracle` (legacy alias: `amd_vulkan_release`)
+- `vulkan_app` (legacy alias: `amd_vulkan_app`)
+- `vulkan_local_directional` (legacy alias: `local_vulkan_directional`)
+- `vulkan_local_comparable` (legacy alias: `local_vulkan_comparable`)
+- `vulkan_local_release` (legacy alias: `local_vulkan_release`)
+- `metal_local_directional` (legacy alias: `local_metal_directional`)
+- `metal_local_comparable` (legacy alias: `local_metal_comparable`)
+- `metal_local_release` (legacy alias: `local_metal_release`)
+- `metal_app` (legacy alias: `macos_app`)
+
+Contract updates in this change:
+
+- `config/backend-runtime-policy.json` lane keys/default lane migrated to canonical names.
+- `config/backend-cutover-policy.json` target lane migrated to `metal_app`.
+- `config/dropin-abi-behavior.json` lane mode keys migrated to canonical names.
+- Runtime telemetry now emits canonical lane names (`backendLane`).
+- CLI/runtime parser retains legacy lane aliases for backward compatibility.
+
+### Backend lane map artifact + invariants (2026-02-26)
+
+- Added generated lane-map contract artifact + schema:
+  - `config/backend-lane-map.json`
+  - `config/backend-lane-map.schema.json`
+- Added generator utility:
+  - `bench/generate_backend_lane_map.py --policy config/backend-runtime-policy.json --out config/backend-lane-map.json`
+- `bench/schema_gate.py` now enforces lane-map invariants against runtime/cutover policy:
+  - `laneToBackend` must exactly match `backend-runtime-policy.json` lane defaults
+  - `backendToLanes` must exactly match reverse grouping from lane defaults
+  - `defaultLane` and cutover target lane must resolve to valid runtime lanes
+  - cutover `defaultBackend` must match mapped backend for cutover target lane
+- `config/schema-targets.json` now includes lane-map schema validation as a blocking schema target.
+
+### Metal oracle lane addition (2026-02-26)
+
+- Added `metal_oracle` as a first-class backend lane in `config/backend-runtime-policy.json`.
+- `metal_oracle` maps to `dawn_oracle` (`allowFallback=true`, `strictNoFallback=false`) for explicit Metal oracle/baseline runs.
+- Runtime lane parsing and telemetry now recognize/emit `metal_oracle`:
+  - Zig parser accepts `metal_oracle` and `metal-oracle`.
+  - backend telemetry `backendLane` uses canonical lane strings.
+- Added `metal_oracle` to generated lane-map artifact `config/backend-lane-map.json` (both `laneToBackend` and `backendToLanes`).
+- Added `metal_oracle` drop-in behavior ownership mode in `config/dropin-abi-behavior.json` (`dawn_ownership`).
+- Release pipeline/gates now infer `metal_oracle` when config paths include `.metal.oracle`, and explicit `--local-metal-lane metal_oracle` is supported.
+
+### Vulkan local smoke dispatch command-path repair (2026-02-26)
+
+- Updated `bench/workloads.local.vulkan.smoke.json` `workgroup_atomic_1024.commandsPath` from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
+- Added compatibility command file `examples/dispatch_commands.json` (kernel-dispatch atomic workload payload) so legacy/manual invocations no longer fail with `FileNotFound`.
+
+### Vulkan timing policy backend-specific upload source allowance (2026-02-26)
+
+- Extended `config/backend-timing-policy.schema.json` to support optional per-backend timing source allowlists via `allowedTimingSourcesByBackendId`.
+- Updated upload-domain timing policy in `config/backend-timing-policy.json` to allow `doe-execution-dispatch-window-ns` when sample `backendId` is `dawn_oracle`.
+- Updated `bench/vulkan_timing_policy_gate.py` to evaluate allowed timing sources using report sample backend telemetry (`traceMeta.backendId` and fallbacks) so lane-vs-lane oracle comparisons validate against explicit policy contract.
+
+### Vulkan timing policy lane-vs-lane fullsuite source alignment (2026-02-26)
+
+- Expanded upload-domain backend-specific timing source allowlist in `config/backend-timing-policy.json` so `zig_vulkan` upload samples may use `doe-execution-dispatch-window-ns` in strict lane-vs-lane reports.
+- Expanded render-domain backend-specific timing source allowlist in `config/backend-timing-policy.json` so `dawn_oracle` render samples may use `doe-execution-encode-ns` in strict lane-vs-lane reports.
+
+### Vulkan Doe-vs-Doe strict normalization parity contract (2026-02-26)
+
+- Added a dedicated strict apples-to-apples workload contract for DOE-vs-DOE lane comparisons:
+  - `bench/workloads.amd.vulkan.extended.doe-vs-doe.json`
+- In that contract, right-side normalization fields are explicitly mirrored from left-side fields for comparable workloads:
+  - `rightCommandRepeat`
+  - `rightIgnoreFirstOps`
+  - `rightUploadBufferUsage`
+  - `rightUploadSubmitEvery`
+  - `rightTimingDivisor`
+- Added strict DOE-vs-DOE normalization symmetry enforcement in `bench/compare_dawn_vs_doe.py`:
+  - when both command templates target `doe-zig-runtime` and comparability mode is `strict`, comparable workloads must satisfy left/right normalization parity or the run fails fast.
+- Added lane-vs-lane full-suite preset using the DOE-vs-DOE parity workload contract:
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.zig-vs-oracle.fullsuite.json`
+
+### Strict timing-scope comparability obligations for Doe-vs-Doe lanes (2026-02-26)
+
+- Expanded comparability contract with strict blocking obligations for timing-scope parity:
+  - `left_right_trace_meta_source_match`
+  - `left_right_timing_selection_policy_match`
+  - `left_right_queue_sync_mode_match`
+- Updated obligation sources and parity fixtures:
+  - `config/comparability-obligations.json`
+  - `lean/Fawn/Comparability.lean`
+  - `bench/comparability_obligation_fixtures.json`
+  - `bench/compare_dawn_vs_doe_modules/comparability.py`
+- Strict comparable runs now fail comparability when left/right timing scope selection diverges, preventing mixed-scope rows from being treated as claimable apples-to-apples evidence.
+- Updated `bench/workloads.amd.vulkan.extended.doe-vs-doe.json` to mark current timing-scope-unstable workloads as `comparable=false` (directional-only) for strict DOE-vs-DOE comparable runs until timing-scope parity is stabilized:
+  - `render_draw_throughput_proxy`
+  - `render_draw_state_bindings`
+  - `render_draw_redundant_pipeline_bindings`
+  - `render_bundle_dynamic_bindings`
+  - `render_bundle_dynamic_pipeline_bindings`
+  - `async_pipeline_diagnostics_contract`
+  - `p1_resource_table_immediates_macro_500`
+  - `render_draw_throughput_macro_200k`
+  - `p0_render_multidraw_contract`
+  - `p0_render_multidraw_indexed_contract`
+  - `p0_render_pixel_local_storage_barrier_macro_500`
+  - `uniform_buffer_update_writebuffer_partial_single`
+
+### Benchmark deltaPercent formula correction (2026-02-26)
+
+- Updated `bench/compare_dawn_vs_doe.py` delta percent computation to ratio-based speedup semantics:
+  - from `((rightMs - leftMs) / rightMs) * 100`
+  - to `((rightMs / leftMs) - 1) * 100`
+- `deltaPercentConvention` metadata now declares `baseline=left` and the new formula.
+- Positive values still mean left is faster; this now reports intuitive speedup magnitudes (for example `5x` faster => `+400%`).
+
+### Doe-vs-Doe timing-source parity stabilization for strict comparable runs (2026-02-26)
+
+- Updated timing selection to prefer `doe-execution-total-ns` when execution evidence is present and GPU timestamp timing is unavailable.
+- Removed render-domain encode-only timing override from `bench/compare_dawn_vs_doe.py` so left/right timing selection no longer diverges by side-specific render override policy.
+- Restored the 12 previously directionalized DOE-vs-DOE Vulkan workloads in `bench/workloads.amd.vulkan.extended.doe-vs-doe.json` to `comparable=true` after timing-source parity stabilization.
+
+### Doe-vs-Doe strict comparability hardening for execution shape + upload timing scope (2026-02-26)
+
+- Expanded comparability contract with a new blocking execution-shape obligation:
+  - `left_right_execution_shape_match`
+- This obligation compares sampled `executionDispatchCount`, `executionRowCount`, and `executionSuccessCount` tuples across sides and fails strict comparability on divergence.
+- Updated obligation contract and parity fixtures:
+  - `config/comparability-obligations.json`
+  - `lean/Fawn/Comparability.lean`
+  - `bench/comparability_obligation_fixtures.json`
+  - `config/comparability-obligation-fixtures.schema.json`
+  - `bench/compare_dawn_vs_doe_modules/comparability.py`
+- Updated DOE timing-source selection for upload workloads:
+  - `bench/compare_dawn_vs_doe_modules/timing_selection.py` now prefers `doe-execution-row-total-ns` (trace row execution durations) for upload-domain operation timing when execution evidence is present.
+  - This removes strict upload lane drift where `doe-execution-total-ns` could violate upload timing policy allowances and mixes setup/runtime scope in per-op upload comparisons.

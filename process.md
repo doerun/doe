@@ -182,6 +182,7 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
   - `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
   - `bench/compare_dawn_vs_doe.config.local.metal.comparable.json`
   - `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+  - optional oracle lane forcing for baseline checks: `--local-metal-lane metal_oracle`
 
 3. blocking gates
 - run backend/timing/sync/shader checks through `run_blocking_gates.py`:
@@ -193,4 +194,36 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 4. strict lane policy
 - strict local Metal lanes must fail on fallback (`fallbackUsed=true`)
 - strict release claims should require backend telemetry and backend identity `zig_metal`
-- shader manifest checks may be required per lane (`local_metal_release`, `macos_app`)
+- shader manifest checks may be required per lane (`metal_local_release`, `metal_app`)
+
+5. cutover verification (metal_app)
+- for app-lane rollout verification, run local-metal gate execution with explicit lane override:
+  `--with-local-metal-gates --local-metal-lane metal_app`
+- validate rollback readiness by running `bench/cycle_gate.py` (via release pipeline with `--with-cycle-gate --cycle-enforce-rollbacks`) under the same comparable/release evidence policy.
+- the explicit rollback switch remains `force_dawn_oracle` (`config/backend-runtime-policy.json` / `config/backend-cutover-policy.json`), preserving deterministic recovery to Dawn-oracle.
+
+## 9. Local Vulkan Hardening Flow (Additive)
+
+Local Vulkan lanes are additive and must not weaken AMD Vulkan strict defaults.
+
+1. preflight
+- run `python3 fawn/bench/preflight_vulkan_host.py`
+
+2. compare
+- use local Vulkan config presets:
+  - `bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.local.vulkan.directional.json`
+  - `bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.local.vulkan.release.json`
+
+3. blocking gates
+- run backend/sync/timing/shader checks in `fawn/bench/run_blocking_gates.py`:
+  - `--with-backend-selection-gate`
+  - `--with-vulkan-sync-conformance-gate`
+  - `--with-vulkan-timing-policy-gate`
+  - `--with-shader-artifact-gate`
+
+4. strict lane policy
+- strict local Vulkan lanes must fail on fallback (`fallbackUsed=true`)
+- strict local Vulkan release claims should require backend telemetry and backend identity `zig_vulkan`
+- shader manifest checks may be required per lane (`vulkan_local_comparable`, `vulkan_local_release`)

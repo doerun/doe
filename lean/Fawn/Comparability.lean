@@ -9,6 +9,10 @@ inductive ComparabilityObligationId where
   | leftRequiredTimingClass
   | rightRequiredTimingClass
   | leftRightTimingClassMatch
+  | leftRightTraceMetaSourceMatch
+  | leftRightTimingSelectionPolicyMatch
+  | leftRightQueueSyncModeMatch
+  | leftRightExecutionShapeMatch
   | leftNativeOperationTimingForWebgpuFfi
   | leftUploadIgnoreFirstScopeConsistent
   | rightUploadIgnoreFirstScopeConsistent
@@ -55,6 +59,14 @@ structure ComparabilityFacts where
   rightRequiredTimingClass : Bool
   timingClassMatchApplies : Bool
   leftRightTimingClassMatch : Bool
+  traceMetaSourceMatchApplies : Bool
+  leftRightTraceMetaSourceMatch : Bool
+  timingSelectionPolicyMatchApplies : Bool
+  leftRightTimingSelectionPolicyMatch : Bool
+  queueSyncModeMatchApplies : Bool
+  leftRightQueueSyncModeMatch : Bool
+  executionShapeMatchApplies : Bool
+  leftRightExecutionShapeMatch : Bool
   operationTimingClassRequired : Bool
   leftNativeOperationTimingForWebgpuFfi : Bool
   uploadDomain : Bool
@@ -112,6 +124,22 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.timingClassMatchApplies
       passes := facts.leftRightTimingClassMatch }
+  , { id := .leftRightTraceMetaSourceMatch
+      blocking := true
+      applicable := facts.traceMetaSourceMatchApplies
+      passes := facts.leftRightTraceMetaSourceMatch }
+  , { id := .leftRightTimingSelectionPolicyMatch
+      blocking := true
+      applicable := facts.timingSelectionPolicyMatchApplies
+      passes := facts.leftRightTimingSelectionPolicyMatch }
+  , { id := .leftRightQueueSyncModeMatch
+      blocking := true
+      applicable := facts.queueSyncModeMatchApplies
+      passes := facts.leftRightQueueSyncModeMatch }
+  , { id := .leftRightExecutionShapeMatch
+      blocking := true
+      applicable := facts.executionShapeMatchApplies
+      passes := facts.leftRightExecutionShapeMatch }
   , { id := .leftNativeOperationTimingForWebgpuFfi
       blocking := true
       applicable := facts.operationTimingClassRequired

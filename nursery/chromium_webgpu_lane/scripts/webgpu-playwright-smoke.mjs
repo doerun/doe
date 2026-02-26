@@ -563,18 +563,12 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
         try {
           const width = 64;
           const height = 64;
-          const canvas = new OffscreenCanvas(width, height);
-          const context = canvas.getContext("webgpu");
-          if (!context) {
-            throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
-          }
-          const format = navigator.gpu.getPreferredCanvasFormat();
-          context.configure({
-            device,
+          const format = "rgba8unorm";
+          const texture = device.createTexture({
+            size: { width, height, depthOrArrayLayers: 1 },
             format,
-            alphaMode: "opaque",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
           });
-          const texture = context.getCurrentTexture();
 
           const shader = device.createShaderModule({
             code: `
@@ -638,6 +632,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           const centerOffset = Math.floor(height / 2) * bytesPerRow + Math.floor(width / 2) * 4;
           const centerRgba = Array.from(data.slice(centerOffset, centerOffset + 4));
           readback.unmap();
+          texture.destroy();
           result.smoke.renderTriangle.centerRgba = centerRgba;
           result.smoke.renderTriangle.pass =
             centerRgba[0] > 100 &&
@@ -647,25 +642,39 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           result.smoke.renderTriangle.error = String(error);
         }
 
+        let benchDevice = device;
+        if (!result.smoke.renderTriangle.pass) {
+          try {
+            benchDevice = await withOpTimeout("bench fallback requestDevice", () =>
+              adapter.requestDevice(),
+            );
+          } catch (error) {
+            const message = `bench fallback device init failed: ${String(error)}`;
+            result.benches.errors.push(message);
+            result.errors.push(message);
+            return result;
+          }
+        }
+
         try {
           const size = 64 * 1024;
           const payload = new Uint8Array(size);
-          const uploadBuffer = device.createBuffer({
+          const uploadBuffer = benchDevice.createBuffer({
             size,
             usage: GPUBufferUsage.COPY_DST,
           });
           for (let i = 0; i < uploadWarmupIters; i += 1) {
-            device.queue.writeBuffer(uploadBuffer, 0, payload);
+            benchDevice.queue.writeBuffer(uploadBuffer, 0, payload);
           }
           await withOpTimeout("writeBuffer warmup onSubmittedWorkDone", () =>
-            device.queue.onSubmittedWorkDone(),
+            benchDevice.queue.onSubmittedWorkDone(),
           );
           const uploadStart = performance.now();
           for (let i = 0; i < uploadIters; i += 1) {
-            device.queue.writeBuffer(uploadBuffer, 0, payload);
+            benchDevice.queue.writeBuffer(uploadBuffer, 0, payload);
           }
           await withOpTimeout("writeBuffer timed onSubmittedWorkDone", () =>
-            device.queue.onSubmittedWorkDone(),
+            benchDevice.queue.onSubmittedWorkDone(),
           );
           const uploadEnd = performance.now();
           result.benches.writeBuffer64kbUsPerOp =
@@ -675,38 +684,38 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
         }
 
         try {
-          const shader = device.createShaderModule({
+          const shader = benchDevice.createShaderModule({
             code: `
               @compute @workgroup_size(1)
               fn main() {}
             `,
           });
-          const pipeline = device.createComputePipeline({
+          const pipeline = benchDevice.createComputePipeline({
             layout: "auto",
             compute: { module: shader, entryPoint: "main" },
           });
           for (let i = 0; i < dispatchWarmupIters; i += 1) {
-            const encoder = device.createCommandEncoder();
+            const encoder = benchDevice.createCommandEncoder();
             const pass = encoder.beginComputePass();
             pass.setPipeline(pipeline);
             pass.dispatchWorkgroups(1);
             pass.end();
-            device.queue.submit([encoder.finish()]);
+            benchDevice.queue.submit([encoder.finish()]);
           }
           await withOpTimeout("dispatch warmup onSubmittedWorkDone", () =>
-            device.queue.onSubmittedWorkDone(),
+            benchDevice.queue.onSubmittedWorkDone(),
           );
           const dispatchStart = performance.now();
           for (let i = 0; i < dispatchIters; i += 1) {
-            const encoder = device.createCommandEncoder();
+            const encoder = benchDevice.createCommandEncoder();
             const pass = encoder.beginComputePass();
             pass.setPipeline(pipeline);
             pass.dispatchWorkgroups(1);
             pass.end();
-            device.queue.submit([encoder.finish()]);
+            benchDevice.queue.submit([encoder.finish()]);
           }
           await withOpTimeout("dispatch timed onSubmittedWorkDone", () =>
-            device.queue.onSubmittedWorkDone(),
+            benchDevice.queue.onSubmittedWorkDone(),
           );
           const dispatchEnd = performance.now();
           result.benches.computeDispatchUsPerOp =

@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "defaultMode": "dawn_ownership",
   "laneModes": {
-    "local_metal_directional": "mixed_ownership",
-    "local_metal_comparable": "zig_metal_ownership",
-    "local_metal_release": "zig_metal_ownership",
-    "local_vulkan_directional": "mixed_ownership",
-    "local_vulkan_comparable": "zig_metal_ownership",
-    "local_vulkan_release": "zig_metal_ownership"
+    "vulkan_app": "zig_vulkan_ownership",
+    "metal_oracle": "dawn_ownership",
+    "metal_local_directional": "mixed_ownership",
+    "metal_local_comparable": "zig_metal_ownership",
+    "metal_local_release": "zig_metal_ownership",
+    "vulkan_local_directional": "mixed_ownership",
+    "vulkan_local_comparable": "zig_vulkan_ownership",
+    "vulkan_local_release": "zig_vulkan_ownership"
   },
   "strictFallbackForbidden": true
 }
