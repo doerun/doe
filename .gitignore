@@ -48,4 +48,5 @@ nursery/chromium_webgpu_lane/artifacts/
 nursery/chromium_webgpu_lane/.external-macos.env
 
 # Nested mirror artifacts (accidental local copies)
+bench/vendor/
 fawn/bench/vendor/
