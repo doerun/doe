@@ -1,6 +1,7 @@
 const std = @import("std");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
+const APP_ICON_SOURCE_SVG = "../nursery/chromium_webgpu_lane/artifacts/fawn-icon-main.svg";
 
 fn fileExists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
@@ -113,33 +114,38 @@ pub fn build(b: *std.Build) void {
         const app_files = b.addWriteFiles();
         const info_plist = app_files.add("Info.plist", app_info_plist);
 
-        const make_icon = b.addSystemCommand(&.{ "python3", "tools/generate_macos_icon.py", "--out" });
-        make_icon.setCwd(b.path("."));
-        const icon_icns = make_icon.addOutputFileArg(APP_ICON_BASENAME ++ ".icns");
+        if (!fileExists(APP_ICON_SOURCE_SVG)) {
+            const missing_icon = b.addFail("Missing required macOS icon source: " ++ APP_ICON_SOURCE_SVG);
+            app_step.dependOn(&missing_icon.step);
+        } else {
+            const make_icon = b.addSystemCommand(&.{ "python3", "tools/generate_macos_icon.py", "--out", "--source-svg", APP_ICON_SOURCE_SVG });
+            make_icon.setCwd(b.path("."));
+            const icon_icns = make_icon.addOutputFileArg(APP_ICON_BASENAME ++ ".icns");
 
-        const app_prefix = "app/" ++ APP_BUNDLE_NAME ++ "/Contents";
-        const install_app_exe = b.addInstallFileWithDir(
-            exe.getEmittedBin(),
-            .prefix,
-            app_prefix ++ "/MacOS/doe-zig-runtime",
-        );
-        const install_app_icon = b.addInstallFileWithDir(
-            icon_icns,
-            .prefix,
-            app_prefix ++ "/Resources/" ++ APP_ICON_BASENAME ++ ".icns",
-        );
-        const install_app_plist = b.addInstallFileWithDir(
-            info_plist,
-            .prefix,
-            app_prefix ++ "/Info.plist",
-        );
+            const app_prefix = "app/" ++ APP_BUNDLE_NAME ++ "/Contents";
+            const install_app_exe = b.addInstallFileWithDir(
+                exe.getEmittedBin(),
+                .prefix,
+                app_prefix ++ "/MacOS/doe-zig-runtime",
+            );
+            const install_app_icon = b.addInstallFileWithDir(
+                icon_icns,
+                .prefix,
+                app_prefix ++ "/Resources/" ++ APP_ICON_BASENAME ++ ".icns",
+            );
+            const install_app_plist = b.addInstallFileWithDir(
+                info_plist,
+                .prefix,
+                app_prefix ++ "/Info.plist",
+            );
 
-        app_step.dependOn(&install_app_exe.step);
-        app_step.dependOn(&install_app_icon.step);
-        app_step.dependOn(&install_app_plist.step);
-        b.getInstallStep().dependOn(&install_app_exe.step);
-        b.getInstallStep().dependOn(&install_app_icon.step);
-        b.getInstallStep().dependOn(&install_app_plist.step);
+            app_step.dependOn(&install_app_exe.step);
+            app_step.dependOn(&install_app_icon.step);
+            app_step.dependOn(&install_app_plist.step);
+            b.getInstallStep().dependOn(&install_app_exe.step);
+            b.getInstallStep().dependOn(&install_app_icon.step);
+            b.getInstallStep().dependOn(&install_app_plist.step);
+        }
     } else {
         const unsupported = b.addFail("zig build app is only supported when target os is macOS.");
         app_step.dependOn(&unsupported.step);

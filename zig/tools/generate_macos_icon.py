@@ -4,9 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import shutil
+import subprocess
+import tempfile
 import struct
 import zlib
 from pathlib import Path
+
+try:  # pragma: no cover - optional dependency.
+    from PIL import Image
+except Exception:  # pragma: no cover - optional dependency path.
+    Image = None
 
 ICNS_ENTRIES = (
     (16, b"icp4"),
@@ -22,6 +30,7 @@ ICNS_ENTRIES = (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", required=True, help="Output .icns path")
+    parser.add_argument("--source-svg", required=False, help="SVG source for icon rendering")
     return parser.parse_args()
 
 
@@ -92,6 +101,54 @@ def make_icon_pixels(size: int) -> bytes:
     return bytes(pixels)
 
 
+def render_svg_pixels(size: int, source_svg: Path) -> bytes:
+    if not source_svg.exists():
+        raise ValueError(f"icon source SVG not found: {source_svg}")
+
+    if Image is None:
+        raise RuntimeError("Pillow is required when rendering icons from SVG")
+    if shutil.which("convert") is None:
+        raise RuntimeError("ImageMagick convert is required when rendering icons from SVG")
+
+    with tempfile.TemporaryDirectory() as work_dir:
+        output_path = Path(work_dir) / f"icon-{size}.png"
+        cmd = [
+            "convert",
+            str(source_svg),
+            "-background",
+            "none",
+            "-resize",
+            f"{size}x{size}",
+            f"PNG:{output_path}",
+        ]
+        try:
+            completed = subprocess.run(
+                cmd,
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=False,
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError("ImageMagick convert binary disappeared before execution") from exc
+
+        if completed.returncode != 0 or not output_path.is_file():
+            details = completed.stderr.decode(errors="replace").strip() if isinstance(completed.stderr, (bytes, bytearray)) else ""
+            raise RuntimeError(f"convert failed for size {size}: {details}")
+
+        with Image.open(output_path) as image:
+            image = image.convert("RGBA")
+            if image.size != (size, size):
+                image = image.resize((size, size))
+            return image.tobytes()
+
+
+def make_icon_pixels_for_size(size: int, source_svg: Path | None) -> bytes:
+    if source_svg is not None:
+        return render_svg_pixels(size, source_svg)
+    return make_icon_pixels(size)
+
+
 def encode_png_rgba(width: int, height: int, pixels: bytes) -> bytes:
     if len(pixels) != width * height * 4:
         raise ValueError("pixel buffer length mismatch")
@@ -110,10 +167,13 @@ def encode_png_rgba(width: int, height: int, pixels: bytes) -> bytes:
     )
 
 
-def encode_icns() -> bytes:
+def encode_icns(source_svg: Path | None) -> bytes:
     encoded_chunks = []
     for size, icns_type in ICNS_ENTRIES:
-        png_data = encode_png_rgba(size, size, make_icon_pixels(size))
+        pixels = make_icon_pixels_for_size(size, source_svg)
+        if len(pixels) != size * size * 4:
+            raise ValueError(f"unexpected pixel buffer length for {size}")
+        png_data = encode_png_rgba(size, size, pixels)
         encoded_chunks.append(icns_type + struct.pack(">I", len(png_data) + 8) + png_data)
     body = b"".join(encoded_chunks)
     return b"icns" + struct.pack(">I", len(body) + 8) + body
@@ -123,7 +183,8 @@ def main() -> int:
     args = parse_args()
     out_path = Path(args.out).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_bytes(encode_icns())
+    source_svg = Path(args.source_svg).resolve() if args.source_svg else None
+    out_path.write_bytes(encode_icns(source_svg))
     return 0
 
 
