@@ -1,6 +1,7 @@
 const std = @import("std");
 const loader = @import("wgpu_loader.zig");
 const types = @import("wgpu_types.zig");
+const backend_policy = @import("backend/backend_policy.zig");
 const p1_capability_procs = @import("wgpu_p1_capability_procs.zig");
 const dropin_ext_a = @import("wgpu_dropin_ext_a.zig");
 const dropin_ext_b = @import("wgpu_dropin_ext_b.zig");
@@ -9,6 +10,11 @@ const dropin_behavior_policy = @import("dropin/dropin_behavior_policy.zig");
 const dropin_symbol_ownership = @import("dropin/dropin_symbol_ownership.zig");
 const dropin_router = @import("dropin/dropin_router.zig");
 const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
+
+const DROPIN_BEHAVIOR_CONFIG_JSON = @embedFile("../../config/dropin-abi-behavior.json");
+const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = @embedFile("../../config/dropin-symbol-ownership.json");
+const DROPIN_BEHAVIOR_DEFAULT_MODE: dropin_behavior_policy.BehaviorMode = .dawn_ownership;
+const DROPIN_BEHAVIOR_DEFAULT_STRICT_NO_FALLBACK = true;
 
 comptime {
     _ = dropin_ext_a;
@@ -21,7 +27,150 @@ comptime {
 }
 
 fn activeBehaviorMode() dropin_behavior_policy.BehaviorMode {
-    return .dawn_ownership;
+    return activeBehaviorConfig().mode;
+}
+
+fn activeStrictNoFallback() bool {
+    return activeBehaviorConfig().strict_no_fallback;
+}
+
+const ParsedDropinBehaviorConfig = struct {
+    mode: dropin_behavior_policy.BehaviorMode,
+    strict_no_fallback: bool,
+};
+
+fn activeBehaviorConfig() ParsedDropinBehaviorConfig {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+
+    const parsed = std.json.parseFromSlice(std.json.Value, arena.allocator(), DROPIN_BEHAVIOR_CONFIG_JSON, .{
+        .ignore_unknown_fields = false,
+    }) catch {
+        return .{
+            .mode = DROPIN_BEHAVIOR_DEFAULT_MODE,
+            .strict_no_fallback = DROPIN_BEHAVIOR_DEFAULT_STRICT_NO_FALLBACK,
+        };
+    };
+    defer parsed.deinit();
+
+    var root = parsed.value;
+    if (root != .object) {
+        return .{
+            .mode = DROPIN_BEHAVIOR_DEFAULT_MODE,
+            .strict_no_fallback = DROPIN_BEHAVIOR_DEFAULT_STRICT_NO_FALLBACK,
+        };
+    }
+
+    const root_obj = root.object;
+    const default_mode = parseModeValue(root_obj.get("defaultMode")) orelse DROPIN_BEHAVIOR_DEFAULT_MODE;
+    var strict_no_fallback = DROPIN_BEHAVIOR_DEFAULT_STRICT_NO_FALLBACK;
+    if (root_obj.get("strictFallbackForbidden")) |raw| {
+        switch (raw) {
+            .bool => |value| strict_no_fallback = value,
+            else => return .{
+                .mode = DROPIN_BEHAVIOR_DEFAULT_MODE,
+                .strict_no_fallback = DROPIN_BEHAVIOR_DEFAULT_STRICT_NO_FALLBACK,
+            },
+        }
+    }
+
+    return .{
+        .mode = resolveModeFromLane(root_obj.get("laneModes"), default_mode),
+        .strict_no_fallback = strict_no_fallback,
+    };
+}
+
+fn activeSymbolOwnershipConfig() []const dropin_symbol_ownership.SymbolOwnership {
+    if (g_symbol_ownership_ready.load(.acquire) != 0) {
+        return g_symbol_ownership_config;
+    }
+
+    g_symbol_ownership_lock.lock();
+    defer g_symbol_ownership_lock.unlock();
+
+    if (g_symbol_ownership_ready.load(.acquire) != 0) {
+        return g_symbol_ownership_config;
+    }
+
+    g_symbol_ownership_config = dropin_symbol_ownership.parse_symbol_ownership_config(
+        std.heap.page_allocator,
+        DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON,
+    ) catch &.{};
+    g_symbol_ownership_ready.store(1, .release);
+    return g_symbol_ownership_config;
+}
+
+fn symbolOwnerForName(symbol: []const u8) dropin_symbol_ownership.SymbolOwner {
+    if (dropin_symbol_ownership.find_symbol_ownership(activeSymbolOwnershipConfig(), symbol)) |entry| {
+        return entry.owner;
+    }
+    return .shared;
+}
+
+fn symbolRequiredInStrict(symbol: []const u8) bool {
+    if (dropin_symbol_ownership.find_symbol_ownership(activeSymbolOwnershipConfig(), symbol)) |entry| {
+        return entry.required_in_strict;
+    }
+    return false;
+}
+
+fn symbolRouteForName(symbol: []const u8) dropin_router.RouteDecision {
+    const strict_no_fallback = activeStrictNoFallback() and symbolRequiredInStrict(symbol);
+    return dropin_router.decide_symbol_route(
+        symbolOwnerForName(symbol),
+        activeBehaviorMode(),
+        strict_no_fallback,
+    );
+}
+
+fn symbolNameSlice(name: types.WGPUStringView) ?[]const u8 {
+    const data = name.data orelse return null;
+    if (name.length == types.WGPU_STRLEN) {
+        const z = @as([*:0]const u8, @ptrCast(data));
+        return std.mem.sliceTo(z, 0);
+    }
+    if (name.length == 0) return null;
+    return data[0..name.length];
+}
+
+fn symbolRouteForView(name: types.WGPUStringView) dropin_router.RouteDecision {
+    if (symbolNameSlice(name)) |symbol| {
+        return symbolRouteForName(symbol);
+    }
+    return dropin_router.decide_symbol_route(
+        .shared,
+        activeBehaviorMode(),
+        false,
+    );
+}
+
+fn parseModeValue(raw_mode: ?std.json.Value) ?dropin_behavior_policy.BehaviorMode {
+    if (raw_mode == null) return null;
+    return switch (raw_mode.?) {
+        .string => |value| dropin_behavior_policy.parse_behavior_mode(value),
+        else => null,
+    };
+}
+
+fn resolveModeFromLane(
+    raw_lane_modes: ?std.json.Value,
+    fallback: dropin_behavior_policy.BehaviorMode,
+) dropin_behavior_policy.BehaviorMode {
+    const lane_modes = raw_lane_modes orelse return fallback;
+    if (lane_modes != .object) return fallback;
+
+    const lane_value = std.process.getEnvVarOwned(std.heap.page_allocator, "FAWN_BACKEND_LANE") catch |err| {
+        if (err == error.EnvironmentVariableNotFound) return fallback;
+        return fallback;
+    };
+    defer std.heap.page_allocator.free(lane_value);
+
+    const lane = backend_policy.parse_lane(lane_value) orelse return fallback;
+    const lane_modes_obj = lane_modes.object;
+    const lane_key = backend_policy.lane_name(lane);
+
+    const lane_mode = lane_modes_obj.get(lane_key) orelse return fallback;
+    return parseModeValue(lane_mode) orelse fallback;
 }
 
 pub const DropinErrorCode = enum(u32) {
@@ -37,6 +186,9 @@ var g_native_lib: ?std.DynLib = null;
 var g_library_ready: bool = false;
 var g_library_failed: bool = false;
 var g_last_error_code = std.atomic.Value(u32).init(@intFromEnum(DropinErrorCode.ok));
+var g_symbol_ownership_config: []const dropin_symbol_ownership.SymbolOwnership = &.{};
+var g_symbol_ownership_ready: std.atomic.Value(u8) = .init(0);
+var g_symbol_ownership_lock: std.Thread.Mutex = .{};
 const WgpuAnyProc = *const fn () callconv(.c) void;
 
 fn setLastError(code: DropinErrorCode) void {
@@ -52,7 +204,6 @@ pub export fn doeWgpuDropinClearLastError() callconv(.c) void {
 }
 
 fn ensureNativeLibraryLocked() bool {
-    _ = activeBehaviorMode();
     if (g_library_ready) return !g_library_failed;
     g_library_ready = true;
     g_native_lib = loader.openLibrary() catch {
@@ -70,9 +221,34 @@ fn ensureNativeLibrary() bool {
     return ensureNativeLibraryLocked();
 }
 
-fn unsupportedSymbol(comptime symbol_name: []const u8) noreturn {
+fn unsupportedProc() callconv(.c) usize {
     setLastError(.symbol_missing);
-    @panic("doe drop-in missing native symbol: " ++ symbol_name);
+    return 0;
+}
+
+pub export fn doeWgpuDropinUnsupportedProc() callconv(.c) usize {
+    return unsupportedProc();
+}
+
+fn unsupportedSymbol(comptime symbol_name: []const u8, comptime FnType: type) FnType {
+    return @as(FnType, @ptrCast(&unsupportedProc));
+}
+
+fn routeAndRecordForName(
+    symbol_name: []const u8,
+    route: dropin_router.RouteDecision,
+    resolved: bool,
+) void {
+    dropin_diagnostics.record(
+        symbol_name,
+        dropin_symbol_ownership.symbol_owner_name(route.owner),
+        resolved,
+        route.fallback_used,
+    );
+}
+
+fn nativeFromSymbol(comptime FnType: type, comptime symbol_name: [:0]const u8) ?FnType {
+    return loadOptionalProc(FnType, symbol_name);
 }
 
 fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) FnType {
@@ -93,15 +269,28 @@ fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) F
     if (Cache.initialized.load(.monotonic) != 0) {
         return Cache.proc.?;
     }
+    const route = symbolRouteForName(symbol_name);
     if (!ensureNativeLibraryLocked()) {
-        unsupportedSymbol(symbol_name);
+        routeAndRecordForName(symbol_name, route, false);
+        return unsupportedSymbol(symbol_name, FnType);
     }
 
-    var lib = g_native_lib.?;
-    const resolved = lib.lookup(FnType, symbol_name) orelse unsupportedSymbol(symbol_name);
-    Cache.proc = resolved;
+    const resolved = switch (route.owner) {
+        .dawn_oracle, .shared => nativeFromSymbol(FnType, symbol_name),
+        .zig_metal, .zig_vulkan => if (route.fallback_used) nativeFromSymbol(FnType, symbol_name) else null,
+    };
+
+    routeAndRecordForName(symbol_name, route, resolved != null);
+    if (resolved) |proc| {
+        Cache.proc = proc;
+        Cache.initialized.store(1, .release);
+        setLastError(.ok);
+        return proc;
+    }
+    const proc = unsupportedSymbol(symbol_name, FnType);
+    Cache.proc = proc;
     Cache.initialized.store(1, .release);
-    return resolved;
+    return proc;
 }
 
 fn loadOptionalProc(comptime FnType: type, comptime symbol_name: [:0]const u8) ?FnType {
@@ -264,16 +453,33 @@ fn resolveNativeProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
 }
 
 pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_capability_procs.WGPUProc {
+    const route = symbolRouteForView(name);
+    const symbol_name = symbolNameSlice(name) orelse {
+        setLastError(.invalid_symbol_name);
+        return null;
+    };
+
+    if (route.owner == .zig_metal or route.owner == .zig_vulkan) {
+        if (!route.fallback_used) {
+            routeAndRecordForName(symbol_name, route, false);
+            setLastError(.symbol_missing);
+            return null;
+        }
+    }
+
     if (resolveLocalProc(name)) |proc| {
+        routeAndRecordForName(symbol_name, route, route.owner == .dawn_oracle or route.owner == .shared or route.fallback_used);
         setLastError(.ok);
         return proc;
     }
 
     if (resolveNativeProc(name)) |proc| {
+        routeAndRecordForName(symbol_name, route, true);
         setLastError(.ok);
         return proc;
     }
 
+    routeAndRecordForName(symbol_name, route, false);
     setLastError(.symbol_missing);
     return null;
 }

@@ -230,10 +230,27 @@ Current lane structure:
    - runtime selector contract and optional module contract drafts.
    - see `contracts/README.md` for index.
 5. `notes/`
-   - findings, experiment logs, touchpoint mapping, and promotion decisions.
+  - findings, experiment logs, touchpoint mapping, and promotion decisions.
 6. `scripts/`
    - lane-local helpers (`bootstrap-host-tools.sh`, `env.sh`, `preflight.sh`,
      `bringup-linux.sh`, `run-smoke.sh`, `run-bench.sh`).
+7. `assets/`
+   - brand assets, logo source, and compiled macOS/Linux logo artifacts.
+
+## Logo asset layout
+
+- Source SVG: `assets/logo/source/fawn-icon-main.svg`
+- Compiled macOS icon: `assets/logo/compiled/macos/fawn-icon-main.icns`
+- Compiled Linux PNGs: `assets/logo/compiled/linux/fawn-icon-main-16.png`,
+  `fawn-icon-main-32.png`, `fawn-icon-main-64.png`,
+  `fawn-icon-main-128.png`, `fawn-icon-main-256.png`,
+  `fawn-icon-main-512.png`.
+- Rebuild from source with:
+
+```bash
+cd /Users/xyz/deco/fawn/nursery/chromium_webgpu_lane
+./scripts/build-fawn-logo-assets.sh
+```
 
 Any script/code added here must be non-production and must not alter core runtime behavior by default.
 

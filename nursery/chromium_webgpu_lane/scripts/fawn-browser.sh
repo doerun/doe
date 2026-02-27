@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/lane-paths.sh"
 
 CHROME_BIN="$(fawn_resolve_chrome_binary)"
 DOE_LIB="$(fawn_resolve_doe_lib)"
+extra_args=()
 
 CHROME_TARGET=""
 

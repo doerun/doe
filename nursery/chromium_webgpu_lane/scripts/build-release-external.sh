@@ -44,6 +44,8 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ -d "${LOCAL_APP_PATH}" ]]; then
     mkdir -p "$(dirname "${HOST_APP_PATH}")"
     rsync -a --delete "${LOCAL_APP_PATH}/" "${HOST_APP_PATH}/"
+    "${SCRIPT_DIR}/patch-chromium-app-doe.sh" --app "${HOST_APP_PATH}" || \
+      echo "warning: unable to enforce Doe icon/name on host app copy" >&2
     echo "copied app bundle to host path: ${HOST_APP_PATH}"
   else
     echo "local app copy skipped; missing: ${LOCAL_APP_PATH}" >&2
