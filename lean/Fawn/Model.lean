@@ -39,10 +39,10 @@ structure SemVer where
   deriving Repr, DecidableEq
 
 def parseVersionComponent (text : String) : Option Nat :=
-  text.trim.toNat?
+  text.trimAscii.toString.toNat?
 
 def SemVer.parse (text : String) : Option SemVer :=
-  let parts := text.trim.split (fun ch => ch = '.')
+  let parts := text.trimAscii.toString.splitOn "."
   match parts with
   | [major] =>
     match parseVersionComponent major, parseVersionComponent "0", parseVersionComponent "0" with
