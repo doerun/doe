@@ -149,7 +149,7 @@ fn writeManifestFile(path: []const u8, content: []const u8) metal_errors.MetalEr
     std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return metal_errors.MetalError.InvalidState;
     const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return metal_errors.MetalError.InvalidState;
     defer file.close();
-    var writer = file.writer();
+    var writer = file.deprecatedWriter();
     writer.writeAll(content) catch return metal_errors.MetalError.InvalidState;
 }
 

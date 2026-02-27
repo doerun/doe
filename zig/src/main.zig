@@ -157,7 +157,7 @@ pub fn main() !void {
     const argv = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, argv);
 
-    const stdout = std.io.getStdOut().writer();
+    const stdout = std.fs.File.stdout().deprecatedWriter();
 
     var quirks_text: ?[]const u8 = null;
     var commands_text: ?[]const u8 = null;
@@ -526,7 +526,7 @@ pub fn main() !void {
                 );
             }
             if (trace_jsonl_file) |*file| {
-                const trace_writer = file.writer();
+                const trace_writer = file.deprecatedWriter();
                 try trace.printTraceLine(
                     trace_writer,
                     idx,

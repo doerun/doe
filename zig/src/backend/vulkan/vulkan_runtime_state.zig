@@ -89,7 +89,7 @@ fn writeManifestFile(path: []const u8, content: []const u8) vulkan_errors.Vulkan
     std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
     const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
     defer file.close();
-    var writer = file.writer();
+    var writer = file.deprecatedWriter();
     writer.writeAll(content) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
 }
 

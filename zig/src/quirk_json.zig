@@ -49,20 +49,20 @@ pub fn parseQuirks(allocator: Allocator, text: []const u8) ![]model.Quirk {
     };
     defer parsed.deinit();
 
-    var list = std.ArrayList(model.Quirk).init(allocator);
+    var list = std.ArrayList(model.Quirk).empty;
     errdefer {
         for (list.items) |quirk| {
             freeQuirkFields(allocator, quirk);
         }
-        list.deinit();
+        list.deinit(allocator);
     }
-    try list.ensureTotalCapacity(parsed.value.len);
+    try list.ensureTotalCapacity(allocator, parsed.value.len);
 
     for (parsed.value) |raw| {
         const q = try materializeQuirk(allocator, raw);
         list.appendAssumeCapacity(q);
     }
-    return list.toOwnedSlice();
+    return list.toOwnedSlice(allocator);
 }
 
 fn parseSingleQuirk(allocator: Allocator, text: []const u8) ![]model.Quirk {
@@ -71,18 +71,18 @@ fn parseSingleQuirk(allocator: Allocator, text: []const u8) ![]model.Quirk {
     });
     defer parsed.deinit();
 
-    var list = std.ArrayList(model.Quirk).init(allocator);
+    var list = std.ArrayList(model.Quirk).empty;
     errdefer {
         for (list.items) |quirk| {
             freeQuirkFields(allocator, quirk);
         }
-        list.deinit();
+        list.deinit(allocator);
     }
 
-    try list.ensureTotalCapacity(1);
+    try list.ensureTotalCapacity(allocator, 1);
     const q = try materializeQuirk(allocator, parsed.value);
     list.appendAssumeCapacity(q);
-    return list.toOwnedSlice();
+    return list.toOwnedSlice(allocator);
 }
 
 pub fn freeQuirks(allocator: Allocator, quirks: []model.Quirk) void {
