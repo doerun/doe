@@ -44,7 +44,11 @@ nursery/chromium_webgpu_lane/src/
 nursery/chromium_webgpu_lane/src
 nursery/chromium_webgpu_lane/chromium/
 nursery/chromium_webgpu_lane/out/
-nursery/chromium_webgpu_lane/artifacts/
+!nursery/chromium_webgpu_lane/artifacts/
+nursery/chromium_webgpu_lane/artifacts/*
+!nursery/chromium_webgpu_lane/artifacts/fawn-icon-main.svg
+!nursery/chromium_webgpu_lane/artifacts/fawn-icon-main.*
+!nursery/chromium_webgpu_lane/artifacts/fawn-icon-main.*/**
 nursery/chromium_webgpu_lane/.external-macos.env
 
 # Nested mirror artifacts (accidental local copies)
