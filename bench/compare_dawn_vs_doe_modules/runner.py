@@ -536,6 +536,27 @@ def run_workload(
         effective_timing_divisor = timing_divisor
         if required_timing_class == "process-wall":
             effective_timing_divisor = 1.0
+            
+        trace_row_count = parse_int(sample_meta.get("executionRowCount", 0)) or 0
+        trace_dispatch_count = parse_int(sample_meta.get("executionDispatchCount", 0)) or 0
+        trace_submit_every = parse_int(sample_meta.get("uploadSubmitEvery", 0)) or 0
+        derived_divisor = 0.0
+        
+        if workload.domain == "upload" and trace_submit_every > 0:
+            derived_divisor = float(trace_row_count)
+        elif trace_dispatch_count > 0:
+            derived_divisor = float(trace_dispatch_count)
+        elif trace_row_count > 0:
+            derived_divisor = float(trace_row_count)
+        
+        if required_timing_class != "process-wall" and derived_divisor > 0.0 and effective_timing_divisor != derived_divisor and workload.comparable:
+            raise ValueError(
+                f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
+                f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
+                f"reveals {derived_divisor} physical operations "
+                f"(rows={trace_row_count}, dispatches={trace_dispatch_count})."
+            )
+
         measured_ms = measured_raw_ms / effective_timing_divisor
         timing_metrics_raw_ms = extract_timing_metrics_ms(
             sample_meta,

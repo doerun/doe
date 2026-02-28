@@ -769,7 +769,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_trace_meta_source_match",
         blocking=True,
-        applicable=len(left_samples) > 0 and len(right_samples) > 0 and not is_dawn_vs_doe and workload_id not in {"uniform_buffer_update_writebuffer_partial_single"},
+        applicable=len(left_samples) > 0 and len(right_samples) > 0,
         passes=left_trace_meta_sources == right_trace_meta_sources,
         failure_reason=(
             "left/right trace meta timing source mismatch: "
@@ -785,7 +785,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_timing_selection_policy_match",
         blocking=True,
-        applicable=len(left_samples) > 0 and len(right_samples) > 0 and not is_dawn_vs_doe,
+        applicable=len(left_samples) > 0 and len(right_samples) > 0,
         passes=left_timing_selection_policies == right_timing_selection_policies,
         failure_reason=(
             "left/right timing selection policy mismatch: "
@@ -801,7 +801,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_queue_sync_mode_match",
         blocking=True,
-        applicable=len(left_samples) > 0 and len(right_samples) > 0 and not is_dawn_vs_doe and workload_id not in {"uniform_buffer_update_writebuffer_partial_single"},
+        applicable=len(left_samples) > 0 and len(right_samples) > 0,
         passes=left_queue_sync_modes == right_queue_sync_modes,
         failure_reason=(
             "left/right queue sync mode mismatch: "
@@ -817,7 +817,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_execution_shape_match",
         blocking=True,
-        applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0 and not is_dawn_vs_doe and workload_id not in {"uniform_buffer_update_writebuffer_partial_single"},
+        applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0,
         passes=left_execution_shapes == right_execution_shapes,
         failure_reason=(
             "left/right execution shape mismatch (dispatch/row/success counts): "
@@ -905,6 +905,18 @@ def compare_assessment(
                 )
         return side_reasons
 
+    def collect_upload_trace_meta_values(samples: list[dict[str, Any]], key: str) -> set[Any]:
+        return {
+            sample.get("traceMeta", {}).get(key)
+            for sample in samples
+            if isinstance(sample, dict) and isinstance(sample.get("traceMeta"), dict)
+        }
+
+    left_upload_usages = collect_upload_trace_meta_values(left_samples, "uploadBufferUsage")
+    right_upload_usages = collect_upload_trace_meta_values(right_samples, "uploadBufferUsage")
+    left_upload_submit_cadence = collect_upload_trace_meta_values(left_samples, "uploadSubmitEvery")
+    right_upload_submit_cadence = collect_upload_trace_meta_values(right_samples, "uploadSubmitEvery")
+
     upload_scope_applies = workload_domain == "upload"
     left_upload_scope_reasons = (
         collect_upload_ignore_first_violations(side_name="left", samples=left_samples)
@@ -935,6 +947,30 @@ def compare_assessment(
         applicable=upload_scope_applies,
         passes=len(right_upload_scope_reasons) == 0,
         details={"violationCount": len(right_upload_scope_reasons)},
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_upload_buffer_usage_match",
+        blocking=True,
+        applicable=upload_scope_applies and len(left_samples) > 0 and len(right_samples) > 0,
+        passes=left_upload_usages == right_upload_usages,
+        failure_reason=(
+            f"left/right upload usage mismatch: {left_upload_usages} vs {right_upload_usages}"
+        ),
+        details={"leftUploadUsages": sorted(list(str(u) for u in left_upload_usages)), "rightUploadUsages": sorted(list(str(u) for u in right_upload_usages))},
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_upload_submit_cadence_match",
+        blocking=True,
+        applicable=upload_scope_applies and len(left_samples) > 0 and len(right_samples) > 0,
+        passes=left_upload_submit_cadence == right_upload_submit_cadence,
+        failure_reason=(
+            f"left/right upload submit cadence mismatch: {left_upload_submit_cadence} vs {right_upload_submit_cadence}"
+        ),
+        details={"leftUploadSubmitCadences": sorted(list(str(c) for c in left_upload_submit_cadence)), "rightUploadSubmitCadences": sorted(list(str(c) for c in right_upload_submit_cadence))},
     )
 
     left_has_execution = False

@@ -148,6 +148,13 @@ def assess_claimability(
             f"right timed sample count {right_count} is below claim floor {effective_min_samples}"
         )
 
+    left_p50_ms = safe_float(left.get("stats", {}).get("p50Ms"))
+    right_p50_ms = safe_float(right.get("stats", {}).get("p50Ms"))
+    if left_p50_ms is not None and left_p50_ms < 0.0001:
+        reasons.append(f"left p50 timing ({left_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
+    if right_p50_ms is not None and right_p50_ms < 0.0001:
+        reasons.append(f"right p50 timing ({right_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
+
     for percentile_key in required_percentiles:
         value = safe_float(delta.get(percentile_key))
         if value is None:

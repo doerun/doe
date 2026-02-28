@@ -618,12 +618,12 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 575000,
-      "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
+      "timingNormalizationNote": "Directional macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
       "id": "draw_indexed_render_macro_200k",
@@ -710,13 +710,13 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 20,
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 5120,
-      "timingNormalizationNote": "Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
+      "timingNormalizationNote": "Directional compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
-      "applesToApplesVetted": true,
-      "benchmarkClass": "comparable"
+      "applesToApplesVetted": false,
+      "benchmarkClass": "directional"
     },
     {
       "id": "p0_render_multidraw_contract",
@@ -841,8 +841,8 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 1,
-      "rightTimingDivisor": 0.2,
-      "timingNormalizationNote": "Dawn ConcurrentExecutionTest RunSingle reports per-iteration wall time with iterationsPerStep=5; rightTimingDivisor=0.2 rescales Dawn timings to per-dispatch step units for apples-to-apples comparison.",
+      "rightTimingDivisor": 5.0,
+      "timingNormalizationNote": "Dawn ConcurrentExecutionTest RunSingle reports per-iteration wall time with iterationsPerStep=5; rightTimingDivisor=5.0 rescales Dawn timings to per-dispatch step units for apples-to-apples comparison.",
       "dawnFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle"
     },
     {
