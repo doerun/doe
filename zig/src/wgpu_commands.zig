@@ -998,7 +998,7 @@ fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !types.KernelSou
 
 fn kernelForName(kernel_name: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, kernel_name, "builtin:noop")) return loader.BUILTIN_KERNEL_DEFAULT_SOURCE;
-    if (std.mem.eql(u8, kernel_name, "fawn.noop")) return loader.BUILTIN_KERNEL_DEFAULT_SOURCE;
+    if (std.mem.eql(u8, kernel_name, "doe.noop")) return loader.BUILTIN_KERNEL_DEFAULT_SOURCE;
     if (std.mem.eql(u8, kernel_name, "copy_textures_x32")) return loader.BUILTIN_KERNEL_DEFAULT_SOURCE;
     return null;
 }

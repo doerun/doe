@@ -8,6 +8,7 @@ const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 const BUFFER_ZERO_INIT_CHUNK_BYTES: usize = 64 * 1024;
+const BUFFER_MIN_ALIGNMENT: u64 = 4;
 
 pub fn getOrCreateBuffer(
     self: *Backend,
@@ -45,8 +46,8 @@ fn getOrCreateBufferWithOptions(
         _ = self.buffers.remove(handle);
     }
 
-    const alignment = @max(4, 1);
-    const size = loader.alignTo(requested_size, alignment);
+    const size = loader.alignTo(requested_size, BUFFER_MIN_ALIGNMENT);
+
     const desc = types.WGPUBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),

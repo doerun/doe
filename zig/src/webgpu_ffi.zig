@@ -944,6 +944,6 @@ pub const WebGPUBackend = struct {
 
     pub fn timestampLog(self: *Self, comptime fmt: []const u8, args: anytype) void {
         if (!self.timestamp_debug) return;
-        std.debug.print("[fawn-timestamp] " ++ fmt, args);
+        std.debug.print("[doe-timestamp] " ++ fmt, args);
     }
 };

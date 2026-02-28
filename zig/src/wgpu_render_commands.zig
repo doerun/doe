@@ -335,7 +335,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
 
         const pipeline_desc = RenderPipelineDescriptor{
             .nextInChain = null,
-            .label = loader.stringView("fawn.render_draw"),
+            .label = loader.stringView("doe.render_draw"),
             .layout = render_pipeline_layout,
             .vertex = .{
                 .nextInChain = null,
@@ -430,7 +430,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             self.device.?,
             &RenderBundleEncoderDescriptor{
                 .nextInChain = null,
-                .label = loader.stringView("fawn.render_bundle_encoder"),
+                .label = loader.stringView("doe.render_bundle_encoder"),
                 .colorFormatCount = 1,
                 .colorFormats = bundle_color_formats[0..].ptr,
                 .depthStencilFormat = RENDER_DEPTH_STENCIL_FORMAT,
@@ -520,7 +520,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             render_bundle_encoder,
             &RenderBundleDescriptor{
                 .nextInChain = null,
-                .label = loader.stringView("fawn.render_bundle"),
+                .label = loader.stringView("doe.render_bundle"),
             },
         );
         if (prepared_render_bundle == null) {

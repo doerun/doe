@@ -1,6 +1,6 @@
 const std = @import("std");
-const loader = @import("wgpu_loader.zig");
 const types = @import("wgpu_types.zig");
+const loader = @import("wgpu_loader.zig");
 const backend_policy = @import("backend/backend_policy.zig");
 const p1_capability_procs = @import("wgpu_p1_capability_procs.zig");
 const dropin_ext_a = @import("wgpu_dropin_ext_a.zig");

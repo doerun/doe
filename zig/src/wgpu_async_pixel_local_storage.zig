@@ -291,7 +291,7 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
     };
     const pipeline_desc = render_types_mod.RenderPipelineDescriptor{
         .nextInChain = null,
-        .label = loader.stringView("fawn.diag.pixel_local_storage"),
+        .label = loader.stringView("doe.diag.pixel_local_storage"),
         .layout = pipeline_layout,
         .vertex = .{
             .nextInChain = null,
@@ -370,7 +370,7 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
     };
     const pipeline_desc = render_types_mod.RenderPipelineDescriptor{
         .nextInChain = null,
-        .label = loader.stringView("fawn.diag.pixel_local_storage.emulated"),
+        .label = loader.stringView("doe.diag.pixel_local_storage.emulated"),
         .layout = null,
         .vertex = .{
             .nextInChain = null,

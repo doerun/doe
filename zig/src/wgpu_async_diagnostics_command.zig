@@ -259,7 +259,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
         self.device.?,
         &render_types_mod.RenderBundleEncoderDescriptor{
             .nextInChain = null,
-            .label = loader.stringView("fawn.resource_table.bundle"),
+            .label = loader.stringView("doe.resource_table.bundle"),
             .colorFormatCount = 1,
             .colorFormats = color_formats[0..].ptr,
             .depthStencilFormat = types.WGPUTextureFormat_Undefined,
@@ -276,7 +276,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
         render_bundle_encoder,
         &render_types_mod.RenderBundleDescriptor{
             .nextInChain = null,
-            .label = loader.stringView("fawn.resource_table.bundle"),
+            .label = loader.stringView("doe.resource_table.bundle"),
         },
     );
     if (render_bundle == null) return error.RenderBundleFinishFailed;
@@ -351,7 +351,7 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
         self.device.?,
         &render_types_mod.RenderBundleEncoderDescriptor{
             .nextInChain = null,
-            .label = loader.stringView("fawn.resource_table.bundle.emulated"),
+            .label = loader.stringView("doe.resource_table.bundle.emulated"),
             .colorFormatCount = 1,
             .colorFormats = color_formats[0..].ptr,
             .depthStencilFormat = types.WGPUTextureFormat_Undefined,
@@ -366,7 +366,7 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
         render_bundle_encoder,
         &render_types_mod.RenderBundleDescriptor{
             .nextInChain = null,
-            .label = loader.stringView("fawn.resource_table.bundle.emulated"),
+            .label = loader.stringView("doe.resource_table.bundle.emulated"),
         },
     );
     if (render_bundle == null) return error.RenderBundleFinishFailed;
@@ -424,7 +424,7 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUText
 
     const compute_pipeline = try resources.createComputePipeline(
         self,
-        "fawn.lifecycle.compute",
+        "doe.lifecycle.compute",
         shader_module,
         "main",
         pipeline_layout,
@@ -587,7 +587,7 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUT
     };
     const pipeline_desc = render_types_mod.RenderPipelineDescriptor{
         .nextInChain = null,
-        .label = loader.stringView("fawn.async_diagnostics"),
+        .label = loader.stringView("doe.async_diagnostics"),
         .layout = null,
         .vertex = .{
             .nextInChain = null,
