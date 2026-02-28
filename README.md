@@ -1,70 +1,62 @@
 # Fawn
 
-A performance-first WebGPU runtime in Zig and Lean 4.
+Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation.
 
-## Naming contract
+**Doe** (`doe-zig-runtime`, `libdoe_webgpu.so`) is a WebGPU runtime written in Zig. It is a ground-up reimplementation of what Dawn does in C++, built for explicit control of the hot path: no hidden allocators, no vtable dispatch, no bindings layers, direct C ABI calls to Vulkan/Metal.
 
-- Product and browser distribution: `Fawn`
-- Backend/runtime implementation identity: `Doe` (`doe-zig-runtime`, `libdoe_webgpu.so`)
+## Two value propositions
 
-## The problem
+### 1. Zig reimplementation (general-purpose)
 
-WebGPU runtimes like Dawn (C++) and wgpu (Rust) spend most of their CPU time on work that isn't submitting commands to the GPU. Repeated runtime validation, abstraction layering, IPC serialization, and driver workaround branching dominate high-frequency small-dispatch workloads. These costs are structural. You can optimize them within the existing architecture, but you can't eliminate them without changing the architecture.
+Rewriting Dawn's C++ in Zig gives structural performance gains with no proof infrastructure required:
 
-## Why Zig + Lean
+- **Explicit allocators** — no hidden allocation, every alloc/free is visible in source
+- **No abstraction tax** — no vtable dispatch, no RTTI, no implicit indirection
+- **Direct backend calls** — Zig calls Vulkan/Metal C ABIs natively without marshaling
+- **Comptime specialization** — device profile and quirk resolution at build time, not per-command branching at runtime
+- **Small auditable binaries**
 
-**Zig** — we chose Zig because we need full control of the hot path:
+C++ and Rust can achieve the same with enough discipline. Zig makes these properties the default. This alone produces measurable wins on CPU-bound GPU workloads.
 
-- Allocations are explicit. The language has no hidden allocator, so we know exactly where memory is allocated and freed in the runtime.
-- The compiled code does what the source says. We don't deal with vtable dispatch, runtime type info, or implicit indirection — the language doesn't generate them.
-- Calling Vulkan/Metal is direct. Zig calls C ABIs natively without bindings layers or marshaling.
-- Binaries are small and easy to inspect.
+### 2. Lean proof elimination (isolated applications)
 
-C++ and Rust can achieve the same performance characteristics with enough discipline. Zig makes them the default. For a GPU runtime where CPU-side overhead is the bottleneck, that matters.
+For specific, controlled deployment targets (verified WASM games, known-safe assets, embedded GPU workloads), Lean 4 enables a second tier of gains:
 
-**Lean 4** — current role and target role:
+- Prove validation invariants offline — bounds checks, compatibility constraints, structural command validity
+- Delete the corresponding Zig runtime branches entirely, not just optimize them
+- The hot path gets physically shorter: fewer instructions, fewer branches, less code to execute
 
-- Current: Lean is the formal contract/model layer for quirk selection and proof-obligation semantics (`verificationMode`, `proofLevel`, blocking/advisory mapping)
-- Current: Zig/runtime traces mirror those Lean obligation fields for gate and replay auditing
-- Target: when proof execution and artifact wiring are integrated end-to-end, proven conditions can be hoisted out and corresponding Zig runtime branches removed
+"Leaning out" means removing runtime code because a proof made it unnecessary. It does not mean adding a proof interpreter to the hot path.
 
-The combination is still the point. Zig handles execution with minimal overhead. Lean defines and checks invariants so elimination can be safe and explicit when wired. "Leaning out" means deleting runtime code, not adding a proof interpreter to the hot path.
+This mode requires ahead-of-time verification of the workload. It is not a general-purpose browser path — it targets isolated applications where the input space is known and provable.
 
-## How we do better
+### How both modes work
 
 The architecture splits validation into two categories:
 
-**Hoistable checks** — provable from known state at init or compile time:
+**Hoistable checks** — resolvable from known state at init, build, or proof time:
 - Static compatibility constraints
 - Structural command validity
 - Device limit and profile compatibility
 
-These get resolved once at startup or build time, then never checked again.
-
-**Dynamic checks** — must stay in the runtime:
+**Dynamic checks** — must stay in the runtime regardless:
 - Device loss and async lifecycle
 - Queue/timeline synchronization
 - Memory residency pressure
 
-For the hoistable category:
-
+For hoistable checks:
 1. Mine driver quirks from upstream Dawn/wgpu source automatically
 2. Normalize them into a schema-first dataset
-3. Prove what we can in Lean; delete runtime branches only when proof-to-artifact wiring is enforced in build/CI
-4. Pre-filter the rest once at startup by device profile — no per-command quirk matching
+3. In Lean mode: prove and delete runtime branches when proof-to-artifact wiring is enforced
+4. In Zig-only mode: pre-filter once at startup by device profile — no per-command quirk matching
 
-The runtime binds a device profile at startup, filters the quirk set once, and buckets by command kind. After that, command dispatch uses pre-resolved actions without per-command quirk matching or profile-table search in hot loops. Future work will push more of this to comptime where the profile is known at build time.
+The runtime binds a device profile at startup, filters the quirk set once, and buckets by command kind. Command dispatch uses pre-resolved actions without per-command quirk matching or profile-table search in hot loops.
 
 ## Why this is the future
 
 WebGPU is becoming the portable GPU API. Every browser ships it. Native embeddings are growing. The workloads running through it — ML inference, real-time rendering, compute pipelines — are getting more demanding, and CPU-side runtime overhead is becoming the bottleneck.
 
 The incumbent runtimes were built for correctness and portability first. The spec is stabilizing now, the conformance surface is known, and the driver quirk space is enumerable. That makes it possible to build a runtime that doesn't trade correctness for performance.
-
-- Zig's comptime system opens a path to make per-device specialization a build artifact instead of a runtime cost
-- Lean provides a path to mechanically checked validation elimination once proof execution is wired in CI/build
-- Both produce small, auditable, reproducible outputs
-- As more conditions are proven and integrated into artifacts, the hot path can get shorter without losing correctness
 
 ## Where we are faster today
 

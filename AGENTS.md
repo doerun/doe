@@ -8,9 +8,11 @@ It is acceptable to reuse selected technical principles from those files, as lis
 
 ## Prime Directive
 
-The objective of `fawn/` is to build a full, performance-first, maintainable replacement for Dawn in Lean + Zig: lean correctness proof support, Zig runtime execution, lighter binaries, easier development, and materially better per-command performance without sacrificing stage discipline.
+Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation.
 
-Build `fawn/` as a machine-driven WebGPU runtime engineering program for quirk ingestion, verification, specialization, and benchmarking with explicit contracts.
+Doe is the Zig WebGPU runtime (`doe-zig-runtime`, `libdoe_webgpu.so`) built in this workspace. The objective is a full, performance-first, maintainable replacement for Dawn: Lean correctness proof support, Zig runtime execution, lighter binaries, easier development, and materially better per-command performance without sacrificing stage discipline.
+
+This workspace (`fawn/`) drives Doe development: quirk ingestion, verification, specialization, and benchmarking with explicit contracts.
 
 - deterministic, schema-first behavior
 - reproducible artifacts for audit and replay
@@ -60,7 +62,7 @@ For Dawn-vs-Doe performance work, also read:
 - every quality decision should emit artifacts required by gates in `fawn/process.md`
 - benchmark and trace artifacts must include traceability fields (module/op hash chain)
 
-## Fawn Non-negotiables
+## Non-negotiables
 
 1. No undocumented manual toggles in runtime
 - any production behavior change must be reflected in versioned config.

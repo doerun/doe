@@ -4,7 +4,7 @@
 
 Date: 2026-02-26
 
-Fawn is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
+Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
 Current `fawn/zig/src` size is 13,485 LOC (`wc -l zig/src/*.zig`, 2026-02-23) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) over the full extended workload matrix.
@@ -539,7 +539,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - Added `auto_calibrate_workload.py` for dynamic `commandRepeat` and `uploadSubmitEvery` parameter searches to ensure consistent CV limits.
 
 90. Data pipeline ingestion optimization:
-- Added `ingest_reports_to_sqlite.py` to ingest Fawn benchmark json reports directly into sqlite data stores.
+- Added `ingest_reports_to_sqlite.py` to ingest Doe benchmark json reports directly into sqlite data stores.
 
 91. Robust native GPU execution span verification:
 - Confirmed timestamp resolution precedence in `timing_selection.py` where `executionGpuTimestampTotalNs` correctly overrides fallback `executionEncodeTotalNs` for WebGPU timing sources.

@@ -2,7 +2,9 @@
 
 ## Abstract
 
-Fawn is a machine-driven runtime program for WebGPU-class execution with:
+Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation.
+
+Doe is a Zig WebGPU runtime for WebGPU-class execution with:
 
 - Zig for explicit low-overhead systems paths
 - Lean 4 for high-value invariant formalization
@@ -47,7 +49,7 @@ Then use Lean where it has highest leverage and keep Zig hot paths explicit and 
 
 ## Security Position
 
-Formal methods complement isolation, they do not replace it. Fawn supports two distinct security modes depending on the trust profile of the workload:
+Formal methods complement isolation, they do not replace it. Doe supports two distinct security modes depending on the trust profile of the workload:
 
 ### 1. Ahead-of-Time Verification (Lean + Zig)
 - Intended for trusted, pre-verified workloads (e.g., verified WASM games, known-safe assets).
@@ -63,11 +65,11 @@ In both modes, sandbox/process boundaries remain required where deployment topol
 
 ## Standalone Execution Model
 
-Fawn is self-contained.
+Doe is self-contained.
 
-- Fawn owns its own runtime, verification boundary, benchmark harness, and replay tooling.
+- Doe owns its own runtime, verification boundary, benchmark harness, and replay tooling.
 - Dawn and wgpu are external incumbents used as comparison baselines only.
-- Fawn does not depend on incumbent internals at runtime.
+- Doe does not depend on incumbent internals at runtime.
 
 ## Zero-Tape Operating System
 
@@ -128,9 +130,9 @@ No delayed “perf sprint” process.
   - `substantiated`: measured deltas + stable trend window + reproducible metadata
 
 Attribution method for "why Zig + Lean":
-1. Zig attribution: compare specialized vs non-specialized Fawn paths with same policy/proof posture.
+1. Zig attribution: compare specialized vs non-specialized Doe paths with same policy/proof posture.
 2. Lean attribution: compare defect/reject/replay outcomes with and without Lean-required quirk sets.
-3. Incumbent attribution: compare Fawn against Dawn/wgpu on identical metric IDs and workload IDs.
+3. Incumbent attribution: compare Doe against Dawn/wgpu on identical metric IDs and workload IDs.
 4. Any claim missing this decomposition is reported as "unattributed".
 
 ## Runtime Architecture
@@ -182,7 +184,7 @@ Attribution method for "why Zig + Lean":
 - replay success and determinism trend up
 - conformance trend improves on selected CTS subsets
 - proof coverage grows only where it yields clear correctness/perf value
-- benchmark deltas against Dawn/wgpu trend in Fawn's favor on targeted workloads
+- benchmark deltas against Dawn/wgpu trend in Doe's favor on targeted workloads
 
 No hard numeric threshold is required for v0 acceptance.
 

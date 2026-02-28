@@ -2,7 +2,7 @@
 
 ## 1. System Shape
 
-Fawn is split into five modules with hard interfaces. In v0 these interfaces are scaffolded and exercised with worked examples, then hardened into runtime code.
+Doe is split into five modules with hard interfaces. In v0 these interfaces are scaffolded and exercised with worked examples, then hardened into runtime code.
 
 1. `agent` (ingestion)
 - Input: upstream source diffs.
@@ -26,7 +26,7 @@ Fawn is split into five modules with hard interfaces. In v0 these interfaces are
 
 ## 2. Incumbent Baselines
 
-Fawn is benchmarked against external incumbents:
+Doe is benchmarked against external incumbents:
 
 1. Dawn (C++)
 2. wgpu (Rust)
@@ -35,7 +35,7 @@ These are baseline systems for measurement, not runtime dependencies.
 
 ## 3. Verification Boundary (Dual Mode Support)
 
-Fawn targets two distinct verification profiles, allowing the system to scale security boundaries based on the trust level of the workload:
+Doe targets two distinct verification profiles, allowing the system to scale security boundaries based on the trust level of the workload:
 
 1. **Ahead-of-Time Verification Mode**:
    - Lean mathematically proves properties offline; Zig executes specialized paths with zero hot-path validation branching.
@@ -65,7 +65,7 @@ v0 defaults:
 
 ## 4. Runtime Selection Policy
 
-Fawn uses startup profile selection, then avoids hot-path policy branching:
+Doe uses startup profile selection, then avoids hot-path policy branching:
 - detect adapter profile once at startup
 - bind selected profile table
 - execute specialized code paths
@@ -93,7 +93,7 @@ Key fields:
 
 ## 6. Zig Boundary Strategy
 
-Fawn's Zig layer supports two integration modes:
+Doe's Zig layer supports two integration modes:
 
 1. Standalone path
 - Zig owns runtime selection and specialization end-to-end.
@@ -154,7 +154,7 @@ for one full path from upstream quirk signal to normalized record and specializa
 
 ## 10. Incumbent Advantage Contract
 
-Fawn only claims advantage over C++/Rust incumbents when all are true:
+Doe only claims advantage over C++/Rust incumbents when all are true:
 1. same workload + backend class + comparable device family
 2. same metric IDs from `fawn/config/benchmarks.json`
 3. reproducible run metadata for both sides
