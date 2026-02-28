@@ -1,1 +1,0 @@
-{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1465727502715934, "hash": "0x57da7a133fbc5ac9", "previousHash": "0x9e3779b97f4a7c15", "command": "render_draw_redundant_pipeline_bindings", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6057570830}

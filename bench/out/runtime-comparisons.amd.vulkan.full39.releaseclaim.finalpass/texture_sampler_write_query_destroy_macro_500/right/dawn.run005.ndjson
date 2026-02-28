@@ -1,1 +1,0 @@
-{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1471486549932865, "hash": "0xf63933bd19ee2653", "previousHash": "0x9e3779b97f4a7c15", "command": "texture_sampler_write_query_destroy_macro_500", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6085092641}

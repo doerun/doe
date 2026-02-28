@@ -14,6 +14,7 @@ import json
 import functools
 import statistics
 import subprocess
+import sys
 import time
 import resource as py_resource
 import tempfile
@@ -1221,7 +1222,8 @@ def main() -> int:
     previous_claim_row_hash = "0" * 64
     claim_row_hashes: list[str] = []
 
-    for workload in workloads:
+    for idx, workload in enumerate(workloads, 1):
+        print(f"[{idx}/{len(workloads)}] Running workload: {workload.id}...", file=sys.stderr, flush=True)
         validate_upload_apples_to_apples(
             workload,
             comparability_mode=args.comparability,

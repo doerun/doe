@@ -1,1 +1,0 @@
-{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 1429307615855700, "hash": "0xa5bc486ab8aeb1b8", "previousHash": "0x9e3779b97f4a7c15", "command": "async_pipeline_diagnostics_contract", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6031768839}
