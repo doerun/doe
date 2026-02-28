@@ -41,8 +41,14 @@ const RawQuirk = struct {
 };
 
 pub fn parseQuirks(allocator: Allocator, text: []const u8) ![]model.Quirk {
+    // fast-path bypass for empty arrays
+    if (std.mem.eql(u8, std.mem.trim(u8, text, " \n\r\t"), "[]")) {
+        return &[_]model.Quirk{};
+    }
+
     const parsed = std.json.parseFromSlice([]const RawQuirk, allocator, text, .{
-        .ignore_unknown_fields = false,
+        .ignore_unknown_fields = true,
+        .allocate = .alloc_always,
     }) catch |err| switch (err) {
         error.UnexpectedToken => return parseSingleQuirk(allocator, text),
         else => return err,

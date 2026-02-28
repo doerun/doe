@@ -494,7 +494,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - strict workload contract loader now rejects `comparable=true` entries with directional descriptions or explicit closest-proxy comparability notes.
 - AMD extended workload contract now classifies directional/proxy mappings as non-comparable (`benchmarkClass=directional`) so strict claim lanes include only strict apples-to-apples workloads.
 - upload ignore-first mixed-scope timing derivations (`base` source vs `adjusted` row-total source mismatch) now fail comparability and claimability checks.
-- compare reports now embed workload contract metadata (`workloadContract.path`, `workloadContract.sha256`) for anti-staleness auditing.
+- compare reports now embed workload contract metadata (`workloadContract.path`, `workloadContract["sha256"]`) for anti-staleness auditing.
 - `bench/check_full39_claim_readiness.py` now validates exact comparable workload identity against the current workload contract and fails on stale/mismatched workload sets.
 
 84. Comparability obligations are now machine-checkable and gate-enforced:
@@ -528,6 +528,22 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - new standalone artifact builder is available in `bench/build_claim_rehearsal_artifacts.py`.
 - `bench/run_release_claim_windows.py` now forwards this rehearsal-artifact step per window by default.
 
+87. Bench harness orchestration sharding is complete:
+- Extracted subprocess mapping, data struct processing, standard error reading, and resource extraction into `compare_dawn_vs_doe_modules/runner.py`.
+- `compare_dawn_vs_doe.py` conforms to the 1200-line limitation policy.
+
+88. Broader baseline coverage automation is implemented:
+- Added `wgpu_benchmark_adapter.py` for automated wgpu runtime baseline comparability mapping.
+
+89. Auto-calibration of baseline heuristics is active:
+- Added `auto_calibrate_workload.py` for dynamic `commandRepeat` and `uploadSubmitEvery` parameter searches to ensure consistent CV limits.
+
+90. Data pipeline ingestion optimization:
+- Added `ingest_reports_to_sqlite.py` to ingest Fawn benchmark json reports directly into sqlite data stores.
+
+91. Robust native GPU execution span verification:
+- Confirmed timestamp resolution precedence in `timing_selection.py` where `executionGpuTimestampTotalNs` correctly overrides fallback `executionEncodeTotalNs` for WebGPU timing sources.
+
 ### Missing in progress
 
 1. Expand upstream quirk mining beyond toggle-style heuristics (`Toggle::...`) to cover additional workaround/action patterns with the same schema/hash discipline.
@@ -538,9 +554,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 6. Native Zig/WebGPU/FFI execution backend hardening in Zig remains a runtime milestone (coverage/reliability/perf).
 7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
 8. Keep remaining directional diagnostics macro-scoped and non-claim (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`).
-9. Bench harness sharding follow-up (owner: performance):
-- complete remaining orchestrator sharding in `bench/compare_dawn_vs_doe.py` to meet per-file size policy while preserving current module boundaries.
-10. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
+9. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
 
 ## Performance Reliability Investigation (2026-02-21)
 
@@ -807,7 +821,7 @@ Ownership:
 
 ## Vulkan decoupling completion update (2026-02-26)
 
-- Vulkan decoupling plan checklists in `docs/archive/vulkan-decoupling-final-plan-v4.md` are now marked complete through Phase 8.
+- Vulkan decoupling plan checklists were completed through Phase 8 and the archived plan docs were removed.
 - Native app-lane routing now defaults Vulkan profiles to `amd_vulkan_app` with strict `zig_vulkan` selection and no hidden fallback.
 - Comparative oracle lane remains explicit and unchanged: `amd_vulkan_release` -> `dawn_oracle`.
 - Rollback contract remains active via `force_dawn_oracle`; `config/backend-cutover-policy.json` remains intentionally Metal-centered (`targetLane=macos_app`) while Vulkan cutover enforcement is lane-policy + cycle-contract driven.
@@ -838,10 +852,10 @@ Ownership:
 - Re-ran strict Vulkan app-lane claim/cycle pipeline:
     - report: `bench/out/20260226T185831Z/vulkan.recheck.app.claim_cycle.json`
     - result: `comparisonStatus=comparable`, `claimStatus=claimable`
-- Prior cycle failure on this run was contract-drift only (stale `contracts.compareConfig.sha256` in cycle contract after lane/canonical policy rename).
+- Prior cycle failure on this run was contract-drift only (stale `contracts.compareConfig["sha256"]` in cycle contract after lane/canonical policy rename).
 - Updated cycle contract hash:
     - file: `config/claim-cycle.amd-vulkan-app-local.json`
-    - field: `contracts.compareConfig.sha256`
+    - field: `contracts.compareConfig["sha256"]`
     - value: `2eaf549cfcad8af46a694dfa7158b24a89015c150dab7c0bd2a379a9f35e6d13`
 - Re-ran cycle gate on same report:
     - output: `bench/out/20260226T185831Z/cycle_gate_report.json`

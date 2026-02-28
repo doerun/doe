@@ -214,7 +214,7 @@ With Doe's default binary path:
 ```bash
 python3 fawn/bench/compare_dawn_vs_doe.py \
   --right-name "chromium-dawn" \
-  --right-command-template "./path/to/dawn-wrapper.sh {commands} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
+  --right-command-template "/path/to/dawn-wrapper {commands} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
 ```
 
 ## Comparability guardrails

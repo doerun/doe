@@ -232,8 +232,9 @@ Current lane structure:
 5. `notes/`
   - findings, experiment logs, touchpoint mapping, and promotion decisions.
 6. `scripts/`
-   - lane-local helpers (`bootstrap-host-tools.sh`, `env.sh`, `preflight.sh`,
-     `bringup-linux.sh`, `run-smoke.sh`, `run-bench.sh`).
+   - lane-local helpers (`scripts/bootstrap-host-tools.sh`, `scripts/env.sh`,
+     `scripts/preflight.sh`, `scripts/bringup-linux.sh`,
+     `scripts/run-smoke.sh`, `scripts/run-bench.sh`).
 7. `assets/`
    - brand assets, logo source, and compiled macOS/Linux logo artifacts.
 

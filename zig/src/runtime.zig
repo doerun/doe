@@ -49,6 +49,7 @@ pub const DispatchContext = struct {
     surface_unconfigure: CommandDispatchBucket,
     surface_release: CommandDispatchBucket,
     async_diagnostics: CommandDispatchBucket,
+    map_async: CommandDispatchBucket,
 
     pub fn deinit(self: DispatchContext) void {
         _ = self;
@@ -78,6 +79,7 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
             .surface_unconfigure = .{},
             .surface_release = .{},
             .async_diagnostics = .{},
+            .map_async = .{},
         };
     }
 
@@ -107,6 +109,7 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
     var surface_unconfigure = std.ArrayList(ScoredQuirk).empty;
     var surface_release = std.ArrayList(ScoredQuirk).empty;
     var async_diagnostics = std.ArrayList(ScoredQuirk).empty;
+    var map_async = std.ArrayList(ScoredQuirk).empty;
 
     for (quirks) |quirk| {
         if (supportsCommand(quirk.scope, .upload)) {
@@ -166,6 +169,9 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
         if (supportsCommand(quirk.scope, .async_diagnostics)) {
             try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, scoring_profile);
         }
+        if (supportsCommand(quirk.scope, .map_async)) {
+            try appendScored(allocator, &map_async, quirk, .map_async, scoring_profile);
+        }
     }
 
     return DispatchContext{
@@ -189,6 +195,7 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
         .surface_unconfigure = finalizeBucket(allocator, &surface_unconfigure),
         .surface_release = finalizeBucket(allocator, &surface_release),
         .async_diagnostics = finalizeBucket(allocator, &async_diagnostics),
+        .map_async = finalizeBucket(allocator, &map_async),
     };
 }
 
@@ -216,6 +223,7 @@ pub fn buildProfileDispatchContext(
     var surface_unconfigure = std.ArrayList(ScoredQuirk).empty;
     var surface_release = std.ArrayList(ScoredQuirk).empty;
     var async_diagnostics = std.ArrayList(ScoredQuirk).empty;
+    var map_async = std.ArrayList(ScoredQuirk).empty;
 
     for (quirks) |quirk| {
         if (!matchesProfile(profile, quirk)) continue;
@@ -277,6 +285,9 @@ pub fn buildProfileDispatchContext(
         if (supportsCommand(quirk.scope, .async_diagnostics)) {
             try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, profile);
         }
+        if (supportsCommand(quirk.scope, .map_async)) {
+            try appendScored(allocator, &map_async, quirk, .map_async, profile);
+        }
     }
 
     return DispatchContext{
@@ -300,6 +311,7 @@ pub fn buildProfileDispatchContext(
         .surface_unconfigure = finalizeBucket(allocator, &surface_unconfigure),
         .surface_release = finalizeBucket(allocator, &surface_release),
         .async_diagnostics = finalizeBucket(allocator, &async_diagnostics),
+        .map_async = finalizeBucket(allocator, &map_async),
     };
 }
 
@@ -480,11 +492,13 @@ fn scoreRule(quirk: model.Quirk, command_kind: model.CommandKind, profile: model
             if (quirk.scope == .layout) score += 2;
         },
         .surface_create, .surface_capabilities, .surface_configure, .surface_acquire, .surface_present, .surface_unconfigure, .surface_release => {
-            if (quirk.scope == .layout) score += 5;
-            if (quirk.scope == .barrier) score += 2;
+            if (quirk.scope == .memory) score += 5;
         },
         .async_diagnostics => {
-            if (quirk.scope == .layout) score += 4;
+            if (quirk.scope == .memory) score += 5;
+        },
+        .map_async => {
+            if (quirk.scope == .memory) score += 6;
         },
     }
 
@@ -569,6 +583,7 @@ fn bucketForKind(context: DispatchContext, kind: model.CommandKind) CommandDispa
         .surface_unconfigure => context.surface_unconfigure,
         .surface_release => context.surface_release,
         .async_diagnostics => context.async_diagnostics,
+        .map_async => context.map_async,
     };
 }
 

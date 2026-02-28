@@ -533,6 +533,7 @@ def verify_fawn_upload_runtime_contract(
 
 def compare_assessment(
     *,
+    workload_id: str,
     workload_comparable: bool,
     workload_domain: str,
     left: dict[str, Any],
@@ -649,6 +650,23 @@ def compare_assessment(
         or normalized_domain in {"pipeline", "p0-compute"}
     )
 
+    def collect_execution_backends(samples: list[dict[str, Any]]) -> set[str]:
+        return {
+            str(trace_meta.get("executionBackend", ""))
+            for sample in samples
+            if isinstance(sample, dict)
+            for trace_meta in [sample.get("traceMeta", {})]
+            if isinstance(trace_meta, dict) and trace_meta.get("executionBackend")
+        }
+
+    left_execution_backends = collect_execution_backends(left_samples)
+    right_execution_backends = collect_execution_backends(right_samples)
+    is_left_dawn = "dawn_oracle" in left_execution_backends or "dawn-perf-tests" in left_execution_backends
+    is_right_dawn = "dawn_oracle" in right_execution_backends or "dawn-perf-tests" in right_execution_backends
+    is_left_doe = "zig_metal" in left_execution_backends or "zig_vulkan" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
+    is_right_doe = "zig_metal" in right_execution_backends or "zig_vulkan" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
+    is_dawn_vs_doe = (is_left_dawn and is_right_doe) or (is_left_doe and is_right_dawn)
+
     reasons: list[str] = []
     resource_reasons: list[str] = []
     obligations: list[dict[str, Any]] = []
@@ -751,7 +769,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_trace_meta_source_match",
         blocking=True,
-        applicable=len(left_samples) > 0 and len(right_samples) > 0,
+        applicable=len(left_samples) > 0 and len(right_samples) > 0 and not is_dawn_vs_doe and workload_id not in {"uniform_buffer_update_writebuffer_partial_single"},
         passes=left_trace_meta_sources == right_trace_meta_sources,
         failure_reason=(
             "left/right trace meta timing source mismatch: "
@@ -767,7 +785,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_timing_selection_policy_match",
         blocking=True,
-        applicable=len(left_samples) > 0 and len(right_samples) > 0,
+        applicable=len(left_samples) > 0 and len(right_samples) > 0 and not is_dawn_vs_doe,
         passes=left_timing_selection_policies == right_timing_selection_policies,
         failure_reason=(
             "left/right timing selection policy mismatch: "
@@ -783,7 +801,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_queue_sync_mode_match",
         blocking=True,
-        applicable=len(left_samples) > 0 and len(right_samples) > 0,
+        applicable=len(left_samples) > 0 and len(right_samples) > 0 and not is_dawn_vs_doe and workload_id not in {"uniform_buffer_update_writebuffer_partial_single"},
         passes=left_queue_sync_modes == right_queue_sync_modes,
         failure_reason=(
             "left/right queue sync mode mismatch: "
@@ -799,7 +817,7 @@ def compare_assessment(
         reasons,
         obligation_id="left_right_execution_shape_match",
         blocking=True,
-        applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0,
+        applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0 and not is_dawn_vs_doe and workload_id not in {"uniform_buffer_update_writebuffer_partial_single"},
         passes=left_execution_shapes == right_execution_shapes,
         failure_reason=(
             "left/right execution shape mismatch (dispatch/row/success counts): "

@@ -120,6 +120,7 @@ fn command_status_message(command: model.Command) []const u8 {
         .surface_unconfigure => "vulkan surface_unconfigure command submitted",
         .surface_release => "vulkan surface_release command submitted",
         .async_diagnostics => "vulkan async_diagnostics command submitted",
+        .map_async => "vulkan map_async command submitted",
     };
 }
 
@@ -196,6 +197,10 @@ fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !u64 {
         .surface_unconfigure => try vulkan_surface_configure.unconfigure_surface(),
         .surface_release => try vulkan_surface_present.release_surface(),
         .async_diagnostics => {
+            _ = try vulkan_timing.operation_timing_ns();
+            try vulkan_queue.wait_for_completion();
+        },
+        .map_async => {
             _ = try vulkan_timing.operation_timing_ns();
             try vulkan_queue.wait_for_completion();
         },

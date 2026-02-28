@@ -251,6 +251,9 @@ const RawCommand = struct {
     workgroupCount: ?[3]u32 = null,
     workgroups: ?[3]u32 = null,
     bindings: ?[]RawKernelBinding = null,
+    map_mode: ?[]const u8 = null,
+    mapMode: ?[]const u8 = null,
+    map_async: ?model.MapAsyncCommand = null,
 };
 
 pub const ParseError = error{
@@ -261,8 +264,16 @@ pub const ParseError = error{
 };
 
 pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
-    const parsed = try std.json.parseFromSlice([]const RawCommand, allocator, text, .{ .ignore_unknown_fields = true });
-    defer parsed.deinit();
+    if (std.mem.eql(u8, std.mem.trim(u8, text, " \n\r\t"), "[]")) {
+        return &[_]model.Command{};
+    }
+
+    // Zig's strict parser crashes if the string has a trailing newline after the valid JSON array end.
+    const cleanly_trimmed = std.mem.trimRight(u8, text, " \n\r\t\\n");
+    const parsed = try std.json.parseFromSliceLeaky([]const RawCommand, allocator, cleanly_trimmed, .{ 
+        .ignore_unknown_fields = true,
+        .allocate = .alloc_always,
+    });
 
     var list = std.ArrayList(model.Command).empty;
     errdefer {
@@ -271,9 +282,9 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
         }
         list.deinit(allocator);
     }
-    try list.ensureTotalCapacity(allocator, parsed.value.len);
+    try list.ensureTotalCapacity(allocator, parsed.len);
 
-    for (parsed.value) |raw| {
+    for (parsed) |raw| {
         list.appendAssumeCapacity(try parseOne(allocator, raw));
     }
 
@@ -315,6 +326,7 @@ fn commandKindEquals(raw_kind: []const u8, kind: []const u8) bool {
 }
 
 fn getCommandName(raw: RawCommand) ?[]const u8 {
+    if (raw.map_async != null) return "map_async";
     return raw.command orelse raw.kind orelse raw.command_kind;
 }
 
@@ -338,6 +350,7 @@ const NormalizedKind = enum {
     surface_unconfigure,
     surface_release,
     async_diagnostics,
+    map_async,
 };
 
 fn parseKind(raw: RawCommand) !NormalizedKind {
@@ -420,6 +433,9 @@ fn parseKind(raw: RawCommand) !NormalizedKind {
     }
     if (commandKindEquals(kind, "async_diagnostics") or commandKindEquals(kind, "pipeline_async_diagnostics")) {
         return .async_diagnostics;
+    }
+    if (commandKindEquals(kind, "map_async") or commandKindEquals(kind, "buffer_map_async")) {
+        return .map_async;
     }
 
     return ParseError.UnknownCommandKind;
@@ -768,6 +784,14 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     if (kind == .surface_unconfigure) return .{ .surface_unconfigure = parse_extra.parseSurfaceUnconfigureCommand(raw) catch return ParseError.InvalidCommandPayload };
     if (kind == .surface_release) return .{ .surface_release = parse_extra.parseSurfaceReleaseCommand(raw) catch return ParseError.InvalidCommandPayload };
     if (kind == .async_diagnostics) return .{ .async_diagnostics = parse_extra.parseAsyncDiagnosticsCommand(raw) catch return ParseError.InvalidCommandPayload };
+
+    if (kind == .map_async) {
+        if (raw.map_async) |m| return .{ .map_async = m };
+        const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
+        const mode_str = raw.map_mode orelse raw.mapMode orelse "write";
+        const mode: model.MapAsyncMode = if (std.mem.eql(u8, mode_str, "read")) .read else if (std.mem.eql(u8, mode_str, "write")) .write else return ParseError.InvalidCommandPayload;
+        return .{ .map_async = .{ .bytes = bytes, .mode = mode } };
+    }
 
     return ParseError.UnknownCommandKind;
 }

@@ -5,7 +5,7 @@ This folder documents practical operating procedures for `fawn/dawn-research` so
 ## 1) Setup and initialization
 
 - Ensure scripts are executable:
-  - `chmod +x scripts/fetch_gerrit_changes.sh scripts/run_dawn_driverradar.sh`
+  - `chmod +x ./scripts/fetch_gerrit_changes.sh ./scripts/run_dawn_driverradar.sh`
 - Run from repository root of this folder or pass absolute paths.
 - Required tools: `bash`, `curl`, `jq`, `python3`.
 - Baseline directory is `data/` by default.

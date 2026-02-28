@@ -145,13 +145,13 @@ Initial criterion is deterministic compatibility and observability, not performa
 
 Use wrappers under `nursery/chromium_webgpu_lane/scripts` to avoid hardcoded paths:
 
-1. `preflight.sh`
+1. `scripts/preflight.sh`
    - checks host dependencies and resolves default Chrome + Doe library paths.
-2. `bringup-linux.sh`
+2. `scripts/bringup-linux.sh`
    - Linux bring-up wrapper for bootstrap -> fetch -> sync -> hooks -> build.
-3. `run-smoke.sh`
+3. `scripts/run-smoke.sh`
    - runs Playwright smoke harness with resolved `--chrome` and `--doe-lib`.
-4. `run-bench.sh`
+4. `scripts/run-bench.sh`
    - runs layered superset orchestrator with resolved `--chrome` and `--doe-lib`.
 
 ## Browser Smoke Harness

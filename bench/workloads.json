@@ -33,6 +33,7 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
+      "leftUploadSubmitEvery": 100,
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB"
     },
     {
@@ -50,6 +51,7 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
+      "leftUploadSubmitEvery": 10,
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB"
     },
     {

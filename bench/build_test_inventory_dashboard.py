@@ -460,6 +460,18 @@ def main() -> int:
         left_profiles, left_samples = extract_side_profiles(payload, "left", meta_cache)
         right_profiles, right_samples = extract_side_profiles(payload, "right", meta_cache)
 
+        if left_profiles and right_profiles:
+            left_apis = {profile.api for profile in left_profiles}
+            right_apis = {profile.api for profile in right_profiles}
+            if left_apis != right_apis:
+                skipped_files.append(
+                    {
+                        "path": str(source_path),
+                        "reason": f"API mismatch: left={left_apis}, right={right_apis}",
+                    }
+                )
+                continue
+
         entry = {
             "sourcePath": str(source_path),
             "outPath": payload.get("outPath", ""),

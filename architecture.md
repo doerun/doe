@@ -33,9 +33,18 @@ Fawn is benchmarked against external incumbents:
 
 These are baseline systems for measurement, not runtime dependencies.
 
-## 3. Verification Boundary (Proof ROI First)
+## 3. Verification Boundary (Dual Mode Support)
 
-Every quirk maps to:
+Fawn targets two distinct verification profiles, allowing the system to scale security boundaries based on the trust level of the workload:
+
+1. **Ahead-of-Time Verification Mode**:
+   - Lean mathematically proves properties offline; Zig executes specialized paths with zero hot-path validation branching.
+   - Designed for trusted, ahead-of-time validated inputs.
+2. **Runtime Verification Mode**:
+   - Zig handles all dynamic bounds-checking, sandboxing, and input validation dynamically at execution time.
+   - Designed for untrusted, dynamic execution (e.g., untrusted web content dropping into a Chromium-like environment).
+
+For Offline Lean Proofs, every quirk maps to:
 - one quirk class (`alignment`, `barrier`, `layout`, `driver_toggle`, `memory`)
 - one verification mode (`guard_only`, `lean_preferred`, `lean_required`)
 - optionally one Lean theorem pack (`WebGPU.Quirks.<Class>`)
@@ -97,6 +106,7 @@ When logic belongs in Zig:
 1. It is in the latency-critical path (`submit/encode/validation` hot loops).
 2. It benefits from compile-time specialization using known quirk/profile data.
 3. It requires explicit allocator control or bounded-memory behavior.
+4. It enforces dynamic sandbox constraints and bounds-checks for untrusted workloads in "Runtime Verification" mode.
 
 When logic should stay out of Zig:
 1. Policy-only gate rules (keep in config + Python/Lean boundary tooling).

@@ -140,7 +140,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--trace-semantic-parity-mode",
         choices=["off", "auto", "required"],
-        default="auto",
+        default="required",
         help="Semantic parity mode forwarded to trace gate execution.",
     )
     parser.add_argument(
@@ -1000,11 +1000,11 @@ def main() -> int:
                 manifest_outputs.append(claim_rehearsal_manifest_path)
             if cycle_gate_ran:
                 manifest_outputs.append(cycle_gate_report_path)
-            output_paths.write_run_manifest_for_outputs(
-                manifest_outputs,
-                manifest_payload,
-            )
-        return exc.returncode
+        output_paths.write_run_manifest_for_outputs(
+            manifest_outputs,
+            manifest_payload,
+        )
+        sys.exit(exc.returncode)
 
     if not args.dry_run:
         manifest_payload = {

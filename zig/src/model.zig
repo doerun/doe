@@ -57,6 +57,7 @@ pub const CommandKind = enum(u8) {
     surface_unconfigure,
     surface_release,
     async_diagnostics,
+    map_async,
 };
 
 pub const WGPUFlags = u64;
@@ -394,6 +395,16 @@ pub const AsyncDiagnosticsCommand = struct {
     feature_policy: AsyncDiagnosticsFeaturePolicy = .strict,
 };
 
+pub const MapAsyncMode = enum {
+    read,
+    write,
+};
+
+pub const MapAsyncCommand = struct {
+    bytes: usize,
+    mode: MapAsyncMode = .write,
+};
+
 pub const Command = union(CommandKind) {
     upload: UploadCommand,
     copy_buffer_to_texture: CopyCommand,
@@ -414,6 +425,7 @@ pub const Command = union(CommandKind) {
     surface_unconfigure: SurfaceUnconfigureCommand,
     surface_release: SurfaceReleaseCommand,
     async_diagnostics: AsyncDiagnosticsCommand,
+    map_async: MapAsyncCommand,
 };
 
 pub const UseTemporaryBufferAction = struct {
@@ -602,6 +614,7 @@ pub fn command_kind(cmd: Command) CommandKind {
         .surface_unconfigure => .surface_unconfigure,
         .surface_release => .surface_release,
         .async_diagnostics => .async_diagnostics,
+        .map_async => .map_async,
     };
 }
 
@@ -626,6 +639,7 @@ pub fn command_kind_name(cmd: CommandKind) []const u8 {
         .surface_unconfigure => "surface_unconfigure",
         .surface_release => "surface_release",
         .async_diagnostics => "async_diagnostics",
+        .map_async => "map_async",
     };
 }
 

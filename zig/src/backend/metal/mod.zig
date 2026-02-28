@@ -125,6 +125,7 @@ fn command_status_message(command: model.Command) []const u8 {
         .surface_unconfigure => "metal surface_unconfigure command submitted",
         .surface_release => "metal surface_release command submitted",
         .async_diagnostics => "metal async_diagnostics command submitted",
+        .map_async => "metal map_async command submitted",
     };
 }
 
@@ -221,6 +222,9 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !u64 {
             try shader_artifact_manifest.emit_shader_artifact_manifest();
             try proc_table.build_proc_table();
             try proc_export.export_procs();
+        },
+        .map_async => {
+            try metal_sync.wait_for_completion();
         },
     }
 

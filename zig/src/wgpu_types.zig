@@ -93,9 +93,12 @@ pub const WGPUQueryType_Timestamp: WGPUQueryType = 0x00000002;
 
 pub const WGPUMapMode = WGPUFlags;
 pub const WGPUMapMode_Read: WGPUMapMode = 0x0000000000000001;
+pub const WGPUMapMode_Write: WGPUMapMode = 0x0000000000000002;
 
 pub const WGPUMapAsyncStatus = u32;
 pub const WGPUMapAsyncStatus_Success: WGPUMapAsyncStatus = 1;
+pub const WGPUBufferMapAsyncStatus = WGPUMapAsyncStatus;
+pub const WGPUBufferMapAsyncStatus_Success = WGPUMapAsyncStatus_Success;
 
 pub const WGPUStatus = u32;
 pub const WGPUStatus_Success: WGPUStatus = 1;
@@ -654,6 +657,7 @@ pub const FnWgpuCommandEncoderResolveQuerySet = *const fn (WGPUCommandEncoder, W
 pub const FnWgpuQuerySetRelease = *const fn (WGPUQuerySet) callconv(.c) void;
 pub const FnWgpuBufferMapAsync = *const fn (WGPUBuffer, WGPUMapMode, usize, usize, WGPUBufferMapCallbackInfo) callconv(.c) WGPUFuture;
 pub const FnWgpuBufferGetConstMappedRange = *const fn (WGPUBuffer, usize, usize) callconv(.c) ?*const anyopaque;
+pub const FnWgpuBufferGetMappedRange = *const fn (WGPUBuffer, usize, usize) callconv(.c) ?*anyopaque;
 pub const FnWgpuBufferUnmap = *const fn (WGPUBuffer) callconv(.c) void;
 
 pub const Procs = struct {
@@ -721,6 +725,7 @@ pub const Procs = struct {
     wgpuQuerySetRelease: FnWgpuQuerySetRelease,
     wgpuBufferMapAsync: FnWgpuBufferMapAsync,
     wgpuBufferGetConstMappedRange: FnWgpuBufferGetConstMappedRange,
+    wgpuBufferGetMappedRange: FnWgpuBufferGetMappedRange,
     wgpuBufferUnmap: FnWgpuBufferUnmap,
 };
 

@@ -86,9 +86,9 @@ def percentile(values: list[float], p: float) -> float:
 
 
 def percent_delta(left: float, right: float) -> float:
-    if right <= 0.0:
+    if left <= 0.0:
         return 0.0
-    return ((right - left) / right) * 100.0
+    return ((right / left) - 1.0) * 100.0
 
 
 def sample_stats(values: list[float]) -> dict[str, float]:
@@ -547,12 +547,14 @@ def generate_html(
         )
 
     table_rows: list[str] = []
+    speedup_rows: list[str] = []
     for analysis in analyses:
         left_stats = analysis.get("leftStatsMs", {})
         right_stats = analysis.get("rightStatsMs", {})
         delta = analysis.get("deltaPercent", {})
         comparable_text = "yes" if analysis.get("comparable") else "no"
-        table_rows.append(
+
+        row_html = (
             "<tr>"
             f"<td>{escape(str(analysis.get('id', '')))}</td>"
             f"<td>{escape(str(analysis.get('domain', '')))}</td>"
@@ -570,6 +572,45 @@ def generate_html(
             f"<td style='color:{pick_delta_color(delta.get('p95Percent'))};font-weight:600'>{fmt_pct(delta.get('p95Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p99Percent'))};font-weight:600'>{fmt_pct(delta.get('p99Percent'))}</td>"
             "</tr>"
+        )
+        if not analysis.get("comparable") and safe_float(delta.get("p50Percent", 0)) > 50.0:
+            speedup_rows.append(row_html)
+        else:
+            table_rows.append(row_html)
+
+    speedup_section = ""
+    if speedup_rows:
+        speedup_section = (
+            "<section class=\"panel\">\n"
+            "  <h2>Fawn Architectural Speedups (Non-Comparable Context)</h2>\n"
+            "  <div class=\"meta\">Workloads where Fawn bypasses C++ API overhead using native WebGPU/Zig features (e.g. multi_draw_indirect). Excluded from the strict Apples-to-Apples metrics.</div>\n"
+            "  <div class=\"table-wrap\">\n"
+            "    <table>\n"
+            "      <thead>\n"
+            "        <tr>\n"
+            "          <th>workload</th>\n"
+            "          <th>domain</th>\n"
+            "          <th>comparable</th>\n"
+            "          <th>left p10 ms</th>\n"
+            "          <th>left p50 ms</th>\n"
+            "          <th>left p95 ms</th>\n"
+            "          <th>left p99 ms</th>\n"
+            "          <th>right p10 ms</th>\n"
+            "          <th>right p50 ms</th>\n"
+            "          <th>right p95 ms</th>\n"
+            "          <th>right p99 ms</th>\n"
+            "          <th>delta p10</th>\n"
+            "          <th>delta p50</th>\n"
+            "          <th>delta p95</th>\n"
+            "          <th>delta p99</th>\n"
+            "        </tr>\n"
+            "      </thead>\n"
+            "      <tbody>\n"
+            f"        {''.join(speedup_rows)}\n"
+            "      </tbody>\n"
+            "    </table>\n"
+            "  </div>\n"
+            "</section>\n"
         )
 
     ecdf_source = analyses
@@ -744,8 +785,8 @@ def generate_html(
       </div>
     </section>
     <section class="panel">
-      <h2>Workload Table</h2>
-      <div class="meta">Fast-end metric shown is p10.</div>
+      <h2>Workload Table (Strict Baseline)</h2>
+      <div class="meta">Fast-end metric shown is p10. Excludes non-comparable architectural speedups.</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -773,6 +814,7 @@ def generate_html(
         </table>
       </div>
     </section>
+    {speedup_section}
     <section class="panel">
       <h2>ECDF Overlays</h2>
       {"".join(ecdf_panels)}

@@ -3,6 +3,8 @@ const builtin = @import("builtin");
 const model = @import("model.zig");
 const types = @import("wgpu_types.zig");
 
+pub const BUFFER_MAP_ASYNC_KEY: u64 = 0xFFFF_FFFF_FFFF_FFE0;
+
 const DlInfo = extern struct {
     dli_fname: [*c]const u8,
     dli_fbase: ?*anyopaque,
@@ -205,6 +207,7 @@ pub fn loadProcs(lib: std.DynLib) !types.Procs {
         .wgpuQuerySetRelease = try loadProc(lib, "wgpuQuerySetRelease", types.FnWgpuQuerySetRelease),
         .wgpuBufferMapAsync = try loadProc(lib, "wgpuBufferMapAsync", types.FnWgpuBufferMapAsync),
         .wgpuBufferGetConstMappedRange = try loadProc(lib, "wgpuBufferGetConstMappedRange", types.FnWgpuBufferGetConstMappedRange),
+        .wgpuBufferGetMappedRange = try loadProc(lib, "wgpuBufferGetMappedRange", types.FnWgpuBufferGetMappedRange),
         .wgpuBufferUnmap = try loadProc(lib, "wgpuBufferUnmap", types.FnWgpuBufferUnmap),
     };
     preloadOptionalApiSurfaceSymbols(lib);

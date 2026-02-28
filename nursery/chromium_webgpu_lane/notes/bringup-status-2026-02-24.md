@@ -161,7 +161,7 @@ If build fails, inspect the first concrete failed action:
 
 ```bash
 cd nursery/chromium_webgpu_lane/src
-tail -n 200 out/fawn_debug/siso_failed_commands.sh
+ls -1 out/fawn_debug | rg failed_commands
 ```
 
 Then ensure lane-local tool path is active and resume build:

@@ -47,11 +47,19 @@ Then use Lean where it has highest leverage and keep Zig hot paths explicit and 
 
 ## Security Position
 
-Formal methods complement isolation, they do not replace it.
+Formal methods complement isolation, they do not replace it. Fawn supports two distinct security modes depending on the trust profile of the workload:
 
-- proofs reduce logic defect surface
-- deterministic boundaries enforce admissibility
-- sandbox/process boundaries remain required where deployment needs them
+### 1. Ahead-of-Time Verification (Lean + Zig)
+- Intended for trusted, pre-verified workloads (e.g., verified WASM games, known-safe assets).
+- Lean mathematically proves invariants and bounds-checks offline.
+- Zig executes the provably-safe workload with zero runtime validation overhead for maximum performance.
+
+### 2. Runtime Verification (Full Zig)
+- Intended for untrusted, dynamic web content (Chromium-style drop-in).
+- Zig forcefully handles dynamic bounds-checking and sandbox enforcement at runtime.
+- Formal proofs reduce the logic defect surface of the runtime itself, while deterministic boundaries enforce input admissibility.
+
+In both modes, sandbox/process boundaries remain required where deployment topologies demand them.
 
 ## Standalone Execution Model
 

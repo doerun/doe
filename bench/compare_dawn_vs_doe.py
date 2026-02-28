@@ -29,6 +29,7 @@ from compare_dawn_vs_doe_modules import claimability as claimability_mod
 from compare_dawn_vs_doe_modules import comparability as comparability_mod
 from compare_dawn_vs_doe_modules import reporting as reporting_mod
 from compare_dawn_vs_doe_modules import timing_selection as timing_selection_mod
+from compare_dawn_vs_doe_modules import runner as runner_mod
 
 MAX_RSS_MARKER = "__DOE_MAXRSS_KB__:"
 DEFAULT_WORKLOADS_PATH = "fawn/bench/workloads.json"
@@ -136,42 +137,15 @@ class BenchmarkMethodologyPolicy:
 
 
 def file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while True:
-            chunk = handle.read(1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
-    return digest.hexdigest()
+    return runner_mod.file_sha256(path)
 
 
 def json_sha256(value: Any) -> str:
-    payload = json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=True,
-    ).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
+    return runner_mod.json_sha256(value)
 
 
 def collect_trace_meta_hashes(command_samples: list[dict[str, Any]]) -> list[dict[str, str]]:
-    by_path: dict[str, str] = {}
-    for sample in command_samples:
-        if not isinstance(sample, dict):
-            continue
-        raw_path = sample.get("traceMetaPath")
-        if not isinstance(raw_path, str) or not raw_path.strip():
-            continue
-        path = raw_path.strip()
-        if path in by_path:
-            continue
-        trace_meta_path = Path(path)
-        if not trace_meta_path.exists():
-            continue
-        by_path[path] = file_sha256(trace_meta_path)
-    return [{"path": path, "sha256": by_path[path]} for path in sorted(by_path.keys())]
+    return runner_mod.collect_trace_meta_hashes(command_samples)
 
 
 def parse_args() -> argparse.Namespace:
@@ -727,15 +701,14 @@ def parse_comparability_candidate(
     return enabled, tier, notes
 
 
-def dawn_metric_median_ms(trace_meta: dict[str, Any], metric_name: str) -> float | None:
-    medians = trace_meta.get("dawnMetricMediansMs")
-    if not isinstance(medians, dict):
-        return None
-    value = safe_float(medians.get(metric_name))
-    if value is None or value < 0.0:
-        return None
-    return value
+def safe_float(value: Any) -> float | None:
+    return runner_mod.safe_float(value)
 
+def parse_int(value: Any) -> int | None:
+    return runner_mod.parse_int(value)
+
+def dawn_metric_median_ms(trace_meta: dict[str, Any], metric_name: str) -> float | None:
+    return runner_mod.dawn_metric_median_ms(trace_meta, metric_name)
 
 def extract_timing_metrics_ms(
     trace_meta: dict[str, Any],
@@ -743,121 +716,25 @@ def extract_timing_metrics_ms(
     wall_ms: float,
     cpu_ms: float,
 ) -> dict[str, float | None]:
-    dawn_wall_ms = dawn_metric_median_ms(trace_meta, "wall_time")
-    dawn_cpu_ms = dawn_metric_median_ms(trace_meta, "cpu_time")
-    dawn_gpu_ms = dawn_metric_median_ms(trace_meta, "gpu_time")
-
-    fawn_gpu_total_ns = safe_int(trace_meta.get("executionGpuTimestampTotalNs"), default=0)
-    fawn_gpu_ms = (
-        float(fawn_gpu_total_ns) / 1_000_000.0
-        if fawn_gpu_total_ns > 0
-        else None
-    )
-
-    return {
-        "wall_time": dawn_wall_ms if dawn_wall_ms is not None else wall_ms,
-        "cpu_time": dawn_cpu_ms if dawn_cpu_ms is not None else cpu_ms,
-        "gpu_time": dawn_gpu_ms if dawn_gpu_ms is not None else fawn_gpu_ms,
-    }
-
+    return runner_mod.extract_timing_metrics_ms(trace_meta, wall_ms=wall_ms, cpu_ms=cpu_ms)
 
 def normalize_timing_metrics_ms(
     metrics_ms: dict[str, float | None],
     divisor: float,
 ) -> dict[str, float | None]:
-    normalized: dict[str, float | None] = {}
-    for key, value in metrics_ms.items():
-        if value is None:
-            normalized[key] = None
-            continue
-        normalized[key] = value / divisor if divisor > 0.0 else value
-    return normalized
-
+    return runner_mod.normalize_timing_metrics_ms(metrics_ms, divisor)
 
 def read_process_rss_kb(pid: int) -> int:
-    status_path = Path("/proc") / str(pid) / "status"
-    try:
-        lines = status_path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return 0
-    for line in lines:
-        if not line.startswith("VmRSS:"):
-            continue
-        parts = line.split()
-        if len(parts) < 2:
-            return 0
-        parsed = parse_int(parts[1])
-        return parsed if parsed is not None else 0
-    return 0
-
+    return runner_mod.read_process_rss_kb(pid)
 
 def read_rocm_vram_snapshot() -> tuple[dict[str, int] | None, str | None]:
-    cmd = ["rocm-smi", "--showmeminfo", "vram", "--json"]
-    try:
-        proc = subprocess.run(
-            cmd,
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=2.0,
-        )
-    except FileNotFoundError:
-        return None, "rocm-smi not found"
-    except subprocess.TimeoutExpired:
-        return None, "rocm-smi timeout"
-
-    if proc.returncode != 0:
-        err = proc.stderr.strip() or f"rocm-smi exited with rc={proc.returncode}"
-        return None, err
-
-    try:
-        payload = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        return None, "rocm-smi returned invalid JSON"
-
-    if not isinstance(payload, dict):
-        return None, "rocm-smi returned non-object payload"
-
-    used_total = 0
-    total_total = 0
-    card_count = 0
-    for card_payload in payload.values():
-        if not isinstance(card_payload, dict):
-            continue
-        used = parse_int(card_payload.get("VRAM Total Used Memory (B)"))
-        total = parse_int(card_payload.get("VRAM Total Memory (B)"))
-        if used is None or total is None:
-            continue
-        used_total += used
-        total_total += total
-        card_count += 1
-
-    if card_count == 0:
-        return None, "rocm-smi payload missing VRAM totals"
-
-    return {
-        "usedBytes": used_total,
-        "totalBytes": total_total,
-        "cardCount": card_count,
-    }, None
-
+    return runner_mod.read_rocm_vram_snapshot()
 
 def assert_json_object(payload: Any, *, context: str, path: Path) -> dict[str, Any]:
-    if not isinstance(payload, dict):
-        raise ValueError(f"{context}: invalid JSON object in {path}")
-    return payload
-
+    return runner_mod.assert_json_object(payload, context=context, path=path)
 
 def parse_trace_meta(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
-    try:
-        return assert_json_object(load_json(path), context="trace-meta", path=path)
-    except json.JSONDecodeError:
-        return {}
-    except ValueError:
-        return {}
-
+    return runner_mod.parse_trace_meta(path)
 
 def materialize_repeated_commands(
     commands_path: str,
@@ -866,87 +743,30 @@ def materialize_repeated_commands(
     out_dir: Path,
     side_name: str,
 ) -> str:
-    if repeat <= 1:
-        return commands_path
-
-    source_path = Path(commands_path)
-    if not source_path.exists():
-        raise ValueError(
-            f"command repeat requested but commands file does not exist: {commands_path}"
-        )
-
-    try:
-        payload = json.loads(source_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise ValueError(
-            f"invalid commands JSON for repeat expansion ({commands_path}): {exc}"
-        ) from exc
-
-    if not isinstance(payload, list):
-        raise ValueError(
-            f"command repeat requires a JSON array of commands, got {type(payload).__name__} in {commands_path}"
-        )
-
-    expanded = payload * repeat
-    generated = out_dir / f"{side_name}.commands.repeat{repeat}.json"
-    generated.parent.mkdir(parents=True, exist_ok=True)
-    generated.write_text(json.dumps(expanded, indent=2) + "\n", encoding="utf-8")
-    return str(generated)
-
+    return runner_mod.materialize_repeated_commands(commands_path, repeat=repeat, out_dir=out_dir, side_name=side_name)
 
 def command_for(
     template: str,
     *,
-    workload: Workload,
+    workload: Any,
     workload_id: str,
     commands_path: str,
     trace_jsonl: Path,
     trace_meta: Path,
     extra_args: list[str],
 ) -> list[str]:
-    ctx = {
-        "commands": shlex.quote(commands_path),
-        "quirks": shlex.quote(workload.quirks_path),
-        "vendor": shlex.quote(workload.vendor),
-        "api": shlex.quote(workload.api),
-        "family": shlex.quote(workload.family),
-        "driver": shlex.quote(workload.driver),
-        "workload": shlex.quote(workload_id),
-        "dawn_filter": shlex.quote(workload.dawn_filter),
-        "trace_jsonl": shlex.quote(str(trace_jsonl)),
-        "trace_meta": shlex.quote(str(trace_meta)),
-        "extra_args": shlex.join(extra_args),
-    }
-    resolved = template.format(**ctx)
-    return shlex.split(resolved)
+    return runner_mod.command_for(
+        template,
+        workload=workload,
+        workload_id=workload_id,
+        commands_path=commands_path,
+        trace_jsonl=trace_jsonl,
+        trace_meta=trace_meta,
+        extra_args=extra_args,
+    )
 
-
-@functools.lru_cache(maxsize=1)
 def max_rss_time_prefix() -> tuple[str, ...]:
-    gtime_bin = shutil.which("gtime")
-    if gtime_bin:
-        return (gtime_bin, "-f", f"{MAX_RSS_MARKER}%M")
-
-    time_bin = Path("/usr/bin/time")
-    if not time_bin.exists():
-        return ()
-
-    # GNU time supports "-f". BSD time on macOS does not.
-    probe = [str(time_bin), "-f", "%M", "/usr/bin/true"]
-    try:
-        result = subprocess.run(
-            probe,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-    except OSError:
-        return ()
-
-    if result.returncode != 0:
-        return ()
-    return (str(time_bin), "-f", f"{MAX_RSS_MARKER}%M")
-
+    return runner_mod.max_rss_time_prefix()
 
 def run_once(
     command: list[str],
@@ -955,147 +775,7 @@ def run_once(
     resource_sample_ms: int,
     resource_sample_target_count: int,
 ) -> tuple[float, float, int, dict[str, Any]]:
-    time_prefix = max_rss_time_prefix()
-    wrapped_command = [*time_prefix, *command] if time_prefix else command
-
-    cpu_usage_before = py_resource.getrusage(py_resource.RUSAGE_CHILDREN)
-    start = time.perf_counter()
-    with tempfile.TemporaryFile(mode="w+b") as stdout_capture, tempfile.TemporaryFile(
-        mode="w+b"
-    ) as stderr_capture:
-        popen = subprocess.Popen(
-            wrapped_command,
-            stdout=stdout_capture,
-            stderr=stderr_capture,
-        )
-
-        sample_interval_s = max(resource_sample_ms, 1) / 1000.0
-        process_peak_rss_kb = 0
-        sample_count = 0
-        sampling_truncated = False
-
-        gpu_probe_error: str | None = None
-        gpu_before: dict[str, int] | None = None
-        gpu_peak: dict[str, int] | None = None
-
-        if gpu_memory_probe == "rocm-smi":
-            gpu_before, gpu_probe_error = read_rocm_vram_snapshot()
-            if gpu_before is not None:
-                gpu_peak = dict(gpu_before)
-
-        while True:
-            process_running = popen.poll() is None
-            if process_running:
-                process_peak_rss_kb = max(process_peak_rss_kb, read_process_rss_kb(popen.pid))
-            sample_count += 1
-
-            if gpu_memory_probe == "rocm-smi":
-                snapshot, err = read_rocm_vram_snapshot()
-                if snapshot is not None:
-                    if gpu_peak is None:
-                        gpu_peak = dict(snapshot)
-                    elif snapshot.get("usedBytes", 0) > gpu_peak.get("usedBytes", 0):
-                        gpu_peak = dict(snapshot)
-                elif gpu_probe_error is None and err:
-                    gpu_probe_error = err
-
-            if resource_sample_target_count > 0 and sample_count >= resource_sample_target_count:
-                if process_running:
-                    sampling_truncated = True
-                    popen.wait()
-                break
-
-            if resource_sample_target_count <= 0 and not process_running:
-                break
-
-            if resource_sample_target_count > 0:
-                time.sleep(sample_interval_s)
-                continue
-
-            try:
-                popen.wait(timeout=sample_interval_s)
-            except subprocess.TimeoutExpired:
-                pass
-
-        popen.wait()
-        stdout_capture.seek(0)
-        stderr_capture.seek(0)
-        stdout = stdout_capture.read().decode("utf-8", errors="replace")
-        stderr = stderr_capture.read().decode("utf-8", errors="replace")
-
-        elapsed_ms = (time.perf_counter() - start) * 1000.0
-        cpu_usage_after = py_resource.getrusage(py_resource.RUSAGE_CHILDREN)
-        process_cpu_ms = max(
-            0.0,
-            (
-                (cpu_usage_after.ru_utime + cpu_usage_after.ru_stime)
-                - (cpu_usage_before.ru_utime + cpu_usage_before.ru_stime)
-            )
-            * 1000.0,
-        )
-
-        stderr_lines: list[str] = []
-        stderr_text = stderr if isinstance(stderr, str) else ""
-        for raw_line in stderr_text.splitlines():
-            line = raw_line.strip()
-            if line.startswith(MAX_RSS_MARKER):
-                parsed_rss = parse_int(line[len(MAX_RSS_MARKER):].strip())
-                if parsed_rss is not None:
-                    process_peak_rss_kb = max(process_peak_rss_kb, parsed_rss)
-                continue
-            stderr_lines.append(raw_line)
-        sanitized_stderr = "\n".join(stderr_lines).strip()
-
-        gpu_after: dict[str, int] | None = None
-        if gpu_memory_probe == "rocm-smi":
-            gpu_after, err = read_rocm_vram_snapshot()
-            if gpu_after is not None:
-                if gpu_peak is None or gpu_after.get("usedBytes", 0) > gpu_peak.get("usedBytes", 0):
-                    gpu_peak = dict(gpu_after)
-            elif gpu_probe_error is None and err:
-                gpu_probe_error = err
-
-        resource: dict[str, Any] = {
-            "resourceSampleMs": max(resource_sample_ms, 1),
-            "resourceSampleCount": sample_count,
-            "resourceSampleTargetCount": max(resource_sample_target_count, 0),
-            "resourceSamplingTruncated": sampling_truncated,
-            "processWallMs": elapsed_ms,
-            "processCpuMs": process_cpu_ms,
-            "processPeakRssKb": process_peak_rss_kb,
-            "gpuMemoryProbe": gpu_memory_probe,
-            "gpuMemoryProbeAvailable": False,
-        }
-
-        if gpu_memory_probe == "rocm-smi":
-            resource["gpuMemoryProbeError"] = gpu_probe_error or ""
-            if gpu_before is not None:
-                resource["gpuVramUsedBeforeBytes"] = gpu_before.get("usedBytes", 0)
-                resource["gpuVramTotalBytes"] = gpu_before.get("totalBytes", 0)
-                resource["gpuVramCardCount"] = gpu_before.get("cardCount", 0)
-            if gpu_after is not None:
-                resource["gpuVramUsedAfterBytes"] = gpu_after.get("usedBytes", 0)
-                if "gpuVramTotalBytes" not in resource:
-                    resource["gpuVramTotalBytes"] = gpu_after.get("totalBytes", 0)
-                    resource["gpuVramCardCount"] = gpu_after.get("cardCount", 0)
-            if gpu_peak is not None:
-                resource["gpuVramUsedPeakBytes"] = gpu_peak.get("usedBytes", 0)
-            if gpu_before is not None and gpu_peak is not None:
-                resource["gpuVramDeltaPeakFromBeforeBytes"] = max(
-                    0,
-                    gpu_peak.get("usedBytes", 0) - gpu_before.get("usedBytes", 0),
-                )
-                resource["gpuMemoryProbeAvailable"] = True
-
-        if popen.returncode != 0:
-            stdout_text = stdout.strip() if isinstance(stdout, str) else ""
-            raise RuntimeError(
-                f"command failed (rc={popen.returncode}): {' '.join(command)}\n"
-                f"stdout={stdout_text}\nstderr={sanitized_stderr}"
-            )
-
-        return elapsed_ms, process_cpu_ms, popen.returncode, resource
-
+    return runner_mod.run_once(command, gpu_memory_probe=gpu_memory_probe, resource_sample_ms=resource_sample_ms, resource_sample_target_count=resource_sample_target_count)
 
 def run_workload(
     name: str,
@@ -1117,182 +797,26 @@ def run_workload(
     benchmark_policy: BenchmarkMethodologyPolicy,
     emit_shell: bool,
 ) -> dict[str, Any]:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    commands_path = materialize_repeated_commands(
-        workload.commands_path,
-        repeat=command_repeat,
+    return runner_mod.run_workload(
+        name=name,
+        template=template,
+        workload=workload,
+        iterations=iterations,
+        warmup=warmup,
         out_dir=out_dir,
-        side_name=name,
+        gpu_memory_probe=gpu_memory_probe,
+        resource_sample_ms=resource_sample_ms,
+        resource_sample_target_count=resource_sample_target_count,
+        timing_divisor=timing_divisor,
+        command_repeat=command_repeat,
+        ignore_first_ops=ignore_first_ops,
+        upload_buffer_usage=upload_buffer_usage,
+        upload_submit_every=upload_submit_every,
+        inject_upload_runtime_flags=inject_upload_runtime_flags,
+        required_timing_class=required_timing_class,
+        benchmark_policy=benchmark_policy,
+        emit_shell=emit_shell,
     )
-    timings: list[float] = []
-    run_records: list[dict[str, Any]] = []
-    sample_meta: dict[str, Any] = {}
-    last_meta = {}
-
-    for run_idx in range(max(iterations, 0)):
-        trace_jsonl = out_dir / f"{name}.run{run_idx:03d}.ndjson"
-        trace_meta = out_dir / f"{name}.run{run_idx:03d}.meta.json"
-        effective_extra_args = list(workload.extra_args)
-        if inject_upload_runtime_flags and workload.domain == "upload" and "doe-zig-runtime" in template:
-            effective_extra_args.extend(
-                [
-                    "--upload-buffer-usage",
-                    upload_buffer_usage,
-                    "--upload-submit-every",
-                    str(upload_submit_every),
-                ]
-            )
-        command = command_for(
-            template,
-            workload=workload,
-            workload_id=workload.id,
-            commands_path=commands_path,
-            trace_jsonl=trace_jsonl,
-            trace_meta=trace_meta,
-            extra_args=effective_extra_args,
-        )
-        if emit_shell:
-            run_records.append(
-                {
-                    "runIndex": run_idx,
-                    "command": " ".join(command),
-                    "commandRepeat": command_repeat,
-                    "uploadIgnoreFirstOps": ignore_first_ops,
-                    "uploadBufferUsage": upload_buffer_usage,
-                    "uploadSubmitEvery": upload_submit_every,
-                    "timingNormalizationDivisor": timing_divisor,
-                }
-            )
-            continue
-
-        if run_idx < warmup:
-            run_once(
-                command,
-                gpu_memory_probe=gpu_memory_probe,
-                resource_sample_ms=resource_sample_ms,
-                resource_sample_target_count=resource_sample_target_count,
-            )
-            continue
-
-        elapsed_ms, process_cpu_ms, rc, resource = run_once(
-            command,
-            gpu_memory_probe=gpu_memory_probe,
-            resource_sample_ms=resource_sample_ms,
-            resource_sample_target_count=resource_sample_target_count,
-        )
-        sample_meta = parse_trace_meta(trace_meta)
-        measured_ms, measured_source, measured_meta = pick_measured_timing_ms(
-            wall_ms=elapsed_ms,
-            trace_meta=sample_meta,
-            trace_jsonl=trace_jsonl,
-            required_timing_class=required_timing_class,
-            benchmark_policy=benchmark_policy,
-            workload_domain=workload.domain,
-        )
-        measured_ms, measured_source, measured_meta = maybe_override_render_encode_timing(
-            workload=workload,
-            measured_ms=measured_ms,
-            measured_source=measured_source,
-            measured_meta=measured_meta,
-            trace_meta=sample_meta,
-            required_timing_class=required_timing_class,
-        )
-        ignore_meta: dict[str, Any] = {}
-        if required_timing_class != "process-wall" and ignore_first_ops > 0:
-            measured_ms, measured_source, ignore_meta = maybe_adjust_timing_for_ignored_first_ops(
-                measured_ms=measured_ms,
-                measured_source=measured_source,
-                trace_jsonl=trace_jsonl,
-                ignore_first_ops=ignore_first_ops,
-            )
-        measured_raw_ms = measured_ms
-        effective_timing_divisor = timing_divisor
-        if required_timing_class == "process-wall":
-            effective_timing_divisor = 1.0
-        measured_ms = measured_raw_ms / effective_timing_divisor
-        timing_metrics_raw_ms = extract_timing_metrics_ms(
-            sample_meta,
-            wall_ms=elapsed_ms,
-            cpu_ms=process_cpu_ms,
-        )
-        timing_metrics_normalized_ms = normalize_timing_metrics_ms(
-            timing_metrics_raw_ms,
-            effective_timing_divisor,
-        )
-        measured_meta["timingNormalizationDivisor"] = effective_timing_divisor
-        measured_meta["timingConfiguredDivisor"] = timing_divisor
-        measured_meta["timingRawMs"] = measured_raw_ms
-        measured_meta["timingNormalizedMs"] = measured_ms
-        measured_meta["uploadBufferUsage"] = upload_buffer_usage
-        measured_meta["uploadSubmitEvery"] = upload_submit_every
-        if ignore_meta:
-            measured_meta.update(ignore_meta)
-        timings.append(measured_ms)
-        run_records.append(
-            {
-                "runIndex": run_idx,
-                "command": command,
-                "elapsedMs": elapsed_ms,
-                "measuredRawMs": measured_raw_ms,
-                "measuredMs": measured_ms,
-                "timingSource": measured_source,
-                "timing": measured_meta,
-                "traceJsonlPath": str(trace_jsonl),
-                "traceMetaPath": str(trace_meta),
-                "returnCode": rc,
-                "resource": resource,
-                "timingMetricsRawMs": timing_metrics_raw_ms,
-                "timingMetricsNormalizedMs": timing_metrics_normalized_ms,
-                "traceMeta": sample_meta,
-                "commandRepeat": command_repeat,
-                "uploadIgnoreFirstOps": ignore_first_ops,
-                "uploadBufferUsage": upload_buffer_usage,
-                "uploadSubmitEvery": upload_submit_every,
-                "timingNormalizationDivisor": timing_divisor,
-            }
-        )
-        last_meta = sample_meta
-
-    if emit_shell:
-        return {
-            "commandSamples": run_records,
-            "stats": format_stats([]),
-            "timingsMs": [],
-            "lastMeta": {},
-            "resourceStats": summarize_resource_stats(run_records),
-            "timingMetricsRawStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsRawMs"),
-            "timingMetricsNormalizedStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsNormalizedMs"),
-        }
-
-    if not timings:
-        return {
-            "commandSamples": run_records,
-            "stats": format_stats([]),
-            "lastMeta": last_meta,
-            "resourceStats": summarize_resource_stats(run_records),
-            "timingMetricsRawStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsRawMs"),
-            "timingMetricsNormalizedStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsNormalizedMs"),
-        }
-
-    timing_sources = sorted({str(sample.get("timingSource", "")) for sample in run_records})
-    timing_classes = sorted(
-        {
-            classify_timing_source(str(sample.get("timingSource", "")))
-            for sample in run_records
-            if isinstance(sample.get("timingSource"), str)
-        }
-    )
-    return {
-        "commandSamples": run_records,
-        "stats": format_stats(timings),
-        "timingsMs": timings,
-        "lastMeta": last_meta,
-        "timingSources": timing_sources,
-        "timingClasses": timing_classes,
-        "resourceStats": summarize_resource_stats(run_records),
-        "timingMetricsRawStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsRawMs"),
-        "timingMetricsNormalizedStatsMs": summarize_timing_metric_stats(run_records, "timingMetricsNormalizedMs"),
-    }
 
 
 def load_workloads(
@@ -1760,6 +1284,7 @@ def main() -> int:
             "meanPercent": percent_delta(safe_float(left_stats["meanMs"]) or 0.0, safe_float(right_stats["meanMs"]) or 0.0),
         }
         comparability = compare_assessment(
+            workload_id=workload.id,
             workload_comparable=workload.comparable,
             workload_domain=workload.domain,
             left=left,
@@ -1800,10 +1325,11 @@ def main() -> int:
                 }
             )
 
-        if left_stats["count"] > 0:
-            overall_left.extend([safe_float(v) for v in left_timings if safe_float(v) is not None])
-        if right_stats["count"] > 0:
-            overall_right.extend([safe_float(v) for v in right_timings if safe_float(v) is not None])
+        if comparability.get("comparable"):
+            if left_stats["count"] >= 7:
+                overall_left.extend([safe_float(v) for v in left_timings if safe_float(v) is not None])
+            if right_stats["count"] >= 7:
+                overall_right.extend([safe_float(v) for v in right_timings if safe_float(v) is not None])
 
         left_trace_meta_hashes = collect_trace_meta_hashes(left.get("commandSamples", []))
         right_trace_meta_hashes = collect_trace_meta_hashes(right.get("commandSamples", []))

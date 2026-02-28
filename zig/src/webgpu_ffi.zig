@@ -633,7 +633,7 @@ pub const WebGPUBackend = struct {
         };
     }
 
-    fn waitForQueueProcessEvents(self: *Self) !void {
+    pub fn waitForQueueProcessEvents(self: *Self) !void {
         if (self.procs == null) return error.ProceduralNotReady;
 
         var done_state = types.QueueSubmitState{};

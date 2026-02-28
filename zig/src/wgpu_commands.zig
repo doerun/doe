@@ -8,6 +8,7 @@ const render_commands = @import("wgpu_render_commands.zig");
 const extended_commands = @import("wgpu_extended_commands.zig");
 const async_diagnostics_command = @import("wgpu_async_diagnostics_command.zig");
 const ffi = @import("webgpu_ffi.zig");
+const sandbox = @import("wgpu_sandbox_guard.zig");
 const Backend = ffi.WebGPUBackend;
 const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB;
 const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA;
@@ -22,6 +23,23 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
             .status_message = "backend-not-initialized",
         };
     }
+
+    sandbox.validateCommand(command) catch |err| {
+        return .{
+            .status = .@"error",
+            .status_message = switch (err) {
+                error.UploadExceedsAddressSpace => "upload bytes exceed address space",
+                error.UploadZeroBytes => "upload command has zero bytes",
+                error.CopyZeroBytes => "copy bytes must be > 0",
+                error.CopyInvalidDirection => "invalid copy direction dimensions or format mismatch",
+                error.CopyInvalidDimensions => "copy command missing valid dimensions",
+                error.DispatchZeroDimensions => "dispatch dimensions must be non-zero",
+                error.KernelDispatchZeroDimensions => "kernel_dispatch dimensions must be non-zero",
+                error.KernelDispatchMissingMarker => "kernel_dispatch requires a non-empty kernel marker",
+                error.KernelDispatchZeroRepeat => "kernel_dispatch repeat must be > 0",
+            },
+        };
+    };
 
     self.clearUncapturedError();
     const result = try switch (command) {
@@ -98,6 +116,10 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
             try flushPendingUploads(self);
             break :blk async_diagnostics_command.executeAsyncDiagnostics(self, diagnostics);
         },
+        .map_async => |map_command| blk: {
+            try flushPendingUploads(self);
+            break :blk executeMapAsync(self, map_command);
+        },
     };
 
     if (self.takeUncapturedError()) |error_type| {
@@ -123,24 +145,107 @@ fn flushPendingUploads(self: *Backend) !void {
     self.upload_submit_pending = 0;
 }
 
+const MapAsyncContext = struct {
+    resolved: bool = false,
+    status: types.WGPUBufferMapAsyncStatus = undefined,
+};
+
+fn onMapBufferCallback(
+    status: types.WGPUMapAsyncStatus,
+    message: types.WGPUStringView,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) void {
+    _ = message;
+    _ = userdata2;
+    if (userdata1) |ptr| {
+        var context = @as(*MapAsyncContext, @ptrCast(@alignCast(ptr)));
+        context.status = status;
+        context.resolved = true;
+    }
+}
+
+fn executeMapAsync(self: *Backend, command: model.MapAsyncCommand) !types.NativeExecutionResult {
+    const setup_start_ns = std.time.nanoTimestamp();
+    const bytes = @as(u64, command.bytes);
+
+    const usage: types.WGPUBufferUsage = if (command.mode == .read)
+        types.WGPUBufferUsage_MapRead | types.WGPUBufferUsage_CopyDst
+    else
+        types.WGPUBufferUsage_MapWrite | types.WGPUBufferUsage_CopySrc;
+
+    const buffer = try resources.getOrCreateBuffer(self, loader.BUFFER_MAP_ASYNC_KEY, bytes, usage);
+    
+    // Unmap first in case it was mapped from a previous iteration
+    self.procs.?.wgpuBufferUnmap(buffer);
+
+    var map_context = MapAsyncContext{};
+    const mode_flag: types.WGPUMapMode = if (command.mode == .read) types.WGPUMapMode_Read else types.WGPUMapMode_Write;
+    
+    // Map the buffer
+    _ = self.procs.?.wgpuBufferMapAsync(
+        buffer,
+        mode_flag,
+        0,
+        bytes,
+        .{
+            .nextInChain = null,
+            .mode = types.WGPUCallbackMode_WaitAnyOnly,
+            .callback = onMapBufferCallback,
+            .userdata1 = &map_context,
+            .userdata2 = null,
+        },
+    );
+
+    const setup_end_ns = std.time.nanoTimestamp();
+
+    // Spin block wait for map_async completion
+    const submit_wait_start_ns = std.time.nanoTimestamp();
+    while (!map_context.resolved) {
+        // Yield to browser/Dawn queue to resolve futures
+        _ = try self.waitForQueueProcessEvents();
+    }
+    const submit_wait_end_ns = std.time.nanoTimestamp();
+
+    if (map_context.status != types.WGPUBufferMapAsyncStatus_Success) {
+        return .{
+            .status = .@"error",
+            .status_message = "buffer map async failed",
+        };
+    }
+
+    if (command.mode == .write) {
+        const mapped_ptr = self.procs.?.wgpuBufferGetMappedRange(buffer, 0, bytes);
+        if (mapped_ptr != null) {
+            // Write some dummy data zero payload to force page fault materialization
+            @memset(@as([*]u8, @ptrCast(mapped_ptr))[0..bytes], 0);
+        }
+    }
+
+    // Clean up map for next iteration (benchmarks map/unmap synchronously inside operations)
+    self.procs.?.wgpuBufferUnmap(buffer);
+
+    const setup_ns = if (setup_end_ns > setup_start_ns) @as(u64, @intCast(setup_end_ns - setup_start_ns)) else 0;
+    const submit_wait_ns = if (submit_wait_end_ns > submit_wait_start_ns) @as(u64, @intCast(submit_wait_end_ns - submit_wait_start_ns)) else 0;
+
+    return .{
+        .status = .ok,
+        .status_message = "buffer map resolved synchronously",
+        .setup_ns = setup_ns,
+        .submit_wait_ns = submit_wait_ns,
+    };
+}
+
 fn executeUpload(self: *Backend, upload: model.UploadCommand) !types.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     const bytes = @as(u64, upload.bytes);
-    if (bytes == 0) {
-        return .{ .status = .unsupported, .status_message = "upload command has zero bytes" };
-    }
 
     const usage = switch (self.upload_buffer_usage_mode) {
         .copy_dst_copy_src => types.WGPUBufferUsage_CopyDst | types.WGPUBufferUsage_CopySrc,
         .copy_dst => types.WGPUBufferUsage_CopyDst,
     };
     const upload_buffer = try resources.getOrCreateBuffer(self, loader.BUFFER_UPLOAD_KEY, bytes, usage);
-    const bytes_usize = std.math.cast(usize, bytes) orelse {
-        return .{
-            .status = .@"error",
-            .status_message = "upload bytes exceed address space",
-        };
-    };
+    const bytes_usize = std.math.cast(usize, bytes) orelse unreachable;
 
     if (bytes_usize > self.upload_scratch.len) {
         if (self.upload_scratch.len > 0) {
@@ -175,56 +280,6 @@ fn executeUpload(self: *Backend, upload: model.UploadCommand) !types.NativeExecu
 
 fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionResult {
     const bytes = @as(u64, copy.bytes);
-    if (bytes == 0) {
-        return .{
-            .status = .unsupported,
-            .status_message = "copy bytes must be > 0",
-        };
-    }
-
-    switch (copy.direction) {
-        .buffer_to_buffer => {
-            if (copy.src.kind != .buffer or copy.dst.kind != .buffer) {
-                return .{ .status = .unsupported, .status_message = "copy_buffer_to_buffer requires src and dst resources to be buffers" };
-            }
-        },
-        .buffer_to_texture => {
-            if (copy.src.kind != .buffer or copy.dst.kind != .texture) {
-                return .{ .status = .unsupported, .status_message = "buffer_to_texture requires a buffer source and texture destination" };
-            }
-        },
-        .texture_to_buffer => {
-            if (copy.src.kind != .texture or copy.dst.kind != .buffer) {
-                return .{ .status = .unsupported, .status_message = "texture_to_buffer requires a texture source and buffer destination" };
-            }
-        },
-        .texture_to_texture => {
-            if (copy.src.kind != .texture or copy.dst.kind != .texture) {
-                return .{ .status = .unsupported, .status_message = "texture_to_texture requires both source and destination textures" };
-            }
-        },
-    }
-    switch (copy.direction) {
-        .buffer_to_texture => {
-            if (!hasValidTextureExtent(copy.dst)) {
-                return .{ .status = .unsupported, .status_message = "buffer_to_texture requires non-zero texture extent" };
-            }
-        },
-        .texture_to_buffer => {
-            if (!hasValidTextureExtent(copy.src)) {
-                return .{ .status = .unsupported, .status_message = "texture_to_buffer requires non-zero texture extent" };
-            }
-        },
-        .texture_to_texture => {
-            if (!hasValidTextureExtent(copy.src) or !hasValidTextureExtent(copy.dst)) {
-                return .{ .status = .unsupported, .status_message = "texture_to_texture requires non-zero texture extents" };
-            }
-            if (!hasMatchingTextureExtent(copy.src, copy.dst)) {
-                return .{ .status = .unsupported, .status_message = "texture_to_texture requires matching source/destination extents" };
-            }
-        },
-        .buffer_to_buffer => {},
-    }
 
     const procs = self.procs orelse return error.ProceduralNotReady;
 
@@ -390,12 +445,6 @@ fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.NativeEx
 }
 
 fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.NativeExecutionResult {
-    if (dispatch.x == 0 and dispatch.y == 0 and dispatch.z == 0) {
-        return .{
-            .status = .unsupported,
-            .status_message = "dispatch dimensions must be non-zero",
-        };
-    }
     return executeKernelDispatchKernel(self, "builtin:noop", "main", dispatch.x, dispatch.y, dispatch.z, 1, 0, false, .{
         .source = loader.BUILTIN_KERNEL_DEFAULT_SOURCE,
         .owned = false,
@@ -404,15 +453,6 @@ fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.Nativ
 }
 
 fn executeKernelDispatch(self: *Backend, kernel: model.KernelDispatchCommand) !types.NativeExecutionResult {
-    if (kernel.x == 0 and kernel.y == 0 and kernel.z == 0) {
-        return .{ .status = .unsupported, .status_message = "kernel_dispatch dimensions must be non-zero" };
-    }
-    if (kernel.kernel.len == 0) {
-        return .{ .status = .unsupported, .status_message = "kernel_dispatch requires a non-empty kernel marker" };
-    }
-    if (kernel.repeat == 0) {
-        return .{ .status = .unsupported, .status_message = "kernel_dispatch repeat must be > 0" };
-    }
     const source = resolveKernelSource(self, kernel.kernel) catch |err| {
         const message = switch (err) {
             error.MissingKernelSource => "kernel_dispatch has no resolvable WGSL source",

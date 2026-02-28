@@ -304,6 +304,15 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{diag_cmd.iterations});
             try stdout.writeAll("}\n");
         },
+        .map_async => |map_cmd| {
+            try stdout.writeAll("{\"seq\":");
+            try stdout.print("{}", .{seq});
+            try stdout.writeAll(",\"kind\":\"map_async\",\"mode\":\"");
+            try stdout.writeAll(@tagName(map_cmd.mode));
+            try stdout.writeAll("\",\"bytes\":");
+            try stdout.print("{}", .{map_cmd.bytes});
+            try stdout.writeAll("}\n");
+        },
     }
 }
 
@@ -421,6 +430,9 @@ pub fn printCommandSummary(stdout: anytype, target: model.Command, execute_resul
                 "  -> async_diagnostics targetFormat={} mode={s} iterations={}\\n",
                 .{ diag_cmd.target_format, @tagName(diag_cmd.mode), diag_cmd.iterations },
             );
+        },
+        .map_async => |map_cmd| {
+            try stdout.print("  -> map_async mode={s} bytes={}\\n", .{ @tagName(map_cmd.mode), map_cmd.bytes });
         },
     }
     if (execute_result) |exec| {

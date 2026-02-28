@@ -65,7 +65,7 @@
   - positive-tail percentile sets for local/release lanes
   - flake budget
   - retry policy taxonomy
-- `config/toolchains.json` now records shader toolchain contract identity (`toolchains.shaderMetal.contract`).
+- `config/toolchains.json` now records shader toolchain contract identity (`toolchains["shaderMetal"].contract`).
 
 ## 2026-02-25
 
@@ -266,7 +266,7 @@
 
 - `bench/compare_dawn_vs_doe.py` now emits workload contract metadata in reports:
   - `workloadContract.path`
-  - `workloadContract.sha256`
+  - `workloadContract["sha256"]`
 - `bench/check_full39_claim_readiness.py` now verifies:
   - exact comparable workload ID set against current workload contract
   - workload contract hash match when report metadata is present
@@ -304,9 +304,9 @@
   - validates chain continuity (`previousHash` -> `hash`)
   - recomputes row hashes deterministically from canonical JSON context
   - verifies context linkage to:
-    - `workloadContract.sha256`
-    - `configContract.sha256`
-    - `benchmarkPolicy.sha256`
+    - `workloadContract["sha256"]`
+    - `configContract["sha256"]`
+    - `benchmarkPolicy["sha256"]`
     - workload `traceMetaHashes` (`left`/`right`)
 - `bench/claim_gate.py` now enforces those hash-link invariants and fails
   claim lanes when linkage is missing/invalid.
