@@ -555,6 +555,12 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
 8. Keep remaining directional diagnostics macro-scoped and non-claim (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`).
 9. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
+10. Zig source file sharding — the following files exceed the 777-line limit and need splitting:
+    - `wgpu_commands.zig` (1050 lines)
+    - `webgpu_ffi.zig` (949 lines)
+    - `wgpu_types.zig` (818 lines)
+    - `wgpu_dropin_lib.zig` (810 lines)
+    - `command_json.zig` (797 lines)
 
 ## Performance Reliability Investigation (2026-02-21)
 

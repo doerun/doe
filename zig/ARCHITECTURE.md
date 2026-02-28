@@ -1,4 +1,4 @@
-# Fawn Zig Architecture
+# Doe Zig Architecture
 
 This document tracks the current Zig runtime topology in `fawn/zig/src`.
 It replaces the old `parser/dispatch/executor` module naming model.

@@ -1,4 +1,4 @@
-# Fawn Zig Module
+# Doe Zig Module
 
 Purpose:
 - produce specialization outputs from validated quirk sets
@@ -13,7 +13,7 @@ Decision rubric (when to use Zig):
 6. For incumbent-replacement/runtime paths, implement in Zig first, then remove branches only when Lean proofs let us hoist them out safely.
 
 Interop note:
-- initial integration target is Fawn's standalone runtime path
+- initial integration target is Doe's standalone runtime path
 - adapter/ABI paths are used only for side-by-side incumbent comparisons
 
 Style guide:
