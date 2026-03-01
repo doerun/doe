@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workloads": [
     {
-      "id": "p1_resource_table_immediates_macro_500",
+      "id": "ctr_resource_table_immediates_macro_500",
       "name": "p1 resource-table/immediates macro (500)",
       "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
       "domain": "p1-resource-table-macro",
@@ -24,7 +24,7 @@
       "benchmarkClass": "comparable"
     },
     {
-      "id": "render_draw_throughput_proxy",
+      "id": "exp_render_draw_throughput_proxy",
       "name": "render-draw-smoke",
       "description": "Local Vulkan render smoke",
       "commandsPath": "examples/draw_call_proxy_commands.json",

@@ -35,112 +35,112 @@ ADAPTER_FIELD_RE = re.compile(r'^\s*(?P<key>\w+):\s*(?P<value>.+?)\s*$')
 INCOMPATIBLE_DRIVER_RE = re.compile(r"Could not open device (?P<device>/dev/dri/[^:]+): Permission denied")
 AUTO_DISCOVER_TOKEN = "@autodiscover"
 AUTODISCOVER_WORKLOAD_PATTERNS: dict[str, tuple[str, str | None]] = {
-    "buffer_upload_1kb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1KB"),
-    "buffer_upload_64kb": ("BufferUploadPerf", "WriteBuffer_BufferSize_64KB"),
-    "buffer_upload_1mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1MB"),
-    "buffer_upload_4mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
-    "buffer_upload_16mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_16MB"),
-    "workgroup_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeAtomic"),
-    "workgroup_non_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeNonAtomic"),
-    "matrix_vector_multiply_32768x2048_f32": (
+    "par_buffer_upload_1kb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1KB"),
+    "par_buffer_upload_64kb": ("BufferUploadPerf", "WriteBuffer_BufferSize_64KB"),
+    "par_buffer_upload_1mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1MB"),
+    "par_buffer_upload_4mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
+    "par_buffer_upload_16mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_16MB"),
+    "par_workgroup_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeAtomic"),
+    "par_workgroup_non_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeNonAtomic"),
+    "par_matrix_vector_multiply_32768x2048_f32": (
         "MatrixVectorMultiplyPerf",
         "Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
     ),
-    "matrix_vector_multiply_32768x2048_f32_swizzle1": (
+    "par_matrix_vector_multiply_32768x2048_f32_swizzle1": (
         "MatrixVectorMultiplyPerf",
         "Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1",
     ),
-    "matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1": (
+    "par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1": (
         "MatrixVectorMultiplyPerf",
         "Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
     ),
-    "shader_compile_pipeline_stress": (
+    "par_shader_compile_pipeline_stress": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "render_draw_throughput_proxy": ("DrawCallPerf", None),
-    "render_draw_state_bindings": ("DrawCallPerf", "DynamicBindGroup"),
-    "render_draw_redundant_pipeline_bindings": (
+    "exp_render_draw_throughput_proxy": ("DrawCallPerf", None),
+    "par_render_draw_state_bindings": ("DrawCallPerf", "DynamicBindGroup"),
+    "par_render_draw_redundant_pipeline_bindings": (
         "DrawCallPerf",
         "RedundantPipeline_RedundantBindGroups",
     ),
-    "render_bundle_dynamic_bindings": ("DrawCallPerf", "DynamicBindGroup_RenderBundle"),
-    "render_bundle_dynamic_pipeline_bindings": (
+    "par_render_bundle_dynamic_bindings": ("DrawCallPerf", "DynamicBindGroup_RenderBundle"),
+    "par_render_bundle_dynamic_pipeline_bindings": (
         "DrawCallPerf",
         "DynamicPipeline_DynamicBindGroup_RenderBundle",
     ),
-    "draw_indexed_render_proxy": ("DrawCallPerf", "DynamicVertexBuffer_DrawIndexed"),
-    "texture_sampling_raster_proxy": ("SubresourceTrackingPerf", "arrayLayer_16_mipLevel_3"),
-    "texture_sampler_write_query_destroy_contract": (
+    "exp_draw_indexed_render_proxy": ("DrawCallPerf", "DynamicVertexBuffer_DrawIndexed"),
+    "exp_texture_sampling_raster_proxy": ("SubresourceTrackingPerf", "arrayLayer_16_mipLevel_3"),
+    "ctr_texture_sampler_write_query_destroy_contract": (
         "SubresourceTrackingPerf",
         "arrayLayer_16_mipLevel_3",
     ),
-    "texture_sampler_write_query_destroy_contract_mip8": (
+    "ctr_texture_sampler_write_query_destroy_contract_mip8": (
         "SubresourceTrackingPerf",
         "arrayLayer_16_mipLevel_8",
     ),
-    "async_pipeline_diagnostics_contract": (
+    "ctr_async_pipeline_diagnostics_contract": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "p1_capability_introspection_contract": (
+    "ctr_capability_introspection_contract": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "p1_resource_table_immediates_contract": (
+    "ctr_resource_table_immediates_contract": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "p2_lifecycle_refcount_contract": (
+    "ctr_lifecycle_refcount_contract": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "p1_capability_introspection_macro_500": (
+    "ctr_capability_introspection_macro_500": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "p1_resource_table_immediates_macro_500": (
+    "ctr_resource_table_immediates_macro_500": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "p2_lifecycle_refcount_macro_200": (
+    "ctr_lifecycle_refcount_macro_200": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "render_draw_throughput_macro_200k": ("DrawCallPerf", None),
-    "draw_indexed_render_macro_200k": ("DrawCallPerf", "DynamicVertexBuffer_DrawIndexed"),
-    "texture_sampler_write_query_destroy_macro_500": (
+    "exp_render_draw_throughput_macro_200k": ("DrawCallPerf", None),
+    "exp_draw_indexed_render_macro_200k": ("DrawCallPerf", "DynamicVertexBuffer_DrawIndexed"),
+    "ctr_texture_sampler_write_query_destroy_macro_500": (
         "SubresourceTrackingPerf",
         "arrayLayer_16_mipLevel_3",
     ),
-    "p0_resource_lifecycle_contract": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
-    "p0_compute_indirect_timestamp_contract": (
+    "ctr_resource_lifecycle_contract": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
+    "ctr_compute_indirect_timestamp_contract": (
         "WorkgroupAtomicPerf",
         "WorkgroupTypeAtomic",
     ),
-    "p0_render_multidraw_contract": ("DrawCallPerf", None),
-    "p0_render_multidraw_indexed_contract": ("DrawCallPerf", "DynamicVertexBuffer_DrawIndexed"),
-    "p0_render_pixel_local_storage_barrier_contract": (
+    "ctr_render_multidraw_contract": ("DrawCallPerf", None),
+    "ctr_render_multidraw_indexed_contract": ("DrawCallPerf", "DynamicVertexBuffer_DrawIndexed"),
+    "ctr_render_pixel_local_storage_barrier_contract": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "p0_render_pixel_local_storage_barrier_macro_500": (
+    "ctr_render_pixel_local_storage_barrier_macro_500": (
         "ShaderRobustnessPerf",
         "MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32",
     ),
-    "uniform_buffer_update_writebuffer_partial_single": (
+    "par_uniform_buffer_update_writebuffer_partial_single": (
         "UniformBufferUpdatePerf",
         "WriteBuffer_PartialSize_SingleUniformBuffer",
     ),
-    "zero_initialize_workgroup_memory_256": (
+    "par_zero_initialize_workgroup_memory_256": (
         "VulkanZeroInitializeWorkgroupMemoryExtensionTest",
         "workgroupSize_256",
     ),
-    "surface_presentation_contract": (
+    "ctr_surface_presentation_contract": (
         "ConcurrentExecutionTest",
         "ConcurrentExecutionType_RunSingle",
     ),
-    "concurrent_execution_single_contract": (
+    "ctr_concurrent_execution_single_contract": (
         "ConcurrentExecutionTest",
         "ConcurrentExecutionType_RunSingle",
     ),
@@ -490,7 +490,7 @@ def autodiscover_filter(dawn_binary: str, extra_args: list[str], workload: str) 
             score -= 2
         if "Null" in filter_name:
             score -= 2
-        if workload == "render_draw_throughput_proxy":
+        if workload == "exp_render_draw_throughput_proxy":
             score -= filter_name.count("__")
         return (score, -len(filter_name))
 

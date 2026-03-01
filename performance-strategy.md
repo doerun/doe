@@ -87,8 +87,8 @@ For default Dawn-vs-Doe runs (`left=doe`, `right=dawn`):
 ## Near-Term Optimization Priorities
 
 1. Align upload timing-source semantics so claim runs are methodologically stable.
-2. Eliminate `buffer_upload_64kb` bimodality (submit-wait spikes + setup variance).
-3. Isolate remaining steady-state hotspots (next focus after 64KB reliability: `buffer_upload_1mb`).
+2. Eliminate `par_buffer_upload_64kb` bimodality (submit-wait spikes + setup variance).
+3. Isolate remaining steady-state hotspots (next focus after 64KB reliability: `par_buffer_upload_1mb`).
 4. Remove steady-state allocator churn from upload paths.
 5. Keep upload path allocation-light and reuse resources/encoders aggressively.
 6. Tune submit cadence by size/profile with explicit config fields.
@@ -107,7 +107,7 @@ For default Dawn-vs-Doe runs (`left=doe`, `right=dawn`):
 
 ## 64KB Upload Finding (2026-02-21)
 
-Investigation outcome for AMD Vulkan `buffer_upload_64kb`:
+Investigation outcome for AMD Vulkan `par_buffer_upload_64kb`:
 
 1. `leftCommandRepeat=50`, `leftUploadSubmitEvery=50`, `leftIgnoreFirstOps=1` showed strong bimodality and negative tails in repeated runs.
 2. Switching `leftIgnoreFirstOps` changed deltas dramatically, confirming high measurement-policy sensitivity.

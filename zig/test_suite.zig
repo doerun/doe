@@ -1,3 +1,15 @@
+const metal_compute_encode_test = @import("tests/metal/metal_compute_encode_test.zig");
+const metal_copy_encode_test = @import("tests/metal/metal_copy_encode_test.zig");
+const metal_device_queue_test = @import("tests/metal/metal_device_queue_test.zig");
+const metal_instance_test = @import("tests/metal/metal_instance_test.zig");
+const metal_mod_integration_test = @import("tests/metal/metal_mod_integration_test.zig");
+const metal_pipeline_cache_test = @import("tests/metal/metal_pipeline_cache_test.zig");
+const metal_render_encode_test = @import("tests/metal/metal_render_encode_test.zig");
+const metal_shader_artifact_manifest_test = @import("tests/metal/metal_shader_artifact_manifest_test.zig");
+const metal_surface_present_test = @import("tests/metal/metal_surface_present_test.zig");
+const metal_sync_semantics_test = @import("tests/metal/metal_sync_semantics_test.zig");
+const metal_timing_semantics_test = @import("tests/metal/metal_timing_semantics_test.zig");
+const metal_upload_path_test = @import("tests/metal/metal_upload_path_test.zig");
 const vulkan_compute_encode_test = @import("tests/vulkan/vulkan_compute_encode_test.zig");
 const vulkan_copy_encode_test = @import("tests/vulkan/vulkan_copy_encode_test.zig");
 const vulkan_device_queue_test = @import("tests/vulkan/vulkan_device_queue_test.zig");
@@ -12,6 +24,18 @@ const vulkan_timing_semantics_test = @import("tests/vulkan/vulkan_timing_semanti
 const vulkan_upload_path_test = @import("tests/vulkan/vulkan_upload_path_test.zig");
 
 comptime {
+    _ = metal_compute_encode_test;
+    _ = metal_copy_encode_test;
+    _ = metal_device_queue_test;
+    _ = metal_instance_test;
+    _ = metal_mod_integration_test;
+    _ = metal_pipeline_cache_test;
+    _ = metal_render_encode_test;
+    _ = metal_shader_artifact_manifest_test;
+    _ = metal_surface_present_test;
+    _ = metal_sync_semantics_test;
+    _ = metal_timing_semantics_test;
+    _ = metal_upload_path_test;
     _ = vulkan_compute_encode_test;
     _ = vulkan_copy_encode_test;
     _ = vulkan_device_queue_test;

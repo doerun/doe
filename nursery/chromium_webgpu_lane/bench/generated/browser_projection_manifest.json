@@ -9,7 +9,7 @@
   "sourceWorkloadCount": 40,
   "rows": [
     {
-      "sourceWorkloadId": "buffer_upload_1kb",
+      "sourceWorkloadId": "par_buffer_upload_1kb",
       "sourceWorkloadName": "buffer-upload 1KB",
       "domain": "upload",
       "projectionClass": "high",
@@ -22,7 +22,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "buffer_upload_64kb",
+      "sourceWorkloadId": "par_buffer_upload_64kb",
       "sourceWorkloadName": "buffer-upload 64KB",
       "domain": "upload",
       "projectionClass": "high",
@@ -35,7 +35,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "buffer_upload_1mb",
+      "sourceWorkloadId": "par_buffer_upload_1mb",
       "sourceWorkloadName": "buffer-upload 1MB",
       "domain": "upload",
       "projectionClass": "high",
@@ -48,7 +48,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "buffer_upload_4mb",
+      "sourceWorkloadId": "par_buffer_upload_4mb",
       "sourceWorkloadName": "buffer-upload 4MB",
       "domain": "upload",
       "projectionClass": "high",
@@ -61,7 +61,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "buffer_upload_16mb",
+      "sourceWorkloadId": "par_buffer_upload_16mb",
       "sourceWorkloadName": "buffer-upload 16MB",
       "domain": "upload",
       "projectionClass": "high",
@@ -74,7 +74,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "workgroup_atomic_1024",
+      "sourceWorkloadId": "par_workgroup_atomic_1024",
       "sourceWorkloadName": "workgroup-atomic 1024",
       "domain": "compute",
       "projectionClass": "high",
@@ -87,7 +87,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "workgroup_non_atomic_1024",
+      "sourceWorkloadId": "par_workgroup_non_atomic_1024",
       "sourceWorkloadName": "workgroup-non-atomic 1024",
       "domain": "compute",
       "projectionClass": "high",
@@ -100,7 +100,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "matrix_vector_multiply_32768x2048_f32",
+      "sourceWorkloadId": "par_matrix_vector_multiply_32768x2048_f32",
       "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (naive swizzle0)",
       "domain": "compute",
       "projectionClass": "high",
@@ -113,7 +113,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "matrix_vector_multiply_32768x2048_f32_swizzle1",
+      "sourceWorkloadId": "par_matrix_vector_multiply_32768x2048_f32_swizzle1",
       "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (naive swizzle1)",
       "domain": "compute",
       "projectionClass": "high",
@@ -126,7 +126,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+      "sourceWorkloadId": "par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
       "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (workgroupshared swizzle1)",
       "domain": "compute",
       "projectionClass": "high",
@@ -139,7 +139,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "shader_compile_pipeline_stress",
+      "sourceWorkloadId": "par_shader_compile_pipeline_stress",
       "sourceWorkloadName": "shader-compile pipeline stress",
       "domain": "pipeline",
       "projectionClass": "medium",
@@ -152,7 +152,7 @@
       "projectionNote": "Pipeline creation remains comparable but includes browser-side scheduling overhead."
     },
     {
-      "sourceWorkloadId": "render_draw_throughput_proxy",
+      "sourceWorkloadId": "exp_render_draw_throughput_proxy",
       "sourceWorkloadName": "render draw throughput",
       "domain": "render",
       "projectionClass": "medium",
@@ -165,7 +165,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "render_draw_state_bindings",
+      "sourceWorkloadId": "par_render_draw_state_bindings",
       "sourceWorkloadName": "render draw state/bindings",
       "domain": "render",
       "projectionClass": "medium",
@@ -178,7 +178,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "render_draw_redundant_pipeline_bindings",
+      "sourceWorkloadId": "par_render_draw_redundant_pipeline_bindings",
       "sourceWorkloadName": "render redundant pipeline/bindings",
       "domain": "render",
       "projectionClass": "medium",
@@ -191,7 +191,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "render_bundle_dynamic_bindings",
+      "sourceWorkloadId": "par_render_bundle_dynamic_bindings",
       "sourceWorkloadName": "render bundle dynamic bindings",
       "domain": "render-bundle",
       "projectionClass": "medium",
@@ -204,7 +204,7 @@
       "projectionNote": "Render bundle throughput projected with browser submission overhead."
     },
     {
-      "sourceWorkloadId": "render_bundle_dynamic_pipeline_bindings",
+      "sourceWorkloadId": "par_render_bundle_dynamic_pipeline_bindings",
       "sourceWorkloadName": "render bundle dynamic pipeline+bindings",
       "domain": "render-bundle",
       "projectionClass": "medium",
@@ -217,7 +217,7 @@
       "projectionNote": "Render bundle throughput projected with browser submission overhead."
     },
     {
-      "sourceWorkloadId": "draw_indexed_render_proxy",
+      "sourceWorkloadId": "exp_draw_indexed_render_proxy",
       "sourceWorkloadName": "draw indexed render proxy",
       "domain": "render",
       "projectionClass": "medium",
@@ -230,7 +230,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "texture_sampling_raster_proxy",
+      "sourceWorkloadId": "exp_texture_sampling_raster_proxy",
       "sourceWorkloadName": "texture sampling/raster",
       "domain": "texture-raster",
       "projectionClass": "medium",
@@ -243,7 +243,7 @@
       "projectionNote": "Texture sampling+raster projection includes browser canvas integration costs."
     },
     {
-      "sourceWorkloadId": "texture_sampler_write_query_destroy_contract",
+      "sourceWorkloadId": "ctr_texture_sampler_write_query_destroy_contract",
       "sourceWorkloadName": "texture sampler/write/query/destroy contract",
       "domain": "texture-contract",
       "projectionClass": "high",
@@ -256,7 +256,7 @@
       "projectionNote": "Texture write/query/destroy semantics map directly to browser WebGPU APIs."
     },
     {
-      "sourceWorkloadId": "texture_sampler_write_query_destroy_contract_mip8",
+      "sourceWorkloadId": "ctr_texture_sampler_write_query_destroy_contract_mip8",
       "sourceWorkloadName": "texture sampler/write/query/destroy contract (mip8)",
       "domain": "texture-contract",
       "projectionClass": "high",
@@ -269,7 +269,7 @@
       "projectionNote": "Texture write/query/destroy semantics map directly to browser WebGPU APIs."
     },
     {
-      "sourceWorkloadId": "async_pipeline_diagnostics_contract",
+      "sourceWorkloadId": "ctr_async_pipeline_diagnostics_contract",
       "sourceWorkloadName": "async pipeline diagnostics contract",
       "domain": "pipeline-async",
       "projectionClass": "medium",
@@ -282,7 +282,7 @@
       "projectionNote": "Async pipeline APIs are comparable but sensitive to browser event-loop scheduling."
     },
     {
-      "sourceWorkloadId": "p1_capability_introspection_contract",
+      "sourceWorkloadId": "ctr_capability_introspection_contract",
       "sourceWorkloadName": "p1 capability introspection contract",
       "domain": "p1-capability",
       "projectionClass": "non_projectable",
@@ -295,7 +295,7 @@
       "projectionNote": "Internal capability contract lane; not a browser API parity signal."
     },
     {
-      "sourceWorkloadId": "p1_resource_table_immediates_contract",
+      "sourceWorkloadId": "ctr_resource_table_immediates_contract",
       "sourceWorkloadName": "p1 resource-table/immediates contract",
       "domain": "p1-resource-table",
       "projectionClass": "non_projectable",
@@ -308,7 +308,7 @@
       "projectionNote": "Internal resource-table contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p2_lifecycle_refcount_contract",
+      "sourceWorkloadId": "ctr_lifecycle_refcount_contract",
       "sourceWorkloadName": "p2 lifecycle/refcount contract",
       "domain": "p2-lifecycle",
       "projectionClass": "non_projectable",
@@ -321,7 +321,7 @@
       "projectionNote": "Internal lifecycle/refcount contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p1_capability_introspection_macro_500",
+      "sourceWorkloadId": "ctr_capability_introspection_macro_500",
       "sourceWorkloadName": "p1 capability introspection macro (500)",
       "domain": "p1-capability-macro",
       "projectionClass": "non_projectable",
@@ -334,7 +334,7 @@
       "projectionNote": "Internal capability macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p1_resource_table_immediates_macro_500",
+      "sourceWorkloadId": "ctr_resource_table_immediates_macro_500",
       "sourceWorkloadName": "p1 resource-table/immediates macro (500)",
       "domain": "p1-resource-table-macro",
       "projectionClass": "non_projectable",
@@ -347,7 +347,7 @@
       "projectionNote": "Internal resource-table macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p2_lifecycle_refcount_macro_200",
+      "sourceWorkloadId": "ctr_lifecycle_refcount_macro_200",
       "sourceWorkloadName": "p2 lifecycle/refcount macro (200)",
       "domain": "p2-lifecycle-macro",
       "projectionClass": "non_projectable",
@@ -360,7 +360,7 @@
       "projectionNote": "Internal lifecycle macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "render_draw_throughput_macro_200k",
+      "sourceWorkloadId": "exp_render_draw_throughput_macro_200k",
       "sourceWorkloadName": "render draw throughput macro (200k draws)",
       "domain": "render-macro",
       "projectionClass": "medium",
@@ -373,7 +373,7 @@
       "projectionNote": "Macro render loops are projected as component-level browser runs."
     },
     {
-      "sourceWorkloadId": "draw_indexed_render_macro_200k",
+      "sourceWorkloadId": "exp_draw_indexed_render_macro_200k",
       "sourceWorkloadName": "draw indexed macro (200k draws)",
       "domain": "render-macro",
       "projectionClass": "medium",
@@ -386,7 +386,7 @@
       "projectionNote": "Macro render loops are projected as component-level browser runs."
     },
     {
-      "sourceWorkloadId": "texture_sampler_write_query_destroy_macro_500",
+      "sourceWorkloadId": "ctr_texture_sampler_write_query_destroy_macro_500",
       "sourceWorkloadName": "texture contract macro (500 draws)",
       "domain": "texture-macro",
       "projectionClass": "medium",
@@ -399,7 +399,7 @@
       "projectionNote": "Texture macro loops project to browser API with non-trivial event-loop overhead."
     },
     {
-      "sourceWorkloadId": "p0_resource_lifecycle_contract",
+      "sourceWorkloadId": "ctr_resource_lifecycle_contract",
       "sourceWorkloadName": "p0 resource lifecycle contract",
       "domain": "p0-resource",
       "projectionClass": "non_projectable",
@@ -412,7 +412,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p0_compute_indirect_timestamp_contract",
+      "sourceWorkloadId": "ctr_compute_indirect_timestamp_contract",
       "sourceWorkloadName": "p0 compute indirect/timestamp contract",
       "domain": "p0-compute",
       "projectionClass": "non_projectable",
@@ -425,7 +425,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p0_render_multidraw_contract",
+      "sourceWorkloadId": "ctr_render_multidraw_contract",
       "sourceWorkloadName": "p0 render multidraw contract",
       "domain": "p0-render",
       "projectionClass": "non_projectable",
@@ -438,7 +438,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p0_render_multidraw_indexed_contract",
+      "sourceWorkloadId": "ctr_render_multidraw_indexed_contract",
       "sourceWorkloadName": "p0 render multidraw indexed contract",
       "domain": "p0-render",
       "projectionClass": "non_projectable",
@@ -451,7 +451,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p0_render_pixel_local_storage_barrier_contract",
+      "sourceWorkloadId": "ctr_render_pixel_local_storage_barrier_contract",
       "sourceWorkloadName": "p0 render pixel-local-storage barrier contract",
       "domain": "p0-render",
       "projectionClass": "non_projectable",
@@ -464,7 +464,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "p0_render_pixel_local_storage_barrier_macro_500",
+      "sourceWorkloadId": "ctr_render_pixel_local_storage_barrier_macro_500",
       "sourceWorkloadName": "p0 render pixel-local-storage barrier macro (500)",
       "domain": "p0-render-macro",
       "projectionClass": "non_projectable",
@@ -477,7 +477,7 @@
       "projectionNote": "Runtime contract macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "surface_presentation_contract",
+      "sourceWorkloadId": "ctr_surface_presentation_contract",
       "sourceWorkloadName": "surface presentation contract",
       "domain": "surface",
       "projectionClass": "medium",
@@ -490,7 +490,7 @@
       "projectionNote": "Surface presentation can be measured in browser, but includes presentation stack overhead."
     },
     {
-      "sourceWorkloadId": "concurrent_execution_single_contract",
+      "sourceWorkloadId": "ctr_concurrent_execution_single_contract",
       "sourceWorkloadName": "concurrent execution single-dispatch contract",
       "domain": "compute",
       "projectionClass": "high",
@@ -503,7 +503,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "uniform_buffer_update_writebuffer_partial_single",
+      "sourceWorkloadId": "par_uniform_buffer_update_writebuffer_partial_single",
       "sourceWorkloadName": "uniform buffer update (WriteBuffer partial single)",
       "domain": "render",
       "projectionClass": "medium",
@@ -516,7 +516,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "zero_initialize_workgroup_memory_256",
+      "sourceWorkloadId": "par_zero_initialize_workgroup_memory_256",
       "sourceWorkloadName": "zero-initialize workgroup memory (256)",
       "domain": "compute",
       "projectionClass": "high",

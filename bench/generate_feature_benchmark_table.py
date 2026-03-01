@@ -10,41 +10,41 @@ from pathlib import Path
 
 
 CAPABILITY_TO_WORKLOADS: dict[str, list[str]] = {
-    "queue_sync_mode": ["buffer_upload_64kb", "draw_indexed_render_proxy"],
-    "render_draw_offsets": ["render_draw_throughput_proxy"],
-    "render_draw_indexed": ["draw_indexed_render_proxy", "p0_render_multidraw_indexed_contract"],
+    "queue_sync_mode": ["par_buffer_upload_64kb", "exp_draw_indexed_render_proxy"],
+    "render_draw_offsets": ["exp_render_draw_throughput_proxy"],
+    "render_draw_indexed": ["exp_draw_indexed_render_proxy", "ctr_render_multidraw_indexed_contract"],
     "render_core_api_surface": [
-        "render_draw_throughput_proxy",
-        "render_draw_state_bindings",
-        "draw_indexed_render_proxy",
+        "exp_render_draw_throughput_proxy",
+        "par_render_draw_state_bindings",
+        "exp_draw_indexed_render_proxy",
     ],
     "render_pass_state_bindings": [
-        "render_draw_state_bindings",
-        "render_draw_redundant_pipeline_bindings",
+        "par_render_draw_state_bindings",
+        "par_render_draw_redundant_pipeline_bindings",
     ],
     "render_draw_encode_modes": [
-        "render_draw_throughput_proxy",
-        "render_bundle_dynamic_bindings",
+        "exp_render_draw_throughput_proxy",
+        "par_render_bundle_dynamic_bindings",
     ],
     "textured_render_workload_contract": [
-        "texture_sampling_raster_proxy",
-        "texture_sampler_write_query_destroy_contract",
-        "texture_sampler_write_query_destroy_contract_mip8",
+        "exp_texture_sampling_raster_proxy",
+        "ctr_texture_sampler_write_query_destroy_contract",
+        "ctr_texture_sampler_write_query_destroy_contract_mip8",
     ],
     "render_bundle_execution": [
-        "render_bundle_dynamic_bindings",
-        "render_bundle_dynamic_pipeline_bindings",
+        "par_render_bundle_dynamic_bindings",
+        "par_render_bundle_dynamic_pipeline_bindings",
     ],
-    "surface_presentation": ["surface_presentation_contract"],
-    "async_pipeline_diagnostics": ["async_pipeline_diagnostics_contract"],
+    "surface_presentation": ["ctr_surface_presentation_contract"],
+    "async_pipeline_diagnostics": ["ctr_async_pipeline_diagnostics_contract"],
     "render_pass_state_space": [
-        "render_draw_state_bindings",
-        "render_draw_redundant_pipeline_bindings",
-        "draw_indexed_render_proxy",
+        "par_render_draw_state_bindings",
+        "par_render_draw_redundant_pipeline_bindings",
+        "exp_draw_indexed_render_proxy",
     ],
     "timestamp_query_claimability": [
-        "p0_compute_indirect_timestamp_contract",
-        "p0_render_multidraw_contract",
+        "ctr_compute_indirect_timestamp_contract",
+        "ctr_render_multidraw_contract",
     ],
     "feature_buffer_map_extended_usages": [
         "buffer_map_readback_1kb",
@@ -67,42 +67,42 @@ CAPABILITY_TO_WORKLOADS: dict[str, list[str]] = {
         "draw_indirect_legacy_equivalent",
     ],
     "texture_query_assertions": [
-        "texture_sampler_write_query_destroy_contract",
-        "texture_sampler_write_query_destroy_contract_mip8",
+        "ctr_texture_sampler_write_query_destroy_contract",
+        "ctr_texture_sampler_write_query_destroy_contract_mip8",
     ],
-    "p0_buffer_destroy_and_barrier_clear": ["p0_resource_lifecycle_contract"],
-    "p0_compute_indirect_async_timestamp": ["p0_compute_indirect_timestamp_contract"],
+    "p0_buffer_destroy_and_barrier_clear": ["ctr_resource_lifecycle_contract"],
+    "p0_compute_indirect_async_timestamp": ["ctr_compute_indirect_timestamp_contract"],
     "p0_query_set_introspection_lifecycle": [
-        "p0_compute_indirect_timestamp_contract",
-        "p0_render_multidraw_contract",
-        "p0_render_multidraw_indexed_contract",
+        "ctr_compute_indirect_timestamp_contract",
+        "ctr_render_multidraw_contract",
+        "ctr_render_multidraw_indexed_contract",
     ],
     "p0_render_occlusion_multidraw_timestamp": [
-        "p0_render_multidraw_contract",
-        "p0_render_multidraw_indexed_contract",
+        "ctr_render_multidraw_contract",
+        "ctr_render_multidraw_indexed_contract",
     ],
-    "p0_device_destroy_lifecycle": ["p0_resource_lifecycle_contract"],
+    "p0_device_destroy_lifecycle": ["ctr_resource_lifecycle_contract"],
     "p0_render_pixel_local_storage_barrier": [
-        "p0_render_pixel_local_storage_barrier_contract",
-        "p0_render_pixel_local_storage_barrier_macro_500",
+        "ctr_render_pixel_local_storage_barrier_contract",
+        "ctr_render_pixel_local_storage_barrier_macro_500",
     ],
     "p1_capability_introspection_surface": [
-        "p1_capability_introspection_contract",
-        "p1_capability_introspection_macro_500",
+        "ctr_capability_introspection_contract",
+        "ctr_capability_introspection_macro_500",
     ],
     "p1_resource_table_immediates_surface": [
-        "p1_resource_table_immediates_contract",
-        "p1_resource_table_immediates_macro_500",
+        "ctr_resource_table_immediates_contract",
+        "ctr_resource_table_immediates_macro_500",
     ],
     "p2_lifecycle_addref_surface": [
-        "p2_lifecycle_refcount_contract",
-        "p2_lifecycle_refcount_macro_200",
+        "ctr_lifecycle_refcount_contract",
+        "ctr_lifecycle_refcount_macro_200",
     ],
 }
 
 FEATURE_INVENTORY_WORKLOADS = [
-    "p1_capability_introspection_contract",
-    "p1_capability_introspection_macro_500",
+    "ctr_capability_introspection_contract",
+    "ctr_capability_introspection_macro_500",
 ]
 
 

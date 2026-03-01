@@ -172,16 +172,15 @@ fn ensure_runtime_bootstrapped(self: *ZigVulkanBackend) !void {
 }
 
 fn submit_and_maybe_wait(self: *ZigVulkanBackend) !u64 {
+    const submit_start = try vulkan_timing.operation_timing_ns();
     try vulkan_queue.submit();
     if (self.queue_sync_mode == .per_command) {
-        const wait_start = try vulkan_timing.operation_timing_ns();
         switch (self.queue_wait_mode) {
             .process_events, .wait_any => try vulkan_sync.wait_for_completion(),
         }
-        const wait_end = try vulkan_timing.operation_timing_ns();
-        return ns_delta(wait_end, wait_start);
     }
-    return 0;
+    const submit_end = try vulkan_timing.operation_timing_ns();
+    return ns_delta(submit_end, submit_start);
 }
 
 fn upload_usage_mode(mode: webgpu.UploadBufferUsageMode) vulkan_upload_path.UploadUsageMode {
@@ -344,10 +343,21 @@ fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
 fn flush_queue(ctx: *anyopaque) anyerror!u64 {
     const self = cast(ctx);
     try ensure_runtime_bootstrapped(self);
-    const wait_start = try vulkan_timing.operation_timing_ns();
-    try vulkan_sync.wait_for_completion();
-    const wait_end = try vulkan_timing.operation_timing_ns();
-    return ns_delta(wait_end, wait_start);
+    var flush_ns: u64 = 0;
+
+    if (self.pending_upload_commands > 0) {
+        self.pending_upload_commands = 0;
+        flush_ns +|= try submit_and_maybe_wait(self);
+    }
+
+    if (self.queue_sync_mode == .deferred) {
+        const wait_start = try vulkan_timing.operation_timing_ns();
+        try vulkan_sync.wait_for_completion();
+        const wait_end = try vulkan_timing.operation_timing_ns();
+        flush_ns +|= ns_delta(wait_end, wait_start);
+    }
+
+    return flush_ns;
 }
 
 fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {

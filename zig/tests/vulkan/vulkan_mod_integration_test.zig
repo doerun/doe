@@ -41,6 +41,28 @@ test "vulkan backend upload behavior applies mode and submit cadence" {
     try std.testing.expectEqual(@as(u64, 2), vulkan_runtime_state.upload_copy_dst_calls());
 }
 
+test "vulkan backend flush_queue submits upload cadence tail in per-command mode" {
+    const backend = try vulkan_mod.ZigVulkanBackend.init(std.testing.allocator, test_profile(), null);
+    var iface = try backend.as_iface(std.testing.allocator, "test_upload_tail_flush", "test_policy_hash");
+    defer iface.deinit();
+
+    iface.set_upload_behavior(.copy_dst, 2);
+    iface.set_queue_sync_mode(.per_command);
+    vulkan_runtime_state.reset_state();
+
+    const first = try iface.execute_command(model.Command{
+        .upload = .{
+            .bytes = 256,
+            .align_bytes = 4,
+        },
+    });
+    try std.testing.expectEqual(@as(u64, 0), first.submit_wait_ns);
+
+    const flush_ns = try iface.flush_queue();
+    try std.testing.expect(flush_ns > 0);
+    try std.testing.expectEqual(@as(u64, 1), vulkan_runtime_state.upload_copy_dst_calls());
+}
+
 test "vulkan kernel_dispatch emits one manifest per command" {
     const result = try vulkan_mod.run_contract_path_for_test(
         model.Command{ .kernel_dispatch = .{

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workloads": [
     {
-      "id": "buffer_upload_1kb",
+      "id": "par_buffer_upload_1kb",
       "name": "buffer-upload 1KB",
       "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB.",
       "domain": "upload",
@@ -28,7 +28,7 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
     },
     {
-      "id": "buffer_upload_64kb",
+      "id": "par_buffer_upload_64kb",
       "name": "buffer-upload 64KB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 64KB.",
       "domain": "upload",
@@ -51,7 +51,7 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB"
     },
     {
-      "id": "buffer_upload_1mb",
+      "id": "par_buffer_upload_1mb",
       "name": "buffer-upload 1MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 1MB.",
       "domain": "upload",
@@ -74,7 +74,7 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB"
     },
     {
-      "id": "buffer_upload_4mb",
+      "id": "par_buffer_upload_4mb",
       "name": "buffer-upload 4MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 4MB.",
       "domain": "upload",
@@ -97,7 +97,7 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB"
     },
     {
-      "id": "buffer_upload_16mb",
+      "id": "par_buffer_upload_16mb",
       "name": "buffer-upload 16MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 16MB.",
       "domain": "upload",
@@ -120,7 +120,7 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB"
     },
     {
-      "id": "workgroup_atomic_1024",
+      "id": "par_workgroup_atomic_1024",
       "name": "workgroup-atomic 1024",
       "description": "Workgroup-atomic compute kernel with 1024 workgroups, 100 dispatches per step, matching Dawn WorkgroupAtomicPerf exactly.",
       "domain": "compute",
@@ -142,7 +142,7 @@
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
     },
     {
-      "id": "workgroup_non_atomic_1024",
+      "id": "par_workgroup_non_atomic_1024",
       "name": "workgroup-non-atomic 1024",
       "description": "Non-atomic workgroup compute kernel with 1024 workgroups, 100 dispatches per step, matching Dawn WorkgroupAtomicPerf non-atomic variant.",
       "domain": "compute",

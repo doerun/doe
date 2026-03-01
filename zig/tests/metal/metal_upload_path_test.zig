@@ -11,6 +11,6 @@ test "metal upload path runs" {
     try metal_instance.create_instance();
     try metal_adapter.select_adapter();
     try metal_device.create_device();
-    try staging_ring.reserve();
-    try upload_path.upload_once();
+    try staging_ring.reserve(1024);
+    try upload_path.upload_once(.copy_dst_copy_src, 1024);
 }

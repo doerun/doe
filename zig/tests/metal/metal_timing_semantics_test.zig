@@ -13,5 +13,5 @@ test "metal timing returns immediate timing sample" {
     try metal_device.create_device();
     try compute_encode.encode_compute();
     const ns = try timing.operation_timing_ns();
-    try std.testing.expectEqual(@as(u64, 7_500), ns);
+    try std.testing.expectEqual(@as(u64, 39_500), ns);
 }

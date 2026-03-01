@@ -565,7 +565,7 @@ pub fn main() !void {
     }
 
     if (execution_context) |*ctx| {
-        if (queue_sync_mode == .deferred) {
+        if (queue_sync_mode == .deferred or upload_submit_every > 1) {
             const flush_ns = try ctx.flushQueue();
             trace_summary.execution_submit_wait_total_ns += flush_ns;
         }

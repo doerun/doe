@@ -89,6 +89,11 @@ fn deinit(ctx: *anyopaque) void {
     allocator.destroy(self);
 }
 
+fn ns_delta(after: u64, before: u64) u64 {
+    if (after > before) return after - before;
+    return 0;
+}
+
 fn ensure_runtime_bootstrapped(self: *ZigMetalBackend) !void {
     if (self.runtime_bootstrapped) return;
     try metal_instance.create_instance();
@@ -101,6 +106,31 @@ fn is_dispatch_command(command: model.Command) bool {
     return switch (command) {
         .dispatch, .kernel_dispatch => true,
         else => false,
+    };
+}
+
+fn command_manifest_module(command: model.Command) []const u8 {
+    return switch (command) {
+        .upload => "upload",
+        .copy_buffer_to_texture => "copy_buffer_to_texture",
+        .barrier => "barrier",
+        .dispatch => "dispatch",
+        .kernel_dispatch => "kernel_dispatch",
+        .render_draw => "render_draw",
+        .sampler_create => "sampler_create",
+        .sampler_destroy => "sampler_destroy",
+        .texture_write => "texture_write",
+        .texture_query => "texture_query",
+        .texture_destroy => "texture_destroy",
+        .surface_create => "surface_create",
+        .surface_capabilities => "surface_capabilities",
+        .surface_configure => "surface_configure",
+        .surface_acquire => "surface_acquire",
+        .surface_present => "surface_present",
+        .surface_unconfigure => "surface_unconfigure",
+        .surface_release => "surface_release",
+        .async_diagnostics => "async_diagnostics",
+        .map_async => "map_async",
     };
 }
 
@@ -142,22 +172,46 @@ fn map_error_status(err: anyerror) webgpu.NativeExecutionStatus {
 }
 
 fn submit_and_maybe_wait(self: *ZigMetalBackend) !u64 {
+    const submit_start = try metal_timing.operation_timing_ns();
     try metal_queue.submit();
     if (self.queue_sync_mode == .per_command) {
         switch (self.queue_wait_mode) {
             .process_events, .wait_any => try metal_sync.wait_for_completion(),
         }
-        return try metal_timing.operation_timing_ns();
     }
-    return 0;
+    const submit_end = try metal_timing.operation_timing_ns();
+    return ns_delta(submit_end, submit_start);
 }
 
-fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !u64 {
+fn upload_usage_mode(mode: webgpu.UploadBufferUsageMode) upload_path.UploadUsageMode {
+    return switch (mode) {
+        .copy_dst_copy_src => .copy_dst_copy_src,
+        .copy_dst => .copy_dst,
+    };
+}
+
+fn submit_for_command(self: *ZigMetalBackend, command: model.Command) !u64 {
+    if (command == .upload and self.upload_submit_every > 1) {
+        self.pending_upload_commands +|= 1;
+        if (self.pending_upload_commands >= self.upload_submit_every) {
+            self.pending_upload_commands = 0;
+            return try submit_and_maybe_wait(self);
+        }
+        return 0;
+    }
+
+    self.pending_upload_commands = 0;
+    return try submit_and_maybe_wait(self);
+}
+
+fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
     metal_runtime_state.clear_manifest_telemetry();
+    metal_runtime_state.set_manifest_module(command_manifest_module(command));
     switch (command) {
-        .upload => {
-            try staging_ring.reserve();
-            try upload_path.upload_once();
+        .upload => |upload| {
+            const upload_bytes = @as(u64, @intCast(upload.bytes));
+            try staging_ring.reserve(upload_bytes);
+            try upload_path.upload_once(upload_usage_mode(self.upload_buffer_usage_mode), upload_bytes);
             try buffer.create_buffer();
         },
         .copy_buffer_to_texture => {
@@ -168,12 +222,10 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !u64 {
         .dispatch, .kernel_dispatch => {
             try compute_encode.encode_compute();
             try pipeline_cache.pipeline_cache_lookup();
-            try shader_artifact_manifest.emit_shader_artifact_manifest();
         },
         .render_draw => {
             try render_encode.encode_render();
             try pipeline_cache.pipeline_cache_lookup();
-            try shader_artifact_manifest.emit_shader_artifact_manifest();
         },
         .sampler_create => {
             try sampler.create_sampler();
@@ -219,7 +271,6 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !u64 {
             try wgsl_ingest.ingest_wgsl();
             try wgsl_to_msl_runner.run_wgsl_to_msl();
             try msl_compile_runner.run_msl_compile();
-            try shader_artifact_manifest.emit_shader_artifact_manifest();
             try proc_table.build_proc_table();
             try proc_export.export_procs();
         },
@@ -229,37 +280,48 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !u64 {
     }
 
     try shader_artifact_manifest.emit_shader_artifact_manifest();
-
-    if (command == .upload and self.upload_submit_every > 1) {
-        self.pending_upload_commands +|= 1;
-        if (self.pending_upload_commands >= self.upload_submit_every) {
-            self.pending_upload_commands = 0;
-            return try submit_and_maybe_wait(self);
-        }
-        return 0;
-    }
-
-    self.pending_upload_commands = 0;
-    return try submit_and_maybe_wait(self);
 }
 
 fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webgpu.NativeExecutionResult {
-    try ensure_runtime_bootstrapped(self);
-    const submit_wait_ns = route_runtime_command(self, command) catch |err| {
+    var setup_ns: u64 = 0;
+    if (!self.runtime_bootstrapped) {
+        const setup_start = try metal_timing.operation_timing_ns();
+        try ensure_runtime_bootstrapped(self);
+        const setup_end = try metal_timing.operation_timing_ns();
+        setup_ns = ns_delta(setup_end, setup_start);
+    }
+
+    const encode_start = try metal_timing.operation_timing_ns();
+    route_runtime_command(self, command) catch |err| {
         return .{
             .status = map_error_status(err),
             .status_message = @errorName(err),
+            .setup_ns = setup_ns,
         };
     };
-    const encode_ns = try metal_timing.operation_timing_ns();
+    const encode_end = try metal_timing.operation_timing_ns();
+    const encode_ns = ns_delta(encode_end, encode_start);
+
+    const submit_wait_ns = submit_for_command(self, command) catch |err| {
+        return .{
+            .status = map_error_status(err),
+            .status_message = @errorName(err),
+            .setup_ns = setup_ns,
+            .encode_ns = encode_ns,
+        };
+    };
     const dispatch_like = is_dispatch_command(command);
     const gpu_timestamp_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
     const gpu_timestamp_ns = if (gpu_timestamp_attempted and encode_ns > 0) encode_ns else 0;
+    const status_message = if (command == .upload and self.upload_submit_every > 1 and submit_wait_ns == 0)
+        "metal upload command queued"
+    else
+        command_status_message(command);
 
     return .{
         .status = .ok,
-        .status_message = command_status_message(command),
-        .setup_ns = 0,
+        .status_message = status_message,
+        .setup_ns = setup_ns,
         .encode_ns = encode_ns,
         .submit_wait_ns = submit_wait_ns,
         .dispatch_count = if (dispatch_like) 1 else 0,
@@ -313,15 +375,27 @@ fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
 fn flush_queue(ctx: *anyopaque) anyerror!u64 {
     const self = cast(ctx);
     try ensure_runtime_bootstrapped(self);
-    try metal_sync.wait_for_completion();
-    return try metal_timing.operation_timing_ns();
+    var flush_ns: u64 = 0;
+
+    if (self.pending_upload_commands > 0) {
+        self.pending_upload_commands = 0;
+        flush_ns +|= try submit_and_maybe_wait(self);
+    }
+
+    if (self.queue_sync_mode == .deferred) {
+        const wait_start = try metal_timing.operation_timing_ns();
+        try metal_sync.wait_for_completion();
+        const wait_end = try metal_timing.operation_timing_ns();
+        flush_ns +|= ns_delta(wait_end, wait_start);
+    }
+
+    return flush_ns;
 }
 
 fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     const self = cast(ctx);
-    _ = max_upload_bytes;
     try ensure_runtime_bootstrapped(self);
-    try staging_ring.reserve();
+    try staging_ring.reserve(max_upload_bytes);
 }
 
 const VTABLE = backend_iface.BackendVTable{

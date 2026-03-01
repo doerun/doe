@@ -16,12 +16,12 @@ AMD Vulkan comparison presets now include claimable comparable slices (local + r
 
 Benchmark contract coverage snapshot (2026-02-25 update):
 - `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `31` strict apples-to-apples comparable + `9` directional contracts.
-- Dawn DrawCallPerf now includes indexed coverage (`DynamicVertexBuffer_DrawIndexed`), and `p0_render_multidraw_indexed_contract` is restored to strict comparable (`comparable=true`).
+- Dawn DrawCallPerf now includes indexed coverage (`DynamicVertexBuffer_DrawIndexed`), and `ctr_render_multidraw_indexed_contract` is restored to strict comparable (`comparable=true`).
 - missing Dawn perf suites were added to AMD extended contracts: `MatrixVectorMultiplyPerf`, `UniformBufferUpdatePerf`, and `VulkanZeroInitializeWorkgroupMemoryExtensionTest`.
 - strict comparable lanes now fail fast for directional/proxy-labeled contracts and upload mixed-scope ignore-first timing derivations.
 - Dawn adapter filter resolution is now explicit-only (no `filters.default` fallback); missing workload mappings fail fast unless that workload is explicitly `@autodiscover`.
 - report ingestion tools (`build_baseline_dataset.py`, `build_test_inventory_dashboard.py`) now require conformant compare reports with canonical comparability obligations and valid `workloadContract.path/sha256` hash consistency.
-- `surface_presentation_contract` is explicitly directional-only (`comparable=false`); strict comparable lanes use `concurrent_execution_single_contract` for Dawn `ConcurrentExecutionTest ... RunSingle` apples-to-apples coverage.
+- `ctr_surface_presentation_contract` is explicitly directional-only (`comparable=false`); strict comparable lanes use `ctr_concurrent_execution_single_contract` for Dawn `ConcurrentExecutionTest ... RunSingle` apples-to-apples coverage.
 - adapter-agnostic strict preset added for this host class: `bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json`.
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
 - claim-lane governance is now hash-locked and machine-checked via `config/claim-cycle.active.json` + `bench/cycle_gate.py`, with release pipeline default wiring when claim gate is enabled.
@@ -35,12 +35,20 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - upload behavior knobs are now execution-effective end-to-end (`upload_buffer_usage_mode`, byte budgets via staging reserve) instead of stored-only fields.
   - `zig/src/backend/vulkan/vulkan_runtime_state.zig` now emits deterministic command-scoped manifest payloads (non-placeholder hashes) and sets initialization state explicitly in `create_instance`.
   - new/expanded correctness tests under `zig/tests/vulkan/` validate timing-bucket separation, upload mode/cadence behavior, manifest hash-chain semantics, and single-emission manifest behavior.
+  - submit-wait semantics were aligned with native baseline scope: Vulkan `submit_wait_ns` now includes queue submit time plus wait time when waiting is enabled, and records submit-only cost under deferred sync.
+  - upload cadence tail correctness is now explicit: final queue flush runs when upload cadence batching is active (`upload_submit_every > 1`), and Vulkan `flush_queue` submits pending upload batches before final wait.
+  - shader manifest `*Sha256` fields now use literal SHA-256 digests of deterministic artifact payload strings instead of non-cryptographic placeholder-style hashes.
+- Metal backend correctness hardening (2026-03-01):
+  - `zig/src/backend/metal/mod.zig` now separates encode timing from submit/wait timing using cumulative timing deltas, removes duplicate shader-manifest emission paths, and flushes pending upload cadence tails during final queue flush.
+  - Metal upload behavior knobs are now execution-effective in runtime path (`upload_buffer_usage_mode`, `upload_submit_every`, and prewarm byte budgets) via byte-aware staging reserve and mode-aware upload execution.
+  - `zig/src/backend/metal/metal_runtime_state.zig` now derives manifest `*Sha256` fields from literal SHA-256 artifact payload digests, records command-scoped manifest module tags, and persists manifest telemetry only after file write success.
+  - Metal tests are now wired into `zig/test_suite.zig` so `zig build test` exercises both Metal and Vulkan backend correctness paths.
 - final macOS Metal Dawn-vs-Doe evidence execution is now codified as an operator runbook:
   `docs/metal-macos-proof-bundle-runbook.md`
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
 - drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libdoe_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
-- native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `texture_sampling_raster_proxy` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
+- native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `exp_texture_sampling_raster_proxy` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
 
 ## Product implementation state (runtime outcomes)
 
@@ -136,7 +144,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 19. Runtime upload prewarm path is now wired in Zig native execution (`maxUploadBytes` prewarm before timed command loop) to reduce first-upload setup spikes.
 20. AMD Vulkan 64KB upload workload now uses size-specific repeat normalization (`leftCommandRepeat=500`, `leftTimingDivisor=500`, `leftIgnoreFirstOps=0`) for more stable per-op claim diagnostics.
 21. Comparability assessment now enforces workload contract comparability flags (`workload.comparable`); workloads marked non-comparable are always reported as non-comparable and strict mode fails fast when they are selected.
-22. `shader_compile_pipeline_stress` has been promoted to a comparable contract for AMD Vulkan using a fixed `ShaderRobustnessPerf` filter plus explicit 50-dispatch normalization (`leftTimingDivisor=50`) and Dawn-aligned kernel command shape.
+22. `par_shader_compile_pipeline_stress` has been promoted to a comparable contract for AMD Vulkan using a fixed `ShaderRobustnessPerf` filter plus explicit 50-dispatch normalization (`leftTimingDivisor=50`) and Dawn-aligned kernel command shape.
 23. Render/texture workload contracts now use explicit per-iteration normalization controls (`leftTimingDivisor`/`leftCommandRepeat`) to keep timing units consistent with Dawn-side workload semantics.
 24. AMD Vulkan matrix coverage now has config-first presets for release claims, extended comparable runs, and directional diagnostics:
 - `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json`
@@ -148,8 +156,8 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - command parser + model + runtime dispatch now accept `render_draw|draw|draw_call`
 - native backend lowers `render_draw` into real render-pass draw submission (not compute proxy)
 - benchmark draw workload command seed now uses `examples/draw_call_proxy_commands.json` `render_draw` contract
-26. Render throughput proxy workload contract is now comparable in the extended AMD matrix (`render_draw_throughput_proxy`).
-27. Texture/raster proxy workload contract is now comparable in the extended AMD matrix (`texture_sampling_raster_proxy`) with explicit command-repeat and timing-divisor controls.
+26. Render throughput proxy workload contract is now comparable in the extended AMD matrix (`exp_render_draw_throughput_proxy`).
+27. Texture/raster proxy workload contract is now comparable in the extended AMD matrix (`exp_texture_sampling_raster_proxy`) with explicit command-repeat and timing-divisor controls.
 28. Native `render_draw` now caches shader+render-pipeline entries by target format for multi-command runs:
 - repeated-command trace shows setup amortization from `2,380,709ns` on first row to `10,009ns` and `9,088ns` on subsequent rows
 - artifacts: `bench/out/render_draw_pipeline_cache.repeat.trace.jsonl`, `bench/out/render_draw_pipeline_cache.repeat.trace.meta.json`
@@ -228,24 +236,24 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - optional expected fields for width/height/depth/format/dimension/view-dimension/sample-count/usage are validated against runtime `wgpuTextureGet*` results with fail-fast mismatch taxonomy.
 52. Benchmark contract coverage for new WebGPU API slices is now expanded in `bench/workloads.amd.vulkan.extended.json` and `bench/workloads.json`:
 - strict comparable AMD extended matrix now includes render-pass state/binding workloads, render-bundle workloads, texture API contract workloads, draw-indexed proxy workload, and async pipeline diagnostics contract workload.
-- `render_draw_throughput_proxy` and `texture_sampling_raster_proxy` are promoted to comparable workload contracts in extended matrices.
-- surface lifecycle contract is explicitly tracked as directional-only (`surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
+- `exp_render_draw_throughput_proxy` and `exp_texture_sampling_raster_proxy` are promoted to comparable workload contracts in extended matrices.
+- surface lifecycle contract is explicitly tracked as directional-only (`ctr_surface_presentation_contract`) because Dawn perf suites do not expose a direct surface lifecycle benchmark contract across adapters.
 - new local adapter-agnostic strict config is available: `bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json`.
 - host requirement preflight is now explicit via `bench/preflight_bench_host.py`.
 53. Benchmark timing-source selection now rejects tiny submit-only dispatch-window measurements when encode/dispatch work is absent:
 - rejection threshold: dispatch window `<100us` and `<1%` of `executionTotalNs`.
 - fallback source is `doe-execution-total-ns`, with explicit metadata `dispatchWindowSelectionRejected`.
 54. AMD Vulkan comparable workload defaults were tuned for setup-amortized per-unit normalization:
-- `draw_indexed_render_proxy` now runs with `leftCommandRepeat=10`, `leftTimingDivisor=20000`, and `--queue-sync-mode deferred`.
-- `texture_sampler_write_query_destroy_contract` and `texture_sampler_write_query_destroy_contract_mip8` now run with `leftCommandRepeat=10` and `leftTimingDivisor=500`.
+- `exp_draw_indexed_render_proxy` now runs with `leftCommandRepeat=10`, `leftTimingDivisor=20000`, and `--queue-sync-mode deferred`.
+- `ctr_texture_sampler_write_query_destroy_contract` and `ctr_texture_sampler_write_query_destroy_contract_mip8` now run with `leftCommandRepeat=10` and `leftTimingDivisor=500`.
 55. Directional macrobenchmark coverage was added as config-first contracts:
-- new workload IDs: `render_draw_throughput_macro_200k`, `draw_indexed_render_macro_200k`, `texture_sampler_write_query_destroy_macro_500`.
+- new workload IDs: `exp_render_draw_throughput_macro_200k`, `exp_draw_indexed_render_macro_200k`, `ctr_texture_sampler_write_query_destroy_macro_500`.
 - new preset config: `bench/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json`.
 - new command seeds: `examples/draw_call_proxy_macro_commands.json`, `examples/draw_call_indexed_proxy_macro_commands.json`, `examples/texture_sampler_write_query_destroy_macro_commands.json`.
 56. P0 WebGPU API slice implementation and benchmark contracts are now integrated:
 - native runtime wiring now covers `wgpuBufferDestroy`, `wgpuCommandEncoderClearBuffer`, `wgpuCommandEncoderWriteBuffer`, `wgpuComputePassEncoderDispatchWorkgroupsIndirect`, `wgpuComputePassEncoderWriteTimestamp`, `wgpuDeviceCreateComputePipelineAsync`, `wgpuDeviceDestroy`, `wgpuQuerySetDestroy`, `wgpuQuerySetGetCount`, `wgpuQuerySetGetType`, `wgpuRenderPassEncoderBeginOcclusionQuery`, `wgpuRenderPassEncoderEndOcclusionQuery`, `wgpuRenderPassEncoderMultiDrawIndirect`, `wgpuRenderPassEncoderMultiDrawIndexedIndirect`, and `wgpuRenderPassEncoderWriteTimestamp`.
 - render multidraw dispatch is now feature-gated via `WGPUFeatureName_MultiDrawIndirect`; fallback draw loops remain deterministic when unavailable.
-- new directional P0 benchmark workloads were added: `p0_resource_lifecycle_contract`, `p0_compute_indirect_timestamp_contract`, `p0_render_multidraw_contract`, `p0_render_multidraw_indexed_contract`.
+- new directional P0 benchmark workloads were added: `ctr_resource_lifecycle_contract`, `ctr_compute_indirect_timestamp_contract`, `ctr_render_multidraw_contract`, `ctr_render_multidraw_indexed_contract`.
 - local benchmark artifacts are emitted under `bench/out/p0_*.perf_report.json` and `bench/out/run-bench-p0_*`.
 - Dawn-side directional comparisons for these contracts currently skip on CPU-only adapters in this host class (`DawnPerfTest::IsCPU`), so claimable Dawn-vs-Doe artifacts remain blocked pending a non-CPU adapter host.
 57. P1/P2 capability and lifecycle API coverage has been expanded:
@@ -259,8 +267,8 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - new lifecycle/AddRef proc surface is implemented in `zig/src/wgpu_p2_lifecycle_procs.zig`; all requested AddRef symbols are dynamically loaded and available:
   `wgpuAdapterAddRef`, `wgpuBindGroupAddRef`, `wgpuBindGroupLayoutAddRef`, `wgpuBufferAddRef`, `wgpuCommandBufferAddRef`, `wgpuCommandEncoderAddRef`, `wgpuComputePassEncoderAddRef`, `wgpuComputePipelineAddRef`, `wgpuDeviceAddRef`, `wgpuExternalTextureAddRef`, `wgpuInstanceAddRef`, `wgpuPipelineLayoutAddRef`, `wgpuQuerySetAddRef`, `wgpuQueueAddRef`, `wgpuRenderPassEncoderAddRef`, `wgpuRenderPipelineAddRef`, `wgpuResourceTableAddRef`, `wgpuSamplerAddRef`, `wgpuShaderModuleAddRef`, `wgpuSharedBufferMemoryAddRef`, `wgpuSharedFenceAddRef`, `wgpuSharedTextureMemoryAddRef`, `wgpuSurfaceAddRef`, `wgpuTexelBufferViewAddRef`, `wgpuTextureAddRef`, `wgpuTextureViewAddRef`.
 58. New directional micro+macro benchmark contracts were added for P1/P2 API clusters (AMD Vulkan extended matrix):
-- micro contracts: `p1_capability_introspection_contract`, `p1_resource_table_immediates_contract`, `p2_lifecycle_refcount_contract`.
-- macro contracts: `p1_capability_introspection_macro_500`, `p1_resource_table_immediates_macro_500`, `p2_lifecycle_refcount_macro_200`.
+- micro contracts: `ctr_capability_introspection_contract`, `ctr_resource_table_immediates_contract`, `ctr_lifecycle_refcount_contract`.
+- macro contracts: `ctr_capability_introspection_macro_500`, `ctr_resource_table_immediates_macro_500`, `ctr_lifecycle_refcount_macro_200`.
 - command seeds are in:
   `examples/p1_capability_introspection_commands.json`,
   `examples/p1_resource_table_immediates_commands.json`,
@@ -275,7 +283,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - runtime now requests/probes Dawn pixel-local-storage features at adapter/device scope (`WGPUFeatureName_PixelLocalStorageCoherent`, `WGPUFeatureName_PixelLocalStorageNonCoherent`) through `zig/src/webgpu_ffi.zig` and `zig/src/wgpu_capability_runtime.zig`.
 - coverage state promoted from partial to implemented in `config/webgpu-spec-coverage.json`.
 - new directional benchmark contracts were added:
-  `p0_render_pixel_local_storage_barrier_contract` and `p0_render_pixel_local_storage_barrier_macro_500`
+  `ctr_render_pixel_local_storage_barrier_contract` and `ctr_render_pixel_local_storage_barrier_macro_500`
   with command seeds
   `examples/p0_render_pixel_local_storage_barrier_commands.json` and
   `examples/p0_render_pixel_local_storage_barrier_macro_commands.json`.
@@ -301,17 +309,17 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 
 61. Comparable contract promotion + timing rigor hardening completed for next-week item set:
 - promoted from directional to comparable (`comparable=true`) where execution is adapter-backed and deterministic:
-  `p1_capability_introspection_contract`,
-  `p2_lifecycle_refcount_contract`,
-  `p1_capability_introspection_macro_500`,
-  `p2_lifecycle_refcount_macro_200`,
-  `p0_resource_lifecycle_contract`,
-  `p0_compute_indirect_timestamp_contract`,
-  `p0_render_multidraw_contract`,
-  `p0_render_multidraw_indexed_contract`.
+  `ctr_capability_introspection_contract`,
+  `ctr_lifecycle_refcount_contract`,
+  `ctr_capability_introspection_macro_500`,
+  `ctr_lifecycle_refcount_macro_200`,
+  `ctr_resource_lifecycle_contract`,
+  `ctr_compute_indirect_timestamp_contract`,
+  `ctr_render_multidraw_contract`,
+  `ctr_render_multidraw_indexed_contract`.
 - at this checkpoint (before later gap-closure promotions), extended workload matrix stood at `34` total contracts: `26` comparable + `8` directional.
 - strict probe run over promoted contracts (`bench/out/dawn-vs-doe.amd.vulkan.promoted.strict_probe.json`) reports `comparisonStatus=comparable` for all 8 promoted workloads (claimability diagnostic due single-sample probe floor).
-- release claimability recheck for upload workloads (`buffer_upload_64kb`, `buffer_upload_1mb`) completed with strict comparability and release sample floor:
+- release claimability recheck for upload workloads (`par_buffer_upload_64kb`, `par_buffer_upload_1mb`) completed with strict comparability and release sample floor:
   `bench/out/dawn-vs-doe.amd.vulkan.release.upload64kb1mb.json`
   => `comparisonStatus=comparable`, `claimStatus=claimable`.
 - benchmark timing rigor now enforces native execution-span timing for strict operation-class comparisons on webgpu-ffi left runs:
@@ -326,17 +334,17 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 
 63. Gap-closure promotion completed: strict comparable capability coverage is now full (`22/22`).
 - promoted to comparable contracts:
-  `p1_resource_table_immediates_contract`,
-  `p0_render_pixel_local_storage_barrier_contract`,
-  `surface_presentation_contract`.
+  `ctr_resource_table_immediates_contract`,
+  `ctr_render_pixel_local_storage_barrier_contract`,
+  `ctr_surface_presentation_contract`.
 - resource-table and PLS contracts now use workload-level strict comparability override
   `allowLeftNoExecution=true` with deterministic unsupported/skipped evidence requirements
   in `bench/compare_dawn_vs_doe.py`; unsupported runtime paths remain explicit taxonomy statuses.
 - surface comparable proxy contract now uses deterministic create/release command shape
   (`examples/surface_presentation_commands.json`) to avoid non-deterministic invalid-surface execution errors on headless adapter classes.
 - Dawn mapping for promoted contracts now uses explicit deterministic filters:
-  `p1_resource_table_immediates_contract -> DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151`
-  `p0_render_pixel_local_storage_barrier_contract -> DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151`.
+  `ctr_resource_table_immediates_contract -> DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151`
+  `ctr_render_pixel_local_storage_barrier_contract -> DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151`.
 - strict gap-close probe artifact:
   `bench/out/dawn-vs-doe.amd.vulkan.gapclose.strict_probe.json`
   reports `comparisonStatus=comparable`, `nonComparableCount=0` for all 3 promoted contracts.
@@ -350,7 +358,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - report: `bench/out/dawn-vs-doe.amd.vulkan.full39.execproof.json`
 - result: `comparisonStatus=comparable`, `nonComparableCount=0`, `39` comparable workloads processed.
 - macro feature-gated contracts now align with their base contract parity rules:
-  `p1_resource_table_immediates_macro_500` and `p0_render_pixel_local_storage_barrier_macro_500`
+  `ctr_resource_table_immediates_macro_500` and `ctr_render_pixel_local_storage_barrier_macro_500`
   set `allowLeftNoExecution=true` + `applesToApplesVetted=true` in
   `bench/workloads.amd.vulkan.extended.json`.
 - native device feature request now includes
@@ -373,7 +381,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - all feature-inventory rows are now in explicit implemented state via a unified inventory contract:
   - Dawn feature-enum source of truth (`bench/vendor/dawn/src/dawn/dawn.json` `feature name`)
   - runtime capability introspection path (`wgpuAdapterGetFeatures` / `wgpuDeviceGetFeatures` in Zig capability runtime)
-  - benchmark mapping contract (`p1_capability_introspection_contract` + `p1_capability_introspection_macro_500`)
+  - benchmark mapping contract (`ctr_capability_introspection_contract` + `ctr_capability_introspection_macro_500`)
 - current status totals are now:
   - `implemented=103`
   - `blocked=0`
@@ -411,7 +419,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - CI now includes `.github/workflows/dropin-compat.yml`, which builds a candidate shared-library artifact, consumes that artifact in a separate gate job, and fails hard on compatibility regressions while publishing drop-in reports every run.
 
 67. Release claim diagnostics and 1KB upload contract were hardened for actionable "faster everywhere" enforcement:
-- `bench/workloads.amd.vulkan.json` now sets `buffer_upload_1kb` `extraArgs` to explicit deferred queue sync (`--queue-sync-mode deferred`) and updates comparability/timing notes so the tiny-upload contract reflects the intended apples-to-apples execution semantics.
+- `bench/workloads.amd.vulkan.json` now sets `par_buffer_upload_1kb` `extraArgs` to explicit deferred queue sync (`--queue-sync-mode deferred`) and updates comparability/timing notes so the tiny-upload contract reflects the intended apples-to-apples execution semantics.
 - `bench/claim_gate.py` now prints non-claimable workload runtime details (delta tails, left/right p50 timing, timing sources, and claimability reasons) so gate failures directly identify which runtime path needs fixing.
 
 68. Release lane workload coverage was switched from default subset to extended comparable matrix:
@@ -492,8 +500,8 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 
 82. Skeptical-claim hardening for strict comparable lanes:
 - timing-selection now rejects tiny dispatch-window measurements globally when both are true: dispatch window below `minDispatchWindowNsWithoutEncode` and coverage below `minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs` (thresholds from `config/benchmark-methodology-thresholds.json`), then falls back to `executionTotalNs`.
-- `surface_presentation_contract` is now directional-only (`comparable=false`) because Dawn `ConcurrentExecutionTest ... RunSingle` is not a matching create/release-surface benchmark contract.
-- new strict comparable replacement workload `concurrent_execution_single_contract` maps to Dawn `ConcurrentExecutionTest ... RunSingle` with a matched single-dispatch compute contract (`examples/concurrent_execution_single_commands.json`, `bench/kernels/concurrent_execution_runsingle_u32.wgsl`).
+- `ctr_surface_presentation_contract` is now directional-only (`comparable=false`) because Dawn `ConcurrentExecutionTest ... RunSingle` is not a matching create/release-surface benchmark contract.
+- new strict comparable replacement workload `ctr_concurrent_execution_single_contract` maps to Dawn `ConcurrentExecutionTest ... RunSingle` with a matched single-dispatch compute contract (`examples/concurrent_execution_single_commands.json`, `bench/kernels/concurrent_execution_runsingle_u32.wgsl`).
 
 83. Apples-to-apples contract enforcement hardening:
 - strict workload contract loader now rejects `comparable=true` entries with directional descriptions or explicit closest-proxy comparability notes.
@@ -558,7 +566,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 5. Extend baseline automation to broader incumbent lanes (including explicit wgpu baselines) and multi-host trend publication.
 6. Native Zig/WebGPU/FFI execution backend hardening in Zig remains a runtime milestone (coverage/reliability/perf).
 7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
-8. Keep remaining directional diagnostics macro-scoped and non-claim (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`).
+8. Keep remaining directional diagnostics macro-scoped and non-claim (`exp_draw_indexed_render_macro_200k`, `ctr_capability_introspection_macro_500`, `ctr_lifecycle_refcount_macro_200`).
 9. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
 10. Zig source file sharding — the following files exceed the 777-line limit and need splitting:
     - `wgpu_commands.zig` (1050 lines)
@@ -570,11 +578,11 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 ## Performance Reliability Investigation (2026-02-21)
 
 Scope:
-- AMD Vulkan upload workloads, with focus on `buffer_upload_64kb`.
+- AMD Vulkan upload workloads, with focus on `par_buffer_upload_64kb`.
 - strict comparability mode remained green during these checks.
 
 Findings:
-1. `buffer_upload_64kb` is highly sensitive to methodology knobs (`leftIgnoreFirstOps`, `leftUploadSubmitEvery`, `leftCommandRepeat`) even when comparability checks pass.
+1. `par_buffer_upload_64kb` is highly sensitive to methodology knobs (`leftIgnoreFirstOps`, `leftUploadSubmitEvery`, `leftCommandRepeat`) even when comparability checks pass.
 2. Mixed timing semantics can produce misleading conclusions:
 - dispatch-window timing excludes setup cost
 - ignore-first adjustment based on per-row durations includes setup for included rows
@@ -585,7 +593,7 @@ Implication:
 - 64KB methodology hardening is now enforced in harness claim mode; runtime smoothing is still needed before robustly claimable "reliably faster" status.
 
 Next required changes:
-1. Re-run strict release claim-mode windows on AMD Vulkan host for `buffer_upload_64kb` with the updated `leftUploadSubmitEvery=100` contract.
+1. Re-run strict release claim-mode windows on AMD Vulkan host for `par_buffer_upload_64kb` with the updated `leftUploadSubmitEvery=100` contract.
 2. Keep queue wait path tuning explicit (`--queue-wait-mode`) and only promote non-default mode into workload contracts after adapter-backed reliability evidence.
 3. Re-freeze workload config defaults only after invariants hold in repeated strict claim-mode runs.
 
@@ -631,10 +639,10 @@ Current contract state after matrix expansion:
 
 3. `bench/compare_dawn_vs_doe.config.amd.vulkan.directional.json`
 - directional diagnostics now focus on remaining non-claim macro workloads
-  (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`)
+  (`exp_draw_indexed_render_macro_200k`, `ctr_capability_introspection_macro_500`, `ctr_lifecycle_refcount_macro_200`)
 
 4. `bench/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json`
-- directional diagnostics target the focused macro subset (`draw_indexed_render_macro_200k`)
+- directional diagnostics target the focused macro subset (`exp_draw_indexed_render_macro_200k`)
 
 5. Host execution note (this machine class)
 - strict AMD Vulkan Dawn runs can fail/skips when `/dev/dri/renderD128` access is unavailable to the active user.
@@ -670,13 +678,13 @@ Execution gap list:
 - drop-in gate reports continue to include per-step runtime and explicit runtime-to-fix output for failing steps.
 - latest Doe-vs-Dawn p50 snapshot on this host shows the dominant lag at `instance_create_destroy`; `queue_write_buffer_1kb` can also be marginally slower and should be treated as a small residual micro-gap.
 
-2. AMD Vulkan extended release workload contract now uses deferred queue sync for `buffer_upload_1kb` in `bench/workloads.amd.vulkan.extended.json` (matching `bench/workloads.amd.vulkan.json`) to avoid per-command wait inflation at tiny payload sizes while preserving per-upload normalization semantics.
+2. AMD Vulkan extended release workload contract now uses deferred queue sync for `par_buffer_upload_1kb` in `bench/workloads.amd.vulkan.extended.json` (matching `bench/workloads.amd.vulkan.json`) to avoid per-command wait inflation at tiny payload sizes while preserving per-upload normalization semantics.
 
 3. Fresh release claim-floor rerun executed on this host using the full comparable release profile (`iterations=16`, `warmup=1`, 17 workloads):
 - report: `bench/out/20260223T202753Z/dawn-vs-doe.amd.vulkan.release.json`
 - gate result: `comparisonStatus=comparable`, `claimStatus=diagnostic`, `nonClaimableCount=1`
 - residual non-claimable workload:
-  - `texture_sampling_raster_proxy` (tails only: `p95/p99 = -16.164%`; `p50` positive).
+  - `exp_texture_sampling_raster_proxy` (tails only: `p95/p99 = -16.164%`; `p50` positive).
 
 4. Render-domain apples-to-apples timing/runtime path was tightened:
 - comparable timing for workload domains `render` and `render-bundle` uses encode-only operation source (`doe-execution-encode-ns`) for claim comparison against Dawn DrawCallPerf timing.
@@ -686,44 +694,44 @@ Execution gap list:
   - result: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`.
 
 5. Texture-raster tail reliability contract was tightened for claim runs:
-- `texture_sampling_raster_proxy` now runs with `leftCommandRepeat=500` and `leftTimingDivisor=500` (same per-iteration unit normalization) to reduce low-coverage GPU timestamp quantization noise in p95/p99 tails.
+- `exp_texture_sampling_raster_proxy` now runs with `leftCommandRepeat=500` and `leftTimingDivisor=500` (same per-iteration unit normalization) to reduce low-coverage GPU timestamp quantization noise in p95/p99 tails.
 - focused release claim-floor rerun for that workload:
   - report: `bench/out/20260223T210045Z/dawn-vs-doe.amd.vulkan.release.json`
   - result: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`.
 
 6. Redundant-pipeline render tail reliability contract was tightened for claim runs:
-- full release pipeline rerun (`bench/out/20260223T211020Z/dawn-vs-doe.amd.vulkan.release.json`) reduced the matrix to one residual non-claimable workload: `render_draw_redundant_pipeline_bindings` (tails only).
-- `render_draw_redundant_pipeline_bindings` now runs with `leftCommandRepeat=10` and `leftTimingDivisor=20000` (per-draw normalization preserved) to reduce sample-tail setup jitter.
+- full release pipeline rerun (`bench/out/20260223T211020Z/dawn-vs-doe.amd.vulkan.release.json`) reduced the matrix to one residual non-claimable workload: `par_render_draw_redundant_pipeline_bindings` (tails only).
+- `par_render_draw_redundant_pipeline_bindings` now runs with `leftCommandRepeat=10` and `leftTimingDivisor=20000` (per-draw normalization preserved) to reduce sample-tail setup jitter.
 - focused release claim-floor rerun for that workload:
   - report: `bench/out/20260223T213900Z/dawn-vs-doe.amd.vulkan.release.json`
   - result: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`.
 
 7. Macro + hard-gated pilot promotion refresh (2026-02-25):
 - promoted to strict comparable in `bench/workloads.amd.vulkan.extended.json`:
-  `render_draw_throughput_macro_200k`,
-  `texture_sampler_write_query_destroy_macro_500`,
-  `p1_resource_table_immediates_macro_500`,
-  `p0_render_pixel_local_storage_barrier_macro_500`,
-  `p0_render_multidraw_contract`,
-  `p0_render_multidraw_indexed_contract`,
-  `p0_resource_lifecycle_contract`,
-  `p0_compute_indirect_timestamp_contract`.
+  `exp_render_draw_throughput_macro_200k`,
+  `ctr_texture_sampler_write_query_destroy_macro_500`,
+  `ctr_resource_table_immediates_macro_500`,
+  `ctr_render_pixel_local_storage_barrier_macro_500`,
+  `ctr_render_multidraw_contract`,
+  `ctr_render_multidraw_indexed_contract`,
+  `ctr_resource_lifecycle_contract`,
+  `ctr_compute_indirect_timestamp_contract`.
 - matrix split is now `31` comparable + `9` directional.
 
 8. Local Metal comparability hotfix (2026-02-26):
 - introduced Metal-only workload contract file: `bench/workloads.local.metal.extended.json`.
 - local Metal config now uses that contract file (`bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`) so AMD Vulkan claim lanes are unchanged.
-- local Metal compare config now pins `--gpu-timestamp-mode off` to avoid `gpu_timestamp_wait_timed_out` failures observed in compute lanes on this host (`workgroup_non_atomic_1024`).
+- local Metal compare config now pins `--gpu-timestamp-mode off` to avoid `gpu_timestamp_wait_timed_out` failures observed in compute lanes on this host (`par_workgroup_non_atomic_1024`).
 - local Metal left template now uses `--queue-sync-mode per-command --gpu-timestamp-mode off` as the stability baseline.
 - for local Metal claim lanes, explicit queue-sync policy is now contractized via workload overrides:
-  - deferred for upload workloads (`buffer_upload_64kb`, `buffer_upload_1mb`, `buffer_upload_4mb`, `buffer_upload_16mb`), texture contract lanes (`texture_sampler_write_query_destroy_contract`, `..._mip8`), and `p0_resource_lifecycle_contract`.
-  - `matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1` is now directional-only (`comparable=false`) in the Metal-local contract due intermittent timeout/error behavior under both deferred and per-command sync on this host.
-- `workgroup_non_atomic_1024` is also directional-only (`comparable=false`) in the Metal-local contract due intermittent Doe execution-error samples (`WaitTimedOut`) in strict runs on this host.
-- focused rerun (`bench/out/scratch/20260226T000817Z/metal.slowness.fixprobe6.json`, `iterations=8`, `warmup=1`) now reports `comparisonStatus=comparable`, with only one residual non-claimable lane: `buffer_upload_4mb` (`p50=-88.19%`, `p95=-53.40%`).
-- full strict local-metal matrix rerun (`bench/out/scratch/20260226T003134Z/metal.full.fixed.full8.json`, `iterations=8`, `warmup=1`) reports `comparisonStatus=comparable` with two residual non-claimable upload tails: `buffer_upload_1kb` (`p50=+3.91%`, `p95=-25.64%`) and `buffer_upload_16mb` (`p50=+1.31%`, `p95=-3.37%`).
+  - deferred for upload workloads (`par_buffer_upload_64kb`, `par_buffer_upload_1mb`, `par_buffer_upload_4mb`, `par_buffer_upload_16mb`), texture contract lanes (`ctr_texture_sampler_write_query_destroy_contract`, `..._mip8`), and `ctr_resource_lifecycle_contract`.
+  - `par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1` is now directional-only (`comparable=false`) in the Metal-local contract due intermittent timeout/error behavior under both deferred and per-command sync on this host.
+- `par_workgroup_non_atomic_1024` is also directional-only (`comparable=false`) in the Metal-local contract due intermittent Doe execution-error samples (`WaitTimedOut`) in strict runs on this host.
+- focused rerun (`bench/out/scratch/20260226T000817Z/metal.slowness.fixprobe6.json`, `iterations=8`, `warmup=1`) now reports `comparisonStatus=comparable`, with only one residual non-claimable lane: `par_buffer_upload_4mb` (`p50=-88.19%`, `p95=-53.40%`).
+- full strict local-metal matrix rerun (`bench/out/scratch/20260226T003134Z/metal.full.fixed.full8.json`, `iterations=8`, `warmup=1`) reports `comparisonStatus=comparable` with two residual non-claimable upload tails: `par_buffer_upload_1kb` (`p50=+3.91%`, `p95=-25.64%`) and `par_buffer_upload_16mb` (`p50=+1.31%`, `p95=-3.37%`).
 - targeted deeper-sample reruns show these two lanes are claimable at higher sample depth (`iterations=12`, `warmup=1`):
-  - `bench/out/scratch/20260226T005352Z/metal.upload.tailprobe.current.json` (`buffer_upload_16mb`)
-  - `bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb.json` (`buffer_upload_1kb`)
+  - `bench/out/scratch/20260226T005352Z/metal.upload.tailprobe.current.json` (`par_buffer_upload_16mb`)
+  - `bench/out/scratch/20260226T005531Z/metal.upload.tailprobe.1kb.json` (`par_buffer_upload_1kb`)
 - local metal strict comparable config now uses `iterations=12` and `claimability.minTimedSamples=11` to reduce p95/p99 tail instability on upload lanes without changing AMD Vulkan methodology.
 
 ## v0 Reality
@@ -737,7 +745,7 @@ Current comparison claim state: `strict-comparable matrix + claimability diagnos
 
 Meaning:
 1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`31` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
-2. remaining directional macro workloads (`draw_indexed_render_macro_200k`, `p1_capability_introspection_macro_500`, `p2_lifecycle_refcount_macro_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
+2. remaining directional macro workloads (`exp_draw_indexed_render_macro_200k`, `ctr_capability_introspection_macro_500`, `ctr_lifecycle_refcount_macro_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
 3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
 

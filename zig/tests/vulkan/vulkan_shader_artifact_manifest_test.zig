@@ -1,6 +1,7 @@
 const std = @import("std");
 const vulkan_shader_artifact_manifest = @import("../../src/backend/vulkan/pipeline/shader_artifact_manifest.zig");
 const vulkan_runtime_state = @import("../../src/backend/vulkan/vulkan_runtime_state.zig");
+const HASH_HEX_SIZE = 64;
 
 fn manifest_field_value(document: []const u8, comptime field_name: []const u8) ?[]const u8 {
     const prefix = "\"" ++ field_name ++ "\":\"";
@@ -8,6 +9,19 @@ fn manifest_field_value(document: []const u8, comptime field_name: []const u8) ?
     const value_start = start_index + prefix.len;
     const value_end_rel = std.mem.indexOfScalar(u8, document[value_start..], '"') orelse return null;
     return document[value_start .. value_start + value_end_rel];
+}
+
+fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
+    const HEX = "0123456789abcdef";
+    var output: [HASH_HEX_SIZE]u8 = undefined;
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+    for (digest, 0..) |byte, index| {
+        const offset = index * 2;
+        output[offset] = HEX[(byte >> 4) & 0x0F];
+        output[offset + 1] = HEX[byte & 0x0F];
+    }
+    return output;
 }
 
 test "vulkan shader artifact manifest emits deterministic hash-linked payload" {
@@ -27,6 +41,9 @@ test "vulkan shader artifact manifest emits deterministic hash-linked payload" {
     try std.testing.expect(std.mem.indexOf(u8, first_manifest, "\"backendId\":\"zig_vulkan\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, first_manifest, "\"module\":\"texture_write\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, first_manifest, "\"wgslSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"") == null);
+    const toolchain_sha = manifest_field_value(first_manifest, "toolchainSha256") orelse return error.MissingToolchainSha256;
+    const expected_toolchain_sha = sha256_hex("toolchain:spirv-tools:vulkan:v1");
+    try std.testing.expectEqualStrings(expected_toolchain_sha[0..], toolchain_sha);
 
     const first_hash = manifest_field_value(first_manifest, "hash") orelse return error.MissingHashField;
     try std.testing.expectEqual(@as(usize, 64), first_hash.len);

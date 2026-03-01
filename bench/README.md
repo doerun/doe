@@ -204,7 +204,7 @@ python3 fawn/bench/compare_dawn_vs_doe.py \
   --include-extended-workloads \
   --include-noncomparable-workloads \
   --comparability warn \
-  --workload-filter workgroup_atomic_1024,workgroup_non_atomic_1024,matrix_vector_multiply_32768x2048_f32,matrix_vector_multiply_32768x2048_f32_swizzle1,matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1,shader_compile_pipeline_stress,render_draw_throughput_proxy,texture_sampling_raster_proxy \
+  --workload-filter par_workgroup_atomic_1024,par_workgroup_non_atomic_1024,par_matrix_vector_multiply_32768x2048_f32,par_matrix_vector_multiply_32768x2048_f32_swizzle1,par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1,par_shader_compile_pipeline_stress,exp_render_draw_throughput_proxy,exp_texture_sampling_raster_proxy \
   --right-command-template "python3 fawn/bench/dawn_benchmark_adapter.py --dawn-state fawn/bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map fawn/bench/dawn_workload_map.json --workload {workload} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
   --out fawn/bench/out/dawn-vs-doe.extended.json
 ```
@@ -269,7 +269,7 @@ Quick reliability recheck pattern:
 ```bash
 python3 fawn/bench/compare_dawn_vs_doe.py \
   --config fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.json \
-  --workload-filter buffer_upload_64kb \
+  --workload-filter par_buffer_upload_64kb \
   --iterations 10 \
   --warmup 1 \
   --out fawn/bench/out/dawn-vs-doe.64kb.recheck.json
@@ -326,16 +326,16 @@ Extended workload domains now include:
 - shader compile/pipeline stress (`ShaderRobustnessPerf` mapping, comparable, fixed single-test filter + per-step normalization).
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
 - async pipeline diagnostics and most P0/P1/P2 API contracts are directional-only in the AMD extended matrix unless/until a directly matched Dawn contract is available.
-- promoted macro contracts now treated as strict comparable include `render_draw_throughput_macro_200k`, `texture_sampler_write_query_destroy_macro_500`, `p1_resource_table_immediates_macro_500`, and `p0_render_pixel_local_storage_barrier_macro_500`.
-- hard-gated pilot promotions now treated as strict comparable include `p0_render_multidraw_contract` and `p0_render_multidraw_indexed_contract` (`applesToApplesVetted=true`).
-- hard-gated contract promotions now also include `p0_resource_lifecycle_contract` and `p0_compute_indirect_timestamp_contract` (`applesToApplesVetted=true`).
-- `surface_presentation_contract` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
-- `concurrent_execution_single_contract` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
+- promoted macro contracts now treated as strict comparable include `exp_render_draw_throughput_macro_200k`, `ctr_texture_sampler_write_query_destroy_macro_500`, `ctr_resource_table_immediates_macro_500`, and `ctr_render_pixel_local_storage_barrier_macro_500`.
+- hard-gated pilot promotions now treated as strict comparable include `ctr_render_multidraw_contract` and `ctr_render_multidraw_indexed_contract` (`applesToApplesVetted=true`).
+- hard-gated contract promotions now also include `ctr_resource_lifecycle_contract` and `ctr_compute_indirect_timestamp_contract` (`applesToApplesVetted=true`).
+- `ctr_surface_presentation_contract` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
+- `ctr_concurrent_execution_single_contract` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:
-  `matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
-  `matrix_vector_multiply_32768x2048_f32_swizzle1` (Naive Swizzle=1),
-  `matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1` (WorkgroupShared Swizzle=1).
+  `par_matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
+  `par_matrix_vector_multiply_32768x2048_f32_swizzle1` (Naive Swizzle=1),
+  `par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1` (WorkgroupShared Swizzle=1).
   Doe matvec command files set `kernel_dispatch.repeat=100` to match Dawn's `kNumDisptaches=100` step structure.
 
 Use report `domain`, `workloadComparable`, and `comparabilityNotes` fields to separate
@@ -534,7 +534,7 @@ Use `@autodiscover` in your map only where you want dynamic filter selection:
 {
   "schemaVersion": 1,
   "filters": {
-    "buffer_upload_1kb": "@autodiscover"
+    "par_buffer_upload_1kb": "@autodiscover"
   }
 }
 ```
@@ -545,7 +545,7 @@ Use `@autodiscover` in your map only where you want dynamic filter selection:
 {
   "schemaVersion": 1,
   "filters": {
-    "buffer_upload_1kb": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
+    "par_buffer_upload_1kb": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
   }
 }
 ```

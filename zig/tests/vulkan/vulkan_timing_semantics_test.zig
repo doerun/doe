@@ -15,14 +15,14 @@ test "vulkan dispatch timing separates encode and submit-wait buckets" {
         webgpu.QueueSyncMode.per_command,
     );
     try std.testing.expectEqual(@as(u64, 13_700), result.encode_ns);
-    try std.testing.expectEqual(@as(u64, 9_000), result.submit_wait_ns);
+    try std.testing.expectEqual(@as(u64, 16_000), result.submit_wait_ns);
 }
 
-test "vulkan deferred sync keeps submit-wait zero at command time" {
+test "vulkan deferred sync records submit cost but not per-command wait cost" {
     const result = try vulkan_mod.run_contract_path_for_test(
         model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
         webgpu.QueueSyncMode.deferred,
     );
     try std.testing.expectEqual(@as(u64, 13_700), result.encode_ns);
-    try std.testing.expectEqual(@as(u64, 0), result.submit_wait_ns);
+    try std.testing.expectEqual(@as(u64, 7_000), result.submit_wait_ns);
 }

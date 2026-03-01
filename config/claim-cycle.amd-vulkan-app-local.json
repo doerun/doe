@@ -23,10 +23,10 @@
   },
   "workloadSets": {
     "comparableIds": [
-      "p1_resource_table_immediates_macro_500"
+      "ctr_resource_table_immediates_macro_500"
     ],
     "directionalIds": [
-      "render_draw_throughput_proxy"
+      "exp_render_draw_throughput_proxy"
     ]
   },
   "methodology": {

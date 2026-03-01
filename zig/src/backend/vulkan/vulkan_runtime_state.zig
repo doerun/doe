@@ -100,48 +100,14 @@ fn fmtToken(buf: []u8, comptime fmt: []const u8, args: anytype) []const u8 {
     return std.fmt.bufPrint(buf, fmt, args) catch "";
 }
 
-fn writeHex(out: *[2]u8, byte: u8) void {
-    out[0] = HEX[(byte >> 4) & 0x0F];
-    out[1] = HEX[byte & 0x0F];
-}
-
-fn u64Hex(u: u64, out: *[16]u8) void {
-    var i: usize = 0;
-    while (i < 8) : (i += 1) {
-        const shift: u6 = @intCast(56 - (i * 8));
-        const value = @as(u8, @intCast((u >> shift) & 0xFF));
-        writeHex(out[i * 2 ..][0..2], value);
-    }
-}
-
-fn hashChunk(input: []const u8, seed: u64) u64 {
-    var h = seed;
-    for (input, 0..) |byte, index| {
-        h +%= @as(u64, byte);
-        h +%= @as(u64, index);
-        h = (h << 7) ^ (h >> 3);
-        h = (h *% 0xff51afd7ed558ccd) +% 0x9e3779b97f4a7c15;
-        h ^= h >> 23;
-        h = (h *% 0xc4ceb9fe1a85ec53) +% 0x9e3779b97f4a7c15;
-        h ^= h >> 27;
-    }
-    return h;
-}
-
-fn hashHex(input: []const u8, seed: u64) [HASH_HEX_SIZE]u8 {
+fn sha256Hex(input: []const u8) [HASH_HEX_SIZE]u8 {
     var output: [HASH_HEX_SIZE]u8 = undefined;
-    const values = [_]u64{
-        hashChunk(input, seed),
-        hashChunk(input, seed +% 0x243f6a8885a308d3),
-        hashChunk(input, seed +% 0x9e3779b97f4a7c15),
-        hashChunk(input, seed +% 0xbf58476d1ce4e5b9),
-    };
-    var index: usize = 0;
-    for (values) |value| {
-        var segment: [16]u8 = undefined;
-        u64Hex(value, &segment);
-        std.mem.copyForwards(u8, output[index .. index + 16], &segment);
-        index += 16;
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+    for (digest, 0..) |byte, index| {
+        const offset = index * 2;
+        output[offset] = HEX[(byte >> 4) & 0x0F];
+        output[offset + 1] = HEX[byte & 0x0F];
     }
     return output;
 }
@@ -312,10 +278,40 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
     const module = manifest_module_name();
     const taxonomy_code = "ok";
 
-    var token_buf: [1024]u8 = undefined;
-    const pipeline_hash = hashHex(fmtToken(
+    var token_buf: [1536]u8 = undefined;
+    const wgsl_artifact = fmtToken(
         &token_buf,
-        "pipeline:{s}:{d}:{d}:{d}:{d}:{d}",
+        "wgsl:module={s}:wgsl_ingests={d}:wgsl_to_spirv_runs={d}",
+        .{
+            module,
+            state.wgsl_ingests,
+            state.wgsl_to_spirv_runs,
+        },
+    );
+    const wgsl_hash = sha256Hex(wgsl_artifact);
+
+    const msl_artifact = fmtToken(
+        &token_buf,
+        "msl:module={s}:wgsl_to_spirv_runs={d}:spirv_opt_runs={d}",
+        .{ module, state.wgsl_to_spirv_runs, state.spirv_opt_runs },
+    );
+    const msl_hash = sha256Hex(msl_artifact);
+
+    const metallib_artifact = fmtToken(
+        &token_buf,
+        "metallib:module={s}:proc_tables_built={d}:proc_exports={d}:resource_lookups={d}",
+        .{
+            module,
+            state.proc_tables_built,
+            state.proc_exports,
+            state.resource_lookups,
+        },
+    );
+    const metallib_hash = sha256Hex(metallib_artifact);
+
+    const pipeline_artifact = fmtToken(
+        &token_buf,
+        "pipeline:module={s}:pipeline_cache_lookups={d}:compute_passes={d}:copy_passes={d}:render_passes={d}:manifest_emits={d}:wgsl_sha={s}:msl_sha={s}:metallib_sha={s}",
         .{
             module,
             state.pipeline_cache_lookups,
@@ -323,34 +319,15 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             state.copy_passes,
             state.render_passes,
             state.manifest_emits,
+            wgsl_hash[0..],
+            msl_hash[0..],
+            metallib_hash[0..],
         },
-    ), 0x517cc1b727220a95);
+    );
+    const pipeline_hash = sha256Hex(pipeline_artifact);
 
-    const wgsl_hash = hashHex(fmtToken(
-        &token_buf,
-        "wgsl:{s}:{d}:{d}",
-        .{ module, state.wgsl_ingests, state.wgsl_to_spirv_runs },
-    ), 0x9e3779b97f4a7c15);
-
-    const msl_hash = hashHex(fmtToken(
-        &token_buf,
-        "spirv:{s}:{d}:{d}",
-        .{ module, state.wgsl_to_spirv_runs, state.spirv_opt_runs },
-    ), 0xbf58476d1ce4e5b9);
-
-    const metallib_hash = hashHex(fmtToken(
-        &token_buf,
-        "binary:{s}:{d}:{d}:{d}",
-        .{
-            module,
-            state.proc_tables_built,
-            state.proc_exports,
-            state.resource_lookups,
-        },
-    ), 0x94d049bb133111eb);
-
-    const toolchain_hash = hashHex("toolchain:spirv-tools:vulkan:v1", 0x2545f4914f6cdd1d);
-    const chain_hash = hashHex(fmtToken(
+    const toolchain_hash = sha256Hex("toolchain:spirv-tools:vulkan:v1");
+    const chain_hash = sha256Hex(fmtToken(
         &token_buf,
         "backendId={s}|module={s}|pipelineHash={s}|wgslSha256={s}|mslSha256={s}|metallibSha256={s}|toolchainSha256={s}|taxonomyCode={s}|previousHash={s}|count={d}",
         .{
@@ -365,7 +342,7 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             previous,
             state.manifest_emits,
         },
-    ), 0x9ddfea08eb382d69);
+    ));
 
     var manifest_buf: [1536]u8 = undefined;
     const manifest_text = fmtToken(

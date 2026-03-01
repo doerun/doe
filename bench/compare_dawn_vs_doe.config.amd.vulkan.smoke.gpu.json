@@ -13,7 +13,7 @@
     "warmup": 0,
     "out": "bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json",
     "workspace": "bench/out/runtime-comparisons.amd.vulkan.smoke.gpu.16mb",
-    "workloadFilter": "buffer_upload_16mb",
+    "workloadFilter": "par_buffer_upload_16mb",
     "includeExtendedWorkloads": true,
     "includeNoncomparableWorkloads": false,
     "emitShell": false
