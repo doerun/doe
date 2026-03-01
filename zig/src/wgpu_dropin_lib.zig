@@ -11,8 +11,8 @@ const dropin_symbol_ownership = @import("dropin/dropin_symbol_ownership.zig");
 const dropin_router = @import("dropin/dropin_router.zig");
 const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
 
-const DROPIN_BEHAVIOR_CONFIG_JSON = @embedFile("../../config/dropin-abi-behavior.json");
-const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = @embedFile("../../config/dropin-symbol-ownership.json");
+const DROPIN_BEHAVIOR_CONFIG_JSON = @embedFile("config/dropin-abi-behavior.json");
+const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = @embedFile("config/dropin-symbol-ownership.json");
 const DROPIN_BEHAVIOR_DEFAULT_MODE: dropin_behavior_policy.BehaviorMode = .dawn_ownership;
 const DROPIN_BEHAVIOR_DEFAULT_STRICT_NO_FALLBACK = true;
 
@@ -53,7 +53,7 @@ fn activeBehaviorConfig() ParsedDropinBehaviorConfig {
     };
     defer parsed.deinit();
 
-    var root = parsed.value;
+    const root = parsed.value;
     if (root != .object) {
         return .{
             .mode = DROPIN_BEHAVIOR_DEFAULT_MODE,
@@ -231,6 +231,7 @@ pub export fn doeWgpuDropinUnsupportedProc() callconv(.c) usize {
 }
 
 fn unsupportedSymbol(comptime symbol_name: []const u8, comptime FnType: type) FnType {
+    _ = symbol_name;
     return @as(FnType, @ptrCast(&unsupportedProc));
 }
 

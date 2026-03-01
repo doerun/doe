@@ -55,11 +55,13 @@ pub fn parse_symbol_ownership_config(
         };
     }
     var should_cleanup = true;
-    errdefer if (should_cleanup) {
-        for (entries) |entry| {
-            if (entry.symbol.len != 0) allocator.free(entry.symbol);
+    errdefer {
+        if (should_cleanup) {
+            for (entries) |entry| {
+                if (entry.symbol.len != 0) allocator.free(entry.symbol);
+            }
+            allocator.free(entries);
         }
-        allocator.free(entries);
     }
     for (parsed.value.symbols, 0..) |entry, index| {
         const owner = parse_symbol_owner(entry.owner) orelse return ParseError.InvalidSymbolOwner;

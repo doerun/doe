@@ -14,6 +14,8 @@ runner="$1"
 shift
 
 chrome_bin="$(fawn_resolve_chrome_binary)"
+dawn_chrome_bin=""
+doe_chrome_bin=""
 doe_lib="$(fawn_resolve_doe_lib)"
 mode="both"
 skip_run=0
@@ -36,6 +38,24 @@ while [[ $# -gt 0 ]]; do
         exit 2
       fi
       doe_lib="$2"
+      forward_args+=("$1" "$2")
+      shift 2
+      ;;
+    --dawn-chrome)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --dawn-chrome" >&2
+        exit 2
+      fi
+      dawn_chrome_bin="$2"
+      forward_args+=("$1" "$2")
+      shift 2
+      ;;
+    --doe-chrome)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --doe-chrome" >&2
+        exit 2
+      fi
+      doe_chrome_bin="$2"
       forward_args+=("$1" "$2")
       shift 2
       ;;
@@ -72,6 +92,8 @@ Usage:
   ./scripts/run-bench.sh [run-browser-benchmark-superset args...]
 
 Runs run-browser-benchmark-superset.py with host-resolved default --chrome and --doe-lib.
+For bench mode, you can override browser executable per runtime mode with
+--dawn-chrome and --doe-chrome.
 All unrecognized args are forwarded to the Python runner.
 EOF
       else
@@ -87,13 +109,28 @@ EOF
   esac
 done
 
-if [[ "${skip_run}" -eq 0 && ! -x "${chrome_bin}" ]]; then
-  echo "missing chrome binary: ${chrome_bin}" >&2
-  exit 1
-fi
-if [[ "${skip_run}" -eq 0 && "${mode}" != "dawn" && ! -f "${doe_lib}" ]]; then
-  echo "missing doe runtime library: ${doe_lib}" >&2
-  exit 1
+if [[ "${skip_run}" -eq 0 ]]; then
+  if [[ "${runner}" == "bench" ]]; then
+    dawn_bin_resolved="${dawn_chrome_bin:-${chrome_bin}}"
+    doe_bin_resolved="${doe_chrome_bin:-${chrome_bin}}"
+    if [[ "${mode}" != "doe" && ! -x "${dawn_bin_resolved}" ]]; then
+      echo "missing dawn mode chrome binary: ${dawn_bin_resolved}" >&2
+      exit 1
+    fi
+    if [[ "${mode}" != "dawn" && ! -x "${doe_bin_resolved}" ]]; then
+      echo "missing doe mode chrome binary: ${doe_bin_resolved}" >&2
+      exit 1
+    fi
+  else
+    if [[ ! -x "${chrome_bin}" ]]; then
+      echo "missing chrome binary: ${chrome_bin}" >&2
+      exit 1
+    fi
+  fi
+  if [[ "${mode}" != "dawn" && ! -f "${doe_lib}" ]]; then
+    echo "missing doe runtime library: ${doe_lib}" >&2
+    exit 1
+  fi
 fi
 
 if [[ "${runner}" == "smoke" ]]; then

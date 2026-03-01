@@ -801,6 +801,7 @@ def run_workload(
     upload_submit_every: int,
     inject_upload_runtime_flags: bool,
     required_timing_class: str,
+    comparability_mode: str,
     benchmark_policy: BenchmarkMethodologyPolicy,
     emit_shell: bool,
 ) -> dict[str, Any]:
@@ -821,6 +822,7 @@ def run_workload(
         upload_submit_every=upload_submit_every,
         inject_upload_runtime_flags=inject_upload_runtime_flags,
         required_timing_class=required_timing_class,
+        comparability_mode=comparability_mode,
         benchmark_policy=benchmark_policy,
         emit_shell=emit_shell,
     )
@@ -1252,6 +1254,7 @@ def main() -> int:
             upload_submit_every=workload.left_upload_submit_every,
             inject_upload_runtime_flags=True,
             required_timing_class=args.require_timing_class,
+            comparability_mode=args.comparability,
             benchmark_policy=benchmark_policy,
             emit_shell=args.emit_shell,
         )
@@ -1272,6 +1275,7 @@ def main() -> int:
             upload_submit_every=workload.right_upload_submit_every,
             inject_upload_runtime_flags=False,
             required_timing_class=args.require_timing_class,
+            comparability_mode=args.comparability,
             benchmark_policy=benchmark_policy,
             emit_shell=args.emit_shell,
         )

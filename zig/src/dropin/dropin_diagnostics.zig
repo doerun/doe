@@ -75,14 +75,14 @@ pub fn snapshot(out: []DropinDiagnostics) usize {
     var written: usize = 0;
 
     while (written < max_out) : (written += 1) {
-        const record = g_records[cursor];
-        const symbol_len = @as(usize, record.symbol_len);
-        const owner_len = @as(usize, record.owner_len);
+        const entry = g_records[cursor];
+        const symbol_len = @as(usize, entry.symbol_len);
+        const owner_len = @as(usize, entry.owner_len);
         out[written] = .{
-            .symbol = record.symbol[0..symbol_len],
-            .owner = record.owner[0..owner_len],
-            .resolved = record.resolved,
-            .fallback_used = record.fallback_used,
+            .symbol = entry.symbol[0..symbol_len],
+            .owner = entry.owner[0..owner_len],
+            .resolved = entry.resolved,
+            .fallback_used = entry.fallback_used,
         };
         cursor = (cursor + 1) % MAX_DIAGNOSTIC_RECORDS;
     }

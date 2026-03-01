@@ -81,6 +81,8 @@ def _sources_match_with_runtime_compatibility(
     *,
     left_sources: list[str],
     right_sources: list[str],
+    workload_domain: str,
+    comparability_mode: str,
     is_dawn_vs_doe: bool,
     is_left_dawn: bool,
     is_right_dawn: bool,
@@ -94,6 +96,24 @@ def _sources_match_with_runtime_compatibility(
 
     left_set = set(left_sources)
     right_set = set(right_sources)
+    normalized_domain = workload_domain.strip().lower()
+    if comparability_mode == "strict":
+        dawn_expected = {"dawn-perf-wall-time"}
+        doe_expected = (
+            {"doe-execution-row-total-ns"}
+            if normalized_domain == "upload"
+            else {"doe-execution-total-ns"}
+        )
+        if is_left_dawn and left_set != dawn_expected:
+            return False
+        if is_right_dawn and right_set != dawn_expected:
+            return False
+        if is_left_doe and left_set != doe_expected:
+            return False
+        if is_right_doe and right_set != doe_expected:
+            return False
+        return True
+
     if is_left_dawn and not left_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
         return False
     if is_right_dawn and not right_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
@@ -110,6 +130,7 @@ def _timing_selection_policy_match_with_runtime_compatibility(
     left_policies: list[str],
     right_policies: list[str],
     workload_domain: str,
+    comparability_mode: str,
     is_dawn_vs_doe: bool,
     is_left_dawn: bool,
     is_right_dawn: bool,
@@ -124,6 +145,23 @@ def _timing_selection_policy_match_with_runtime_compatibility(
     left_set = set(left_policies)
     right_set = set(right_policies)
     normalized_domain = workload_domain.strip().lower()
+
+    if comparability_mode == "strict":
+        doe_expected = (
+            {"upload-row-total-preferred"}
+            if normalized_domain == "upload"
+            else {"<none>"}
+        )
+        dawn_expected = {"<none>"}
+        if is_left_dawn and left_set != dawn_expected:
+            return False
+        if is_right_dawn and right_set != dawn_expected:
+            return False
+        if is_left_doe and left_set != doe_expected:
+            return False
+        if is_right_doe and right_set != doe_expected:
+            return False
+        return True
 
     doe_allowed = {"<none>"}
     if normalized_domain == "upload":
@@ -866,6 +904,8 @@ def compare_assessment(
         passes=_sources_match_with_runtime_compatibility(
             left_sources=left_trace_meta_sources,
             right_sources=right_trace_meta_sources,
+            workload_domain=workload_domain,
+            comparability_mode=comparability_mode,
             is_dawn_vs_doe=is_dawn_vs_doe,
             is_left_dawn=is_left_dawn,
             is_right_dawn=is_right_dawn,
@@ -891,6 +931,7 @@ def compare_assessment(
             left_policies=left_timing_selection_policies,
             right_policies=right_timing_selection_policies,
             workload_domain=workload_domain,
+            comparability_mode=comparability_mode,
             is_dawn_vs_doe=is_dawn_vs_doe,
             is_left_dawn=is_left_dawn,
             is_right_dawn=is_right_dawn,

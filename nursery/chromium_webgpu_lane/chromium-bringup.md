@@ -72,7 +72,7 @@ fetch --nohooks chromium
 cd src
 gclient sync --nohooks --no-history --jobs 1
 gclient runhooks
-gn gen out/fawn_release --args='is_debug=false'
+gn gen out/fawn_release --args='is_debug=false is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false'
 autoninja -C out/fawn_release chrome
 
 # copy runnable release artifacts to local lane output

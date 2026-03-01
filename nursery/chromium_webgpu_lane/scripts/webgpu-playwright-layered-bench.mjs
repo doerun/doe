@@ -97,6 +97,8 @@ function usage() {
 Options:
   --mode dawn|doe|both      Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
+  --dawn-chrome PATH        Browser executable for dawn mode (defaults to --chrome)
+  --doe-chrome PATH         Browser executable for doe mode (defaults to --chrome)
   --doe-lib PATH            libdoe_webgpu.{so,dylib} path (for doe mode)
   --manifest PATH           Projection manifest JSON path
   --workflows PATH          Browser workflow manifest JSON path
@@ -206,6 +208,8 @@ function parseArgs(argv) {
   const args = {
     mode: "both",
     chromePath: DEFAULT_CHROME,
+    dawnChromePath: "",
+    doeChromePath: "",
     doeLibPath: DEFAULT_DOE_LIB,
     manifestPath: DEFAULT_MANIFEST,
     workflowsPath: DEFAULT_WORKFLOWS,
@@ -234,6 +238,12 @@ function parseArgs(argv) {
       i += 1;
     } else if (token === "--chrome") {
       args.chromePath = readOptionValue(argv, i, "--chrome");
+      i += 1;
+    } else if (token === "--dawn-chrome") {
+      args.dawnChromePath = readOptionValue(argv, i, "--dawn-chrome");
+      i += 1;
+    } else if (token === "--doe-chrome") {
+      args.doeChromePath = readOptionValue(argv, i, "--doe-chrome");
       i += 1;
     } else if (token === "--doe-lib") {
       args.doeLibPath = readOptionValue(argv, i, "--doe-lib");
@@ -298,12 +308,20 @@ function parseArgs(argv) {
     throw new Error("--mode must be one of dawn, doe, both");
   }
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
-  if (!existsSync(args.chromePath)) {
-    throw new Error(`chrome binary not found: ${args.chromePath}`);
+  const modeChromePaths = {
+    dawn: args.dawnChromePath || args.chromePath,
+    doe: args.doeChromePath || args.chromePath,
+  };
+  if (args.mode !== "doe" && !existsSync(modeChromePaths.dawn)) {
+    throw new Error(`dawn mode chrome binary not found: ${modeChromePaths.dawn}`);
+  }
+  if (args.mode !== "dawn" && !existsSync(modeChromePaths.doe)) {
+    throw new Error(`doe mode chrome binary not found: ${modeChromePaths.doe}`);
   }
   if (args.mode !== "dawn" && !existsSync(args.doeLibPath)) {
     throw new Error(`doe runtime library not found: ${args.doeLibPath}`);
   }
+  args.modeChromePaths = modeChromePaths;
   return args;
 }
 
@@ -1291,7 +1309,7 @@ function applyModeWideFailure(l1Rows, l2Rows, rowResultsById, workflowResultsByI
   }
 }
 
-async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows) {
+async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromePath) {
   const launchArgs = [
     ...baseLaunchArgs(pageTarget.port),
     ...args.chromeArgs,
@@ -1321,7 +1339,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows) {
 
   try {
     browser = await chromium.launch({
-      executablePath: args.chromePath,
+      executablePath: chromePath,
       headless: args.headless,
       args: launchArgs,
       timeout: 120000,
@@ -1333,6 +1351,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows) {
     applyModeWideFailure(l1Rows, l2Rows, rowResultsById, workflowResultsById, failure);
     return {
       mode,
+      chromePath,
       launchArgs,
       elapsedMs: Date.now() - startMs,
       runtimeProbe,
@@ -1387,6 +1406,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows) {
 
     return {
       mode,
+      chromePath,
       launchArgs,
       elapsedMs: Date.now() - startMs,
       runtimeProbe,
@@ -1403,6 +1423,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows) {
     runtimeProbe.errors = [...runtimeProbe.errors, failure.error];
     return {
       mode,
+      chromePath,
       launchArgs,
       elapsedMs: Date.now() - startMs,
       runtimeProbe,
@@ -1549,6 +1570,8 @@ async function main() {
         continue;
       }
 
+      const chromePathForMode =
+        mode === "dawn" ? args.modeChromePaths.dawn : args.modeChromePaths.doe;
       const modeRun = await runMode(
         chromium,
         mode,
@@ -1556,9 +1579,11 @@ async function main() {
         pageTarget,
         l1Rows,
         l2Rows,
+        chromePathForMode,
       );
       modeRunDetails.push({
         mode: modeRun.mode,
+        chromePath: modeRun.chromePath,
         elapsedMs: modeRun.elapsedMs,
         launchArgs: modeRun.launchArgs,
         runtimeProbe: modeRun.runtimeProbe,
@@ -1625,6 +1650,7 @@ async function main() {
       arch: process.arch,
     },
     chromePath: args.chromePath,
+    modeChromePaths: args.modeChromePaths,
     doeLibPath: args.doeLibPath,
     mode: args.mode,
     modeOrder: modes,

@@ -21,9 +21,9 @@ fi
 
 cd "${LANE_DIR}/src"
 
-if [[ ! -f "out/fawn_release/args.gn" ]]; then
-  gn gen out/fawn_release --args='is_debug=false'
-fi
+DEFAULT_RELEASE_GN_ARGS="is_debug=false is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false"
+RELEASE_GN_ARGS="${FAWN_CHROMIUM_RELEASE_GN_ARGS:-${DEFAULT_RELEASE_GN_ARGS}}"
+gn gen out/fawn_release "--args=${RELEASE_GN_ARGS}"
 
 autoninja -C out/fawn_release chrome "$@"
 

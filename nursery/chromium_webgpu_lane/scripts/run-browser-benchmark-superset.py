@@ -99,6 +99,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest-out", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--workflows", default=str(DEFAULT_WORKFLOWS))
     parser.add_argument("--chrome", default=str(DEFAULT_CHROME))
+    parser.add_argument(
+        "--dawn-chrome",
+        default="",
+        help="Browser executable for dawn mode (defaults to --chrome).",
+    )
+    parser.add_argument(
+        "--doe-chrome",
+        default="",
+        help="Browser executable for doe mode (defaults to --chrome).",
+    )
     parser.add_argument("--doe-lib", default=str(DEFAULT_DOE_LIB))
     parser.add_argument("--mode", choices=["dawn", "doe", "both"], default="both")
     parser.add_argument("--headless", default="true", choices=["true", "false"])
@@ -346,6 +356,8 @@ def main() -> int:
     manifest_out = Path(args.manifest_out).resolve()
     workflows = Path(args.workflows).resolve()
     chrome = Path(args.chrome).resolve()
+    dawn_chrome = Path(args.dawn_chrome).resolve() if args.dawn_chrome else chrome
+    doe_chrome = Path(args.doe_chrome).resolve() if args.doe_chrome else chrome
     doe_lib = Path(args.doe_lib).resolve()
     promotion_approvals = Path(args.promotion_approvals).resolve()
     default_out, default_summary, default_check = default_output_paths()
@@ -361,8 +373,11 @@ def main() -> int:
         return 2
 
     if not args.skip_run:
-        if not chrome.exists():
-            print(f"FAIL: chrome binary not found: {chrome}")
+        if args.mode in {"dawn", "both"} and not dawn_chrome.exists():
+            print(f"FAIL: dawn mode chrome binary not found: {dawn_chrome}")
+            return 2
+        if args.mode in {"doe", "both"} and not doe_chrome.exists():
+            print(f"FAIL: doe mode chrome binary not found: {doe_chrome}")
             return 2
         if args.mode in {"doe", "both"} and not doe_lib.exists():
             print(f"FAIL: doe runtime library not found: {doe_lib}")
@@ -389,6 +404,10 @@ def main() -> int:
             args.mode,
             "--chrome",
             str(chrome),
+            "--dawn-chrome",
+            str(dawn_chrome),
+            "--doe-chrome",
+            str(doe_chrome),
             "--doe-lib",
             str(doe_lib),
             "--manifest",
@@ -475,6 +494,8 @@ def main() -> int:
             "manifest": str(manifest_out),
             "workflows": str(workflows),
             "chrome": str(chrome),
+            "dawnChrome": str(dawn_chrome),
+            "doeChrome": str(doe_chrome),
             "doeLib": str(doe_lib),
             "mode": args.mode,
             "promotionApprovals": str(promotion_approvals),

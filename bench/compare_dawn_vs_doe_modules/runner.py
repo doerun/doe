@@ -453,6 +453,7 @@ def run_workload(
     upload_submit_every: int,
     inject_upload_runtime_flags: bool,
     required_timing_class: str,
+    comparability_mode: str,
     benchmark_policy: Any,
     emit_shell: bool,
 ) -> dict[str, Any]:
@@ -581,19 +582,26 @@ def run_workload(
         elif trace_success_count > 0 or trace_row_count > 0:
             derived_divisor = float(max(trace_success_count, trace_row_count))
         
-        enforce_counter_derived_divisor = workload.comparable and workload.domain == "upload"
-        if (
-            enforce_counter_derived_divisor
+        enforce_counter_derived_divisor = (
+            comparability_mode == "strict"
+            and workload.comparable
             and required_timing_class != "process-wall"
-            and derived_divisor > 1.0
-            and effective_timing_divisor != derived_divisor
-        ):
-            raise ValueError(
-                f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
-                f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
-                f"reveals {derived_divisor} physical operations "
-                f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
-            )
+        )
+        if enforce_counter_derived_divisor and effective_timing_divisor > 1.0:
+            if derived_divisor <= 1.0:
+                raise ValueError(
+                    f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
+                    f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
+                    "does not expose a counter-derived physical operation count > 1 "
+                    f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
+                )
+            if abs(effective_timing_divisor - derived_divisor) > 1e-9:
+                raise ValueError(
+                    f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
+                    f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
+                    f"reveals {derived_divisor} physical operations "
+                    f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
+                )
 
         measured_ms = measured_raw_ms / effective_timing_divisor
         timing_metrics_raw_ms = extract_timing_metrics_ms(

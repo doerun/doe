@@ -39,6 +39,8 @@ pub const ZigMetalBackend = struct {
     queue_sync_mode: webgpu.QueueSyncMode = .per_command,
     gpu_timestamp_mode: webgpu.GpuTimestampMode = .auto,
     pending_upload_commands: u32 = 0,
+    upload_reserved_bytes: u64 = 0,
+    upload_buffer_ready: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*ZigMetalBackend {
         _ = profile;
@@ -56,6 +58,8 @@ pub const ZigMetalBackend = struct {
             .queue_sync_mode = .per_command,
             .gpu_timestamp_mode = .auto,
             .pending_upload_commands = 0,
+            .upload_reserved_bytes = 0,
+            .upload_buffer_ready = false,
         };
         return ptr;
     }
@@ -200,8 +204,34 @@ fn submit_for_command(self: *ZigMetalBackend, command: model.Command) !u64 {
         return 0;
     }
 
+    if (self.pending_upload_commands > 0) {
+        self.pending_upload_commands = 0;
+        return try submit_and_maybe_wait(self);
+    }
+
     self.pending_upload_commands = 0;
     return try submit_and_maybe_wait(self);
+}
+
+fn command_requires_shader_manifest(command: model.Command) bool {
+    return switch (command) {
+        .dispatch, .kernel_dispatch, .render_draw, .async_diagnostics => true,
+        else => false,
+    };
+}
+
+fn ensure_upload_capacity(self: *ZigMetalBackend, required_bytes: u64) !void {
+    if (required_bytes == 0) return;
+    if (required_bytes <= self.upload_reserved_bytes) return;
+    const additional_bytes = required_bytes - self.upload_reserved_bytes;
+    try staging_ring.reserve(additional_bytes);
+    self.upload_reserved_bytes = required_bytes;
+}
+
+fn ensure_upload_buffer(self: *ZigMetalBackend) !void {
+    if (self.upload_buffer_ready) return;
+    try buffer.create_buffer();
+    self.upload_buffer_ready = true;
 }
 
 fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
@@ -210,9 +240,9 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
     switch (command) {
         .upload => |upload| {
             const upload_bytes = @as(u64, @intCast(upload.bytes));
-            try staging_ring.reserve(upload_bytes);
+            try ensure_upload_capacity(self, upload_bytes);
+            try ensure_upload_buffer(self);
             try upload_path.upload_once(upload_usage_mode(self.upload_buffer_usage_mode), upload_bytes);
-            try buffer.create_buffer();
         },
         .copy_buffer_to_texture => {
             try copy_encode.encode_copy();
@@ -279,7 +309,9 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
         },
     }
 
-    try shader_artifact_manifest.emit_shader_artifact_manifest();
+    if (command_requires_shader_manifest(command)) {
+        try shader_artifact_manifest.emit_shader_artifact_manifest();
+    }
 }
 
 fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webgpu.NativeExecutionResult {
@@ -341,6 +373,8 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .queue_sync_mode = queue_sync_mode,
         .gpu_timestamp_mode = .off,
         .pending_upload_commands = 0,
+        .upload_reserved_bytes = 0,
+        .upload_buffer_ready = false,
     };
     metal_runtime_state.reset_state();
     _ = try execute_runtime_command(&backend, command);
@@ -353,6 +387,9 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
+    if (self.upload_buffer_usage_mode != mode) {
+        self.upload_buffer_ready = false;
+    }
     self.upload_buffer_usage_mode = mode;
     self.upload_submit_every = if (submit_every == 0) 1 else submit_every;
 }
@@ -374,6 +411,9 @@ fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
 
 fn flush_queue(ctx: *anyopaque) anyerror!u64 {
     const self = cast(ctx);
+    if (!self.runtime_bootstrapped and self.pending_upload_commands == 0) {
+        return 0;
+    }
     try ensure_runtime_bootstrapped(self);
     var flush_ns: u64 = 0;
 
@@ -395,7 +435,8 @@ fn flush_queue(ctx: *anyopaque) anyerror!u64 {
 fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     const self = cast(ctx);
     try ensure_runtime_bootstrapped(self);
-    try staging_ring.reserve(max_upload_bytes);
+    try ensure_upload_capacity(self, max_upload_bytes);
+    try ensure_upload_buffer(self);
 }
 
 const VTABLE = backend_iface.BackendVTable{

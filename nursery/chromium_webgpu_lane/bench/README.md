@@ -55,6 +55,15 @@ npm install --prefix nursery/chromium_webgpu_lane playwright-core
 ./nursery/chromium_webgpu_lane/scripts/run-bench.sh
 ```
 
+To run dawn/doe against different browser executables in one benchmark run:
+
+```bash
+./nursery/chromium_webgpu_lane/scripts/run-bench.sh \
+  --mode both \
+  --dawn-chrome /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --doe-chrome nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium
+```
+
 Default outputs are lane-local diagnostic artifacts under:
 
 - `nursery/chromium_webgpu_lane/artifacts/<timestamp>/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json`

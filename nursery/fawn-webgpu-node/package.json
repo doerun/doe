@@ -1,0 +1,35 @@
+{
+  "name": "@fawn/webgpu-node",
+  "version": "0.2.0",
+  "description": "Headless Doe WebGPU bridge for browserless AI/ML benchmarking and CI",
+  "type": "module",
+  "main": "./src/node-runtime.js",
+  "exports": {
+    ".": {
+      "bun": "./src/bun-ffi.js",
+      "default": "./src/node-runtime.js"
+    },
+    "./bun": "./src/bun-ffi.js",
+    "./node": "./src/node-runtime.js"
+  },
+  "bin": {
+    "fawn-webgpu-bench": "./bin/fawn-webgpu-bench.js",
+    "fawn-webgpu-compare": "./bin/fawn-webgpu-compare.js"
+  },
+  "scripts": {
+    "test": "node ./test-node.js",
+    "test:bun": "bun ./test.js"
+  },
+  "keywords": [
+    "webgpu",
+    "doe",
+    "headless",
+    "benchmarking",
+    "ai",
+    "ml",
+    "ci",
+    "bun"
+  ],
+  "author": "Fawn",
+  "license": "ISC"
+}

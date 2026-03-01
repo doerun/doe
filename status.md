@@ -43,12 +43,27 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - Metal upload behavior knobs are now execution-effective in runtime path (`upload_buffer_usage_mode`, `upload_submit_every`, and prewarm byte budgets) via byte-aware staging reserve and mode-aware upload execution.
   - `zig/src/backend/metal/metal_runtime_state.zig` now derives manifest `*Sha256` fields from literal SHA-256 artifact payload digests, records command-scoped manifest module tags, and persists manifest telemetry only after file write success.
   - Metal tests are now wired into `zig/test_suite.zig` so `zig build test` exercises both Metal and Vulkan backend correctness paths.
+  - Metal upload hot-path now reuses staging capacity and upload buffer allocation across commands in `zig/src/backend/metal/mod.zig` (`ensure_upload_capacity`, `ensure_upload_buffer`), removing per-command reserve+buffer-create churn for steady-state upload workloads.
+  - Metal command routing now emits shader artifact manifests only for shader-bearing command families (`dispatch`, `kernel_dispatch`, `render_draw`, `async_diagnostics`), reducing non-shader command overhead without changing manifest coverage on shader paths.
+  - Metal flush behavior now avoids unnecessary runtime bootstrap on no-op flushes and preserves upload cadence correctness when a non-upload command follows queued uploads.
 - final macOS Metal Dawn-vs-Doe evidence execution is now codified as an operator runbook:
   `docs/metal-macos-proof-bundle-runbook.md`
+- Chromium lane release/build defaults now force non-CfT branding args at `gn gen` time (`is_chrome_for_testing=false`, `is_chrome_for_testing_branded=false`, `is_chrome_branded=false`) so stale `args.gn` does not reintroduce Chrome-for-Testing UI branding.
+- Chromium lane browser layered benchmark harness now supports per-mode browser executables (`--dawn-chrome`, `--doe-chrome`) so one run can compare Doe runtime path in `Fawn.app` against a separate Dawn/Chrome binary without mixing launch binaries.
+- experimental npm bridge package now provides practical headless integration paths under `nursery/fawn-webgpu-node`:
+  - Node process-bridge runtime wrapper (`src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
+  - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
+  - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
+  - package CLI entrypoint `fawn-webgpu-doppler` provides Doppler bench/compare wrappers (`tools/doppler-cli.js bench`, `tools/compare-engines.js`) with Fawn executable auto-discovery to simplify cross-repo interop.
+  - package scope/positioning is now explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/fawn-webgpu-node/API_CONTRACT.md` and compatibility boundary in `nursery/fawn-webgpu-node/COMPAT_SCOPE.md`.
+  - Bun direct-FFI path remains available as prototype (`src/bun-ffi.js`) for low-level C-ABI integration experiments.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
 - drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libdoe_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `exp_texture_sampling_raster_proxy` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
+- local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.local.metal.extended.json` (no hard-coded 19-workload subset filter).
+- strict comparability now pins Dawn-vs-Doe timing-source and timing-selection-policy pairs by domain (`upload` uses row-total/upload-row-total-preferred; non-upload uses execution-total/`<none>`), instead of broad runtime-family compatibility acceptance.
+- strict normalization now requires counter-derived operation divisors for every comparable non-process-wall workload (not upload-only), and fails fast when configured divisors cannot be derived from trace counters.
 
 ## Product implementation state (runtime outcomes)
 

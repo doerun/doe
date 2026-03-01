@@ -95,9 +95,9 @@ fi
 
 if [[ -z "${gn_args}" ]]; then
   if [[ "${mode}" == "debug" ]]; then
-    gn_args="is_debug=true"
+    gn_args="is_debug=true is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false"
   else
-    gn_args="is_debug=false"
+    gn_args="is_debug=false is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false"
   fi
 fi
 
