@@ -1,0 +1,61 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xde553990efed7ac4",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "par_matrix_vector_multiply_32768x2048_f32",
+  "gtestFilter": "MatrixVectorMultiplyPerf.Run/Metal_Apple_M3__e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+  "selectedFilter": "MatrixVectorMultiplyPerf.Run/Metal_Apple_M3__e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Metal_Apple_M3__e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0 --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote28.claim.local/par_matrix_vector_multiply_32768x2048_f32/right/dawn.run009.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 3.315036111,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6329.754374994081,
+  "processWallMs": 6329.754374994081,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 3.315036111,
+    "cpu_time": 3.314505278,
+    "gpu_time": 3.3062912
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 3315036,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      3.313416389,
+      3.3162486110000002,
+      3.315036111
+    ],
+    "cpu_time": [
+      3.3130100000000002,
+      3.3157177780000002,
+      3.314505278
+    ],
+    "gpu_time": [
+      3.30498048,
+      3.30760192,
+      3.3062912
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    3.313416389,
+    3.3162486110000002,
+    3.315036111
+  ]
+}

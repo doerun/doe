@@ -10,6 +10,18 @@ const LIB_EXTENSION_BY_PLATFORM = {
 };
 
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const PROVIDER_MODULE_SPECIFIER = resolve_provider_module_specifier();
+const DEFAULT_PROVIDER_CREATE_ARGS = parse_create_args_from_env(
+    process.env.FAWN_WEBGPU_CREATE_ARGS
+);
+let provider_module_namespace = null;
+let provider_module_load_error = null;
+
+try {
+    provider_module_namespace = await import(PROVIDER_MODULE_SPECIFIER);
+} catch (error) {
+    provider_module_load_error = error;
+}
 
 function first_existing_path(paths) {
     for (const path of paths) {
@@ -74,6 +86,155 @@ function build_bench_args(options) {
 
 function has_option_flag(args, flag) {
     return Array.isArray(args) && args.includes(flag);
+}
+
+function resolve_provider_module_specifier() {
+    const candidate = process.env.FAWN_WEBGPU_NODE_PROVIDER_MODULE;
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
+        return candidate.trim();
+    }
+    return "webgpu";
+}
+
+function parse_create_args_from_env(raw) {
+    if (typeof raw !== "string" || raw.trim().length === 0) {
+        return [];
+    }
+    return raw
+        .split(";")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+}
+
+function normalize_create_args(create_args) {
+    if (create_args == null) {
+        return [...DEFAULT_PROVIDER_CREATE_ARGS];
+    }
+    if (!Array.isArray(create_args)) {
+        throw new Error("create(...) expects an array of string args.");
+    }
+    const normalized = [];
+    for (const [index, value] of create_args.entries()) {
+        if (typeof value !== "string") {
+            throw new Error(
+                `create(...) arg[${index}] must be a string, got ${typeof value}`
+            );
+        }
+        const trimmed = value.trim();
+        if (trimmed.length > 0) normalized.push(trimmed);
+    }
+    return normalized;
+}
+
+function resolve_provider_create_function() {
+    if (!provider_module_namespace) {
+        const message = provider_module_load_error
+            ? provider_module_load_error.message || String(provider_module_load_error)
+            : "provider module did not load";
+        throw new Error(
+            `Could not load WebGPU provider module '${PROVIDER_MODULE_SPECIFIER}': ${message}. ` +
+                "Set FAWN_WEBGPU_NODE_PROVIDER_MODULE to a module exporting create(...) and globals."
+        );
+    }
+
+    const from_namespace = provider_module_namespace.create;
+    const from_default = provider_module_namespace.default?.create;
+    const create_fn = typeof from_namespace === "function" ? from_namespace : from_default;
+    if (typeof create_fn !== "function") {
+        throw new Error(
+            `Provider module '${PROVIDER_MODULE_SPECIFIER}' does not export create(...).`
+        );
+    }
+    return create_fn;
+}
+
+function build_provider_globals() {
+    if (!provider_module_namespace) {
+        return {};
+    }
+    const direct = provider_module_namespace.globals;
+    const nested = provider_module_namespace.default?.globals;
+    const source = (direct && typeof direct === "object") ? direct : nested;
+    if (!source || typeof source !== "object") {
+        return {};
+    }
+    return { ...source };
+}
+
+function define_global_if_missing(target, name, value) {
+    if (!target || typeof target !== "object") return;
+    if (value === undefined || value === null) return;
+    if (target[name] !== undefined) return;
+    Object.defineProperty(target, name, {
+        value,
+        writable: true,
+        configurable: true,
+        enumerable: false,
+    });
+}
+
+export const globals = build_provider_globals();
+
+export function create(createArgs = null) {
+    const create_fn = resolve_provider_create_function();
+    const args = normalize_create_args(createArgs);
+    const gpu = create_fn(args);
+    if (!gpu || typeof gpu.requestAdapter !== "function") {
+        throw new Error(
+            `Provider module '${PROVIDER_MODULE_SPECIFIER}' returned an invalid GPU object from create(...).`
+        );
+    }
+    return gpu;
+}
+
+export function setupGlobals(target = globalThis, createArgs = null) {
+    for (const [name, value] of Object.entries(globals)) {
+        define_global_if_missing(target, name, value);
+    }
+    const gpu = create(createArgs);
+    if (typeof target.navigator === "undefined") {
+        Object.defineProperty(target, "navigator", {
+            value: { gpu },
+            writable: true,
+            configurable: true,
+            enumerable: false,
+        });
+    } else if (!target.navigator.gpu) {
+        Object.defineProperty(target.navigator, "gpu", {
+            value: gpu,
+            writable: true,
+            configurable: true,
+            enumerable: false,
+        });
+    }
+    return gpu;
+}
+
+export async function requestAdapter(adapterOptions = undefined, createArgs = null) {
+    const gpu = create(createArgs);
+    return gpu.requestAdapter(adapterOptions);
+}
+
+export async function requestDevice(options = {}) {
+    const adapterOptions = options?.adapterOptions;
+    const deviceDescriptor = options?.deviceDescriptor;
+    const createArgs = options?.createArgs ?? null;
+    const adapter = await requestAdapter(adapterOptions, createArgs);
+    if (!adapter || typeof adapter.requestDevice !== "function") {
+        throw new Error("Provider returned an invalid adapter object.");
+    }
+    return adapter.requestDevice(deviceDescriptor);
+}
+
+export function providerInfo() {
+    return {
+        module: PROVIDER_MODULE_SPECIFIER,
+        loaded: !!provider_module_namespace,
+        loadError: provider_module_load_error
+            ? provider_module_load_error.message || String(provider_module_load_error)
+            : "",
+        defaultCreateArgs: [...DEFAULT_PROVIDER_CREATE_ARGS],
+    };
 }
 
 export function resolveFawnRepoRoot(explicitPath) {
@@ -200,4 +361,3 @@ export function runDawnVsDoeCompare(options = {}) {
         env: { ...process.env, ...(options.env ?? {}) },
     });
 }
-

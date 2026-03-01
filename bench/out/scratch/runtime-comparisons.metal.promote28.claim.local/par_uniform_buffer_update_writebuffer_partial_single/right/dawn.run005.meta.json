@@ -1,0 +1,56 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x33bcdec5982ce3a9",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "par_uniform_buffer_update_writebuffer_partial_single",
+  "gtestFilter": "UniformBufferUpdatePerf.Run/Metal_Apple_M3_WriteBuffer_PartialSize_SingleUniformBuffer",
+  "selectedFilter": "UniformBufferUpdatePerf.Run/Metal_Apple_M3_WriteBuffer_PartialSize_SingleUniformBuffer",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=UniformBufferUpdatePerf.Run/Metal_Apple_M3_WriteBuffer_PartialSize_SingleUniformBuffer --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote28.claim.local/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run005.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.073065321691,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6019.685624996782,
+  "processWallMs": 6019.685624996782,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.073065321691,
+    "cpu_time": 0.031889114583
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 73065,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.073085842525,
+      0.073065321691,
+      0.073032248775
+    ],
+    "cpu_time": [
+      0.031814191176,
+      0.032003964461,
+      0.031889114583
+    ],
+    "gpu_time": []
+  },
+  "benchmarkWallMsSamples": [
+    0.073085842525,
+    0.073065321691,
+    0.073032248775
+  ]
+}

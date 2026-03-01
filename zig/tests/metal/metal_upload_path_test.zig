@@ -12,5 +12,10 @@ test "metal upload path runs" {
     try metal_adapter.select_adapter();
     try metal_device.create_device();
     try staging_ring.reserve(1024);
-    try upload_path.upload_once(.copy_dst_copy_src, 1024);
+    try std.testing.expectEqual(@as(u64, 1024), metal_runtime_state.staging_reserved_bytes());
+    try staging_ring.reserve(2048);
+    try std.testing.expectEqual(@as(u64, 3072), metal_runtime_state.staging_reserved_bytes());
+    try upload_path.upload_once(.copy_dst, 512);
+    try std.testing.expectEqual(@as(u64, 1), metal_runtime_state.upload_copy_dst_calls());
+    try std.testing.expectEqual(@as(u64, 0), metal_runtime_state.upload_copy_dst_copy_src_calls());
 }

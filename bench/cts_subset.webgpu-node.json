@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "workdir": "../doppler/node_modules/webgpu",
+  "commandTemplate": "npm run cts -- {query}",
+  "queries": [
+    "webgpu:api,operation,buffer:*",
+    "webgpu:api,operation,texture:*",
+    "webgpu:shader,execution,expression,call,builtin,textureDimensions:*"
+  ]
+}
+

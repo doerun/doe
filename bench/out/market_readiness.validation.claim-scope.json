@@ -1,0 +1,613 @@
+{
+  "claimStatus": "claimable",
+  "claimabilityMode": "local",
+  "comparisonStatus": "comparable",
+  "generatedAtUtc": "2026-03-01T18:37:00.931375Z",
+  "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+  "rows": [
+    {
+      "artifacts": {
+        "leftTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/left/doe.run011.meta.json"
+        ],
+        "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+        "rightTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1kb/right/dawn.run011.meta.json"
+        ]
+      },
+      "domain": "upload",
+      "externalCitation": "par_buffer_upload_1kb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=4601.2164104651165/4882.3915140624995/4882.3915140624995, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "name": "buffer-upload 1KB",
+      "performance": {
+        "deltaPercent": {
+          "p50Percent": 4601.2164104651165,
+          "p95Percent": 4882.3915140624995,
+          "p99Percent": 4882.3915140624995
+        },
+        "leftStatsMs": {
+          "p50Ms": 0.00017199999999999998,
+          "p95Ms": 0.000192,
+          "p99Ms": 0.000192
+        },
+        "rightStatsMs": {
+          "p50Ms": 0.008086092226,
+          "p95Ms": 0.009566191707,
+          "p99Ms": 0.009566191707
+        }
+      },
+      "reportStatus": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable"
+      },
+      "runtime": {
+        "leftBackendId": "zig_metal",
+        "leftProfile": {
+          "api": "metal",
+          "deviceFamily": "m3",
+          "driver": "1.0.0",
+          "vendor": "apple"
+        },
+        "rightBackendId": "",
+        "rightProfile": {}
+      },
+      "timing": {
+        "leftClasses": [
+          "operation"
+        ],
+        "leftSources": [
+          "doe-execution-row-total-ns"
+        ],
+        "rightClasses": [
+          "operation"
+        ],
+        "rightSources": [
+          "dawn-perf-wall-time"
+        ]
+      },
+      "workloadId": "par_buffer_upload_1kb",
+      "workloadStatus": {
+        "workloadClaimableNow": true,
+        "workloadComparableContract": true,
+        "workloadComparableNow": true
+      }
+    },
+    {
+      "artifacts": {
+        "leftTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/left/doe.run011.meta.json"
+        ],
+        "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+        "rightTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_64kb/right/dawn.run011.meta.json"
+        ]
+      },
+      "domain": "upload",
+      "externalCitation": "par_buffer_upload_64kb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=5857.330636597938/5690.292109223301/5690.292109223301, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "name": "buffer-upload 64KB",
+      "performance": {
+        "deltaPercent": {
+          "p50Percent": 5857.330636597938,
+          "p95Percent": 5690.292109223301,
+          "p99Percent": 5690.292109223301
+        },
+        "leftStatsMs": {
+          "p50Ms": 0.000194,
+          "p95Ms": 0.000206,
+          "p99Ms": 0.000206
+        },
+        "rightStatsMs": {
+          "p50Ms": 0.011557221434999999,
+          "p95Ms": 0.011928001745,
+          "p99Ms": 0.011928001745
+        }
+      },
+      "reportStatus": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable"
+      },
+      "runtime": {
+        "leftBackendId": "zig_metal",
+        "leftProfile": {
+          "api": "metal",
+          "deviceFamily": "m3",
+          "driver": "1.0.0",
+          "vendor": "apple"
+        },
+        "rightBackendId": "",
+        "rightProfile": {}
+      },
+      "timing": {
+        "leftClasses": [
+          "operation"
+        ],
+        "leftSources": [
+          "doe-execution-row-total-ns"
+        ],
+        "rightClasses": [
+          "operation"
+        ],
+        "rightSources": [
+          "dawn-perf-wall-time"
+        ]
+      },
+      "workloadId": "par_buffer_upload_64kb",
+      "workloadStatus": {
+        "workloadClaimableNow": true,
+        "workloadComparableContract": true,
+        "workloadComparableNow": true
+      }
+    },
+    {
+      "artifacts": {
+        "leftTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/left/doe.run011.meta.json"
+        ],
+        "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+        "rightTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_1mb/right/dawn.run011.meta.json"
+        ]
+      },
+      "domain": "upload",
+      "externalCitation": "par_buffer_upload_1mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=47365.54265380952/38509.252658076926/38509.252658076926, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "name": "buffer-upload 1MB",
+      "performance": {
+        "deltaPercent": {
+          "p50Percent": 47365.54265380952,
+          "p95Percent": 38509.252658076926,
+          "p99Percent": 38509.252658076926
+        },
+        "leftStatsMs": {
+          "p50Ms": 0.00021,
+          "p95Ms": 0.00026,
+          "p99Ms": 0.00026
+        },
+        "rightStatsMs": {
+          "p50Ms": 0.099677639573,
+          "p95Ms": 0.100384056911,
+          "p99Ms": 0.100384056911
+        }
+      },
+      "reportStatus": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable"
+      },
+      "runtime": {
+        "leftBackendId": "zig_metal",
+        "leftProfile": {
+          "api": "metal",
+          "deviceFamily": "m3",
+          "driver": "1.0.0",
+          "vendor": "apple"
+        },
+        "rightBackendId": "",
+        "rightProfile": {}
+      },
+      "timing": {
+        "leftClasses": [
+          "operation"
+        ],
+        "leftSources": [
+          "doe-execution-row-total-ns"
+        ],
+        "rightClasses": [
+          "operation"
+        ],
+        "rightSources": [
+          "dawn-perf-wall-time"
+        ]
+      },
+      "workloadId": "par_buffer_upload_1mb",
+      "workloadStatus": {
+        "workloadClaimableNow": true,
+        "workloadComparableContract": true,
+        "workloadComparableNow": true
+      }
+    },
+    {
+      "artifacts": {
+        "leftTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/left/doe.run011.meta.json"
+        ],
+        "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+        "rightTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_4mb/right/dawn.run011.meta.json"
+        ]
+      },
+      "domain": "upload",
+      "externalCitation": "par_buffer_upload_4mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=155790.92098384618/146432.98712357142/146432.98712357142, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "name": "buffer-upload 4MB",
+      "performance": {
+        "deltaPercent": {
+          "p50Percent": 155790.92098384618,
+          "p95Percent": 146432.98712357142,
+          "p99Percent": 146432.98712357142
+        },
+        "leftStatsMs": {
+          "p50Ms": 0.00026,
+          "p95Ms": 0.00028000000000000003,
+          "p99Ms": 0.00028000000000000003
+        },
+        "rightStatsMs": {
+          "p50Ms": 0.405316394558,
+          "p95Ms": 0.410292363946,
+          "p99Ms": 0.410292363946
+        }
+      },
+      "reportStatus": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable"
+      },
+      "runtime": {
+        "leftBackendId": "zig_metal",
+        "leftProfile": {
+          "api": "metal",
+          "deviceFamily": "m3",
+          "driver": "1.0.0",
+          "vendor": "apple"
+        },
+        "rightBackendId": "",
+        "rightProfile": {}
+      },
+      "timing": {
+        "leftClasses": [
+          "operation"
+        ],
+        "leftSources": [
+          "doe-execution-row-total-ns"
+        ],
+        "rightClasses": [
+          "operation"
+        ],
+        "rightSources": [
+          "dawn-perf-wall-time"
+        ]
+      },
+      "workloadId": "par_buffer_upload_4mb",
+      "workloadStatus": {
+        "workloadClaimableNow": true,
+        "workloadComparableContract": true,
+        "workloadComparableNow": true
+      }
+    },
+    {
+      "artifacts": {
+        "leftTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/left/doe.run011.meta.json"
+        ],
+        "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+        "rightTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_buffer_upload_16mb/right/dawn.run011.meta.json"
+        ]
+      },
+      "domain": "upload",
+      "externalCitation": "par_buffer_upload_16mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=963360.9850000001/809019.3527272729/809019.3527272729, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "name": "buffer-upload 16MB",
+      "performance": {
+        "deltaPercent": {
+          "p50Percent": 963360.9850000001,
+          "p95Percent": 809019.3527272729,
+          "p99Percent": 809019.3527272729
+        },
+        "leftStatsMs": {
+          "p50Ms": 0.00017999999999999998,
+          "p95Ms": 0.00021999999999999998,
+          "p99Ms": 0.00021999999999999998
+        },
+        "rightStatsMs": {
+          "p50Ms": 1.734229773,
+          "p95Ms": 1.7800625760000002,
+          "p99Ms": 1.7800625760000002
+        }
+      },
+      "reportStatus": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable"
+      },
+      "runtime": {
+        "leftBackendId": "zig_metal",
+        "leftProfile": {
+          "api": "metal",
+          "deviceFamily": "m3",
+          "driver": "1.0.0",
+          "vendor": "apple"
+        },
+        "rightBackendId": "",
+        "rightProfile": {}
+      },
+      "timing": {
+        "leftClasses": [
+          "operation"
+        ],
+        "leftSources": [
+          "doe-execution-row-total-ns"
+        ],
+        "rightClasses": [
+          "operation"
+        ],
+        "rightSources": [
+          "dawn-perf-wall-time"
+        ]
+      },
+      "workloadId": "par_buffer_upload_16mb",
+      "workloadStatus": {
+        "workloadClaimableNow": true,
+        "workloadComparableContract": true,
+        "workloadComparableNow": true
+      }
+    },
+    {
+      "artifacts": {
+        "leftTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/left/doe.run011.meta.json"
+        ],
+        "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+        "rightTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/ctr_resource_lifecycle_contract/right/dawn.run011.meta.json"
+        ]
+      },
+      "domain": "p0-resource",
+      "externalCitation": "ctr_resource_lifecycle_contract: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=218924.6640536842/191329.67171727272/191329.67171727272, timingSources(left/right)=['doe-execution-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "name": "p0 resource lifecycle contract",
+      "performance": {
+        "deltaPercent": {
+          "p50Percent": 218924.6640536842,
+          "p95Percent": 191329.67171727272,
+          "p99Percent": 191329.67171727272
+        },
+        "leftStatsMs": {
+          "p50Ms": 0.00019,
+          "p95Ms": 0.00022,
+          "p99Ms": 0.00022
+        },
+        "rightStatsMs": {
+          "p50Ms": 0.416146861702,
+          "p95Ms": 0.421145277778,
+          "p99Ms": 0.421145277778
+        }
+      },
+      "reportStatus": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable"
+      },
+      "runtime": {
+        "leftBackendId": "zig_metal",
+        "leftProfile": {
+          "api": "metal",
+          "deviceFamily": "m3",
+          "driver": "1.0.0",
+          "vendor": "apple"
+        },
+        "rightBackendId": "",
+        "rightProfile": {}
+      },
+      "timing": {
+        "leftClasses": [
+          "operation"
+        ],
+        "leftSources": [
+          "doe-execution-total-ns"
+        ],
+        "rightClasses": [
+          "operation"
+        ],
+        "rightSources": [
+          "dawn-perf-wall-time"
+        ]
+      },
+      "workloadId": "ctr_resource_lifecycle_contract",
+      "workloadStatus": {
+        "workloadClaimableNow": true,
+        "workloadComparableContract": true,
+        "workloadComparableNow": true
+      }
+    },
+    {
+      "artifacts": {
+        "leftTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/left/doe.run011.meta.json"
+        ],
+        "reportPath": "bench/out/20260301T173606Z/metal.npm.compare.json",
+        "rightTraceMetaPaths": [
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run001.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run002.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run003.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run004.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run005.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run006.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run007.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run008.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run009.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run010.meta.json",
+          "bench/out/20260301T173606Z/runtime-comparisons.local.metal.extended.comparable/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run011.meta.json"
+        ]
+      },
+      "domain": "render",
+      "externalCitation": "par_uniform_buffer_update_writebuffer_partial_single: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=221.56382151423642/199.44606105843005/199.44606105843005, timingSources(left/right)=['doe-execution-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "name": "uniform buffer update (WriteBuffer partial single)",
+      "performance": {
+        "deltaPercent": {
+          "p50Percent": 221.56382151423642,
+          "p95Percent": 199.44606105843005,
+          "p99Percent": 199.44606105843005
+        },
+        "leftStatsMs": {
+          "p50Ms": 0.02318,
+          "p95Ms": 0.025415,
+          "p99Ms": 0.025415
+        },
+        "rightStatsMs": {
+          "p50Ms": 0.074538493827,
+          "p95Ms": 0.076104216418,
+          "p99Ms": 0.076104216418
+        }
+      },
+      "reportStatus": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable"
+      },
+      "runtime": {
+        "leftBackendId": "zig_metal",
+        "leftProfile": {
+          "api": "metal",
+          "deviceFamily": "m3",
+          "driver": "1.0.0",
+          "vendor": "apple"
+        },
+        "rightBackendId": "",
+        "rightProfile": {}
+      },
+      "timing": {
+        "leftClasses": [
+          "operation"
+        ],
+        "leftSources": [
+          "doe-execution-total-ns"
+        ],
+        "rightClasses": [
+          "operation"
+        ],
+        "rightSources": [
+          "dawn-perf-wall-time"
+        ]
+      },
+      "workloadId": "par_uniform_buffer_update_writebuffer_partial_single",
+      "workloadStatus": {
+        "workloadClaimableNow": true,
+        "workloadComparableContract": true,
+        "workloadComparableNow": true
+      }
+    }
+  ],
+  "schemaVersion": 1,
+  "workloadCount": 7
+}

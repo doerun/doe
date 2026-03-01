@@ -1,0 +1,53 @@
+{
+  "artifacts": [
+    {
+      "dependencies": [
+        "/usr/lib/libSystem.B.dylib"
+      ],
+      "dependencyCount": 1,
+      "exists": true,
+      "label": "doe-bin",
+      "path": "zig/zig-out/bin/doe-zig-runtime",
+      "rawSizeBytes": 3509280,
+      "strippedSizeBytes": 2897168
+    },
+    {
+      "dependencies": [
+        "/System/Library/Frameworks/IOSurface.framework/Versions/A/IOSurface",
+        "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+        "/usr/lib/libobjc.A.dylib",
+        "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+        "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+        "/System/Library/Frameworks/Metal.framework/Versions/A/Metal",
+        "/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore",
+        "/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa",
+        "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit",
+        "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics",
+        "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+        "/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit",
+        "/usr/lib/libSystem.B.dylib"
+      ],
+      "dependencyCount": 13,
+      "exists": true,
+      "label": "dawn-bin",
+      "path": "bench/vendor/dawn/out/Release/dawn_perf_tests",
+      "rawSizeBytes": 13160560,
+      "strippedSizeBytes": 8327760
+    },
+    {
+      "dependencies": [
+        "@rpath/libdoe_webgpu.dylib",
+        "/usr/lib/libSystem.B.dylib"
+      ],
+      "dependencyCount": 2,
+      "exists": true,
+      "label": "doe-lib",
+      "path": "zig/zig-out/lib/libdoe_webgpu.dylib",
+      "rawSizeBytes": 2019712,
+      "strippedSizeBytes": 1608272
+    }
+  ],
+  "buildRuns": {},
+  "generatedAtUtc": "2026-03-01T18:36:35.924099Z",
+  "schemaVersion": 1
+}

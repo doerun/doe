@@ -113,6 +113,15 @@ fn is_dispatch_command(command: model.Command) bool {
     };
 }
 
+fn command_operation_count(command: model.Command) u32 {
+    return switch (command) {
+        .kernel_dispatch => |kernel| if (kernel.repeat > 0) kernel.repeat else 1,
+        .render_draw => |render| if (render.draw_count > 0) render.draw_count else 1,
+        .async_diagnostics => |diagnostics| if (diagnostics.iterations > 0) diagnostics.iterations else 1,
+        else => 1,
+    };
+}
+
 fn command_manifest_module(command: model.Command) []const u8 {
     return switch (command) {
         .upload => "upload",
@@ -317,10 +326,8 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
 fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webgpu.NativeExecutionResult {
     var setup_ns: u64 = 0;
     if (!self.runtime_bootstrapped) {
-        const setup_start = try metal_timing.operation_timing_ns();
         try ensure_runtime_bootstrapped(self);
-        const setup_end = try metal_timing.operation_timing_ns();
-        setup_ns = ns_delta(setup_end, setup_start);
+        setup_ns = try metal_timing.operation_timing_ns();
     }
 
     const encode_start = try metal_timing.operation_timing_ns();
@@ -343,6 +350,7 @@ fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webg
         };
     };
     const dispatch_like = is_dispatch_command(command);
+    const operation_count = command_operation_count(command);
     const gpu_timestamp_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
     const gpu_timestamp_ns = if (gpu_timestamp_attempted and encode_ns > 0) encode_ns else 0;
     const status_message = if (command == .upload and self.upload_submit_every > 1 and submit_wait_ns == 0)
@@ -356,7 +364,7 @@ fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webg
         .setup_ns = setup_ns,
         .encode_ns = encode_ns,
         .submit_wait_ns = submit_wait_ns,
-        .dispatch_count = if (dispatch_like) 1 else 0,
+        .dispatch_count = operation_count,
         .gpu_timestamp_ns = gpu_timestamp_ns,
         .gpu_timestamp_attempted = gpu_timestamp_attempted,
         .gpu_timestamp_valid = gpu_timestamp_ns > 0,

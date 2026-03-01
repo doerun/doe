@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-02-26
+Date: 2026-03-01
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -54,9 +54,17 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - Node process-bridge runtime wrapper (`src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
-  - package CLI entrypoint `fawn-webgpu-doppler` provides Doppler bench/compare wrappers (`tools/doppler-cli.js bench`, `tools/compare-engines.js`) with Fawn executable auto-discovery to simplify cross-repo interop.
-  - package scope/positioning is now explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/fawn-webgpu-node/API_CONTRACT.md` and compatibility boundary in `nursery/fawn-webgpu-node/COMPAT_SCOPE.md`.
+  - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`) through both Node and Bun entrypoints.
+  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/fawn-webgpu-node/API_CONTRACT.md` and compatibility boundary in `nursery/fawn-webgpu-node/COMPAT_SCOPE.md`.
   - Bun direct-FFI path remains available as prototype (`src/bun-ffi.js`) for low-level C-ABI integration experiments.
+- market-readiness evidence toolchain is now implemented under `bench/`:
+  - `build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
+  - `measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
+  - `run_cts_subset.py` + `cts_subset.webgpu-node.json` for repeatable CTS subset trend artifacts.
+  - `build_model_capacity_matrix.py` for hardware×model ceiling disclosure artifacts (status + capacity summaries).
+  - `run_market_readiness_bundle.py` to orchestrate the full evidence bundle and emit a linked manifest.
+- Fawn fork maintenance policy is now documented for buyer/security review:
+  `docs/fawn-fork-maintenance-policy.md`.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
 - drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libdoe_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
@@ -64,6 +72,8 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.local.metal.extended.json` (no hard-coded 19-workload subset filter).
 - strict comparability now pins Dawn-vs-Doe timing-source and timing-selection-policy pairs by domain (`upload` uses row-total/upload-row-total-preferred; non-upload uses execution-total/`<none>`), instead of broad runtime-family compatibility acceptance.
 - strict normalization now requires counter-derived operation divisors for every comparable non-process-wall workload (not upload-only), and fails fast when configured divisors cannot be derived from trace counters.
+- strict comparable runs now execute a one-sample Doe preflight per workload before timed iterations and fail fast when `executionSuccessCount==0` or counter-derived normalization divisors disagree with workload contracts.
+- strict compare orchestration now lints comparable workload divisors from command-shape operation counts (`commandsPath` + command repeat + per-command repeat/dispatch/draw/iteration multipliers), so mismatched `leftTimingDivisor` contracts fail before benchmark execution.
 
 ## Product implementation state (runtime outcomes)
 
@@ -914,3 +924,70 @@ Ownership:
   - rollback: `bench/out/metal.finish.rollbackprobe.rollback.json` left backend `dawn_oracle`
 - Host limitation note:
   - native Dawn Metal adapter/filter autodiscovery is unavailable on this Linux host; strict metal lane validation here uses Doe-vs-Doe command templates for backend/gate contract closure.
+
+## Metal comparable surface + invariants hardening (2026-03-01)
+
+- Expanded local Metal strict comparable set in `bench/workloads.local.metal.extended.json` from 7 to 19 workloads using prior full-suite comparability evidence:
+  - evidence source: `bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json`
+  - left two known directional contracts intentionally unchanged pending counter-derived normalization proof:
+    - `exp_render_draw_throughput_macro_200k`
+    - `ctr_compute_indirect_timestamp_contract`
+- Re-promotion is now revalidated on this host with fresh strict evidence after fixing two runtime/comparability blockers:
+  - `zig/src/backend/metal/mod.zig`: first-command bootstrap ordering fixed for non-upload workloads (`execute_runtime_command` now bootstraps before reading timing counters), removing `InvalidState` execution failures on render/texture/async/kernel command families.
+  - `zig/src/backend/metal/mod.zig`: execution operation-count export now reflects command shape (`repeat`/`draw_count`/`iterations`) for strict counter-derived normalization evidence.
+  - `bench/compare_dawn_vs_doe_modules/comparability.py`: compute-domain execution-shape matching now treats unknown dispatch counters as wildcard when row/success shapes match, while still failing when both sides expose conflicting known dispatch counts.
+- Local metal workload contract updates:
+  - removed stale demotion annotations for the 12 re-promoted workloads in `bench/workloads.local.metal.extended.json`.
+  - fixed `ctr_concurrent_execution_single_contract` right normalization on this lane to `rightTimingDivisor=1.0` with updated evidence note (Dawn trace exposes one physical operation per timed sample in strict runs).
+- Fresh artifacts:
+  - strict smoke (`iterations=1`, `warmup=0`): `bench/out/scratch/metal.promote19.smoke.json` -> `comparisonStatus=comparable`, `workloadCount=19`.
+  - local claim-mode (`iterations=12`, `warmup=1`): `bench/out/scratch/metal.promote19.claim.local.json` -> `comparisonStatus=comparable`, `claimStatus=diagnostic`, `nonClaimableCount=5` (14/19 claimable workloads).
+  - five residual non-claimable workloads are all render-domain microcontracts failing only the configured 100ns noise-floor requirement:
+    - `exp_render_draw_throughput_proxy`
+    - `par_render_draw_state_bindings`
+    - `par_render_draw_redundant_pipeline_bindings`
+    - `par_render_bundle_dynamic_bindings`
+    - `par_render_bundle_dynamic_pipeline_bindings`
+- Promotion expansion pass (2026-03-01, local Metal host) applied for 10 additional candidate workloads using strict command-shape divisor contracts:
+  - promoted comparable contracts:
+    - `par_workgroup_atomic_1024`
+    - `par_workgroup_non_atomic_1024`
+    - `par_matrix_vector_multiply_32768x2048_f32`
+    - `par_matrix_vector_multiply_32768x2048_f32_swizzle1`
+    - `par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1`
+    - `par_shader_compile_pipeline_stress`
+    - `exp_texture_sampling_raster_proxy`
+    - `exp_render_draw_throughput_macro_200k`
+    - `ctr_render_multidraw_contract`
+  - attempted promotion `ctr_render_multidraw_indexed_contract` was reverted to directional on this host because Dawn Metal autodiscover exposes no `DrawCallPerf` `DrawIndexed` variant, so strict apples-to-apples mapping is unavailable.
+  - divisor updates applied from strict command-shape inference:
+    - `exp_texture_sampling_raster_proxy`: `500 -> 1000`
+    - `exp_render_draw_throughput_macro_200k`: `575000 -> 200000`
+    - `ctr_render_multidraw_contract`: `15000 -> 2000`
+    - `ctr_render_multidraw_indexed_contract`: `10000 -> 2000` (kept directional after remap failure on this host)
+- expanded local-metal report artifact:
+  - `bench/out/scratch/metal.promote28.claim.local.json`
+  - `comparisonStatus=comparable`, `claimStatus=diagnostic`, `workloadCount=28`, `nonClaimableCount=8`
+  - current host-ceiling summary:
+    - strict comparable: `28`
+    - directional: `12`
+  - non-claimable set contains:
+    - 7 noise-floor constrained render/macro contracts (`<100ns` p50 on Doe side)
+    - 1 slower contract by claim criteria (`exp_texture_sampling_raster_proxy` negative p50/p95 deltas)
+- Added blocking gate hook + script for comparable runtime invariants:
+  - new gate script: `bench/comparable_runtime_invariants_gate.py`
+  - wired into gate runner via `--with-comparable-runtime-invariants-gate` in `bench/run_blocking_gates.py`
+  - enforces comparable-lane zero execution errors/unsupported on traced samples and upload cadence tail-submit invariant for per-command + `uploadSubmitEvery>1`.
+- Strengthened Metal backend correctness observability and test coverage:
+  - runtime counters exposed in `zig/src/backend/metal/metal_runtime_state.zig` for manifest emit count, staging reserved bytes, upload mode call splits
+  - Metal tests expanded for:
+    - encode vs submit/wait timing separation (`zig/tests/metal/metal_timing_semantics_test.zig`)
+    - upload cadence tail flush (`zig/tests/metal/metal_mod_integration_test.zig`)
+    - single-manifest kernel dispatch emission (`zig/tests/metal/metal_mod_integration_test.zig`)
+    - upload byte-budget + usage mode accounting (`zig/tests/metal/metal_upload_path_test.zig`)
+- Bun in-process Doe provider now auto-activates when `libdoe_webgpu` is discoverable:
+  - file: `nursery/fawn-webgpu-node/src/bun-ffi.js`
+  - modes:
+    - `FAWN_WEBGPU_BUN_PROVIDER=doe` forces Doe provider (error if lib missing)
+    - `FAWN_WEBGPU_BUN_PROVIDER=provider` disables Doe auto-provider
+    - default `auto` prefers Doe when the library is present, otherwise falls back to provider module.

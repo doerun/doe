@@ -1,0 +1,61 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xb59b565f45ba501c",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "ctr_async_pipeline_diagnostics_contract",
+  "gtestFilter": "ShaderRobustnessPerf.Run/Metal_Apple_M3__e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimInner_512_DimBOuter_512",
+  "selectedFilter": "ShaderRobustnessPerf.Run/Metal_Apple_M3__e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimInner_512_DimBOuter_512",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=ShaderRobustnessPerf.Run/Metal_Apple_M3__e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimInner_512_DimBOuter_512 --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote29.claim.local/ctr_async_pipeline_diagnostics_contract/right/dawn.run003.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.299978409091,
+  "timingMetric": "wall_time",
+  "elapsedMs": 5983.227458011243,
+  "processWallMs": 5983.227458011243,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.299978409091,
+    "cpu_time": 0.297315189394,
+    "gpu_time": 0.284187927273
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 299978,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.30019152777799996,
+      0.299978409091,
+      0.299973800505
+    ],
+    "cpu_time": [
+      0.297438674242,
+      0.29723979797999994,
+      0.297315189394
+    ],
+    "gpu_time": [
+      0.284187927273,
+      0.284029052121,
+      0.284207786667
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.30019152777799996,
+    0.299978409091,
+    0.299973800505
+  ]
+}

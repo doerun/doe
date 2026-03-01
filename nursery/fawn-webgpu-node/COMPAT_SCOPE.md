@@ -9,13 +9,17 @@ This note narrows optional parity work to concrete integration value.
 - Doe native bench runs
 - Dawn-vs-Doe compare runs
 3. Deterministic artifact paths and non-zero exit-code propagation.
+4. Minimal in-process provider surface for Node consumers:
+- `create(args?)`
+- `globals`
+- `requestAdapter`/`requestDevice` convenience helpers
+- `setupGlobals` for `navigator.gpu` + enum bootstrap
 
 ## Optional later (only when demanded by integrations)
 
-1. Minimal compute-only compatibility shim:
-- enough API shape for specific Node consumers that need `requestAdapter`/`requestDevice`.
-2. Minimal constants compatibility:
+1. Minimal constants compatibility:
 - only constants required by real integrations, not full WebGPU enum surface.
+2. Provider-module swap support for non-default backends beyond `webgpu`.
 
 ## Not planned by default
 

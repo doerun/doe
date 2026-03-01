@@ -227,3 +227,32 @@ Local Vulkan lanes are additive and must not weaken AMD Vulkan strict defaults.
 - strict local Vulkan lanes must fail on fallback (`fallbackUsed=true`)
 - strict local Vulkan release claims should require backend telemetry and backend identity `zig_vulkan`
 - shader manifest checks may be required per lane (`vulkan_local_comparable`, `vulkan_local_release`)
+
+## 10. Market-Readiness Evidence Flow (Additive)
+
+This flow is additive and does not replace blocking v0 runtime gates. Its role is external claim scoping and repeatable buyer-facing evidence packaging.
+
+1. produce strict compare evidence
+- run `bench/run_release_pipeline.py` (or `bench/run_market_readiness_bundle.py` wrapper) on a strict comparable config.
+
+2. scope claim statements
+- run `bench/build_claim_scope_report.py` and require:
+  - `comparisonStatus=comparable`
+  - `claimStatus=claimable`
+  - `claimabilityPolicy.mode=release` (or lane-appropriate mode)
+- every external statement must cite workload/domain + timing source/class + backend profile + artifact path.
+
+3. publish runtime footprint evidence
+- run `bench/measure_runtime_footprint.py` and publish raw + stripped sizes and dependency counts.
+- if build timing claims are made, include `--doe-build-cmd` and `--dawn-build-cmd` measured wall-time outputs.
+
+4. publish CTS trend evidence
+- run `bench/run_cts_subset.py` with a versioned query config (for example `bench/cts_subset.webgpu-node.json`).
+- report exact pass/fail counts and query list used.
+
+5. publish model ceiling matrix (when AI/ML positioning is in scope)
+- run `bench/build_model_capacity_matrix.py` with measured row inputs (hardware, model, quantization, status, TTFT/decode/prefill, peak VRAM, artifact path).
+- do not generalize beyond measured rows.
+
+6. canonical one-command wrapper
+- use `bench/run_market_readiness_bundle.py` to run steps 1-5 and emit a linked manifest.

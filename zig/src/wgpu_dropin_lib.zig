@@ -510,6 +510,47 @@ pub export fn wgpuAdapterRequestDevice(a0: types.WGPUAdapter, a1: ?*const types.
     return proc(a0, a1, a2);
 }
 
+// FFI-friendly wrappers: flattened args for runtimes that cannot pass structs by value (Bun FFI, Node ffi-napi).
+// These assemble the CallbackInfo struct from scalar args and delegate to the standard C ABI functions.
+
+pub export fn doeRequestAdapterFlat(
+    instance: types.WGPUInstance,
+    options: ?*const types.WGPURequestAdapterOptions,
+    mode: types.WGPUCallbackMode,
+    callback: types.WGPURequestAdapterCallback,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) types.WGPUFuture {
+    const info = types.WGPURequestAdapterCallbackInfo{
+        .nextInChain = null,
+        .mode = mode,
+        .callback = callback,
+        .userdata1 = userdata1,
+        .userdata2 = userdata2,
+    };
+    const proc = loadRequiredProc(types.FnWgpuInstanceRequestAdapter, "wgpuInstanceRequestAdapter");
+    return proc(instance, options, info);
+}
+
+pub export fn doeRequestDeviceFlat(
+    adapter: types.WGPUAdapter,
+    descriptor: ?*const types.WGPUDeviceDescriptor,
+    mode: types.WGPUCallbackMode,
+    callback: types.WGPURequestDeviceCallback,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) types.WGPUFuture {
+    const info = types.WGPURequestDeviceCallbackInfo{
+        .nextInChain = null,
+        .mode = mode,
+        .callback = callback,
+        .userdata1 = userdata1,
+        .userdata2 = userdata2,
+    };
+    const proc = loadRequiredProc(types.FnWgpuAdapterRequestDevice, "wgpuAdapterRequestDevice");
+    return proc(adapter, descriptor, info);
+}
+
 pub export fn wgpuDeviceCreateBuffer(a0: types.WGPUDevice, a1: ?*const types.WGPUBufferDescriptor) callconv(.c) types.WGPUBuffer {
     const proc = loadRequiredProc(types.FnWgpuDeviceCreateBuffer, "wgpuDeviceCreateBuffer");
     return proc(a0, a1);

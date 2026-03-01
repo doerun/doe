@@ -1,0 +1,1 @@
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 109134886310541, "hash": "0x17f9e5f3e8d6458e", "previousHash": "0x9e3779b97f4a7c15", "command": "par_shader_compile_pipeline_stress", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6069628583}

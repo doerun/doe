@@ -963,22 +963,62 @@ def compare_assessment(
             "rightQueueSyncModes": right_queue_sync_modes,
         },
     )
+    def compare_execution_shapes(
+        left_shapes: list[dict[str, int]],
+        right_shapes: list[dict[str, int]],
+    ) -> tuple[bool, str]:
+        def to_shape_map(shapes: list[dict[str, int]]) -> dict[tuple[int, int], set[int]]:
+            mapped: dict[tuple[int, int], set[int]] = {}
+            for shape in shapes:
+                row_count = safe_int(shape.get("executionRowCount"), default=-1)
+                success_count = safe_int(shape.get("executionSuccessCount"), default=-1)
+                dispatch_count = safe_int(shape.get("executionDispatchCount"), default=-1)
+                key = (row_count, success_count)
+                mapped.setdefault(key, set()).add(dispatch_count)
+            return mapped
+
+        left_map = to_shape_map(left_shapes)
+        right_map = to_shape_map(right_shapes)
+        if set(left_map.keys()) != set(right_map.keys()):
+            return False, "row/success shape sets differ"
+
+        for key in sorted(left_map.keys()):
+            left_dispatches = left_map[key]
+            right_dispatches = right_map[key]
+            left_known = {value for value in left_dispatches if value >= 0}
+            right_known = {value for value in right_dispatches if value >= 0}
+            if left_known and right_known and left_known != right_known:
+                return (
+                    False,
+                    (
+                        f"dispatch counts differ for row/success={key}: "
+                        f"{sorted(left_known)} vs {sorted(right_known)}"
+                    ),
+                )
+        return True, ""
+
+    execution_shape_match, execution_shape_mismatch_reason = compare_execution_shapes(
+        left_execution_shapes,
+        right_execution_shapes,
+    )
     _record_obligation(
         obligations,
         reasons,
         obligation_id="left_right_execution_shape_match",
         blocking=True,
         applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0,
-        passes=left_execution_shapes == right_execution_shapes,
+        passes=execution_shape_match,
         failure_reason=(
             "left/right execution shape mismatch (dispatch/row/success counts): "
-            f"{left_execution_shapes} vs {right_execution_shapes}"
+            f"{left_execution_shapes} vs {right_execution_shapes}; "
+            f"reason={execution_shape_mismatch_reason}"
         ),
         details={
             "workloadDomain": workload_domain,
             "dispatchShapeDomain": dispatch_shape_domain,
             "leftExecutionShapes": left_execution_shapes,
             "rightExecutionShapes": right_execution_shapes,
+            "comparisonReason": execution_shape_mismatch_reason,
         },
     )
 

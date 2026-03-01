@@ -103,9 +103,26 @@ That document defines:
 - `build_claim_rehearsal_artifacts.py`
   - builds machine-readable claim rehearsal artifacts from a compare report:
     claim gate result, tail-health table, timing-invariant audit, contract-hash manifest, and a rehearsal manifest linking all outputs.
+- `build_claim_scope_report.py`
+  - emits citation-safe claim scope artifacts from a compare report:
+    per-workload status (`comparisonStatus`, `claimStatus`, comparability/claimability flags), timing-source/timing-class context, backend/profile metadata, and trace-meta/report paths.
+  - fails fast when top-level report status is not explicitly claimable/comparable as required by CLI arguments.
 - `cycle_gate.py`
   - validates active cycle contract hash locks (`workloadContract`, benchmark policy, compare config, substantiation policy), methodology invariants, and comparable/directional workload partition.
   - validates claim-lane report conformance + hash-link invariants, evaluates rollback criteria, and enforces artifact namespace policy (`bench/out/...` canonical vs `bench/out/scratch/...` diagnostics).
+- `measure_runtime_footprint.py`
+  - measures Doe-vs-Dawn runtime artifact footprint (`rawSizeBytes`, optional stripped size, dependency counts/list) and optional build wall times.
+  - emits JSON + markdown reports suitable for embedded/runtime sizing evidence.
+- `run_cts_subset.py`
+  - executes a configured WebGPU CTS query subset and emits per-query pass/fail + wall-time artifacts (JSON + markdown).
+  - supports `--dry-run`, `--stop-on-fail`, and bounded query execution via `--max-queries`.
+- `build_model_capacity_matrix.py`
+  - builds a hardware×model capacity matrix artifact from measured Doppler/Doe runs, including status classes (`pass`, `fail`, `oom`, `unsupported`) and per-hardware max passable model size.
+  - emits JSON + markdown summaries for explicit model-size ceiling disclosure.
+- `run_market_readiness_bundle.py`
+  - one-command orchestrator for release evidence packaging:
+    release pipeline -> claim scope report -> runtime footprint -> CTS subset -> optional model-capacity matrix.
+  - writes a manifest linking all generated artifacts and exits non-zero on any failed step.
 - `check_full39_claim_readiness.py`
   - validates a full-matrix compare report against strict done criteria (exact comparable workload identity from contract, `comparisonStatus=comparable`, `claimStatus=claimable`, and zero left unsupported/error counters).
   - prints worst p95/p99 tail regressions plus non-claimable workload reasons to accelerate tail-fix loops.
@@ -821,3 +838,36 @@ python3 bench/claim_gate.py \
   --require-backend-telemetry \
   --expected-backend-id zig_metal
 ```
+
+## Market-readiness evidence bundle
+
+Use this when you need scoped external evidence, not just a raw compare report.
+
+Canonical command:
+
+```bash
+python3 bench/run_market_readiness_bundle.py \
+  --config bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json \
+  --report bench/out/metal.npm.compare.json \
+  --cts-config bench/cts_subset.webgpu-node.json
+```
+
+Outputs (prefix defaults to `<report>.market-readiness.*`):
+
+- claim scope: `*.claim-scope.json`, `*.claim-scope.md`
+- footprint: `*.footprint.json`, `*.footprint.md`
+- CTS subset: `*.cts.json`, `*.cts.md`
+- manifest: `*.manifest.json`
+
+Optional model ceiling matrix artifact:
+
+```bash
+python3 bench/run_market_readiness_bundle.py \
+  --config bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json \
+  --report bench/out/metal.npm.compare.json \
+  --cts-config bench/cts_subset.webgpu-node.json \
+  --model-capacity-config bench/model_capacity_matrix.template.json
+```
+
+Model matrix source contract (example template):
+- `bench/model_capacity_matrix.template.json`

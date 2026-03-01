@@ -987,6 +987,147 @@ def load_workloads(
     return result
 
 
+def parse_positive_int_command_field(
+    *,
+    value: Any,
+    workload_id: str,
+    command_index: int,
+    field_name: str,
+) -> int:
+    parsed = parse_int(value)
+    if parsed is None or parsed < 1:
+        raise ValueError(
+            f"invalid workload {workload_id}: command[{command_index}] "
+            f"{field_name} must be an integer >= 1"
+        )
+    return parsed
+
+
+def command_shape_multiplier(
+    command: dict[str, Any],
+    *,
+    workload_id: str,
+    command_index: int,
+) -> int:
+    multiplier = 1
+    aliases: list[tuple[str, tuple[str, ...]]] = [
+        ("repeat", ("repeat",)),
+        ("dispatchCount", ("dispatch_count", "dispatchCount")),
+        ("drawCount", ("draw_count", "drawCount")),
+        ("iterations", ("iterations", "iterationCount")),
+    ]
+    for canonical_name, field_aliases in aliases:
+        raw_value: Any = None
+        present = False
+        for field_name in field_aliases:
+            if field_name in command:
+                raw_value = command[field_name]
+                present = True
+                break
+        if not present:
+            continue
+        parsed = parse_positive_int_command_field(
+            value=raw_value,
+            workload_id=workload_id,
+            command_index=command_index,
+            field_name=canonical_name,
+        )
+        multiplier *= parsed
+    return multiplier
+
+
+def infer_command_shape_operation_count(
+    *,
+    commands_path: Path,
+    workload_id: str,
+) -> int:
+    if not commands_path.exists():
+        raise ValueError(
+            f"invalid workload {workload_id}: commands file does not exist: {commands_path}"
+        )
+    try:
+        payload = json.loads(commands_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"invalid workload {workload_id}: malformed commands JSON {commands_path}: {exc}"
+        ) from exc
+    if not isinstance(payload, list):
+        raise ValueError(
+            f"invalid workload {workload_id}: commands payload must be a JSON array in {commands_path}"
+        )
+    if not payload:
+        raise ValueError(
+            f"invalid workload {workload_id}: commands payload must not be empty in {commands_path}"
+        )
+
+    total = 0
+    for command_index, raw_command in enumerate(payload):
+        if not isinstance(raw_command, dict):
+            raise ValueError(
+                f"invalid workload {workload_id}: commands[{command_index}] must be an object"
+            )
+        total += command_shape_multiplier(
+            raw_command,
+            workload_id=workload_id,
+            command_index=command_index,
+        )
+    return total
+
+
+def enforce_strict_command_shape_divisor_contracts(
+    *,
+    workloads: list[Workload],
+    comparability_mode: str,
+    required_timing_class: str,
+    right_command_template: str,
+) -> None:
+    if comparability_mode != "strict" or required_timing_class == "process-wall":
+        return
+
+    lint_right_divisors = template_uses_doe_runtime(right_command_template)
+    command_shape_cache: dict[str, int] = {}
+    failures: list[str] = []
+
+    for workload in workloads:
+        if not workload.comparable:
+            continue
+        commands_path = Path(workload.commands_path)
+        cache_key = str(commands_path.resolve()) if commands_path.exists() else str(commands_path)
+        if cache_key not in command_shape_cache:
+            command_shape_cache[cache_key] = infer_command_shape_operation_count(
+                commands_path=commands_path,
+                workload_id=workload.id,
+            )
+        per_stream_ops = command_shape_cache[cache_key]
+        expected_left_ops = per_stream_ops * workload.left_command_repeat
+        expected_right_ops = per_stream_ops * workload.right_command_repeat
+
+        if workload.left_timing_divisor > 1.0 and abs(
+            workload.left_timing_divisor - float(expected_left_ops)
+        ) > 1e-9:
+            failures.append(
+                f"{workload.id}: leftTimingDivisor={workload.left_timing_divisor} "
+                f"does not match command-shape operations={expected_left_ops} "
+                f"(commandsPath={workload.commands_path}, leftCommandRepeat={workload.left_command_repeat})"
+            )
+        if (
+            lint_right_divisors
+            and workload.right_timing_divisor > 1.0
+            and abs(workload.right_timing_divisor - float(expected_right_ops)) > 1e-9
+        ):
+            failures.append(
+                f"{workload.id}: rightTimingDivisor={workload.right_timing_divisor} "
+                f"does not match command-shape operations={expected_right_ops} "
+                f"(commandsPath={workload.commands_path}, rightCommandRepeat={workload.right_command_repeat})"
+            )
+
+    if failures:
+        raise ValueError(
+            "strict command-shape divisor lint failed for comparable workloads: "
+            + "; ".join(failures)
+        )
+
+
 def template_uses_doe_runtime(template: str) -> bool:
     return "doe-zig-runtime" in template
 
@@ -1117,6 +1258,12 @@ def main() -> int:
         left_command_template=args.left_command_template,
         right_command_template=args.right_command_template,
         comparability_mode=args.comparability,
+    )
+    enforce_strict_command_shape_divisor_contracts(
+        workloads=workloads,
+        comparability_mode=args.comparability,
+        required_timing_class=args.require_timing_class,
+        right_command_template=args.right_command_template,
     )
 
     if (

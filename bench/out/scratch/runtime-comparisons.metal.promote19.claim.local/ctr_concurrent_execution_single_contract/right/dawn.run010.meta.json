@@ -1,0 +1,61 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xf5723562871ffcbf",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "ctr_concurrent_execution_single_contract",
+  "gtestFilter": "ConcurrentExecutionTest.Run/Metal_Apple_M3_ConcurrentExecutionType_RunSingle",
+  "selectedFilter": "ConcurrentExecutionTest.Run/Metal_Apple_M3_ConcurrentExecutionType_RunSingle",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=ConcurrentExecutionTest.Run/Metal_Apple_M3_ConcurrentExecutionType_RunSingle --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote19.claim.local/ctr_concurrent_execution_single_contract/right/dawn.run010.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 11.677101961,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6046.622042005765,
+  "processWallMs": 6046.622042005765,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 11.677101961,
+    "cpu_time": 11.646362745000001,
+    "gpu_time": 11.510434635
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 11677102,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      11.687856863,
+      11.677101961,
+      11.669369608000002
+    ],
+    "cpu_time": [
+      11.657026471,
+      11.646362745000001,
+      11.638607353
+    ],
+    "gpu_time": [
+      11.511205647,
+      11.510434635,
+      11.505037553000001
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    11.687856863,
+    11.677101961,
+    11.669369608000002
+  ]
+}

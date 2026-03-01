@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""Validate runtime invariants for workloads marked comparable in compare reports."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--report", default="bench/out/dawn-vs-doe.json")
+    return parser.parse_args()
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"invalid JSON object: {path}")
+    return payload
+
+
+def parse_int(value: Any, fallback: int = 0) -> int:
+    if isinstance(value, bool):
+        return fallback
+    if isinstance(value, int):
+        return value
+    return fallback
+
+
+def canonical_source(source: Any) -> str:
+    if not isinstance(source, str) or not source:
+        return ""
+    return source.split("+", 1)[0]
+
+
+def main() -> int:
+    args = parse_args()
+    report = load_json(Path(args.report))
+    workloads = report.get("workloads")
+    if not isinstance(workloads, list):
+        print("FAIL: invalid report workloads")
+        return 1
+
+    failures: list[str] = []
+    checked_workloads = 0
+
+    for workload in workloads:
+        if not isinstance(workload, dict):
+            continue
+        if workload.get("workloadComparable") is not True:
+            continue
+        comparability = workload.get("comparability")
+        if not isinstance(comparability, dict):
+            failures.append(f"{workload.get('id', 'unknown')}: missing comparability object")
+            continue
+        if comparability.get("comparable") is not True:
+            failures.append(
+                f"{workload.get('id', 'unknown')}: workloadComparable=true but comparability.comparable!=true"
+            )
+            continue
+
+        checked_workloads += 1
+        workload_id = str(workload.get("id", "unknown"))
+        workload_domain = str(workload.get("domain", ""))
+
+        for side_name in ("left", "right"):
+            side = workload.get(side_name)
+            if not isinstance(side, dict):
+                continue
+            samples = side.get("commandSamples")
+            if not isinstance(samples, list):
+                continue
+
+            for sample in samples:
+                if not isinstance(sample, dict):
+                    continue
+                if sample.get("returnCode") != 0:
+                    continue
+                trace_meta = sample.get("traceMeta")
+                if not isinstance(trace_meta, dict):
+                    continue
+
+                exec_error_count = parse_int(trace_meta.get("executionErrorCount"))
+                if exec_error_count > 0:
+                    failures.append(
+                        f"{workload_id}: {side_name} executionErrorCount={exec_error_count} on comparable workload"
+                    )
+
+                exec_unsupported_count = parse_int(trace_meta.get("executionUnsupportedCount"))
+                if exec_unsupported_count > 0:
+                    failures.append(
+                        f"{workload_id}: {side_name} executionUnsupportedCount={exec_unsupported_count} on comparable workload"
+                    )
+
+                # Encode/submit telemetry checks apply only to left (Doe) side.
+                # Right side (Dawn adapter) does not emit these fields.
+                if side_name == "left":
+                    exec_success_count = parse_int(trace_meta.get("executionSuccessCount"))
+                    encode_total_ns = parse_int(trace_meta.get("executionEncodeTotalNs"))
+                    submit_wait_total_ns = parse_int(trace_meta.get("executionSubmitWaitTotalNs"))
+                    if exec_success_count > 0 and encode_total_ns == 0 and submit_wait_total_ns == 0:
+                        failures.append(
+                            f"{workload_id}: {side_name} both encode and submit/wait totals are zero with successful execution"
+                        )
+
+                    timing_source = canonical_source(sample.get("timingSource"))
+                    if timing_source == "doe-execution-encode-ns" and submit_wait_total_ns != 0:
+                        failures.append(
+                            f"{workload_id}: {side_name} encode-only timing source carries submit/wait total {submit_wait_total_ns}"
+                        )
+
+                queue_sync_mode = trace_meta.get("queueSyncMode")
+                upload_submit_every = parse_int(
+                    sample.get("uploadSubmitEvery", trace_meta.get("uploadSubmitEvery", 1)),
+                    fallback=1,
+                )
+                if (
+                    workload_domain == "upload"
+                    and queue_sync_mode == "per-command"
+                    and upload_submit_every > 1
+                    and exec_success_count > 0
+                    and submit_wait_total_ns == 0
+                ):
+                    failures.append(
+                        f"{workload_id}: {side_name} upload cadence tail not submitted (submit_wait_total_ns=0 with uploadSubmitEvery={upload_submit_every})"
+                    )
+
+    if checked_workloads == 0:
+        print("FAIL: comparable runtime invariants gate found no comparable workloads to validate")
+        return 1
+
+    if failures:
+        print("FAIL: comparable runtime invariants gate")
+        for item in failures:
+            print(f"  {item}")
+        return 1
+
+    print(
+        "PASS: comparable runtime invariants gate "
+        f"(checked comparable workloads={checked_workloads})"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

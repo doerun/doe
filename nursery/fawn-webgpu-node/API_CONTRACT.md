@@ -8,6 +8,61 @@ Scope: browserless benchmarking and CI orchestration for Doe runtime workflows.
 
 Module: `@fawn/webgpu-node` (Node default export target)
 
+### `create(createArgs?)`
+
+Input:
+
+- `createArgs?: string[]` (provider-specific options)
+
+Behavior:
+
+- loads in-process provider module from `FAWN_WEBGPU_NODE_PROVIDER_MODULE` (default: `webgpu`)
+- calls provider `create(createArgs)` and returns GPU object
+
+Output:
+
+- `GPU` object with `requestAdapter(...)`
+
+### `globals`
+
+Output:
+
+- provider globals object suitable for `Object.assign(globalThis, globals)`
+
+### `setupGlobals(target?, createArgs?)`
+
+Input:
+
+- `target?: object` (default: `globalThis`)
+- `createArgs?: string[]`
+
+Behavior:
+
+- installs provider globals if missing
+- installs `navigator.gpu` if missing
+
+Output:
+
+- `GPU` object
+
+### `requestAdapter(adapterOptions?, createArgs?)`
+
+Output:
+
+- `Promise<GPUAdapter | null>`
+
+### `requestDevice(options?)`
+
+Input:
+
+- `options.adapterOptions?: object`
+- `options.deviceDescriptor?: object`
+- `options.createArgs?: string[]`
+
+Output:
+
+- `Promise<GPUDevice>`
+
 ### `createDoeRuntime(options?)`
 
 Input:
@@ -90,6 +145,6 @@ Purpose:
 
 ## Non-goals in v1
 
-1. Full in-process WebGPU JS object model parity.
+1. Full browser-parity WebGPU JS object model emulation.
 2. Browser presentation parity.
 3. npm `webgpu` drop-in compatibility guarantee.

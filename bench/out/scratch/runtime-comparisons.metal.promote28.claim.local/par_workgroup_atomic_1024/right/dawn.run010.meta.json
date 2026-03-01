@@ -1,0 +1,61 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x265ec9fee3ac3d5a",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "par_workgroup_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Metal_Apple_M3_WorkgroupUsageType_WorkgroupTypeAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Metal_Apple_M3_WorkgroupUsageType_WorkgroupTypeAtomic",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Metal_Apple_M3_WorkgroupUsageType_WorkgroupTypeAtomic --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote28.claim.local/par_workgroup_atomic_1024/right/dawn.run010.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.32251771505399995,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6054.91245900339,
+  "processWallMs": 6054.91245900339,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.32251771505399995,
+    "cpu_time": 0.32113680107500003,
+    "gpu_time": 0.31421340903199996
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 322518,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.32251771505399995,
+      0.322563077957,
+      0.322250215054
+    ],
+    "cpu_time": [
+      0.32113680107500003,
+      0.32114772849499995,
+      0.32088686827999996
+    ],
+    "gpu_time": [
+      0.31421340903199996,
+      0.314340252903,
+      0.314065424516
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.32251771505399995,
+    0.322563077957,
+    0.322250215054
+  ]
+}

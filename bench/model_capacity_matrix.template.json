@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "notes": [
+    "Populate entries only with measured runs.",
+    "Do not infer unmeasured hardware/model combinations.",
+    "Status must be one of: pass, fail, oom, unsupported."
+  ],
+  "entries": []
+}

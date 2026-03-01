@@ -200,6 +200,100 @@ def parse_trace_meta(path: Path) -> dict[str, Any]:
     except (json.JSONDecodeError, ValueError):
         return {}
 
+
+def ensure_doe_runtime_trace_meta_fields(
+    sample_meta: dict[str, Any],
+    *,
+    queue_sync_mode: str,
+    upload_buffer_usage: str,
+    upload_submit_every: int,
+) -> bool:
+    patched = False
+    if "queueSyncMode" not in sample_meta:
+        sample_meta["queueSyncMode"] = queue_sync_mode
+        patched = True
+    if "uploadBufferUsage" not in sample_meta:
+        sample_meta["uploadBufferUsage"] = upload_buffer_usage
+        patched = True
+    if "uploadSubmitEvery" not in sample_meta:
+        sample_meta["uploadSubmitEvery"] = upload_submit_every
+        patched = True
+    return patched
+
+
+def derive_counter_derived_divisor(
+    *,
+    workload_domain: str,
+    trace_meta: dict[str, Any],
+) -> tuple[float, int, int, int]:
+    trace_row_count = parse_int(trace_meta.get("executionRowCount", 0)) or 0
+    trace_dispatch_count = parse_int(trace_meta.get("executionDispatchCount", 0)) or 0
+    trace_success_count = parse_int(trace_meta.get("executionSuccessCount", 0)) or 0
+    trace_submit_every = parse_int(trace_meta.get("uploadSubmitEvery", 0)) or 0
+    derived_divisor = 0.0
+
+    if workload_domain == "upload" and trace_submit_every > 0:
+        derived_divisor = float(trace_row_count)
+    elif trace_dispatch_count > 0:
+        derived_divisor = float(trace_dispatch_count)
+    elif trace_success_count > 0 or trace_row_count > 0:
+        derived_divisor = float(max(trace_success_count, trace_row_count))
+
+    return derived_divisor, trace_success_count, trace_row_count, trace_dispatch_count
+
+
+def enforce_strict_counter_derived_normalization(
+    *,
+    workload: Any,
+    run_label: str,
+    effective_timing_divisor: float,
+    required_timing_class: str,
+    comparability_mode: str,
+    trace_meta: dict[str, Any],
+    require_execution_success: bool,
+) -> None:
+    if (
+        comparability_mode != "strict"
+        or (not workload.comparable)
+        or required_timing_class == "process-wall"
+    ):
+        return
+
+    (
+        derived_divisor,
+        trace_success_count,
+        trace_row_count,
+        trace_dispatch_count,
+    ) = derive_counter_derived_divisor(
+        workload_domain=workload.domain,
+        trace_meta=trace_meta,
+    )
+
+    if require_execution_success and trace_success_count <= 0:
+        raise ValueError(
+            f"strict execution preflight failed for {workload.id} ({run_label}): "
+            "trace meta reports zero successful operations "
+            f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
+        )
+
+    if effective_timing_divisor <= 1.0:
+        return
+
+    if derived_divisor <= 1.0:
+        raise ValueError(
+            f"strict counter-derived normalization failed for {workload.id} ({run_label}): "
+            f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
+            "does not expose a counter-derived physical operation count > 1 "
+            f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
+        )
+    if abs(effective_timing_divisor - derived_divisor) > 1e-9:
+        raise ValueError(
+            f"strict counter-derived normalization failed for {workload.id} ({run_label}): "
+            f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
+            f"reveals {derived_divisor} physical operations "
+            f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
+        )
+
 def materialize_repeated_commands(
     commands_path: str,
     *,
@@ -468,24 +562,78 @@ def run_workload(
     run_records: list[dict[str, Any]] = []
     sample_meta: dict[str, Any] = {}
     last_meta = {}
+    effective_extra_args = list(workload.extra_args)
+    if inject_upload_runtime_flags and workload.domain == "upload" and "doe-zig-runtime" in template:
+        effective_extra_args.extend(
+            [
+                "--upload-buffer-usage",
+                upload_buffer_usage,
+                "--upload-submit-every",
+                str(upload_submit_every),
+            ]
+        )
+    queue_sync_mode = "per-command"
+    for i, arg in enumerate(workload.extra_args):
+        if arg == "--queue-sync-mode" and i + 1 < len(workload.extra_args):
+            queue_sync_mode = workload.extra_args[i + 1]
+    is_doe_runtime = "doe-zig-runtime" in template
+
+    strict_runtime_preflight = (
+        (not emit_shell)
+        and comparability_mode == "strict"
+        and workload.comparable
+        and required_timing_class != "process-wall"
+        and is_doe_runtime
+    )
+    if strict_runtime_preflight:
+        preflight_trace_jsonl = out_dir / f"{name}.preflight.ndjson"
+        preflight_trace_meta = out_dir / f"{name}.preflight.meta.json"
+        preflight_command = command_for(
+            template,
+            workload=workload,
+            workload_id=workload.id,
+            commands_path=commands_path,
+            trace_jsonl=preflight_trace_jsonl,
+            trace_meta=preflight_trace_meta,
+            queue_sync_mode=queue_sync_mode,
+            upload_buffer_usage=upload_buffer_usage,
+            upload_submit_every=upload_submit_every,
+            extra_args=effective_extra_args,
+        )
+        run_once(
+            preflight_command,
+            gpu_memory_probe=gpu_memory_probe,
+            resource_sample_ms=resource_sample_ms,
+            resource_sample_target_count=resource_sample_target_count,
+        )
+        preflight_meta = parse_trace_meta(preflight_trace_meta)
+        preflight_meta_patched = ensure_doe_runtime_trace_meta_fields(
+            preflight_meta,
+            queue_sync_mode=queue_sync_mode,
+            upload_buffer_usage=upload_buffer_usage,
+            upload_submit_every=upload_submit_every,
+        )
+        if preflight_meta_patched:
+            preflight_trace_meta.write_text(
+                json.dumps(preflight_meta, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+        effective_preflight_divisor = timing_divisor
+        if required_timing_class == "process-wall":
+            effective_preflight_divisor = 1.0
+        enforce_strict_counter_derived_normalization(
+            workload=workload,
+            run_label="preflight",
+            effective_timing_divisor=effective_preflight_divisor,
+            required_timing_class=required_timing_class,
+            comparability_mode=comparability_mode,
+            trace_meta=preflight_meta,
+            require_execution_success=True,
+        )
 
     for run_idx in range(max(iterations, 0)):
         trace_jsonl = out_dir / f"{name}.run{run_idx:03d}.ndjson"
         trace_meta = out_dir / f"{name}.run{run_idx:03d}.meta.json"
-        effective_extra_args = list(workload.extra_args)
-        if inject_upload_runtime_flags and workload.domain == "upload" and "doe-zig-runtime" in template:
-            effective_extra_args.extend(
-                [
-                    "--upload-buffer-usage",
-                    upload_buffer_usage,
-                    "--upload-submit-every",
-                    str(upload_submit_every),
-                ]
-            )
-        queue_sync_mode = "per-command"
-        for i, arg in enumerate(workload.extra_args):
-            if arg == "--queue-sync-mode" and i + 1 < len(workload.extra_args):
-                queue_sync_mode = workload.extra_args[i + 1]
 
         command = command_for(
             template,
@@ -531,16 +679,13 @@ def run_workload(
         sample_meta = parse_trace_meta(trace_meta)
 
         trace_meta_patched = False
-        if "doe-zig-runtime" in template:
-            if "queueSyncMode" not in sample_meta:
-                sample_meta["queueSyncMode"] = queue_sync_mode
-                trace_meta_patched = True
-            if "uploadBufferUsage" not in sample_meta:
-                sample_meta["uploadBufferUsage"] = upload_buffer_usage
-                trace_meta_patched = True
-            if "uploadSubmitEvery" not in sample_meta:
-                sample_meta["uploadSubmitEvery"] = upload_submit_every
-                trace_meta_patched = True
+        if is_doe_runtime:
+            trace_meta_patched = ensure_doe_runtime_trace_meta_fields(
+                sample_meta,
+                queue_sync_mode=queue_sync_mode,
+                upload_buffer_usage=upload_buffer_usage,
+                upload_submit_every=upload_submit_every,
+            )
         if trace_meta_patched:
             trace_meta.write_text(
                 json.dumps(sample_meta, separators=(",", ":")) + "\n",
@@ -568,40 +713,15 @@ def run_workload(
         effective_timing_divisor = timing_divisor
         if required_timing_class == "process-wall":
             effective_timing_divisor = 1.0
-            
-        trace_row_count = parse_int(sample_meta.get("executionRowCount", 0)) or 0
-        trace_dispatch_count = parse_int(sample_meta.get("executionDispatchCount", 0)) or 0
-        trace_success_count = parse_int(sample_meta.get("executionSuccessCount", 0)) or 0
-        trace_submit_every = parse_int(sample_meta.get("uploadSubmitEvery", 0)) or 0
-        derived_divisor = 0.0
-        
-        if workload.domain == "upload" and trace_submit_every > 0:
-            derived_divisor = float(trace_row_count)
-        elif trace_dispatch_count > 0:
-            derived_divisor = float(trace_dispatch_count)
-        elif trace_success_count > 0 or trace_row_count > 0:
-            derived_divisor = float(max(trace_success_count, trace_row_count))
-        
-        enforce_counter_derived_divisor = (
-            comparability_mode == "strict"
-            and workload.comparable
-            and required_timing_class != "process-wall"
+        enforce_strict_counter_derived_normalization(
+            workload=workload,
+            run_label=f"run {run_idx}",
+            effective_timing_divisor=effective_timing_divisor,
+            required_timing_class=required_timing_class,
+            comparability_mode=comparability_mode,
+            trace_meta=sample_meta,
+            require_execution_success=is_doe_runtime,
         )
-        if enforce_counter_derived_divisor and effective_timing_divisor > 1.0:
-            if derived_divisor <= 1.0:
-                raise ValueError(
-                    f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
-                    f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
-                    "does not expose a counter-derived physical operation count > 1 "
-                    f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
-                )
-            if abs(effective_timing_divisor - derived_divisor) > 1e-9:
-                raise ValueError(
-                    f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
-                    f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
-                    f"reveals {derived_divisor} physical operations "
-                    f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
-                )
 
         measured_ms = measured_raw_ms / effective_timing_divisor
         timing_metrics_raw_ms = extract_timing_metrics_ms(

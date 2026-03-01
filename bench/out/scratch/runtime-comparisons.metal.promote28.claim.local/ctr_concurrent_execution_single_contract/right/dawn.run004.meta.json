@@ -1,0 +1,61 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0xe63b9d09e3e7e7c1",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "ctr_concurrent_execution_single_contract",
+  "gtestFilter": "ConcurrentExecutionTest.Run/Metal_Apple_M3_ConcurrentExecutionType_RunSingle",
+  "selectedFilter": "ConcurrentExecutionTest.Run/Metal_Apple_M3_ConcurrentExecutionType_RunSingle",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=ConcurrentExecutionTest.Run/Metal_Apple_M3_ConcurrentExecutionType_RunSingle --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote28.claim.local/ctr_concurrent_execution_single_contract/right/dawn.run004.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 11.664325000000002,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6088.07316700404,
+  "processWallMs": 6088.07316700404,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 11.664325000000002,
+    "cpu_time": 11.638579902,
+    "gpu_time": 11.502724518
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 11664325,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      11.670733824000001,
+      11.662572549,
+      11.664325000000002
+    ],
+    "cpu_time": [
+      11.642612255,
+      11.636003430999999,
+      11.638579902
+    ],
+    "gpu_time": [
+      11.502724518,
+      11.503495529,
+      11.502724518
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    11.670733824000001,
+    11.662572549,
+    11.664325000000002
+  ]
+}

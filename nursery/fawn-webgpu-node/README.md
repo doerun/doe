@@ -15,6 +15,12 @@ The package is intentionally contract-first around two stable CLIs and one Node 
 1. `fawn-webgpu-bench`
 2. `fawn-webgpu-compare`
 3. Node API: `createDoeRuntime(...)`, `runDawnVsDoeCompare(...)`
+4. Minimal in-process WebGPU compatibility API:
+- `create(args?)`
+- `globals`
+- `setupGlobals(target?, args?)`
+- `requestAdapter(...)`
+- `requestDevice(...)`
 
 See `API_CONTRACT.md` for canonical signatures and outputs.
 
@@ -47,11 +53,27 @@ FAWN_DOE_LIB=/abs/path/libdoe_webgpu.dylib \
 fawn-webgpu-bench --commands /abs/path/commands.json
 ```
 
+### 3) Use as Node WebGPU provider module (Doppler interop)
+
+```bash
+cd ../doppler
+DOPPLER_NODE_WEBGPU_MODULE=@fawn/webgpu-node node tools/doppler-cli.js test-model --surface node
+```
+
+By default, the in-process provider behind `create(...)` is loaded from module `webgpu`.
+You can override this with:
+
+```bash
+FAWN_WEBGPU_NODE_PROVIDER_MODULE=webgpu \
+FAWN_WEBGPU_CREATE_ARGS='backend=metal;enable-dawn-features=allow_unsafe_apis' \
+node your-script.js
+```
+
 ## What we intentionally do not provide in v1
 
-1. Full Node N-API WebGPU JS object model (`navigator.gpu`, `GPUDevice`, etc.).
+1. Full browser-parity WebGPU object-model emulation (events/lifetimes/presentation stack).
 2. Full browser-style API parity or presentation stack behavior.
-3. Drop-in compatibility guarantees for third-party libraries expecting npm `webgpu` module semantics.
+3. Broad drop-in compatibility guarantees for every third-party `webgpu` consumer.
 
 ## What we might add later (only if required)
 

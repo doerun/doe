@@ -42,7 +42,10 @@ const State = struct {
     msl_compile_runs: u64 = 0,
     manifest_emits: u64 = 0,
     staging_reservations: u64 = 0,
+    staging_reserved_bytes: u64 = 0,
     upload_calls: u64 = 0,
+    upload_copy_dst_copy_src_calls: u64 = 0,
+    upload_copy_dst_calls: u64 = 0,
     buffers_created: u64 = 0,
     buffers_destroyed: u64 = 0,
     textures_created: u64 = 0,
@@ -366,6 +369,7 @@ pub fn reserve(bytes: u64) metal_errors.MetalError!void {
     try require_device();
     if (bytes == 0) return;
     state.staging_reservations +|= 1;
+    state.staging_reserved_bytes +|= bytes;
     charge(STAGING_RESERVE_BASE_NS + scaled_cost(bytes, STAGING_RESERVE_BYTES_PER_NS, STAGING_RESERVE_MAX_NS));
 }
 
@@ -373,6 +377,10 @@ pub fn upload_once(mode: UploadUsageMode, bytes: u64) metal_errors.MetalError!vo
     try require_device();
     if (bytes == 0) return;
     state.upload_calls +|= 1;
+    switch (mode) {
+        .copy_dst_copy_src => state.upload_copy_dst_copy_src_calls +|= 1,
+        .copy_dst => state.upload_copy_dst_calls +|= 1,
+    }
     const mode_cost = switch (mode) {
         .copy_dst_copy_src => UPLOAD_COPY_DST_COPY_SRC_BASE_NS,
         .copy_dst => UPLOAD_COPY_DST_BASE_NS,
@@ -521,4 +529,20 @@ pub fn set_manifest_module(module: []const u8) void {
 pub fn current_manifest_module() ?[]const u8 {
     if (current_manifest_module_len == 0) return null;
     return current_manifest_module_storage[0..current_manifest_module_len];
+}
+
+pub fn manifest_emit_count() u64 {
+    return state.manifest_emits;
+}
+
+pub fn staging_reserved_bytes() u64 {
+    return state.staging_reserved_bytes;
+}
+
+pub fn upload_copy_dst_copy_src_calls() u64 {
+    return state.upload_copy_dst_copy_src_calls;
+}
+
+pub fn upload_copy_dst_calls() u64 {
+    return state.upload_copy_dst_calls;
 }

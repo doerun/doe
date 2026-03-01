@@ -1,0 +1,1 @@
+{"traceVersion": 1, "module": "dawn-perf-tests", "opCode": "dispatch", "seq": 0, "timestampMonoNs": 109534369538000, "hash": "0x686074143e1dbcdb", "previousHash": "0x9e3779b97f4a7c15", "command": "exp_texture_sampling_raster_proxy", "executionBackend": "dawn-perf-tests", "executionStatus": "ok", "executionStatusMessage": "", "executionDurationNs": 6028355458}

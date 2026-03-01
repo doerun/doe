@@ -110,6 +110,11 @@ def parse_args() -> argparse.Namespace:
         help="Run vulkan_timing_policy_gate.py after trace gate.",
     )
     parser.add_argument(
+        "--with-comparable-runtime-invariants-gate",
+        action="store_true",
+        help="Run comparable_runtime_invariants_gate.py after trace gate.",
+    )
+    parser.add_argument(
         "--with-dropin-proc-resolution-gate",
         action="store_true",
         help="Run dropin_proc_resolution_tests.py in the drop-in phase.",
@@ -293,6 +298,9 @@ def main() -> int:
     metal_timing_policy_gate = bench_dir / "metal_timing_policy_gate.py"
     vulkan_sync_conformance = bench_dir / "vulkan_sync_conformance.py"
     vulkan_timing_policy_gate = bench_dir / "vulkan_timing_policy_gate.py"
+    comparable_runtime_invariants_gate = (
+        bench_dir / "comparable_runtime_invariants_gate.py"
+    )
     dropin_gate = bench_dir / "dropin_gate.py"
     dropin_proc_resolution_tests = bench_dir / "dropin_proc_resolution_tests.py"
     claim_gate = bench_dir / "claim_gate.py"
@@ -336,6 +344,16 @@ def main() -> int:
                 args.trace_semantic_parity_mode,
             ],
         )
+        if args.with_comparable_runtime_invariants_gate:
+            run_gate(
+                "comparable-runtime-invariants",
+                [
+                    sys.executable,
+                    str(comparable_runtime_invariants_gate),
+                    "--report",
+                    str(report_path),
+                ],
+            )
 
         if args.with_backend_selection_gate:
             backend_policy_path = Path(args.backend_runtime_policy)

@@ -1,0 +1,61 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x43b66418280dc206",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "par_workgroup_non_atomic_1024",
+  "gtestFilter": "WorkgroupAtomicPerf.Run/Metal_Apple_M3_WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "selectedFilter": "WorkgroupAtomicPerf.Run/Metal_Apple_M3_WorkgroupUsageType_WorkgroupTypeNonAtomic",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Metal_Apple_M3_WorkgroupUsageType_WorkgroupTypeNonAtomic --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote29.claim.local/par_workgroup_non_atomic_1024/right/dawn.run003.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.32317793055599997,
+  "timingMetric": "wall_time",
+  "elapsedMs": 5920.172708007158,
+  "processWallMs": 5920.172708007158,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.32317793055599997,
+    "cpu_time": 0.321783291667,
+    "gpu_time": 0.314769408
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 323178,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.323892361111,
+      0.323077819444,
+      0.32317793055599997
+    ],
+    "cpu_time": [
+      0.32243318055599995,
+      0.32169815277799996,
+      0.321783291667
+    ],
+    "gpu_time": [
+      0.31546845866699996,
+      0.314769408,
+      0.314463573333
+    ]
+  },
+  "benchmarkWallMsSamples": [
+    0.323892361111,
+    0.323077819444,
+    0.32317793055599997
+  ]
+}

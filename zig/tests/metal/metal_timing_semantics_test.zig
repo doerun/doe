@@ -5,6 +5,9 @@ const metal_device = @import("../../src/backend/metal/metal_device.zig");
 const compute_encode = @import("../../src/backend/metal/commands/compute_encode.zig");
 const timing = @import("../../src/backend/metal/metal_timing.zig");
 const metal_runtime_state = @import("../../src/backend/metal/metal_runtime_state.zig");
+const model = @import("../../src/model.zig");
+const webgpu = @import("../../src/webgpu_ffi.zig");
+const metal_mod = @import("../../src/backend/metal/mod.zig");
 
 test "metal timing returns immediate timing sample" {
     metal_runtime_state.reset_state();
@@ -14,4 +17,22 @@ test "metal timing returns immediate timing sample" {
     try compute_encode.encode_compute();
     const ns = try timing.operation_timing_ns();
     try std.testing.expectEqual(@as(u64, 39_500), ns);
+}
+
+test "metal dispatch timing separates encode and submit-wait buckets" {
+    const result = try metal_mod.run_contract_path_for_test(
+        model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
+        webgpu.QueueSyncMode.per_command,
+    );
+    try std.testing.expectEqual(@as(u64, 11_000), result.encode_ns);
+    try std.testing.expectEqual(@as(u64, 14_000), result.submit_wait_ns);
+}
+
+test "metal deferred sync records submit cost without per-command wait cost" {
+    const result = try metal_mod.run_contract_path_for_test(
+        model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
+        webgpu.QueueSyncMode.deferred,
+    );
+    try std.testing.expectEqual(@as(u64, 11_000), result.encode_ns);
+    try std.testing.expectEqual(@as(u64, 6_000), result.submit_wait_ns);
 }

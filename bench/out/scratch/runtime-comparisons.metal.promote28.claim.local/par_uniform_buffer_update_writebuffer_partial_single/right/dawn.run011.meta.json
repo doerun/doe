@@ -1,0 +1,56 @@
+{
+  "traceVersion": 1,
+  "module": "dawn-perf-tests",
+  "schema": "adapter-meta",
+  "seqMax": 0,
+  "rowCount": 1,
+  "hash": "0x9ac451ddf8c6a708",
+  "previousHash": "0x9e3779b97f4a7c15",
+  "commandCount": 1,
+  "workload": "par_uniform_buffer_update_writebuffer_partial_single",
+  "gtestFilter": "UniformBufferUpdatePerf.Run/Metal_Apple_M3_WriteBuffer_PartialSize_SingleUniformBuffer",
+  "selectedFilter": "UniformBufferUpdatePerf.Run/Metal_Apple_M3_WriteBuffer_PartialSize_SingleUniformBuffer",
+  "filterResolution": "autodiscover",
+  "command": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=UniformBufferUpdatePerf.Run/Metal_Apple_M3_WriteBuffer_PartialSize_SingleUniformBuffer --backend=metal --trace-file=bench/out/scratch/runtime-comparisons.metal.promote28.claim.local/par_uniform_buffer_update_writebuffer_partial_single/right/dawn.run011.ndjson",
+  "queueSyncMode": "per-command",
+  "uploadBufferUsage": "copy-dst-copy-src",
+  "uploadSubmitEvery": 1,
+  "timingSource": "dawn-perf-wall-time",
+  "timingClass": "operation",
+  "timingMs": 0.07296691176499999,
+  "timingMetric": "wall_time",
+  "elapsedMs": 6016.584750002949,
+  "processWallMs": 6016.584750002949,
+  "dawnTimingMetricRequested": "wall_time",
+  "dawnMetricMediansMs": {
+    "wall_time": 0.07296691176499999,
+    "cpu_time": 0.031890370710999996
+  },
+  "executionBackend": "dawn-perf-tests",
+  "executionRowCount": 1,
+  "executionSuccessCount": 1,
+  "executionErrorCount": 0,
+  "executionTotalNs": 72967,
+  "gtestFilterNoMatch": false,
+  "gtestSkippedCount": 0,
+  "gtestUnsupported": false,
+  "gtestRunningCount": 1,
+  "dawnMetricSamplesMs": {
+    "wall_time": [
+      0.07314363051499999,
+      0.07292390318599999,
+      0.07296691176499999
+    ],
+    "cpu_time": [
+      0.031934243259999995,
+      0.031857196691,
+      0.031890370710999996
+    ],
+    "gpu_time": []
+  },
+  "benchmarkWallMsSamples": [
+    0.07314363051499999,
+    0.07292390318599999,
+    0.07296691176499999
+  ]
+}
