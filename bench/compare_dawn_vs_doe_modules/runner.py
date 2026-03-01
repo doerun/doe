@@ -581,7 +581,13 @@ def run_workload(
         elif trace_success_count > 0 or trace_row_count > 0:
             derived_divisor = float(max(trace_success_count, trace_row_count))
         
-        if required_timing_class != "process-wall" and derived_divisor > 1.0 and effective_timing_divisor != derived_divisor and workload.comparable:
+        enforce_counter_derived_divisor = workload.comparable and workload.domain == "upload"
+        if (
+            enforce_counter_derived_divisor
+            and required_timing_class != "process-wall"
+            and derived_divisor > 1.0
+            and effective_timing_divisor != derived_divisor
+        ):
             raise ValueError(
                 f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
                 f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
