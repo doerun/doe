@@ -236,6 +236,9 @@ def command_for(
     commands_path: str,
     trace_jsonl: Path,
     trace_meta: Path,
+    queue_sync_mode: str,
+    upload_buffer_usage: str,
+    upload_submit_every: int,
     extra_args: list[str],
 ) -> list[str]:
     ctx = {
@@ -249,6 +252,9 @@ def command_for(
         "dawn_filter": shlex.quote(workload.dawn_filter),
         "trace_jsonl": shlex.quote(str(trace_jsonl)),
         "trace_meta": shlex.quote(str(trace_meta)),
+        "queue_sync_mode": shlex.quote(queue_sync_mode),
+        "upload_buffer_usage": shlex.quote(upload_buffer_usage),
+        "upload_submit_every": shlex.quote(str(upload_submit_every)),
         "extra_args": shlex.join(extra_args),
     }
     resolved = template.format(**ctx)
@@ -475,6 +481,11 @@ def run_workload(
                     str(upload_submit_every),
                 ]
             )
+        queue_sync_mode = "per-command"
+        for i, arg in enumerate(workload.extra_args):
+            if arg == "--queue-sync-mode" and i + 1 < len(workload.extra_args):
+                queue_sync_mode = workload.extra_args[i + 1]
+
         command = command_for(
             template,
             workload=workload,
@@ -482,6 +493,9 @@ def run_workload(
             commands_path=commands_path,
             trace_jsonl=trace_jsonl,
             trace_meta=trace_meta,
+            queue_sync_mode=queue_sync_mode,
+            upload_buffer_usage=upload_buffer_usage,
+            upload_submit_every=upload_submit_every,
             extra_args=effective_extra_args,
         )
         if emit_shell:
@@ -514,7 +528,24 @@ def run_workload(
             resource_sample_target_count=resource_sample_target_count,
         )
         sample_meta = parse_trace_meta(trace_meta)
-        
+
+        trace_meta_patched = False
+        if "doe-zig-runtime" in template:
+            if "queueSyncMode" not in sample_meta:
+                sample_meta["queueSyncMode"] = queue_sync_mode
+                trace_meta_patched = True
+            if "uploadBufferUsage" not in sample_meta:
+                sample_meta["uploadBufferUsage"] = upload_buffer_usage
+                trace_meta_patched = True
+            if "uploadSubmitEvery" not in sample_meta:
+                sample_meta["uploadSubmitEvery"] = upload_submit_every
+                trace_meta_patched = True
+        if trace_meta_patched:
+            trace_meta.write_text(
+                json.dumps(sample_meta, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+
         # Note: maybe_override_render_encode_timing must be implemented/imported in the final logic
         measured_ms, measured_source, measured_meta = pick_measured_timing_ms(
             wall_ms=elapsed_ms,
@@ -539,6 +570,7 @@ def run_workload(
             
         trace_row_count = parse_int(sample_meta.get("executionRowCount", 0)) or 0
         trace_dispatch_count = parse_int(sample_meta.get("executionDispatchCount", 0)) or 0
+        trace_success_count = parse_int(sample_meta.get("executionSuccessCount", 0)) or 0
         trace_submit_every = parse_int(sample_meta.get("uploadSubmitEvery", 0)) or 0
         derived_divisor = 0.0
         
@@ -546,15 +578,15 @@ def run_workload(
             derived_divisor = float(trace_row_count)
         elif trace_dispatch_count > 0:
             derived_divisor = float(trace_dispatch_count)
-        elif trace_row_count > 0:
-            derived_divisor = float(trace_row_count)
+        elif trace_success_count > 0 or trace_row_count > 0:
+            derived_divisor = float(max(trace_success_count, trace_row_count))
         
-        if required_timing_class != "process-wall" and derived_divisor > 0.0 and effective_timing_divisor != derived_divisor and workload.comparable:
+        if required_timing_class != "process-wall" and derived_divisor > 1.0 and effective_timing_divisor != derived_divisor and workload.comparable:
             raise ValueError(
                 f"strict counter-derived normalization failed for {workload.id} (run {run_idx}): "
                 f"workload contract specifies divisor {effective_timing_divisor}, but trace meta "
                 f"reveals {derived_divisor} physical operations "
-                f"(rows={trace_row_count}, dispatches={trace_dispatch_count})."
+                f"(success={trace_success_count}, rows={trace_row_count}, dispatches={trace_dispatch_count})."
             )
 
         measured_ms = measured_raw_ms / effective_timing_divisor

@@ -21,6 +21,16 @@ NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
 }
+DOE_OPERATION_TIMING_SOURCES = {
+    *NATIVE_EXECUTION_OPERATION_TIMING_SOURCES,
+    "doe-trace-window",
+}
+DAWN_OPERATION_TIMING_SOURCES = {
+    "dawn-perf-wall-time",
+    "dawn-perf-cpu-time",
+    "dawn-perf-gpu-time",
+    "dawn-perf-wall-ns",
+}
 OBLIGATION_SCHEMA_VERSION = 1
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _COMPARABILITY_OBLIGATIONS_PATH = _REPO_ROOT / "config/comparability-obligations.json"
@@ -65,6 +75,70 @@ def _record_obligation(
     )
     if blocking and applicable and (not passes) and failure_reason:
         reasons.append(failure_reason)
+
+
+def _sources_match_with_runtime_compatibility(
+    *,
+    left_sources: list[str],
+    right_sources: list[str],
+    is_dawn_vs_doe: bool,
+    is_left_dawn: bool,
+    is_right_dawn: bool,
+    is_left_doe: bool,
+    is_right_doe: bool,
+) -> bool:
+    if not left_sources or not right_sources:
+        return False
+    if not is_dawn_vs_doe:
+        return left_sources == right_sources
+
+    left_set = set(left_sources)
+    right_set = set(right_sources)
+    if is_left_dawn and not left_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
+        return False
+    if is_right_dawn and not right_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
+        return False
+    if is_left_doe and not left_set.issubset(DOE_OPERATION_TIMING_SOURCES):
+        return False
+    if is_right_doe and not right_set.issubset(DOE_OPERATION_TIMING_SOURCES):
+        return False
+    return True
+
+
+def _timing_selection_policy_match_with_runtime_compatibility(
+    *,
+    left_policies: list[str],
+    right_policies: list[str],
+    workload_domain: str,
+    is_dawn_vs_doe: bool,
+    is_left_dawn: bool,
+    is_right_dawn: bool,
+    is_left_doe: bool,
+    is_right_doe: bool,
+) -> bool:
+    if not left_policies or not right_policies:
+        return False
+    if not is_dawn_vs_doe:
+        return left_policies == right_policies
+
+    left_set = set(left_policies)
+    right_set = set(right_policies)
+    normalized_domain = workload_domain.strip().lower()
+
+    doe_allowed = {"<none>"}
+    if normalized_domain == "upload":
+        doe_allowed = {"upload-row-total-preferred"}
+    dawn_allowed = {"<none>"}
+
+    if is_left_dawn and not left_set.issubset(dawn_allowed):
+        return False
+    if is_right_dawn and not right_set.issubset(dawn_allowed):
+        return False
+    if is_left_doe and not left_set.issubset(doe_allowed):
+        return False
+    if is_right_doe and not right_set.issubset(doe_allowed):
+        return False
+    return True
 
 
 def _load_canonical_obligation_ids() -> tuple[str, ...]:
@@ -188,6 +262,16 @@ def evaluate_comparability_from_facts(
             True,
             fact_bool("upload_domain"),
             fact_bool("right_upload_ignore_first_scope_consistent"),
+        ),
+        "left_right_upload_buffer_usage_match": (
+            True,
+            fact_bool("upload_domain"),
+            fact_bool("left_right_upload_buffer_usage_match"),
+        ),
+        "left_right_upload_submit_cadence_match": (
+            True,
+            fact_bool("upload_domain"),
+            fact_bool("left_right_upload_submit_cadence_match"),
         ),
         "left_execution_evidence_present": (
             True,
@@ -458,6 +542,12 @@ def verify_fawn_upload_runtime_contract(
             str(workload.left_upload_submit_every),
         ]
     )
+
+    queue_sync_mode = "per-command"
+    for i, arg in enumerate(workload.extra_args):
+        if arg == "--queue-sync-mode" and i + 1 < len(workload.extra_args):
+            queue_sync_mode = workload.extra_args[i + 1]
+
     command = command_for_fn(
         template,
         workload=workload,
@@ -465,6 +555,9 @@ def verify_fawn_upload_runtime_contract(
         commands_path=workload.commands_path,
         trace_jsonl=preflight_trace_jsonl,
         trace_meta=preflight_trace_meta,
+        queue_sync_mode=queue_sync_mode,
+        upload_buffer_usage=workload.left_upload_buffer_usage,
+        upload_submit_every=workload.left_upload_submit_every,
         extra_args=preflight_extra_args,
     )
     runtime_index = find_fawn_runtime_index(command)
@@ -770,9 +863,17 @@ def compare_assessment(
         obligation_id="left_right_trace_meta_source_match",
         blocking=True,
         applicable=len(left_samples) > 0 and len(right_samples) > 0,
-        passes=left_trace_meta_sources == right_trace_meta_sources,
+        passes=_sources_match_with_runtime_compatibility(
+            left_sources=left_trace_meta_sources,
+            right_sources=right_trace_meta_sources,
+            is_dawn_vs_doe=is_dawn_vs_doe,
+            is_left_dawn=is_left_dawn,
+            is_right_dawn=is_right_dawn,
+            is_left_doe=is_left_doe,
+            is_right_doe=is_right_doe,
+        ),
         failure_reason=(
-            "left/right trace meta timing source mismatch: "
+            "left/right trace meta source mismatch or incompatible runtime families: "
             f"{left_trace_meta_sources} vs {right_trace_meta_sources}"
         ),
         details={
@@ -786,9 +887,18 @@ def compare_assessment(
         obligation_id="left_right_timing_selection_policy_match",
         blocking=True,
         applicable=len(left_samples) > 0 and len(right_samples) > 0,
-        passes=left_timing_selection_policies == right_timing_selection_policies,
+        passes=_timing_selection_policy_match_with_runtime_compatibility(
+            left_policies=left_timing_selection_policies,
+            right_policies=right_timing_selection_policies,
+            workload_domain=workload_domain,
+            is_dawn_vs_doe=is_dawn_vs_doe,
+            is_left_dawn=is_left_dawn,
+            is_right_dawn=is_right_dawn,
+            is_left_doe=is_left_doe,
+            is_right_doe=is_right_doe,
+        ),
         failure_reason=(
-            "left/right timing selection policy mismatch: "
+            "left/right timing selection policy mismatch or incompatible runtime policies: "
             f"{left_timing_selection_policies} vs {right_timing_selection_policies}"
         ),
         details={

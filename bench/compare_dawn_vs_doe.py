@@ -754,6 +754,9 @@ def command_for(
     commands_path: str,
     trace_jsonl: Path,
     trace_meta: Path,
+    queue_sync_mode: str,
+    upload_buffer_usage: str,
+    upload_submit_every: int,
     extra_args: list[str],
 ) -> list[str]:
     return runner_mod.command_for(
@@ -763,6 +766,9 @@ def command_for(
         commands_path=commands_path,
         trace_jsonl=trace_jsonl,
         trace_meta=trace_meta,
+        queue_sync_mode=queue_sync_mode,
+        upload_buffer_usage=upload_buffer_usage,
+        upload_submit_every=upload_submit_every,
         extra_args=extra_args,
     )
 

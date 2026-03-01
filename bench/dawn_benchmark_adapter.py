@@ -183,6 +183,9 @@ def parse_args() -> argparse.Namespace:
         default="wall_time",
         help="Benchmark metric to use as primary timing (from Dawn *RESULT output).",
     )
+    parser.add_argument("--queue-sync-mode", default="none")
+    parser.add_argument("--upload-buffer-usage", default="none")
+    parser.add_argument("--upload-submit-every", type=int, default=0)
     return parser.parse_args()
 
 
@@ -562,6 +565,9 @@ def write_meta(
     skipped_test_count: int,
     test_unsupported: bool,
     filter_resolution: str,
+    queue_sync_mode: str,
+    upload_buffer_usage: str,
+    upload_submit_every: int,
 ) -> None:
     row_count = 1 if include_trace_row else 0
     seq_max = int(trace_row.get("seq", 0)) if include_trace_row else 0
@@ -581,6 +587,9 @@ def write_meta(
         "selectedFilter": selected_filter,
         "filterResolution": filter_resolution,
         "command": shlex.join(command),
+        "queueSyncMode": queue_sync_mode,
+        "uploadBufferUsage": upload_buffer_usage,
+        "uploadSubmitEvery": upload_submit_every,
         "timingSource": timing_source,
         "timingClass": timing_class,
         "timingMs": timing_ms,
@@ -731,6 +740,9 @@ def main() -> int:
             skipped_test_count=skipped_test_count,
             test_unsupported=test_unsupported,
             filter_resolution=filter_resolution,
+            queue_sync_mode=args.queue_sync_mode,
+            upload_buffer_usage=args.upload_buffer_usage,
+            upload_submit_every=args.upload_submit_every,
         )
 
     if effective_return_code != 0:

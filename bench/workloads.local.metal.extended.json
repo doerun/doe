@@ -15,8 +15,6 @@
       "driver": "24.0.0",
       "leftCommandRepeat": 500,
       "leftIgnoreFirstOps": 1,
-      "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 50,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -24,7 +22,7 @@
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units.",
+      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, ignore first upload op, with deferred queue sync, and normalize to per-upload units.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
     },
     {
@@ -41,8 +39,6 @@
       "driver": "24.0.0",
       "leftCommandRepeat": 500,
       "leftIgnoreFirstOps": 0,
-      "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 100,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -50,7 +46,7 @@
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, use explicit size-tuned submit cadence (64KB uses submitEvery=100) with deferred queue sync, and normalize to per-upload units.",
+      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, use deferred queue sync, and normalize to per-upload units.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB"
     },
     {
@@ -67,8 +63,6 @@
       "driver": "24.0.0",
       "leftCommandRepeat": 100,
       "leftIgnoreFirstOps": 1,
-      "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 2,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -76,7 +70,7 @@
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 100 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units.",
+      "timingNormalizationNote": "Upload microbenchmark mode: run 100 uploads per Fawn sample, ignore first upload op, with deferred queue sync, and normalize to per-upload units.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB"
     },
     {
@@ -93,8 +87,6 @@
       "driver": "24.0.0",
       "leftCommandRepeat": 50,
       "leftIgnoreFirstOps": 1,
-      "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 1,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -102,7 +94,7 @@
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 50 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units.",
+      "timingNormalizationNote": "Upload microbenchmark mode: run 50 uploads per Fawn sample, ignore first upload op, with deferred queue sync, and normalize to per-upload units.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB"
     },
     {
@@ -119,8 +111,6 @@
       "driver": "24.0.0",
       "leftCommandRepeat": 50,
       "leftIgnoreFirstOps": 1,
-      "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 2,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -128,7 +118,7 @@
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 50 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units.",
+      "timingNormalizationNote": "Upload microbenchmark mode: run 50 uploads per Fawn sample, ignore first upload op, with deferred queue sync, and normalize to per-upload units.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB"
     },
     {
