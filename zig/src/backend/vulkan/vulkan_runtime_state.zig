@@ -1,6 +1,11 @@
 const std = @import("std");
 const vulkan_errors = @import("vulkan_errors.zig");
 
+pub const UploadUsageMode = enum {
+    copy_dst_copy_src,
+    copy_dst,
+};
+
 const State = struct {
     initialized: bool = false,
     instance_generation: u64 = 0,
@@ -19,7 +24,10 @@ const State = struct {
     spirv_opt_runs: u64 = 0,
     manifest_emits: u64 = 0,
     staging_reservations: u64 = 0,
+    staging_reserved_bytes: u64 = 0,
     upload_calls: u64 = 0,
+    upload_copy_dst_copy_src_calls: u64 = 0,
+    upload_copy_dst_calls: u64 = 0,
     buffers_created: u64 = 0,
     textures_created: u64 = 0,
     samplers_created: u64 = 0,
@@ -35,15 +43,107 @@ const State = struct {
 var state = State{};
 const MANIFEST_PATH_CAPACITY = 256;
 const HASH_HEX_SIZE = 64;
+const MANIFEST_MODULE_CAPACITY = 96;
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+const DEFAULT_MANIFEST_MODULE = "vulkan_dispatch";
+const HEX = "0123456789abcdef";
+const INITIAL_TIMING_NS: u64 = 4_000;
+const CREATE_INSTANCE_COST_NS: u64 = 14_000;
+const SELECT_ADAPTER_COST_NS: u64 = 11_000;
+const CREATE_DEVICE_COST_NS: u64 = 13_000;
+const QUEUE_SUBMIT_COST_NS: u64 = 7_000;
+const WAIT_FOR_COMPLETION_COST_NS: u64 = 9_000;
+const ENCODE_COMPUTE_COST_NS: u64 = 8_500;
+const ENCODE_COPY_COST_NS: u64 = 7_000;
+const ENCODE_RENDER_COST_NS: u64 = 10_000;
+const PIPELINE_CACHE_LOOKUP_COST_NS: u64 = 4_000;
+const INGEST_WGSL_COST_NS: u64 = 16_000;
+const WGSL_TO_SPIRV_COST_NS: u64 = 21_000;
+const SPIRV_OPT_COST_NS: u64 = 18_500;
+const MANIFEST_EMIT_COST_NS: u64 = 5_200;
+const STAGING_RESERVATION_BASE_COST_NS: u64 = 3_100;
+const STAGING_RESERVATION_BYTES_PER_NS: u64 = 4_096;
+const STAGING_RESERVATION_MAX_COST_NS: u64 = 8_000;
+const UPLOAD_COPY_DST_COPY_SRC_BASE_COST_NS: u64 = 6_000;
+const UPLOAD_COPY_DST_BASE_COST_NS: u64 = 5_000;
+const UPLOAD_BYTES_PER_NS: u64 = 8_192;
+const UPLOAD_MAX_SIZE_COST_NS: u64 = 8_000;
+const CREATE_BUFFER_COST_NS: u64 = 2_300;
+const DESTROY_BUFFER_COST_NS: u64 = 1_200;
+const CREATE_TEXTURE_COST_NS: u64 = 2_400;
+const WRITE_TEXTURE_COST_NS: u64 = 1_900;
+const QUERY_TEXTURE_COST_NS: u64 = 1_100;
+const DESTROY_TEXTURE_COST_NS: u64 = 1_700;
+const CREATE_SAMPLER_COST_NS: u64 = 1_500;
+const DESTROY_SAMPLER_COST_NS: u64 = 1_100;
+const CREATE_BIND_GROUP_COST_NS: u64 = 2_600;
+const DESTROY_BIND_GROUP_COST_NS: u64 = 1_600;
+const LOOKUP_RESOURCE_COST_NS: u64 = 900;
+const CREATE_SURFACE_COST_NS: u64 = 4_800;
+const CONFIGURE_SURFACE_COST_NS: u64 = 2_400;
+const UNCONFIGURE_SURFACE_COST_NS: u64 = 1_200;
+const GET_SURFACE_CAPABILITIES_COST_NS: u64 = 1_100;
+const ACQUIRE_SURFACE_COST_NS: u64 = 1_700;
+const PRESENT_SURFACE_COST_NS: u64 = 5_600;
+const RELEASE_SURFACE_COST_NS: u64 = 2_000;
+const BUILD_PROC_TABLE_COST_NS: u64 = 1_300;
+const EXPORT_PROCS_COST_NS: u64 = 900;
 var current_manifest_path_storage: [MANIFEST_PATH_CAPACITY]u8 = undefined;
 var current_manifest_path_len: usize = 0;
 var current_manifest_hash_storage: [HASH_HEX_SIZE]u8 = undefined;
 var current_manifest_hash_len: usize = 0;
+var current_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = undefined;
+var current_manifest_module_len: usize = 0;
 
 fn fmtToken(buf: []u8, comptime fmt: []const u8, args: anytype) []const u8 {
     return std.fmt.bufPrint(buf, fmt, args) catch "";
+}
+
+fn writeHex(out: *[2]u8, byte: u8) void {
+    out[0] = HEX[(byte >> 4) & 0x0F];
+    out[1] = HEX[byte & 0x0F];
+}
+
+fn u64Hex(u: u64, out: *[16]u8) void {
+    var i: usize = 0;
+    while (i < 8) : (i += 1) {
+        const shift: u6 = @intCast(56 - (i * 8));
+        const value = @as(u8, @intCast((u >> shift) & 0xFF));
+        writeHex(out[i * 2 ..][0..2], value);
+    }
+}
+
+fn hashChunk(input: []const u8, seed: u64) u64 {
+    var h = seed;
+    for (input, 0..) |byte, index| {
+        h +%= @as(u64, byte);
+        h +%= @as(u64, index);
+        h = (h << 7) ^ (h >> 3);
+        h = (h *% 0xff51afd7ed558ccd) +% 0x9e3779b97f4a7c15;
+        h ^= h >> 23;
+        h = (h *% 0xc4ceb9fe1a85ec53) +% 0x9e3779b97f4a7c15;
+        h ^= h >> 27;
+    }
+    return h;
+}
+
+fn hashHex(input: []const u8, seed: u64) [HASH_HEX_SIZE]u8 {
+    var output: [HASH_HEX_SIZE]u8 = undefined;
+    const values = [_]u64{
+        hashChunk(input, seed),
+        hashChunk(input, seed +% 0x243f6a8885a308d3),
+        hashChunk(input, seed +% 0x9e3779b97f4a7c15),
+        hashChunk(input, seed +% 0xbf58476d1ce4e5b9),
+    };
+    var index: usize = 0;
+    for (values) |value| {
+        var segment: [16]u8 = undefined;
+        u64Hex(value, &segment);
+        std.mem.copyForwards(u8, output[index .. index + 16], &segment);
+        index += 16;
+    }
+    return output;
 }
 
 fn charge(cost_ns: u64) void {
@@ -57,7 +157,7 @@ fn ensure_instance() void {
         state.adapter_generation = 1;
         state.device_generation = 1;
         state.queue_generation = 1;
-        state.total_timing_ns = 4_000;
+        state.total_timing_ns = INITIAL_TIMING_NS;
     }
 }
 
@@ -68,14 +168,24 @@ fn ensure_device() void {
     if (state.queue_generation == 0) state.queue_generation = 1;
 }
 
+fn scaled_cost(bytes: u64, bytes_per_ns: u64, max_cost_ns: u64) u64 {
+    const raw = if (bytes_per_ns == 0) bytes else bytes / bytes_per_ns;
+    return @min(raw, max_cost_ns);
+}
+
 fn previousManifestHash() []const u8 {
     if (current_manifest_hash_len == 0) return ZERO_HASH;
     return current_manifest_hash_storage[0..current_manifest_hash_len];
 }
 
+fn manifest_module_name() []const u8 {
+    if (current_manifest_module_len == 0) return DEFAULT_MANIFEST_MODULE;
+    return current_manifest_module_storage[0..current_manifest_module_len];
+}
+
 fn persistManifestPath(path: []const u8) void {
     if (path.len == 0 or path.len > MANIFEST_PATH_CAPACITY) return;
-    std.mem.copyForwards(u8, &current_manifest_path_storage, path);
+    std.mem.copyForwards(u8, current_manifest_path_storage[0..path.len], path);
     current_manifest_path_len = path.len;
 }
 
@@ -83,6 +193,12 @@ fn persistManifestHash(hash: []const u8) void {
     if (hash.len == 0 or hash.len > HASH_HEX_SIZE) return;
     std.mem.copyForwards(u8, current_manifest_hash_storage[0..hash.len], hash);
     current_manifest_hash_len = hash.len;
+}
+
+fn persistManifestModule(module: []const u8) void {
+    if (module.len == 0 or module.len > MANIFEST_MODULE_CAPACITY) return;
+    std.mem.copyForwards(u8, current_manifest_module_storage[0..module.len], module);
+    current_manifest_module_len = module.len;
 }
 
 fn writeManifestFile(path: []const u8, content: []const u8) vulkan_errors.VulkanError!void {
@@ -94,36 +210,40 @@ fn writeManifestFile(path: []const u8, content: []const u8) vulkan_errors.Vulkan
 }
 
 pub fn create_instance() vulkan_errors.VulkanError!void {
+    if (!state.initialized) {
+        state.initialized = true;
+        state.total_timing_ns = INITIAL_TIMING_NS;
+    }
     state.instance_generation +|= 1;
-    charge(14_000);
+    charge(CREATE_INSTANCE_COST_NS);
 }
 
 pub fn select_adapter() vulkan_errors.VulkanError!void {
     ensure_instance();
     state.adapter_generation +|= 1;
     state.queue_generation +|= 1;
-    charge(11_000);
+    charge(SELECT_ADAPTER_COST_NS);
 }
 
 pub fn create_device() vulkan_errors.VulkanError!void {
     ensure_device();
     state.device_generation +|= 1;
     state.queue_generation +|= 1;
-    charge(13_000);
+    charge(CREATE_DEVICE_COST_NS);
 }
 
 pub fn submit() vulkan_errors.VulkanError!void {
     ensure_device();
     state.queue_depth +|= 1;
     state.pending_sync_requests +|= 1;
-    charge(7_000);
+    charge(QUEUE_SUBMIT_COST_NS);
 }
 
 pub fn wait_for_completion() vulkan_errors.VulkanError!void {
     ensure_device();
     state.queue_depth = 0;
     state.pending_sync_requests = 0;
-    charge(9_000);
+    charge(WAIT_FOR_COMPLETION_COST_NS);
 }
 
 pub fn operation_timing_ns() vulkan_errors.VulkanError!u64 {
@@ -134,43 +254,47 @@ pub fn operation_timing_ns() vulkan_errors.VulkanError!u64 {
 pub fn encode_compute() vulkan_errors.VulkanError!void {
     ensure_device();
     state.compute_passes +|= 1;
-    charge(8_500);
+    charge(ENCODE_COMPUTE_COST_NS);
 }
 
 pub fn encode_copy() vulkan_errors.VulkanError!void {
     ensure_device();
     state.copy_passes +|= 1;
-    charge(7_000);
+    charge(ENCODE_COPY_COST_NS);
 }
 
 pub fn encode_render() vulkan_errors.VulkanError!void {
     ensure_device();
     state.render_passes +|= 1;
-    charge(10_000);
+    charge(ENCODE_RENDER_COST_NS);
 }
 
 pub fn pipeline_cache_lookup() vulkan_errors.VulkanError!void {
     ensure_device();
     state.pipeline_cache_lookups +|= 1;
-    charge(4_000);
+    charge(PIPELINE_CACHE_LOOKUP_COST_NS);
 }
 
 pub fn ingest_wgsl() vulkan_errors.VulkanError!void {
     ensure_device();
     state.wgsl_ingests +|= 1;
-    charge(16_000);
+    charge(INGEST_WGSL_COST_NS);
 }
 
 pub fn run_wgsl_to_spirv() vulkan_errors.VulkanError!void {
     ensure_device();
     state.wgsl_to_spirv_runs +|= 1;
-    charge(21_000);
+    charge(WGSL_TO_SPIRV_COST_NS);
 }
 
 pub fn run_spirv_opt() vulkan_errors.VulkanError!void {
     ensure_device();
     state.spirv_opt_runs +|= 1;
-    charge(18_500);
+    charge(SPIRV_OPT_COST_NS);
+}
+
+pub fn set_manifest_module(module: []const u8) void {
+    persistManifestModule(module);
 }
 
 pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
@@ -184,62 +308,118 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
         .{ SHADER_ARTIFACT_DIR, state.manifest_emits },
     );
 
-    const wgsl_hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const msl_hash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    const metallib_hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-    const toolchain_hash = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+    const backend_id = "zig_vulkan";
+    const module = manifest_module_name();
+    const taxonomy_code = "ok";
 
-    var pipeline_hash_buf: [HASH_HEX_SIZE]u8 = undefined;
-    const pipeline_hash = fmtToken(
-        &pipeline_hash_buf,
-        "{x:0>64}",
-        .{state.manifest_emits},
-    );
+    var token_buf: [1024]u8 = undefined;
+    const pipeline_hash = hashHex(fmtToken(
+        &token_buf,
+        "pipeline:{s}:{d}:{d}:{d}:{d}:{d}",
+        .{
+            module,
+            state.pipeline_cache_lookups,
+            state.compute_passes,
+            state.copy_passes,
+            state.render_passes,
+            state.manifest_emits,
+        },
+    ), 0x517cc1b727220a95);
 
-    var chain_hash_buf: [HASH_HEX_SIZE]u8 = undefined;
-    const chain_hash = fmtToken(
-        &chain_hash_buf,
-        "{x:0>64}",
-        .{state.manifest_emits + 0x1000},
-    );
+    const wgsl_hash = hashHex(fmtToken(
+        &token_buf,
+        "wgsl:{s}:{d}:{d}",
+        .{ module, state.wgsl_ingests, state.wgsl_to_spirv_runs },
+    ), 0x9e3779b97f4a7c15);
+
+    const msl_hash = hashHex(fmtToken(
+        &token_buf,
+        "spirv:{s}:{d}:{d}",
+        .{ module, state.wgsl_to_spirv_runs, state.spirv_opt_runs },
+    ), 0xbf58476d1ce4e5b9);
+
+    const metallib_hash = hashHex(fmtToken(
+        &token_buf,
+        "binary:{s}:{d}:{d}:{d}",
+        .{
+            module,
+            state.proc_tables_built,
+            state.proc_exports,
+            state.resource_lookups,
+        },
+    ), 0x94d049bb133111eb);
+
+    const toolchain_hash = hashHex("toolchain:spirv-tools:vulkan:v1", 0x2545f4914f6cdd1d);
+    const chain_hash = hashHex(fmtToken(
+        &token_buf,
+        "backendId={s}|module={s}|pipelineHash={s}|wgslSha256={s}|mslSha256={s}|metallibSha256={s}|toolchainSha256={s}|taxonomyCode={s}|previousHash={s}|count={d}",
+        .{
+            backend_id,
+            module,
+            pipeline_hash[0..],
+            wgsl_hash[0..],
+            msl_hash[0..],
+            metallib_hash[0..],
+            toolchain_hash[0..],
+            taxonomy_code,
+            previous,
+            state.manifest_emits,
+        },
+    ), 0x9ddfea08eb382d69);
 
     var manifest_buf: [1536]u8 = undefined;
     const manifest_text = fmtToken(
         &manifest_buf,
-        "{{\"schemaVersion\":1,\"backendId\":\"zig_vulkan\",\"module\":\"kernel_dispatch\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"mslSha256\":\"{s}\",\"metallibSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"ok\",\"previousHash\":\"{s}\",\"hash\":\"{s}\"}}",
+        "{{\"schemaVersion\":1,\"backendId\":\"{s}\",\"module\":\"{s}\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"mslSha256\":\"{s}\",\"metallibSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"{s}\",\"previousHash\":\"{s}\",\"hash\":\"{s}\"}}",
         .{
-            pipeline_hash,
-            wgsl_hash,
-            msl_hash,
-            metallib_hash,
-            toolchain_hash,
+            backend_id,
+            module,
+            pipeline_hash[0..],
+            wgsl_hash[0..],
+            msl_hash[0..],
+            metallib_hash[0..],
+            toolchain_hash[0..],
+            taxonomy_code,
             previous,
-            chain_hash,
+            chain_hash[0..],
         },
     );
 
     persistManifestPath(path);
-    persistManifestHash(chain_hash);
+    persistManifestHash(chain_hash[0..]);
     try writeManifestFile(path, manifest_text);
-    charge(5_200);
+    charge(MANIFEST_EMIT_COST_NS);
 }
 
-pub fn reserve_staging() vulkan_errors.VulkanError!void {
+pub fn reserve_staging(bytes: u64) vulkan_errors.VulkanError!void {
     ensure_device();
+    if (bytes == 0) return vulkan_errors.VulkanError.InvalidArgument;
     state.staging_reservations +|= 1;
-    charge(3_100);
+    state.staging_reserved_bytes +|= bytes;
+    charge(STAGING_RESERVATION_BASE_COST_NS + scaled_cost(bytes, STAGING_RESERVATION_BYTES_PER_NS, STAGING_RESERVATION_MAX_COST_NS));
 }
 
-pub fn upload_once() vulkan_errors.VulkanError!void {
+pub fn upload_once(mode: UploadUsageMode, bytes: u64) vulkan_errors.VulkanError!void {
     ensure_device();
+    if (bytes == 0) return vulkan_errors.VulkanError.InvalidArgument;
     state.upload_calls +|= 1;
-    charge(6_000);
+    const mode_cost = switch (mode) {
+        .copy_dst_copy_src => blk: {
+            state.upload_copy_dst_copy_src_calls +|= 1;
+            break :blk UPLOAD_COPY_DST_COPY_SRC_BASE_COST_NS;
+        },
+        .copy_dst => blk: {
+            state.upload_copy_dst_calls +|= 1;
+            break :blk UPLOAD_COPY_DST_BASE_COST_NS;
+        },
+    };
+    charge(mode_cost + scaled_cost(bytes, UPLOAD_BYTES_PER_NS, UPLOAD_MAX_SIZE_COST_NS));
 }
 
 pub fn create_buffer() vulkan_errors.VulkanError!void {
     ensure_device();
     state.buffers_created +|= 1;
-    charge(2_300);
+    charge(CREATE_BUFFER_COST_NS);
 }
 
 pub fn destroy_buffer() vulkan_errors.VulkanError!void {
@@ -247,13 +427,13 @@ pub fn destroy_buffer() vulkan_errors.VulkanError!void {
     if (state.buffers_created > 0) {
         state.buffers_created -= 1;
     }
-    charge(1_200);
+    charge(DESTROY_BUFFER_COST_NS);
 }
 
 pub fn create_texture() vulkan_errors.VulkanError!void {
     ensure_device();
     state.textures_created +|= 1;
-    charge(2_400);
+    charge(CREATE_TEXTURE_COST_NS);
 }
 
 pub fn write_texture() vulkan_errors.VulkanError!void {
@@ -261,7 +441,7 @@ pub fn write_texture() vulkan_errors.VulkanError!void {
     if (state.textures_created == 0) {
         state.textures_created +|= 1;
     }
-    charge(1_900);
+    charge(WRITE_TEXTURE_COST_NS);
 }
 
 pub fn query_texture() vulkan_errors.VulkanError!void {
@@ -269,7 +449,7 @@ pub fn query_texture() vulkan_errors.VulkanError!void {
     if (state.textures_created == 0) {
         state.textures_created +|= 1;
     }
-    charge(1_100);
+    charge(QUERY_TEXTURE_COST_NS);
 }
 
 pub fn destroy_texture() vulkan_errors.VulkanError!void {
@@ -277,13 +457,13 @@ pub fn destroy_texture() vulkan_errors.VulkanError!void {
     if (state.textures_created > 0) {
         state.textures_created -= 1;
     }
-    charge(1_700);
+    charge(DESTROY_TEXTURE_COST_NS);
 }
 
 pub fn create_sampler() vulkan_errors.VulkanError!void {
     ensure_device();
     state.samplers_created +|= 1;
-    charge(1_500);
+    charge(CREATE_SAMPLER_COST_NS);
 }
 
 pub fn destroy_sampler() vulkan_errors.VulkanError!void {
@@ -291,13 +471,13 @@ pub fn destroy_sampler() vulkan_errors.VulkanError!void {
     if (state.samplers_created > 0) {
         state.samplers_created -= 1;
     }
-    charge(1_100);
+    charge(DESTROY_SAMPLER_COST_NS);
 }
 
 pub fn create_bind_group() vulkan_errors.VulkanError!void {
     ensure_device();
     state.bind_groups_created +|= 1;
-    charge(2_600);
+    charge(CREATE_BIND_GROUP_COST_NS);
 }
 
 pub fn destroy_bind_group() vulkan_errors.VulkanError!void {
@@ -305,26 +485,26 @@ pub fn destroy_bind_group() vulkan_errors.VulkanError!void {
     if (state.bind_groups_created > 0) {
         state.bind_groups_created -= 1;
     }
-    charge(1_600);
+    charge(DESTROY_BIND_GROUP_COST_NS);
 }
 
 pub fn lookup_resource() vulkan_errors.VulkanError!void {
     ensure_device();
     state.resource_lookups +|= 1;
-    charge(900);
+    charge(LOOKUP_RESOURCE_COST_NS);
 }
 
 pub fn create_surface() vulkan_errors.VulkanError!void {
     ensure_device();
     state.surfaces_created +|= 1;
-    charge(4_800);
+    charge(CREATE_SURFACE_COST_NS);
 }
 
 pub fn configure_surface() vulkan_errors.VulkanError!void {
     ensure_device();
     if (state.surfaces_created == 0) state.surfaces_created +|= 1;
     state.surfaces_configured +|= 1;
-    charge(2_400);
+    charge(CONFIGURE_SURFACE_COST_NS);
 }
 
 pub fn unconfigure_surface() vulkan_errors.VulkanError!void {
@@ -332,25 +512,25 @@ pub fn unconfigure_surface() vulkan_errors.VulkanError!void {
     if (state.surfaces_configured > 0) {
         state.surfaces_configured -= 1;
     }
-    charge(1_200);
+    charge(UNCONFIGURE_SURFACE_COST_NS);
 }
 
 pub fn get_surface_capabilities() vulkan_errors.VulkanError!void {
     ensure_device();
     if (state.surfaces_created == 0) state.surfaces_created +|= 1;
-    charge(1_100);
+    charge(GET_SURFACE_CAPABILITIES_COST_NS);
 }
 
 pub fn acquire_surface() vulkan_errors.VulkanError!void {
     ensure_device();
     if (state.surfaces_created == 0) state.surfaces_created +|= 1;
-    charge(1_700);
+    charge(ACQUIRE_SURFACE_COST_NS);
 }
 
 pub fn present_surface() vulkan_errors.VulkanError!void {
     ensure_device();
     state.surfaces_presented +|= 1;
-    charge(5_600);
+    charge(PRESENT_SURFACE_COST_NS);
 }
 
 pub fn release_surface() vulkan_errors.VulkanError!void {
@@ -358,25 +538,26 @@ pub fn release_surface() vulkan_errors.VulkanError!void {
     if (state.surfaces_created > 0) {
         state.surfaces_created -= 1;
     }
-    charge(2_000);
+    charge(RELEASE_SURFACE_COST_NS);
 }
 
 pub fn build_proc_table() vulkan_errors.VulkanError!void {
     ensure_device();
     state.proc_tables_built +|= 1;
-    charge(1_300);
+    charge(BUILD_PROC_TABLE_COST_NS);
 }
 
 pub fn export_procs() vulkan_errors.VulkanError!void {
     ensure_device();
     state.proc_exports +|= 1;
-    charge(900);
+    charge(EXPORT_PROCS_COST_NS);
 }
 
 pub fn reset_state() void {
     state = State{};
     current_manifest_path_len = 0;
     current_manifest_hash_len = 0;
+    current_manifest_module_len = 0;
 }
 
 pub fn current_manifest_path() ?[]const u8 {
@@ -387,4 +568,25 @@ pub fn current_manifest_path() ?[]const u8 {
 pub fn current_manifest_hash() ?[]const u8 {
     if (current_manifest_hash_len == 0) return null;
     return current_manifest_hash_storage[0..current_manifest_hash_len];
+}
+
+pub fn current_manifest_module() ?[]const u8 {
+    if (current_manifest_module_len == 0) return null;
+    return current_manifest_module_storage[0..current_manifest_module_len];
+}
+
+pub fn manifest_emit_count() u64 {
+    return state.manifest_emits;
+}
+
+pub fn staging_reserved_bytes() u64 {
+    return state.staging_reserved_bytes;
+}
+
+pub fn upload_copy_dst_copy_src_calls() u64 {
+    return state.upload_copy_dst_copy_src_calls;
+}
+
+pub fn upload_copy_dst_calls() u64 {
+    return state.upload_copy_dst_calls;
 }

@@ -2,10 +2,7 @@ const vulkan_errors = @import("../vulkan_errors.zig");
 const vulkan_runtime_state = @import("../vulkan_runtime_state.zig");
 const staging_ring = @import("staging_ring.zig");
 
-pub const UploadUsageMode = enum {
-    copy_dst_copy_src,
-    copy_dst,
-};
+pub const UploadUsageMode = vulkan_runtime_state.UploadUsageMode;
 
 pub fn prewarm_upload_path(max_upload_bytes: u64) vulkan_errors.VulkanError!void {
     if (max_upload_bytes == 0) return;

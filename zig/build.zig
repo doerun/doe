@@ -161,10 +161,11 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run Zig unit tests");
     const test_exec = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/model.zig"),
+            .root_source_file = b.path("test_suite.zig"),
             .target = target,
             .optimize = optimize,
         }),
     });
-    test_step.dependOn(&test_exec.step);
+    const run_tests = b.addRunArtifact(test_exec);
+    test_step.dependOn(&run_tests.step);
 }

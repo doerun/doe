@@ -92,6 +92,31 @@ fn ns_delta(after: u64, before: u64) u64 {
     return 0;
 }
 
+fn command_manifest_module(command: model.Command) []const u8 {
+    return switch (command) {
+        .upload => "upload",
+        .copy_buffer_to_texture => "copy_buffer_to_texture",
+        .barrier => "barrier",
+        .dispatch => "dispatch",
+        .kernel_dispatch => "kernel_dispatch",
+        .render_draw => "render_draw",
+        .sampler_create => "sampler_create",
+        .sampler_destroy => "sampler_destroy",
+        .texture_write => "texture_write",
+        .texture_query => "texture_query",
+        .texture_destroy => "texture_destroy",
+        .surface_create => "surface_create",
+        .surface_capabilities => "surface_capabilities",
+        .surface_configure => "surface_configure",
+        .surface_acquire => "surface_acquire",
+        .surface_present => "surface_present",
+        .surface_unconfigure => "surface_unconfigure",
+        .surface_release => "surface_release",
+        .async_diagnostics => "async_diagnostics",
+        .map_async => "map_async",
+    };
+}
+
 fn is_dispatch_command(command: model.Command) bool {
     switch (command) {
         .dispatch, .kernel_dispatch => return true,
@@ -159,10 +184,32 @@ fn submit_and_maybe_wait(self: *ZigVulkanBackend) !u64 {
     return 0;
 }
 
-fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !u64 {
+fn upload_usage_mode(mode: webgpu.UploadBufferUsageMode) vulkan_upload_path.UploadUsageMode {
+    return switch (mode) {
+        .copy_dst_copy_src => .copy_dst_copy_src,
+        .copy_dst => .copy_dst,
+    };
+}
+
+fn submit_for_command(self: *ZigVulkanBackend, command: model.Command) !u64 {
+    if (command == .upload and self.upload_submit_every > 1) {
+        self.pending_upload_commands +|= 1;
+        if (self.pending_upload_commands >= self.upload_submit_every) {
+            self.pending_upload_commands = 0;
+            return try submit_and_maybe_wait(self);
+        }
+        return 0;
+    }
+
+    self.pending_upload_commands = 0;
+    return try submit_and_maybe_wait(self);
+}
+
+fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !void {
+    vulkan_runtime_state.set_manifest_module(command_manifest_module(command));
     switch (command) {
-        .upload => {
-            try vulkan_upload_path.upload_once();
+        .upload => |upload| {
+            try vulkan_upload_path.upload_once(upload_usage_mode(self.upload_buffer_usage_mode), @as(u64, @intCast(upload.bytes)));
             try vulkan_proc_export.export_procs();
         },
         .copy_buffer_to_texture => {
@@ -177,7 +224,6 @@ fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !u64 {
             try vulkan_spirv_runner.run();
             try vulkan_opt_runner.run();
             try vulkan_pipeline_cache.pipeline_cache_lookup();
-            try vulkan_shader_manifest.emit();
         },
         .render_draw => try render_encode.encode_render(),
         .sampler_create => try vulkan_sampler.create_sampler(),
@@ -206,18 +252,6 @@ fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !u64 {
         },
     }
     try vulkan_shader_manifest.emit();
-
-    if (command == .upload and self.upload_submit_every > 1) {
-        self.pending_upload_commands +|= 1;
-        if (self.pending_upload_commands >= self.upload_submit_every) {
-            self.pending_upload_commands = 0;
-            return try submit_and_maybe_wait(self);
-        }
-        return 0;
-    }
-
-    self.pending_upload_commands = 0;
-    return try submit_and_maybe_wait(self);
 }
 
 fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !webgpu.NativeExecutionResult {
@@ -230,7 +264,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
     }
 
     const encode_start = try vulkan_timing.operation_timing_ns();
-    const submit_wait_ns = route_runtime_command(self, command) catch |err| {
+    route_runtime_command(self, command) catch |err| {
         return .{
             .status = map_error_status(err),
             .status_message = @errorName(err),
@@ -239,6 +273,16 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
     };
     const encode_end = try vulkan_timing.operation_timing_ns();
     const encode_ns = ns_delta(encode_end, encode_start);
+
+    const submit_wait_ns = submit_for_command(self, command) catch |err| {
+        return .{
+            .status = map_error_status(err),
+            .status_message = @errorName(err),
+            .setup_ns = setup_ns,
+            .encode_ns = encode_ns,
+        };
+    };
+
     const dispatch_like = is_dispatch_command(command);
     const gpu_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
     const gpu_timestamp_ns = if (gpu_attempted and encode_ns > 0) encode_ns else 0;

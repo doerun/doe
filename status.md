@@ -30,6 +30,11 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - comparable+claimable run: `bench/out/20260226T164929Z/vulkan.amd_vulkan_app.local.claim_cycle.json`
   - cycle gate pass: `bench/out/20260226T164929Z/cycle_gate_report.json`
   - additional strict checks pass on the same artifact: backend selection (`amd_vulkan_app`), shader artifact, Vulkan sync, Vulkan timing
+- Vulkan backend correctness hardening (2026-03-01):
+  - `zig/src/backend/vulkan/mod.zig` now separates encode timing from submit/wait timing and removes duplicate manifest emission on `kernel_dispatch`.
+  - upload behavior knobs are now execution-effective end-to-end (`upload_buffer_usage_mode`, byte budgets via staging reserve) instead of stored-only fields.
+  - `zig/src/backend/vulkan/vulkan_runtime_state.zig` now emits deterministic command-scoped manifest payloads (non-placeholder hashes) and sets initialization state explicitly in `create_instance`.
+  - new/expanded correctness tests under `zig/tests/vulkan/` validate timing-bucket separation, upload mode/cadence behavior, manifest hash-chain semantics, and single-emission manifest behavior.
 - final macOS Metal Dawn-vs-Doe evidence execution is now codified as an operator runbook:
   `docs/metal-macos-proof-bundle-runbook.md`
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
