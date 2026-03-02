@@ -22,12 +22,16 @@ __pycache__/
 bench/compare_dawn_vs_doe.config.local.*.json
 bench/out/20??????T??????Z
 bench/out/20??????T??????Z/
+bench/out/scratch/
+bench/out/**/tmp.*
+bench/out/**/tmp.*/
 
 # Editor/temp artifacts
 *.swp
 *.tmp
 
 # Chromium lane local artifacts (large and machine-specific)
+nursery/chromium_webgpu_lane/
 nursery/fawn-browser/.gclient*
 nursery/fawn-browser/.gcs_entries
 nursery/fawn-browser/.cipd
