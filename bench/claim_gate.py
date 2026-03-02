@@ -18,6 +18,7 @@ import report_conformance
 VALID_STATUSES = {"comparable", "unreliable"}
 VALID_CLAIM_STATUSES = {"claimable", "diagnostic", "not-evaluated"}
 VALID_CLAIMABILITY_MODES = {"off", "local", "release"}
+VALID_BENCHMARK_CLASSES = {"comparable", "directional"}
 RELEASE_REQUIRED_POSITIVE_PERCENTILES = ["p50Percent", "p95Percent", "p99Percent"]
 LOCAL_REQUIRED_POSITIVE_PERCENTILES = ["p50Percent", "p95Percent"]
 
@@ -209,7 +210,26 @@ def load_expected_comparable_workload_ids(path: Path) -> set[str]:
         workload_id = row.get("id")
         if not isinstance(workload_id, str) or not workload_id:
             continue
-        if bool(row.get("comparable", False)):
+        comparable = bool(row.get("comparable", False))
+        benchmark_class_raw = row.get("benchmarkClass")
+        if benchmark_class_raw is None:
+            benchmark_class = "comparable" if comparable else "directional"
+        else:
+            benchmark_class = str(benchmark_class_raw).strip().lower()
+        if benchmark_class not in VALID_BENCHMARK_CLASSES:
+            raise ValueError(
+                f"invalid workload contract: {workload_id} benchmarkClass must be one of "
+                f"{sorted(VALID_BENCHMARK_CLASSES)}"
+            )
+        if benchmark_class == "comparable" and not comparable:
+            raise ValueError(
+                f"invalid workload contract: {workload_id} benchmarkClass=comparable requires comparable=true"
+            )
+        if benchmark_class == "directional" and comparable:
+            raise ValueError(
+                f"invalid workload contract: {workload_id} benchmarkClass=directional requires comparable=false"
+            )
+        if benchmark_class == "comparable" and comparable:
             workload_ids.add(workload_id)
     if not workload_ids:
         raise ValueError(f"invalid workload contract: no comparable workload IDs in {path}")
@@ -426,6 +446,18 @@ def main() -> int:
                 failures.append(f"workloads[{index}] is not an object")
                 continue
             workload_id = workload.get("id", f"workload[{index}]")
+            workload_contract_comparable = workload.get("workloadComparable")
+            if workload_contract_comparable not in (True, False):
+                failures.append(
+                    f"{workload_id}: workloadComparable must be true/false in report workload row"
+                )
+            elif (
+                args.require_claim_status == "claimable"
+                and workload_contract_comparable is not True
+            ):
+                failures.append(
+                    f"{workload_id}: claimable reports require workloadComparable=true"
+                )
             workload_claimability = workload.get("claimability")
             if not isinstance(workload_claimability, dict):
                 failures.append(f"{workload_id}: missing claimability object")

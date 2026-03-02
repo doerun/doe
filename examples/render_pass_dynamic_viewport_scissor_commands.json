@@ -1,0 +1,24 @@
+[
+  {
+    "kind": "render_pass",
+    "drawCount": 250,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "redundant",
+    "encodeMode": "render-pass",
+    "viewportX": 0,
+    "viewportY": 0,
+    "viewportWidth": 32,
+    "viewportHeight": 32,
+    "viewportMinDepth": 0,
+    "viewportMaxDepth": 1,
+    "scissorX": 4,
+    "scissorY": 4,
+    "scissorWidth": 24,
+    "scissorHeight": 24,
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  }
+]

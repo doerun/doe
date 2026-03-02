@@ -16,7 +16,7 @@ from compare_dawn_vs_doe_modules.timing_selection import (
 
 NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-total-ns",
-    "doe-execution-row-total-ns",
+    "doe-execution-row-average-ns",
     "doe-execution-dispatch-window-ns",
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
@@ -83,6 +83,7 @@ def _sources_match_with_runtime_compatibility(
     right_sources: list[str],
     workload_domain: str,
     comparability_mode: str,
+    required_timing_class: str,
     is_dawn_vs_doe: bool,
     is_left_dawn: bool,
     is_right_dawn: bool,
@@ -91,6 +92,8 @@ def _sources_match_with_runtime_compatibility(
 ) -> bool:
     if not left_sources or not right_sources:
         return False
+    if comparability_mode == "strict" and required_timing_class == "process-wall":
+        return set(left_sources) == {"wall-time"} and set(right_sources) == {"wall-time"}
     if not is_dawn_vs_doe:
         return left_sources == right_sources
 
@@ -100,7 +103,7 @@ def _sources_match_with_runtime_compatibility(
     if comparability_mode == "strict":
         dawn_expected = {"dawn-perf-wall-time"}
         doe_expected = (
-            {"doe-execution-row-total-ns"}
+            {"doe-execution-row-average-ns"}
             if normalized_domain == "upload"
             else {"doe-execution-total-ns"}
         )
@@ -131,6 +134,7 @@ def _timing_selection_policy_match_with_runtime_compatibility(
     right_policies: list[str],
     workload_domain: str,
     comparability_mode: str,
+    required_timing_class: str,
     is_dawn_vs_doe: bool,
     is_left_dawn: bool,
     is_right_dawn: bool,
@@ -139,6 +143,9 @@ def _timing_selection_policy_match_with_runtime_compatibility(
 ) -> bool:
     if not left_policies or not right_policies:
         return False
+    if comparability_mode == "strict" and required_timing_class == "process-wall":
+        expected = {"forced-process-wall"}
+        return set(left_policies) == expected and set(right_policies) == expected
     if not is_dawn_vs_doe:
         return left_policies == right_policies
 
@@ -148,7 +155,7 @@ def _timing_selection_policy_match_with_runtime_compatibility(
 
     if comparability_mode == "strict":
         doe_expected = (
-            {"upload-row-total-preferred"}
+            {"upload-row-average-preferred"}
             if normalized_domain == "upload"
             else {"<none>"}
         )
@@ -165,7 +172,7 @@ def _timing_selection_policy_match_with_runtime_compatibility(
 
     doe_allowed = {"<none>"}
     if normalized_domain == "upload":
-        doe_allowed = {"upload-row-total-preferred"}
+        doe_allowed = {"upload-row-average-preferred"}
     dawn_allowed = {"<none>"}
 
     if is_left_dawn and not left_set.issubset(dawn_allowed):
@@ -704,6 +711,12 @@ def compare_assessment(
             if isinstance(timing, dict) and str(timing.get("traceMetaSource", ""))
         }
     )
+    left_selected_sources = sorted(
+        {canonical_timing_source(source) for source in left_sources if source}
+    )
+    right_selected_sources = sorted(
+        {canonical_timing_source(source) for source in right_sources if source}
+    )
     left_timing_selection_policies = sorted(
         {
             (
@@ -902,10 +915,19 @@ def compare_assessment(
         blocking=True,
         applicable=len(left_samples) > 0 and len(right_samples) > 0,
         passes=_sources_match_with_runtime_compatibility(
-            left_sources=left_trace_meta_sources,
-            right_sources=right_trace_meta_sources,
+            left_sources=(
+                left_selected_sources
+                if required_timing_class == "process-wall"
+                else left_trace_meta_sources
+            ),
+            right_sources=(
+                right_selected_sources
+                if required_timing_class == "process-wall"
+                else right_trace_meta_sources
+            ),
             workload_domain=workload_domain,
             comparability_mode=comparability_mode,
+            required_timing_class=required_timing_class,
             is_dawn_vs_doe=is_dawn_vs_doe,
             is_left_dawn=is_left_dawn,
             is_right_dawn=is_right_dawn,
@@ -919,6 +941,8 @@ def compare_assessment(
         details={
             "leftTraceMetaSources": left_trace_meta_sources,
             "rightTraceMetaSources": right_trace_meta_sources,
+            "leftSelectedSources": left_selected_sources,
+            "rightSelectedSources": right_selected_sources,
         },
     )
     _record_obligation(
@@ -932,6 +956,7 @@ def compare_assessment(
             right_policies=right_timing_selection_policies,
             workload_domain=workload_domain,
             comparability_mode=comparability_mode,
+            required_timing_class=required_timing_class,
             is_dawn_vs_doe=is_dawn_vs_doe,
             is_left_dawn=is_left_dawn,
             is_right_dawn=is_right_dawn,
@@ -1079,10 +1104,10 @@ def compare_assessment(
             canonical_base = canonical_timing_source(base_source)
             canonical_adjusted = canonical_timing_source(adjusted_source)
             canonical_selected = canonical_timing_source(str(sample.get("timingSource", "")))
-            if canonical_adjusted != "doe-execution-row-total-ns":
+            if canonical_adjusted != "doe-execution-row-average-ns":
                 side_reasons.append(
                     f"{side_name} {run_label} ignore-first adjusted source is "
-                    f"{canonical_adjusted}; require doe-execution-row-total-ns"
+                    f"{canonical_adjusted}; require doe-execution-row-average-ns"
                 )
             if canonical_base and canonical_adjusted and canonical_base != canonical_adjusted:
                 side_reasons.append(

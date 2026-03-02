@@ -96,9 +96,9 @@
     - `./out/fawn_debug/gpu_unittests --gtest_filter=WebGPURuntimeSelectionTest.*:GpuPreferencesTest.EncodeDecode` passes
 37. Forced-Doe headless launch now fails cleanly (no GPU-process null-deref crash) when environment preconditions fail.
 38. Ran strict 3-workload comparison subset:
-    - `par_buffer_upload_64kb`
-    - `par_workgroup_atomic_1024`
-    - `ctr_texture_sampler_write_query_destroy_contract`
+    - `upload_write_buffer_64kb`
+    - `compute_workgroup_atomic_1024`
+    - `texture_sampler_write_query_destroy`
 39. Captured strict subset report with comparable + claimable classification:
     - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
 

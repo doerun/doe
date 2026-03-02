@@ -9,7 +9,7 @@
   "sourceWorkloadCount": 77,
   "rows": [
     {
-      "sourceWorkloadId": "par_buffer_upload_1kb",
+      "sourceWorkloadId": "upload_write_buffer_1kb",
       "sourceWorkloadName": "buffer-upload 1KB",
       "domain": "upload",
       "projectionClass": "high",
@@ -22,7 +22,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "par_buffer_upload_64kb",
+      "sourceWorkloadId": "upload_write_buffer_64kb",
       "sourceWorkloadName": "buffer-upload 64KB",
       "domain": "upload",
       "projectionClass": "high",
@@ -35,7 +35,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "par_buffer_upload_1mb",
+      "sourceWorkloadId": "upload_write_buffer_1mb",
       "sourceWorkloadName": "buffer-upload 1MB",
       "domain": "upload",
       "projectionClass": "high",
@@ -48,7 +48,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "par_buffer_upload_4mb",
+      "sourceWorkloadId": "upload_write_buffer_4mb",
       "sourceWorkloadName": "buffer-upload 4MB",
       "domain": "upload",
       "projectionClass": "high",
@@ -61,7 +61,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "par_buffer_upload_16mb",
+      "sourceWorkloadId": "upload_write_buffer_16mb",
       "sourceWorkloadName": "buffer-upload 16MB",
       "domain": "upload",
       "projectionClass": "high",
@@ -74,7 +74,7 @@
       "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
     },
     {
-      "sourceWorkloadId": "par_workgroup_atomic_1024",
+      "sourceWorkloadId": "compute_workgroup_atomic_1024",
       "sourceWorkloadName": "workgroup-atomic 1024",
       "domain": "compute",
       "projectionClass": "high",
@@ -87,7 +87,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "par_workgroup_non_atomic_1024",
+      "sourceWorkloadId": "compute_workgroup_non_atomic_1024",
       "sourceWorkloadName": "workgroup-non-atomic 1024",
       "domain": "compute",
       "projectionClass": "high",
@@ -100,7 +100,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "par_matrix_vector_multiply_32768x2048_f32",
+      "sourceWorkloadId": "compute_matvec_32768x2048_f32",
       "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (naive swizzle0)",
       "domain": "compute",
       "projectionClass": "high",
@@ -113,7 +113,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "par_matrix_vector_multiply_32768x2048_f32_swizzle1",
+      "sourceWorkloadId": "compute_matvec_32768x2048_f32_swizzle1",
       "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (naive swizzle1)",
       "domain": "compute",
       "projectionClass": "high",
@@ -126,7 +126,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+      "sourceWorkloadId": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
       "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (workgroupshared swizzle1)",
       "domain": "compute",
       "projectionClass": "high",
@@ -139,7 +139,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "par_shader_compile_pipeline_stress",
+      "sourceWorkloadId": "pipeline_compile_stress",
       "sourceWorkloadName": "shader-compile pipeline stress",
       "domain": "pipeline",
       "projectionClass": "medium",
@@ -152,7 +152,7 @@
       "projectionNote": "Pipeline creation remains comparable but includes browser-side scheduling overhead."
     },
     {
-      "sourceWorkloadId": "exp_render_draw_throughput_proxy",
+      "sourceWorkloadId": "render_draw_throughput_baseline",
       "sourceWorkloadName": "render draw throughput",
       "domain": "render",
       "projectionClass": "medium",
@@ -165,7 +165,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "par_render_draw_state_bindings",
+      "sourceWorkloadId": "render_draw_state_bindings",
       "sourceWorkloadName": "render draw state/bindings",
       "domain": "render",
       "projectionClass": "medium",
@@ -178,7 +178,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "par_render_draw_redundant_pipeline_bindings",
+      "sourceWorkloadId": "render_draw_redundant_pipeline_bindings",
       "sourceWorkloadName": "render redundant pipeline/bindings",
       "domain": "render",
       "projectionClass": "medium",
@@ -191,7 +191,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "par_render_bundle_dynamic_bindings",
+      "sourceWorkloadId": "render_bundle_dynamic_bindings",
       "sourceWorkloadName": "render bundle dynamic bindings",
       "domain": "render-bundle",
       "projectionClass": "medium",
@@ -204,7 +204,7 @@
       "projectionNote": "Render bundle throughput projected with browser submission overhead."
     },
     {
-      "sourceWorkloadId": "par_render_bundle_dynamic_pipeline_bindings",
+      "sourceWorkloadId": "render_bundle_dynamic_pipeline_bindings",
       "sourceWorkloadName": "render bundle dynamic pipeline+bindings",
       "domain": "render-bundle",
       "projectionClass": "medium",
@@ -217,7 +217,7 @@
       "projectionNote": "Render bundle throughput projected with browser submission overhead."
     },
     {
-      "sourceWorkloadId": "exp_draw_indexed_render_proxy",
+      "sourceWorkloadId": "render_draw_indexed_baseline",
       "sourceWorkloadName": "draw indexed render proxy",
       "domain": "render",
       "projectionClass": "medium",
@@ -230,7 +230,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "exp_texture_sampling_raster_proxy",
+      "sourceWorkloadId": "texture_sampling_raster_baseline",
       "sourceWorkloadName": "texture sampling/raster",
       "domain": "texture-raster",
       "projectionClass": "medium",
@@ -243,7 +243,7 @@
       "projectionNote": "Texture sampling+raster projection includes browser canvas integration costs."
     },
     {
-      "sourceWorkloadId": "ctr_texture_sampler_write_query_destroy_contract",
+      "sourceWorkloadId": "texture_sampler_write_query_destroy",
       "sourceWorkloadName": "texture sampler/write/query/destroy contract",
       "domain": "texture-contract",
       "projectionClass": "high",
@@ -256,7 +256,7 @@
       "projectionNote": "Texture write/query/destroy semantics map directly to browser WebGPU APIs."
     },
     {
-      "sourceWorkloadId": "ctr_texture_sampler_write_query_destroy_contract_mip8",
+      "sourceWorkloadId": "texture_sampler_write_query_destroy_mip8",
       "sourceWorkloadName": "texture sampler/write/query/destroy contract (mip8)",
       "domain": "texture-contract",
       "projectionClass": "high",
@@ -269,7 +269,7 @@
       "projectionNote": "Texture write/query/destroy semantics map directly to browser WebGPU APIs."
     },
     {
-      "sourceWorkloadId": "ctr_async_pipeline_diagnostics_contract",
+      "sourceWorkloadId": "pipeline_async_diagnostics",
       "sourceWorkloadName": "async pipeline diagnostics contract",
       "domain": "pipeline-async",
       "projectionClass": "medium",
@@ -282,7 +282,7 @@
       "projectionNote": "Async pipeline APIs are comparable but sensitive to browser event-loop scheduling."
     },
     {
-      "sourceWorkloadId": "ctr_capability_introspection_contract",
+      "sourceWorkloadId": "capability_introspection",
       "sourceWorkloadName": "p1 capability introspection contract",
       "domain": "p1-capability",
       "projectionClass": "non_projectable",
@@ -295,7 +295,7 @@
       "projectionNote": "Internal capability contract lane; not a browser API parity signal."
     },
     {
-      "sourceWorkloadId": "ctr_resource_table_immediates_contract",
+      "sourceWorkloadId": "resource_table_immediates",
       "sourceWorkloadName": "p1 resource-table/immediates contract",
       "domain": "p1-resource-table",
       "projectionClass": "non_projectable",
@@ -308,7 +308,7 @@
       "projectionNote": "Internal resource-table contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_lifecycle_refcount_contract",
+      "sourceWorkloadId": "lifecycle_refcount",
       "sourceWorkloadName": "p2 lifecycle/refcount contract",
       "domain": "p2-lifecycle",
       "projectionClass": "non_projectable",
@@ -321,7 +321,7 @@
       "projectionNote": "Internal lifecycle/refcount contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_capability_introspection_macro_500",
+      "sourceWorkloadId": "capability_introspection_500",
       "sourceWorkloadName": "p1 capability introspection macro (500)",
       "domain": "p1-capability-macro",
       "projectionClass": "non_projectable",
@@ -334,7 +334,7 @@
       "projectionNote": "Internal capability macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_resource_table_immediates_macro_500",
+      "sourceWorkloadId": "resource_table_immediates_500",
       "sourceWorkloadName": "p1 resource-table/immediates macro (500)",
       "domain": "p1-resource-table-macro",
       "projectionClass": "non_projectable",
@@ -347,7 +347,7 @@
       "projectionNote": "Internal resource-table macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_lifecycle_refcount_macro_200",
+      "sourceWorkloadId": "lifecycle_refcount_200",
       "sourceWorkloadName": "p2 lifecycle/refcount macro (200)",
       "domain": "p2-lifecycle-macro",
       "projectionClass": "non_projectable",
@@ -360,7 +360,7 @@
       "projectionNote": "Internal lifecycle macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "exp_render_draw_throughput_macro_200k",
+      "sourceWorkloadId": "render_draw_throughput_200k",
       "sourceWorkloadName": "render draw throughput macro (200k draws)",
       "domain": "render-macro",
       "projectionClass": "medium",
@@ -373,7 +373,7 @@
       "projectionNote": "Macro render loops are projected as component-level browser runs."
     },
     {
-      "sourceWorkloadId": "exp_draw_indexed_render_macro_200k",
+      "sourceWorkloadId": "render_draw_indexed_200k",
       "sourceWorkloadName": "draw indexed macro (200k draws)",
       "domain": "render-macro",
       "projectionClass": "medium",
@@ -386,7 +386,7 @@
       "projectionNote": "Macro render loops are projected as component-level browser runs."
     },
     {
-      "sourceWorkloadId": "ctr_texture_sampler_write_query_destroy_macro_500",
+      "sourceWorkloadId": "texture_sampler_write_query_destroy_500",
       "sourceWorkloadName": "texture contract macro (500 draws)",
       "domain": "texture-macro",
       "projectionClass": "medium",
@@ -399,7 +399,7 @@
       "projectionNote": "Texture macro loops project to browser API with non-trivial event-loop overhead."
     },
     {
-      "sourceWorkloadId": "ctr_resource_lifecycle_contract",
+      "sourceWorkloadId": "resource_lifecycle",
       "sourceWorkloadName": "p0 resource lifecycle contract",
       "domain": "p0-resource",
       "projectionClass": "non_projectable",
@@ -412,7 +412,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_compute_indirect_timestamp_contract",
+      "sourceWorkloadId": "compute_indirect_timestamp",
       "sourceWorkloadName": "p0 compute indirect/timestamp contract",
       "domain": "p0-compute",
       "projectionClass": "non_projectable",
@@ -425,7 +425,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_render_multidraw_contract",
+      "sourceWorkloadId": "render_multidraw",
       "sourceWorkloadName": "p0 render multidraw contract",
       "domain": "p0-render",
       "projectionClass": "non_projectable",
@@ -438,7 +438,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_render_multidraw_indexed_contract",
+      "sourceWorkloadId": "render_multidraw_indexed",
       "sourceWorkloadName": "p0 render multidraw indexed contract",
       "domain": "p0-render",
       "projectionClass": "non_projectable",
@@ -451,7 +451,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_render_pixel_local_storage_barrier_contract",
+      "sourceWorkloadId": "render_pixel_local_storage_barrier",
       "sourceWorkloadName": "p0 render pixel-local-storage barrier contract",
       "domain": "p0-render",
       "projectionClass": "non_projectable",
@@ -464,7 +464,7 @@
       "projectionNote": "Runtime contract lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_render_pixel_local_storage_barrier_macro_500",
+      "sourceWorkloadId": "render_pixel_local_storage_barrier_500",
       "sourceWorkloadName": "p0 render pixel-local-storage barrier macro (500)",
       "domain": "p0-render-macro",
       "projectionClass": "non_projectable",
@@ -477,7 +477,7 @@
       "projectionNote": "Runtime contract macro lane; keep in core engine benchmarks only."
     },
     {
-      "sourceWorkloadId": "ctr_surface_presentation_contract",
+      "sourceWorkloadId": "surface_presentation",
       "sourceWorkloadName": "surface presentation contract",
       "domain": "surface",
       "projectionClass": "medium",
@@ -490,7 +490,7 @@
       "projectionNote": "Surface presentation can be measured in browser, but includes presentation stack overhead."
     },
     {
-      "sourceWorkloadId": "copy_buffer_to_texture_contract",
+      "sourceWorkloadId": "copy_buffer_to_texture",
       "sourceWorkloadName": "copy buffer-to-texture contract",
       "domain": "copy",
       "projectionClass": "medium",
@@ -503,7 +503,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "copy_texture_to_buffer_contract",
+      "sourceWorkloadId": "copy_texture_to_buffer",
       "sourceWorkloadName": "copy texture-to-buffer contract",
       "domain": "copy",
       "projectionClass": "medium",
@@ -516,7 +516,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "dispatch_fallback_contract",
+      "sourceWorkloadId": "compute_dispatch_fallback",
       "sourceWorkloadName": "dispatch fallback contract",
       "domain": "compute",
       "projectionClass": "high",
@@ -529,7 +529,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "copy_protocol_contract",
+      "sourceWorkloadId": "copy_protocol",
       "sourceWorkloadName": "copy protocol contract",
       "domain": "copy",
       "projectionClass": "medium",
@@ -542,7 +542,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "copy_texture_to_texture_contract",
+      "sourceWorkloadId": "copy_texture_to_texture",
       "sourceWorkloadName": "copy texture-to-texture contract",
       "domain": "copy",
       "projectionClass": "medium",
@@ -555,7 +555,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "dispatch_grid_contract",
+      "sourceWorkloadId": "compute_dispatch_grid",
       "sourceWorkloadName": "dispatch grid contract",
       "domain": "compute",
       "projectionClass": "high",
@@ -568,7 +568,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "surface_full_presentation_contract",
+      "sourceWorkloadId": "surface_full_presentation",
       "sourceWorkloadName": "surface full presentation contract",
       "domain": "surface",
       "projectionClass": "medium",
@@ -581,7 +581,7 @@
       "projectionNote": "Surface presentation can be measured in browser, but includes presentation stack overhead."
     },
     {
-      "sourceWorkloadId": "ctr_concurrent_execution_single_contract",
+      "sourceWorkloadId": "compute_concurrent_execution_single",
       "sourceWorkloadName": "concurrent execution single-dispatch contract",
       "domain": "compute",
       "projectionClass": "high",
@@ -594,7 +594,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "par_uniform_buffer_update_writebuffer_partial_single",
+      "sourceWorkloadId": "render_uniform_buffer_update_writebuffer_partial_single",
       "sourceWorkloadName": "uniform buffer update (WriteBuffer partial single)",
       "domain": "render",
       "projectionClass": "medium",
@@ -607,7 +607,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "par_zero_initialize_workgroup_memory_256",
+      "sourceWorkloadId": "compute_zero_initialize_workgroup_memory_256",
       "sourceWorkloadName": "zero-initialize workgroup memory (256)",
       "domain": "compute",
       "projectionClass": "high",
@@ -620,7 +620,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "buffer_map_readback_1kb",
+      "sourceWorkloadId": "resource_buffer_map_readback_1kb",
       "sourceWorkloadName": "buffer map readback 1kb",
       "domain": "resource",
       "projectionClass": "medium",
@@ -633,7 +633,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "buffer_map_readback_64kb",
+      "sourceWorkloadId": "resource_buffer_map_readback_64kb",
       "sourceWorkloadName": "buffer map readback 64kb",
       "domain": "resource",
       "projectionClass": "medium",
@@ -646,7 +646,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "buffer_map_write_1kb",
+      "sourceWorkloadId": "resource_buffer_map_write_1kb",
       "sourceWorkloadName": "buffer map write 1kb",
       "domain": "resource",
       "projectionClass": "medium",
@@ -659,7 +659,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "buffer_map_write_64kb",
+      "sourceWorkloadId": "resource_buffer_map_write_64kb",
       "sourceWorkloadName": "buffer map write 64kb",
       "domain": "resource",
       "projectionClass": "medium",
@@ -672,7 +672,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "buffer_map_partial_read_4kb",
+      "sourceWorkloadId": "resource_buffer_map_partial_read_4kb",
       "sourceWorkloadName": "buffer map partial read 4kb",
       "domain": "resource",
       "projectionClass": "medium",
@@ -685,7 +685,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "buffer_map_partial_write_64kb",
+      "sourceWorkloadId": "resource_buffer_map_partial_write_64kb",
       "sourceWorkloadName": "buffer map partial write 64kb",
       "domain": "resource",
       "projectionClass": "medium",
@@ -698,7 +698,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "buffer_map_double_request_guard",
+      "sourceWorkloadId": "resource_buffer_map_double_request_guard",
       "sourceWorkloadName": "buffer map double request guard",
       "domain": "resource",
       "projectionClass": "medium",
@@ -711,7 +711,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "buffer_map_unmap_storm_macro",
+      "sourceWorkloadId": "resource_buffer_map_unmap_storm",
       "sourceWorkloadName": "buffer map unmap storm macro",
       "domain": "resource",
       "projectionClass": "medium",
@@ -724,7 +724,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "dispatch_indirect_1",
+      "sourceWorkloadId": "compute_dispatch_indirect_single",
       "sourceWorkloadName": "dispatch indirect 1",
       "domain": "compute",
       "projectionClass": "high",
@@ -737,7 +737,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "dispatch_indirect_live_args",
+      "sourceWorkloadId": "compute_dispatch_indirect_live_args",
       "sourceWorkloadName": "dispatch indirect live args",
       "domain": "compute",
       "projectionClass": "high",
@@ -750,7 +750,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "dispatch_indirect_large_args",
+      "sourceWorkloadId": "compute_dispatch_indirect_large_args",
       "sourceWorkloadName": "dispatch indirect large args",
       "domain": "compute",
       "projectionClass": "high",
@@ -763,7 +763,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "dispatch_workgroups_2d_sweep",
+      "sourceWorkloadId": "compute_dispatch_workgroups_2d_sweep",
       "sourceWorkloadName": "dispatch workgroups 2D sweep",
       "domain": "compute",
       "projectionClass": "high",
@@ -776,7 +776,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "dispatch_workgroups_3d_sweep",
+      "sourceWorkloadId": "compute_dispatch_workgroups_3d_sweep",
       "sourceWorkloadName": "dispatch workgroups 3D sweep",
       "domain": "compute",
       "projectionClass": "high",
@@ -789,7 +789,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "dispatch_workgroups_indirect_pipeline_switch",
+      "sourceWorkloadId": "compute_dispatch_workgroups_indirect_pipeline_switch",
       "sourceWorkloadName": "dispatch indirect pipeline switch",
       "domain": "compute",
       "projectionClass": "high",
@@ -802,7 +802,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "kernel_dispatch_macro_1000",
+      "sourceWorkloadId": "compute_kernel_dispatch_1000",
       "sourceWorkloadName": "kernel dispatch macro 1000",
       "domain": "compute",
       "projectionClass": "high",
@@ -815,7 +815,7 @@
       "projectionNote": "Direct compute dispatch projection with minimal browser mediation."
     },
     {
-      "sourceWorkloadId": "draw_indexed_indirect_u16",
+      "sourceWorkloadId": "render_draw_indexed_indirect_u16",
       "sourceWorkloadName": "draw indexed indirect u16",
       "domain": "render",
       "projectionClass": "medium",
@@ -828,7 +828,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "draw_indexed_indirect_u32",
+      "sourceWorkloadId": "render_draw_indexed_indirect_u32",
       "sourceWorkloadName": "draw indexed indirect u32",
       "domain": "render",
       "projectionClass": "medium",
@@ -841,7 +841,7 @@
       "projectionNote": "Render command shape projects to browser API with canvas/context overhead."
     },
     {
-      "sourceWorkloadId": "draw_indirect_legacy_equivalent",
+      "sourceWorkloadId": "render_draw_indirect_legacy_equivalent",
       "sourceWorkloadName": "draw indirect legacy equivalent",
       "domain": "render",
       "projectionClass": "medium",
@@ -997,7 +997,7 @@
       "projectionNote": "Default browser API projection with declared browser-layer overhead."
     },
     {
-      "sourceWorkloadId": "copy_texture_to_texture_stress_macro",
+      "sourceWorkloadId": "copy_texture_to_texture_stress",
       "sourceWorkloadName": "copy texture to texture stress macro",
       "domain": "copy",
       "projectionClass": "medium",

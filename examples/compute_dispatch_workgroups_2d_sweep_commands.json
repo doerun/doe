@@ -1,0 +1,20 @@
+[
+  {
+    "kind": "dispatch_workgroups",
+    "x": 16,
+    "y": 16,
+    "z": 1
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 32,
+    "y": 8,
+    "z": 1
+  },
+  {
+    "kind": "dispatch_workgroups",
+    "x": 64,
+    "y": 4,
+    "z": 1
+  }
+]

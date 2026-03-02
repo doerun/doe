@@ -10,6 +10,7 @@ pub const SandboxViolation = error{
     CopyInvalidDirection,
     CopyInvalidDimensions,
     DispatchZeroDimensions,
+    DispatchIndirectZeroDimensions,
     KernelDispatchZeroDimensions,
     KernelDispatchMissingMarker,
     KernelDispatchZeroRepeat,
@@ -51,6 +52,9 @@ pub fn validateCommand(command: model.Command) !void {
         },
         .dispatch => |dispatch| {
             if (dispatch.x == 0 and dispatch.y == 0 and dispatch.z == 0) return error.DispatchZeroDimensions;
+        },
+        .dispatch_indirect => |dispatch| {
+            if (dispatch.x == 0 and dispatch.y == 0 and dispatch.z == 0) return error.DispatchIndirectZeroDimensions;
         },
         .kernel_dispatch => |kernel| {
             if (kernel.x == 0 and kernel.y == 0 and kernel.z == 0) return error.KernelDispatchZeroDimensions;

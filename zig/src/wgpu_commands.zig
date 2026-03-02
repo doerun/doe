@@ -34,6 +34,7 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
                 error.CopyInvalidDirection => "invalid copy direction dimensions or format mismatch",
                 error.CopyInvalidDimensions => "copy command missing valid dimensions",
                 error.DispatchZeroDimensions => "dispatch dimensions must be non-zero",
+                error.DispatchIndirectZeroDimensions => "dispatch_indirect dimensions must be non-zero",
                 error.KernelDispatchZeroDimensions => "kernel_dispatch dimensions must be non-zero",
                 error.KernelDispatchMissingMarker => "kernel_dispatch requires a non-empty kernel marker",
                 error.KernelDispatchZeroRepeat => "kernel_dispatch repeat must be > 0",
@@ -56,6 +57,10 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
             try flushPendingUploads(self);
             break :blk executeDispatch(self, dispatch);
         },
+        .dispatch_indirect => |dispatch| blk: {
+            try flushPendingUploads(self);
+            break :blk executeDispatchIndirect(self, dispatch);
+        },
         .kernel_dispatch => |kernel| blk: {
             try flushPendingUploads(self);
             break :blk executeKernelDispatch(self, kernel);
@@ -63,6 +68,18 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
         .render_draw => |render| blk: {
             try flushPendingUploads(self);
             break :blk render_commands.executeRenderDraw(self, render);
+        },
+        .draw_indirect => |render| blk: {
+            try flushPendingUploads(self);
+            break :blk executeDrawIndirect(self, render);
+        },
+        .draw_indexed_indirect => |render| blk: {
+            try flushPendingUploads(self);
+            break :blk executeDrawIndexedIndirect(self, render);
+        },
+        .render_pass => |render| blk: {
+            try flushPendingUploads(self);
+            break :blk executeRenderPass(self, render);
         },
         .sampler_create => |sampler_cmd| blk: {
             try flushPendingUploads(self);
@@ -450,6 +467,26 @@ fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.Nativ
         .owned = false,
         .mode = .fallback,
     }, null);
+}
+
+fn executeDispatchIndirect(self: *Backend, dispatch: model.DispatchIndirectCommand) !types.NativeExecutionResult {
+    return executeKernelDispatchKernel(self, "builtin:noop", "main", dispatch.x, dispatch.y, dispatch.z, 1, 0, false, .{
+        .source = loader.BUILTIN_KERNEL_DEFAULT_SOURCE,
+        .owned = false,
+        .mode = .fallback,
+    }, null);
+}
+
+fn executeDrawIndirect(self: *Backend, render: model.DrawIndirectCommand) !types.NativeExecutionResult {
+    return render_commands.executeRenderDraw(self, render);
+}
+
+fn executeDrawIndexedIndirect(self: *Backend, render: model.DrawIndexedIndirectCommand) !types.NativeExecutionResult {
+    return render_commands.executeRenderDraw(self, render);
+}
+
+fn executeRenderPass(self: *Backend, render: model.RenderPassCommand) !types.NativeExecutionResult {
+    return render_commands.executeRenderDraw(self, render);
 }
 
 fn executeKernelDispatch(self: *Backend, kernel: model.KernelDispatchCommand) !types.NativeExecutionResult {

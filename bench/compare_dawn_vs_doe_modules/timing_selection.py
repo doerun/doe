@@ -81,24 +81,28 @@ def maybe_adjust_timing_for_ignored_first_ops(
         }
 
     # Upload ignore-first must stay in a single operation scope. Derive both the
-    # pre/post values from row-total execution durations to avoid mixed-scope
+    # pre/post values from row-average execution durations to avoid mixed-scope
     # adjustments when primary timing selection used a different source.
     base_row_total_ns = sum(durations_ns)
-    base_row_total_ms = float(base_row_total_ns) / 1_000_000.0
+    base_row_count = len(durations_ns)
+    base_row_avg_ms = (float(base_row_total_ns) / float(base_row_count)) / 1_000_000.0
     adjusted_ns = sum(durations_ns[ignore_first_ops:])
-    adjusted_ms = float(adjusted_ns) / 1_000_000.0
-    adjusted_source = "doe-execution-row-total-ns+ignore-first-ops"
+    adjusted_count = len(durations_ns) - ignore_first_ops
+    adjusted_ms = (float(adjusted_ns) / float(adjusted_count)) / 1_000_000.0
+    adjusted_source = "doe-execution-row-average-ns+ignore-first-ops"
     return adjusted_ms, adjusted_source, {
         "uploadIgnoreFirstOps": ignore_first_ops,
         "uploadIgnoreFirstApplied": True,
-        "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
-        "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
-        "uploadRowsTotal": len(durations_ns),
-        "uploadRowsIncluded": len(durations_ns) - ignore_first_ops,
-        "uploadTimingRawMsBeforeIgnore": base_row_total_ms,
+        "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-average-ns",
+        "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-average-ns",
+        "uploadRowsTotal": base_row_count,
+        "uploadRowsIncluded": adjusted_count,
+        "uploadTimingRawMsBeforeIgnore": base_row_avg_ms,
         "uploadTimingMeasuredMsBeforeIgnore": measured_ms,
         "uploadTimingMeasuredSourceBeforeIgnore": measured_source,
         "uploadTimingRawMsAfterIgnore": adjusted_ms,
+        "uploadTimingTotalNsBeforeIgnore": base_row_total_ns,
+        "uploadTimingTotalNsAfterIgnore": adjusted_ns,
     }
 
 
@@ -113,6 +117,7 @@ def classify_timing_source(source: str) -> str:
     if canonical in (
         "doe-execution-total-ns",
         "doe-execution-row-total-ns",
+        "doe-execution-row-average-ns",
         "doe-execution-dispatch-window-ns",
         "doe-execution-encode-ns",
         "doe-execution-gpu-timestamp-ns",
@@ -183,21 +188,24 @@ def pick_measured_timing_ms(
         row_durations_ns = parse_execution_duration_ns_rows(trace_jsonl)
         if row_durations_ns:
             row_total_ns = sum(row_durations_ns)
-            if row_total_ns > 0:
-                measured_ms = float(row_total_ns) / 1_000_000.0
+            row_count = len(row_durations_ns)
+            if row_total_ns > 0 and row_count > 0:
+                row_average_ns = float(row_total_ns) / float(row_count)
+                measured_ms = row_average_ns / 1_000_000.0
                 timing_meta = {
                     "source": "trace-meta",
-                    "traceMetaSource": "doe-execution-row-total-ns",
+                    "traceMetaSource": "doe-execution-row-average-ns",
                     "traceMetaTimingMs": measured_ms,
                     "executionRowTotalNs": row_total_ns,
-                    "executionRowDurationCount": len(row_durations_ns),
+                    "executionRowDurationCount": row_count,
+                    "executionRowAverageNs": row_average_ns,
                     "executionDispatchCount": execution_dispatch_count,
                     "executionRowCount": execution_row_count,
                     "executionSuccessCount": execution_success_count,
                     "wallTimeMs": wall_ms,
-                    "timingSelectionPolicy": "upload-row-total-preferred",
+                    "timingSelectionPolicy": "upload-row-average-preferred",
                 }
-                return measured_ms, "doe-execution-row-total-ns", timing_meta
+                return measured_ms, "doe-execution-row-average-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
         measured_ms = float(execution_total_ns) / 1_000_000.0

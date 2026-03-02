@@ -2,6 +2,43 @@
 
 ## 2026-03-02
 
+### Strict Dawn-vs-Doe normalization contract hardening
+
+- Comparable workload timing divisors were migrated to direct operation timing for Dawn-vs-Doe strict runs:
+  - `leftTimingDivisor=1.0`
+  - `rightTimingDivisor=1.0`
+- Updated workload catalogs under `bench/workloads*.json` accordingly for comparable workloads.
+- `bench/compare_dawn_vs_doe.py` now fails fast in strict operation mode if a comparable
+  Dawn-vs-Doe workload config attempts side-specific divisor scaling.
+
+### Benchmark workload ID contract migration (status-free IDs)
+
+- Migrated benchmark workload IDs away from lifecycle/status prefixes (`par_`, `exp_`, `ctr_`)
+  and maturity tokens (`contract`, `proxy`, `macro`).
+- New benchmark ID contract is now stable, domain-first, and shape-oriented:
+  `domain_subject_shape_variant`.
+- Workload IDs are immutable contract keys:
+  - do not rename IDs when promoting directional workloads to comparable/claim lanes.
+  - encode comparability/claim methodology in workload metadata (`comparable`, `benchmarkClass`,
+    `comparabilityCandidate`, normalization fields), not in ID text.
+- Updated all benchmark workload references and maps to the new ID set across:
+  - `bench/workloads*.json`
+  - Dawn workload maps/autodiscovery
+  - compare configs and claim-cycle contracts
+  - benchmark/docs/status references
+
+### Runtime command contract expansion for benchmark semantics
+
+- Added first-class runtime command kinds for explicit workload semantics:
+  - `dispatch_indirect`
+  - `draw_indirect`
+  - `draw_indexed_indirect`
+  - `render_pass`
+- Updated Zig model/parser/runtime/backend routing to treat these as explicit command
+  kinds rather than alias-only labels.
+- Updated benchmark command fixtures for indirect/RenderPass-named workloads to use
+  matching command kinds directly.
+
 ### D3D12 backend lane and contract expansion
 
 - Added first-class Doe D3D12 backend identity `doe_d3d12` to backend contract schemas and policy surfaces:
@@ -97,7 +134,7 @@
 - `bench/vendor/dawn/src/dawn/tests/perf_tests/DrawCallPerf.cpp` now includes an
   indexed draw variant (`DynamicVertexBuffer_DrawIndexed`) in Dawn perf coverage.
 - `bench/workloads.amd.vulkan.extended.json` restores
-  `ctr_render_multidraw_indexed_contract` to strict comparable:
+  `render_multidraw_indexed` to strict comparable:
   - `comparable=true`
   - `benchmarkClass=comparable`
   - `applesToApplesVetted=true`
@@ -199,7 +236,7 @@
 - Feature inventory implementation contract now requires:
   - Dawn feature-enum source (`bench/vendor/dawn/src/dawn/dawn.json` `feature name` values).
   - Zig runtime capability introspection path (`wgpuAdapterGetFeatures` / `wgpuDeviceGetFeatures` via `zig/src/wgpu_capability_runtime.zig`).
-  - benchmark mapping contract via capability introspection workloads (`ctr_capability_introspection_contract`, `ctr_capability_introspection_macro_500`).
+  - benchmark mapping contract via capability introspection workloads (`capability_introspection`, `capability_introspection_500`).
 - Current closure totals in `config/webgpu-spec-coverage.json`:
   - `implemented=103`
   - `blocked=0`
@@ -236,12 +273,12 @@
 ### AMD extended workload contract correction for concurrent execution
 
 - `bench/workloads.amd.vulkan.extended.json` was updated to keep strict claim lanes apples-to-apples:
-  - `ctr_surface_presentation_contract` is now directional-only (`comparable=false`)
-  - added `ctr_concurrent_execution_single_contract` as the strict comparable mapping for Dawn `ConcurrentExecutionTest ... RunSingle`
+  - `surface_presentation` is now directional-only (`comparable=false`)
+  - added `compute_concurrent_execution_single` as the strict comparable mapping for Dawn `ConcurrentExecutionTest ... RunSingle`
 - new command/kernel artifacts were added for the replacement comparable contract:
   - `examples/concurrent_execution_single_commands.json`
   - `bench/kernels/concurrent_execution_runsingle_u32.wgsl`
-- `bench/dawn_workload_map.amd.extended.json` now includes filter mapping for `ctr_concurrent_execution_single_contract`.
+- `bench/dawn_workload_map.amd.extended.json` now includes filter mapping for `compute_concurrent_execution_single`.
 
 ### Apples-to-apples enforcement hardening
 
@@ -384,7 +421,7 @@
 - `zig/src/backend/metal/mod.zig` no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `doe_metal` now executes through metal module contracts and returns native execution results directly.
 - Removed `catch unreachable` behavior from Metal backend wrappers; queue/upload/timestamp policy knobs are now explicit backend fields.
 - Metal shader manifest emission is now enforced on successful command routing paths so strict shader artifact gates can validate manifest linkage in strict lanes.
-- `bench/workloads.local.metal.smoke.json` `par_workgroup_atomic_1024.commandsPath` corrected from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
+- `bench/workloads.local.metal.smoke.json` `compute_workgroup_atomic_1024.commandsPath` corrected from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
 - Backend selection now honors policy-forced backend first (`policy_lane_prefers_dawn_delegate`) before Apple-chip preference, enabling rollback switch enforcement.
 
 ### Backend lane canonical rename (2026-02-26)
@@ -436,7 +473,7 @@ Contract updates in this change:
 
 ### Vulkan local smoke dispatch command-path repair (2026-02-26)
 
-- Updated `bench/workloads.local.vulkan.smoke.json` `par_workgroup_atomic_1024.commandsPath` from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
+- Updated `bench/workloads.local.vulkan.smoke.json` `compute_workgroup_atomic_1024.commandsPath` from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
 - Added compatibility command file `examples/dispatch_commands.json` (kernel-dispatch atomic workload payload) so legacy/manual invocations no longer fail with `FileNotFound`.
 
 ### Vulkan timing policy backend-specific upload source allowance (2026-02-26)
@@ -478,18 +515,18 @@ Contract updates in this change:
   - `bench/compare_dawn_vs_doe_modules/comparability.py`
 - Strict comparable runs now fail comparability when left/right timing scope selection diverges, preventing mixed-scope rows from being treated as claimable apples-to-apples evidence.
 - Updated `bench/workloads.amd.vulkan.extended.doe-vs-doe.json` to mark current timing-scope-unstable workloads as `comparable=false` (directional-only) for strict DOE-vs-DOE comparable runs until timing-scope parity is stabilized:
-  - `exp_render_draw_throughput_proxy`
-  - `par_render_draw_state_bindings`
-  - `par_render_draw_redundant_pipeline_bindings`
-  - `par_render_bundle_dynamic_bindings`
-  - `par_render_bundle_dynamic_pipeline_bindings`
-  - `ctr_async_pipeline_diagnostics_contract`
-  - `ctr_resource_table_immediates_macro_500`
-  - `exp_render_draw_throughput_macro_200k`
-  - `ctr_render_multidraw_contract`
-  - `ctr_render_multidraw_indexed_contract`
-  - `ctr_render_pixel_local_storage_barrier_macro_500`
-  - `par_uniform_buffer_update_writebuffer_partial_single`
+  - `render_draw_throughput_baseline`
+  - `render_draw_state_bindings`
+  - `render_draw_redundant_pipeline_bindings`
+  - `render_bundle_dynamic_bindings`
+  - `render_bundle_dynamic_pipeline_bindings`
+  - `pipeline_async_diagnostics`
+  - `resource_table_immediates_500`
+  - `render_draw_throughput_200k`
+  - `render_multidraw`
+  - `render_multidraw_indexed`
+  - `render_pixel_local_storage_barrier_500`
+  - `render_uniform_buffer_update_writebuffer_partial_single`
 
 ### Benchmark deltaPercent formula drift note (2026-02-26, superseded)
 
@@ -514,6 +551,16 @@ Contract updates in this change:
   - negative = left slower
 - Interpretation target:
   - `+300%` means `4x` faster
+
+### Dawn-vs-Doe strict timing-basis clarification (2026-03-02)
+
+- Default strict timing basis for cross-runtime Dawn-vs-Doe lanes is `operation`.
+- Removed forced strict `process-wall` guard in `bench/compare_dawn_vs_doe.py`.
+- Updated compare presets back to `comparability.requireTimingClass=operation`.
+- Documentation now explicitly separates benchmark intents:
+  - `apples-to-apples` (comparable contract lanes)
+  - `doe-advantage` (directional optimized lanes)
+  while keeping the same timing basis rule for fairness.
 
 ### Doe-vs-Doe timing-source parity stabilization for strict comparable runs (2026-02-26)
 

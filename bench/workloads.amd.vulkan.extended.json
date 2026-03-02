@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workloads": [
     {
-      "id": "par_buffer_upload_1kb",
+      "id": "upload_write_buffer_1kb",
       "name": "buffer-upload 1KB",
       "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB.",
       "domain": "upload",
@@ -20,17 +20,18 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
       "rightUploadBufferUsage": "copy-dst",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_buffer_upload_64kb",
+      "id": "upload_write_buffer_64kb",
       "name": "buffer-upload 64KB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 64KB.",
       "domain": "upload",
@@ -48,17 +49,18 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightUploadBufferUsage": "copy-dst",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_buffer_upload_1mb",
+      "id": "upload_write_buffer_1mb",
       "name": "buffer-upload 1MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 1MB.",
       "domain": "upload",
@@ -76,17 +78,18 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
       "rightUploadBufferUsage": "copy-dst",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_buffer_upload_4mb",
+      "id": "upload_write_buffer_4mb",
       "name": "buffer-upload 4MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 4MB.",
       "domain": "upload",
@@ -104,17 +107,18 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "rightUploadBufferUsage": "copy-dst",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_buffer_upload_16mb",
+      "id": "upload_write_buffer_16mb",
       "name": "buffer-upload 16MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 16MB.",
       "domain": "upload",
@@ -132,21 +136,22 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
       "rightUploadBufferUsage": "copy-dst",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_workgroup_atomic_1024",
+      "id": "compute_workgroup_atomic_1024",
       "name": "workgroup-atomic 1024",
       "description": "Workgroup-atomic compute kernel with 1024 workgroups, 100 dispatches per step, matching Dawn WorkgroupAtomicPerf exactly.",
       "domain": "compute",
-      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupWithAtomics (256 threads, 1 atomicStore + 256 atomicLoads per invocation). Both sides dispatch 100 times per step; Dawn divides internally by iterationsPerStep=100, Fawn divides via leftTimingDivisor.",
+      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupWithAtomics (256 threads, 1 atomicStore + 256 atomicLoads per invocation). Both sides dispatch 100 times per step with direct timing (no side-specific divisor scaling).",
       "commandsPath": "examples/workgroup_atomic_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -159,16 +164,18 @@
       ],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Dawn divides by iterationsPerStep=100 internally; Fawn dispatches 100 times via repeat and divides here to match.",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "rightTimingDivisor": 1.0,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_workgroup_non_atomic_1024",
+      "id": "compute_workgroup_non_atomic_1024",
       "name": "workgroup-non-atomic 1024",
       "description": "Non-atomic workgroup compute kernel with 1024 workgroups, 100 dispatches per step, matching Dawn WorkgroupAtomicPerf non-atomic variant.",
       "domain": "compute",
-      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupNoAtomics (256 threads, 1 store + 256 loads per invocation). Both sides dispatch 100 times per step; Dawn divides internally, Fawn divides via leftTimingDivisor.",
+      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupNoAtomics (256 threads, 1 store + 256 loads per invocation). Both sides dispatch 100 times per step with direct timing (no side-specific divisor scaling).",
       "commandsPath": "examples/workgroup_non_atomic_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -181,12 +188,14 @@
       ],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Dawn divides by iterationsPerStep=100 internally; Fawn dispatches 100 times via repeat and divides here to match.",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic"
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+      "rightTimingDivisor": 1.0,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_matrix_vector_multiply_32768x2048_f32",
+      "id": "compute_matvec_32768x2048_f32",
       "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle0)",
       "description": "Matrix-vector compute kernel aligned to Dawn MatrixVectorMultiplyPerf dimensions (Rows=32768, Cols=2048, F32/F32, Impl=Naive, Swizzle=0, 100 dispatches).",
       "domain": "compute",
@@ -203,13 +212,14 @@
       ],
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 100,
+      "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1,
-      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
-      "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0"
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_0",
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_matrix_vector_multiply_32768x2048_f32_swizzle1",
+      "id": "compute_matvec_32768x2048_f32_swizzle1",
       "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle1)",
       "description": "Matrix-vector compute kernel aligned to Dawn MatrixVectorMultiplyPerf dimensions (Rows=32768, Cols=2048, F32/F32, Impl=Naive, Swizzle=1, 100 dispatches).",
       "domain": "compute",
@@ -226,13 +236,14 @@
       ],
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 100,
+      "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1,
-      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
-      "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1"
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1",
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1",
+      "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
       "name": "matrix-vector multiply 32768x2048 f32 (workgroupshared swizzle1)",
       "description": "Matrix-vector compute kernel aligned to Dawn MatrixVectorMultiplyPerf dimensions (Rows=32768, Cols=2048, F32/F32, Impl=WorkgroupShared, Swizzle=1, 100 dispatches).",
       "domain": "compute",
@@ -249,13 +260,14 @@
       ],
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 100,
+      "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1,
-      "timingNormalizationNote": "Dawn MatrixVectorMultiplyPerf already reports per-dispatch metrics (iterationsPerStep=100 internal normalization). Fawn executes repeat=100 and divides by leftTimingDivisor=100 to match per-dispatch units.",
-      "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1"
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_WorkgroupShared_Swizzle_1",
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_shader_compile_pipeline_stress",
+      "id": "pipeline_compile_stress",
       "name": "shader-compile pipeline stress",
       "description": "Shader robustness pipeline stress aligned with Dawn ShaderRobustnessPerf (MatMulFloatOneDimSharedArray, f32, 512x512x512).",
       "domain": "pipeline",
@@ -272,12 +284,14 @@
       ],
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Dawn reports per-iteration metrics with iterationsPerStep=50; Fawn kernel dispatch repeats 50 and normalizes to per-dispatch units.",
-      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16"
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
+      "rightTimingDivisor": 1.0,
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "exp_render_draw_throughput_proxy",
+      "id": "render_draw_throughput_baseline",
       "name": "render draw throughput",
       "description": "Native render/draw throughput workload aligned to Dawn DrawCallPerf base variant.",
       "domain": "render",
@@ -292,10 +306,11 @@
       "default": false,
       "leftTimingDivisor": 2000,
       "timingNormalizationNote": "Dawn DrawCallPerf reports per draw (iterationsPerStep=2000); Fawn render_draw normalizes to per-draw units.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "par_render_draw_state_bindings",
+      "id": "render_draw_state_bindings",
       "name": "render draw state/bindings",
       "description": "Render-pass state and bind-group benchmark using explicit viewport/scissor/blend/stencil + dynamic bind offsets.",
       "domain": "render",
@@ -310,10 +325,11 @@
       "default": false,
       "leftTimingDivisor": 2000,
       "timingNormalizationNote": "Dawn DrawCallPerf DynamicBindGroup reports per draw (iterationsPerStep=2000); Fawn command stream normalizes to per-draw units.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicBindGroup"
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicBindGroup",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "par_render_draw_redundant_pipeline_bindings",
+      "id": "render_draw_redundant_pipeline_bindings",
       "name": "render redundant pipeline/bindings",
       "description": "Render workload that intentionally rebinds pipeline and bind groups every draw.",
       "domain": "render",
@@ -329,10 +345,11 @@
       "leftCommandRepeat": 10,
       "leftTimingDivisor": 20000,
       "timingNormalizationNote": "Dawn DrawCallPerf redundant-pipeline variant reports per draw (iterationsPerStep=2000); Fawn repeats the redundant-pipeline command stream 10x and normalizes to per-draw units to reduce sample-tail setup jitter.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__RedundantPipeline_RedundantBindGroups"
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__RedundantPipeline_RedundantBindGroups",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "par_render_bundle_dynamic_bindings",
+      "id": "render_bundle_dynamic_bindings",
       "name": "render bundle dynamic bindings",
       "description": "Render-bundle workload with dynamic bind-group offsets.",
       "domain": "render-bundle",
@@ -347,10 +364,11 @@
       "default": false,
       "leftTimingDivisor": 2000,
       "timingNormalizationNote": "Dawn DrawCallPerf render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicBindGroup_RenderBundle"
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicBindGroup_RenderBundle",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "par_render_bundle_dynamic_pipeline_bindings",
+      "id": "render_bundle_dynamic_pipeline_bindings",
       "name": "render bundle dynamic pipeline+bindings",
       "description": "Render-bundle workload with dynamic pipeline and dynamic bind-group updates.",
       "domain": "render-bundle",
@@ -365,10 +383,11 @@
       "default": false,
       "leftTimingDivisor": 2000,
       "timingNormalizationNote": "Dawn DrawCallPerf dynamic-pipeline render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicPipeline_DynamicBindGroup_RenderBundle"
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicPipeline_DynamicBindGroup_RenderBundle",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "exp_draw_indexed_render_proxy",
+      "id": "render_draw_indexed_baseline",
       "name": "draw indexed render proxy",
       "description": "Indexed draw-call throughput benchmark using command-provided index buffers.",
       "domain": "render",
@@ -397,7 +416,7 @@
       }
     },
     {
-      "id": "exp_texture_sampling_raster_proxy",
+      "id": "texture_sampling_raster_baseline",
       "name": "texture sampling/raster",
       "description": "Texture/raster workload combining texture-sampling compute with a native render_draw raster step.",
       "domain": "texture-raster",
@@ -419,10 +438,11 @@
       "leftCommandRepeat": 500,
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Dawn SubresourceTrackingPerf reports per iteration (iterationsPerStep=50); Fawn repeats the combined compute+render path 500 times, disables kernel GPU timestamp queries for this lane (`--gpu-timestamp-mode off`), and normalizes to per-iteration units.",
-      "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3"
+      "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_texture_sampler_write_query_destroy_contract",
+      "id": "texture_sampler_write_query_destroy",
       "name": "texture sampler/write/query/destroy contract",
       "description": "Texture API contract benchmark covering sampler creation, queue write texture, texture query assertions, and resource destroy lifecycle.",
       "domain": "texture-contract",
@@ -438,10 +458,11 @@
       "default": false,
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Fawn command stream executes sampler/texture lifecycle calls plus render draws; repeat=10 and per-iteration normalization reduce fixed setup/sync skew while keeping SubresourceTrackingPerf-oriented units.",
-      "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3"
+      "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_texture_sampler_write_query_destroy_contract_mip8",
+      "id": "texture_sampler_write_query_destroy_mip8",
       "name": "texture sampler/write/query/destroy contract (mip8)",
       "description": "Texture API contract benchmark aligned to SubresourceTrackingPerf mipLevel=8 variant.",
       "domain": "texture-contract",
@@ -457,10 +478,11 @@
       "default": false,
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Normalized per iteration against the SubresourceTrackingPerf mipLevel=8 variant with repeat=10 to amortize fixed setup/sync overhead.",
-      "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_8"
+      "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_8",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_async_pipeline_diagnostics_contract",
+      "id": "pipeline_async_diagnostics",
       "name": "async pipeline diagnostics contract",
       "description": "Async diagnostics benchmark covering async render pipeline creation, error scopes, and shader compilation info.",
       "domain": "pipeline-async",
@@ -477,10 +499,11 @@
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Apples-to-apples only: Fawn repeats async diagnostics command and normalizes by async sub-steps to reduce fixed process/setup skew.",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
-      "applesToApplesVetted": true
+      "applesToApplesVetted": true,
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_capability_introspection_contract",
+      "id": "capability_introspection",
       "name": "p1 capability introspection contract",
       "description": "Directional contract workload for adapter/device/instance capability introspection and free-members lifecycle checks.",
       "domain": "p1-capability",
@@ -500,7 +523,7 @@
       "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_resource_table_immediates_contract",
+      "id": "resource_table_immediates",
       "name": "p1 resource-table/immediates contract",
       "description": "Directional contract workload for Dawn ResourceTable and immediates APIs with explicit feature-gating parity.",
       "domain": "p1-resource-table",
@@ -522,7 +545,7 @@
       "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_lifecycle_refcount_contract",
+      "id": "lifecycle_refcount",
       "name": "p2 lifecycle/refcount contract",
       "description": "Directional contract workload for AddRef lifecycle touch coverage across core object classes.",
       "domain": "p2-lifecycle",
@@ -543,7 +566,7 @@
       "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_capability_introspection_macro_500",
+      "id": "capability_introspection_500",
       "name": "p1 capability introspection macro (500)",
       "description": "Directional macro capability workload repeating capability introspection 500 times inside one command.",
       "domain": "p1-capability-macro",
@@ -563,7 +586,7 @@
       "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_resource_table_immediates_macro_500",
+      "id": "resource_table_immediates_500",
       "name": "p1 resource-table/immediates macro (500)",
       "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
       "domain": "p1-resource-table-macro",
@@ -577,15 +600,16 @@
       "comparable": true,
       "allowLeftNoExecution": false,
       "default": false,
-      "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Apples-to-apples macro ResourceTable contract: command-repeat=500 with per-iteration normalization and explicit feature-gating parity support.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
       "applesToApplesVetted": false,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "rightTimingDivisor": 1.0
     },
     {
-      "id": "ctr_lifecycle_refcount_macro_200",
+      "id": "lifecycle_refcount_200",
       "name": "p2 lifecycle/refcount macro (200)",
       "description": "Directional macro lifecycle workload repeating AddRef touch coverage 200 times inside one command.",
       "domain": "p2-lifecycle-macro",
@@ -605,7 +629,7 @@
       "benchmarkClass": "directional"
     },
     {
-      "id": "exp_render_draw_throughput_macro_200k",
+      "id": "render_draw_throughput_200k",
       "name": "render draw throughput macro (200k draws)",
       "description": "Apples-to-apples macro render throughput workload using a 200k-draw command stream.",
       "domain": "render-macro",
@@ -621,10 +645,10 @@
       "leftTimingDivisor": 575000,
       "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
-      "id": "exp_draw_indexed_render_macro_200k",
+      "id": "render_draw_indexed_200k",
       "name": "draw indexed macro (200k draws)",
       "description": "Directional macro indexed draw stress using a 200k-draw indexed command stream.",
       "domain": "render-macro",
@@ -652,7 +676,7 @@
       }
     },
     {
-      "id": "ctr_texture_sampler_write_query_destroy_macro_500",
+      "id": "texture_sampler_write_query_destroy_500",
       "name": "texture contract macro (500 draws)",
       "description": "Apples-to-apples macro texture lifecycle workload with a larger render-draw phase for setup amortization analysis.",
       "domain": "texture-macro",
@@ -668,10 +692,10 @@
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
       "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_resource_lifecycle_contract",
+      "id": "resource_lifecycle",
       "name": "p0 resource lifecycle contract",
       "description": "Apples-to-apples contract workload for upload-buffer resize churn plus explicit barrier submission.",
       "domain": "p0-resource",
@@ -689,10 +713,10 @@
       "timingNormalizationNote": "Apples-to-apples lifecycle contract: normalize per command-sequence iteration over upload resize + barrier operations.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "applesToApplesVetted": true,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_compute_indirect_timestamp_contract",
+      "id": "compute_indirect_timestamp",
       "name": "p0 compute indirect/timestamp contract",
       "description": "Apples-to-apples compute contract workload for async pipeline creation, indirect dispatch, and timestamp/query APIs.",
       "domain": "p0-compute",
@@ -710,10 +734,10 @@
       "timingNormalizationNote": "Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
       "applesToApplesVetted": true,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_render_multidraw_contract",
+      "id": "render_multidraw",
       "name": "p0 render multidraw contract",
       "description": "Apples-to-apples render-pass workload focused on occlusion/timestamp query wiring and multidraw API path parity.",
       "domain": "p0-render",
@@ -730,10 +754,10 @@
       "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
       "applesToApplesVetted": true,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_render_multidraw_indexed_contract",
+      "id": "render_multidraw_indexed",
       "name": "p0 render multidraw indexed contract",
       "description": "Apples-to-apples indexed render-pass workload for indexed multidraw API path parity and query wiring.",
       "domain": "p0-render",
@@ -750,10 +774,10 @@
       "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__DynamicVertexBuffer_DrawIndexed",
       "applesToApplesVetted": true,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_render_pixel_local_storage_barrier_contract",
+      "id": "render_pixel_local_storage_barrier",
       "name": "p0 render pixel-local-storage barrier contract",
       "description": "Directional P0 contract workload for pipeline-layout/render-pass pixel-local-storage chains plus explicit barrier invocation under feature-gating parity.",
       "domain": "p0-render",
@@ -775,7 +799,7 @@
       "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_render_pixel_local_storage_barrier_macro_500",
+      "id": "render_pixel_local_storage_barrier_500",
       "name": "p0 render pixel-local-storage barrier macro (500)",
       "description": "Apples-to-apples macro PLS workload with 500 in-command iterations to stress non-coherent barrier sequencing overhead.",
       "domain": "p0-render-macro",
@@ -794,10 +818,10 @@
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
       "applesToApplesVetted": false,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
-      "id": "ctr_surface_presentation_contract",
+      "id": "surface_presentation",
       "name": "surface presentation contract",
       "description": "Surface presentation contract mapped for apples-to-apples lane validation across create/release and concurrent surface sequencing.",
       "domain": "surface",
@@ -810,14 +834,15 @@
       "driver": "24.0.0",
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 2,
-      "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
       "applesToApplesVetted": true,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "rightTimingDivisor": 1.0
     },
     {
-      "id": "copy_buffer_to_texture_contract",
+      "id": "copy_buffer_to_texture",
       "name": "copy buffer-to-texture contract",
       "description": "Directional copy contract covering buffer-to-texture transfer path.",
       "domain": "copy",
@@ -843,7 +868,7 @@
       }
     },
     {
-      "id": "copy_texture_to_buffer_contract",
+      "id": "copy_texture_to_buffer",
       "name": "copy texture-to-buffer contract",
       "description": "Directional copy contract covering texture-to-buffer transfer path.",
       "domain": "copy",
@@ -869,7 +894,7 @@
       }
     },
     {
-      "id": "dispatch_fallback_contract",
+      "id": "compute_dispatch_fallback",
       "name": "dispatch fallback contract",
       "description": "Directional dispatch benchmark exercising the builtin fallback dispatch command path.",
       "domain": "compute",
@@ -895,12 +920,12 @@
       }
     },
     {
-      "id": "copy_protocol_contract",
+      "id": "copy_protocol",
       "name": "copy protocol contract",
       "description": "Directional mixed protocol benchmark combining sampler, copy, barrier, diagnostics, and texture lifecycle checks.",
       "domain": "copy",
       "comparabilityNotes": "Directional-only protocol contract. This benchmark is intentionally non-claimable while copy-path parity remains directional.",
-      "commandsPath": "examples/copy_protocol_contract_commands.json",
+      "commandsPath": "examples/copy_protocol_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -921,7 +946,7 @@
       }
     },
     {
-      "id": "copy_texture_to_texture_contract",
+      "id": "copy_texture_to_texture",
       "name": "copy texture-to-texture contract",
       "description": "Directional copy contract covering texture-to-texture transfer path.",
       "domain": "copy",
@@ -947,12 +972,12 @@
       }
     },
     {
-      "id": "dispatch_grid_contract",
+      "id": "compute_dispatch_grid",
       "name": "dispatch grid contract",
       "description": "Directional dispatch contract exercising non-trivial 3D dispatch grid shapes through fallback dispatch command path.",
       "domain": "compute",
       "comparabilityNotes": "Directional-only dispatch protocol contract. This benchmark is intentionally non-claimable until a Dawn compute-dispatch parity lane is added.",
-      "commandsPath": "examples/dispatch_grid_contract_commands.json",
+      "commandsPath": "examples/compute_dispatch_grid_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -973,7 +998,7 @@
       }
     },
     {
-      "id": "surface_full_presentation_contract",
+      "id": "surface_full_presentation",
       "name": "surface full presentation contract",
       "description": "Directional surface lifecycle contract covering capabilities/configure/acquire/present/unconfigure/release operations.",
       "domain": "surface",
@@ -999,7 +1024,7 @@
       }
     },
     {
-      "id": "ctr_concurrent_execution_single_contract",
+      "id": "compute_concurrent_execution_single",
       "name": "concurrent execution single-dispatch contract",
       "description": "Compute contract aligned to Dawn ConcurrentExecutionTest RunSingle with a single heavy compute dispatch.",
       "domain": "compute",
@@ -1017,12 +1042,13 @@
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 1,
-      "rightTimingDivisor": 0.2,
-      "timingNormalizationNote": "Dawn ConcurrentExecutionTest RunSingle reports per-iteration wall time with iterationsPerStep=5; rightTimingDivisor=0.2 rescales Dawn timings to per-dispatch step units for apples-to-apples comparison.",
-      "dawnFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle"
+      "rightTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
+      "benchmarkClass": "comparable"
     },
     {
-      "id": "par_uniform_buffer_update_writebuffer_partial_single",
+      "id": "render_uniform_buffer_update_writebuffer_partial_single",
       "name": "uniform buffer update (WriteBuffer partial single)",
       "description": "Uniform update + draw benchmark aligned to Dawn UniformBufferUpdatePerf WriteBuffer Partial SingleUniformBuffer variant.",
       "domain": "render",
@@ -1039,10 +1065,11 @@
       "leftTimingDivisor": 4400,
       "rightTimingDivisor": 1,
       "timingNormalizationNote": "Dawn UniformBufferUpdatePerf already reports per-iteration metrics (iterationsPerStep=100 internal normalization). Fawn repeats upload+draw 100 times and applies leftTimingDivisor normalization only.",
-      "dawnFilter": "UniformBufferUpdatePerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_PartialSize_SingleUniformBuffer"
+      "dawnFilter": "UniformBufferUpdatePerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_PartialSize_SingleUniformBuffer",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "par_zero_initialize_workgroup_memory_256",
+      "id": "compute_zero_initialize_workgroup_memory_256",
       "name": "zero-initialize workgroup memory (256)",
       "description": "Compute workload aligned to Dawn VulkanZeroInitializeWorkgroupMemoryExtensionTest workgroupSize=256 variant.",
       "domain": "compute",
@@ -1062,15 +1089,16 @@
       "leftTimingDivisor": 2400,
       "rightTimingDivisor": 1,
       "timingNormalizationNote": "Dawn VulkanZeroInitializeWorkgroupMemoryExtensionTest already reports per-iteration metrics (iterationsPerStep=50 internal normalization). Fawn repeats dispatch 50 times and applies leftTimingDivisor normalization only.",
-      "dawnFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256"
+      "dawnFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256",
+      "benchmarkClass": "directional"
     },
     {
-      "id": "buffer_map_readback_1kb",
+      "id": "resource_buffer_map_readback_1kb",
       "name": "buffer map readback 1kb",
       "description": "One-shot map/read/unmap cycle over 1KB mapped buffers.",
       "domain": "resource",
       "comparabilityNotes": "Comparable map-readback candidate for buffer staging semantics and mapped-range validation.",
-      "commandsPath": "examples/buffer_map_readback_1kb_commands.json",
+      "commandsPath": "examples/resource_buffer_map_readback_1kb_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1081,17 +1109,17 @@
       "leftCommandRepeat": 240,
       "leftIgnoreFirstOps": 2,
       "leftTimingDivisor": 240,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Dawn map-readback parity is tracked as per-op map-read-unmap units with one ignore-first warmup path.",
       "dawnFilter": "pending-map-readback-1kb"
     },
     {
-      "id": "buffer_map_readback_64kb",
+      "id": "resource_buffer_map_readback_64kb",
       "name": "buffer map readback 64kb",
       "description": "One-shot map/read/unmap cycle over 64KB mapped buffers.",
       "domain": "resource",
       "comparabilityNotes": "Comparable map-readback candidate focused on larger staging windows.",
-      "commandsPath": "examples/buffer_map_readback_64kb_commands.json",
+      "commandsPath": "examples/resource_buffer_map_readback_64kb_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1102,17 +1130,17 @@
       "leftCommandRepeat": 200,
       "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 200,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable readback lane normalizing to per-op map-read-unmap units over a 64KB transfer size.",
       "dawnFilter": "pending-map-readback-64kb"
     },
     {
-      "id": "buffer_map_write_1kb",
+      "id": "resource_buffer_map_write_1kb",
       "name": "buffer map write 1kb",
       "description": "One-shot map/write/unmap cycle over 1KB mapped buffers.",
       "domain": "resource",
       "comparabilityNotes": "Comparable map-write candidate for write-through staging semantics and deterministic source fill.",
-      "commandsPath": "examples/buffer_map_write_1kb_commands.json",
+      "commandsPath": "examples/resource_buffer_map_write_1kb_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1123,17 +1151,17 @@
       "leftCommandRepeat": 240,
       "leftIgnoreFirstOps": 2,
       "leftTimingDivisor": 240,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable writeback lane normalizing to per-op map-write-unmap units at 1KB.",
       "dawnFilter": "pending-map-write-1kb"
     },
     {
-      "id": "buffer_map_write_64kb",
+      "id": "resource_buffer_map_write_64kb",
       "name": "buffer map write 64kb",
       "description": "One-shot map/write/unmap cycle over 64KB mapped buffers.",
       "domain": "resource",
       "comparabilityNotes": "Comparable map-write candidate for larger staging windows and mapped memory throughput.",
-      "commandsPath": "examples/buffer_map_write_64kb_commands.json",
+      "commandsPath": "examples/resource_buffer_map_write_64kb_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1144,17 +1172,17 @@
       "leftCommandRepeat": 200,
       "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 200,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable writeback lane normalizing to per-op map-write-unmap units at 64KB.",
       "dawnFilter": "pending-map-write-64kb"
     },
     {
-      "id": "buffer_map_partial_read_4kb",
+      "id": "resource_buffer_map_partial_read_4kb",
       "name": "buffer map partial read 4kb",
       "description": "One-shot partial map/read path over a fixed 4KB subrange.",
       "domain": "resource",
       "comparabilityNotes": "Comparable partial-range read candidate isolating subrange map behavior.",
-      "commandsPath": "examples/buffer_map_partial_read_4kb_commands.json",
+      "commandsPath": "examples/resource_buffer_map_partial_read_4kb_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1165,17 +1193,17 @@
       "leftCommandRepeat": 300,
       "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 300,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable partial-range lane normalizing to per-op partial read mapping.",
       "dawnFilter": "pending-map-partial-read-4kb"
     },
     {
-      "id": "buffer_map_partial_write_64kb",
+      "id": "resource_buffer_map_partial_write_64kb",
       "name": "buffer map partial write 64kb",
       "description": "One-shot partial map/write path over a fixed 64KB subrange.",
       "domain": "resource",
       "comparabilityNotes": "Comparable partial-range write candidate for subrange validation and bounds coverage.",
-      "commandsPath": "examples/buffer_map_partial_write_64kb_commands.json",
+      "commandsPath": "examples/resource_buffer_map_partial_write_64kb_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1186,17 +1214,17 @@
       "leftCommandRepeat": 220,
       "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 220,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable partial-range lane normalizing to per-op partial write mapping at 64KB subrange.",
       "dawnFilter": "pending-map-partial-write-64kb"
     },
     {
-      "id": "buffer_map_double_request_guard",
+      "id": "resource_buffer_map_double_request_guard",
       "name": "buffer map double request guard",
       "description": "Error-path workload ensuring repeated map requests before unmap remain deterministic.",
       "domain": "resource",
       "comparabilityNotes": "Directional error-path parity candidate for second-map-while-mapped sequencing.",
-      "commandsPath": "examples/buffer_map_double_request_guard_commands.json",
+      "commandsPath": "examples/resource_buffer_map_double_request_guard_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1218,12 +1246,12 @@
       }
     },
     {
-      "id": "buffer_map_unmap_storm_macro",
+      "id": "resource_buffer_map_unmap_storm",
       "name": "buffer map unmap storm macro",
       "description": "Mixed read/write map/unmap macro stream stressing repeated mapping cycles.",
       "domain": "resource",
       "comparabilityNotes": "Comparable high-frequency map/unmap candidate with deterministic pair-normalized output.",
-      "commandsPath": "examples/buffer_map_unmap_storm_macro_commands.json",
+      "commandsPath": "examples/resource_buffer_map_unmap_storm_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1234,17 +1262,17 @@
       "leftCommandRepeat": 40,
       "leftIgnoreFirstOps": 2,
       "leftTimingDivisor": 80,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable macro lane with two mapping operations per iteration; divisor accounts for per-op normalization.",
       "dawnFilter": "pending-map-storm-macro"
     },
     {
-      "id": "dispatch_indirect_1",
+      "id": "compute_dispatch_indirect_single",
       "name": "dispatch indirect 1",
       "description": "Indirect dispatch lane with one dispatch-indirect arg buffer.",
       "domain": "compute",
       "comparabilityNotes": "Comparable base indirect-dispatch lane for command-shape parity.",
-      "commandsPath": "examples/dispatch_indirect_1_commands.json",
+      "commandsPath": "examples/compute_dispatch_indirect_single_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1255,17 +1283,17 @@
       "leftCommandRepeat": 500,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 500,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable indirect-dispatch baseline normalized to one dispatch per mapped arg update.",
       "dawnFilter": "pending-dispatch-indirect-1"
     },
     {
-      "id": "dispatch_indirect_live_args",
+      "id": "compute_dispatch_indirect_live_args",
       "name": "dispatch indirect live args",
       "description": "Live-updated indirect dispatch args with fixed dispatch pipeline.",
       "domain": "compute",
       "comparabilityNotes": "Directional indirect-arg mutability candidate for argument-buffer coherence parity.",
-      "commandsPath": "examples/dispatch_indirect_live_args_commands.json",
+      "commandsPath": "examples/compute_dispatch_indirect_live_args_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1287,12 +1315,12 @@
       }
     },
     {
-      "id": "dispatch_indirect_large_args",
+      "id": "compute_dispatch_indirect_large_args",
       "name": "dispatch indirect large args",
       "description": "Boundary-focused indirect dispatch arg-buffer stress with bounded range validation.",
       "domain": "compute",
       "comparabilityNotes": "Directional indirect arg-boundary candidate for large-arg-buffer coverage.",
-      "commandsPath": "examples/dispatch_indirect_large_args_commands.json",
+      "commandsPath": "examples/compute_dispatch_indirect_large_args_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1314,12 +1342,12 @@
       }
     },
     {
-      "id": "dispatch_workgroups_2d_sweep",
+      "id": "compute_dispatch_workgroups_2d_sweep",
       "name": "dispatch workgroups 2D sweep",
       "description": "Dispatch-sweep workload over 2D workgroup geometry variants.",
       "domain": "compute",
       "comparabilityNotes": "Comparable 2D dispatch partition candidate for deterministic geometry shaping.",
-      "commandsPath": "examples/dispatch_workgroups_2d_sweep_commands.json",
+      "commandsPath": "examples/compute_dispatch_workgroups_2d_sweep_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1330,17 +1358,17 @@
       "leftCommandRepeat": 320,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 320,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable dispatch-sweep lane with fixed total-work normalization across 2D shape variants.",
       "dawnFilter": "pending-dispatch-2d-sweep"
     },
     {
-      "id": "dispatch_workgroups_3d_sweep",
+      "id": "compute_dispatch_workgroups_3d_sweep",
       "name": "dispatch workgroups 3D sweep",
       "description": "Dispatch-sweep workload over 3D workgroup geometry variants.",
       "domain": "compute",
       "comparabilityNotes": "Directional 3D geometry candidate for fixed-work dispatch shape coverage.",
-      "commandsPath": "examples/dispatch_workgroups_3d_sweep_commands.json",
+      "commandsPath": "examples/compute_dispatch_workgroups_3d_sweep_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1362,12 +1390,12 @@
       }
     },
     {
-      "id": "dispatch_workgroups_indirect_pipeline_switch",
+      "id": "compute_dispatch_workgroups_indirect_pipeline_switch",
       "name": "dispatch indirect pipeline switch",
       "description": "Indirect dispatch workload alternating pipelines between launches.",
       "domain": "compute",
       "comparabilityNotes": "Directional indirect pipeline-switch candidate for compute state-transition coverage.",
-      "commandsPath": "examples/dispatch_workgroups_indirect_pipeline_switch_commands.json",
+      "commandsPath": "examples/compute_dispatch_workgroups_indirect_pipeline_switch_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1389,12 +1417,12 @@
       }
     },
     {
-      "id": "kernel_dispatch_macro_1000",
+      "id": "compute_kernel_dispatch_1000",
       "name": "kernel dispatch macro 1000",
       "description": "Macro dispatch command stream carrying 1000 kernel dispatch repeats per sample.",
       "domain": "compute",
       "comparabilityNotes": "Directional macro candidate with high repeat density for tail-stability diagnostics.",
-      "commandsPath": "examples/kernel_dispatch_macro_1000_commands.json",
+      "commandsPath": "examples/compute_kernel_dispatch_1000_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1416,12 +1444,12 @@
       }
     },
     {
-      "id": "draw_indexed_indirect_u16",
+      "id": "render_draw_indexed_indirect_u16",
       "name": "draw indexed indirect u16",
       "description": "Indexed indirect draw path using U16 index format.",
       "domain": "render",
       "comparabilityNotes": "Comparable indirect-index candidate for indexed rendering argument decoding parity.",
-      "commandsPath": "examples/draw_indexed_indirect_u16_commands.json",
+      "commandsPath": "examples/render_draw_indexed_indirect_u16_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1432,17 +1460,17 @@
       "leftCommandRepeat": 500,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 500,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable indexed-indirect lane normalizing to one indirect indexed draw per sample.",
       "dawnFilter": "pending-draw-indexed-indirect-u16"
     },
     {
-      "id": "draw_indexed_indirect_u32",
+      "id": "render_draw_indexed_indirect_u32",
       "name": "draw indexed indirect u32",
       "description": "Indexed indirect draw path using U32 index format.",
       "domain": "render",
       "comparabilityNotes": "Comparable indexed-indirect candidate for index-format parity across u32 decoding.",
-      "commandsPath": "examples/draw_indexed_indirect_u32_commands.json",
+      "commandsPath": "examples/render_draw_indexed_indirect_u32_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1453,17 +1481,17 @@
       "leftCommandRepeat": 500,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 500,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable indexed-indirect lane normalizing to one indirect indexed draw per sample.",
       "dawnFilter": "pending-draw-indexed-indirect-u32"
     },
     {
-      "id": "draw_indirect_legacy_equivalent",
+      "id": "render_draw_indirect_legacy_equivalent",
       "name": "draw indirect legacy equivalent",
       "description": "Legacy-style indirect draw proxy using legacy-equivalent argument shape.",
       "domain": "render",
       "comparabilityNotes": "Directional indirect draw candidate for legacy-compatible proxy parity.",
-      "commandsPath": "examples/draw_indirect_legacy_equivalent_commands.json",
+      "commandsPath": "examples/render_draw_indirect_legacy_equivalent_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
@@ -1501,7 +1529,7 @@
       "leftCommandRepeat": 240,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 240,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable render-pass lane normalized per pass operation across clear/load boundaries.",
       "dawnFilter": "pending-render-loadops-clear-load"
     },
@@ -1522,7 +1550,7 @@
       "leftCommandRepeat": 240,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 240,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable render-pass lane normalized per pass operation across storeOp toggles.",
       "dawnFilter": "pending-render-storeops-discard"
     },
@@ -1651,7 +1679,7 @@
       "leftCommandRepeat": 600,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 600,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable buffer copy lane normalizing to one direct buffer-to-buffer copy op.",
       "dawnFilter": "pending-copy-b2b-4kb"
     },
@@ -1699,7 +1727,7 @@
       "leftCommandRepeat": 320,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 320,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable copy layout lane normalizing to one buffer-to-texture transfer.",
       "dawnFilter": "pending-copy-b2t-tight-pitch"
     },
@@ -1720,7 +1748,7 @@
       "leftCommandRepeat": 280,
       "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 280,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "timingNormalizationNote": "Comparable copy layout lane normalized to one texture-to-buffer transfer.",
       "dawnFilter": "pending-copy-t2b-padded"
     },
@@ -1752,12 +1780,12 @@
       }
     },
     {
-      "id": "copy_texture_to_texture_stress_macro",
+      "id": "copy_texture_to_texture_stress",
       "name": "copy texture to texture stress macro",
       "description": "High-density texture-to-texture copy stress macro stream.",
       "domain": "copy",
       "comparabilityNotes": "Directional stress macro candidate for copy command throughput and scheduler load.",
-      "commandsPath": "examples/copy_texture_to_texture_stress_macro_commands.json",
+      "commandsPath": "examples/copy_texture_to_texture_stress_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",

@@ -86,7 +86,7 @@ FAWN_UPLOAD_RUNTIME_SOURCE_PATHS = (
 )
 NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-total-ns",
-    "doe-execution-row-total-ns",
+    "doe-execution-row-average-ns",
     "doe-execution-dispatch-window-ns",
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
@@ -118,6 +118,7 @@ class Workload:
     right_upload_submit_every: int
     dawn_filter: str
     comparable: bool
+    benchmark_class: str
     allow_left_no_execution: bool
     include_by_default: bool
     left_timing_divisor: float
@@ -888,6 +889,25 @@ def load_workloads(
             else int(left_upload_submit_every_raw or 0)
         )
         right_upload_submit_every_raw = parse_int(item.get("rightUploadSubmitEvery"))
+        comparable = bool(item.get("comparable", False))
+        benchmark_class_raw = item.get("benchmarkClass")
+        if benchmark_class_raw is None:
+            benchmark_class = "comparable" if comparable else "directional"
+        else:
+            benchmark_class = str(benchmark_class_raw).strip().lower()
+        if benchmark_class not in {"comparable", "directional"}:
+            raise ValueError(
+                f"invalid workload {workload_id}: benchmarkClass must be one of "
+                "['comparable', 'directional']"
+            )
+        if benchmark_class == "comparable" and not comparable:
+            raise ValueError(
+                f"invalid workload {workload_id}: benchmarkClass=comparable requires comparable=true"
+            )
+        if benchmark_class == "directional" and comparable:
+            raise ValueError(
+                f"invalid workload {workload_id}: benchmarkClass=directional requires comparable=false"
+            )
         workload = Workload(
             id=workload_id,
             name=item.get("name", workload_id),
@@ -916,7 +936,8 @@ def load_workloads(
                 else int(right_upload_submit_every_raw or 0)
             ),
             dawn_filter=item.get("dawnFilter", ""),
-            comparable=bool(item.get("comparable", False)),
+            comparable=comparable,
+            benchmark_class=benchmark_class,
             allow_left_no_execution=bool(item.get("allowLeftNoExecution", False)),
             include_by_default=bool(item.get("default", True)),
             left_timing_divisor=left_timing_divisor,
@@ -1219,6 +1240,45 @@ def enforce_strict_doe_runtime_normalization_symmetry(
         )
 
 
+def enforce_strict_dawn_vs_doe_direct_operation_timing(
+    workloads: list[Workload],
+    left_command_template: str,
+    right_command_template: str,
+    comparability_mode: str,
+    required_timing_class: str,
+) -> None:
+    if comparability_mode != "strict":
+        return
+    if required_timing_class != "operation":
+        return
+
+    left_is_doe = template_uses_doe_runtime(left_command_template)
+    right_is_doe = template_uses_doe_runtime(right_command_template)
+    # Dawn-vs-Doe only.
+    if left_is_doe == right_is_doe:
+        return
+
+    failures: list[str] = []
+    for workload in workloads:
+        if not workload.comparable:
+            continue
+        mismatches: list[str] = []
+        if workload.left_timing_divisor != 1.0:
+            mismatches.append(f"leftTimingDivisor={workload.left_timing_divisor}")
+        if workload.right_timing_divisor != 1.0:
+            mismatches.append(f"rightTimingDivisor={workload.right_timing_divisor}")
+        if mismatches:
+            failures.append(f"{workload.id}: " + ", ".join(mismatches))
+
+    if failures:
+        details = "; ".join(failures)
+        raise ValueError(
+            "strict dawn-vs-doe operation comparability requires direct per-side timing "
+            "normalization (leftTimingDivisor=1 and rightTimingDivisor=1) for comparable workloads: "
+            f"{details}"
+        )
+
+
 format_stats = reporting_mod.format_stats
 format_distribution = reporting_mod.format_distribution
 summarize_timing_metric_stats = reporting_mod.summarize_timing_metric_stats
@@ -1290,11 +1350,30 @@ def main() -> int:
             )
         print(f"FAIL: no workloads selected{hint}")
         return 1
+    if args.claimability in {"local", "release"}:
+        non_comparable_contract_ids = [
+            workload.id
+            for workload in workloads
+            if workload.benchmark_class != "comparable"
+        ]
+        if non_comparable_contract_ids:
+            raise ValueError(
+                "claimability mode requires comparable-only workload contracts "
+                "(benchmarkClass=comparable). Directional workloads selected: "
+                + ", ".join(non_comparable_contract_ids)
+            )
     enforce_strict_doe_runtime_normalization_symmetry(
         workloads=workloads,
         left_command_template=args.left_command_template,
         right_command_template=args.right_command_template,
         comparability_mode=args.comparability,
+    )
+    enforce_strict_dawn_vs_doe_direct_operation_timing(
+        workloads=workloads,
+        left_command_template=args.left_command_template,
+        right_command_template=args.right_command_template,
+        comparability_mode=args.comparability,
+        required_timing_class=args.require_timing_class,
     )
     enforce_strict_command_shape_divisor_contracts(
         workloads=workloads,

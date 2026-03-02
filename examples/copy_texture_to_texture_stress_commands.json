@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "copy_texture_to_texture",
+    "bytes": 16384,
+    "src_handle": 44310,
+    "src_width": 64,
+    "src_height": 64,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 256,
+    "src_rows_per_image": 64,
+    "dst_handle": 44311,
+    "dst_width": 64,
+    "dst_height": 64,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 256,
+    "dst_rows_per_image": 64
+  },
+  {
+    "kind": "copy_texture_to_texture",
+    "bytes": 16384,
+    "src_handle": 44312,
+    "src_width": 64,
+    "src_height": 64,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 256,
+    "src_rows_per_image": 64,
+    "dst_handle": 44313,
+    "dst_width": 64,
+    "dst_height": 64,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 256,
+    "dst_rows_per_image": 64
+  }
+]

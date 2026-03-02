@@ -98,8 +98,12 @@ fn command_manifest_module(command: model.Command) []const u8 {
         .copy_buffer_to_texture => "copy_buffer_to_texture",
         .barrier => "barrier",
         .dispatch => "dispatch",
+        .dispatch_indirect => "dispatch_indirect",
         .kernel_dispatch => "kernel_dispatch",
         .render_draw => "render_draw",
+        .draw_indirect => "draw_indirect",
+        .draw_indexed_indirect => "draw_indexed_indirect",
+        .render_pass => "render_pass",
         .sampler_create => "sampler_create",
         .sampler_destroy => "sampler_destroy",
         .texture_write => "texture_write",
@@ -119,7 +123,7 @@ fn command_manifest_module(command: model.Command) []const u8 {
 
 fn is_dispatch_command(command: model.Command) bool {
     switch (command) {
-        .dispatch, .kernel_dispatch => return true,
+        .dispatch, .dispatch_indirect, .kernel_dispatch => return true,
         else => return false,
     }
 }
@@ -127,6 +131,7 @@ fn is_dispatch_command(command: model.Command) bool {
 fn command_operation_count(command: model.Command) u32 {
     return switch (command) {
         .dispatch => 1,
+        .dispatch_indirect => 1,
         .kernel_dispatch => |kernel| if (kernel.repeat == 0) 1 else kernel.repeat,
         else => 0,
     };
@@ -138,8 +143,12 @@ fn command_status_message(command: model.Command) []const u8 {
         .copy_buffer_to_texture => "vulkan copy command submitted",
         .barrier => "vulkan barrier command submitted",
         .dispatch => "vulkan dispatch command submitted",
+        .dispatch_indirect => "vulkan dispatch_indirect command submitted",
         .kernel_dispatch => "vulkan kernel dispatch command submitted",
         .render_draw => "vulkan render command submitted",
+        .draw_indirect => "vulkan draw_indirect command submitted",
+        .draw_indexed_indirect => "vulkan draw_indexed_indirect command submitted",
+        .render_pass => "vulkan render_pass command submitted",
         .sampler_create => "vulkan sampler_create command submitted",
         .sampler_destroy => "vulkan sampler_destroy command submitted",
         .texture_write => "vulkan texture_write command submitted",
@@ -225,6 +234,7 @@ fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !void 
         },
         .barrier => try vulkan_sync.wait_for_completion(),
         .dispatch => try compute_encode.encode_compute(),
+        .dispatch_indirect => try compute_encode.encode_compute(),
         .kernel_dispatch => {
             try compute_encode.encode_compute();
             try vulkan_wgsl_ingest.ingest();
@@ -233,6 +243,9 @@ fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !void 
             try vulkan_pipeline_cache.pipeline_cache_lookup();
         },
         .render_draw => try render_encode.encode_render(),
+        .draw_indirect => try render_encode.encode_render(),
+        .draw_indexed_indirect => try render_encode.encode_render(),
+        .render_pass => try render_encode.encode_render(),
         .sampler_create => try vulkan_sampler.create_sampler(),
         .sampler_destroy => try vulkan_sampler.destroy_sampler(),
         .texture_write => {

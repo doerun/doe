@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "description": "Local metal map with explicit autodiscovery for smoke/comparable lanes.",
   "filters": {
-    "par_buffer_upload_64kb": "@autodiscover",
-    "par_workgroup_atomic_1024": "@autodiscover",
-    "exp_render_draw_throughput_proxy": "@autodiscover"
+    "upload_write_buffer_64kb": "@autodiscover",
+    "compute_workgroup_atomic_1024": "@autodiscover",
+    "render_draw_throughput_baseline": "@autodiscover"
   }
 }

@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "map_async",
+    "bytes": 16384,
+    "mapMode": "read"
+  },
+  {
+    "kind": "map_async",
+    "bytes": 16384,
+    "mapMode": "write"
+  }
+]

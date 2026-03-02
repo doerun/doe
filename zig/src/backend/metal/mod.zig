@@ -108,15 +108,16 @@ fn ensure_runtime_bootstrapped(self: *ZigMetalBackend) !void {
 
 fn is_dispatch_command(command: model.Command) bool {
     return switch (command) {
-        .dispatch, .kernel_dispatch => true,
+        .dispatch, .dispatch_indirect, .kernel_dispatch => true,
         else => false,
     };
 }
 
 fn command_operation_count(command: model.Command) u32 {
     return switch (command) {
+        .dispatch_indirect => 1,
         .kernel_dispatch => |kernel| if (kernel.repeat > 0) kernel.repeat else 1,
-        .render_draw => |render| if (render.draw_count > 0) render.draw_count else 1,
+        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |render| if (render.draw_count > 0) render.draw_count else 1,
         .async_diagnostics => |diagnostics| if (diagnostics.iterations > 0) diagnostics.iterations else 1,
         else => 1,
     };
@@ -128,8 +129,12 @@ fn command_manifest_module(command: model.Command) []const u8 {
         .copy_buffer_to_texture => "copy_buffer_to_texture",
         .barrier => "barrier",
         .dispatch => "dispatch",
+        .dispatch_indirect => "dispatch_indirect",
         .kernel_dispatch => "kernel_dispatch",
         .render_draw => "render_draw",
+        .draw_indirect => "draw_indirect",
+        .draw_indexed_indirect => "draw_indexed_indirect",
+        .render_pass => "render_pass",
         .sampler_create => "sampler_create",
         .sampler_destroy => "sampler_destroy",
         .texture_write => "texture_write",
@@ -153,8 +158,12 @@ fn command_status_message(command: model.Command) []const u8 {
         .copy_buffer_to_texture => "metal copy command submitted",
         .barrier => "metal barrier command submitted",
         .dispatch => "metal dispatch command submitted",
+        .dispatch_indirect => "metal dispatch_indirect command submitted",
         .kernel_dispatch => "metal kernel dispatch command submitted",
         .render_draw => "metal render command submitted",
+        .draw_indirect => "metal draw_indirect command submitted",
+        .draw_indexed_indirect => "metal draw_indexed_indirect command submitted",
+        .render_pass => "metal render_pass command submitted",
         .sampler_create => "metal sampler_create command submitted",
         .sampler_destroy => "metal sampler_destroy command submitted",
         .texture_write => "metal texture_write command submitted",
@@ -224,7 +233,7 @@ fn submit_for_command(self: *ZigMetalBackend, command: model.Command) !u64 {
 
 fn command_requires_shader_manifest(command: model.Command) bool {
     return switch (command) {
-        .dispatch, .kernel_dispatch, .render_draw, .async_diagnostics => true,
+        .dispatch, .dispatch_indirect, .kernel_dispatch, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass, .async_diagnostics => true,
         else => false,
     };
 }
@@ -258,11 +267,11 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
             try texture.create_texture();
             try resource_table.lookup_resource();
         },
-        .dispatch, .kernel_dispatch => {
+        .dispatch, .dispatch_indirect, .kernel_dispatch => {
             try compute_encode.encode_compute();
             try pipeline_cache.pipeline_cache_lookup();
         },
-        .render_draw => {
+        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => {
             try render_encode.encode_render();
             try pipeline_cache.pipeline_cache_lookup();
         },

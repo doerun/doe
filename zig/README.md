@@ -236,8 +236,10 @@ Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metad
   - `upload` | `buffer_upload`
   - `copy_buffer_to_texture` | `texture_copy` | `copy_texture` | `copy_buffer_to_buffer` | `copy_texture_to_buffer`
   - `dispatch` | `dispatch_workgroups` | `dispatch_invocations`
+  - `dispatch_indirect`
   - `kernel_dispatch`
   - `render_draw` | `draw` | `draw_call` | `draw_indexed`
+  - `draw_indirect` | `draw_indexed_indirect` | `render_pass`
   - `sampler_create` | `create_sampler`, `sampler_destroy` | `destroy_sampler`
   - `texture_write` | `write_texture` | `queue_write_texture`, `texture_query` | `query_texture`, `texture_destroy` | `destroy_texture`
   - `surface_create` | `create_surface`, `surface_capabilities` | `get_surface_capabilities`, `surface_configure` | `configure_surface`,

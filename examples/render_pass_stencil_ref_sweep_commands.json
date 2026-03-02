@@ -1,0 +1,15 @@
+[
+  {
+    "kind": "render_pass",
+    "drawCount": 160,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "redundant",
+    "encodeMode": "render-pass",
+    "stencilReference": 3,
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm"
+  }
+]

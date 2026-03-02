@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 4096,
+    "src_handle": 44200,
+    "dst_handle": 44201,
+    "src_width": 32,
+    "src_height": 32,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 128,
+    "src_rows_per_image": 32,
+    "dst_bytes_per_row": 256,
+    "dst_rows_per_image": 32
+  }
+]

@@ -174,6 +174,8 @@ python3 fawn/bench/cleanup_out.py --retention-days 14
 ## Workload presets
 
 - `fawn/bench/workloads.json` defines replay workloads, default profiles, and command seed artifacts.
+- workload IDs must follow the immutable naming contract from `bench/benchmark-writing-guide.md`:
+  `domain_subject_shape_variant` (status-free, no lifecycle/maturity prefixes).
 - each workload includes `comparable` to declare whether mapping quality is apples-to-apples (`true`) or directional (`false`).
 - workloads may set `allowLeftNoExecution: true` to allow strict comparability for deterministic feature-gated paths when left runtime reports unsupported/skipped execution evidence and zero execution errors.
 - each workload can include `default: false`; these extended workloads are skipped unless `--include-extended-workloads` or explicit `--workload-filter` is provided.
@@ -221,7 +223,7 @@ python3 fawn/bench/compare_dawn_vs_doe.py \
   --include-extended-workloads \
   --include-noncomparable-workloads \
   --comparability warn \
-  --workload-filter par_workgroup_atomic_1024,par_workgroup_non_atomic_1024,par_matrix_vector_multiply_32768x2048_f32,par_matrix_vector_multiply_32768x2048_f32_swizzle1,par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1,par_shader_compile_pipeline_stress,exp_render_draw_throughput_proxy,exp_texture_sampling_raster_proxy \
+  --workload-filter compute_workgroup_atomic_1024,compute_workgroup_non_atomic_1024,compute_matvec_32768x2048_f32,compute_matvec_32768x2048_f32_swizzle1,compute_matvec_32768x2048_f32_workgroupshared_swizzle1,pipeline_compile_stress,render_draw_throughput_baseline,texture_sampling_raster_baseline \
   --right-command-template "python3 fawn/bench/dawn_benchmark_adapter.py --dawn-state fawn/bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map fawn/bench/dawn_workload_map.json --workload {workload} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
   --out fawn/bench/out/dawn-vs-doe.extended.json
 ```
@@ -242,6 +244,7 @@ python3 fawn/bench/compare_dawn_vs_doe.py \
 - strict mode also exits non-zero when a selected workload contract is explicitly marked non-comparable (`comparable=false`).
 - comparability evaluation is emitted as machine-checkable obligations per workload (`comparability.obligations` with `blockingFailedObligations`), and comparability status is derived from blocking-obligation pass/fail (not only free-form reason text).
 - `--require-timing-class operation` (default): require operation-level timings on both sides.
+- use `--require-timing-class process-wall` only for diagnostic end-to-end overhead studies.
 - `--allow-left-no-execution`: opt out if left trace-meta has no `executionSuccessCount`/`executionRowCount`.
 - workload-level `allowLeftNoExecution: true` provides the same opt-out per workload contract and still requires explicit unsupported/skipped execution evidence when no successful execution samples are present.
 - strict mode rejects samples with runtime execution failures (`executionErrorCount > 0`) on either side.
@@ -286,7 +289,7 @@ Quick reliability recheck pattern:
 ```bash
 python3 fawn/bench/compare_dawn_vs_doe.py \
   --config fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.json \
-  --workload-filter par_buffer_upload_64kb \
+  --workload-filter upload_write_buffer_64kb \
   --iterations 10 \
   --warmup 1 \
   --out fawn/bench/out/dawn-vs-doe.64kb.recheck.json
@@ -343,16 +346,16 @@ Extended workload domains now include:
 - shader compile/pipeline stress (`ShaderRobustnessPerf` mapping, comparable, fixed single-test filter + per-step normalization).
 - texture/raster and texture API contract workloads (`SubresourceTrackingPerf` mappings) including explicit sampler create/destroy, queue write texture, texture query assertions, and texture destroy lifecycle commands.
 - async pipeline diagnostics and most P0/P1/P2 API contracts are directional-only in the AMD extended matrix unless/until a directly matched Dawn contract is available.
-- promoted macro contracts now treated as strict comparable include `exp_render_draw_throughput_macro_200k`, `ctr_texture_sampler_write_query_destroy_macro_500`, `ctr_resource_table_immediates_macro_500`, and `ctr_render_pixel_local_storage_barrier_macro_500`.
-- hard-gated pilot promotions now treated as strict comparable include `ctr_render_multidraw_contract` and `ctr_render_multidraw_indexed_contract` (`applesToApplesVetted=true`).
-- hard-gated contract promotions now also include `ctr_resource_lifecycle_contract` and `ctr_compute_indirect_timestamp_contract` (`applesToApplesVetted=true`).
-- `ctr_surface_presentation_contract` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
-- `ctr_concurrent_execution_single_contract` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
+- promoted macro contracts now treated as strict comparable include `render_draw_throughput_200k`, `texture_sampler_write_query_destroy_500`, `resource_table_immediates_500`, and `render_pixel_local_storage_barrier_500`.
+- hard-gated pilot promotions now treated as strict comparable include `render_multidraw` and `render_multidraw_indexed` (`applesToApplesVetted=true`).
+- hard-gated contract promotions now also include `resource_lifecycle` and `compute_indirect_timestamp` (`applesToApplesVetted=true`).
+- `surface_presentation` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
+- `compute_concurrent_execution_single` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:
-  `par_matrix_vector_multiply_32768x2048_f32` (Naive Swizzle=0),
-  `par_matrix_vector_multiply_32768x2048_f32_swizzle1` (Naive Swizzle=1),
-  `par_matrix_vector_multiply_32768x2048_f32_workgroupshared_swizzle1` (WorkgroupShared Swizzle=1).
+  `compute_matvec_32768x2048_f32` (Naive Swizzle=0),
+  `compute_matvec_32768x2048_f32_swizzle1` (Naive Swizzle=1),
+  `compute_matvec_32768x2048_f32_workgroupshared_swizzle1` (WorkgroupShared Swizzle=1).
   Doe matvec command files set `kernel_dispatch.repeat=100` to match Dawn's `kNumDisptaches=100` step structure.
 
 Use report `domain`, `workloadComparable`, and `comparabilityNotes` fields to separate
@@ -551,7 +554,7 @@ Use `@autodiscover` in your map only where you want dynamic filter selection:
 {
   "schemaVersion": 1,
   "filters": {
-    "par_buffer_upload_1kb": "@autodiscover"
+    "upload_write_buffer_1kb": "@autodiscover"
   }
 }
 ```
@@ -562,7 +565,7 @@ Use `@autodiscover` in your map only where you want dynamic filter selection:
 {
   "schemaVersion": 1,
   "filters": {
-    "par_buffer_upload_1kb": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
+    "upload_write_buffer_1kb": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
   }
 }
 ```
@@ -765,6 +768,16 @@ Claimable Dawn-vs-Doe performance results must satisfy this contract.
   `leftUploadSubmitEvery`/`rightUploadSubmitEvery`,
   `leftTimingDivisor`/`rightTimingDivisor`
 - strict mode must fail fast on mismatched comparability settings or adapter/filter/test validity failures
+
+Two benchmark intents are supported and must be reported separately:
+
+- `apples-to-apples`: implementation-parity workloads (`workloadComparable=true`) with strict comparability.
+- `doe-advantage`: Doe-optimized workloads (directional by workload contract) that still use the same strict timing basis (`operation`) for fairness.
+
+Important:
+
+- Dawn-vs-Doe strict runs do not allow mixed timing mechanisms for claim-grade evidence.
+- For claim-grade apples-to-apples runs, keep strict operation timing. Use `process-wall` only for diagnostic overhead views.
 
 Directional investigation runs are allowed, but they must be explicitly marked non-comparable (`workloadComparable=false` or `--include-noncomparable-workloads`) and must not be presented as apples-to-apples claims.
 

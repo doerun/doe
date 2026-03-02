@@ -62,8 +62,10 @@ fn printUsage(stdout: anytype) !void {
         \\  upload | buffer_upload
         \\  copy_buffer_to_texture | texture_copy | copy_texture | copy_buffer_to_buffer | copy_texture_to_buffer | copy_texture_to_texture
         \\  dispatch | dispatch_workgroups | dispatch_invocations
+        \\  dispatch_indirect
         \\  kernel_dispatch (requires a kernel string)
-        \\  render_draw | draw | draw_call | draw_indexed (requires draw_count; draw_indexed requires indexData/indices)
+        \\  render_draw | draw | draw_call | draw_indexed
+        \\  draw_indirect | draw_indexed_indirect | render_pass (render_draw-compatible payload fields)
         \\  sampler_create | create_sampler
         \\  sampler_destroy | destroy_sampler
         \\  texture_write | write_texture | queue_write_texture

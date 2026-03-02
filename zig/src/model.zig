@@ -42,8 +42,12 @@ pub const CommandKind = enum(u8) {
     copy_buffer_to_texture,
     barrier,
     dispatch,
+    dispatch_indirect,
     kernel_dispatch,
     render_draw,
+    draw_indirect,
+    draw_indexed_indirect,
+    render_pass,
     sampler_create,
     sampler_destroy,
     texture_write,
@@ -203,6 +207,8 @@ pub const DispatchCommand = struct {
     z: u32,
 };
 
+pub const DispatchIndirectCommand = DispatchCommand;
+
 pub const KernelBindingResourceKind = enum(u8) {
     buffer,
     texture,
@@ -299,6 +305,10 @@ pub const RenderDrawCommand = struct {
     stencil_reference: u32 = 0,
     bind_group_dynamic_offsets: ?[]const u32 = null,
 };
+
+pub const DrawIndirectCommand = RenderDrawCommand;
+pub const DrawIndexedIndirectCommand = RenderDrawCommand;
+pub const RenderPassCommand = RenderDrawCommand;
 
 pub const SamplerCreateCommand = struct {
     handle: u64,
@@ -410,8 +420,12 @@ pub const Command = union(CommandKind) {
     copy_buffer_to_texture: CopyCommand,
     barrier: BarrierCommand,
     dispatch: DispatchCommand,
+    dispatch_indirect: DispatchIndirectCommand,
     kernel_dispatch: KernelDispatchCommand,
     render_draw: RenderDrawCommand,
+    draw_indirect: DrawIndirectCommand,
+    draw_indexed_indirect: DrawIndexedIndirectCommand,
+    render_pass: RenderPassCommand,
     sampler_create: SamplerCreateCommand,
     sampler_destroy: SamplerDestroyCommand,
     texture_write: TextureWriteCommand,
@@ -599,8 +613,12 @@ pub fn command_kind(cmd: Command) CommandKind {
         .copy_buffer_to_texture => .copy_buffer_to_texture,
         .barrier => .barrier,
         .dispatch => .dispatch,
+        .dispatch_indirect => .dispatch_indirect,
         .kernel_dispatch => .kernel_dispatch,
         .render_draw => .render_draw,
+        .draw_indirect => .draw_indirect,
+        .draw_indexed_indirect => .draw_indexed_indirect,
+        .render_pass => .render_pass,
         .sampler_create => .sampler_create,
         .sampler_destroy => .sampler_destroy,
         .texture_write => .texture_write,
@@ -624,8 +642,12 @@ pub fn command_kind_name(cmd: CommandKind) []const u8 {
         .copy_buffer_to_texture => "copy_buffer_to_texture",
         .barrier => "barrier",
         .dispatch => "dispatch",
+        .dispatch_indirect => "dispatch_indirect",
         .kernel_dispatch => "kernel_dispatch",
         .render_draw => "render_draw",
+        .draw_indirect => "draw_indirect",
+        .draw_indexed_indirect => "draw_indexed_indirect",
+        .render_pass => "render_pass",
         .sampler_create => "sampler_create",
         .sampler_destroy => "sampler_destroy",
         .texture_write => "texture_write",

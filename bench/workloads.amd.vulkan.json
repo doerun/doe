@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workloads": [
     {
-      "id": "par_buffer_upload_1kb",
+      "id": "upload_write_buffer_1kb",
       "name": "buffer-upload 1KB",
       "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB.",
       "domain": "upload",
@@ -23,14 +23,14 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0
     },
     {
-      "id": "par_buffer_upload_64kb",
+      "id": "upload_write_buffer_64kb",
       "name": "buffer-upload 64KB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 64KB.",
       "domain": "upload",
@@ -51,14 +51,14 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0
     },
     {
-      "id": "par_buffer_upload_1mb",
+      "id": "upload_write_buffer_1mb",
       "name": "buffer-upload 1MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 1MB.",
       "domain": "upload",
@@ -79,14 +79,14 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0
     },
     {
-      "id": "par_buffer_upload_4mb",
+      "id": "upload_write_buffer_4mb",
       "name": "buffer-upload 4MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 4MB.",
       "domain": "upload",
@@ -107,14 +107,14 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0
     },
     {
-      "id": "par_buffer_upload_16mb",
+      "id": "upload_write_buffer_16mb",
       "name": "buffer-upload 16MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 16MB.",
       "domain": "upload",
@@ -135,18 +135,18 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0
     },
     {
-      "id": "par_workgroup_atomic_1024",
+      "id": "compute_workgroup_atomic_1024",
       "name": "workgroup-atomic 1024",
       "description": "Workgroup-atomic compute kernel with 1024 workgroups, 100 dispatches per step, matching Dawn WorkgroupAtomicPerf exactly.",
       "domain": "compute",
-      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupWithAtomics (256 threads, 1 atomicStore + 256 atomicLoads per invocation). Both sides dispatch 100 times per step; Dawn divides internally by iterationsPerStep=100, Fawn divides via leftTimingDivisor.",
+      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupWithAtomics (256 threads, 1 atomicStore + 256 atomicLoads per invocation). Both sides dispatch 100 times per step with direct timing (no side-specific divisor scaling).",
       "commandsPath": "examples/workgroup_atomic_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -159,16 +159,17 @@
       ],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Dawn divides by iterationsPerStep=100 internally; Fawn executes repeat=100 and divides via leftTimingDivisor=100 to match.",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "rightTimingDivisor": 1.0
     },
     {
-      "id": "par_workgroup_non_atomic_1024",
+      "id": "compute_workgroup_non_atomic_1024",
       "name": "workgroup-non-atomic 1024",
       "description": "Non-atomic workgroup compute kernel with 1024 workgroups, 100 dispatches per step, matching Dawn WorkgroupAtomicPerf non-atomic variant.",
       "domain": "compute",
-      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupNoAtomics (256 threads, 1 store + 256 loads per invocation). Both sides dispatch 100 times per step; Dawn divides internally, Fawn divides via leftTimingDivisor.",
+      "comparabilityNotes": "Kernel matches Dawn GenWorkgroupNoAtomics (256 threads, 1 store + 256 loads per invocation). Both sides dispatch 100 times per step with direct timing (no side-specific divisor scaling).",
       "commandsPath": "examples/workgroup_non_atomic_commands.json",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
@@ -181,9 +182,10 @@
       ],
       "comparable": true,
       "default": true,
-      "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Dawn divides by iterationsPerStep=100 internally; Fawn executes repeat=100 and divides via leftTimingDivisor=100 to match.",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic"
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
+      "rightTimingDivisor": 1.0
     }
   ]
 }

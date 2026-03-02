@@ -81,15 +81,41 @@ Common comparability fields:
 - `allowLeftNoExecution`
 - `extraArgs`
 
+Strict Dawn-vs-Doe operation comparability rule:
+- when `comparability=strict` and `requireTimingClass=operation`, comparable workloads must use direct timing:
+  `leftTimingDivisor=1.0` and `rightTimingDivisor=1.0`.
+
 Parser-level field constraints:
 - `id` must be non-empty and unique per file.
 - `left/rightCommandRepeat >= 1`
 - `left/rightIgnoreFirstOps >= 0`
 - `left/rightUploadSubmitEvery >= 1`
 - `left/rightTimingDivisor > 0`
+- strict Dawn-vs-Doe operation runs require `left/rightTimingDivisor == 1.0` for `comparable=true` workloads
 - `left/rightUploadBufferUsage` must be `copy-dst-copy-src` or `copy-dst`
 - `comparabilityCandidate.enabled=true` requires `comparabilityCandidate.tier`
 - `comparabilityCandidate.enabled=true` cannot be combined with `comparable=true`
+
+### 3.1 Workload ID naming contract (required)
+
+Workload IDs are immutable contract keys. They must be stable across benchmark-class promotion and methodology changes.
+
+Required pattern:
+- `domain_subject_shape_variant` (snake case tokens)
+
+Required rules:
+- include domain first (for example: `upload`, `compute`, `render`, `pipeline`, `resource`, `surface`, `capability`, `lifecycle`, `texture`)
+- encode operation semantics and stable shape descriptors (`1kb`, `200k`, `mip8`, matrix geometry, etc.)
+- keep IDs status-free and lifecycle-free; do not encode maturity tier or rollout state
+- do not rename an existing ID when it moves between directional/comparable/claim lanes; change metadata fields instead
+- avoid overloaded shorthand prefixes (`par_`, `exp_`, `ctr_`) and status tokens (`contract`, `proxy`, `macro`) in new IDs
+
+Classification and methodology belong in fields, not ID text:
+- `comparable`
+- `benchmarkClass`
+- `comparabilityCandidate`
+- `comparabilityNotes`
+- timing normalization fields
 
 ## 4) Apples-to-apples strict rules for comparable workloads
 
@@ -126,7 +152,10 @@ Use this to prevent false claims from rows where one side executes more internal
 
 ## 6) Timing selection and normalization policy
 
-Strict default timing class for per-op comparisons is `operation`.
+For strict Dawn-vs-Doe claim lanes, required timing class is `operation` by default.
+
+For same-runtime parity lanes (Doe-vs-Doe or Dawn-vs-Dawn), operation timing remains
+allowed under their lane contracts.
 
 Current selection priorities in compare harness:
 1. Explicit `traceMeta.timingMs`/`timingSource` when present and valid.
@@ -135,6 +164,17 @@ Current selection priorities in compare harness:
 4. GPU timestamp total (`doe-execution-gpu-timestamp-ns`) as fallback.
 5. Dispatch window (`doe-execution-dispatch-window-ns`) when available.
 6. Trace window or wall-time fallback only when operation sources are unavailable.
+
+Benchmark intent split (required reporting separation):
+
+1. `apples-to-apples`:
+   - workload contract marked comparable
+   - strict comparability on
+   - same timing basis across sides (default: `operation`)
+2. `doe-advantage`:
+   - directional/optimized workload contract
+   - still measured with the same timing basis rule as apples-to-apples
+   - cannot be reported as apples-to-apples comparable evidence
 
 Upload-specific rule:
 - ignore-first adjustment must stay in row-total scope.
@@ -180,8 +220,12 @@ Supported top-level command kinds:
 - `copy_buffer_to_texture`
 - `barrier`
 - `dispatch`
+- `dispatch_indirect`
 - `kernel_dispatch`
 - `render_draw`
+- `draw_indirect`
+- `draw_indexed_indirect`
+- `render_pass`
 - `sampler_create`
 - `sampler_destroy`
 - `texture_write`

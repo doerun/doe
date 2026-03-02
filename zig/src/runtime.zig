@@ -422,8 +422,12 @@ fn supportsCommand(scope: model.Scope, command_kind: model.CommandKind) bool {
     return switch (scope) {
         .alignment => command_kind == .upload or command_kind == .copy_buffer_to_texture,
         .layout => command_kind == .dispatch or
+            command_kind == .dispatch_indirect or
             command_kind == .kernel_dispatch or
             command_kind == .render_draw or
+            command_kind == .draw_indirect or
+            command_kind == .draw_indexed_indirect or
+            command_kind == .render_pass or
             command_kind == .copy_buffer_to_texture or
             command_kind == .sampler_create or
             command_kind == .sampler_destroy or
@@ -438,7 +442,15 @@ fn supportsCommand(scope: model.Scope, command_kind: model.CommandKind) bool {
             command_kind == .surface_unconfigure or
             command_kind == .surface_release or
             command_kind == .async_diagnostics,
-        .barrier => command_kind == .barrier or command_kind == .dispatch or command_kind == .kernel_dispatch or command_kind == .render_draw or command_kind == .surface_present,
+        .barrier => command_kind == .barrier or
+            command_kind == .dispatch or
+            command_kind == .dispatch_indirect or
+            command_kind == .kernel_dispatch or
+            command_kind == .render_draw or
+            command_kind == .draw_indirect or
+            command_kind == .draw_indexed_indirect or
+            command_kind == .render_pass or
+            command_kind == .surface_present,
         .driver_toggle => true,
         .memory => command_kind == .copy_buffer_to_texture or command_kind == .upload or command_kind == .texture_write or command_kind == .texture_query or command_kind == .texture_destroy,
     };
@@ -473,6 +485,10 @@ fn scoreRule(quirk: model.Quirk, command_kind: model.CommandKind, profile: model
             if (quirk.scope == .layout) score += 4;
             if (quirk.scope == .barrier) score += 6;
         },
+        .dispatch_indirect => {
+            if (quirk.scope == .layout) score += 4;
+            if (quirk.scope == .barrier) score += 6;
+        },
         .barrier => {
             if (quirk.scope == .barrier) score += 8;
         },
@@ -480,7 +496,7 @@ fn scoreRule(quirk: model.Quirk, command_kind: model.CommandKind, profile: model
             if (quirk.scope == .layout) score += 7;
             if (quirk.scope == .barrier) score += 2;
         },
-        .render_draw => {
+        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => {
             if (quirk.scope == .layout) score += 6;
             if (quirk.scope == .barrier) score += 3;
         },
@@ -568,8 +584,12 @@ fn bucketForKind(context: DispatchContext, kind: model.CommandKind) CommandDispa
         .copy_buffer_to_texture => context.copy_buffer_to_texture,
         .barrier => context.barrier,
         .dispatch => context.dispatch,
+        .dispatch_indirect => context.dispatch,
         .kernel_dispatch => context.kernel_dispatch,
         .render_draw => context.render_draw,
+        .draw_indirect => context.render_draw,
+        .draw_indexed_indirect => context.render_draw,
+        .render_pass => context.render_draw,
         .sampler_create => context.sampler_create,
         .sampler_destroy => context.sampler_destroy,
         .texture_write => context.texture_write,
@@ -613,6 +633,13 @@ fn applyAction(quirk: model.Quirk, command: model.Command) model.Command {
                         .z = dispatch_command.z,
                     },
                 },
+                .dispatch_indirect => |dispatch_command| .{
+                    .dispatch_indirect = .{
+                        .x = dispatch_command.x,
+                        .y = dispatch_command.y,
+                        .z = dispatch_command.z,
+                    },
+                },
                 .kernel_dispatch => |kernel_command| .{
                     .kernel_dispatch = .{
                         .kernel = kernel_command.kernel,
@@ -628,6 +655,15 @@ fn applyAction(quirk: model.Quirk, command: model.Command) model.Command {
                 },
                 .render_draw => |render_command| .{
                     .render_draw = render_command,
+                },
+                .draw_indirect => |render_command| .{
+                    .draw_indirect = render_command,
+                },
+                .draw_indexed_indirect => |render_command| .{
+                    .draw_indexed_indirect = render_command,
+                },
+                .render_pass => |render_command| .{
+                    .render_pass = render_command,
                 },
                 else => command,
             };

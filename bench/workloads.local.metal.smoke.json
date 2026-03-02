@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workloads": [
     {
-      "id": "par_buffer_upload_64kb",
+      "id": "upload_write_buffer_64kb",
       "name": "upload-64kb-smoke",
       "description": "Local Metal upload smoke",
       "commandsPath": "examples/upload_64kb_commands.json",
@@ -16,13 +16,13 @@
       "default": true,
       "leftCommandRepeat": 16,
       "leftIgnoreFirstOps": 1,
-      "leftTimingDivisor": 16,
+      "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "extraArgs": "--queue-sync-mode deferred --gpu-timestamp-mode off",
       "dawnFilter": "@autodiscover",
       "comparabilityNotes": "Local Metal smoke upload contract",
-      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightUploadBufferUsage": "copy-dst",
       "rightCommandRepeat": 16,
       "rightIgnoreFirstOps": 1,
@@ -30,7 +30,7 @@
       "rightUploadSubmitEvery": 1
     },
     {
-      "id": "par_workgroup_atomic_1024",
+      "id": "compute_workgroup_atomic_1024",
       "name": "workgroup-atomic-smoke",
       "description": "Local Metal compute smoke",
       "commandsPath": "examples/workgroup_atomic_commands.json",
@@ -44,16 +44,17 @@
       "default": true,
       "leftCommandRepeat": 8,
       "leftIgnoreFirstOps": 0,
-      "leftTimingDivisor": 8,
+      "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "extraArgs": "--queue-sync-mode per-command --gpu-timestamp-mode off",
       "dawnFilter": "@autodiscover",
       "comparabilityNotes": "Local Metal compute smoke contract",
-      "timingNormalizationNote": "Per-dispatch normalization"
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "rightTimingDivisor": 1.0
     },
     {
-      "id": "exp_render_draw_throughput_proxy",
+      "id": "render_draw_throughput_baseline",
       "name": "render-draw-smoke",
       "description": "Local Metal render smoke",
       "commandsPath": "examples/draw_call_proxy_commands.json",

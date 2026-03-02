@@ -13,7 +13,7 @@
     "warmup": 1,
     "out": "bench/out/dawn-vs-doe.amd.vulkan.macro.directional.json",
     "workspace": "bench/out/runtime-comparisons.amd.vulkan.macro.directional",
-    "workloadFilter": "exp_draw_indexed_render_macro_200k",
+    "workloadFilter": "render_draw_indexed_200k",
     "includeExtendedWorkloads": true,
     "includeNoncomparableWorkloads": true,
     "emitShell": false

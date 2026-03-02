@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workloads": [
     {
-      "id": "ctr_resource_table_immediates_macro_500",
+      "id": "resource_table_immediates_500",
       "name": "p1 resource-table/immediates macro (500)",
       "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
       "domain": "p1-resource-table-macro",
@@ -16,15 +16,16 @@
       "comparable": true,
       "allowLeftNoExecution": false,
       "default": true,
-      "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Apples-to-apples macro ResourceTable contract: command-repeat=500 with per-iteration normalization and explicit feature-gating parity support.",
+      "leftTimingDivisor": 1.0,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
       "applesToApplesVetted": false,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "rightTimingDivisor": 1.0
     },
     {
-      "id": "exp_render_draw_throughput_proxy",
+      "id": "render_draw_throughput_baseline",
       "name": "render-draw-smoke",
       "description": "Local Vulkan render smoke",
       "commandsPath": "examples/draw_call_proxy_commands.json",

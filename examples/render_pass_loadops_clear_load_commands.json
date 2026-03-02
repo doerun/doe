@@ -1,0 +1,18 @@
+[
+  {
+    "kind": "render_pass",
+    "drawCount": 240,
+    "vertexCount": 3,
+    "instanceCount": 1,
+    "pipelineMode": "static",
+    "bindGroupMode": "no-change",
+    "encodeMode": "render-pass",
+    "targetWidth": 64,
+    "targetHeight": 64,
+    "targetFormat": "rgba8unorm",
+    "blendR": 0,
+    "blendG": 0,
+    "blendB": 0,
+    "blendA": 0
+  }
+]

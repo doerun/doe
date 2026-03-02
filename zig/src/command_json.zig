@@ -305,7 +305,7 @@ fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
             if (kernel_command.entry_point) |entry_point| allocator.free(entry_point);
             if (kernel_command.bindings) |bindings| allocator.free(bindings);
         },
-        .render_draw => |render_command| {
+        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |render_command| {
             if (render_command.index_data) |index_data| {
                 switch (index_data) {
                     .uint16 => |values| allocator.free(values),
@@ -335,8 +335,12 @@ const NormalizedKind = enum {
     copy,
     barrier,
     dispatch,
+    dispatch_indirect,
     kernel_dispatch,
     render_draw,
+    draw_indirect,
+    draw_indexed_indirect,
+    render_pass,
     sampler_create,
     sampler_destroy,
     texture_write,
@@ -384,9 +388,21 @@ fn parseKind(raw: RawCommand) !NormalizedKind {
     {
         return .dispatch;
     }
+    if (commandKindEquals(kind, "dispatch_indirect")) {
+        return .dispatch_indirect;
+    }
 
     if (commandKindEquals(kind, "kernel_dispatch")) {
         return .kernel_dispatch;
+    }
+    if (commandKindEquals(kind, "draw_indirect")) {
+        return .draw_indirect;
+    }
+    if (commandKindEquals(kind, "draw_indexed_indirect")) {
+        return .draw_indexed_indirect;
+    }
+    if (commandKindEquals(kind, "render_pass")) {
+        return .render_pass;
     }
     if (commandKindEquals(kind, "render_draw") or
         commandKindEquals(kind, "draw") or
@@ -637,7 +653,7 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         return .{ .barrier = .{ .dependency_count = dependency_count } };
     }
 
-    if (kind == .kernel_dispatch or kind == .dispatch) {
+    if (kind == .kernel_dispatch or kind == .dispatch or kind == .dispatch_indirect) {
         const dispatch = try parseDispatchDimensions(raw);
         if (kind == .kernel_dispatch) {
             const repeat_count = raw.repeat orelse raw.dispatch_count orelse raw.dispatchCount orelse 1;
@@ -660,10 +676,13 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
                 .bindings = kernel_bindings,
             } };
         }
+        if (kind == .dispatch_indirect) {
+            return .{ .dispatch_indirect = dispatch };
+        }
         return .{ .dispatch = dispatch };
     }
 
-    if (kind == .render_draw) {
+    if (kind == .render_draw or kind == .draw_indirect or kind == .draw_indexed_indirect or kind == .render_pass) {
         const draw_count = raw.draw_count orelse raw.drawCount orelse return ParseError.InvalidCommandPayload;
         const vertex_count = raw.vertex_count orelse raw.vertexCount orelse 3;
         const instance_count = raw.instance_count orelse raw.instanceCount orelse 1;
@@ -672,7 +691,7 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         const parsed_index_count = raw.index_count orelse raw.indexCount;
         const is_draw_indexed = blk: {
             const command_name = getCommandName(raw) orelse break :blk false;
-            break :blk commandKindEquals(command_name, "draw_indexed");
+            break :blk commandKindEquals(command_name, "draw_indexed") or commandKindEquals(command_name, "draw_indexed_indirect");
         };
         const raw_index_data = raw.index_data orelse raw.indexData orelse raw.indices;
         const indexed_draw = is_draw_indexed or parsed_index_count != null or raw_index_data != null;
@@ -738,7 +757,7 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
             if (index_end > index_data_len_u32) return ParseError.InvalidCommandPayload;
         }
 
-        return .{ .render_draw = .{
+        const render_command: model.RenderDrawCommand = .{
             .draw_count = draw_count,
             .vertex_count = vertex_count,
             .instance_count = instance_count,
@@ -768,7 +787,14 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
             .blend_constant = .{ blend_r, blend_g, blend_b, blend_a },
             .stencil_reference = stencil_reference,
             .bind_group_dynamic_offsets = dynamic_offsets,
-        } };
+        };
+        return switch (kind) {
+            .render_draw => .{ .render_draw = render_command },
+            .draw_indirect => .{ .draw_indirect = render_command },
+            .draw_indexed_indirect => .{ .draw_indexed_indirect = render_command },
+            .render_pass => .{ .render_pass = render_command },
+            else => unreachable,
+        };
     }
 
     if (kind == .sampler_create) return .{ .sampler_create = parse_extra.parseSamplerCreateCommand(raw) catch return ParseError.InvalidCommandPayload };

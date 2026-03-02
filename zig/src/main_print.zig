@@ -65,10 +65,13 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{copy.temporary_buffer_alignment});
             try stdout.writeAll("}\n");
         },
-        .dispatch => |dispatch_cmd| {
+        .dispatch, .dispatch_indirect => |dispatch_cmd| {
+            const dispatch_kind = model.command_kind_name(model.command_kind(command));
             try stdout.writeAll("{\"seq\":");
             try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"dispatch\",\"x\":");
+            try stdout.writeAll(",\"kind\":\"");
+            try stdout.writeAll(dispatch_kind);
+            try stdout.writeAll("\",\"x\":");
             try stdout.print("{}", .{dispatch_cmd.x});
             try stdout.writeAll(",\"y\":");
             try stdout.print("{}", .{dispatch_cmd.y});
@@ -90,10 +93,13 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{kernel_cmd.repeat});
             try stdout.writeAll("}\n");
         },
-        .render_draw => |render_cmd| {
+        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |render_cmd| {
+            const render_kind = model.command_kind_name(model.command_kind(command));
             try stdout.writeAll("{\"seq\":");
             try stdout.print("{}", .{seq});
-            try stdout.writeAll(",\"kind\":\"render_draw\",\"drawCount\":");
+            try stdout.writeAll(",\"kind\":\"");
+            try stdout.writeAll(render_kind);
+            try stdout.writeAll("\",\"drawCount\":");
             try stdout.print("{}", .{render_cmd.draw_count});
             try stdout.writeAll(",\"vertexCount\":");
             try stdout.print("{}", .{render_cmd.vertex_count});
@@ -331,13 +337,16 @@ pub fn printCommandSummary(stdout: anytype, target: model.Command, execute_resul
         .kernel_dispatch => |kernel_cmd| {
             try stdout.print("  -> kernel={s} dispatch {}x{}x{} repeat={}\\n", .{ kernel_cmd.kernel, kernel_cmd.x, kernel_cmd.y, kernel_cmd.z, kernel_cmd.repeat });
         },
-        .dispatch => |dispatch_cmd| {
-            try stdout.print("  -> dispatch {}x{}x{}\\n", .{ dispatch_cmd.x, dispatch_cmd.y, dispatch_cmd.z });
+        .dispatch, .dispatch_indirect => |dispatch_cmd| {
+            const dispatch_kind = model.command_kind_name(model.command_kind(target));
+            try stdout.print("  -> {s} {}x{}x{}\\n", .{ dispatch_kind, dispatch_cmd.x, dispatch_cmd.y, dispatch_cmd.z });
         },
-        .render_draw => |render_cmd| {
+        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |render_cmd| {
+            const render_kind = model.command_kind_name(model.command_kind(target));
             try stdout.print(
-                "  -> render_draw draws={} vertices={} instances={} firstVertex={} firstInstance={} indexCount={any} firstIndex={} baseVertex={} target={}x{} handle={} pipelineMode={s} bindGroupMode={s} encodeMode={s} viewport=({d},{d},{any},{any},{d},{d}) scissor=({},{},{any},{any}) stencilRef={} dynamicOffsets={any}\\n",
+                "  -> {s} draws={} vertices={} instances={} firstVertex={} firstInstance={} indexCount={any} firstIndex={} baseVertex={} target={}x{} handle={} pipelineMode={s} bindGroupMode={s} encodeMode={s} viewport=({d},{d},{any},{any},{d},{d}) scissor=({},{},{any},{any}) stencilRef={} dynamicOffsets={any}\\n",
                 .{
+                    render_kind,
                     render_cmd.draw_count,
                     render_cmd.vertex_count,
                     render_cmd.instance_count,
