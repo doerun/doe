@@ -6,7 +6,7 @@ Date: 2026-03-01
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
-Current `fawn/zig/src` size is 13,485 LOC (`wc -l zig/src/*.zig`, 2026-02-23) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
+Current `zig/src` size is 15,091 LOC (`wc -l zig/src/*.zig`, 2026-03-02) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
 AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) over the full extended workload matrix.
 - Backend naming cutover is complete for runtime-visible surfaces: Doe is now the only backend identity (`doe-zig-runtime`, `libdoe_webgpu.so`, Chromium `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path`).
 - Doe identity cleanup for runtime-visible diagnostics is complete:
@@ -31,7 +31,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
 - claim-lane governance is now hash-locked and machine-checked via `config/claim-cycle.active.json` + `bench/cycle_gate.py`, with release pipeline default wiring when claim gate is enabled.
 - app-lane Vulkan claim/cycle proof now has a dedicated strict local contract and fresh green evidence:
-  - contract/config/workload: `config/claim-cycle.vulkan-doe-app-local.json`, `bench/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json`, `bench/workloads.amd.vulkan.app.claim.json`
+  - contract/config/workload: `config/claim-cycle.amd-vulkan-app-local.json`, `bench/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json`, `bench/workloads.amd.vulkan.app.claim.json`
   - comparable+claimable run: `bench/out/20260226T164929Z/vulkan.vulkan_doe_app.local.claim_cycle.json`
   - cycle gate pass: `bench/out/20260226T164929Z/cycle_gate_report.json`
   - additional strict checks pass on the same artifact: backend selection (`vulkan_doe_app`), shader artifact, Vulkan sync, Vulkan timing
@@ -56,18 +56,18 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - Chromium lane release/build defaults now force non-CfT branding args at `gn gen` time (`is_chrome_for_testing=false`, `is_chrome_for_testing_branded=false`, `is_chrome_branded=false`) so stale `args.gn` does not reintroduce Chrome-for-Testing UI branding.
 - Chromium lane browser layered benchmark harness now supports per-mode browser executables (`--dawn-chrome`, `--doe-chrome`) so one run can compare Doe runtime path in `Fawn.app` against a separate Dawn/Chrome binary without mixing launch binaries.
 - experimental npm bridge package now provides practical headless integration paths under `nursery/webgpu-core`:
-  - Node process-bridge runtime wrapper (`src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
+  - Node process-bridge runtime wrapper (`nursery/webgpu-core/src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`) through both Node and Bun entrypoints.
   - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu-core/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu-core/COMPAT_SCOPE.md`.
-  - Bun direct-FFI path remains available as prototype (`src/bun-ffi.js`) for low-level C-ABI integration experiments.
+  - Bun direct-FFI path remains available as prototype (`nursery/webgpu-core/src/bun-ffi.js`) for low-level C-ABI integration experiments.
 - market-readiness evidence toolchain is now implemented under `bench/`:
-  - `build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
-  - `measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
-  - `run_cts_subset.py` + `cts_subset.webgpu-node.json` for repeatable CTS subset trend artifacts.
-  - `build_model_capacity_matrix.py` for hardware×model ceiling disclosure artifacts (status + capacity summaries).
-  - `run_market_readiness_bundle.py` to orchestrate the full evidence bundle and emit a linked manifest.
+  - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
+  - `bench/measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
+  - `bench/run_cts_subset.py` + `bench/cts_subset.webgpu-node.json` for repeatable CTS subset trend artifacts.
+  - `bench/build_model_capacity_matrix.py` for hardware×model ceiling disclosure artifacts (status + capacity summaries).
+  - `bench/run_market_readiness_bundle.py` to orchestrate the full evidence bundle and emit a linked manifest.
 - Fawn fork maintenance policy is now documented for buyer/security review:
   `docs/fawn-fork-maintenance-policy.md`.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
@@ -84,15 +84,15 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 
 ### Implemented
 
-1. v0 runtime prototype in `fawn/zig/src`:
+1. v0 runtime prototype in `zig/src`:
 - typed model and JSON ingestion
 - deterministic matcher + selector + action application
 - runnable `doe-zig-runtime` entry path
 - dispatch/trace/replay now work; execution is native for implemented command classes with explicit unsupported taxonomy on unimplemented paths
-2. Lean contract sources in `fawn/lean/Fawn` (`Model.lean`, `Dispatch.lean`).
-- runtime command stream parser in `fawn/zig/src/command_json.zig`
-- lean runtime selection module in `fawn/lean/Fawn/Runtime.lean`.
-3. Lean bridge gate evaluator in `fawn/lean/Fawn/Bridge.lean`.
+2. Lean contract sources in `lean/Fawn` (`Model.lean`, `Dispatch.lean`).
+- runtime command stream parser in `zig/src/command_json.zig`
+- lean runtime selection module in `lean/Fawn/Runtime.lean`.
+3. Lean bridge gate evaluator in `lean/Fawn/Bridge.lean`.
 4. Zig runtime dispatch now includes explicit Lean obligation metadata (`requiresLean`, `isBlocking`, `verification_mode`, `proof_level`) in trace output.
 5. Zig parser/dispatch runtime now includes:
 - command aliases for replay input and kernel name alias handling
@@ -104,15 +104,15 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 6. Lean runtime dispatch now includes driver-range matching, proof-priority tie-break support, and `Runtime.DispatchDecision` to mirror Zig trace metadata.
 7. Trace contract hardened with deterministic row hash-chain fields (`traceVersion`, `module`, `opCode`, `hash`, `previousHash`) and a companion parity comparator.
 8. Run-level Zig trace summary emission implemented via `--trace-meta`, including deterministic session-level `seqMax`, row counts, and terminal hash-chain anchors for fast replay validation.
-9. Release replay hard-gate now exists as `fawn/bench/trace_gate.py`, validating `trace-meta` + `trace-jsonl` from comparison report samples.
+9. Release replay hard-gate now exists as `bench/trace_gate.py`, validating `trace-meta` + `trace-jsonl` from comparison report samples.
 
 ### Missing for full product confidence (runtime + validation quality)
 
 1. Baseline dataset generation for Dawn/wgpu comparisons.
 2. Comprehensive quirk coverage from upstream mining for full production confidence.
-3. Real backend execution against GPU devices (current path includes queue-submission for upload/copy/barrier and dispatch-family compute lowering in `src/webgpu_ffi.zig`).
+3. Real backend execution against GPU devices (current path includes queue-submission for upload/copy/barrier and dispatch-family compute lowering in `zig/src/webgpu_ffi.zig`).
 4. Multi-host profile diversity for claim substantiation remains an infrastructure target; policy and gate wiring now exist, but broader runner coverage still needs provisioning.
-- `fawn/zig/src` now has queue-submission execution for all implemented command classes in `src/webgpu_ffi.zig`.
+- `zig/src` now has queue-submission execution for all implemented command classes in `zig/src/webgpu_ffi.zig`.
 - Dispatch/kernel routes now use native compute pipeline lowering with fallback WGSL for missing kernel payloads.
 - Planned full native execution path is now represented by implemented multi-module backend surfaces; remaining work is coverage hardening, reliability tuning, and benchmark substantiation.
 
@@ -124,13 +124,13 @@ Acceptance required before production claims:
 - deterministic execution timing captured from real backend execution spans
 
 Planned implementation slices:
-1. `src/webgpu_ffi.zig` loader contract and typed handle wrappers.
-2. `src/webgpu_runtime.zig` (new) for instance, adapter, device, and queue lifecycle.
-3. `src/command_ir.zig` (new) for canonical IR and replayable command serialization.
-4. `src/resource_pool.zig` (new) for buffers, textures, pipelines, and staging aliases.
-5. `src/command_encoder.zig` (new) for upload/copy/barrier/dispatch translation.
-6. `src/execution.zig` native scheduler integration and status taxonomy.
-7. `src/main.zig` release execution defaults and replay-linked hard failure mode.
+1. `zig/src/webgpu_ffi.zig` loader contract and typed handle wrappers.
+2. `zig/src/webgpu_runtime.zig` (new) for instance, adapter, device, and queue lifecycle.
+3. `zig/src/command_ir.zig` (new) for canonical IR and replayable command serialization.
+4. `zig/src/resource_pool.zig` (new) for buffers, textures, pipelines, and staging aliases.
+5. `zig/src/command_encoder.zig` (new) for upload/copy/barrier/dispatch translation.
+6. `zig/src/execution.zig` native scheduler integration and status taxonomy.
+7. `zig/src/main.zig` release execution defaults and replay-linked hard failure mode.
 8. parity harness updates for execution results and benchmark artifacts.
 
 Estimated remaining effort is tracked by explicit capability/gate gaps below instead of LOC placeholders.
@@ -140,33 +140,33 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 ### Implemented
 
 1. Canonical docs (`thesis`, `architecture`, `process`, `upgrade-policy`).
-2. Config surface in `fawn/config/`.
+2. Config surface in `config/`.
 3. Module scaffolds in:
-- `fawn/agent/`
-- `fawn/lean/`
-- `fawn/zig/`
-- `fawn/bench/`
-- `fawn/trace/`
-4. End-to-end worked example in `fawn/examples/`.
+- `agent/`
+- `lean/`
+- `zig/`
+- `bench/`
+- `trace/`
+4. End-to-end worked example in `examples/`.
 5. Baseline benchmark policy and run-metadata contract.
 6. Self-contained scaffold scripts:
-- `fawn/bench/run_bench.py`
-- `fawn/bench/check_correctness.py`
-- `fawn/trace/replay.py`
-7. Added Dawn/Doe benchmark orchestration scaffolding via `fawn/bench/compare_dawn_vs_doe.py` and `fawn/bench/workloads.json` for repeatable shared-workload runtime comparisons.
+- `bench/run_bench.py`
+- `bench/check_correctness.py`
+- `trace/replay.py`
+7. Added Dawn/Doe benchmark orchestration scaffolding via `bench/compare_dawn_vs_doe.py` and `bench/workloads.json` for repeatable shared-workload runtime comparisons.
 8. Added Zig replay comparison mode in `zig/src/main.zig` (`--replay`) that now enforces `seq`, `command`, optional `kernel`, module/op-code, and hash-chain alignment.
-9. Added hard release gate command path in docs/process via `fawn/bench/trace_gate.py` for replay artifact validation.
+9. Added hard release gate command path in docs/process via `bench/trace_gate.py` for replay artifact validation.
 10. Release gating is explicit in process/docs and enforced in `.github/workflows/release-gates.yml`.
-11. Strict Dawn-vs-Doe upload comparability preflight is now enforced in `fawn/bench/compare_dawn_vs_doe.py`:
+11. Strict Dawn-vs-Doe upload comparability preflight is now enforced in `bench/compare_dawn_vs_doe.py`:
 - fail fast if executed `doe-zig-runtime` does not expose upload knobs (`--upload-buffer-usage`, `--upload-submit-every`)
 - fail fast if upload knob validation probes are not recognized
 - fail fast if runtime binary appears older than key upload/runtime Zig sources (`zig/src/main.zig`, `zig/src/execution.zig`, `zig/src/wgpu_commands.zig`, `zig/src/webgpu_ffi.zig`)
-12. AMD Vulkan upload workloads in `fawn/bench/workloads.amd.vulkan.json` now use explicit size-tuned `leftUploadSubmitEvery` values (instead of a single shared cadence) to keep methodology explicit while reducing upload backpressure artifacts.
+12. AMD Vulkan upload workloads in `bench/workloads.amd.vulkan.json` now use explicit size-tuned `leftUploadSubmitEvery` values (instead of a single shared cadence) to keep methodology explicit while reducing upload backpressure artifacts.
 13. Comparison delta sign convention is now left-runtime perspective with right baseline (`((rightMs-leftMs)/rightMs)*100`), so positive means left faster and negative means left slower (`compare_dawn_vs_doe.py` and `compare_runtimes.py`, report `deltaPercentConvention`).
 14. Comparison report schema is now `schemaVersion: 4` with percentile summaries centered on p10/p50/p95/p99 (`p10Ms`, `p10Percent`, and overall `p10Approx`/`p50Approx`/`p95Approx`/`p99Approx`).
-15. Post-benchmark visualization pipeline step is now available via `fawn/bench/visualize_dawn_vs_doe.py`, producing a self-contained HTML report and optional analysis JSON from Dawn-vs-Doe comparison artifacts.
+15. Post-benchmark visualization pipeline step is now available via `bench/visualize_dawn_vs_doe.py`, producing a self-contained HTML report and optional analysis JSON from Dawn-vs-Doe comparison artifacts.
 16. Visualization/distribution diagnostics now include ECDF overlays, workload×percentile heatmap, KS statistic with asymptotic p-value, Wasserstein distance, probability of superiority (`P(left<right)`), and bootstrap CI summaries for delta `p50`/`p95`/`p99`.
-17. Claimability reliability mode is now implemented in `fawn/bench/compare_dawn_vs_doe.py`:
+17. Claimability reliability mode is now implemented in `bench/compare_dawn_vs_doe.py`:
 - `--claimability local|release` enforces sample-floor and positive-tail checks
 - report now includes workload-level `claimability`, top-level `claimabilityPolicy`, `claimabilitySummary`, and `claimStatus`
 - claimability failures exit non-zero (`rc=3`) so CI/pipelines can gate on claimable speed
@@ -335,7 +335,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
   - capability inventory tracking completion: `100.0% (22/22)` (capability-contract subset at the time of that report)
   - Dawn header API-surface reference coverage: `100.00% (199/199)`
   - capability-to-benchmark mapping coverage: `100.00% (22/22)`
-  (`bench/out/dawn-vs-doe-feature-benchmark-coverage.md`, `bench/out/dawn_header_vs_doe_ref_scan.json`).
+  (`bench/out/dawn-vs-doe-feature-benchmark-coverage.md`).
 
 61. Comparable contract promotion + timing rigor hardening completed for next-week item set:
 - promoted from directional to comparable (`comparable=true`) where execution is adapter-backed and deterministic:
@@ -572,17 +572,17 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 - `bench/run_release_claim_windows.py` now forwards this rehearsal-artifact step per window by default.
 
 87. Bench harness orchestration sharding is complete:
-- Extracted subprocess mapping, data struct processing, standard error reading, and resource extraction into `compare_dawn_vs_doe_modules/runner.py`.
-- `compare_dawn_vs_doe.py` conforms to the 1200-line limitation policy.
+- Extracted subprocess mapping, data struct processing, standard error reading, and resource extraction into `bench/compare_dawn_vs_doe_modules/runner.py`.
+- `bench/compare_dawn_vs_doe.py` conforms to the 1200-line limitation policy.
 
 88. Broader baseline coverage automation is implemented:
-- Added `wgpu_benchmark_adapter.py` for automated wgpu runtime baseline comparability mapping.
+- Added `bench/wgpu_benchmark_adapter.py` for automated wgpu runtime baseline comparability mapping.
 
 89. Auto-calibration of baseline heuristics is active:
-- Added `auto_calibrate_workload.py` for dynamic `commandRepeat` and `uploadSubmitEvery` parameter searches to ensure consistent CV limits.
+- Added `bench/auto_calibrate_workload.py` for dynamic `commandRepeat` and `uploadSubmitEvery` parameter searches to ensure consistent CV limits.
 
 90. Data pipeline ingestion optimization:
-- Added `ingest_reports_to_sqlite.py` to ingest Doe benchmark json reports directly into sqlite data stores.
+- Added `bench/ingest_reports_to_sqlite.py` to ingest Doe benchmark json reports directly into sqlite data stores.
 
 91. Robust native GPU execution span verification:
 - Confirmed timestamp resolution precedence in `timing_selection.py` where `executionGpuTimestampTotalNs` correctly overrides fallback `executionEncodeTotalNs` for WebGPU timing sources.
@@ -903,7 +903,7 @@ Ownership:
     - result: `comparisonStatus=comparable`, `claimStatus=claimable`
 - Prior cycle failure on this run was contract-drift only (stale `contracts.compareConfig["sha256"]` in cycle contract after lane/canonical policy rename).
 - Updated cycle contract hash:
-    - file: `config/claim-cycle.vulkan-doe-app-local.json`
+    - file: `config/claim-cycle.amd-vulkan-app-local.json`
     - field: `contracts.compareConfig["sha256"]`
     - value: `2eaf549cfcad8af46a694dfa7158b24a89015c150dab7c0bd2a379a9f35e6d13`
 - Re-ran cycle gate on same report:

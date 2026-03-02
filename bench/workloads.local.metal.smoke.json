@@ -18,11 +18,16 @@
       "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 16,
       "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 16,
+      "leftUploadSubmitEvery": 1,
       "extraArgs": "--queue-sync-mode deferred --gpu-timestamp-mode off",
       "dawnFilter": "@autodiscover",
       "comparabilityNotes": "Local Metal smoke upload contract",
-      "timingNormalizationNote": "Per-op normalization with repeat/divisor"
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "rightUploadBufferUsage": "copy-dst",
+      "rightCommandRepeat": 16,
+      "rightIgnoreFirstOps": 1,
+      "rightTimingDivisor": 1.0,
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "par_workgroup_atomic_1024",

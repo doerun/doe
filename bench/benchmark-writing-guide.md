@@ -129,11 +129,12 @@ Use this to prevent false claims from rows where one side executes more internal
 Strict default timing class for per-op comparisons is `operation`.
 
 Current selection priorities in compare harness:
-1. GPU timestamp total (`doe-execution-gpu-timestamp-ns`) when valid.
+1. Explicit `traceMeta.timingMs`/`timingSource` when present and valid.
 2. Upload-domain row-total execution durations (`doe-execution-row-total-ns`) when execution evidence exists.
 3. Execution total (`doe-execution-total-ns`) when execution evidence exists.
-4. Dispatch window (`doe-execution-dispatch-window-ns`) when available.
-5. Trace window or wall-time fallback only when operation sources are unavailable.
+4. GPU timestamp total (`doe-execution-gpu-timestamp-ns`) as fallback.
+5. Dispatch window (`doe-execution-dispatch-window-ns`) when available.
+6. Trace window or wall-time fallback only when operation sources are unavailable.
 
 Upload-specific rule:
 - ignore-first adjustment must stay in row-total scope.
@@ -145,14 +146,14 @@ Important:
 
 ## 7) Delta percent convention
 
-Current report convention is ratio-style with left as baseline:
-- `((rightMs / leftMs) - 1) * 100`
+Current report convention uses right-runtime baseline:
+- `((rightMs - leftMs) / rightMs) * 100`
 - positive means left faster
 - negative means left slower
 
 Interpretation examples:
-- `+400%` means left is `5x` faster.
-- `-99%` means left is `100x` slower.
+- `+40%` means left took 40% less time than right.
+- `-25%` means left took 25% more time than right.
 
 Always read this from report metadata field `deltaPercentConvention`.
 

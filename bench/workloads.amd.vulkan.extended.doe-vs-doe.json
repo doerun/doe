@@ -16,21 +16,18 @@
       "leftCommandRepeat": 500,
       "leftIgnoreFirstOps": 1,
       "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 50,
-      "extraArgs": [
-        "--queue-sync-mode",
-        "deferred"
-      ],
+      "leftUploadSubmitEvery": 1,
+      "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence with deferred queue sync, and normalize to per-upload units. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 1,
       "rightUploadBufferUsage": "copy-dst",
-      "rightUploadSubmitEvery": 50,
-      "rightTimingDivisor": 500.0
+      "rightUploadSubmitEvery": 1,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_64kb",
@@ -47,18 +44,18 @@
       "leftCommandRepeat": 500,
       "leftIgnoreFirstOps": 0,
       "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 100,
+      "leftUploadSubmitEvery": 1,
       "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 500 uploads per Fawn sample, use explicit size-tuned submit cadence (64KB uses submitEvery=100), and normalize to per-upload units. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 0,
       "rightUploadBufferUsage": "copy-dst",
-      "rightUploadSubmitEvery": 100,
-      "rightTimingDivisor": 500.0
+      "rightUploadSubmitEvery": 1,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_1mb",
@@ -75,18 +72,18 @@
       "leftCommandRepeat": 50,
       "leftIgnoreFirstOps": 1,
       "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 2,
+      "leftUploadSubmitEvery": 1,
       "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 50 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence, and normalize to per-upload units. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "rightUploadBufferUsage": "copy-dst",
-      "rightUploadSubmitEvery": 2,
-      "rightTimingDivisor": 50.0
+      "rightUploadSubmitEvery": 1,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_4mb",
@@ -108,13 +105,13 @@
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 50 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence, and normalize to per-upload units. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "rightUploadBufferUsage": "copy-dst",
       "rightUploadSubmitEvery": 1,
-      "rightTimingDivisor": 50.0
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_16mb",
@@ -131,18 +128,18 @@
       "leftCommandRepeat": 50,
       "leftIgnoreFirstOps": 1,
       "leftUploadBufferUsage": "copy-dst",
-      "leftUploadSubmitEvery": 2,
+      "leftUploadSubmitEvery": 1,
       "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Upload microbenchmark mode: run 50 uploads per Fawn sample, ignore first upload op, use explicit size-tuned submit cadence, and normalize to per-upload units. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "rightUploadBufferUsage": "copy-dst",
-      "rightUploadSubmitEvery": 2,
-      "rightTimingDivisor": 50.0
+      "rightUploadSubmitEvery": 1,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_workgroup_atomic_1024",

@@ -39,17 +39,13 @@ Interpretation: comparability obligations passed; the run is diagnostic because 
 
 Very large positive percentages mostly come from very small Doe absolute times on some macro/dispatch-style workloads (tiny denominator effects), not from a methodology failure in this run.
 
-## What did not make sense (and why)
+## What did not make sense (historical context)
 
-The HTML report and JSON report are not using the same delta formula.
+This walkthrough captured a period where JSON/HTML delta formulas drifted.
 
-- JSON (canonical compare output) declares:
-  - `((rightMs / leftMs) - 1) * 100` (positive => Doe faster)
-- HTML generator currently computes:
-  - `((right - left) / right) * 100`
-  - see `bench/visualize_dawn_vs_doe.py:88`
-
-This formula mismatch changes magnitude and can make cross-view interpretation look inconsistent. For benchmark decisions, use the canonical JSON report first.
+- Current benchmark convention is now unified:
+  - `((rightMs - leftMs) / rightMs) * 100` (positive => left/Doe faster)
+- This walkthrough's legacy percentages were produced before that realignment.
 
 ## Merged interpretation of shortfalls (corrected)
 

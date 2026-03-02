@@ -16,7 +16,15 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
+      "leftUploadBufferUsage": "copy-dst",
+      "rightUploadBufferUsage": "copy-dst",
+      "rightCommandRepeat": 1,
+      "rightIgnoreFirstOps": 0,
+      "rightTimingDivisor": 1.0,
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftUploadSubmitEvery": 1,
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "par_buffer_upload_64kb",
@@ -33,8 +41,15 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftUploadSubmitEvery": 100,
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB"
+      "leftUploadSubmitEvery": 1,
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
+      "leftUploadBufferUsage": "copy-dst",
+      "rightUploadBufferUsage": "copy-dst",
+      "rightCommandRepeat": 1,
+      "rightIgnoreFirstOps": 0,
+      "rightTimingDivisor": 1.0,
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "par_buffer_upload_1mb",
@@ -51,8 +66,15 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "leftUploadSubmitEvery": 10,
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB"
+      "leftUploadSubmitEvery": 1,
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
+      "leftUploadBufferUsage": "copy-dst",
+      "rightUploadBufferUsage": "copy-dst",
+      "rightCommandRepeat": 1,
+      "rightIgnoreFirstOps": 0,
+      "rightTimingDivisor": 1.0,
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "par_buffer_upload_4mb",
@@ -69,7 +91,15 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB"
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
+      "leftUploadBufferUsage": "copy-dst",
+      "rightUploadBufferUsage": "copy-dst",
+      "rightCommandRepeat": 1,
+      "rightIgnoreFirstOps": 0,
+      "rightTimingDivisor": 1.0,
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftUploadSubmitEvery": 1,
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "par_buffer_upload_16mb",
@@ -86,7 +116,15 @@
       "extraArgs": [],
       "comparable": true,
       "default": true,
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB"
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
+      "leftUploadBufferUsage": "copy-dst",
+      "rightUploadBufferUsage": "copy-dst",
+      "rightCommandRepeat": 1,
+      "rightIgnoreFirstOps": 0,
+      "rightTimingDivisor": 1.0,
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "leftUploadSubmitEvery": 1,
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "par_workgroup_atomic_1024",

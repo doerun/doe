@@ -20,15 +20,14 @@
       "rightUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "rightUploadSubmitEvery": 1,
-      "extraArgs": [
-        "--queue-sync-mode",
-        "deferred"
-      ],
+      "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Strict upload comparability mode: run 500 uploads per sample, no ignore-first adjustment, submitEvery=1 on both sides, and normalize to per-upload units.",
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB"
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
+      "rightCommandRepeat": 500,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_64kb",
@@ -49,15 +48,14 @@
       "rightUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "rightUploadSubmitEvery": 1,
-      "extraArgs": [
-        "--queue-sync-mode",
-        "deferred"
-      ],
+      "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Strict upload comparability mode: run 500 uploads per sample, no ignore-first adjustment, submitEvery=1 on both sides, and normalize to per-upload units.",
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB"
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
+      "rightCommandRepeat": 500,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_1mb",
@@ -78,15 +76,14 @@
       "rightUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "rightUploadSubmitEvery": 1,
-      "extraArgs": [
-        "--queue-sync-mode",
-        "deferred"
-      ],
+      "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 100,
-      "timingNormalizationNote": "Strict upload comparability mode: run 100 uploads per sample, no ignore-first adjustment, submitEvery=1 on both sides, and normalize to per-upload units.",
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB"
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
+      "rightCommandRepeat": 100,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_4mb",
@@ -107,15 +104,14 @@
       "rightUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "rightUploadSubmitEvery": 1,
-      "extraArgs": [
-        "--queue-sync-mode",
-        "deferred"
-      ],
+      "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Strict upload comparability mode: run 50 uploads per sample, no ignore-first adjustment, submitEvery=1 on both sides, and normalize to per-upload units.",
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB"
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
+      "rightCommandRepeat": 50,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_buffer_upload_16mb",
@@ -136,15 +132,14 @@
       "rightUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "rightUploadSubmitEvery": 1,
-      "extraArgs": [
-        "--queue-sync-mode",
-        "deferred"
-      ],
+      "extraArgs": [],
       "comparable": true,
       "default": true,
       "leftTimingDivisor": 50,
-      "timingNormalizationNote": "Strict upload comparability mode: run 50 uploads per sample, no ignore-first adjustment, submitEvery=1 on both sides, and normalize to per-upload units.",
-      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB"
+      "timingNormalizationNote": "Upload strict comparable mode: explicit left/right upload usage and submit cadence (copy-dst-copy-src, submitEvery=1). Left repeat/divisor stay explicit for Doe-side normalization; right divisor remains 1.0 unless explicitly contracted otherwise.",
+      "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
+      "rightCommandRepeat": 50,
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "par_workgroup_atomic_1024",

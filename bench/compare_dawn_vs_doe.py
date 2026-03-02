@@ -616,9 +616,9 @@ def safe_int(value: Any, default: int = 0) -> int:
 
 
 def percent_delta(left: float, right: float) -> float:
-    if left <= 0.0:
+    if right <= 0.0:
         return 0.0
-    return ((right / left) - 1.0) * 100.0
+    return ((right - left) / right) * 100.0
 
 
 def safe_float(value: Any) -> float | None:
@@ -968,6 +968,23 @@ def load_workloads(
             raise ValueError(
                 f"invalid workload {workload.id}: rightUploadSubmitEvery must be >= 1"
             )
+        if workload.comparable and workload_domain == "upload":
+            required_upload_contract_fields = (
+                "rightCommandRepeat",
+                "rightIgnoreFirstOps",
+                "rightUploadBufferUsage",
+                "rightUploadSubmitEvery",
+                "rightTimingDivisor",
+            )
+            missing_upload_contract_fields = [
+                field for field in required_upload_contract_fields if field not in item
+            ]
+            if missing_upload_contract_fields:
+                raise ValueError(
+                    f"invalid workload {workload.id}: comparable upload workloads must "
+                    "declare explicit right-side normalization fields; missing "
+                    + ", ".join(missing_upload_contract_fields)
+                )
         if (
             workload.comparable
             and workload.domain in NON_APPLES_TO_APPLES_DOMAINS
@@ -1331,8 +1348,8 @@ def main() -> int:
         "left": {"name": args.left_name},
         "right": {"name": args.right_name},
         "deltaPercentConvention": {
-            "baseline": "left",
-            "formula": "((rightMs / leftMs) - 1) * 100",
+            "baseline": "right",
+            "formula": "((rightMs - leftMs) / rightMs) * 100",
             "positive": "left faster",
             "negative": "left slower",
             "zero": "parity",

@@ -491,13 +491,25 @@ Contract updates in this change:
   - `ctr_render_pixel_local_storage_barrier_macro_500`
   - `par_uniform_buffer_update_writebuffer_partial_single`
 
-### Benchmark deltaPercent formula correction (2026-02-26)
+### Benchmark deltaPercent formula drift note (2026-02-26, superseded)
 
-- Updated `bench/compare_dawn_vs_doe.py` delta percent computation to ratio-based speedup semantics:
+- A temporary migration moved `bench/compare_dawn_vs_doe.py` to ratio-style speedup semantics:
   - from `((rightMs - leftMs) / rightMs) * 100`
   - to `((rightMs / leftMs) - 1) * 100`
-- `deltaPercentConvention` metadata now declares `baseline=left` and the new formula.
-- Positive values still mean left is faster; this now reports intuitive speedup magnitudes (for example `5x` faster => `+400%`).
+- This introduced cross-tool inconsistency with other benchmark/report tooling.
+
+### Benchmark deltaPercent convention realignment (2026-03-02)
+
+- Re-aligned benchmark/report tooling to a single bounded left-perspective convention:
+  - `((rightMs - leftMs) / rightMs) * 100`
+- Updated:
+  - `bench/compare_dawn_vs_doe.py`
+  - `bench/visualize_dawn_vs_doe.py`
+  - `bench/benchmark-writing-guide.md`
+- `deltaPercentConvention` now consistently declares:
+  - `baseline=right`
+  - positive = left faster
+  - negative = left slower
 
 ### Doe-vs-Doe timing-source parity stabilization for strict comparable runs (2026-02-26)
 

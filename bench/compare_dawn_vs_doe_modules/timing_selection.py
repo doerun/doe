@@ -174,21 +174,6 @@ def pick_measured_timing_ms(
     execution_row_count = safe_int(trace_meta.get("executionRowCount"), default=0)
     execution_success_count = safe_int(trace_meta.get("executionSuccessCount"), default=0)
 
-    gpu_timestamp_total_ns = safe_int(
-        trace_meta.get("executionGpuTimestampTotalNs"), default=-1
-    )
-    if gpu_timestamp_total_ns > 0:
-        measured_ms = float(gpu_timestamp_total_ns) / 1_000_000.0
-        timing_meta = {
-            "source": "trace-meta",
-            "traceMetaSource": "doe-execution-gpu-timestamp-ns",
-            "traceMetaTimingMs": measured_ms,
-            "executionGpuTimestampTotalNs": gpu_timestamp_total_ns,
-            "executionDispatchCount": execution_dispatch_count,
-            "wallTimeMs": wall_ms,
-        }
-        return measured_ms, "doe-execution-gpu-timestamp-ns", timing_meta
-
     has_execution_evidence = (
         execution_dispatch_count > 0
         or execution_row_count > 0
@@ -226,6 +211,24 @@ def pick_measured_timing_ms(
             "wallTimeMs": wall_ms,
         }
         return measured_ms, "doe-execution-total-ns", timing_meta
+
+    gpu_timestamp_total_ns = safe_int(
+        trace_meta.get("executionGpuTimestampTotalNs"), default=-1
+    )
+    if gpu_timestamp_total_ns > 0:
+        measured_ms = float(gpu_timestamp_total_ns) / 1_000_000.0
+        timing_meta = {
+            "source": "trace-meta",
+            "traceMetaSource": "doe-execution-gpu-timestamp-ns",
+            "traceMetaTimingMs": measured_ms,
+            "executionGpuTimestampTotalNs": gpu_timestamp_total_ns,
+            "executionDispatchCount": execution_dispatch_count,
+            "executionRowCount": execution_row_count,
+            "executionSuccessCount": execution_success_count,
+            "wallTimeMs": wall_ms,
+            "timingSelectionPolicy": "gpu-timestamp-fallback",
+        }
+        return measured_ms, "doe-execution-gpu-timestamp-ns", timing_meta
 
     dispatch_window_ns = -1
     if execution_encode_total_ns >= 0 and execution_submit_wait_total_ns >= 0:
