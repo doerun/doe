@@ -146,14 +146,15 @@ Important:
 
 ## 7) Delta percent convention
 
-Current report convention uses right-runtime baseline:
-- `((rightMs - leftMs) / rightMs) * 100`
+Current report convention is ratio-style with left as baseline:
+- `((rightMs / leftMs) - 1) * 100`
 - positive means left faster
 - negative means left slower
 
 Interpretation examples:
-- `+40%` means left took 40% less time than right.
-- `-25%` means left took 25% more time than right.
+- `+300%` means left is `4x` faster.
+- `+400%` means left is `5x` faster.
+- `-50%` means left is `2x` slower.
 
 Always read this from report metadata field `deltaPercentConvention`.
 

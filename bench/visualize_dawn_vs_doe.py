@@ -86,9 +86,9 @@ def percentile(values: list[float], p: float) -> float:
 
 
 def percent_delta(left: float, right: float) -> float:
-    if right <= 0.0:
+    if left <= 0.0:
         return 0.0
-    return ((right - left) / right) * 100.0
+    return ((right / left) - 1.0) * 100.0
 
 
 def sample_stats(values: list[float]) -> dict[str, float]:

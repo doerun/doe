@@ -44,7 +44,7 @@ Very large positive percentages mostly come from very small Doe absolute times o
 This walkthrough captured a period where JSON/HTML delta formulas drifted.
 
 - Current benchmark convention is now unified:
-  - `((rightMs - leftMs) / rightMs) * 100` (positive => left/Doe faster)
+  - `((rightMs / leftMs) - 1) * 100` (positive => left/Doe faster)
 - This walkthrough's legacy percentages were produced before that realignment.
 
 ## Merged interpretation of shortfalls (corrected)

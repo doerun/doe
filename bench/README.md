@@ -770,9 +770,9 @@ Directional investigation runs are allowed, but they must be explicitly marked n
 
 ## Delta sign convention
 
-Performance deltas are now reported from the left-runtime perspective with the right side as baseline:
+Performance deltas are reported from the left-runtime perspective using ratio-style speedup:
 
-- formula: `((rightMs - leftMs) / rightMs) * 100`
+- formula: `((rightMs / leftMs) - 1) * 100`
 - positive percent: left runtime is faster
 - negative percent: left runtime is slower
 - zero: parity
@@ -781,6 +781,12 @@ For default Dawn-vs-Doe runs (`left=doe`, `right=dawn`), this means:
 
 - positive percent: Doe is faster than Dawn
 - negative percent: Doe is slower than Dawn
+
+Interpretation examples:
+
+- `+300%` => left is `4x` faster
+- `+400%` => left is `5x` faster
+- `-50%` => left is `2x` slower
 
 `compare_dawn_vs_doe.py` and `compare_runtimes.py` emit `deltaPercentConvention` in reports and now write `schemaVersion: 4`.
 

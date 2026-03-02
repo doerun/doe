@@ -616,9 +616,9 @@ def safe_int(value: Any, default: int = 0) -> int:
 
 
 def percent_delta(left: float, right: float) -> float:
-    if right <= 0.0:
+    if left <= 0.0:
         return 0.0
-    return ((right - left) / right) * 100.0
+    return ((right / left) - 1.0) * 100.0
 
 
 def safe_float(value: Any) -> float | None:
@@ -1348,8 +1348,8 @@ def main() -> int:
         "left": {"name": args.left_name},
         "right": {"name": args.right_name},
         "deltaPercentConvention": {
-            "baseline": "right",
-            "formula": "((rightMs - leftMs) / rightMs) * 100",
+            "baseline": "left",
+            "formula": "((rightMs / leftMs) - 1) * 100",
             "positive": "left faster",
             "negative": "left slower",
             "zero": "parity",

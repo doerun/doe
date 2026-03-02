@@ -64,9 +64,9 @@ def percentile(values: list[float], p: float) -> float:
 
 
 def percent_delta(left: float, right: float) -> float:
-    if right <= 0:
+    if left <= 0:
         return 0.0
-    return ((right - left) / right) * 100.0
+    return ((right / left) - 1.0) * 100.0
 
 
 def read_meta(path: str) -> dict[str, object]:
@@ -124,8 +124,8 @@ def main() -> int:
         "left": left,
         "right": right,
         "deltaPercentConvention": {
-            "baseline": "right",
-            "formula": "((rightMs - leftMs) / rightMs) * 100",
+            "baseline": "left",
+            "formula": "((rightMs / leftMs) - 1) * 100",
             "positive": "left faster",
             "negative": "left slower",
             "zero": "parity",

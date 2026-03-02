@@ -498,18 +498,22 @@ Contract updates in this change:
   - to `((rightMs / leftMs) - 1) * 100`
 - This introduced cross-tool inconsistency with other benchmark/report tooling.
 
-### Benchmark deltaPercent convention realignment (2026-03-02)
+### Benchmark deltaPercent convention update (2026-03-02)
 
-- Re-aligned benchmark/report tooling to a single bounded left-perspective convention:
-  - `((rightMs - leftMs) / rightMs) * 100`
+- Re-aligned benchmark/report tooling to ratio-style speedup semantics:
+  - `((rightMs / leftMs) - 1) * 100`
 - Updated:
   - `bench/compare_dawn_vs_doe.py`
   - `bench/visualize_dawn_vs_doe.py`
+  - `bench/compare_runtimes.py`
   - `bench/benchmark-writing-guide.md`
+  - `bench/README.md`
 - `deltaPercentConvention` now consistently declares:
-  - `baseline=right`
+  - `baseline=left`
   - positive = left faster
   - negative = left slower
+- Interpretation target:
+  - `+300%` means `4x` faster
 
 ### Doe-vs-Doe timing-source parity stabilization for strict comparable runs (2026-02-26)
 
