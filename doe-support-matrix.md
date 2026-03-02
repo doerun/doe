@@ -226,7 +226,7 @@ All of doe-runtime, plus:
 | GPU process sandbox | Not applicable | Required |
 | Security patch cadence | Not applicable | Required SLA |
 | Upstream rebase | Not applicable | Required cadence |
-| Rollback to Dawn | Manual (`force_dawn_oracle`) | Managed, policy-driven |
+| Rollback to Dawn | Manual (`force_dawn_delegate`) | Managed, policy-driven |
 
 ### Not Supported at Launch
 
@@ -241,7 +241,7 @@ All doe-runtime gates, plus:
 | Gate | Mode | Script |
 |------|------|--------|
 | Cycle lock/rollback | Blocking | `bench/cycle_gate.py` |
-| Cutover verification | Blocking per lane | `--with-local-metal-gates --local-metal-lane metal_app` |
+| Cutover verification | Blocking per lane | `--with-local-metal-gates --local-metal-lane metal_doe_app` |
 | Claim rehearsal | Required for release claims | `bench/build_claim_rehearsal_artifacts.py` |
 | Substantiation | Required for trend publication | `bench/run_release_claim_windows.py` |
 
@@ -259,7 +259,7 @@ All doe-runtime requirements, plus:
 |-----------|--------|-------|
 | Security patch cadence | Within 72 hours of Chrome stable security update | GPU process CVEs prioritized |
 | Upstream rebase cadence | Per Chrome major release (every 4 weeks) | Doe integration isolated to minimize conflict surface |
-| Rollback policy | `force_dawn_oracle` available in `backend-runtime-policy.json` | Deterministic recovery to Dawn-oracle baseline |
+| Rollback policy | `force_dawn_delegate` available in `backend-runtime-policy.json` | Deterministic recovery to Dawn baseline baseline |
 | Diff size tracking | Published per release | Fawn-vs-upstream Chromium diff LOC tracked; growing diff requires justification |
 | Release cadence | Monthly minimum, aligned with Chrome stable | Hotfix releases for security within SLA |
 
@@ -326,7 +326,7 @@ doe-core ──────────► doe-runtime ────────�
 4. Security patch flow demonstrated: at least one Chrome security patch applied within 72-hour target
 5. Rebase cadence demonstrated: at least one full Chrome major version rebase completed
 6. Operational commitments documented in shipping artifacts (not just internal docs)
-7. Rollback to Dawn-oracle validated end-to-end in browser context
+7. Rollback to Dawn baseline validated end-to-end in browser context
 
 ---
 

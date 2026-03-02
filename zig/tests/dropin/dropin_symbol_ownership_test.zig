@@ -1,9 +1,10 @@
 const std = @import("std");
 const ownership = @import("../../src/dropin/dropin_symbol_ownership.zig");
 
-test "symbol ownership parser accepts zig_metal" {
-    try std.testing.expect(ownership.parse_symbol_owner("zig_metal") != null);
-    try std.testing.expect(ownership.parse_symbol_owner("zig_vulkan") != null);
+test "symbol ownership parser accepts doe_metal" {
+    try std.testing.expect(ownership.parse_symbol_owner("doe_metal") != null);
+    try std.testing.expect(ownership.parse_symbol_owner("doe_vulkan") != null);
+    try std.testing.expect(ownership.parse_symbol_owner("doe_d3d12") != null);
 }
 
 test "symbol ownership config parser owns symbol names" {

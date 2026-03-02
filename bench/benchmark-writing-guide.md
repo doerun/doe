@@ -223,8 +223,8 @@ Coverage updates are separate from claimability. A covered feature is not automa
 Useful strict run pattern:
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.zig-vs-oracle.fullsuite.json
-python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan.strict.zig_vs_oracle.fullsuite.apples.json
+python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.doe-vs-dawn.fullsuite.json
+python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan.strict.doe_vs_dawn.fullsuite.apples.json
 ```
 
 ## 12) Anti-patterns

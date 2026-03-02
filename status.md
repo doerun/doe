@@ -13,6 +13,11 @@ AMD Vulkan comparison presets now include claimable comparable slices (local + r
   - drop-in helper exports are now `doeWgpuDropinLastErrorCode` / `doeWgpuDropinClearLastError`
   - runtime timestamp debug env flag is now `DOE_WGPU_TIMESTAMP_DEBUG`
   - trace semantic-parity eligibility now keys on Doe module identity (`module` starts with `doe-`)
+- D3D12 backend lane/runtime integration now exists as a first-class Doe backend path:
+  - backend identity: `doe_d3d12`
+  - runtime module tree: `zig/src/backend/d3d12/*`
+  - lane contracts: `d3d12_doe_app`, `d3d12_doe_directional`, `d3d12_doe_comparable`, `d3d12_doe_release`, `d3d12_dawn_release`
+  - drop-in behavior contracts include `doe_d3d12_ownership` and D3D12 lane mode mapping.
 
 Benchmark contract coverage snapshot (2026-02-25 update):
 - `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `31` strict apples-to-apples comparable + `9` directional contracts.
@@ -26,10 +31,10 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - host prerequisites are now explicit and machine-checkable via `bench/preflight_bench_host.py`.
 - claim-lane governance is now hash-locked and machine-checked via `config/claim-cycle.active.json` + `bench/cycle_gate.py`, with release pipeline default wiring when claim gate is enabled.
 - app-lane Vulkan claim/cycle proof now has a dedicated strict local contract and fresh green evidence:
-  - contract/config/workload: `config/claim-cycle.amd-vulkan-app-local.json`, `bench/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json`, `bench/workloads.amd.vulkan.app.claim.json`
-  - comparable+claimable run: `bench/out/20260226T164929Z/vulkan.amd_vulkan_app.local.claim_cycle.json`
+  - contract/config/workload: `config/claim-cycle.vulkan-doe-app-local.json`, `bench/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json`, `bench/workloads.amd.vulkan.app.claim.json`
+  - comparable+claimable run: `bench/out/20260226T164929Z/vulkan.vulkan_doe_app.local.claim_cycle.json`
   - cycle gate pass: `bench/out/20260226T164929Z/cycle_gate_report.json`
-  - additional strict checks pass on the same artifact: backend selection (`amd_vulkan_app`), shader artifact, Vulkan sync, Vulkan timing
+  - additional strict checks pass on the same artifact: backend selection (`vulkan_doe_app`), shader artifact, Vulkan sync, Vulkan timing
 - Vulkan backend correctness hardening (2026-03-01):
   - `zig/src/backend/vulkan/mod.zig` now separates encode timing from submit/wait timing and removes duplicate manifest emission on `kernel_dispatch`.
   - upload behavior knobs are now execution-effective end-to-end (`upload_buffer_usage_mode`, byte budgets via staging reserve) instead of stored-only fields.
@@ -467,7 +472,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 72. Replay gate now includes CI-native semantic parity checks for runtime-to-runtime lanes:
 - `bench/trace_gate.py` adds `--semantic-parity-mode off|auto|required`.
 - `auto` compares eligible doe-to-doe trace pairs with `trace/compare_dispatch_traces.py` while preserving Dawn-vs-Doe release compatibility.
-- `required` fails hard unless semantic parity checks execute and pass, enabling strict Zig-vs-oracle parity lanes.
+- `required` fails hard unless semantic parity checks execute and pass, enabling strict Doe-vs-Dawn parity lanes.
 
 73. Substantiation evidence is now policy-backed and machine-gated:
 - new config contract `config/substantiation-policy.json` (+ schema) defines minimum report-count and minimum unique left-profile requirements.
@@ -778,8 +783,8 @@ Meaning:
 
 1. backend decoupling scaffold landed
 - new backend runtime tree under `zig/src/backend` with explicit identities:
-  - `dawn_oracle`
-  - `zig_metal`
+  - `dawn_delegate`
+  - `doe_metal`
 - execution path now carries backend lane and selection telemetry through trace metadata.
 
 2. strict local-metal gate stack landed
@@ -797,12 +802,12 @@ Meaning:
 4. strict-lane evidence closure
 - Metal shader-commands now emit command-scoped manifest telemetry and strict manifest checks are gate-enforced for comparable/release Metal lanes.
 - local-metal routing, sync, timing, backend, and proc-resolution gates are wired as additive strict controls with no change to AMD Vulkan strict defaults.
-- rollback switch contract is active (`force_dawn_oracle`) and macOS-app cutover is now a strict Metal default lane (`macos_app` -> `zig_metal`).
+- rollback switch contract is active (`force_dawn_delegate`) and macOS-app cutover is now a strict Metal default lane (`metal_doe_app` -> `doe_metal`).
 
 5. Metal decoupling phase-completion status (2026-02-26)
 - all Metal phases are now closed in this rollout scope.
 - phase coverage is closed for contract surface, selection/proc ownership, shader artifacts, sync/timing, and strict local release comparability.
-- runtime now defaults app-lane selection to `macos_app` with strict rollback rehearsal and oracle backstop preserved.
+- runtime now defaults app-lane selection to `metal_doe_app` with strict rollback rehearsal and Dawn-baseline backstop preserved.
 - remaining focus is ongoing performance evidence across host diversity and fleet-level substantiation windows, not plan-scope missing phases.
 
 ## Track A Execution Plan (Finalized)
@@ -866,9 +871,9 @@ Ownership:
 ## Vulkan decoupling completion update (2026-02-26)
 
 - Vulkan decoupling plan checklists were completed through Phase 8 and the archived plan docs were removed.
-- Native app-lane routing now defaults Vulkan profiles to `amd_vulkan_app` with strict `zig_vulkan` selection and no hidden fallback.
-- Comparative oracle lane remains explicit and unchanged: `amd_vulkan_release` -> `dawn_oracle`.
-- Rollback contract remains active via `force_dawn_oracle`; `config/backend-cutover-policy.json` remains intentionally Metal-centered (`targetLane=macos_app`) while Vulkan cutover enforcement is lane-policy + cycle-contract driven.
+- Native app-lane routing now defaults Vulkan profiles to `vulkan_doe_app` with strict `doe_vulkan` selection and no hidden fallback.
+- Comparative Dawn-baseline lane remains explicit and unchanged: `vulkan_dawn_release` -> `dawn_delegate`.
+- Rollback contract remains active via `force_dawn_delegate`; `config/backend-cutover-policy.json` remains intentionally Metal-centered (`targetLane=metal_doe_app`) while Vulkan cutover enforcement is lane-policy + cycle-contract driven.
 
 ## Vulkan finish pass evidence (2026-02-26)
 
@@ -879,16 +884,16 @@ Ownership:
   - command: `run_blocking_gates.py` with backend-selection + shader-artifact + vulkan-sync + vulkan-timing gates
   - report: `bench/out/vulkan.finish.local.comparable.1kb.json`
   - result: PASS (schema/correctness/trace/backend-selection/shader/sync/timing)
-- `amd_vulkan_app` strict local-claim run executed with lane-specific cycle contract:
-  - report: `bench/out/20260226T164929Z/vulkan.amd_vulkan_app.local.claim_cycle.json`
+- `vulkan_doe_app` strict local-claim run executed with lane-specific cycle contract:
+  - report: `bench/out/20260226T164929Z/vulkan.vulkan_doe_app.local.claim_cycle.json`
   - status: `comparisonStatus=comparable`, `claimStatus=claimable`, `nonClaimableCount=0`
   - claim gate: PASS (`mode=local`, min timed samples `7`)
   - cycle gate output: `bench/out/20260226T164929Z/cycle_gate_report.json` (`pass=true`)
   - backend-selection/shader/sync/timing: PASS on same report
-- historical note: prior app-lane release-contract attempt (`bench/out/vulkan.finish.amd_vulkan_app.claim.json` + `bench/out/20260226T160252Z/vulkan.finish.amd_vulkan_app.cycle.json`) failed and is superseded by the contract-aligned run above.
+- historical note: prior app-lane release-contract attempt (`bench/out/vulkan.finish.vulkan_doe_app.claim.json` + `bench/out/20260226T160252Z/vulkan.finish.vulkan_doe_app.cycle.json`) failed and is superseded by the contract-aligned run above.
 - rollback switch posture exercised:
-  - report: `bench/out/vulkan.finish.amd_vulkan_app.rollback.json`
-  - with `FAWN_BACKEND_SWITCH=force_dawn_oracle`, backend switched from `zig_vulkan` to `dawn_oracle` on `amd_vulkan_app` lane.
+  - report: `bench/out/vulkan.finish.vulkan_doe_app.rollback.json`
+  - with `FAWN_BACKEND_SWITCH=force_dawn_delegate`, backend switched from `doe_vulkan` to `dawn_delegate` on `vulkan_doe_app` lane.
 - scope note: release-grade full-matrix claim substantiation is still tracked separately from this strict local app-lane closure evidence.
 
 ## Vulkan recheck closure delta (2026-02-26)
@@ -898,7 +903,7 @@ Ownership:
     - result: `comparisonStatus=comparable`, `claimStatus=claimable`
 - Prior cycle failure on this run was contract-drift only (stale `contracts.compareConfig["sha256"]` in cycle contract after lane/canonical policy rename).
 - Updated cycle contract hash:
-    - file: `config/claim-cycle.amd-vulkan-app-local.json`
+    - file: `config/claim-cycle.vulkan-doe-app-local.json`
     - field: `contracts.compareConfig["sha256"]`
     - value: `2eaf549cfcad8af46a694dfa7158b24a89015c150dab7c0bd2a379a9f35e6d13`
 - Re-ran cycle gate on same report:
@@ -915,13 +920,13 @@ Ownership:
   - `bench/out/metal.finish.local.comparable.json`
 - Local strict release-lane metal evidence report:
   - `bench/out/metal.finish.local.release.json`
-- macos_app cutover-lane metal evidence report:
-  - `bench/out/metal.finish.macos_app.comparable.json`
+- metal_doe_app cutover-lane metal evidence report:
+  - `bench/out/metal.finish.metal_doe_app.comparable.json`
 - Strict Metal blocking gate stack passed on both comparable and release-lane reports:
   - schema, correctness, trace (semantic parity mode off), backend-selection, shader-artifact, metal-sync, metal-timing-policy.
-- Rollback switch behavior verified at backend selection layer using `FAWN_BACKEND_SWITCH=force_dawn_oracle` with `macos_app` lane:
-  - baseline: `bench/out/metal.finish.rollbackprobe.baseline.json` left backend `zig_metal`
-  - rollback: `bench/out/metal.finish.rollbackprobe.rollback.json` left backend `dawn_oracle`
+- Rollback switch behavior verified at backend selection layer using `FAWN_BACKEND_SWITCH=force_dawn_delegate` with `metal_doe_app` lane:
+  - baseline: `bench/out/metal.finish.rollbackprobe.baseline.json` left backend `doe_metal`
+  - rollback: `bench/out/metal.finish.rollbackprobe.rollback.json` left backend `dawn_delegate`
 - Host limitation note:
   - native Dawn Metal adapter/filter autodiscovery is unavailable on this Linux host; strict metal lane validation here uses Doe-vs-Doe command templates for backend/gate contract closure.
 

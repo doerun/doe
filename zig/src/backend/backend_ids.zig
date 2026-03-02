@@ -1,16 +1,18 @@
 const std = @import("std");
 
 pub const BackendId = enum {
-    dawn_oracle,
-    zig_metal,
-    zig_vulkan,
+    dawn_delegate,
+    doe_metal,
+    doe_vulkan,
+    doe_d3d12,
 };
 
 pub fn backend_id_name(id: BackendId) []const u8 {
     return switch (id) {
-        .dawn_oracle => "dawn_oracle",
-        .zig_metal => "zig_metal",
-        .zig_vulkan => "zig_vulkan",
+        .dawn_delegate => "dawn_delegate",
+        .doe_metal => "doe_metal",
+        .doe_vulkan => "doe_vulkan",
+        .doe_d3d12 => "doe_d3d12",
     };
 }
 
@@ -19,9 +21,10 @@ pub fn backendIdName(id: BackendId) []const u8 {
 }
 
 pub fn parse_backend_id(raw: []const u8) ?BackendId {
-    if (std.ascii.eqlIgnoreCase(raw, "dawn_oracle")) return .dawn_oracle;
-    if (std.ascii.eqlIgnoreCase(raw, "zig_metal")) return .zig_metal;
-    if (std.ascii.eqlIgnoreCase(raw, "zig_vulkan")) return .zig_vulkan;
+    if (std.ascii.eqlIgnoreCase(raw, "dawn_delegate")) return .dawn_delegate;
+    if (std.ascii.eqlIgnoreCase(raw, "doe_metal")) return .doe_metal;
+    if (std.ascii.eqlIgnoreCase(raw, "doe_vulkan")) return .doe_vulkan;
+    if (std.ascii.eqlIgnoreCase(raw, "doe_d3d12")) return .doe_d3d12;
     return null;
 }
 

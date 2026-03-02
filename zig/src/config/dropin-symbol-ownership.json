@@ -13,17 +13,17 @@
     },
     {
       "symbol": "wgpuCommandEncoderCopyBufferToBuffer",
-      "owner": "zig_metal",
+      "owner": "doe_metal",
       "requiredInStrict": true
     },
     {
       "symbol": "wgpuComputePassEncoderDispatchWorkgroups",
-      "owner": "zig_metal",
+      "owner": "doe_metal",
       "requiredInStrict": true
     },
     {
       "symbol": "wgpuRenderPassEncoderDraw",
-      "owner": "zig_metal",
+      "owner": "doe_metal",
       "requiredInStrict": false
     }
   ]

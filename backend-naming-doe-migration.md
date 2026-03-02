@@ -1,32 +1,70 @@
-# Doe Backend Naming Migration (Completed)
+# Doe Naming Contract (No Backward Compatibility)
 
-## Contract
+## Product and package naming
 
-1. Product: `Fawn`
-2. Browser distribution: `Fawn Browser`
-3. WebGPU backend/runtime implementation: `Doe`
+1. Workspace/product: `fawn`
+2. Runtime family: `doe`
+3. Browser distribution package: `@doe/fawn-browser`
+4. Core/headless package: `@doe/webgpu-core`
+5. Full runtime package: `@doe/webgpu`
 
-`Fawn` remains the product name. `Doe` identifies only backend/runtime surfaces.
+## Backend ID contract
 
-## Completed Outcomes (Phase 1 -> 2 -> 3)
+External/runtime-visible backend IDs are now:
 
-1. Canonical backend artifacts are Doe-only:
-   - runtime binary: `doe-zig-runtime`
-   - drop-in shared library: `libdoe_webgpu.so`
-2. Bench/gate/workflow defaults now use Doe artifacts.
-3. Chromium Track-A runtime selection surfaces now use Doe-only names:
-   - `--use-webgpu-runtime=doe`
-   - `--disable-webgpu-doe`
-   - `--doe-webgpu-library-path=<path>`
-4. Chromium GPU preference fields and enum variants are Doe-only (`kDoe`, `disable_webgpu_doe`, `doe_webgpu_library_path`).
-5. Legacy backend aliases were removed from runtime-visible paths.
-6. Drop-in/runtime diagnostics use Doe naming:
-   - helper exports: `doeWgpuDropinLastErrorCode`, `doeWgpuDropinClearLastError`
-   - env flag: `DOE_WGPU_TIMESTAMP_DEBUG`
-   - trace semantic-parity module eligibility: `module` starts with `doe-`
+1. `dawn_delegate`
+2. `doe_vulkan`
+3. `doe_metal`
+4. `doe_d3d12`
 
-## Scope Preserved
+These IDs describe executor + API and replace all old `dawn_oracle` / `zig_*` IDs.
 
-1. Repository/product naming remains `fawn`.
-2. Performance report family naming now uses `dawn-vs-doe`.
-3. Historical artifacts were not rewritten.
+## Lane ID contract
+
+Lane IDs use one shape:
+
+`<api>_<executor>_<mode>`
+
+Allowed executors:
+
+1. `doe`
+2. `dawn`
+
+Current lane IDs:
+
+1. `vulkan_dawn_release`
+2. `vulkan_dawn_directional`
+3. `vulkan_doe_app`
+4. `vulkan_doe_comparable`
+5. `vulkan_doe_release`
+6. `d3d12_dawn_release`
+7. `d3d12_doe_app`
+8. `d3d12_doe_directional`
+9. `d3d12_doe_comparable`
+10. `d3d12_doe_release`
+11. `metal_dawn_release`
+12. `metal_doe_app`
+13. `metal_doe_directional`
+14. `metal_doe_comparable`
+15. `metal_doe_release`
+
+No old aliases are supported.
+
+## Directory/module naming
+
+Runtime backend modules align to executor/API identity:
+
+1. `zig/src/backend/vulkan/`
+2. `zig/src/backend/metal/`
+3. `zig/src/backend/d3d12/`
+4. `zig/src/backend/dawn_delegate_backend.zig`
+
+Internal Zig type names may continue to include `Zig` (implementation language detail), but contracts/configs/reports use `doe_*` IDs.
+
+## Reporting and benchmark naming
+
+Report/config naming is now `doe-vs-dawn` / `doe_vs_dawn`, and runtime artifacts in `bench/out` were rewritten to the new backend/lane IDs.
+
+## Migration status
+
+This migration is complete and intentionally non-backward-compatible.

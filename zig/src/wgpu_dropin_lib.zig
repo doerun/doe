@@ -277,8 +277,8 @@ fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) F
     }
 
     const resolved = switch (route.owner) {
-        .dawn_oracle, .shared => nativeFromSymbol(FnType, symbol_name),
-        .zig_metal, .zig_vulkan => if (route.fallback_used) nativeFromSymbol(FnType, symbol_name) else null,
+        .dawn_delegate, .shared => nativeFromSymbol(FnType, symbol_name),
+        .doe_metal, .doe_vulkan, .doe_d3d12 => if (route.fallback_used) nativeFromSymbol(FnType, symbol_name) else null,
     };
 
     routeAndRecordForName(symbol_name, route, resolved != null);
@@ -460,7 +460,7 @@ pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_cap
         return null;
     };
 
-    if (route.owner == .zig_metal or route.owner == .zig_vulkan) {
+    if (route.owner == .doe_metal or route.owner == .doe_vulkan or route.owner == .doe_d3d12) {
         if (!route.fallback_used) {
             routeAndRecordForName(symbol_name, route, false);
             setLastError(.symbol_missing);
@@ -469,7 +469,7 @@ pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_cap
     }
 
     if (resolveLocalProc(name)) |proc| {
-        routeAndRecordForName(symbol_name, route, route.owner == .dawn_oracle or route.owner == .shared or route.fallback_used);
+        routeAndRecordForName(symbol_name, route, route.owner == .dawn_delegate or route.owner == .shared or route.fallback_used);
         setLastError(.ok);
         return proc;
     }

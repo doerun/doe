@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "cycleId": "2026q1-amd-vulkan-app-local-claim-cycle",
+  "cycleId": "2026q1-vulkan-doe-app-local-claim-cycle",
   "active": true,
-  "objective": "Produce auditable vulkan_app strict-comparable claim/cycle evidence with matched contract hashes and rollback controls.",
+  "objective": "Produce auditable vulkan_doe_app strict-comparable claim/cycle evidence with matched contract hashes and rollback controls.",
   "contracts": {
     "workloadContract": {
       "path": "bench/workloads.amd.vulkan.app.claim.json",

@@ -404,16 +404,16 @@ def infer_local_metal_lane(config_path: Path, explicit_lane: str) -> str:
     if explicit_lane.strip():
         return explicit_lane.strip()
     config_name = str(config_path).lower()
-    if ".local.metal.oracle" in config_name or ".metal.oracle" in config_name:
-        return "metal_oracle"
+    if ".local.metal.dawn" in config_name or ".metal.dawn" in config_name:
+        return "metal_dawn_release"
     if ".local.metal.release" in config_name:
-        return "metal_local_release"
+        return "metal_doe_release"
     if ".local.metal.directional" in config_name:
-        return "metal_local_directional"
+        return "metal_doe_directional"
     if ".local.metal.extended" in config_name or ".local.metal.comparable" in config_name:
-        return "metal_local_comparable"
-    if "metal_app" in config_name or "macos_app" in config_name or "macos-app" in config_name:
-        return "metal_app"
+        return "metal_doe_comparable"
+    if "metal_doe_app" in config_name or "metal_doe_app" in config_name or "metal-doe-app" in config_name:
+        return "metal_doe_app"
     return ""
 
 
@@ -422,25 +422,25 @@ def infer_local_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
         return explicit_lane.strip()
     config_name = str(config_path).lower()
     if ".local.vulkan.release" in config_name:
-        return "vulkan_local_release"
+        return "vulkan_doe_release"
     if ".local.vulkan.directional" in config_name:
-        return "vulkan_local_directional"
+        return "vulkan_dawn_directional"
     if ".local.vulkan.extended" in config_name or ".local.vulkan.comparable" in config_name:
-        return "vulkan_local_comparable"
+        return "vulkan_doe_comparable"
     return ""
 
 
 def local_metal_requires_shader_manifest(lane: str) -> bool:
     if not lane:
         return False
-    strict_lanes = {"metal_local_comparable", "metal_local_release", "metal_app"}
+    strict_lanes = {"metal_doe_comparable", "metal_doe_release", "metal_doe_app"}
     return lane in strict_lanes
 
 
 def local_vulkan_requires_shader_manifest(lane: str) -> bool:
     if not lane:
         return False
-    strict_lanes = {"vulkan_local_comparable", "vulkan_local_release"}
+    strict_lanes = {"vulkan_doe_comparable", "vulkan_doe_release"}
     return lane in strict_lanes
 
 
@@ -848,7 +848,7 @@ def main() -> int:
                         [
                             "--claim-require-backend-telemetry",
                             "--claim-expected-backend-id",
-                            "zig_metal",
+                            "doe_metal",
                         ]
                     )
                 if (
@@ -860,7 +860,7 @@ def main() -> int:
                         [
                             "--claim-require-backend-telemetry",
                             "--claim-expected-backend-id",
-                            "zig_vulkan",
+                            "doe_vulkan",
                         ]
                     )
             run_step("gates", gates_cmd, dry_run=args.dry_run)

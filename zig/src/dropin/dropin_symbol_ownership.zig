@@ -1,16 +1,18 @@
 const std = @import("std");
 
 pub const SymbolOwner = enum {
-    dawn_oracle,
-    zig_metal,
-    zig_vulkan,
+    dawn_delegate,
+    doe_metal,
+    doe_vulkan,
+    doe_d3d12,
     shared,
 };
 
 pub fn parse_symbol_owner(raw: []const u8) ?SymbolOwner {
-    if (std.ascii.eqlIgnoreCase(raw, "dawn_oracle")) return .dawn_oracle;
-    if (std.ascii.eqlIgnoreCase(raw, "zig_metal")) return .zig_metal;
-    if (std.ascii.eqlIgnoreCase(raw, "zig_vulkan")) return .zig_vulkan;
+    if (std.ascii.eqlIgnoreCase(raw, "dawn_delegate")) return .dawn_delegate;
+    if (std.ascii.eqlIgnoreCase(raw, "doe_metal")) return .doe_metal;
+    if (std.ascii.eqlIgnoreCase(raw, "doe_vulkan")) return .doe_vulkan;
+    if (std.ascii.eqlIgnoreCase(raw, "doe_d3d12")) return .doe_d3d12;
     if (std.ascii.eqlIgnoreCase(raw, "shared")) return .shared;
     return null;
 }
@@ -90,9 +92,10 @@ pub fn find_symbol_ownership(
 
 pub fn symbol_owner_name(owner: SymbolOwner) []const u8 {
     return switch (owner) {
-        .dawn_oracle => "dawn_oracle",
-        .zig_metal => "zig_metal",
-        .zig_vulkan => "zig_vulkan",
+        .dawn_delegate => "dawn_delegate",
+        .doe_metal => "doe_metal",
+        .doe_vulkan => "doe_vulkan",
+        .doe_d3d12 => "doe_d3d12",
         .shared => "shared",
     };
 }

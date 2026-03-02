@@ -41,7 +41,7 @@
 - run replay hard gate from comparison report artifacts:
   `python3 fawn/bench/trace_gate.py --report fawn/bench/out/dawn-vs-doe.json --semantic-parity-mode auto`
   CI must run without `--skip-missing` and fail hard if any sample is missing or fails replay checks.
-  For runtime-to-runtime oracle lanes (for example Zig vs Lean trace parity), run with `--semantic-parity-mode required` so the gate fails unless semantic parity checks execute and pass.
+  For runtime-to-runtime reference lanes (for example Zig vs Lean trace parity), run with `--semantic-parity-mode required` so the gate fails unless semantic parity checks execute and pass.
 - run drop-in compatibility hard gate from a built shared-library artifact:
   `python3 fawn/bench/dropin_gate.py --artifact fawn/zig/zig-out/lib/libdoe_webgpu.so --report fawn/bench/out/dropin_report.json`
   CI must fail hard if symbol completeness, black-box behavior, or drop-in benchmark execution fails, and must emit a drop-in report on every run.
@@ -182,7 +182,7 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
   - `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
   - `bench/compare_dawn_vs_doe.config.local.metal.comparable.json`
   - `bench/compare_dawn_vs_doe.config.local.metal.release.json`
-  - optional oracle lane forcing for baseline checks: `--local-metal-lane metal_oracle`
+  - optional Dawn-baseline lane forcing for baseline checks: `--local-metal-lane metal_dawn_release`
 
 3. blocking gates
 - run backend/timing/sync/shader checks through `run_blocking_gates.py`:
@@ -193,14 +193,14 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 
 4. strict lane policy
 - strict local Metal lanes must fail on fallback (`fallbackUsed=true`)
-- strict release claims should require backend telemetry and backend identity `zig_metal`
-- shader manifest checks may be required per lane (`metal_local_release`, `metal_app`)
+- strict release claims should require backend telemetry and backend identity `doe_metal`
+- shader manifest checks may be required per lane (`metal_doe_release`, `metal_doe_app`)
 
-5. cutover verification (metal_app)
+5. cutover verification (metal_doe_app)
 - for app-lane rollout verification, run local-metal gate execution with explicit lane override:
-  `--with-local-metal-gates --local-metal-lane metal_app`
+  `--with-local-metal-gates --local-metal-lane metal_doe_app`
 - validate rollback readiness by running `bench/cycle_gate.py` (via release pipeline with `--with-cycle-gate --cycle-enforce-rollbacks`) under the same comparable/release evidence policy.
-- the explicit rollback switch remains `force_dawn_oracle` (`config/backend-runtime-policy.json` / `config/backend-cutover-policy.json`), preserving deterministic recovery to Dawn-oracle.
+- the explicit rollback switch remains `force_dawn_delegate` (`config/backend-runtime-policy.json` / `config/backend-cutover-policy.json`), preserving deterministic recovery to Dawn baseline.
 
 ## 9. Local Vulkan Hardening Flow (Additive)
 
@@ -225,8 +225,8 @@ Local Vulkan lanes are additive and must not weaken AMD Vulkan strict defaults.
 
 4. strict lane policy
 - strict local Vulkan lanes must fail on fallback (`fallbackUsed=true`)
-- strict local Vulkan release claims should require backend telemetry and backend identity `zig_vulkan`
-- shader manifest checks may be required per lane (`vulkan_local_comparable`, `vulkan_local_release`)
+- strict local Vulkan release claims should require backend telemetry and backend identity `doe_vulkan`
+- shader manifest checks may be required per lane (`vulkan_doe_comparable`, `vulkan_doe_release`)
 
 ## 10. Market-Readiness Evidence Flow (Additive)
 

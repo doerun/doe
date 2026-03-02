@@ -12,10 +12,13 @@
         "dawn-perf-wall-ns"
       ],
       "allowedTimingSourcesByBackendId": {
-        "zig_vulkan": [
+        "doe_vulkan": [
           "doe-execution-dispatch-window-ns"
         ],
-        "dawn_oracle": [
+        "doe_d3d12": [
+          "doe-execution-dispatch-window-ns"
+        ],
+        "dawn_delegate": [
           "doe-execution-dispatch-window-ns"
         ]
       },
@@ -46,7 +49,7 @@
         "dawn-perf-wall-ns"
       ],
       "allowedTimingSourcesByBackendId": {
-        "dawn_oracle": [
+        "dawn_delegate": [
           "doe-execution-encode-ns"
         ]
       },

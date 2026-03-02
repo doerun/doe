@@ -14,7 +14,7 @@
         "required": ["symbol", "owner", "requiredInStrict"],
         "properties": {
           "symbol": { "type": "string", "pattern": "^wgpu[A-Za-z0-9_]+$" },
-          "owner": { "type": "string", "enum": ["dawn_oracle", "zig_metal", "zig_vulkan", "shared"] },
+          "owner": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12", "shared"] },
           "requiredInStrict": { "type": "boolean" }
         }
       }

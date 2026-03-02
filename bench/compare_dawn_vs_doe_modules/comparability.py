@@ -792,10 +792,10 @@ def compare_assessment(
 
     left_execution_backends = collect_execution_backends(left_samples)
     right_execution_backends = collect_execution_backends(right_samples)
-    is_left_dawn = "dawn_oracle" in left_execution_backends or "dawn-perf-tests" in left_execution_backends
-    is_right_dawn = "dawn_oracle" in right_execution_backends or "dawn-perf-tests" in right_execution_backends
-    is_left_doe = "zig_metal" in left_execution_backends or "zig_vulkan" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
-    is_right_doe = "zig_metal" in right_execution_backends or "zig_vulkan" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
+    is_left_dawn = "dawn_delegate" in left_execution_backends or "dawn-perf-tests" in left_execution_backends
+    is_right_dawn = "dawn_delegate" in right_execution_backends or "dawn-perf-tests" in right_execution_backends
+    is_left_doe = "doe_metal" in left_execution_backends or "doe_vulkan" in left_execution_backends or "doe_d3d12" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
+    is_right_doe = "doe_metal" in right_execution_backends or "doe_vulkan" in right_execution_backends or "doe_d3d12" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
     is_dawn_vs_doe = (is_left_dawn and is_right_doe) or (is_left_doe and is_right_dawn)
 
     reasons: list[str] = []
@@ -1028,7 +1028,7 @@ def compare_assessment(
         if not isinstance(trace_meta, dict):
             continue
         execution_backend = str(trace_meta.get("executionBackend", ""))
-        if execution_backend not in {"webgpu-ffi", "dawn_oracle", "zig_metal"}:
+        if execution_backend not in {"webgpu-ffi", "dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"}:
             continue
         execution_dispatch = safe_int(trace_meta.get("executionDispatchCount"), default=0)
         execution_success = safe_int(trace_meta.get("executionSuccessCount"), default=0)

@@ -171,7 +171,7 @@ def collect_targets(root: Path) -> list[ValidationTarget]:
 
 def validate_backend_lane_map_invariants(root: Path) -> list[str]:
     failures: list[str] = []
-    backend_ids = ("dawn_oracle", "zig_metal", "zig_vulkan")
+    backend_ids = ("dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12")
 
     runtime_policy_path = root / "config" / "backend-runtime-policy.json"
     lane_map_path = root / "config" / "backend-lane-map.json"

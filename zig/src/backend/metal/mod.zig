@@ -67,11 +67,11 @@ pub const ZigMetalBackend = struct {
     pub fn as_iface(self: *ZigMetalBackend, allocator: std.mem.Allocator, reason: []const u8, policy_hash: []const u8) !backend_iface.BackendIface {
         _ = allocator;
         return .{
-            .id = .zig_metal,
+            .id = .doe_metal,
             .context = self,
             .vtable = &VTABLE,
             .telemetry = .{
-                .backend_id = .zig_metal,
+                .backend_id = .doe_metal,
                 .backend_selection_reason = reason,
                 .fallback_used = false,
                 .selection_policy_hash = policy_hash,

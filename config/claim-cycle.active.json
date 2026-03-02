@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "cycleId": "2026q1-amd-vulkan-release-claim-cycle",
+  "cycleId": "2026q1-vulkan-dawn-release-claim-cycle",
   "active": true,
   "objective": "Move from strong local comparable results to repeatable, auditable incumbent-replacement confidence under one active contract hash.",
   "contracts": {

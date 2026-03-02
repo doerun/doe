@@ -14,41 +14,57 @@ fn is_apple_vendor(vendor: []const u8) bool {
 }
 
 pub fn select_backend(profile: model.DeviceProfile, policy: backend_policy.SelectionPolicy) Selection {
-    if (policy.default_backend == .dawn_oracle) {
+    if (policy.default_backend == .dawn_delegate) {
         return .{
-            .backend_id = .dawn_oracle,
-            .reason = "policy_lane_prefers_dawn_oracle",
+            .backend_id = .dawn_delegate,
+            .reason = "policy_lane_prefers_dawn_delegate",
             .fallback_used = false,
         };
     }
 
-    if (policy.default_backend == .zig_metal and profile.api == .metal and is_apple_vendor(profile.vendor)) {
+    if (policy.default_backend == .doe_metal and profile.api == .metal and is_apple_vendor(profile.vendor)) {
         return .{
-            .backend_id = .zig_metal,
-            .reason = "apple_chip_prefers_zig_metal",
+            .backend_id = .doe_metal,
+            .reason = "apple_chip_prefers_doe_metal",
             .fallback_used = false,
         };
     }
 
-    if (policy.default_backend == .zig_vulkan) {
+    if (policy.default_backend == .doe_vulkan) {
         return .{
-            .backend_id = .zig_vulkan,
-            .reason = "policy_lane_prefers_zig_vulkan",
+            .backend_id = .doe_vulkan,
+            .reason = "policy_lane_prefers_doe_vulkan",
             .fallback_used = false,
         };
     }
 
-    if (profile.api == .metal and policy.default_backend == .zig_metal) {
+    if (policy.default_backend == .doe_d3d12) {
         return .{
-            .backend_id = .zig_metal,
-            .reason = "policy_lane_prefers_zig_metal",
+            .backend_id = .doe_d3d12,
+            .reason = "policy_lane_prefers_doe_d3d12",
             .fallback_used = false,
         };
     }
 
-    if (policy.default_backend == .zig_metal and !policy.allow_fallback) {
+    if (profile.api == .metal and policy.default_backend == .doe_metal) {
         return .{
-            .backend_id = .zig_metal,
+            .backend_id = .doe_metal,
+            .reason = "policy_lane_prefers_doe_metal",
+            .fallback_used = false,
+        };
+    }
+
+    if (policy.default_backend == .doe_metal and !policy.allow_fallback) {
+        return .{
+            .backend_id = .doe_metal,
+            .reason = "strict_lane_no_fallback",
+            .fallback_used = false,
+        };
+    }
+
+    if (policy.default_backend == .doe_d3d12 and !policy.allow_fallback) {
+        return .{
+            .backend_id = .doe_d3d12,
             .reason = "strict_lane_no_fallback",
             .fallback_used = false,
         };

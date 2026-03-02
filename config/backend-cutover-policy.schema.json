@@ -12,7 +12,7 @@
       "required": ["targetLane", "defaultBackend", "requiredComparablePasses", "requiredClaimablePasses"],
       "properties": {
         "targetLane": { "type": "string", "minLength": 1 },
-        "defaultBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal", "zig_vulkan"] },
+        "defaultBackend": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] },
         "requiredComparablePasses": { "type": "integer", "minimum": 1 },
         "requiredClaimablePasses": { "type": "integer", "minimum": 1 },
         "requireRollbackRehearsal": { "type": "boolean" }
@@ -24,7 +24,7 @@
       "required": ["switchName", "switchBackend", "requiredCiValidation"],
       "properties": {
         "switchName": { "type": "string", "minLength": 1 },
-        "switchBackend": { "type": "string", "enum": ["dawn_oracle", "zig_metal", "zig_vulkan"] },
+        "switchBackend": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] },
         "requiredCiValidation": { "type": "boolean" }
       }
     }

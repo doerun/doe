@@ -38,7 +38,7 @@ test "vulkan shader artifact manifest emits deterministic hash-linked payload" {
     if (vulkan_runtime_state.current_manifest_module()) |module| {
         try std.testing.expectEqualStrings("texture_write", module);
     }
-    try std.testing.expect(std.mem.indexOf(u8, first_manifest, "\"backendId\":\"zig_vulkan\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, first_manifest, "\"backendId\":\"doe_vulkan\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, first_manifest, "\"module\":\"texture_write\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, first_manifest, "\"wgslSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"") == null);
     const toolchain_sha = manifest_field_value(first_manifest, "toolchainSha256") orelse return error.MissingToolchainSha256;

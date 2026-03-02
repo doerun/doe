@@ -11,7 +11,7 @@ pub const BackendTelemetry = struct {
 
 pub fn default_telemetry() BackendTelemetry {
     return .{
-        .backend_id = .dawn_oracle,
+        .backend_id = .dawn_delegate,
         .backend_selection_reason = "legacy_native_default",
         .fallback_used = false,
         .selection_policy_hash = "backend-runtime-policy-v1",

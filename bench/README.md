@@ -266,7 +266,7 @@ python3 fawn/bench/compare_dawn_vs_doe.py \
   claimability failures return non-zero exit status (`3`) and report `claimStatus=diagnostic`.
 - trace replay gate supports semantic parity lanes:
   `bench/trace_gate.py --semantic-parity-mode auto|required`.
-  use `required` only for runtime-to-runtime parity artifacts (for example Zig vs oracle traces), because Dawn comparison traces are not semantic-envelope compatible.
+  use `required` only for runtime-to-runtime parity artifacts (for example Doe vs Dawn traces), because Dawn comparison traces are not semantic-envelope compatible.
 - optional resource profiling is available via `--resource-probe rocm-smi` and is applied equally to both sides.
 - when resource probe is enabled, strict comparability also checks probe quality:
   use fixed `N vs N` probing via `--resource-sample-target-count N`.
@@ -836,7 +836,7 @@ python3 bench/claim_gate.py \
   --require-claimability-mode release \
   --require-min-timed-samples 15 \
   --require-backend-telemetry \
-  --expected-backend-id zig_metal
+  --expected-backend-id doe_metal
 ```
 
 ## Market-readiness evidence bundle

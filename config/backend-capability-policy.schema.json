@@ -13,7 +13,7 @@
         "additionalProperties": false,
         "required": ["backendId", "requiredFeatures", "unsupportedErrorCode"],
         "properties": {
-          "backendId": { "type": "string", "enum": ["dawn_oracle", "zig_metal", "zig_vulkan"] },
+          "backendId": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] },
           "requiredFeatures": {
             "type": "array",
             "items": { "type": "string", "minLength": 1 },

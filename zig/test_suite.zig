@@ -22,6 +22,18 @@ const vulkan_surface_present_test = @import("tests/vulkan/vulkan_surface_present
 const vulkan_sync_semantics_test = @import("tests/vulkan/vulkan_sync_semantics_test.zig");
 const vulkan_timing_semantics_test = @import("tests/vulkan/vulkan_timing_semantics_test.zig");
 const vulkan_upload_path_test = @import("tests/vulkan/vulkan_upload_path_test.zig");
+const d3d12_compute_encode_test = @import("tests/d3d12/d3d12_compute_encode_test.zig");
+const d3d12_copy_encode_test = @import("tests/d3d12/d3d12_copy_encode_test.zig");
+const d3d12_device_queue_test = @import("tests/d3d12/d3d12_device_queue_test.zig");
+const d3d12_instance_test = @import("tests/d3d12/d3d12_instance_test.zig");
+const d3d12_mod_integration_test = @import("tests/d3d12/d3d12_mod_integration_test.zig");
+const d3d12_pipeline_cache_test = @import("tests/d3d12/d3d12_pipeline_cache_test.zig");
+const d3d12_render_encode_test = @import("tests/d3d12/d3d12_render_encode_test.zig");
+const d3d12_shader_artifact_manifest_test = @import("tests/d3d12/d3d12_shader_artifact_manifest_test.zig");
+const d3d12_surface_present_test = @import("tests/d3d12/d3d12_surface_present_test.zig");
+const d3d12_sync_semantics_test = @import("tests/d3d12/d3d12_sync_semantics_test.zig");
+const d3d12_timing_semantics_test = @import("tests/d3d12/d3d12_timing_semantics_test.zig");
+const d3d12_upload_path_test = @import("tests/d3d12/d3d12_upload_path_test.zig");
 
 comptime {
     _ = metal_compute_encode_test;
@@ -48,4 +60,16 @@ comptime {
     _ = vulkan_sync_semantics_test;
     _ = vulkan_timing_semantics_test;
     _ = vulkan_upload_path_test;
+    _ = d3d12_compute_encode_test;
+    _ = d3d12_copy_encode_test;
+    _ = d3d12_device_queue_test;
+    _ = d3d12_instance_test;
+    _ = d3d12_mod_integration_test;
+    _ = d3d12_pipeline_cache_test;
+    _ = d3d12_render_encode_test;
+    _ = d3d12_shader_artifact_manifest_test;
+    _ = d3d12_surface_present_test;
+    _ = d3d12_sync_semantics_test;
+    _ = d3d12_timing_semantics_test;
+    _ = d3d12_upload_path_test;
 }

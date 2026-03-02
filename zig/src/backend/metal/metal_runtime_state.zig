@@ -265,7 +265,7 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
     );
 
     var token_buf: [1536]u8 = undefined;
-    const backend_id = "zig_metal";
+    const backend_id = "doe_metal";
     const module = manifest_module_name();
     const taxonomy_code = "pipeline_dispatch_ready";
 

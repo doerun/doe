@@ -12,7 +12,7 @@ pub fn decide_symbol_route(
     strict_no_fallback: bool,
 ) RouteDecision {
     switch (owner) {
-        .dawn_oracle => return .{ .owner = .dawn_oracle, .fallback_used = false },
+        .dawn_delegate => return .{ .owner = .dawn_delegate, .fallback_used = false },
         .shared => return .{ .owner = .shared, .fallback_used = false },
         else => {}
     }
@@ -22,15 +22,15 @@ pub fn decide_symbol_route(
         return .{ .owner = owner, .fallback_used = false };
     }
 
-    // Mixed mode allows falling back to native oracle when a Zig-owned symbol
+    // Mixed mode allows falling back to Dawn delegate when a Zig-owned symbol
     // cannot be resolved.
     if (behavior_mode == .mixed_ownership) {
-        return .{ .owner = .dawn_oracle, .fallback_used = true };
+        return .{ .owner = .dawn_delegate, .fallback_used = true };
     }
 
     // Strict ownership mode with fallback allowed by behavior policy.
     if (behavior_mode == .dawn_ownership) {
-        return .{ .owner = .dawn_oracle, .fallback_used = false };
+        return .{ .owner = .dawn_delegate, .fallback_used = false };
     }
 
     return .{ .owner = owner, .fallback_used = true };

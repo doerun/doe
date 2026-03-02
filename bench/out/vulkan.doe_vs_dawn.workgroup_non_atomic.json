@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 4,
+  "generatedAtUtc": "2026-02-26T19:18:38.487492Z",
+  "outputTimestamp": "",
+  "left": {
+    "runtime": "doe_vulkan",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release: zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_non_atomic_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_app --execute",
+    "iterations": 12,
+    "timingsMs": [
+      8.509457809850574,
+      2.6812271680682898,
+      2.368750050663948,
+      2.1590290125459433,
+      2.597695915028453,
+      2.935949945822358,
+      2.3411698639392853,
+      1.9720999989658594,
+      2.0488700829446316,
+      2.577167935669422,
+      2.644971013069153,
+      2.2907089442014694
+    ],
+    "p10Ms": 2.0488700829446316,
+    "p50Ms": 2.368750050663948,
+    "p95Ms": 2.935949945822358,
+    "p99Ms": 2.935949945822358,
+    "meanMs": 2.9272581450641155,
+    "medianMs": 2.472958993166685,
+    "minMs": 1.9720999989658594,
+    "maxMs": 8.509457809850574,
+    "meta": {}
+  },
+  "right": {
+    "runtime": "dawn_delegate",
+    "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release: zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_non_atomic_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_dawn_release --execute",
+    "iterations": 12,
+    "timingsMs": [
+      29.10837298259139,
+      30.034243827685714,
+      28.552614152431488,
+      30.944054946303368,
+      29.935614904388785,
+      28.434538980945945,
+      29.596979962661862,
+      30.22073209285736,
+      27.759775053709745,
+      28.79031514748931,
+      30.091778142377734,
+      29.84446892514825
+    ],
+    "p10Ms": 28.434538980945945,
+    "p50Ms": 29.596979962661862,
+    "p95Ms": 30.22073209285736,
+    "p99Ms": 30.22073209285736,
+    "meanMs": 29.44279075988258,
+    "medianMs": 29.720724443905056,
+    "minMs": 27.759775053709745,
+    "maxMs": 30.944054946303368,
+    "meta": {}
+  },
+  "deltaPercentConvention": {
+    "baseline": "right",
+    "formula": "((rightMs - leftMs) / rightMs) * 100",
+    "positive": "left faster",
+    "negative": "left slower",
+    "zero": "parity"
+  },
+  "delta": {
+    "p10Percent": 92.7944318551548,
+    "p50Percent": 91.99664947689848,
+    "p95Percent": 90.28498073176637,
+    "p99Percent": 90.28498073176637,
+    "meanPercent": 90.05781018199993,
+    "p50LeftMs": 2.368750050663948,
+    "p50RightMs": 29.596979962661862
+  }
+}

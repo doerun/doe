@@ -167,8 +167,10 @@ If these are not met, claims are directional only, not substantiated.
 Backend selection is now represented as a first-class runtime contract:
 
 1. backend identities
-- `dawn_oracle`
-- `zig_metal`
+- `dawn_delegate`
+- `doe_metal`
+- `doe_vulkan`
+- `doe_d3d12`
 
 2. policy contracts
 - `config/backend-runtime-policy.json`
@@ -185,5 +187,5 @@ Backend selection is now represented as a first-class runtime contract:
   - optional shader artifact references
 
 4. strict-lane rule
-- strict local Metal lanes and cutover lanes are no-fallback by contract
+- strict local backend lanes (Metal/Vulkan/D3D12) and cutover lanes are no-fallback by contract
 - fallback must be explicit, policy-encoded, and auditable via trace artifacts

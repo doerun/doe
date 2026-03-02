@@ -274,7 +274,7 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
         .{ SHADER_ARTIFACT_DIR, state.manifest_emits },
     );
 
-    const backend_id = "zig_vulkan";
+    const backend_id = "doe_vulkan";
     const module = manifest_module_name();
     const taxonomy_code = "ok";
 

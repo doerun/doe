@@ -22,7 +22,13 @@ pub fn build(b: *std.Build) void {
         }),
     });
     dropin_lib.linkLibC();
-    dropin_lib.linkSystemLibrary("dl");
+    if (target.result.os.tag == .windows) {
+        dropin_lib.linkSystemLibrary("d3d12");
+        dropin_lib.linkSystemLibrary("dxgi");
+        dropin_lib.linkSystemLibrary("dxguid");
+    } else {
+        dropin_lib.linkSystemLibrary("dl");
+    }
     const install_dropin = b.addInstallArtifact(dropin_lib, .{});
 
     const dropin_step = b.step("dropin", "Build the drop-in WebGPU shared library");
@@ -77,7 +83,13 @@ pub fn build(b: *std.Build) void {
         }),
     });
     exe.linkLibC();
-    exe.linkSystemLibrary("dl");
+    if (target.result.os.tag == .windows) {
+        exe.linkSystemLibrary("d3d12");
+        exe.linkSystemLibrary("dxgi");
+        exe.linkSystemLibrary("dxguid");
+    } else {
+        exe.linkSystemLibrary("dl");
+    }
 
     b.installArtifact(exe);
 
@@ -168,4 +180,15 @@ pub fn build(b: *std.Build) void {
     });
     const run_tests = b.addRunArtifact(test_exec);
     test_step.dependOn(&run_tests.step);
+
+    const d3d12_test_step = b.step("test-d3d12", "Run D3D12-focused Zig tests (no Metal test suite)");
+    const d3d12_test_exec = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test_suite_d3d12.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
+    d3d12_test_step.dependOn(&run_d3d12_tests.step);
 }

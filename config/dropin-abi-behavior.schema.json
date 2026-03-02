@@ -8,13 +8,13 @@
     "schemaVersion": { "type": "integer", "const": 1 },
     "defaultMode": {
       "type": "string",
-      "enum": ["dawn_ownership", "mixed_ownership", "zig_metal_ownership", "zig_vulkan_ownership"]
+      "enum": ["dawn_ownership", "mixed_ownership", "doe_metal_ownership", "doe_vulkan_ownership", "doe_d3d12_ownership"]
     },
     "laneModes": {
       "type": "object",
       "additionalProperties": {
         "type": "string",
-        "enum": ["dawn_ownership", "mixed_ownership", "zig_metal_ownership", "zig_vulkan_ownership"]
+        "enum": ["dawn_ownership", "mixed_ownership", "doe_metal_ownership", "doe_vulkan_ownership", "doe_d3d12_ownership"]
       }
     },
     "strictFallbackForbidden": { "type": "boolean" }

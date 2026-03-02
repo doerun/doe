@@ -190,10 +190,12 @@ Reference commands:
 Native execution now supports explicit backend selection lanes:
 
 ```bash
-zig build run -- --backend native --execute --backend-lane vulkan_oracle
-zig build run -- --backend native --execute --backend-lane metal_local_comparable
-zig build run -- --backend native --execute --backend-lane metal_local_release
-zig build run -- --backend native --execute --backend-lane metal_oracle
+zig build run -- --backend native --execute --backend-lane vulkan_dawn_release
+zig build run -- --backend native --execute --backend-lane d3d12_doe_app
+zig build run -- --backend native --execute --backend-lane metal_doe_comparable
+zig build run -- --backend native --execute --backend-lane metal_doe_release
+zig build run -- --backend native --execute --backend-lane metal_dawn_release
+zig build run -- --backend native --execute --backend-lane d3d12_doe_release
 ```
 
 Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metadata records:

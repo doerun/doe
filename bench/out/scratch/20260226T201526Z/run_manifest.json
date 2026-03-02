@@ -1,6 +1,6 @@
 {
   "claimGateRan": false,
-  "config": "bench/compare_dawn_vs_doe.config.amd.vulkan.zig-vs-oracle.fullsuite.json",
+  "config": "bench/compare_dawn_vs_doe.config.amd.vulkan.doe-vs-dawn.fullsuite.json",
   "createdAtUtc": "2026-02-26T20:15:28.184319Z",
   "dropinGateRan": false,
   "fullRun": true,

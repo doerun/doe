@@ -2,33 +2,45 @@
   "schemaVersion": 1,
   "sourcePolicyPath": "config/backend-runtime-policy.json",
   "laneToBackend": {
-    "metal_app": "zig_metal",
-    "metal_local_comparable": "zig_metal",
-    "metal_local_directional": "zig_metal",
-    "metal_local_release": "zig_metal",
-    "metal_oracle": "dawn_oracle",
-    "vulkan_app": "zig_vulkan",
-    "vulkan_local_comparable": "zig_vulkan",
-    "vulkan_local_directional": "dawn_oracle",
-    "vulkan_local_release": "zig_vulkan",
-    "vulkan_oracle": "dawn_oracle"
+    "d3d12_doe_app": "doe_d3d12",
+    "d3d12_doe_comparable": "doe_d3d12",
+    "d3d12_doe_directional": "doe_d3d12",
+    "d3d12_doe_release": "doe_d3d12",
+    "d3d12_dawn_release": "dawn_delegate",
+    "metal_doe_app": "doe_metal",
+    "metal_doe_comparable": "doe_metal",
+    "metal_doe_directional": "doe_metal",
+    "metal_doe_release": "doe_metal",
+    "metal_dawn_release": "dawn_delegate",
+    "vulkan_doe_app": "doe_vulkan",
+    "vulkan_doe_comparable": "doe_vulkan",
+    "vulkan_dawn_directional": "dawn_delegate",
+    "vulkan_doe_release": "doe_vulkan",
+    "vulkan_dawn_release": "dawn_delegate"
   },
   "backendToLanes": {
-    "dawn_oracle": [
-      "metal_oracle",
-      "vulkan_local_directional",
-      "vulkan_oracle"
+    "dawn_delegate": [
+      "d3d12_dawn_release",
+      "metal_dawn_release",
+      "vulkan_dawn_directional",
+      "vulkan_dawn_release"
     ],
-    "zig_metal": [
-      "metal_app",
-      "metal_local_comparable",
-      "metal_local_directional",
-      "metal_local_release"
+    "doe_metal": [
+      "metal_doe_app",
+      "metal_doe_comparable",
+      "metal_doe_directional",
+      "metal_doe_release"
     ],
-    "zig_vulkan": [
-      "vulkan_app",
-      "vulkan_local_comparable",
-      "vulkan_local_release"
+    "doe_vulkan": [
+      "vulkan_doe_app",
+      "vulkan_doe_comparable",
+      "vulkan_doe_release"
+    ],
+    "doe_d3d12": [
+      "d3d12_doe_app",
+      "d3d12_doe_comparable",
+      "d3d12_doe_directional",
+      "d3d12_doe_release"
     ]
   }
 }

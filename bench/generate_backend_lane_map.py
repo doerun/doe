@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 
-BACKEND_IDS = ("dawn_oracle", "zig_metal", "zig_vulkan")
+BACKEND_IDS = ("dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12")
 
 
 def parse_args() -> argparse.Namespace:

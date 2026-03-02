@@ -1,69 +1,99 @@
 {
   "schemaVersion": 1,
-  "defaultLane": "vulkan_oracle",
+  "defaultLane": "vulkan_dawn_release",
   "selectionPolicyHashSeed": "backend-runtime-policy-v1",
   "cutoverPolicyPath": "config/backend-cutover-policy.json",
   "rollbackSwitch": {
-    "name": "force_dawn_oracle",
-    "forceBackend": "dawn_oracle"
+    "name": "force_dawn_delegate",
+    "forceBackend": "dawn_delegate"
   },
   "lanes": {
-    "vulkan_oracle": {
-      "defaultBackend": "dawn_oracle",
+    "vulkan_dawn_release": {
+      "defaultBackend": "dawn_delegate",
       "allowFallback": true,
       "strictNoFallback": false,
-      "notes": "Oracle benchmark/claim lane retained after app cutover"
+      "notes": "Dawn benchmark/claim lane retained after app cutover"
     },
-    "vulkan_app": {
-      "defaultBackend": "zig_vulkan",
+    "vulkan_doe_app": {
+      "defaultBackend": "doe_vulkan",
       "allowFallback": false,
       "strictNoFallback": true,
       "notes": "AMD Vulkan app lane after controlled cutover"
     },
-    "metal_local_directional": {
-      "defaultBackend": "zig_metal",
+    "d3d12_doe_app": {
+      "defaultBackend": "doe_d3d12",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Windows D3D12 app lane"
+    },
+    "metal_doe_directional": {
+      "defaultBackend": "doe_metal",
       "allowFallback": true,
       "strictNoFallback": false,
       "notes": "Directional diagnostics lane"
     },
-    "metal_local_comparable": {
-      "defaultBackend": "zig_metal",
+    "metal_doe_comparable": {
+      "defaultBackend": "doe_metal",
       "allowFallback": false,
       "strictNoFallback": true,
       "notes": "Strict comparable lane"
     },
-    "metal_local_release": {
-      "defaultBackend": "zig_metal",
+    "metal_doe_release": {
+      "defaultBackend": "doe_metal",
       "allowFallback": false,
       "strictNoFallback": true,
       "notes": "Strict release lane"
     },
-    "metal_oracle": {
-      "defaultBackend": "dawn_oracle",
+    "metal_dawn_release": {
+      "defaultBackend": "dawn_delegate",
       "allowFallback": true,
       "strictNoFallback": false,
-      "notes": "Metal oracle benchmark lane"
+      "notes": "Metal Dawn baseline benchmark lane"
     },
-    "vulkan_local_directional": {
-      "defaultBackend": "dawn_oracle",
+    "d3d12_doe_directional": {
+      "defaultBackend": "doe_d3d12",
+      "allowFallback": true,
+      "strictNoFallback": false,
+      "notes": "D3D12 diagnostics lane"
+    },
+    "d3d12_doe_comparable": {
+      "defaultBackend": "doe_d3d12",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Strict comparable D3D12 lane"
+    },
+    "d3d12_doe_release": {
+      "defaultBackend": "doe_d3d12",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Strict D3D12 release lane"
+    },
+    "d3d12_dawn_release": {
+      "defaultBackend": "dawn_delegate",
+      "allowFallback": true,
+      "strictNoFallback": false,
+      "notes": "D3D12 Dawn baseline benchmark lane"
+    },
+    "vulkan_dawn_directional": {
+      "defaultBackend": "dawn_delegate",
       "allowFallback": true,
       "strictNoFallback": false,
       "notes": "Vulkan diagnostics lane"
     },
-    "vulkan_local_comparable": {
-      "defaultBackend": "zig_vulkan",
+    "vulkan_doe_comparable": {
+      "defaultBackend": "doe_vulkan",
       "allowFallback": false,
       "strictNoFallback": true,
       "notes": "Strict comparable Vulkan lane"
     },
-    "vulkan_local_release": {
-      "defaultBackend": "zig_vulkan",
+    "vulkan_doe_release": {
+      "defaultBackend": "doe_vulkan",
       "allowFallback": false,
       "strictNoFallback": true,
       "notes": "Strict local Vulkan release lane"
     },
-    "metal_app": {
-      "defaultBackend": "zig_metal",
+    "metal_doe_app": {
+      "defaultBackend": "doe_metal",
       "allowFallback": false,
       "strictNoFallback": true,
       "notes": "Controlled cutover target"

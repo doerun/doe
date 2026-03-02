@@ -36,7 +36,7 @@
         ]
       },
       "domain": "upload",
-      "externalCitation": "par_buffer_upload_1kb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=4601.2164104651165/4882.3915140624995/4882.3915140624995, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "externalCitation": "par_buffer_upload_1kb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=4601.2164104651165/4882.3915140624995/4882.3915140624995, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=doe_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
       "name": "buffer-upload 1KB",
       "performance": {
         "deltaPercent": {
@@ -60,7 +60,7 @@
         "comparisonStatus": "comparable"
       },
       "runtime": {
-        "leftBackendId": "zig_metal",
+        "leftBackendId": "doe_metal",
         "leftProfile": {
           "api": "metal",
           "deviceFamily": "m3",
@@ -122,7 +122,7 @@
         ]
       },
       "domain": "upload",
-      "externalCitation": "par_buffer_upload_64kb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=5857.330636597938/5690.292109223301/5690.292109223301, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "externalCitation": "par_buffer_upload_64kb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=5857.330636597938/5690.292109223301/5690.292109223301, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=doe_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
       "name": "buffer-upload 64KB",
       "performance": {
         "deltaPercent": {
@@ -146,7 +146,7 @@
         "comparisonStatus": "comparable"
       },
       "runtime": {
-        "leftBackendId": "zig_metal",
+        "leftBackendId": "doe_metal",
         "leftProfile": {
           "api": "metal",
           "deviceFamily": "m3",
@@ -208,7 +208,7 @@
         ]
       },
       "domain": "upload",
-      "externalCitation": "par_buffer_upload_1mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=47365.54265380952/38509.252658076926/38509.252658076926, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "externalCitation": "par_buffer_upload_1mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=47365.54265380952/38509.252658076926/38509.252658076926, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=doe_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
       "name": "buffer-upload 1MB",
       "performance": {
         "deltaPercent": {
@@ -232,7 +232,7 @@
         "comparisonStatus": "comparable"
       },
       "runtime": {
-        "leftBackendId": "zig_metal",
+        "leftBackendId": "doe_metal",
         "leftProfile": {
           "api": "metal",
           "deviceFamily": "m3",
@@ -294,7 +294,7 @@
         ]
       },
       "domain": "upload",
-      "externalCitation": "par_buffer_upload_4mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=155790.92098384618/146432.98712357142/146432.98712357142, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "externalCitation": "par_buffer_upload_4mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=155790.92098384618/146432.98712357142/146432.98712357142, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=doe_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
       "name": "buffer-upload 4MB",
       "performance": {
         "deltaPercent": {
@@ -318,7 +318,7 @@
         "comparisonStatus": "comparable"
       },
       "runtime": {
-        "leftBackendId": "zig_metal",
+        "leftBackendId": "doe_metal",
         "leftProfile": {
           "api": "metal",
           "deviceFamily": "m3",
@@ -380,7 +380,7 @@
         ]
       },
       "domain": "upload",
-      "externalCitation": "par_buffer_upload_16mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=963360.9850000001/809019.3527272729/809019.3527272729, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "externalCitation": "par_buffer_upload_16mb: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=963360.9850000001/809019.3527272729/809019.3527272729, timingSources(left/right)=['doe-execution-row-total-ns']/['dawn-perf-wall-time'], backend(left/right)=doe_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
       "name": "buffer-upload 16MB",
       "performance": {
         "deltaPercent": {
@@ -404,7 +404,7 @@
         "comparisonStatus": "comparable"
       },
       "runtime": {
-        "leftBackendId": "zig_metal",
+        "leftBackendId": "doe_metal",
         "leftProfile": {
           "api": "metal",
           "deviceFamily": "m3",
@@ -466,7 +466,7 @@
         ]
       },
       "domain": "p0-resource",
-      "externalCitation": "ctr_resource_lifecycle_contract: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=218924.6640536842/191329.67171727272/191329.67171727272, timingSources(left/right)=['doe-execution-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "externalCitation": "ctr_resource_lifecycle_contract: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=218924.6640536842/191329.67171727272/191329.67171727272, timingSources(left/right)=['doe-execution-total-ns']/['dawn-perf-wall-time'], backend(left/right)=doe_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
       "name": "p0 resource lifecycle contract",
       "performance": {
         "deltaPercent": {
@@ -490,7 +490,7 @@
         "comparisonStatus": "comparable"
       },
       "runtime": {
-        "leftBackendId": "zig_metal",
+        "leftBackendId": "doe_metal",
         "leftProfile": {
           "api": "metal",
           "deviceFamily": "m3",
@@ -552,7 +552,7 @@
         ]
       },
       "domain": "render",
-      "externalCitation": "par_uniform_buffer_update_writebuffer_partial_single: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=221.56382151423642/199.44606105843005/199.44606105843005, timingSources(left/right)=['doe-execution-total-ns']/['dawn-perf-wall-time'], backend(left/right)=zig_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
+      "externalCitation": "par_uniform_buffer_update_writebuffer_partial_single: comparisonStatus=comparable, claimStatus=claimable, workloadComparable=True, workloadComparableNow=True, workloadClaimableNow=True, delta(p50/p95/p99)=221.56382151423642/199.44606105843005/199.44606105843005, timingSources(left/right)=['doe-execution-total-ns']/['dawn-perf-wall-time'], backend(left/right)=doe_metal/, report=bench/out/20260301T173606Z/metal.npm.compare.json",
       "name": "uniform buffer update (WriteBuffer partial single)",
       "performance": {
         "deltaPercent": {
@@ -576,7 +576,7 @@
         "comparisonStatus": "comparable"
       },
       "runtime": {
-        "leftBackendId": "zig_metal",
+        "leftBackendId": "doe_metal",
         "leftProfile": {
           "api": "metal",
           "deviceFamily": "m3",

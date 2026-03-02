@@ -2,32 +2,41 @@
   "schemaVersion": 1,
   "backends": [
     {
-      "backendId": "dawn_oracle",
+      "backendId": "dawn_delegate",
       "requiredFeatures": [
         "queue_submit",
         "compute_dispatch",
         "trace_meta"
       ],
-      "unsupportedErrorCode": "backend_dawn_oracle_unsupported"
+      "unsupportedErrorCode": "backend_dawn_delegate_unsupported"
     },
     {
-      "backendId": "zig_metal",
+      "backendId": "doe_metal",
       "requiredFeatures": [
         "metal_queue_completion",
         "wgsl_to_msl",
         "shader_artifact_manifest",
         "operation_timing"
       ],
-      "unsupportedErrorCode": "backend_zig_metal_unsupported"
+      "unsupportedErrorCode": "backend_doe_metal_unsupported"
     },
     {
-      "backendId": "zig_vulkan",
+      "backendId": "doe_vulkan",
       "requiredFeatures": [
         "queue_completion",
         "shader_artifact_manifest",
         "operation_timing"
       ],
-      "unsupportedErrorCode": "backend_zig_vulkan_unsupported"
+      "unsupportedErrorCode": "backend_doe_vulkan_unsupported"
+    },
+    {
+      "backendId": "doe_d3d12",
+      "requiredFeatures": [
+        "queue_completion",
+        "shader_artifact_manifest",
+        "operation_timing"
+      ],
+      "unsupportedErrorCode": "backend_doe_d3d12_unsupported"
     }
   ]
 }

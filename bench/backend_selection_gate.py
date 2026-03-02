@@ -28,15 +28,19 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def normalize_lane_alias(raw_lane: str) -> str:
     aliases = {
-        "amd_vulkan_release": "vulkan_oracle",
-        "amd_vulkan_app": "vulkan_app",
-        "local_vulkan_directional": "vulkan_local_directional",
-        "local_vulkan_comparable": "vulkan_local_comparable",
-        "local_vulkan_release": "vulkan_local_release",
-        "local_metal_directional": "metal_local_directional",
-        "local_metal_comparable": "metal_local_comparable",
-        "local_metal_release": "metal_local_release",
-        "macos_app": "metal_app",
+        "vulkan_dawn_release": "vulkan_dawn_release",
+        "vulkan_doe_app": "vulkan_doe_app",
+        "d3d12_doe_app": "d3d12_doe_app",
+        "d3d12_doe_directional": "d3d12_doe_directional",
+        "d3d12_doe_comparable": "d3d12_doe_comparable",
+        "d3d12_doe_release": "d3d12_doe_release",
+        "vulkan_dawn_directional": "vulkan_dawn_directional",
+        "vulkan_doe_comparable": "vulkan_doe_comparable",
+        "vulkan_doe_release": "vulkan_doe_release",
+        "metal_doe_directional": "metal_doe_directional",
+        "metal_doe_comparable": "metal_doe_comparable",
+        "metal_doe_release": "metal_doe_release",
+        "metal_doe_app": "metal_doe_app",
     }
     return aliases.get(raw_lane, raw_lane)
 
@@ -45,23 +49,33 @@ def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
     if explicit_lane:
         return normalize_lane_alias(explicit_lane)
     config_path = str(report.get("configPath", ""))
-    if "metal_app" in config_path or "macos_app" in config_path or "macos-app" in config_path:
-        return "metal_app"
-    if ".metal.oracle" in config_path:
-        return "metal_oracle"
+    if "metal_doe_app" in config_path or "metal_doe_app" in config_path or "metal-doe-app" in config_path:
+        return "metal_doe_app"
+    if ".metal.dawn" in config_path:
+        return "metal_dawn_release"
     if ".metal.release" in config_path:
-        return "metal_local_release"
+        return "metal_doe_release"
     if ".metal.comparable" in config_path or ".metal.extended.comparable" in config_path:
-        return "metal_local_comparable"
+        return "metal_doe_comparable"
     if ".metal.directional" in config_path:
-        return "metal_local_directional"
+        return "metal_doe_directional"
+    if ".local.d3d12.release" in config_path:
+        return "d3d12_doe_release"
+    if ".local.d3d12.comparable" in config_path or ".local.d3d12.extended.comparable" in config_path:
+        return "d3d12_doe_comparable"
+    if ".local.d3d12.directional" in config_path:
+        return "d3d12_doe_directional"
+    if ".d3d12.dawn" in config_path:
+        return "d3d12_dawn_release"
+    if ".d3d12.app" in config_path:
+        return "d3d12_doe_app"
     if ".local.vulkan.release" in config_path:
-        return "vulkan_local_release"
+        return "vulkan_doe_release"
     if ".local.vulkan.comparable" in config_path or ".local.vulkan.extended.comparable" in config_path:
-        return "vulkan_local_comparable"
+        return "vulkan_doe_comparable"
     if ".local.vulkan.directional" in config_path:
-        return "vulkan_local_directional"
-    return "vulkan_oracle"
+        return "vulkan_dawn_directional"
+    return "vulkan_dawn_release"
 
 
 def main() -> int:

@@ -18,7 +18,7 @@
   ],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
-    "backendId": { "type": "string", "enum": ["zig_metal", "zig_vulkan"] },
+    "backendId": { "type": "string", "enum": ["doe_metal", "doe_vulkan", "doe_d3d12"] },
     "module": { "type": "string", "minLength": 1 },
     "pipelineHash": { "type": "string", "minLength": 1 },
     "wgslSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
