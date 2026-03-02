@@ -10,7 +10,7 @@ Source and compiled brand assets are now centralized here.
 Use the lane script to rebuild from source:
 
 ```bash
-cd /Users/xyz/deco/fawn/nursery/chromium_webgpu_lane
+cd /Users/xyz/deco/fawn/nursery/fawn-browser
 ./scripts/build-fawn-logo-assets.sh
 ```
 

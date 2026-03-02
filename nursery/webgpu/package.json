@@ -1,0 +1,22 @@
+{
+  "name": "@doe/webgpu",
+  "version": "0.0.1",
+  "description": "Full Doe WebGPU runtime packaging (scaffold; in-progress)",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./node": "./src/node.js",
+    "./bun": "./src/bun.js"
+  },
+  "keywords": [
+    "webgpu",
+    "doe",
+    "runtime",
+    "vulkan",
+    "metal",
+    "dx12",
+    "wgpu"
+  ],
+  "license": "ISC"
+}

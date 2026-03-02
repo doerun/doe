@@ -13,7 +13,7 @@ This is a planning artifact only. No production behavior is changed by this file
 
 ## Guiding Constraints
 
-1. Keep this lane isolated in `fawn/nursery/chromium_webgpu_lane/`.
+1. Keep this lane isolated in `fawn/nursery/fawn-browser/`.
 2. Do not modify core runtime behavior implicitly.
 3. Preserve Fawn stage discipline and gate precedence.
 4. Require deterministic artifacts for all quality decisions.

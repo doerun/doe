@@ -48,14 +48,14 @@ def parse_args() -> argparse.Namespace:
         "--manifest",
         default=str(
             REPO_ROOT
-            / "nursery/chromium_webgpu_lane/bench/generated/browser_projection_manifest.json"
+            / "nursery/fawn-browser/bench/generated/browser_projection_manifest.json"
         ),
         help="Path to generated browser projection manifest JSON.",
     )
     parser.add_argument(
         "--workflows",
         default=str(
-            REPO_ROOT / "nursery/chromium_webgpu_lane/bench/workflows/browser-workflow-manifest.json"
+            REPO_ROOT / "nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json"
         ),
         help="Path to browser workflow manifest JSON.",
     )
@@ -73,7 +73,7 @@ def parse_args() -> argparse.Namespace:
         "--promotion-approvals",
         default=str(
             REPO_ROOT
-            / "nursery/chromium_webgpu_lane/bench/workflows/browser-promotion-approvals.json"
+            / "nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json"
         ),
         help="Path to promotion approval JSON used when --require-promotion-approvals is set.",
     )

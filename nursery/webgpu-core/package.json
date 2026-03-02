@@ -1,5 +1,5 @@
 {
-  "name": "@fawn/webgpu-node",
+  "name": "@doe/webgpu-core",
   "version": "0.2.0",
   "description": "Headless Doe WebGPU bridge for browserless AI/ML benchmarking and CI",
   "type": "module",

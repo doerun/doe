@@ -1,4 +1,4 @@
-# @fawn/webgpu-node API Contract
+# @doe/webgpu-core API Contract
 
 Contract version: `v1`
 
@@ -6,7 +6,7 @@ Scope: browserless benchmarking and CI orchestration for Doe runtime workflows.
 
 ## Node runtime API
 
-Module: `@fawn/webgpu-node` (Node default export target)
+Module: `@doe/webgpu-core` (Node default export target)
 
 ### `create(createArgs?)`
 

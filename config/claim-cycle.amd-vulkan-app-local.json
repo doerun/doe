@@ -91,7 +91,7 @@
     ],
     "diagnosticAllowedPrefixes": [
       "bench/out/scratch/",
-      "nursery/chromium_webgpu_lane/"
+      "nursery/fawn-browser/"
     ]
   },
   "attestations": {

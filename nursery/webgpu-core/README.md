@@ -1,6 +1,10 @@
-# @fawn/webgpu-node
+# @doe/webgpu-core
 
 Headless Doe bridge for browserless benchmarking and CI workflows.
+
+Package naming in this repo:
+- `@doe/webgpu-core`: current published/packaged headless integration surface.
+- `@doe/webgpu`: future full runtime package (general runtime replacement positioning).
 
 ## Positioning
 
@@ -29,7 +33,7 @@ See `API_CONTRACT.md` for canonical signatures and outputs.
 ### 1) Headless Doe bench
 
 ```bash
-cd nursery/fawn-webgpu-node
+cd nursery/webgpu-core
 fawn-webgpu-bench \
   --commands ../../examples/buffer_upload_1kb_commands.json \
   --trace-jsonl ./out/run.ndjson \
@@ -39,7 +43,7 @@ fawn-webgpu-bench \
 ### 2) One-command Dawn-vs-Doe compare
 
 ```bash
-cd nursery/fawn-webgpu-node
+cd nursery/webgpu-core
 fawn-webgpu-compare \
   --config ../../bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json \
   --out ../../bench/out/metal.npm.compare.json
@@ -57,7 +61,7 @@ fawn-webgpu-bench --commands /abs/path/commands.json
 
 ```bash
 cd ../doppler
-DOPPLER_NODE_WEBGPU_MODULE=@fawn/webgpu-node node tools/doppler-cli.js test-model --surface node
+DOPPLER_NODE_WEBGPU_MODULE=@doe/webgpu-core node tools/doppler-cli.js test-model --surface node
 ```
 
 By default, the in-process provider behind `create(...)` is loaded from module `webgpu`.

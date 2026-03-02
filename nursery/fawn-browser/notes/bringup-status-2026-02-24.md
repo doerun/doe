@@ -7,11 +7,11 @@
    - `cache/`
    - `notes/`
 2. Bootstrapped `depot_tools` at:
-   - `nursery/chromium_webgpu_lane/depot_tools`
+   - `nursery/fawn-browser/depot_tools`
 3. Started Chromium checkout with:
    - `fetch --nohooks --no-history chromium`
 4. Verified Chromium source tree exists at:
-   - `nursery/chromium_webgpu_lane/src`
+   - `nursery/fawn-browser/src`
 5. Recorded local `src` revision:
    - `5ffed8f84d` (short SHA at check time)
 6. Added `.gitignore` coverage for large lane artifacts and metadata:
@@ -144,7 +144,7 @@ out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-
 From `fawn/` root:
 
 ```bash
-cd nursery/chromium_webgpu_lane
+cd nursery/fawn-browser
 ./scripts/bootstrap-host-tools.sh
 source ./scripts/env.sh
 fetch --nohooks chromium
@@ -160,14 +160,14 @@ If sync retries persist, keep `--jobs 1` and retry until repo health is restored
 If build fails, inspect the first concrete failed action:
 
 ```bash
-cd nursery/chromium_webgpu_lane/src
+cd nursery/fawn-browser/src
 ls -1 out/fawn_debug | rg failed_commands
 ```
 
 Then ensure lane-local tool path is active and resume build:
 
 ```bash
-cd nursery/chromium_webgpu_lane
+cd nursery/fawn-browser
 source ./scripts/env.sh
 cd src
 autoninja -C out/fawn_debug chrome

@@ -8,7 +8,7 @@
 
 Local Chromium checkout exists under:
 
-1. `nursery/chromium_webgpu_lane/src`
+1. `nursery/fawn-browser/src`
 2. current `src` revision: `5ffed8f84d` (local checkout HEAD at scan time)
 
 ## Primary Track A Touchpoints

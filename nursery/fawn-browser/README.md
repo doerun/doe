@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`fawn/nursery/chromium_webgpu_lane` is an isolated, experimental planning lane for using Fawn as:
+`fawn/nursery/fawn-browser` is an isolated, experimental planning lane for using Fawn as:
 
 1. A Dawn replacement path for `navigator.gpu` in Chromium.
 2. An optional execution substrate for selected Chromium-internal GPU modules.
@@ -249,7 +249,7 @@ Current lane structure:
 - Rebuild from source with:
 
 ```bash
-cd /Users/xyz/deco/fawn/nursery/chromium_webgpu_lane
+cd /Users/xyz/deco/fawn/nursery/fawn-browser
 ./scripts/build-fawn-logo-assets.sh
 ```
 

@@ -3,7 +3,7 @@
   "generatedAt": "2026-03-01T02:28:58.669873Z",
   "sourceWorkloadsPath": "bench/workloads.amd.vulkan.extended.json",
   "sourceWorkloadsSha256": "8587f8521a55d02af8ff40da2fdba0fed2ee421fa66ab742227badb6b8dfd1a4",
-  "rulesPath": "nursery/chromium_webgpu_lane/bench/projection-rules.json",
+  "rulesPath": "nursery/fawn-browser/bench/projection-rules.json",
   "rulesSha256": "06ac37731d70bb86652dbad5a6e7e80f1de4aad1b5020d530b500c98e54de245",
   "projectionContractHash": "2f7cfca12307226249cc1adf6dc7c9ec1e8c95ef52a8507c397d63f68540ceec",
   "sourceWorkloadCount": 77,

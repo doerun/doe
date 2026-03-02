@@ -12,19 +12,19 @@ const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
 function defaultChromePath() {
   const releaseLocalOut =
     process.env.FAWN_CHROMIUM_RELEASE_LOCAL_OUT ??
-    resolve(ROOT, "nursery/chromium_webgpu_lane/out/fawn_release_local");
+    resolve(ROOT, "nursery/fawn-browser/out/fawn_release_local");
   const envChrome = process.env.FAWN_CHROME_BIN;
   const candidates = [
     envChrome,
     resolve(releaseLocalOut, "chrome"),
     resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
     resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/chrome"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -57,15 +57,15 @@ const DEFAULT_CHROME = defaultChromePath();
 const DEFAULT_DOE_LIB = defaultDoeLibPath();
 const DEFAULT_MANIFEST = resolve(
   ROOT,
-  "nursery/chromium_webgpu_lane/bench/generated/browser_projection_manifest.json",
+  "nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
 );
 const DEFAULT_WORKFLOWS = resolve(
   ROOT,
-  "nursery/chromium_webgpu_lane/bench/workflows/browser-workflow-manifest.json",
+  "nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json",
 );
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const BENCH_OUT_SCRATCH_ROOT = resolve(ROOT, "bench/out/scratch");
-const ARTIFACTS_ROOT = resolve(ROOT, "nursery/chromium_webgpu_lane/artifacts");
+const ARTIFACTS_ROOT = resolve(ROOT, "nursery/fawn-browser/artifacts");
 const DEFAULT_OUT_FILE = "dawn-vs-doe.tracka.browser-layered.diagnostic.json";
 const HASH_ALGORITHM = "sha256";
 
@@ -92,7 +92,7 @@ function defaultOutPath() {
 
 function usage() {
   console.log(`Usage:
-  node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-layered-bench.mjs [options]
+  node nursery/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs [options]
 
 Options:
   --mode dawn|doe|both      Runtime mode to run (default: both)
@@ -102,7 +102,7 @@ Options:
   --doe-lib PATH            libdoe_webgpu.{so,dylib} path (for doe mode)
   --manifest PATH           Projection manifest JSON path
   --workflows PATH          Browser workflow manifest JSON path
-  --out PATH                Output report JSON path (default: nursery/chromium_webgpu_lane/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
+  --out PATH                Output report JSON path (default: nursery/fawn-browser/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out/scratch
   --allow-data-url-fallback Allow data: URL fallback if local server bind fails
   --headless true|false     Launch headless (default: true)
@@ -152,7 +152,7 @@ function ensureAllowedOutPath(outPath, allowBenchOut) {
   }
   if (!allowBenchOut) {
     throw new Error(
-      `refusing to write diagnostic browser layered output to ${BENCH_OUT_ROOT}; write under nursery/chromium_webgpu_lane/artifacts or pass --allow-bench-out explicitly`,
+      `refusing to write diagnostic browser layered output to ${BENCH_OUT_ROOT}; write under nursery/fawn-browser/artifacts or pass --allow-bench-out explicitly`,
     );
   }
   if (!pathWithin(outPath, BENCH_OUT_SCRATCH_ROOT)) {
@@ -490,7 +490,7 @@ async function loadChromiumDriver() {
   }
 
   throw new Error(
-    "Playwright not found. Install with: npm install --prefix nursery/chromium_webgpu_lane playwright-core",
+    "Playwright not found. Install with: npm install --prefix nursery/fawn-browser playwright-core",
   );
 }
 
@@ -1623,7 +1623,7 @@ async function main() {
   const mergedSummary = mergeModeSummary(l1Summary, l2Summary, modes);
   const modeRunDetailsWithHashes = attachHashChain(
     modeRunDetails,
-    "nursery.chromium_webgpu_lane.browser_layered_bench",
+    "nursery.fawn-browser.browser_layered_bench",
   );
 
   const report = {

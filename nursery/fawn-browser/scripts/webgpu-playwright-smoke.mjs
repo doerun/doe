@@ -12,19 +12,19 @@ const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
 function defaultChromePath() {
   const releaseLocalOut =
     process.env.FAWN_CHROMIUM_RELEASE_LOCAL_OUT ??
-    resolve(ROOT, "nursery/chromium_webgpu_lane/out/fawn_release_local");
+    resolve(ROOT, "nursery/fawn-browser/out/fawn_release_local");
   const envChrome = process.env.FAWN_CHROME_BIN;
   const candidates = [
     envChrome,
     resolve(releaseLocalOut, "chrome"),
     resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
     resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/chrome"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -97,13 +97,13 @@ const ADAPTER_LIMIT_KEYS = [
 
 function usage() {
   console.log(`Usage:
-  node nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs [options]
+  node nursery/fawn-browser/scripts/webgpu-playwright-smoke.mjs [options]
 
 Options:
   --mode dawn|doe|both      Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
   --doe-lib PATH            libdoe_webgpu.{so,dylib} path (for doe mode)
-  --out PATH                JSON report output path (default: nursery/chromium_webgpu_lane/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
+  --out PATH                JSON report output path (default: nursery/fawn-browser/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out
   --headless true|false     Launch headless (default: true)
   --chrome-arg ARG          Extra Chromium arg (repeatable)
@@ -185,7 +185,7 @@ function timestampId() {
 function defaultOutPath() {
   return resolve(
     ROOT,
-    "nursery/chromium_webgpu_lane/artifacts",
+    "nursery/fawn-browser/artifacts",
     timestampId(),
     DEFAULT_OUT_FILE,
   );
@@ -208,7 +208,7 @@ function pathWithin(pathValue, rootPath) {
 function ensureAllowedOutPath(outPath, allowBenchOut) {
   if (!allowBenchOut && pathWithin(outPath, BENCH_OUT_ROOT)) {
     throw new Error(
-      `refusing to write diagnostic browser smoke output to ${BENCH_OUT_ROOT}; write under nursery/chromium_webgpu_lane/artifacts or pass --allow-bench-out explicitly`,
+      `refusing to write diagnostic browser smoke output to ${BENCH_OUT_ROOT}; write under nursery/fawn-browser/artifacts or pass --allow-bench-out explicitly`,
     );
   }
 }
@@ -340,7 +340,7 @@ async function loadChromiumDriver() {
   }
 
   throw new Error(
-    "Playwright not found. Install with: npm install --prefix nursery/chromium_webgpu_lane playwright-core",
+    "Playwright not found. Install with: npm install --prefix nursery/fawn-browser playwright-core",
   );
 }
 

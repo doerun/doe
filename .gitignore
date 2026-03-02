@@ -27,29 +27,29 @@ bench/out/20??????T??????Z/
 *.swp
 *.tmp
 
-# Chromium WebGPU lane local artifacts (large and machine-specific)
-nursery/chromium_webgpu_lane/.gclient*
-nursery/chromium_webgpu_lane/.gcs_entries
-nursery/chromium_webgpu_lane/.cipd
-nursery/chromium_webgpu_lane/.cipd/
-nursery/chromium_webgpu_lane/.cipd.local_backup.*/
-nursery/chromium_webgpu_lane/.local_volume/
-nursery/chromium_webgpu_lane/_bad_scm/
-nursery/chromium_webgpu_lane/cache/
-nursery/chromium_webgpu_lane/cache
-nursery/chromium_webgpu_lane/depot_tools/
-nursery/chromium_webgpu_lane/depot_tools
-nursery/chromium_webgpu_lane/node_modules/
-nursery/chromium_webgpu_lane/src/
-nursery/chromium_webgpu_lane/src
-nursery/chromium_webgpu_lane/chromium/
-nursery/chromium_webgpu_lane/out/
-!nursery/chromium_webgpu_lane/artifacts/
-nursery/chromium_webgpu_lane/artifacts/*
-!nursery/chromium_webgpu_lane/artifacts/fawn-icon-main.svg
-!nursery/chromium_webgpu_lane/artifacts/fawn-icon-main.*
-!nursery/chromium_webgpu_lane/artifacts/fawn-icon-main.*/**
-nursery/chromium_webgpu_lane/.external-macos.env
+# Chromium lane local artifacts (large and machine-specific)
+nursery/fawn-browser/.gclient*
+nursery/fawn-browser/.gcs_entries
+nursery/fawn-browser/.cipd
+nursery/fawn-browser/.cipd/
+nursery/fawn-browser/.cipd.local_backup.*/
+nursery/fawn-browser/.local_volume/
+nursery/fawn-browser/_bad_scm/
+nursery/fawn-browser/cache/
+nursery/fawn-browser/cache
+nursery/fawn-browser/depot_tools/
+nursery/fawn-browser/depot_tools
+nursery/fawn-browser/node_modules/
+nursery/fawn-browser/src/
+nursery/fawn-browser/src
+nursery/fawn-browser/chromium/
+nursery/fawn-browser/out/
+!nursery/fawn-browser/artifacts/
+nursery/fawn-browser/artifacts/*
+!nursery/fawn-browser/artifacts/fawn-icon-main.svg
+!nursery/fawn-browser/artifacts/fawn-icon-main.*
+!nursery/fawn-browser/artifacts/fawn-icon-main.*/**
+nursery/fawn-browser/.external-macos.env
 
 # Nested mirror artifacts (accidental local copies)
 bench/vendor/

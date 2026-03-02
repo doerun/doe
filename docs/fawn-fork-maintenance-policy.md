@@ -4,7 +4,7 @@ Purpose:
 - define how Fawn keeps Chromium security/currentness while carrying Doe integration deltas.
 
 Scope:
-- this document governs `nursery/chromium_webgpu_lane` operational maintenance.
+- this document governs `nursery/fawn-browser` operational maintenance.
 - it does not relax runtime or benchmark gate policy in `process.md`.
 
 ## 1. Integration boundary

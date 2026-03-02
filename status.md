@@ -50,12 +50,12 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   `docs/metal-macos-proof-bundle-runbook.md`
 - Chromium lane release/build defaults now force non-CfT branding args at `gn gen` time (`is_chrome_for_testing=false`, `is_chrome_for_testing_branded=false`, `is_chrome_branded=false`) so stale `args.gn` does not reintroduce Chrome-for-Testing UI branding.
 - Chromium lane browser layered benchmark harness now supports per-mode browser executables (`--dawn-chrome`, `--doe-chrome`) so one run can compare Doe runtime path in `Fawn.app` against a separate Dawn/Chrome binary without mixing launch binaries.
-- experimental npm bridge package now provides practical headless integration paths under `nursery/fawn-webgpu-node`:
+- experimental npm bridge package now provides practical headless integration paths under `nursery/webgpu-core`:
   - Node process-bridge runtime wrapper (`src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`) through both Node and Bun entrypoints.
-  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/fawn-webgpu-node/API_CONTRACT.md` and compatibility boundary in `nursery/fawn-webgpu-node/COMPAT_SCOPE.md`.
+  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu-core/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu-core/COMPAT_SCOPE.md`.
   - Bun direct-FFI path remains available as prototype (`src/bun-ffi.js`) for low-level C-ABI integration experiments.
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
@@ -986,7 +986,7 @@ Ownership:
     - single-manifest kernel dispatch emission (`zig/tests/metal/metal_mod_integration_test.zig`)
     - upload byte-budget + usage mode accounting (`zig/tests/metal/metal_upload_path_test.zig`)
 - Bun in-process Doe provider now auto-activates when `libdoe_webgpu` is discoverable:
-  - file: `nursery/fawn-webgpu-node/src/bun-ffi.js`
+  - file: `nursery/webgpu-core/src/bun-ffi.js`
   - modes:
     - `FAWN_WEBGPU_BUN_PROVIDER=doe` forces Doe provider (error if lib missing)
     - `FAWN_WEBGPU_BUN_PROVIDER=provider` disables Doe auto-provider

@@ -27,12 +27,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--rules",
-        default="nursery/chromium_webgpu_lane/bench/projection-rules.json",
+        default="nursery/fawn-browser/bench/projection-rules.json",
         help="Path to projection-rules.json.",
     )
     parser.add_argument(
         "--out",
-        default="nursery/chromium_webgpu_lane/bench/generated/browser_projection_manifest.json",
+        default="nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
         help="Output manifest path.",
     )
     parser.add_argument(

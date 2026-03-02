@@ -10,7 +10,7 @@ Start Chromium bring-up for this lane quickly while keeping:
 
 ## Local Layout (Recommended)
 
-Use directories under `fawn/nursery/chromium_webgpu_lane`:
+Use directories under `fawn/nursery/fawn-browser`:
 
 1. `depot_tools/`
 2. `src/` (Chromium checkout)
@@ -35,14 +35,14 @@ Use lane-local scripts so bring-up does not depend on system package installs:
 2. `scripts/env.sh`
    - prepends `depot_tools` and cached host-tool binaries to `PATH`.
 
-This keeps all setup isolated inside `nursery/chromium_webgpu_lane/`.
+This keeps all setup isolated inside `nursery/fawn-browser/`.
 
 ## Bring-Up Steps (Machine Commands)
 
 Example flow from `fawn/` root:
 
 ```bash
-cd nursery/chromium_webgpu_lane
+cd nursery/fawn-browser
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
 ./scripts/bootstrap-host-tools.sh
 source ./scripts/env.sh
@@ -63,7 +63,7 @@ external volume and sync only release artifacts back to local disk.
 From `fawn/` root:
 
 ```bash
-cd nursery/chromium_webgpu_lane
+cd nursery/fawn-browser
 ./scripts/setup-macos-external-lane.sh /Volumes/fawn
 source ./scripts/env.sh
 
@@ -83,13 +83,13 @@ cd ..
 For incremental rebuilds after initial setup:
 
 ```bash
-cd nursery/chromium_webgpu_lane
+cd nursery/fawn-browser
 ./scripts/build-release-external.sh
 ```
 
 Default local release artifact path:
 
-- `nursery/chromium_webgpu_lane/out/fawn_release_local`
+- `nursery/fawn-browser/out/fawn_release_local`
 - local app bundle is synchronized as canonical `Fawn.app`
 - if upstream still emits `Chromium.app`, sync maps it into local `Fawn.app` during artifact copy
 
@@ -143,7 +143,7 @@ Initial criterion is deterministic compatibility and observability, not performa
 
 ## Common Wrapper Scripts
 
-Use wrappers under `nursery/chromium_webgpu_lane/scripts` to avoid hardcoded paths:
+Use wrappers under `nursery/fawn-browser/scripts` to avoid hardcoded paths:
 
 1. `scripts/preflight.sh`
    - checks host dependencies and resolves default Chrome + Doe library paths.
@@ -158,7 +158,7 @@ Use wrappers under `nursery/chromium_webgpu_lane/scripts` to avoid hardcoded pat
 
 A small Playwright harness now exists for real-browser WebGPU smoke + mini bench comparison:
 
-- `nursery/chromium_webgpu_lane/scripts/webgpu-playwright-smoke.mjs`
+- `nursery/fawn-browser/scripts/webgpu-playwright-smoke.mjs`
 - classification: diagnostic browser evidence (`L1`), not a strict `L0` claim artifact
 - checks:
   - `navigator.gpu` + adapter/device availability
@@ -172,18 +172,18 @@ Run from repo root:
 
 ```bash
 # install runtime dependency once (uses your Chromium binary, no Playwright browser download required)
-npm install --prefix nursery/chromium_webgpu_lane playwright-core
+npm install --prefix nursery/fawn-browser playwright-core
 
 # compare Dawn vs Doe in one diagnostic report (positive delta => Doe faster, diagnostic only)
-./nursery/chromium_webgpu_lane/scripts/run-smoke.sh \
+./nursery/fawn-browser/scripts/run-smoke.sh \
   --mode both \
-  --out nursery/chromium_webgpu_lane/artifacts/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json \
+  --out nursery/fawn-browser/artifacts/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json \
   --chrome-arg=--ozone-platform=x11
 ```
 
 By default the harness writes to timestamped lane-local artifacts:
 
-- `nursery/chromium_webgpu_lane/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json`
+- `nursery/fawn-browser/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json`
 
 Guardrail:
 
@@ -206,29 +206,29 @@ Only publish to canonical `fawn/bench/out/` flows after converting results into 
 
 The nursery lane now also includes a contract-driven layered harness (`L1` + `L2`) that is generated from the core workload source-of-truth:
 
-- generator: `nursery/chromium_webgpu_lane/scripts/generate-browser-projection-manifest.py`
-- runner: `nursery/chromium_webgpu_lane/scripts/webgpu-playwright-layered-bench.mjs`
-- checker: `nursery/chromium_webgpu_lane/scripts/check-browser-benchmark-superset.py`
-- orchestrator: `nursery/chromium_webgpu_lane/scripts/run-browser-benchmark-superset.py`
+- generator: `nursery/fawn-browser/scripts/generate-browser-projection-manifest.py`
+- runner: `nursery/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs`
+- checker: `nursery/fawn-browser/scripts/check-browser-benchmark-superset.py`
+- orchestrator: `nursery/fawn-browser/scripts/run-browser-benchmark-superset.py`
 
 Artifacts and contracts:
 
-- `nursery/chromium_webgpu_lane/contracts/browser-benchmark-superset.contract.md`
-- `nursery/chromium_webgpu_lane/bench/projection-rules.json`
-- `nursery/chromium_webgpu_lane/bench/generated/browser_projection_manifest.json`
-- `nursery/chromium_webgpu_lane/bench/workflows/browser-workflow-manifest.json`
+- `nursery/fawn-browser/contracts/browser-benchmark-superset.contract.md`
+- `nursery/fawn-browser/bench/projection-rules.json`
+- `nursery/fawn-browser/bench/generated/browser_projection_manifest.json`
+- `nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json`
 
 Run from repo root:
 
 ```bash
-./nursery/chromium_webgpu_lane/scripts/run-bench.sh --mode both
+./nursery/fawn-browser/scripts/run-bench.sh --mode both
 ```
 
 Environment note:
 
 - in restricted sandboxes where socket operations are blocked, browser launch can fail before tests run; in that case, run this command directly on the host session where Chromium normally runs.
 
-Default outputs are lane-local diagnostic artifacts under `nursery/chromium_webgpu_lane/artifacts/<timestamp>/...`.
+Default outputs are lane-local diagnostic artifacts under `nursery/fawn-browser/artifacts/<timestamp>/...`.
 This includes:
 
 - layered report JSON,
@@ -284,7 +284,7 @@ Rollback triggers:
    `m4`) and root install is unavailable, run:
 
 ```bash
-cd nursery/chromium_webgpu_lane
+cd nursery/fawn-browser
 ./scripts/bootstrap-host-tools.sh
 source ./scripts/env.sh
 ```
