@@ -862,6 +862,32 @@ def load_workloads(
             workload_id=workload_id,
         )
         apples_to_apples_vetted = bool(item.get("applesToApplesVetted", False))
+        workload_domain = str(item.get("domain", "uncategorized")).strip().lower()
+        left_command_repeat = parse_int(item.get("leftCommandRepeat")) or 1
+        right_command_repeat_raw = parse_int(item.get("rightCommandRepeat"))
+        right_command_repeat = (
+            left_command_repeat
+            if right_command_repeat_raw is None and workload_domain == "upload"
+            else (1 if right_command_repeat_raw is None else int(right_command_repeat_raw or 0))
+        )
+        left_ignore_first_ops = parse_int(item.get("leftIgnoreFirstOps")) or 0
+        right_ignore_first_ops_raw = parse_int(item.get("rightIgnoreFirstOps"))
+        right_ignore_first_ops = (
+            left_ignore_first_ops
+            if right_ignore_first_ops_raw is None and workload_domain == "upload"
+            else (0 if right_ignore_first_ops_raw is None else int(right_ignore_first_ops_raw or 0))
+        )
+        left_timing_divisor = float(item.get("leftTimingDivisor", 1.0))
+        left_upload_buffer_usage = str(
+            item.get("leftUploadBufferUsage", "copy-dst-copy-src")
+        )
+        left_upload_submit_every_raw = parse_int(item.get("leftUploadSubmitEvery"))
+        left_upload_submit_every = (
+            1
+            if left_upload_submit_every_raw is None
+            else int(left_upload_submit_every_raw or 0)
+        )
+        right_upload_submit_every_raw = parse_int(item.get("rightUploadSubmitEvery"))
         workload = Workload(
             id=workload_id,
             name=item.get("name", workload_id),
@@ -875,31 +901,25 @@ def load_workloads(
             family=item.get("family", "gen12"),
             driver=item.get("driver", "31.0.101"),
             extra_args=parse_extra_args(item.get("extraArgs", []), workload_id=workload_id),
-            left_command_repeat=parse_int(item.get("leftCommandRepeat")) or 1,
-            right_command_repeat=parse_int(item.get("rightCommandRepeat")) or 1,
-            left_ignore_first_ops=parse_int(item.get("leftIgnoreFirstOps")) or 0,
-            right_ignore_first_ops=parse_int(item.get("rightIgnoreFirstOps")) or 0,
-            left_upload_buffer_usage=str(
-                item.get("leftUploadBufferUsage", "copy-dst-copy-src")
-            ),
+            left_command_repeat=left_command_repeat,
+            right_command_repeat=right_command_repeat,
+            left_ignore_first_ops=left_ignore_first_ops,
+            right_ignore_first_ops=right_ignore_first_ops,
+            left_upload_buffer_usage=left_upload_buffer_usage,
             right_upload_buffer_usage=str(
-                item.get("rightUploadBufferUsage", "copy-dst-copy-src")
+                item.get("rightUploadBufferUsage", left_upload_buffer_usage)
             ),
-            left_upload_submit_every=(
-                1
-                if parse_int(item.get("leftUploadSubmitEvery")) is None
-                else int(parse_int(item.get("leftUploadSubmitEvery")) or 0)
-            ),
+            left_upload_submit_every=left_upload_submit_every,
             right_upload_submit_every=(
-                1
-                if parse_int(item.get("rightUploadSubmitEvery")) is None
-                else int(parse_int(item.get("rightUploadSubmitEvery")) or 0)
+                left_upload_submit_every
+                if right_upload_submit_every_raw is None
+                else int(right_upload_submit_every_raw or 0)
             ),
             dawn_filter=item.get("dawnFilter", ""),
             comparable=bool(item.get("comparable", False)),
             allow_left_no_execution=bool(item.get("allowLeftNoExecution", False)),
             include_by_default=bool(item.get("default", True)),
-            left_timing_divisor=float(item.get("leftTimingDivisor", 1.0)),
+            left_timing_divisor=left_timing_divisor,
             right_timing_divisor=float(item.get("rightTimingDivisor", 1.0)),
             timing_normalization_note=item.get("timingNormalizationNote", ""),
             comparability_candidate=comparability_candidate,

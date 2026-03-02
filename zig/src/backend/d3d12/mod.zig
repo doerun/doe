@@ -124,6 +124,14 @@ fn is_dispatch_command(command: model.Command) bool {
     }
 }
 
+fn command_operation_count(command: model.Command) u32 {
+    return switch (command) {
+        .dispatch => 1,
+        .kernel_dispatch => |kernel| if (kernel.repeat == 0) 1 else kernel.repeat,
+        else => 0,
+    };
+}
+
 fn command_status_message(command: model.Command) []const u8 {
     return switch (command) {
         .upload => "d3d12 upload command submitted",
@@ -283,6 +291,7 @@ fn execute_runtime_command(self: *ZigD3D12Backend, command: model.Command) !webg
     };
 
     const dispatch_like = is_dispatch_command(command);
+    const operation_count = command_operation_count(command);
     const gpu_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
     const gpu_timestamp_ns = if (gpu_attempted and encode_ns > 0) encode_ns else 0;
 
@@ -292,7 +301,7 @@ fn execute_runtime_command(self: *ZigD3D12Backend, command: model.Command) !webg
         .setup_ns = setup_ns,
         .encode_ns = encode_ns,
         .submit_wait_ns = submit_wait_ns,
-        .dispatch_count = if (dispatch_like) 1 else 0,
+        .dispatch_count = if (dispatch_like) operation_count else 0,
         .gpu_timestamp_ns = gpu_timestamp_ns,
         .gpu_timestamp_attempted = gpu_attempted,
         .gpu_timestamp_valid = gpu_timestamp_ns > 0,
