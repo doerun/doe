@@ -2,7 +2,7 @@
 
 Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation.
 
-**Doe** (`doe-zig-runtime`, `libdoe_webgpu.so`) is a WebGPU runtime written in Zig. It is a ground-up reimplementation of what Dawn does in C++, built for explicit control of the hot path: no hidden allocators, no vtable dispatch, no bindings layers, direct C ABI calls to Vulkan/Metal.
+**Doe** (`doe-zig-runtime`, `libdoe_webgpu.so`) is a WebGPU runtime written in Zig. It is a ground-up reimplementation of what Dawn does in C++, built for explicit control of the hot path: no hidden allocators, no vtable dispatch, no bindings layers, direct C ABI calls to Vulkan/Metal/D3D12.
 
 ![Fawn logo](nursery/fawn-browser/assets/logo/compiled/linux/fawn-icon-main-256.png)
 
