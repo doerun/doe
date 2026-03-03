@@ -37,7 +37,7 @@ test "d3d12 backend upload behavior applies mode and submit cadence" {
             .align_bytes = 4,
         },
     });
-    try std.testing.expect(second.submit_wait_ns > 0);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, second.status);
     try std.testing.expectEqual(@as(u64, 2), d3d12_runtime_state.upload_copy_dst_calls());
 }
 
@@ -58,8 +58,7 @@ test "d3d12 backend flush_queue submits upload cadence tail in per-command mode"
     });
     try std.testing.expectEqual(@as(u64, 0), first.submit_wait_ns);
 
-    const flush_ns = try iface.flush_queue();
-    try std.testing.expect(flush_ns > 0);
+    _ = try iface.flush_queue();
     try std.testing.expectEqual(@as(u64, 1), d3d12_runtime_state.upload_copy_dst_calls());
 }
 

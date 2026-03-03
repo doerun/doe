@@ -1,12 +1,12 @@
 {
-  "repo": "/home/x/deco/fawn/bench/vendor/dawn",
-  "buildDir": "/home/x/deco/fawn/bench/vendor/dawn/out/Release",
+  "repo": "/Users/xyz/deco/fawn/bench/vendor/dawn",
+  "buildDir": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release",
   "branch": "main",
   "buildType": "Release",
   "buildSystem": "gn",
   "generator": null,
   "gnArgs": "is_debug=false",
   "binaries": {
-    "dawn_perf_tests": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests"
+    "dawn_perf_tests": "/Users/xyz/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests"
   }
 }

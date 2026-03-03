@@ -28,6 +28,7 @@ That document defines:
   - computes timing statistics from wall time and trace-window timings when trace artifacts are present
   - emits reproducible run metadata with workload/artifact hashes and toolchain fields
   - compares against incumbent baseline ids from `fawn/config/benchmarks.json`
+  - enforces host/backend compatibility before execution and fails fast on unsupported OS/backend mixes (for example: Vulkan on macOS, Metal on Linux/Windows, D3D12 on Linux/macOS).
 - `check_correctness.py`
   - runs deterministic contract-level correctness checks
 - `schema_gate.py`
@@ -82,6 +83,8 @@ That document defines:
 - `compare_dawn_vs_doe.py`
   - executes shared workload files against two explicit command templates (default Doe backend runtime on the left side + configurable Dawn/competitor runtime).
   - outputs per-run trace artifacts (`--trace-jsonl` and `--trace-meta` when templates provide these placeholders) plus workload-level and overall quantile summaries.
+  - enforces host/backend compatibility before execution and fails fast on unsupported OS/backend mixes (for example: Vulkan on macOS, Metal on Linux/Windows, D3D12 on Linux/macOS).
+  - current repo compare configs default to command-stream Dawn delegate lanes (`dawn_delegate`) for apples-to-apples strict workloads; `dawn_benchmark_adapter.py` remains available for gtest-filter diagnostics.
   - core logic is now split into dedicated helper modules under `bench/compare_dawn_vs_doe_modules/`:
     `timing_selection.py`, `comparability.py`, `claimability.py`, `reporting.py`.
 - `cleanup_out.py`

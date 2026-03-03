@@ -205,6 +205,11 @@ fn submit_and_maybe_wait(self: *ZigMetalBackend) !u64 {
     return ns_delta(submit_end, submit_start);
 }
 
+const SubmitResult = struct {
+    wait_ns: u64,
+    submitted: bool,
+};
+
 fn upload_usage_mode(mode: webgpu.UploadBufferUsageMode) upload_path.UploadUsageMode {
     return switch (mode) {
         .copy_dst_copy_src => .copy_dst_copy_src,
@@ -212,23 +217,35 @@ fn upload_usage_mode(mode: webgpu.UploadBufferUsageMode) upload_path.UploadUsage
     };
 }
 
-fn submit_for_command(self: *ZigMetalBackend, command: model.Command) !u64 {
+fn submit_for_command(self: *ZigMetalBackend, command: model.Command) !SubmitResult {
     if (command == .upload and self.upload_submit_every > 1) {
         self.pending_upload_commands +|= 1;
         if (self.pending_upload_commands >= self.upload_submit_every) {
             self.pending_upload_commands = 0;
-            return try submit_and_maybe_wait(self);
+            return .{
+                .wait_ns = try submit_and_maybe_wait(self),
+                .submitted = true,
+            };
         }
-        return 0;
+        return .{
+            .wait_ns = 0,
+            .submitted = false,
+        };
     }
 
     if (self.pending_upload_commands > 0) {
         self.pending_upload_commands = 0;
-        return try submit_and_maybe_wait(self);
+        return .{
+            .wait_ns = try submit_and_maybe_wait(self),
+            .submitted = true,
+        };
     }
 
     self.pending_upload_commands = 0;
-    return try submit_and_maybe_wait(self);
+    return .{
+        .wait_ns = try submit_and_maybe_wait(self),
+        .submitted = true,
+    };
 }
 
 fn command_requires_shader_manifest(command: model.Command) bool {
@@ -335,8 +352,10 @@ fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
 fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webgpu.NativeExecutionResult {
     var setup_ns: u64 = 0;
     if (!self.runtime_bootstrapped) {
+        const setup_start = try metal_timing.operation_timing_ns();
         try ensure_runtime_bootstrapped(self);
-        setup_ns = try metal_timing.operation_timing_ns();
+        const setup_end = try metal_timing.operation_timing_ns();
+        setup_ns = ns_delta(setup_end, setup_start);
     }
 
     const encode_start = try metal_timing.operation_timing_ns();
@@ -350,7 +369,7 @@ fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webg
     const encode_end = try metal_timing.operation_timing_ns();
     const encode_ns = ns_delta(encode_end, encode_start);
 
-    const submit_wait_ns = submit_for_command(self, command) catch |err| {
+    const submit = submit_for_command(self, command) catch |err| {
         return .{
             .status = map_error_status(err),
             .status_message = @errorName(err),
@@ -361,8 +380,8 @@ fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webg
     const dispatch_like = is_dispatch_command(command);
     const operation_count = command_operation_count(command);
     const gpu_timestamp_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
-    const gpu_timestamp_ns = if (gpu_timestamp_attempted and encode_ns > 0) encode_ns else 0;
-    const status_message = if (command == .upload and self.upload_submit_every > 1 and submit_wait_ns == 0)
+    const gpu_timestamp_ns: u64 = 0;
+    const status_message = if (command == .upload and self.upload_submit_every > 1 and !submit.submitted)
         "metal upload command queued"
     else
         command_status_message(command);
@@ -372,11 +391,11 @@ fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webg
         .status_message = status_message,
         .setup_ns = setup_ns,
         .encode_ns = encode_ns,
-        .submit_wait_ns = submit_wait_ns,
+        .submit_wait_ns = submit.wait_ns,
         .dispatch_count = operation_count,
         .gpu_timestamp_ns = gpu_timestamp_ns,
         .gpu_timestamp_attempted = gpu_timestamp_attempted,
-        .gpu_timestamp_valid = gpu_timestamp_ns > 0,
+        .gpu_timestamp_valid = false,
     };
 }
 

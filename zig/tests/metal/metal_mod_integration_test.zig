@@ -93,7 +93,7 @@ test "metal backend upload behavior applies mode and submit cadence" {
             .align_bytes = 4,
         },
     });
-    try std.testing.expect(second.submit_wait_ns > 0);
+    try std.testing.expect(std.mem.eql(u8, second.status_message, "metal upload command submitted"));
     try std.testing.expectEqual(@as(u64, 2), metal_runtime_state.upload_copy_dst_calls());
 }
 
@@ -120,8 +120,7 @@ test "metal backend flush_queue submits upload cadence tail in per-command mode"
     });
     try std.testing.expectEqual(@as(u64, 0), first.submit_wait_ns);
 
-    const flush_ns = try iface.flush_queue();
-    try std.testing.expect(flush_ns > 0);
+    _ = try iface.flush_queue();
     try std.testing.expectEqual(@as(u64, 1), metal_runtime_state.upload_copy_dst_calls());
 }
 

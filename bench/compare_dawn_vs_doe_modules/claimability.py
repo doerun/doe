@@ -68,10 +68,10 @@ def assess_upload_timing_scope_consistency(
         run_index = safe_int(sample.get("runIndex"), default=-1)
         run_label = f"run {run_index}" if run_index >= 0 else "sample"
 
-        if ignore_applied and canonical != "doe-execution-row-average-ns":
+        if ignore_applied and canonical != "doe-execution-row-total-ns":
             reasons.append(
                 f"{side_name} {run_label} uses ignore-first with non-row timing source "
-                f"({canonical}); require doe-execution-row-average-ns"
+                f"({canonical}); require doe-execution-row-total-ns"
             )
         if ignore_applied:
             base_source_raw = timing.get("uploadIgnoreFirstBaseTimingSource")
@@ -88,10 +88,10 @@ def assess_upload_timing_scope_consistency(
                 reasons.append(
                     f"{side_name} {run_label} missing uploadIgnoreFirstBaseTimingSource while ignore-first is applied"
                 )
-            if canonical_adjusted != "doe-execution-row-average-ns":
+            if canonical_adjusted != "doe-execution-row-total-ns":
                 reasons.append(
                     f"{side_name} {run_label} uses ignore-first adjusted source "
-                    f"({canonical_adjusted}); require doe-execution-row-average-ns"
+                    f"({canonical_adjusted}); require doe-execution-row-total-ns"
                 )
             if canonical_base and canonical_adjusted and canonical_base != canonical_adjusted:
                 reasons.append(
@@ -146,6 +146,32 @@ def assess_claimability(
     if right_count < effective_min_samples:
         reasons.append(
             f"right timed sample count {right_count} is below claim floor {effective_min_samples}"
+        )
+
+    left_stdev_ms = safe_float(left.get("stats", {}).get("stdevMs"))
+    left_samples = left.get("commandSamples", [])
+    left_canonical_sources = {
+        canonical_timing_source(str(sample.get("timingSource", "")))
+        for sample in left_samples
+        if isinstance(sample, dict) and isinstance(sample.get("timingSource"), str)
+    } if isinstance(left_samples, list) else set()
+    if (
+        left_count >= effective_min_samples
+        and left_stdev_ms is not None
+        and left_stdev_ms == 0.0
+        and left_canonical_sources
+        and left_canonical_sources.issubset(
+            {
+                "doe-execution-row-total-ns",
+                "doe-execution-total-ns",
+                "doe-execution-dispatch-window-ns",
+                "doe-execution-encode-ns",
+            }
+        )
+    ):
+        reasons.append(
+            "left timed samples have zero variance across the full claim window; "
+            "treat as non-claimable until timing path is proven non-synthetic"
         )
 
     left_p50_ms = safe_float(left.get("stats", {}).get("p50Ms"))

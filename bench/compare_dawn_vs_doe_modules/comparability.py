@@ -16,7 +16,7 @@ from compare_dawn_vs_doe_modules.timing_selection import (
 
 NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-total-ns",
-    "doe-execution-row-average-ns",
+    "doe-execution-row-total-ns",
     "doe-execution-dispatch-window-ns",
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
@@ -85,6 +85,10 @@ def _sources_match_with_runtime_compatibility(
     comparability_mode: str,
     required_timing_class: str,
     is_dawn_vs_doe: bool,
+    is_left_dawn_perf: bool,
+    is_right_dawn_perf: bool,
+    is_left_dawn_delegate: bool,
+    is_right_dawn_delegate: bool,
     is_left_dawn: bool,
     is_right_dawn: bool,
     is_left_doe: bool,
@@ -101,25 +105,34 @@ def _sources_match_with_runtime_compatibility(
     right_set = set(right_sources)
     normalized_domain = workload_domain.strip().lower()
     if comparability_mode == "strict":
-        dawn_expected = {"dawn-perf-wall-time"}
         doe_expected = (
-            {"doe-execution-row-average-ns"}
+            {"doe-execution-row-total-ns"}
             if normalized_domain == "upload"
             else {"doe-execution-total-ns"}
         )
-        if is_left_dawn and left_set != dawn_expected:
+        left_expected: set[str] | None = None
+        right_expected: set[str] | None = None
+        if is_left_dawn_perf:
+            left_expected = {"dawn-perf-wall-time"}
+        elif is_left_dawn_delegate or is_left_doe:
+            left_expected = doe_expected
+        if is_right_dawn_perf:
+            right_expected = {"dawn-perf-wall-time"}
+        elif is_right_dawn_delegate or is_right_doe:
+            right_expected = doe_expected
+        if left_expected is not None and left_set != left_expected:
             return False
-        if is_right_dawn and right_set != dawn_expected:
-            return False
-        if is_left_doe and left_set != doe_expected:
-            return False
-        if is_right_doe and right_set != doe_expected:
+        if right_expected is not None and right_set != right_expected:
             return False
         return True
 
-    if is_left_dawn and not left_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
+    if is_left_dawn_perf and not left_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
         return False
-    if is_right_dawn and not right_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
+    if is_right_dawn_perf and not right_set.issubset(DAWN_OPERATION_TIMING_SOURCES):
+        return False
+    if is_left_dawn_delegate and not left_set.issubset(DOE_OPERATION_TIMING_SOURCES):
+        return False
+    if is_right_dawn_delegate and not right_set.issubset(DOE_OPERATION_TIMING_SOURCES):
         return False
     if is_left_doe and not left_set.issubset(DOE_OPERATION_TIMING_SOURCES):
         return False
@@ -136,6 +149,10 @@ def _timing_selection_policy_match_with_runtime_compatibility(
     comparability_mode: str,
     required_timing_class: str,
     is_dawn_vs_doe: bool,
+    is_left_dawn_perf: bool,
+    is_right_dawn_perf: bool,
+    is_left_dawn_delegate: bool,
+    is_right_dawn_delegate: bool,
     is_left_dawn: bool,
     is_right_dawn: bool,
     is_left_doe: bool,
@@ -155,29 +172,39 @@ def _timing_selection_policy_match_with_runtime_compatibility(
 
     if comparability_mode == "strict":
         doe_expected = (
-            {"upload-row-average-preferred"}
+            {"upload-row-total-preferred"}
             if normalized_domain == "upload"
             else {"<none>"}
         )
-        dawn_expected = {"<none>"}
-        if is_left_dawn and left_set != dawn_expected:
+        left_expected: set[str] | None = None
+        right_expected: set[str] | None = None
+        if is_left_dawn_perf:
+            left_expected = {"<none>"}
+        elif is_left_dawn_delegate or is_left_doe:
+            left_expected = doe_expected
+        if is_right_dawn_perf:
+            right_expected = {"<none>"}
+        elif is_right_dawn_delegate or is_right_doe:
+            right_expected = doe_expected
+        if left_expected is not None and left_set != left_expected:
             return False
-        if is_right_dawn and right_set != dawn_expected:
-            return False
-        if is_left_doe and left_set != doe_expected:
-            return False
-        if is_right_doe and right_set != doe_expected:
+        if right_expected is not None and right_set != right_expected:
             return False
         return True
 
     doe_allowed = {"<none>"}
     if normalized_domain == "upload":
-        doe_allowed = {"upload-row-average-preferred"}
-    dawn_allowed = {"<none>"}
+        doe_allowed = {"upload-row-total-preferred"}
+    dawn_perf_allowed = {"<none>"}
+    dawn_delegate_allowed = doe_allowed
 
-    if is_left_dawn and not left_set.issubset(dawn_allowed):
+    if is_left_dawn_perf and not left_set.issubset(dawn_perf_allowed):
         return False
-    if is_right_dawn and not right_set.issubset(dawn_allowed):
+    if is_right_dawn_perf and not right_set.issubset(dawn_perf_allowed):
+        return False
+    if is_left_dawn_delegate and not left_set.issubset(dawn_delegate_allowed):
+        return False
+    if is_right_dawn_delegate and not right_set.issubset(dawn_delegate_allowed):
         return False
     if is_left_doe and not left_set.issubset(doe_allowed):
         return False
@@ -805,8 +832,12 @@ def compare_assessment(
 
     left_execution_backends = collect_execution_backends(left_samples)
     right_execution_backends = collect_execution_backends(right_samples)
-    is_left_dawn = "dawn_delegate" in left_execution_backends or "dawn-perf-tests" in left_execution_backends
-    is_right_dawn = "dawn_delegate" in right_execution_backends or "dawn-perf-tests" in right_execution_backends
+    is_left_dawn_perf = "dawn-perf-tests" in left_execution_backends
+    is_right_dawn_perf = "dawn-perf-tests" in right_execution_backends
+    is_left_dawn_delegate = "dawn_delegate" in left_execution_backends
+    is_right_dawn_delegate = "dawn_delegate" in right_execution_backends
+    is_left_dawn = is_left_dawn_delegate or is_left_dawn_perf
+    is_right_dawn = is_right_dawn_delegate or is_right_dawn_perf
     is_left_doe = "doe_metal" in left_execution_backends or "doe_vulkan" in left_execution_backends or "doe_d3d12" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
     is_right_doe = "doe_metal" in right_execution_backends or "doe_vulkan" in right_execution_backends or "doe_d3d12" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
     is_dawn_vs_doe = (is_left_dawn and is_right_doe) or (is_left_doe and is_right_dawn)
@@ -929,6 +960,10 @@ def compare_assessment(
             comparability_mode=comparability_mode,
             required_timing_class=required_timing_class,
             is_dawn_vs_doe=is_dawn_vs_doe,
+            is_left_dawn_perf=is_left_dawn_perf,
+            is_right_dawn_perf=is_right_dawn_perf,
+            is_left_dawn_delegate=is_left_dawn_delegate,
+            is_right_dawn_delegate=is_right_dawn_delegate,
             is_left_dawn=is_left_dawn,
             is_right_dawn=is_right_dawn,
             is_left_doe=is_left_doe,
@@ -958,6 +993,10 @@ def compare_assessment(
             comparability_mode=comparability_mode,
             required_timing_class=required_timing_class,
             is_dawn_vs_doe=is_dawn_vs_doe,
+            is_left_dawn_perf=is_left_dawn_perf,
+            is_right_dawn_perf=is_right_dawn_perf,
+            is_left_dawn_delegate=is_left_dawn_delegate,
+            is_right_dawn_delegate=is_right_dawn_delegate,
             is_left_dawn=is_left_dawn,
             is_right_dawn=is_right_dawn,
             is_left_doe=is_left_doe,
@@ -1104,10 +1143,10 @@ def compare_assessment(
             canonical_base = canonical_timing_source(base_source)
             canonical_adjusted = canonical_timing_source(adjusted_source)
             canonical_selected = canonical_timing_source(str(sample.get("timingSource", "")))
-            if canonical_adjusted != "doe-execution-row-average-ns":
+            if canonical_adjusted != "doe-execution-row-total-ns":
                 side_reasons.append(
                     f"{side_name} {run_label} ignore-first adjusted source is "
-                    f"{canonical_adjusted}; require doe-execution-row-average-ns"
+                    f"{canonical_adjusted}; require doe-execution-row-total-ns"
                 )
             if canonical_base and canonical_adjusted and canonical_base != canonical_adjusted:
                 side_reasons.append(

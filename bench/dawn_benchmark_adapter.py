@@ -40,6 +40,9 @@ AUTODISCOVER_WORKLOAD_PATTERNS: dict[str, tuple[str, str | None]] = {
     "upload_write_buffer_1mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1MB"),
     "upload_write_buffer_4mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
     "upload_write_buffer_16mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_16MB"),
+    "upload_write_buffer_256mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_256MB"),
+    "upload_write_buffer_1gb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1GB"),
+    "upload_write_buffer_4gb": ("BufferUploadPerf", "WriteBuffer_BufferSize_4GB"),
     "compute_workgroup_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeAtomic"),
     "compute_workgroup_non_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeNonAtomic"),
     "compute_matvec_32768x2048_f32": (

@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import functools
+import platform
 import statistics
 import subprocess
 import sys
@@ -86,12 +87,22 @@ FAWN_UPLOAD_RUNTIME_SOURCE_PATHS = (
 )
 NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-total-ns",
-    "doe-execution-row-average-ns",
+    "doe-execution-row-total-ns",
     "doe-execution-dispatch-window-ns",
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
 }
 RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
+KNOWN_GPU_BACKENDS = {"vulkan", "metal", "d3d12", "webgpu"}
+GPU_BACKEND_ALIASES = {
+    "dx12": "d3d12",
+    "direct3d12": "d3d12",
+}
+HOST_ALLOWED_GPU_BACKENDS = {
+    "darwin": {"metal", "webgpu"},
+    "linux": {"vulkan", "webgpu"},
+    "windows": {"vulkan", "d3d12", "webgpu"},
+}
 
 
 @dataclass
@@ -1279,6 +1290,180 @@ def enforce_strict_dawn_vs_doe_direct_operation_timing(
         )
 
 
+def backend_from_token(value: str) -> str | None:
+    normalized = value.strip().lower()
+    normalized = GPU_BACKEND_ALIASES.get(normalized, normalized)
+    if normalized in KNOWN_GPU_BACKENDS:
+        return normalized
+    return None
+
+
+def infer_backend_from_lane_name(lane: str) -> str | None:
+    lane_lower = lane.strip().lower()
+    if "vulkan" in lane_lower:
+        return "vulkan"
+    if "metal" in lane_lower:
+        return "metal"
+    if "d3d12" in lane_lower:
+        return "d3d12"
+    return None
+
+
+def extract_backends_from_command(command: list[str]) -> set[str]:
+    backends: set[str] = set()
+    index = 0
+    while index < len(command):
+        token = command[index]
+        if token == "--backend" and index + 1 < len(command):
+            backend = backend_from_token(command[index + 1])
+            if backend:
+                backends.add(backend)
+            index += 2
+            continue
+        if token.startswith("--backend="):
+            backend = backend_from_token(token.split("=", 1)[1])
+            if backend:
+                backends.add(backend)
+            index += 1
+            continue
+        if token == "--api" and index + 1 < len(command):
+            backend = backend_from_token(command[index + 1])
+            if backend:
+                backends.add(backend)
+            index += 2
+            continue
+        if token.startswith("--api="):
+            backend = backend_from_token(token.split("=", 1)[1])
+            if backend:
+                backends.add(backend)
+            index += 1
+            continue
+        if token == "--backend-lane" and index + 1 < len(command):
+            backend = infer_backend_from_lane_name(command[index + 1])
+            if backend:
+                backends.add(backend)
+            index += 2
+            continue
+        if token.startswith("--backend-lane="):
+            backend = infer_backend_from_lane_name(token.split("=", 1)[1])
+            if backend:
+                backends.add(backend)
+            index += 1
+            continue
+        if token == "--dawn-extra-args" and index + 1 < len(command):
+            extra_arg = command[index + 1]
+            if extra_arg == "--backend" and index + 2 < len(command):
+                backend = backend_from_token(command[index + 2])
+                if backend:
+                    backends.add(backend)
+                index += 3
+                continue
+            if extra_arg.startswith("--backend="):
+                backend = backend_from_token(extra_arg.split("=", 1)[1])
+                if backend:
+                    backends.add(backend)
+            index += 2
+            continue
+        if token.startswith("--dawn-extra-args="):
+            extra_arg = token.split("=", 1)[1]
+            if extra_arg == "--backend" and index + 1 < len(command):
+                backend = backend_from_token(command[index + 1])
+                if backend:
+                    backends.add(backend)
+                index += 2
+                continue
+            if extra_arg.startswith("--backend="):
+                backend = backend_from_token(extra_arg.split("=", 1)[1])
+                if backend:
+                    backends.add(backend)
+            index += 1
+            continue
+        index += 1
+    return backends
+
+
+def infer_workload_queue_sync_mode(workload: Workload) -> str:
+    queue_sync_mode = "per-command"
+    for index, arg in enumerate(workload.extra_args):
+        if arg == "--queue-sync-mode" and index + 1 < len(workload.extra_args):
+            queue_sync_mode = workload.extra_args[index + 1]
+    return queue_sync_mode
+
+
+def infer_workload_backends(
+    *,
+    workload: Workload,
+    left_command_template: str,
+    right_command_template: str,
+) -> set[str]:
+    probe_root = Path("bench/out/scratch/host-backend-policy-probe")
+    queue_sync_mode = infer_workload_queue_sync_mode(workload)
+    left_command = command_for(
+        left_command_template,
+        workload=workload,
+        workload_id=workload.id,
+        commands_path=workload.commands_path,
+        trace_jsonl=probe_root / f"{workload.id}.left.ndjson",
+        trace_meta=probe_root / f"{workload.id}.left.meta.json",
+        queue_sync_mode=queue_sync_mode,
+        upload_buffer_usage=workload.left_upload_buffer_usage,
+        upload_submit_every=workload.left_upload_submit_every,
+        extra_args=workload.extra_args,
+    )
+    right_command = command_for(
+        right_command_template,
+        workload=workload,
+        workload_id=workload.id,
+        commands_path=workload.commands_path,
+        trace_jsonl=probe_root / f"{workload.id}.right.ndjson",
+        trace_meta=probe_root / f"{workload.id}.right.meta.json",
+        queue_sync_mode=queue_sync_mode,
+        upload_buffer_usage=workload.right_upload_buffer_usage,
+        upload_submit_every=workload.right_upload_submit_every,
+        extra_args=workload.extra_args,
+    )
+    detected = extract_backends_from_command(left_command)
+    detected.update(extract_backends_from_command(right_command))
+    if not detected:
+        api_backend = backend_from_token(workload.api)
+        if api_backend:
+            detected.add(api_backend)
+    return detected
+
+
+def enforce_host_backend_policy(
+    *,
+    workloads: list[Workload],
+    left_command_template: str,
+    right_command_template: str,
+) -> None:
+    host_name = platform.system().strip()
+    host_key = host_name.lower()
+    allowed_backends = HOST_ALLOWED_GPU_BACKENDS.get(host_key)
+    if not allowed_backends:
+        return
+
+    violations: list[str] = []
+    for workload in workloads:
+        detected = infer_workload_backends(
+            workload=workload,
+            left_command_template=left_command_template,
+            right_command_template=right_command_template,
+        )
+        disallowed = sorted(backend for backend in detected if backend not in allowed_backends)
+        if disallowed:
+            violations.append(f"{workload.id}: {', '.join(disallowed)}")
+
+    if violations:
+        allowed_text = ", ".join(sorted(allowed_backends))
+        raise ValueError(
+            f"host/backend policy violation on {host_name}: allowed backends are [{allowed_text}]. "
+            "Use an OS-appropriate benchmark config (Metal on macOS, Vulkan on Linux, D3D12 on Windows). "
+            "Blocked workload backends: "
+            + "; ".join(violations)
+        )
+
+
 format_stats = reporting_mod.format_stats
 format_distribution = reporting_mod.format_distribution
 summarize_timing_metric_stats = reporting_mod.summarize_timing_metric_stats
@@ -1350,6 +1535,11 @@ def main() -> int:
             )
         print(f"FAIL: no workloads selected{hint}")
         return 1
+    enforce_host_backend_policy(
+        workloads=workloads,
+        left_command_template=args.left_command_template,
+        right_command_template=args.right_command_template,
+    )
     if args.claimability in {"local", "release"}:
         non_comparable_contract_ids = [
             workload.id

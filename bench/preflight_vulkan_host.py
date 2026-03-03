@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -50,6 +51,10 @@ def check_vulkaninfo() -> tuple[bool, str]:
 
 
 def main() -> int:
+    if sys.platform != "linux":
+        print("FAIL: Vulkan preflight requires Linux host")
+        return 1
+
     checks: list[tuple[str, bool, str]] = []
 
     render_node = Path("/dev/dri/renderD128")

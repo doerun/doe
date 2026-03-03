@@ -40,10 +40,32 @@ def parse_trace_rows(path: Path) -> list[dict[str, Any]]:
 
 
 def parse_execution_duration_ns_rows(path: Path) -> list[int]:
+    return parse_execution_row_total_ns_rows(path)
+
+
+def parse_execution_row_total_ns_rows(path: Path) -> list[int]:
     rows = parse_trace_rows(path)
     durations: list[int] = []
     for row in rows:
         duration_ns = safe_int(row.get("executionDurationNs"), default=-1)
+        setup_ns = safe_int(row.get("executionSetupNs"), default=-1)
+        encode_ns = safe_int(row.get("executionEncodeNs"), default=-1)
+        submit_wait_ns = safe_int(row.get("executionSubmitWaitNs"), default=-1)
+
+        component_total_ns = 0
+        has_component_timing = False
+        for component_ns in (setup_ns, encode_ns, submit_wait_ns):
+            if component_ns >= 0:
+                component_total_ns += component_ns
+                has_component_timing = True
+
+        if has_component_timing and component_total_ns > 0:
+            if duration_ns > 0:
+                durations.append(max(duration_ns, component_total_ns))
+            else:
+                durations.append(component_total_ns)
+            continue
+
         if duration_ns >= 0:
             durations.append(duration_ns)
     return durations
@@ -62,12 +84,12 @@ def maybe_adjust_timing_for_ignored_first_ops(
             "uploadIgnoreFirstApplied": False,
         }
 
-    durations_ns = parse_execution_duration_ns_rows(trace_jsonl)
+    durations_ns = parse_execution_row_total_ns_rows(trace_jsonl)
     if not durations_ns:
         return measured_ms, measured_source, {
             "uploadIgnoreFirstOps": ignore_first_ops,
             "uploadIgnoreFirstApplied": False,
-            "uploadIgnoreFirstReason": "trace has no executionDurationNs rows",
+            "uploadIgnoreFirstReason": "trace has no execution row-total timing rows",
         }
 
     if len(durations_ns) <= ignore_first_ops:
@@ -81,7 +103,7 @@ def maybe_adjust_timing_for_ignored_first_ops(
         }
 
     # Upload ignore-first must stay in a single operation scope. Derive both the
-    # pre/post values from row-average execution durations to avoid mixed-scope
+    # pre/post values from per-row operation totals to avoid mixed-scope
     # adjustments when primary timing selection used a different source.
     base_row_total_ns = sum(durations_ns)
     base_row_count = len(durations_ns)
@@ -89,12 +111,12 @@ def maybe_adjust_timing_for_ignored_first_ops(
     adjusted_ns = sum(durations_ns[ignore_first_ops:])
     adjusted_count = len(durations_ns) - ignore_first_ops
     adjusted_ms = (float(adjusted_ns) / float(adjusted_count)) / 1_000_000.0
-    adjusted_source = "doe-execution-row-average-ns+ignore-first-ops"
+    adjusted_source = "doe-execution-row-total-ns+ignore-first-ops"
     return adjusted_ms, adjusted_source, {
         "uploadIgnoreFirstOps": ignore_first_ops,
         "uploadIgnoreFirstApplied": True,
-        "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-average-ns",
-        "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-average-ns",
+        "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+        "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
         "uploadRowsTotal": base_row_count,
         "uploadRowsIncluded": adjusted_count,
         "uploadTimingRawMsBeforeIgnore": base_row_avg_ms,
@@ -185,7 +207,7 @@ def pick_measured_timing_ms(
         or execution_success_count > 0
     )
     if workload_domain == "upload" and has_execution_evidence:
-        row_durations_ns = parse_execution_duration_ns_rows(trace_jsonl)
+        row_durations_ns = parse_execution_row_total_ns_rows(trace_jsonl)
         if row_durations_ns:
             row_total_ns = sum(row_durations_ns)
             row_count = len(row_durations_ns)
@@ -194,18 +216,18 @@ def pick_measured_timing_ms(
                 measured_ms = row_average_ns / 1_000_000.0
                 timing_meta = {
                     "source": "trace-meta",
-                    "traceMetaSource": "doe-execution-row-average-ns",
+                    "traceMetaSource": "doe-execution-row-total-ns",
                     "traceMetaTimingMs": measured_ms,
                     "executionRowTotalNs": row_total_ns,
                     "executionRowDurationCount": row_count,
-                    "executionRowAverageNs": row_average_ns,
+                    "executionRowOperationTotalAverageNs": row_average_ns,
                     "executionDispatchCount": execution_dispatch_count,
                     "executionRowCount": execution_row_count,
                     "executionSuccessCount": execution_success_count,
                     "wallTimeMs": wall_ms,
-                    "timingSelectionPolicy": "upload-row-average-preferred",
+                    "timingSelectionPolicy": "upload-row-total-preferred",
                 }
-                return measured_ms, "doe-execution-row-average-ns", timing_meta
+                return measured_ms, "doe-execution-row-total-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
         measured_ms = float(execution_total_ns) / 1_000_000.0

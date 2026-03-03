@@ -263,11 +263,9 @@ fn route_runtime_command(self: *ZigVulkanBackend, command: model.Command) !void 
         .surface_unconfigure => try vulkan_surface_configure.unconfigure_surface(),
         .surface_release => try vulkan_surface_present.release_surface(),
         .async_diagnostics => {
-            _ = try vulkan_timing.operation_timing_ns();
             try vulkan_queue.wait_for_completion();
         },
         .map_async => {
-            _ = try vulkan_timing.operation_timing_ns();
             try vulkan_queue.wait_for_completion();
         },
     }
@@ -306,7 +304,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
     const dispatch_like = is_dispatch_command(command);
     const operation_count = command_operation_count(command);
     const gpu_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
-    const gpu_timestamp_ns = if (gpu_attempted and encode_ns > 0) encode_ns else 0;
+    const gpu_timestamp_ns: u64 = 0;
 
     return .{
         .status = .ok,
@@ -317,7 +315,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .dispatch_count = if (dispatch_like) operation_count else 0,
         .gpu_timestamp_ns = gpu_timestamp_ns,
         .gpu_timestamp_attempted = gpu_attempted,
-        .gpu_timestamp_valid = gpu_timestamp_ns > 0,
+        .gpu_timestamp_valid = false,
     };
 }
 

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-03-01
+Date: 2026-03-02
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -80,6 +80,20 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `texture_sampling_raster_baseline` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.local.metal.extended.json` (no hard-coded 19-workload subset filter).
+- backend lane timing realism hardening (2026-03-02):
+  - `zig/src/backend/backend_registry.zig` now routes `doe_metal`/`doe_vulkan`/`doe_d3d12` lane execution through the real `webgpu.WebGPUBackend` command path while preserving Doe backend IDs in telemetry.
+  - backend timing source modules (`zig/src/backend/{metal,vulkan,d3d12}/*_timing.zig`) now use real nanosecond timestamps instead of runtime-state synthetic counters.
+  - fabricated GPU timestamp fallback (`gpu_timestamp_ns = encode_ns`) was removed from Doe backend lane modules.
+  - Metal setup timing now records an explicit start/end delta window (instead of assigning an absolute timing sample).
+- large-upload comparable contract promotion via Dawn delegate (2026-03-02):
+  - `upload_write_buffer_256mb`, `upload_write_buffer_1gb`, and `upload_write_buffer_4gb` are now strict comparable contracts (`comparable=true`, `benchmarkClass=comparable`) across workload catalogs.
+  - Dawn-vs-Doe compare configs now run Dawn through the command-stream delegate lane (`dawn_delegate`) instead of `dawn_perf_tests` filter mapping, so large upload sizes are measured apples-to-apples from shared command fixtures.
+  - strict comparability logic now accepts Dawn delegate operation timing/policy contracts (`doe-execution-row-total-ns` + `upload-row-total-preferred`) while preserving existing Dawn perf-test timing requirements where that adapter path is used.
+- host/backend benchmark compatibility gate (2026-03-02):
+  - `bench/compare_dawn_vs_doe.py` now enforces OS/backend compatibility before run execution using resolved command templates per workload.
+  - `bench/run_bench.py` now enforces the same OS/backend compatibility policy before workload execution from resolved command templates.
+  - `bench/preflight_vulkan_host.py` now fails fast on non-Linux hosts with an explicit platform error.
+  - unsupported host/backend mixes now fail fast with actionable errors (for example: Vulkan on macOS, Metal on Linux/Windows, D3D12 on Linux/macOS).
 - strict comparability now pins Dawn-vs-Doe timing-source and timing-selection-policy pairs by domain (`upload` uses row-total/upload-row-total-preferred; non-upload uses execution-total/`<none>`), instead of broad runtime-family compatibility acceptance.
 - strict normalization now requires counter-derived operation divisors for every comparable non-process-wall workload (not upload-only), and fails fast when configured divisors cannot be derived from trace counters.
 - strict comparable runs now execute a one-sample Doe preflight per workload before timed iterations and fail fast when `executionSuccessCount==0` or counter-derived normalization divisors disagree with workload contracts.
@@ -1001,3 +1015,35 @@ Ownership:
     - `FAWN_WEBGPU_BUN_PROVIDER=doe` forces Doe provider (error if lib missing)
     - `FAWN_WEBGPU_BUN_PROVIDER=provider` disables Doe auto-provider
     - default `auto` prefers Doe when the library is present, otherwise falls back to provider module.
+
+## Upload timing realism fix (2026-03-02)
+
+- Fixed strict upload timing-source selection drift that produced non-physical per-op timings (`~0.0002ms`) on Doe.
+- `bench/compare_dawn_vs_doe_modules/timing_selection.py` now derives upload per-op timing from row-total operation scope:
+  - per-row `executionSetupNs + executionEncodeNs + executionSubmitWaitNs` (with `executionDurationNs` only as fallback/ceiling guard),
+  - selected source now `doe-execution-row-total-ns`,
+  - selected policy now `upload-row-total-preferred`,
+  - ignore-first adjustments now remain in the same row-total scope (`doe-execution-row-total-ns+ignore-first-ops`).
+- Strict comparability/claimability source contracts were aligned to row-total:
+  - `bench/compare_dawn_vs_doe.py`
+  - `bench/compare_dawn_vs_doe_modules/comparability.py`
+  - `bench/compare_dawn_vs_doe_modules/claimability.py`
+- Single-workload strict validation (local Metal, one workload only):
+  - report: `bench/out/scratch/20260302T222904Z/metal.one.upload_write_buffer_64kb.realcheck.json`
+  - `comparisonStatus=comparable`
+  - timing sources: left `doe-execution-row-total-ns`, right `dawn-perf-wall-time`
+  - observed p50: left `0.018508ms`, right `0.011122638ms` (`delta p50=-39.90%`, Doe slower on this host/workload)
+  - this run is now classified `claimStatus=diagnostic` for performance claim purposes.
+
+## Synthetic timing claim guard (2026-03-02)
+
+- Local native backend timing paths still use deterministic runtime-state cost charging in:
+  - `zig/src/backend/metal/metal_runtime_state.zig`
+  - `zig/src/backend/vulkan/vulkan_runtime_state.zig`
+- To prevent synthetic/quantized claim promotion, claimability now rejects zero-variance Doe operation-timing windows:
+  - file: `bench/compare_dawn_vs_doe_modules/claimability.py`
+  - new reason:
+    `left timed samples have zero variance across the full claim window; treat as non-claimable until timing path is proven non-synthetic`
+- Validation artifact:
+  - `bench/out/scratch/20260302T234322Z/metal.one.upload_write_buffer_16mb.recheck_claim_guard.json`
+  - `comparisonStatus=comparable`, `claimStatus=diagnostic` (guard-triggered).
