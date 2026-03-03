@@ -1,30 +1,25 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "symbols": [
     {
       "symbol": "wgpuGetProcAddress",
-      "owner": "shared",
-      "requiredInStrict": true
+      "owner": "shared"
     },
     {
       "symbol": "wgpuCreateInstance",
-      "owner": "shared",
-      "requiredInStrict": true
+      "owner": "shared"
     },
     {
       "symbol": "wgpuCommandEncoderCopyBufferToBuffer",
-      "owner": "doe_metal",
-      "requiredInStrict": true
+      "owner": "shared"
     },
     {
       "symbol": "wgpuComputePassEncoderDispatchWorkgroups",
-      "owner": "doe_metal",
-      "requiredInStrict": true
+      "owner": "shared"
     },
     {
       "symbol": "wgpuRenderPassEncoderDraw",
-      "owner": "doe_metal",
-      "requiredInStrict": false
+      "owner": "shared"
     }
   ]
 }

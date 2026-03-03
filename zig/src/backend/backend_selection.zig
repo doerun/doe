@@ -54,25 +54,9 @@ pub fn select_backend(profile: model.DeviceProfile, policy: backend_policy.Selec
         };
     }
 
-    if (policy.default_backend == .doe_metal and !policy.allow_fallback) {
-        return .{
-            .backend_id = .doe_metal,
-            .reason = "strict_lane_no_fallback",
-            .fallback_used = false,
-        };
-    }
-
-    if (policy.default_backend == .doe_d3d12 and !policy.allow_fallback) {
-        return .{
-            .backend_id = .doe_d3d12,
-            .reason = "strict_lane_no_fallback",
-            .fallback_used = false,
-        };
-    }
-
     return .{
         .backend_id = policy.default_backend,
-        .reason = "policy_lane_default",
+        .reason = if (policy.strict_no_fallback) "strict_lane_no_fallback" else "policy_lane_default",
         .fallback_used = false,
     };
 }

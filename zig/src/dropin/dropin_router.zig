@@ -17,21 +17,13 @@ pub fn decide_symbol_route(
         else => {}
     }
 
-    // strict modes force ownership decisions to be honored without fallback.
+    // Strict policy never allows delegate fallback behavior.
     if (strict_no_fallback) {
         return .{ .owner = owner, .fallback_used = false };
     }
 
-    // Mixed mode allows falling back to Dawn delegate when a Zig-owned symbol
-    // cannot be resolved.
-    if (behavior_mode == .mixed_ownership) {
-        return .{ .owner = .dawn_delegate, .fallback_used = true };
-    }
-
-    // Strict ownership mode with fallback allowed by behavior policy.
-    if (behavior_mode == .dawn_ownership) {
-        return .{ .owner = .dawn_delegate, .fallback_used = false };
-    }
-
-    return .{ .owner = owner, .fallback_used = true };
+    return switch (behavior_mode) {
+        .dawn_ownership, .mixed_ownership => .{ .owner = .dawn_delegate, .fallback_used = false },
+        .doe_metal_ownership, .doe_vulkan_ownership, .doe_d3d12_ownership => .{ .owner = owner, .fallback_used = false },
+    };
 }

@@ -1,10 +1,3 @@
-pub const VulkanError = error{
-    InvalidArgument,
-    Unsupported,
-    UnsupportedFeature,
-    ShaderToolchainUnavailable,
-    ShaderCompileFailed,
-    SyncUnavailable,
-    TimingPolicyMismatch,
-    SurfaceUnavailable,
-};
+const common_errors = @import("../common/errors.zig");
+
+pub const VulkanError = common_errors.BackendNativeError;

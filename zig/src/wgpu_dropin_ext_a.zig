@@ -9,7 +9,7 @@ const render = @import("wgpu_render_api.zig");
 const async_procs = @import("wgpu_async_procs.zig");
 
 extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;
-extern fn doeWgpuDropinUnsupportedProc() callconv(.c) usize;
+extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn;
 
 fn symbolView(comptime name: []const u8) types.WGPUStringView {
     return .{ .data = name.ptr, .length = name.len };
@@ -17,7 +17,7 @@ fn symbolView(comptime name: []const u8) types.WGPUStringView {
 
 fn resolveRequiredProc(comptime FnType: type, comptime symbol_name: []const u8) FnType {
     const proc = wgpuGetProcAddress(symbolView(symbol_name)) orelse
-        return @as(FnType, @ptrCast(&doeWgpuDropinUnsupportedProc));
+        doeWgpuDropinAbortMissingRequiredSymbol(symbolView(symbol_name));
     return @as(FnType, @ptrCast(proc));
 }
 

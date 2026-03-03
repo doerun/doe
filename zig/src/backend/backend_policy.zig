@@ -129,58 +129,26 @@ pub fn load_policy_for_lane(
         else => return PolicyLoadError.InvalidRuntimePolicy,
     };
 
-    const rollback_value = root_obj.get("rollbackSwitch") orelse return PolicyLoadError.InvalidRuntimePolicy;
-    const rollback_obj = switch (rollback_value) {
-        .object => |obj| obj,
-        else => return PolicyLoadError.InvalidRuntimePolicy,
-    };
-    const rollback_name_value = rollback_obj.get("name") orelse return PolicyLoadError.InvalidRuntimePolicy;
-    const rollback_name = switch (rollback_name_value) {
-        .string => |value| value,
-        else => return PolicyLoadError.InvalidRuntimePolicy,
-    };
-    const rollback_backend_value = rollback_obj.get("forceBackend") orelse return PolicyLoadError.InvalidRuntimePolicy;
-    const rollback_backend_name = switch (rollback_backend_value) {
-        .string => |value| value,
-        else => return PolicyLoadError.InvalidRuntimePolicy,
-    };
-    const rollback_backend = backend_ids.parse_backend_id(rollback_backend_name) orelse return PolicyLoadError.InvalidRuntimePolicy;
-
-    var force_backend: ?backend_ids.BackendId = null;
-    const active_switch = std.process.getEnvVarOwned(allocator, "FAWN_BACKEND_SWITCH") catch |err| switch (err) {
-        error.EnvironmentVariableNotFound => null,
-        else => return err,
-    };
-    defer if (active_switch) |value| allocator.free(value);
-    if (active_switch) |switch_name| {
-        if (std.mem.eql(u8, switch_name, rollback_name)) {
-            force_backend = rollback_backend;
-        }
-    }
-
     const backend_value = lane_obj.get("defaultBackend") orelse return PolicyLoadError.InvalidRuntimePolicy;
     const backend_name = switch (backend_value) {
         .string => |value| value,
         else => return PolicyLoadError.InvalidRuntimePolicy,
     };
-    const lane_backend = backend_ids.parse_backend_id(backend_name) orelse return PolicyLoadError.InvalidRuntimePolicy;
-    const backend_id = force_backend orelse lane_backend;
+    const backend_id = backend_ids.parse_backend_id(backend_name) orelse return PolicyLoadError.InvalidRuntimePolicy;
 
     const allow_fallback_value = lane_obj.get("allowFallback") orelse return PolicyLoadError.InvalidRuntimePolicy;
-    var allow_fallback = switch (allow_fallback_value) {
+    const allow_fallback = switch (allow_fallback_value) {
         .bool => |value| value,
         else => return PolicyLoadError.InvalidRuntimePolicy,
     };
 
     const strict_no_fallback_value = lane_obj.get("strictNoFallback") orelse return PolicyLoadError.InvalidRuntimePolicy;
-    var strict_no_fallback = switch (strict_no_fallback_value) {
+    const strict_no_fallback = switch (strict_no_fallback_value) {
         .bool => |value| value,
         else => return PolicyLoadError.InvalidRuntimePolicy,
     };
-
-    if (force_backend != null) {
-        allow_fallback = false;
-        strict_no_fallback = true;
+    if (allow_fallback or !strict_no_fallback) {
+        return PolicyLoadError.InvalidRuntimePolicy;
     }
 
     return .{
@@ -200,8 +168,8 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
         .vulkan_dawn_release => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
-            .allow_fallback = true,
-            .strict_no_fallback = false,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
             .policy_hash = "backend-runtime-policy-v1",
         },
         .vulkan_doe_app, .vulkan_doe_comparable, .vulkan_doe_release => .{
@@ -221,15 +189,15 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
         .metal_doe_directional => .{
             .lane = lane,
             .default_backend = .doe_metal,
-            .allow_fallback = true,
-            .strict_no_fallback = false,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
             .policy_hash = "backend-runtime-policy-v1",
         },
         .metal_dawn_release => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
-            .allow_fallback = true,
-            .strict_no_fallback = false,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
             .policy_hash = "backend-runtime-policy-v1",
         },
         .metal_doe_comparable, .metal_doe_release, .metal_doe_app => .{
@@ -242,22 +210,22 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
         .vulkan_dawn_directional => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
-            .allow_fallback = true,
-            .strict_no_fallback = false,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
             .policy_hash = "backend-runtime-policy-v1",
         },
         .d3d12_doe_directional => .{
             .lane = lane,
             .default_backend = .doe_d3d12,
-            .allow_fallback = true,
-            .strict_no_fallback = false,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
             .policy_hash = "backend-runtime-policy-v1",
         },
         .d3d12_dawn_release => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
-            .allow_fallback = true,
-            .strict_no_fallback = false,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
             .policy_hash = "backend-runtime-policy-v1",
         },
     };

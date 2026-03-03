@@ -3,15 +3,11 @@
   "defaultLane": "vulkan_dawn_release",
   "selectionPolicyHashSeed": "backend-runtime-policy-v1",
   "cutoverPolicyPath": "config/backend-cutover-policy.json",
-  "rollbackSwitch": {
-    "name": "force_dawn_delegate",
-    "forceBackend": "dawn_delegate"
-  },
   "lanes": {
     "vulkan_dawn_release": {
       "defaultBackend": "dawn_delegate",
-      "allowFallback": true,
-      "strictNoFallback": false,
+      "allowFallback": false,
+      "strictNoFallback": true,
       "notes": "Dawn benchmark/claim lane retained after app cutover"
     },
     "vulkan_doe_app": {
@@ -28,8 +24,8 @@
     },
     "metal_doe_directional": {
       "defaultBackend": "doe_metal",
-      "allowFallback": true,
-      "strictNoFallback": false,
+      "allowFallback": false,
+      "strictNoFallback": true,
       "notes": "Directional diagnostics lane"
     },
     "metal_doe_comparable": {
@@ -46,14 +42,14 @@
     },
     "metal_dawn_release": {
       "defaultBackend": "dawn_delegate",
-      "allowFallback": true,
-      "strictNoFallback": false,
+      "allowFallback": false,
+      "strictNoFallback": true,
       "notes": "Metal Dawn baseline benchmark lane"
     },
     "d3d12_doe_directional": {
       "defaultBackend": "doe_d3d12",
-      "allowFallback": true,
-      "strictNoFallback": false,
+      "allowFallback": false,
+      "strictNoFallback": true,
       "notes": "D3D12 diagnostics lane"
     },
     "d3d12_doe_comparable": {
@@ -70,14 +66,14 @@
     },
     "d3d12_dawn_release": {
       "defaultBackend": "dawn_delegate",
-      "allowFallback": true,
-      "strictNoFallback": false,
+      "allowFallback": false,
+      "strictNoFallback": true,
       "notes": "D3D12 Dawn baseline benchmark lane"
     },
     "vulkan_dawn_directional": {
       "defaultBackend": "dawn_delegate",
-      "allowFallback": true,
-      "strictNoFallback": false,
+      "allowFallback": false,
+      "strictNoFallback": true,
       "notes": "Vulkan diagnostics lane"
     },
     "vulkan_doe_comparable": {

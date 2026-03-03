@@ -28,6 +28,9 @@ pub fn build(b: *std.Build) void {
         dropin_lib.linkSystemLibrary("dxguid");
     } else {
         dropin_lib.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            dropin_lib.linkSystemLibrary("vulkan");
+        }
     }
     const install_dropin = b.addInstallArtifact(dropin_lib, .{});
 
@@ -89,6 +92,9 @@ pub fn build(b: *std.Build) void {
         exe.linkSystemLibrary("dxguid");
     } else {
         exe.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            exe.linkSystemLibrary("vulkan");
+        }
     }
 
     b.installArtifact(exe);
@@ -178,6 +184,17 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
+    test_exec.linkLibC();
+    if (target.result.os.tag == .windows) {
+        test_exec.linkSystemLibrary("d3d12");
+        test_exec.linkSystemLibrary("dxgi");
+        test_exec.linkSystemLibrary("dxguid");
+    } else {
+        test_exec.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            test_exec.linkSystemLibrary("vulkan");
+        }
+    }
     const run_tests = b.addRunArtifact(test_exec);
     test_step.dependOn(&run_tests.step);
 
@@ -189,6 +206,17 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
+    d3d12_test_exec.linkLibC();
+    if (target.result.os.tag == .windows) {
+        d3d12_test_exec.linkSystemLibrary("d3d12");
+        d3d12_test_exec.linkSystemLibrary("dxgi");
+        d3d12_test_exec.linkSystemLibrary("dxguid");
+    } else {
+        d3d12_test_exec.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            d3d12_test_exec.linkSystemLibrary("vulkan");
+        }
+    }
     const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
     d3d12_test_step.dependOn(&run_d3d12_tests.step);
 }

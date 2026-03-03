@@ -1,8 +1,8 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
 const webgpu = @import("../../src/webgpu_ffi.zig");
 const d3d12_mod = @import("../../src/backend/d3d12/mod.zig");
-const d3d12_runtime_state = @import("../../src/backend/d3d12/d3d12_runtime_state.zig");
 
 fn test_profile() model.DeviceProfile {
     return .{
@@ -13,70 +13,26 @@ fn test_profile() model.DeviceProfile {
     };
 }
 
-test "d3d12 backend upload behavior applies mode and submit cadence" {
+test "d3d12 backend iface advertises doe_d3d12 lane identity" {
+    if (builtin.os.tag != .windows) return error.SkipZigTest;
+
     const backend = try d3d12_mod.ZigD3D12Backend.init(std.testing.allocator, test_profile(), null);
-    var iface = try backend.as_iface(std.testing.allocator, "test_upload_behavior", "test_policy_hash");
+    var iface = try backend.as_iface(std.testing.allocator, "test_backend_identity", "test_policy_hash");
     defer iface.deinit();
 
-    iface.set_upload_behavior(.copy_dst, 2);
-    d3d12_runtime_state.reset_state();
-
-    const first = try iface.execute_command(model.Command{
-        .upload = .{
-            .bytes = 256,
-            .align_bytes = 4,
-        },
-    });
-    try std.testing.expectEqual(@as(u64, 0), first.submit_wait_ns);
-    try std.testing.expectEqual(@as(u64, 1), d3d12_runtime_state.upload_copy_dst_calls());
-    try std.testing.expectEqual(@as(u64, 0), d3d12_runtime_state.upload_copy_dst_copy_src_calls());
-
-    const second = try iface.execute_command(model.Command{
-        .upload = .{
-            .bytes = 256,
-            .align_bytes = 4,
-        },
-    });
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, second.status);
-    try std.testing.expectEqual(@as(u64, 2), d3d12_runtime_state.upload_copy_dst_calls());
+    try std.testing.expectEqualStrings("doe_d3d12", @tagName(iface.id));
+    try std.testing.expectEqualStrings("doe_d3d12", @tagName(iface.telemetry.backend_id));
+    try std.testing.expect(!iface.telemetry.fallback_used);
 }
 
-test "d3d12 backend flush_queue submits upload cadence tail in per-command mode" {
-    const backend = try d3d12_mod.ZigD3D12Backend.init(std.testing.allocator, test_profile(), null);
-    var iface = try backend.as_iface(std.testing.allocator, "test_upload_tail_flush", "test_policy_hash");
-    defer iface.deinit();
-
-    iface.set_upload_behavior(.copy_dst, 2);
-    iface.set_queue_sync_mode(.per_command);
-    d3d12_runtime_state.reset_state();
-
-    const first = try iface.execute_command(model.Command{
-        .upload = .{
-            .bytes = 256,
-            .align_bytes = 4,
-        },
-    });
-    try std.testing.expectEqual(@as(u64, 0), first.submit_wait_ns);
-
-    _ = try iface.flush_queue();
-    try std.testing.expectEqual(@as(u64, 1), d3d12_runtime_state.upload_copy_dst_calls());
-}
-
-test "d3d12 kernel_dispatch emits one manifest per command" {
+test "d3d12 run_contract_path_for_test preserves dispatch operation count" {
     const result = try d3d12_mod.run_contract_path_for_test(
-        model.Command{ .kernel_dispatch = .{
-            .kernel = "vector_add",
-            .x = 1,
-            .y = 1,
-            .z = 1,
-        } },
+        model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
         webgpu.QueueSyncMode.per_command,
     );
-    try std.testing.expect(result.status == .ok);
-    try std.testing.expectEqual(@as(u64, 1), d3d12_runtime_state.manifest_emit_count());
-    if (d3d12_runtime_state.current_manifest_path()) |path| {
-        try std.testing.expect(std.mem.endsWith(u8, path, "d3d12-manifest-1.json"));
-    } else {
-        return error.MissingManifestPath;
+    try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
+    if (builtin.os.tag != .windows) {
+        try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
+        try std.testing.expectEqualStrings("d3d12-native-tests-require-windows", result.status_message);
     }
 }

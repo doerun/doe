@@ -1,12 +1,5 @@
-const std = @import("std");
-const d3d12_errors = @import("d3d12_errors.zig");
+const common_timing = @import("../common/timing.zig");
 
-fn now_ns() u64 {
-    const now = std.time.nanoTimestamp();
-    if (now <= 0) return 0;
-    return @as(u64, @intCast(now));
-}
-
-pub fn operation_timing_ns() d3d12_errors.D3D12Error!u64 {
-    return now_ns();
-}
+pub const now_ns = common_timing.now_ns;
+pub const operation_timing_ns = common_timing.operation_timing_ns;
+pub const ns_delta = common_timing.ns_delta;

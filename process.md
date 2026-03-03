@@ -74,6 +74,11 @@
   `releaseEvidence.enforceTargetUniqueLeftProfiles=true` makes `targetUniqueLeftProfiles` blocking (not warning-only).
 - for strict Dawn-vs-Doe upload comparability, fail fast if the executed `doe-zig-runtime` binary does not expose/validate upload knobs or appears older than key upload/runtime Zig sources.
 - comparability decisions must be emitted as machine-checkable per-workload obligations in benchmark reports; release claim gates must validate obligation schema + blocking-pass status, not only summary strings.
+- native D3D12 lane contract (`doe_d3d12`):
+  - backend routing must stay direct (`backendKind=native_d3d12`), with no delegate fallback on strict D3D12 lanes.
+  - legacy simulator/runtime-state modules are not part of the D3D12 lane; command execution must flow through the instance-owned native backend implementation.
+  - command support must be capability-gated via `backend/common/capabilities.zig`; unsupported commands fail fast with typed taxonomy and capability name.
+  - comparability/timing labeling must be derived from shared artifact classification (`backend/common/artifact_meta.zig`): GPU timestamp valid => strict; attempted-but-invalid or no-attempt => directional CPU timing classes.
 
 6. Benchmark
 - run self-contained benchmark matrix
@@ -200,7 +205,7 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 - for app-lane rollout verification, run local-metal gate execution with explicit lane override:
   `--with-local-metal-gates --local-metal-lane metal_doe_app`
 - validate rollback readiness by running `bench/cycle_gate.py` (via release pipeline with `--with-cycle-gate --cycle-enforce-rollbacks`) under the same comparable/release evidence policy.
-- the explicit rollback switch remains `force_dawn_delegate` (`config/backend-runtime-policy.json` / `config/backend-cutover-policy.json`), preserving deterministic recovery to Dawn baseline.
+- runtime backend routing is strict no-fallback by contract across all lanes (`allowFallback=false`, `strictNoFallback=true` in `config/backend-runtime-policy.json`).
 
 ## 9. Local Vulkan Hardening Flow (Additive)
 

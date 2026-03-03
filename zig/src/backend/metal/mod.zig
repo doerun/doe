@@ -1,70 +1,82 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const surface_procs = @import("../../wgpu_surface_procs.zig");
 const backend_iface = @import("../backend_iface.zig");
-const metal_runtime_state = @import("metal_runtime_state.zig");
-const metal_instance = @import("metal_instance.zig");
-const metal_adapter = @import("metal_adapter.zig");
-const metal_device = @import("metal_device.zig");
-const metal_queue = @import("metal_queue.zig");
-const metal_sync = @import("metal_sync.zig");
-const metal_timing = @import("metal_timing.zig");
-const copy_encode = @import("commands/copy_encode.zig");
-const compute_encode = @import("commands/compute_encode.zig");
-const render_encode = @import("commands/render_encode.zig");
-const staging_ring = @import("upload/staging_ring.zig");
-const upload_path = @import("upload/upload_path.zig");
-const buffer = @import("resources/buffer.zig");
-const texture = @import("resources/texture.zig");
-const sampler = @import("resources/sampler.zig");
-const bind_group = @import("resources/bind_group.zig");
-const resource_table = @import("resources/resource_table.zig");
-const wgsl_ingest = @import("pipeline/wgsl_ingest.zig");
-const wgsl_to_msl_runner = @import("pipeline/wgsl_to_msl_runner.zig");
-const msl_compile_runner = @import("pipeline/msl_compile_runner.zig");
-const pipeline_cache = @import("pipeline/pipeline_cache.zig");
-const shader_artifact_manifest = @import("pipeline/shader_artifact_manifest.zig");
-const surface_create = @import("surface/surface_create.zig");
-const surface_configure = @import("surface/surface_configure.zig");
-const surface_present = @import("surface/present.zig");
-const proc_table = @import("procs/proc_table.zig");
-const proc_export = @import("procs/proc_export.zig");
+const common_errors = @import("../common/errors.zig");
+const common_timing = @import("../common/timing.zig");
+const command_info = @import("../common/command_info.zig");
+const capabilities = @import("../common/capabilities.zig");
+const artifact_meta = @import("../common/artifact_meta.zig");
+
+const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
+const MANIFEST_PATH_CAPACITY: usize = 256;
+const HASH_HEX_SIZE: usize = 64;
+const MANIFEST_CONTENT_CAPACITY: usize = 2048;
+const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+const HEX = "0123456789abcdef";
 
 pub const ZigMetalBackend = struct {
     allocator: std.mem.Allocator,
-    runtime_bootstrapped: bool = false,
+    inner: webgpu.WebGPUBackend,
+    capability_set: capabilities.CapabilitySet,
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = 1,
     queue_wait_mode: webgpu.QueueWaitMode = .process_events,
     queue_sync_mode: webgpu.QueueSyncMode = .per_command,
     gpu_timestamp_mode: webgpu.GpuTimestampMode = .auto,
-    pending_upload_commands: u32 = 0,
-    upload_reserved_bytes: u64 = 0,
-    upload_buffer_ready: bool = false,
+    manifest_emit_count: u64 = 0,
+    manifest_path_storage: [MANIFEST_PATH_CAPACITY]u8 = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
+    manifest_path_len: usize = 0,
+    manifest_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
+    manifest_hash_len: usize = 0,
 
-    pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*ZigMetalBackend {
-        _ = profile;
-        _ = kernel_root;
-        metal_runtime_state.reset_state();
+    pub fn init(
+        allocator: std.mem.Allocator,
+        profile: model.DeviceProfile,
+        kernel_root: ?[]const u8,
+    ) !*ZigMetalBackend {
+        if (profile.api != .metal) return common_errors.BackendNativeError.UnsupportedFeature;
+        if (builtin.os.tag != .macos) return common_errors.BackendNativeError.UnsupportedFeature;
 
         const ptr = try allocator.create(ZigMetalBackend);
         errdefer allocator.destroy(ptr);
+
+        var inner = try webgpu.WebGPUBackend.init(allocator, profile, kernel_root);
+        errdefer inner.deinit();
+
         ptr.* = .{
             .allocator = allocator,
-            .runtime_bootstrapped = false,
+            .inner = inner,
+            .capability_set = default_capability_set(),
             .upload_buffer_usage_mode = .copy_dst_copy_src,
             .upload_submit_every = 1,
             .queue_wait_mode = .process_events,
             .queue_sync_mode = .per_command,
             .gpu_timestamp_mode = .auto,
-            .pending_upload_commands = 0,
-            .upload_reserved_bytes = 0,
-            .upload_buffer_ready = false,
+            .manifest_emit_count = 0,
+            .manifest_path_storage = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
+            .manifest_path_len = 0,
+            .manifest_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
+            .manifest_hash_len = 0,
         };
+
+        ptr.inner.setUploadBehavior(ptr.upload_buffer_usage_mode, ptr.upload_submit_every);
+        ptr.inner.setQueueWaitMode(ptr.queue_wait_mode);
+        ptr.inner.setQueueSyncMode(ptr.queue_sync_mode);
+        ptr.inner.setGpuTimestampMode(ptr.gpu_timestamp_mode);
+        ptr.refresh_capabilities();
+
         return ptr;
     }
 
-    pub fn as_iface(self: *ZigMetalBackend, allocator: std.mem.Allocator, reason: []const u8, policy_hash: []const u8) !backend_iface.BackendIface {
+    pub fn as_iface(
+        self: *ZigMetalBackend,
+        allocator: std.mem.Allocator,
+        reason: []const u8,
+        policy_hash: []const u8,
+    ) !backend_iface.BackendIface {
         _ = allocator;
         return .{
             .id = .doe_metal,
@@ -80,399 +92,292 @@ pub const ZigMetalBackend = struct {
             },
         };
     }
+
+    fn manifest_path(self: *const ZigMetalBackend) ?[]const u8 {
+        if (self.manifest_path_len == 0) return null;
+        return self.manifest_path_storage[0..self.manifest_path_len];
+    }
+
+    fn manifest_hash(self: *const ZigMetalBackend) ?[]const u8 {
+        if (self.manifest_hash_len == 0) return null;
+        return self.manifest_hash_storage[0..self.manifest_hash_len];
+    }
+
+    fn refresh_capabilities(self: *ZigMetalBackend) void {
+        var caps = default_capability_set();
+
+        if (self.inner.has_multi_draw_indirect) {
+            caps.declare(.indirect_draw);
+            caps.declare(.indexed_indirect_draw);
+        }
+        if (self.inner.has_timestamp_query) {
+            caps.declare(.gpu_timestamps);
+        }
+        if (self.inner.has_timestamp_inside_passes) {
+            caps.declare(.timestamp_inside_passes);
+        }
+        if (surface_procs.loadSurfaceProcs(self.inner.dyn_lib) != null) {
+            caps.declare(.surface_lifecycle);
+            caps.declare(.surface_present);
+        }
+
+        self.capability_set = caps;
+    }
+
+    fn previous_manifest_hash(self: *const ZigMetalBackend) []const u8 {
+        return self.manifest_hash() orelse ZERO_HASH;
+    }
+
+    fn emit_shader_artifact_manifest(
+        self: *ZigMetalBackend,
+        command: model.Command,
+        meta: artifact_meta.ArtifactMeta,
+        status_code: []const u8,
+    ) common_errors.BackendNativeError!void {
+        self.manifest_emit_count +|= 1;
+
+        var path_buffer: [MANIFEST_PATH_CAPACITY]u8 = undefined;
+        const path = std.fmt.bufPrint(
+            &path_buffer,
+            "{s}/metal_shader_artifact_{d}.json",
+            .{ SHADER_ARTIFACT_DIR, self.manifest_emit_count },
+        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        var content_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
+        const content = std.fmt.bufPrint(
+            &content_buffer,
+            "{{\"backendId\":\"doe_metal\",\"backendKind\":\"{s}\",\"timingSource\":\"{s}\",\"comparability\":\"{s}\",\"claimable\":{},\"module\":\"{s}\",\"statusCode\":\"{s}\",\"previousManifestHash\":\"{s}\"}}\n",
+            .{
+                meta.backend_kind.name(),
+                meta.timing_source.name(),
+                meta.comparability.name(),
+                meta.is_claimable(),
+                command_info.manifest_module(command),
+                status_code,
+                self.previous_manifest_hash(),
+            },
+        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        const hash = sha256_hex(content);
+
+        std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+        const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+        defer file.close();
+        file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        persist_manifest_path(self, path);
+        persist_manifest_hash(self, hash[0..]);
+    }
 };
+
+fn default_capability_set() capabilities.CapabilitySet {
+    var set = capabilities.CapabilitySet{};
+    set.declare_all(&.{
+        .kernel_dispatch,
+        .buffer_upload,
+        .buffer_copy,
+        .barrier_sync,
+        .sampler_lifecycle,
+        .texture_write,
+        .texture_query,
+        .texture_destroy,
+        .async_diagnostics,
+        .map_async,
+        .render_pass,
+        .render_draw,
+    });
+    return set;
+}
+
+fn should_emit_shader_artifact(command: model.Command) bool {
+    return switch (command) {
+        .dispatch,
+        .dispatch_indirect,
+        .kernel_dispatch,
+        .render_draw,
+        .draw_indirect,
+        .draw_indexed_indirect,
+        .render_pass,
+        .async_diagnostics,
+        => true,
+        else => false,
+    };
+}
+
+fn artifact_status_code(result: webgpu.NativeExecutionResult) []const u8 {
+    if (result.status_message.len != 0) return result.status_message;
+    return switch (result.status) {
+        .ok => "ok",
+        .unsupported => "unsupported",
+        .@"error" => "error",
+    };
+}
+
+fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
+    var output: [HASH_HEX_SIZE]u8 = undefined;
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+    for (digest, 0..) |byte, index| {
+        const output_index = index * 2;
+        output[output_index] = HEX[(byte >> 4) & 0x0F];
+        output[output_index + 1] = HEX[byte & 0x0F];
+    }
+    return output;
+}
+
+fn persist_manifest_path(self: *ZigMetalBackend, value: []const u8) void {
+    if (value.len > self.manifest_path_storage.len) {
+        self.manifest_path_len = 0;
+        return;
+    }
+    std.mem.copyForwards(u8, self.manifest_path_storage[0..value.len], value);
+    self.manifest_path_len = value.len;
+}
+
+fn persist_manifest_hash(self: *ZigMetalBackend, value: []const u8) void {
+    if (value.len > self.manifest_hash_storage.len) {
+        self.manifest_hash_len = 0;
+        return;
+    }
+    std.mem.copyForwards(u8, self.manifest_hash_storage[0..value.len], value);
+    self.manifest_hash_len = value.len;
+}
 
 fn cast(ctx: *anyopaque) *ZigMetalBackend {
     return @as(*ZigMetalBackend, @ptrCast(@alignCast(ctx)));
 }
 
+pub fn manifest_path_from_context(ctx: *anyopaque) ?[]const u8 {
+    return cast(ctx).manifest_path();
+}
+
+pub fn manifest_hash_from_context(ctx: *anyopaque) ?[]const u8 {
+    return cast(ctx).manifest_hash();
+}
+
 fn deinit(ctx: *anyopaque) void {
     const self = cast(ctx);
     const allocator = self.allocator;
-    metal_runtime_state.reset_state();
+    self.inner.deinit();
     allocator.destroy(self);
-}
-
-fn ns_delta(after: u64, before: u64) u64 {
-    if (after > before) return after - before;
-    return 0;
-}
-
-fn ensure_runtime_bootstrapped(self: *ZigMetalBackend) !void {
-    if (self.runtime_bootstrapped) return;
-    try metal_instance.create_instance();
-    try metal_adapter.select_adapter();
-    try metal_device.create_device();
-    self.runtime_bootstrapped = true;
-}
-
-fn is_dispatch_command(command: model.Command) bool {
-    return switch (command) {
-        .dispatch, .dispatch_indirect, .kernel_dispatch => true,
-        else => false,
-    };
-}
-
-fn command_operation_count(command: model.Command) u32 {
-    return switch (command) {
-        .dispatch_indirect => 1,
-        .kernel_dispatch => |kernel| if (kernel.repeat > 0) kernel.repeat else 1,
-        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |render| if (render.draw_count > 0) render.draw_count else 1,
-        .async_diagnostics => |diagnostics| if (diagnostics.iterations > 0) diagnostics.iterations else 1,
-        else => 1,
-    };
-}
-
-fn command_manifest_module(command: model.Command) []const u8 {
-    return switch (command) {
-        .upload => "upload",
-        .copy_buffer_to_texture => "copy_buffer_to_texture",
-        .barrier => "barrier",
-        .dispatch => "dispatch",
-        .dispatch_indirect => "dispatch_indirect",
-        .kernel_dispatch => "kernel_dispatch",
-        .render_draw => "render_draw",
-        .draw_indirect => "draw_indirect",
-        .draw_indexed_indirect => "draw_indexed_indirect",
-        .render_pass => "render_pass",
-        .sampler_create => "sampler_create",
-        .sampler_destroy => "sampler_destroy",
-        .texture_write => "texture_write",
-        .texture_query => "texture_query",
-        .texture_destroy => "texture_destroy",
-        .surface_create => "surface_create",
-        .surface_capabilities => "surface_capabilities",
-        .surface_configure => "surface_configure",
-        .surface_acquire => "surface_acquire",
-        .surface_present => "surface_present",
-        .surface_unconfigure => "surface_unconfigure",
-        .surface_release => "surface_release",
-        .async_diagnostics => "async_diagnostics",
-        .map_async => "map_async",
-    };
-}
-
-fn command_status_message(command: model.Command) []const u8 {
-    return switch (command) {
-        .upload => "metal upload command submitted",
-        .copy_buffer_to_texture => "metal copy command submitted",
-        .barrier => "metal barrier command submitted",
-        .dispatch => "metal dispatch command submitted",
-        .dispatch_indirect => "metal dispatch_indirect command submitted",
-        .kernel_dispatch => "metal kernel dispatch command submitted",
-        .render_draw => "metal render command submitted",
-        .draw_indirect => "metal draw_indirect command submitted",
-        .draw_indexed_indirect => "metal draw_indexed_indirect command submitted",
-        .render_pass => "metal render_pass command submitted",
-        .sampler_create => "metal sampler_create command submitted",
-        .sampler_destroy => "metal sampler_destroy command submitted",
-        .texture_write => "metal texture_write command submitted",
-        .texture_query => "metal texture_query command submitted",
-        .texture_destroy => "metal texture_destroy command submitted",
-        .surface_create => "metal surface_create command submitted",
-        .surface_capabilities => "metal surface_capabilities command submitted",
-        .surface_configure => "metal surface_configure command submitted",
-        .surface_acquire => "metal surface_acquire command submitted",
-        .surface_present => "metal surface_present command submitted",
-        .surface_unconfigure => "metal surface_unconfigure command submitted",
-        .surface_release => "metal surface_release command submitted",
-        .async_diagnostics => "metal async_diagnostics command submitted",
-        .map_async => "metal map_async command submitted",
-    };
-}
-
-fn map_error_status(err: anyerror) webgpu.NativeExecutionStatus {
-    return switch (err) {
-        error.Unsupported,
-        error.UnsupportedFeature,
-        error.SyncUnavailable,
-        error.TimingPolicyMismatch,
-        error.SurfaceUnavailable,
-        => .unsupported,
-        else => .@"error",
-    };
-}
-
-fn submit_and_maybe_wait(self: *ZigMetalBackend) !u64 {
-    const submit_start = try metal_timing.operation_timing_ns();
-    try metal_queue.submit();
-    if (self.queue_sync_mode == .per_command) {
-        switch (self.queue_wait_mode) {
-            .process_events, .wait_any => try metal_sync.wait_for_completion(),
-        }
-    }
-    const submit_end = try metal_timing.operation_timing_ns();
-    return ns_delta(submit_end, submit_start);
-}
-
-const SubmitResult = struct {
-    wait_ns: u64,
-    submitted: bool,
-};
-
-fn upload_usage_mode(mode: webgpu.UploadBufferUsageMode) upload_path.UploadUsageMode {
-    return switch (mode) {
-        .copy_dst_copy_src => .copy_dst_copy_src,
-        .copy_dst => .copy_dst,
-    };
-}
-
-fn submit_for_command(self: *ZigMetalBackend, command: model.Command) !SubmitResult {
-    if (command == .upload and self.upload_submit_every > 1) {
-        self.pending_upload_commands +|= 1;
-        if (self.pending_upload_commands >= self.upload_submit_every) {
-            self.pending_upload_commands = 0;
-            return .{
-                .wait_ns = try submit_and_maybe_wait(self),
-                .submitted = true,
-            };
-        }
-        return .{
-            .wait_ns = 0,
-            .submitted = false,
-        };
-    }
-
-    if (self.pending_upload_commands > 0) {
-        self.pending_upload_commands = 0;
-        return .{
-            .wait_ns = try submit_and_maybe_wait(self),
-            .submitted = true,
-        };
-    }
-
-    self.pending_upload_commands = 0;
-    return .{
-        .wait_ns = try submit_and_maybe_wait(self),
-        .submitted = true,
-    };
-}
-
-fn command_requires_shader_manifest(command: model.Command) bool {
-    return switch (command) {
-        .dispatch, .dispatch_indirect, .kernel_dispatch, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass, .async_diagnostics => true,
-        else => false,
-    };
-}
-
-fn ensure_upload_capacity(self: *ZigMetalBackend, required_bytes: u64) !void {
-    if (required_bytes == 0) return;
-    if (required_bytes <= self.upload_reserved_bytes) return;
-    const additional_bytes = required_bytes - self.upload_reserved_bytes;
-    try staging_ring.reserve(additional_bytes);
-    self.upload_reserved_bytes = required_bytes;
-}
-
-fn ensure_upload_buffer(self: *ZigMetalBackend) !void {
-    if (self.upload_buffer_ready) return;
-    try buffer.create_buffer();
-    self.upload_buffer_ready = true;
-}
-
-fn route_runtime_command(self: *ZigMetalBackend, command: model.Command) !void {
-    metal_runtime_state.clear_manifest_telemetry();
-    metal_runtime_state.set_manifest_module(command_manifest_module(command));
-    switch (command) {
-        .upload => |upload| {
-            const upload_bytes = @as(u64, @intCast(upload.bytes));
-            try ensure_upload_capacity(self, upload_bytes);
-            try ensure_upload_buffer(self);
-            try upload_path.upload_once(upload_usage_mode(self.upload_buffer_usage_mode), upload_bytes);
-        },
-        .copy_buffer_to_texture => {
-            try copy_encode.encode_copy();
-            try texture.create_texture();
-            try resource_table.lookup_resource();
-        },
-        .dispatch, .dispatch_indirect, .kernel_dispatch => {
-            try compute_encode.encode_compute();
-            try pipeline_cache.pipeline_cache_lookup();
-        },
-        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => {
-            try render_encode.encode_render();
-            try pipeline_cache.pipeline_cache_lookup();
-        },
-        .sampler_create => {
-            try sampler.create_sampler();
-            try bind_group.create_bind_group();
-        },
-        .barrier => {
-            try metal_sync.wait_for_completion();
-        },
-        .sampler_destroy => {
-            try sampler.destroy_sampler();
-        },
-        .texture_write => {
-            try texture.write_texture();
-        },
-        .texture_query => {
-            try texture.query_texture();
-        },
-        .texture_destroy => {
-            try texture.destroy_texture();
-        },
-        .surface_capabilities => {
-            try surface_configure.get_surface_capabilities();
-        },
-        .surface_acquire => {
-            try surface_present.acquire_surface();
-        },
-        .surface_create => {
-            try surface_create.create_surface();
-        },
-        .surface_configure => {
-            try surface_configure.configure_surface();
-        },
-        .surface_present => {
-            try surface_present.present_surface();
-        },
-        .surface_unconfigure => {
-            try surface_configure.unconfigure_surface();
-        },
-        .surface_release => {
-            try surface_present.release_surface();
-        },
-        .async_diagnostics => {
-            try wgsl_ingest.ingest_wgsl();
-            try wgsl_to_msl_runner.run_wgsl_to_msl();
-            try msl_compile_runner.run_msl_compile();
-            try proc_table.build_proc_table();
-            try proc_export.export_procs();
-        },
-        .map_async => {
-            try metal_sync.wait_for_completion();
-        },
-    }
-
-    if (command_requires_shader_manifest(command)) {
-        try shader_artifact_manifest.emit_shader_artifact_manifest();
-    }
-}
-
-fn execute_runtime_command(self: *ZigMetalBackend, command: model.Command) !webgpu.NativeExecutionResult {
-    var setup_ns: u64 = 0;
-    if (!self.runtime_bootstrapped) {
-        const setup_start = try metal_timing.operation_timing_ns();
-        try ensure_runtime_bootstrapped(self);
-        const setup_end = try metal_timing.operation_timing_ns();
-        setup_ns = ns_delta(setup_end, setup_start);
-    }
-
-    const encode_start = try metal_timing.operation_timing_ns();
-    route_runtime_command(self, command) catch |err| {
-        return .{
-            .status = map_error_status(err),
-            .status_message = @errorName(err),
-            .setup_ns = setup_ns,
-        };
-    };
-    const encode_end = try metal_timing.operation_timing_ns();
-    const encode_ns = ns_delta(encode_end, encode_start);
-
-    const submit = submit_for_command(self, command) catch |err| {
-        return .{
-            .status = map_error_status(err),
-            .status_message = @errorName(err),
-            .setup_ns = setup_ns,
-            .encode_ns = encode_ns,
-        };
-    };
-    const dispatch_like = is_dispatch_command(command);
-    const operation_count = command_operation_count(command);
-    const gpu_timestamp_attempted = dispatch_like and self.gpu_timestamp_mode == .auto;
-    const gpu_timestamp_ns: u64 = 0;
-    const status_message = if (command == .upload and self.upload_submit_every > 1 and !submit.submitted)
-        "metal upload command queued"
-    else
-        command_status_message(command);
-
-    return .{
-        .status = .ok,
-        .status_message = status_message,
-        .setup_ns = setup_ns,
-        .encode_ns = encode_ns,
-        .submit_wait_ns = submit.wait_ns,
-        .dispatch_count = operation_count,
-        .gpu_timestamp_ns = gpu_timestamp_ns,
-        .gpu_timestamp_attempted = gpu_timestamp_attempted,
-        .gpu_timestamp_valid = false,
-    };
-}
-
-pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgpu.QueueSyncMode) !void {
-    var backend = ZigMetalBackend{
-        .allocator = std.testing.allocator,
-        .runtime_bootstrapped = false,
-        .upload_buffer_usage_mode = .copy_dst_copy_src,
-        .upload_submit_every = 1,
-        .queue_wait_mode = .process_events,
-        .queue_sync_mode = queue_sync_mode,
-        .gpu_timestamp_mode = .off,
-        .pending_upload_commands = 0,
-        .upload_reserved_bytes = 0,
-        .upload_buffer_ready = false,
-    };
-    metal_runtime_state.reset_state();
-    _ = try execute_runtime_command(&backend, command);
 }
 
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
-    return try execute_runtime_command(self, command);
+    self.refresh_capabilities();
+    const required = capabilities.required_capabilities(command);
+    if (self.capability_set.missing(required)) |missing_cap| {
+        return .{
+            .status = .unsupported,
+            .status_message = capabilities.capability_name(missing_cap),
+            .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
+        };
+    }
+
+    const execute_start = try common_timing.operation_timing_ns();
+    var native_result = self.inner.executeCommand(command) catch |err| {
+        const execute_end = try common_timing.operation_timing_ns();
+        _ = common_timing.ns_delta(execute_end, execute_start);
+        return .{
+            .status = common_errors.map_error_status(err),
+            .status_message = common_errors.error_code(err),
+            .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
+        };
+    };
+    const execute_end = try common_timing.operation_timing_ns();
+    _ = common_timing.ns_delta(execute_end, execute_start);
+
+    if (command_info.is_dispatch(command) and native_result.dispatch_count == 0) {
+        native_result.dispatch_count = command_info.operation_count(command);
+    }
+
+    const meta = artifact_meta.classify(
+        .native_metal,
+        native_result.gpu_timestamp_valid,
+        native_result.gpu_timestamp_attempted,
+    );
+    if (should_emit_shader_artifact(command)) {
+        self.emit_shader_artifact_manifest(command, meta, artifact_status_code(native_result)) catch |err| {
+            native_result.status = common_errors.map_error_status(err);
+            native_result.status_message = common_errors.error_code(err);
+        };
+    }
+
+    return native_result;
 }
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
-    if (self.upload_buffer_usage_mode != mode) {
-        self.upload_buffer_ready = false;
-    }
     self.upload_buffer_usage_mode = mode;
     self.upload_submit_every = if (submit_every == 0) 1 else submit_every;
+    self.inner.setUploadBehavior(self.upload_buffer_usage_mode, self.upload_submit_every);
 }
 
 fn set_queue_wait_mode(ctx: *anyopaque, mode: webgpu.QueueWaitMode) void {
     const self = cast(ctx);
     self.queue_wait_mode = mode;
+    self.inner.setQueueWaitMode(mode);
 }
 
 fn set_queue_sync_mode(ctx: *anyopaque, mode: webgpu.QueueSyncMode) void {
     const self = cast(ctx);
     self.queue_sync_mode = mode;
+    self.inner.setQueueSyncMode(mode);
 }
 
 fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
     const self = cast(ctx);
     self.gpu_timestamp_mode = mode;
+    self.inner.setGpuTimestampMode(mode);
 }
 
 fn flush_queue(ctx: *anyopaque) anyerror!u64 {
     const self = cast(ctx);
-    if (!self.runtime_bootstrapped and self.pending_upload_commands == 0) {
-        return 0;
-    }
-    try ensure_runtime_bootstrapped(self);
-    var flush_ns: u64 = 0;
-
-    if (self.pending_upload_commands > 0) {
-        self.pending_upload_commands = 0;
-        flush_ns +|= try submit_and_maybe_wait(self);
-    }
-
-    if (self.queue_sync_mode == .deferred) {
-        const wait_start = try metal_timing.operation_timing_ns();
-        try metal_sync.wait_for_completion();
-        const wait_end = try metal_timing.operation_timing_ns();
-        flush_ns +|= ns_delta(wait_end, wait_start);
-    }
-
-    return flush_ns;
+    return try self.inner.flushQueue();
 }
 
 fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     const self = cast(ctx);
-    try ensure_runtime_bootstrapped(self);
-    try ensure_upload_capacity(self, max_upload_bytes);
-    try ensure_upload_buffer(self);
+    try self.inner.prewarmUploadPath(max_upload_bytes);
+}
+
+fn is_runtime_unavailable_for_test(err: anyerror) bool {
+    return switch (err) {
+        error.LibraryOpenFailed,
+        error.SymbolMissing,
+        error.AdapterUnavailable,
+        error.AdapterRequestFailed,
+        error.AdapterRequestNoCallback,
+        error.DeviceRequestFailed,
+        error.DeviceRequestNoCallback,
+        error.NativeInstanceUnavailable,
+        error.NativeQueueUnavailable,
+        => true,
+        else => false,
+    };
+}
+
+pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgpu.QueueSyncMode) !void {
+    const profile = model.DeviceProfile{
+        .vendor = "apple",
+        .api = .metal,
+        .device_family = "m3",
+        .driver_version = .{ .major = 1, .minor = 0, .patch = 0 },
+    };
+
+    const backend = ZigMetalBackend.init(std.testing.allocator, profile, null) catch |err| {
+        if (is_runtime_unavailable_for_test(err)) return;
+        return err;
+    };
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_contract", "test_policy_hash");
+    defer iface.deinit();
+
+    iface.set_queue_sync_mode(queue_sync_mode);
+    _ = try iface.execute_command(command);
 }
 
 const VTABLE = backend_iface.BackendVTable{

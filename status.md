@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-03-02
+Date: 2026-03-03
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -23,6 +23,18 @@ AMD Vulkan comparison presets now include claimable comparable slices (local + r
   - runtime module tree: `zig/src/backend/d3d12/*`
   - lane contracts: `d3d12_doe_app`, `d3d12_doe_directional`, `d3d12_doe_comparable`, `d3d12_doe_release`, `d3d12_dawn_release`
   - drop-in behavior contracts include `doe_d3d12_ownership` and D3D12 lane mode mapping.
+- D3D12 native backend routing is active:
+  - `zig/src/backend/backend_registry.zig` routes `doe_d3d12` directly to `zig/src/backend/d3d12/mod.zig`.
+  - active D3D12 execution is instance-owned (`ZigD3D12Backend` + `WebGPUBackend`) with shared common-layer error/capability contracts.
+  - D3D12 shader-artifact manifest failures are now handled in-place (typed status update) without throwing away command timing/dispatch metadata.
+- Vulkan native backend routing is now active on `doe_vulkan`:
+  - `zig/src/backend/backend_registry.zig` routes `doe_vulkan` to `zig/src/backend/vulkan/mod.zig` (no Dawn delegate fallback in this lane).
+  - `kernel_dispatch` binds real kernel SPIR-V via native Vulkan runtime (`load_kernel_spirv` + pipeline bind), removing noop-kernel execution on that path.
+  - upload cadence now queues copy command buffers and flushes by explicit submit policy (`upload_submit_every`) instead of immediate per-upload submit.
+- Runtime backend selection is strict no-fallback across all lanes:
+  - `zig/src/backend/backend_runtime.zig` initializes the selected backend directly and does not auto-route to `dawn_delegate`.
+  - `config/backend-runtime-policy.json` enforces `allowFallback=false` and `strictNoFallback=true` for every lane.
+  - backend init failures now fail fast with explicit backend errors and `fallbackUsed=false`.
 
 Benchmark contract coverage snapshot (2026-02-25 update):
 - `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `31` strict apples-to-apples comparable + `9` directional contracts.
@@ -81,7 +93,8 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `texture_sampling_raster_baseline` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.local.metal.extended.json` (no hard-coded 19-workload subset filter).
 - backend lane timing realism hardening (2026-03-02):
-  - `zig/src/backend/backend_registry.zig` now routes `doe_metal`/`doe_vulkan`/`doe_d3d12` lane execution through the real `webgpu.WebGPUBackend` command path while preserving Doe backend IDs in telemetry.
+  - `zig/src/backend/backend_registry.zig` now routes `doe_metal` lane execution through the real `webgpu.WebGPUBackend` command path while preserving Doe backend IDs in telemetry.
+  - `doe_vulkan` and `doe_d3d12` lanes now execute through native backend modules in active registry routing.
   - backend timing source modules (`zig/src/backend/{metal,vulkan,d3d12}/*_timing.zig`) now use real nanosecond timestamps instead of runtime-state synthetic counters.
   - fabricated GPU timestamp fallback (`gpu_timestamp_ns = encode_ns`) was removed from Doe backend lane modules.
   - Metal setup timing now records an explicit start/end delta window (instead of assigning an absolute timing sample).
@@ -132,7 +145,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 3. Real backend execution against GPU devices (current path includes queue-submission for upload/copy/barrier and dispatch-family compute lowering in `zig/src/webgpu_ffi.zig`).
 4. Multi-host profile diversity for claim substantiation remains an infrastructure target; policy and gate wiring now exist, but broader runner coverage still needs provisioning.
 - `zig/src` now has queue-submission execution for all implemented command classes in `zig/src/webgpu_ffi.zig`.
-- Dispatch/kernel routes now use native compute pipeline lowering with fallback WGSL for missing kernel payloads.
+- Dispatch fallback shims were removed from active paths: explicit `kernel_dispatch` kernel payloads are required, and unsupported dispatch families fail with explicit taxonomy instead of no-op WGSL fallback.
 - Planned full native execution path is now represented by implemented multi-module backend surfaces; remaining work is coverage hardening, reliability tuning, and benchmark substantiation.
 
 ### Non-prototype execution backlog (full native)
@@ -821,12 +834,12 @@ Meaning:
 4. strict-lane evidence closure
 - Metal shader-commands now emit command-scoped manifest telemetry and strict manifest checks are gate-enforced for comparable/release Metal lanes.
 - local-metal routing, sync, timing, backend, and proc-resolution gates are wired as additive strict controls with no change to AMD Vulkan strict defaults.
-- rollback switch contract is active (`force_dawn_delegate`) and macOS-app cutover is now a strict Metal default lane (`metal_doe_app` -> `doe_metal`).
+- strict no-fallback routing is enforced across all backend lanes (`allowFallback=false`, `strictNoFallback=true`) and macOS-app cutover remains a strict Metal default lane (`metal_doe_app` -> `doe_metal`).
 
 5. Metal decoupling phase-completion status (2026-02-26)
 - all Metal phases are now closed in this rollout scope.
 - phase coverage is closed for contract surface, selection/proc ownership, shader artifacts, sync/timing, and strict local release comparability.
-- runtime now defaults app-lane selection to `metal_doe_app` with strict rollback rehearsal and Dawn-baseline backstop preserved.
+- runtime now defaults app-lane selection to `metal_doe_app` with strict no-fallback backend routing.
 - remaining focus is ongoing performance evidence across host diversity and fleet-level substantiation windows, not plan-scope missing phases.
 
 ## Track A Execution Plan (Finalized)
@@ -892,7 +905,7 @@ Ownership:
 - Vulkan decoupling plan checklists were completed through Phase 8 and the archived plan docs were removed.
 - Native app-lane routing now defaults Vulkan profiles to `vulkan_doe_app` with strict `doe_vulkan` selection and no hidden fallback.
 - Comparative Dawn-baseline lane remains explicit and unchanged: `vulkan_dawn_release` -> `dawn_delegate`.
-- Rollback contract remains active via `force_dawn_delegate`; `config/backend-cutover-policy.json` remains intentionally Metal-centered (`targetLane=metal_doe_app`) while Vulkan cutover enforcement is lane-policy + cycle-contract driven.
+- Runtime rollback switching is retired for backend selection; `config/backend-cutover-policy.json` remains intentionally Metal-centered (`targetLane=metal_doe_app`) while Vulkan cutover enforcement is lane-policy + cycle-contract driven.
 
 ## Vulkan finish pass evidence (2026-02-26)
 
@@ -910,9 +923,9 @@ Ownership:
   - cycle gate output: `bench/out/20260226T164929Z/cycle_gate_report.json` (`pass=true`)
   - backend-selection/shader/sync/timing: PASS on same report
 - historical note: prior app-lane release-contract attempt (`bench/out/vulkan.finish.vulkan_doe_app.claim.json` + `bench/out/20260226T160252Z/vulkan.finish.vulkan_doe_app.cycle.json`) failed and is superseded by the contract-aligned run above.
-- rollback switch posture exercised:
+- historical rollback-switch rehearsal artifacts remain archived:
   - report: `bench/out/vulkan.finish.vulkan_doe_app.rollback.json`
-  - with `FAWN_BACKEND_SWITCH=force_dawn_delegate`, backend switched from `doe_vulkan` to `dawn_delegate` on `vulkan_doe_app` lane.
+  - current runtime contract is strict no-fallback; `FAWN_BACKEND_SWITCH` backend override is no longer active.
 - scope note: release-grade full-matrix claim substantiation is still tracked separately from this strict local app-lane closure evidence.
 
 ## Vulkan recheck closure delta (2026-02-26)
@@ -943,9 +956,10 @@ Ownership:
   - `bench/out/metal.finish.metal_doe_app.comparable.json`
 - Strict Metal blocking gate stack passed on both comparable and release-lane reports:
   - schema, correctness, trace (semantic parity mode off), backend-selection, shader-artifact, metal-sync, metal-timing-policy.
-- Rollback switch behavior verified at backend selection layer using `FAWN_BACKEND_SWITCH=force_dawn_delegate` with `metal_doe_app` lane:
+- historical rollback-switch behavior artifacts are retained for audit only:
   - baseline: `bench/out/metal.finish.rollbackprobe.baseline.json` left backend `doe_metal`
   - rollback: `bench/out/metal.finish.rollbackprobe.rollback.json` left backend `dawn_delegate`
+  - current runtime contract does not permit backend rollback switching.
 - Host limitation note:
   - native Dawn Metal adapter/filter autodiscovery is unavailable on this Linux host; strict metal lane validation here uses Doe-vs-Doe command templates for backend/gate contract closure.
 

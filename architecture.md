@@ -188,4 +188,4 @@ Backend selection is now represented as a first-class runtime contract:
 
 4. strict-lane rule
 - strict local backend lanes (Metal/Vulkan/D3D12) and cutover lanes are no-fallback by contract
-- fallback must be explicit, policy-encoded, and auditable via trace artifacts
+- runtime backend selection does not provide fallback switching; lanes must be selected explicitly via policy/config

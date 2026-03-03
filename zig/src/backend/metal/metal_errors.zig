@@ -1,10 +1,3 @@
-pub const MetalError = error{
-    InvalidState,
-    Unsupported,
-    UnsupportedFeature,
-    ShaderToolchainUnavailable,
-    ShaderCompileFailed,
-    SyncUnavailable,
-    TimingPolicyMismatch,
-    SurfaceUnavailable,
-};
+const common_errors = @import("../common/errors.zig");
+
+pub const MetalError = common_errors.BackendNativeError;

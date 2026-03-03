@@ -74,44 +74,44 @@ python3 bench/run_release_pipeline.py \
   --claim-require-min-timed-samples 7
 ```
 
-## 5. Rollback proof
+## 5. Strict no-fallback proof
 
-Baseline:
+Strict-lane run:
 
 ```bash
 python3 bench/run_release_pipeline.py \
   --config bench/compare_dawn_vs_doe.config.local.metal.comparable.json \
-  --report bench/out/metal.macos.final.rollback.baseline.json \
-  --workspace bench/out/runtime-comparisons.metal.macos.final.rollback.baseline \
+  --report bench/out/metal.macos.final.strict_nofallback.json \
+  --workspace bench/out/runtime-comparisons.metal.macos.final.strict_nofallback \
   --with-local-metal-gates \
   --local-metal-lane metal_doe_app \
   --trace-semantic-parity-mode required
 ```
 
-Rollback:
+Optional invariance check (legacy env var should be inert):
 
 ```bash
 FAWN_BACKEND_SWITCH=force_dawn_delegate \
 python3 bench/run_release_pipeline.py \
   --config bench/compare_dawn_vs_doe.config.local.metal.comparable.json \
-  --report bench/out/metal.macos.final.rollback.force_dawn.json \
-  --workspace bench/out/runtime-comparisons.metal.macos.final.rollback.force_dawn \
+  --report bench/out/metal.macos.final.strict_nofallback.legacy_env.json \
+  --workspace bench/out/runtime-comparisons.metal.macos.final.strict_nofallback.legacy_env \
   --with-local-metal-gates \
   --local-metal-lane metal_doe_app \
   --trace-semantic-parity-mode required
 ```
 
-Expected rollback evidence:
+Expected strict evidence:
 
-1. Baseline left backend selection is `doe_metal`.
-2. Rollback left backend selection is `dawn_delegate`.
-3. `bench/backend_selection_gate.py` fails under rollback for `metal_doe_app` lane as expected.
+1. Left backend selection remains `doe_metal` on both runs.
+2. `fallbackUsed` is `false` for every sample.
+3. `bench/backend_selection_gate.py` passes for `metal_doe_app`.
+4. Legacy `FAWN_BACKEND_SWITCH` no longer changes runtime backend routing.
 
 ## 6. Required proof bundle artifacts
 
 1. Comparable report JSON + workspace traces.
 2. Release report JSON + workspace traces.
 3. `metal_doe_app` comparable report JSON.
-4. Baseline rollback report JSON.
-5. Forced rollback report JSON.
+4. Strict no-fallback report JSON (plus optional legacy-env invariance report).
 6. Claim rehearsal artifacts emitted by release pipeline (`*.claim-rehearsal.*`).

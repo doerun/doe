@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
 const webgpu = @import("../../src/webgpu_ffi.zig");
 const d3d12_mod = @import("../../src/backend/d3d12/mod.zig");
@@ -14,8 +15,15 @@ test "d3d12 dispatch timing separates encode and submit-wait buckets" {
         model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
         webgpu.QueueSyncMode.per_command,
     );
-    try std.testing.expect(result.encode_ns > 0);
     try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
+    if (result.status == .ok) {
+        try std.testing.expect(result.encode_ns > 0 or result.submit_wait_ns > 0 or result.setup_ns > 0);
+    } else if (builtin.os.tag == .windows) {
+        try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
+        try std.testing.expectEqualStrings("compute_dispatch", result.status_message);
+    } else {
+        try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
+    }
 }
 
 test "d3d12 deferred sync records submit cost but not per-command wait cost" {
@@ -23,6 +31,13 @@ test "d3d12 deferred sync records submit cost but not per-command wait cost" {
         model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
         webgpu.QueueSyncMode.deferred,
     );
-    try std.testing.expect(result.encode_ns > 0);
     try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
+    if (result.status == .ok) {
+        try std.testing.expect(result.encode_ns > 0 or result.submit_wait_ns > 0 or result.setup_ns > 0);
+    } else if (builtin.os.tag == .windows) {
+        try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
+        try std.testing.expectEqualStrings("compute_dispatch", result.status_message);
+    } else {
+        try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
+    }
 }

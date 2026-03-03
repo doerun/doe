@@ -5,17 +5,16 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "symbols"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
     "symbols": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["symbol", "owner", "requiredInStrict"],
+        "required": ["symbol", "owner"],
         "properties": {
           "symbol": { "type": "string", "pattern": "^wgpu[A-Za-z0-9_]+$" },
-          "owner": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12", "shared"] },
-          "requiredInStrict": { "type": "boolean" }
+          "owner": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12", "shared"] }
         }
       }
     }

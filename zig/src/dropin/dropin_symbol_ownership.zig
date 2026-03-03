@@ -20,7 +20,6 @@ pub fn parse_symbol_owner(raw: []const u8) ?SymbolOwner {
 pub const SymbolOwnership = struct {
     symbol: []const u8,
     owner: SymbolOwner,
-    required_in_strict: bool,
 };
 
 const SymbolOwnershipConfig = struct {
@@ -28,7 +27,6 @@ const SymbolOwnershipConfig = struct {
     symbols: []const struct {
         symbol: []const u8,
         owner: []const u8,
-        requiredInStrict: bool,
     },
 };
 
@@ -46,14 +44,13 @@ pub fn parse_symbol_ownership_config(
     });
     defer parsed.deinit();
 
-    if (parsed.value.schemaVersion != 1) return ParseError.InvalidSchemaVersion;
+    if (parsed.value.schemaVersion != 2) return ParseError.InvalidSchemaVersion;
 
     var entries = try allocator.alloc(SymbolOwnership, parsed.value.symbols.len);
     for (entries) |*entry| {
         entry.* = .{
             .symbol = "",
             .owner = .shared,
-            .required_in_strict = false,
         };
     }
     var should_cleanup = true;
@@ -71,7 +68,6 @@ pub fn parse_symbol_ownership_config(
         entries[index] = .{
             .symbol = symbol,
             .owner = owner,
-            .required_in_strict = entry.requiredInStrict,
         };
     }
     should_cleanup = false;

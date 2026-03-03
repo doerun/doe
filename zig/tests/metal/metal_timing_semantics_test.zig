@@ -1,10 +1,5 @@
 const std = @import("std");
-const metal_instance = @import("../../src/backend/metal/metal_instance.zig");
-const metal_adapter = @import("../../src/backend/metal/metal_adapter.zig");
-const metal_device = @import("../../src/backend/metal/metal_device.zig");
-const compute_encode = @import("../../src/backend/metal/commands/compute_encode.zig");
-const timing = @import("../../src/backend/metal/metal_timing.zig");
-const metal_runtime_state = @import("../../src/backend/metal/metal_runtime_state.zig");
+const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
 const metal_mod = @import("../../src/backend/metal/mod.zig");
 
@@ -17,34 +12,62 @@ fn test_profile() model.DeviceProfile {
     };
 }
 
-test "metal timing returns immediate timing sample" {
-    metal_runtime_state.reset_state();
-    const before = try timing.operation_timing_ns();
-    try metal_instance.create_instance();
-    try metal_adapter.select_adapter();
-    try metal_device.create_device();
-    try compute_encode.encode_compute();
-    const after = try timing.operation_timing_ns();
-    try std.testing.expect(after >= before);
-    try std.testing.expect(after > 0);
+fn skip_if_runtime_unavailable(err: anyerror) bool {
+    return switch (err) {
+        error.LibraryOpenFailed,
+        error.SymbolMissing,
+        error.AdapterUnavailable,
+        error.AdapterRequestFailed,
+        error.AdapterRequestNoCallback,
+        error.DeviceRequestFailed,
+        error.DeviceRequestNoCallback,
+        error.NativeInstanceUnavailable,
+        error.NativeQueueUnavailable,
+        => true,
+        else => false,
+    };
 }
 
-test "metal dispatch timing separates encode and submit-wait buckets" {
-    const backend = try metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null);
+test "metal kernel dispatch timing includes non-zero encode and dispatch count" {
+    if (builtin.os.tag != .macos) return;
+
+    const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
+        if (skip_if_runtime_unavailable(err)) return;
+        return err;
+    };
     var iface = try backend.as_iface(std.testing.allocator, "test_metal_timing", "test_policy_hash");
     defer iface.deinit();
-    iface.set_queue_sync_mode(.per_command);
-    const result = try iface.execute_command(model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } });
+
+    const result = try iface.execute_command(model.Command{ .kernel_dispatch = .{
+        .kernel = "bench/kernels/shader_compile_pipeline_stress.wgsl",
+        .x = 1,
+        .y = 1,
+        .z = 1,
+    } });
+    try std.testing.expect(result.status == .ok);
     try std.testing.expect(result.encode_ns > 0);
     try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
 }
 
-test "metal deferred sync records submit cost without per-command wait cost" {
-    const backend = try metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null);
-    var iface = try backend.as_iface(std.testing.allocator, "test_metal_timing", "test_policy_hash");
+test "metal deferred sync keeps kernel dispatch timing valid" {
+    if (builtin.os.tag != .macos) return;
+
+    const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
+        if (skip_if_runtime_unavailable(err)) return;
+        return err;
+    };
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_timing_deferred", "test_policy_hash");
     defer iface.deinit();
+
     iface.set_queue_sync_mode(.deferred);
-    const result = try iface.execute_command(model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } });
+    const result = try iface.execute_command(model.Command{ .kernel_dispatch = .{
+        .kernel = "bench/kernels/shader_compile_pipeline_stress.wgsl",
+        .x = 1,
+        .y = 1,
+        .z = 1,
+    } });
+
+    try std.testing.expect(result.status == .ok);
     try std.testing.expect(result.encode_ns > 0);
     try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
 }

@@ -42,8 +42,7 @@ const sample_quirks =
 const default_commands = [_]model.Command{
     .{ .copy_buffer_to_texture = .{ .direction = .buffer_to_texture, .src = .{ .handle = 0x1000 }, .dst = .{ .handle = 0x2000 }, .bytes = 4096 } },
     .{ .upload = .{ .bytes = 4096, .align_bytes = 4 } },
-    .{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
-    .{ .kernel_dispatch = .{ .kernel = "builtin:noop", .x = 2, .y = 1, .z = 1 } },
+    .{ .kernel_dispatch = .{ .kernel = "bench/kernels/shader_compile_pipeline_stress.wgsl", .x = 2, .y = 1, .z = 1 } },
     .{ .barrier = .{ .dependency_count = 3 } },
 };
 

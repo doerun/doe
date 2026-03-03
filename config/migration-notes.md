@@ -1,5 +1,33 @@
 # Config Migration Notes
 
+## 2026-03-03
+
+### Drop-in strict ownership contract simplification
+
+- Migrated drop-in symbol ownership contract to schema version `2`:
+  - removed `requiredInStrict` from symbol entries.
+  - strict no-fallback is now policy-wide and does not depend on per-symbol strict flags.
+  - optional compatibility mode remains explicit through `dropin-abi-behavior.json` (`strictFallbackForbidden=false`).
+- Updated files:
+  - `config/dropin-symbol-ownership.schema.json`
+  - `config/dropin-symbol-ownership.json`
+  - `zig/src/config/dropin-symbol-ownership.json`
+- Runtime parser now enforces `schemaVersion == 2` in:
+  - `zig/src/dropin/dropin_symbol_ownership.zig`
+
+### No-op execution placeholder retirement
+
+- Removed embedded no-op kernel fallback routing from active WebGPU command execution paths.
+- `dispatch`/`dispatch_indirect` now fail explicitly unless executed through explicit `kernel_dispatch` contracts.
+- Vulkan native dispatch no longer auto-builds a default no-op compute pipeline; dispatch now requires an explicit loaded kernel pipeline.
+
+### Backend lane fallback policy clarification
+
+- Backend lane selection remains strict-only by contract:
+  - `allowFallback` is schema-constrained to `false`.
+  - `strictNoFallback` is schema-constrained to `true`.
+- Runtime backend init continues to fail fast without delegate fallback branches in active backend routing.
+
 ## 2026-03-02
 
 ### Strict Dawn-vs-Doe normalization contract hardening
@@ -92,10 +120,10 @@
 ### Metal app-lane cutover closure
 
 - `config/backend-cutover-policy.json` now sets `targetLane` to `metal_doe_app` and `defaultBackend` to `doe_metal` for the app lane cutover path.
-- `config/backend-runtime-policy.json` keeps `metal_doe_app` as strict (`allowFallback=false`, `strictNoFallback=true`) and leaves `force_dawn_delegate` as the explicit rollback switch.
+- `config/backend-runtime-policy.json` keeps `metal_doe_app` as strict (`allowFallback=false`, `strictNoFallback=true`) and now enforces strict no-fallback across every lane.
 - `zig/src/execution.zig` now routes implicit Metal profile lane selection to `metal_doe_app` by default.
 - Metal strict gate execution now supports cutover validation by passing `metal_doe_app` as `--local-metal-lane` where required and using release-cycle enforcement (`cycle_gate.py` with rollback criteria enabled).
-- rollback switch rehearsal remains available through existing `backend-runtime-policy.json` switch definitions, preserving deterministic Dawn fallback during incident response.
+- rollback switching is retired from runtime backend selection; incident response uses explicit lane policy/config changes with auditable artifacts.
 
 ### Backend/runtime contract expansion and strict-lane hardening
 
@@ -414,7 +442,7 @@
 - All Vulkan compare config command templates now pin an explicit `--backend-lane` so strict AMD Dawn-baseline reports remain on `vulkan_dawn_release` while local Vulkan presets remain on their intended local lanes.
 - Vulkan backend execution no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `zig/src/backend/vulkan/mod.zig` now runs through Vulkan module contracts and emits native execution results directly.
 - Added Vulkan shader-manifest telemetry path/hash emission in `zig/src/backend/vulkan/vulkan_runtime_state.zig` and backend telemetry refresh in `zig/src/backend/backend_runtime.zig` for strict shader-artifact gate coverage.
-- Added rollback switch activation in backend policy loading: set `FAWN_BACKEND_SWITCH=force_dawn_delegate` to force the runtime policy rollback backend contract.
+- Retired runtime rollback switch activation in backend policy loading; backend selection no longer honors `FAWN_BACKEND_SWITCH`.
 
 ### Metal end-to-end runtime closure (2026-02-26)
 
@@ -422,7 +450,7 @@
 - Removed `catch unreachable` behavior from Metal backend wrappers; queue/upload/timestamp policy knobs are now explicit backend fields.
 - Metal shader manifest emission is now enforced on successful command routing paths so strict shader artifact gates can validate manifest linkage in strict lanes.
 - `bench/workloads.local.metal.smoke.json` `compute_workgroup_atomic_1024.commandsPath` corrected from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
-- Backend selection now honors policy-forced backend first (`policy_lane_prefers_dawn_delegate`) before Apple-chip preference, enabling rollback switch enforcement.
+- Backend selection now resolves directly from strict lane policy + profile constraints with no runtime rollback override path.
 
 ### Backend lane canonical rename (2026-02-26)
 

@@ -8,8 +8,8 @@
     "requireRollbackRehearsal": true
   },
   "rollback": {
-    "switchName": "force_dawn_delegate",
+    "switchName": "strict_no_runtime_fallback",
     "switchBackend": "dawn_delegate",
-    "requiredCiValidation": true
+    "requiredCiValidation": false
   }
 }

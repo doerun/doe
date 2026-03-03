@@ -83,11 +83,6 @@ pub const OPTIONAL_API_SURFACE_SYMBOLS = [_][:0]const u8{
     "wgpuTextureViewSetLabel",
 };
 
-pub const BUILTIN_KERNEL_DEFAULT_SOURCE =
-    \\@compute @workgroup_size(1)
-    \\fn main() {}
-;
-
 fn currentModuleDirectory(buffer: *[std.fs.max_path_bytes]u8) ?[]const u8 {
     if (builtin.os.tag == .windows) return null;
 

@@ -226,7 +226,7 @@ All of doe-runtime, plus:
 | GPU process sandbox | Not applicable | Required |
 | Security patch cadence | Not applicable | Required SLA |
 | Upstream rebase | Not applicable | Required cadence |
-| Rollback to Dawn | Manual (`force_dawn_delegate`) | Managed, policy-driven |
+| Rollback to Dawn | Explicit lane/config selection only (no runtime override switch) | Managed, policy-driven |
 
 ### Not Supported at Launch
 
@@ -259,7 +259,7 @@ All doe-runtime requirements, plus:
 |-----------|--------|-------|
 | Security patch cadence | Within 72 hours of Chrome stable security update | GPU process CVEs prioritized |
 | Upstream rebase cadence | Per Chrome major release (every 4 weeks) | Doe integration isolated to minimize conflict surface |
-| Rollback policy | `force_dawn_delegate` available in `backend-runtime-policy.json` | Deterministic recovery to Dawn baseline baseline |
+| Rollback policy | Runtime backend override switch removed; use explicit lane/config policy | Deterministic recovery via audited policy updates |
 | Diff size tracking | Published per release | Fawn-vs-upstream Chromium diff LOC tracked; growing diff requires justification |
 | Release cadence | Monthly minimum, aligned with Chrome stable | Hotfix releases for security within SLA |
 

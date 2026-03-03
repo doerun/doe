@@ -3,21 +3,12 @@
   "title": "Fawn Backend Runtime Policy",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "defaultLane", "lanes", "rollbackSwitch"],
+  "required": ["schemaVersion", "defaultLane", "lanes"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "defaultLane": { "type": "string", "minLength": 1 },
     "selectionPolicyHashSeed": { "type": "string" },
     "cutoverPolicyPath": { "type": "string", "minLength": 1 },
-    "rollbackSwitch": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["name", "forceBackend"],
-      "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "forceBackend": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] }
-      }
-    },
     "lanes": {
       "type": "object",
       "additionalProperties": {
@@ -26,8 +17,8 @@
         "required": ["defaultBackend", "allowFallback", "strictNoFallback"],
         "properties": {
           "defaultBackend": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] },
-          "allowFallback": { "type": "boolean" },
-          "strictNoFallback": { "type": "boolean" },
+          "allowFallback": { "type": "boolean", "const": false },
+          "strictNoFallback": { "type": "boolean", "const": true },
           "notes": { "type": "string" }
         }
       }

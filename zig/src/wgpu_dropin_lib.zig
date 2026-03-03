@@ -107,15 +107,8 @@ fn symbolOwnerForName(symbol: []const u8) dropin_symbol_ownership.SymbolOwner {
     return .shared;
 }
 
-fn symbolRequiredInStrict(symbol: []const u8) bool {
-    if (dropin_symbol_ownership.find_symbol_ownership(activeSymbolOwnershipConfig(), symbol)) |entry| {
-        return entry.required_in_strict;
-    }
-    return false;
-}
-
 fn symbolRouteForName(symbol: []const u8) dropin_router.RouteDecision {
-    const strict_no_fallback = activeStrictNoFallback() and symbolRequiredInStrict(symbol);
+    const strict_no_fallback = activeStrictNoFallback();
     return dropin_router.decide_symbol_route(
         symbolOwnerForName(symbol),
         activeBehaviorMode(),
@@ -221,18 +214,17 @@ fn ensureNativeLibrary() bool {
     return ensureNativeLibraryLocked();
 }
 
-fn unsupportedProc() callconv(.c) usize {
+fn abortMissingRequiredSymbol(symbol_name: []const u8) noreturn {
     setLastError(.symbol_missing);
-    return 0;
+    std.debug.panic("missing required WebGPU symbol: {s}", .{symbol_name});
 }
 
-pub export fn doeWgpuDropinUnsupportedProc() callconv(.c) usize {
-    return unsupportedProc();
-}
-
-fn unsupportedSymbol(comptime symbol_name: []const u8, comptime FnType: type) FnType {
-    _ = symbol_name;
-    return @as(FnType, @ptrCast(&unsupportedProc));
+pub export fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn {
+    const symbol_name = symbolNameSlice(name) orelse {
+        setLastError(.invalid_symbol_name);
+        std.debug.panic("missing required WebGPU symbol: <invalid>", .{});
+    };
+    abortMissingRequiredSymbol(symbol_name);
 }
 
 fn routeAndRecordForName(
@@ -273,7 +265,7 @@ fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) F
     const route = symbolRouteForName(symbol_name);
     if (!ensureNativeLibraryLocked()) {
         routeAndRecordForName(symbol_name, route, false);
-        return unsupportedSymbol(symbol_name, FnType);
+        abortMissingRequiredSymbol(symbol_name);
     }
 
     const resolved = switch (route.owner) {
@@ -288,10 +280,7 @@ fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) F
         setLastError(.ok);
         return proc;
     }
-    const proc = unsupportedSymbol(symbol_name, FnType);
-    Cache.proc = proc;
-    Cache.initialized.store(1, .release);
-    return proc;
+    abortMissingRequiredSymbol(symbol_name);
 }
 
 fn loadOptionalProc(comptime FnType: type, comptime symbol_name: [:0]const u8) ?FnType {

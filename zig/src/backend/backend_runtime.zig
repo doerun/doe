@@ -6,9 +6,9 @@ const backend_policy = @import("backend_policy.zig");
 const backend_registry = @import("backend_registry.zig");
 const backend_selection = @import("backend_selection.zig");
 const backend_telemetry = @import("backend_telemetry.zig");
-const metal_runtime_state = @import("metal/metal_runtime_state.zig");
-const vulkan_runtime_state = @import("vulkan/vulkan_runtime_state.zig");
-const d3d12_runtime_state = @import("d3d12/d3d12_runtime_state.zig");
+const vulkan_backend = @import("vulkan/mod.zig");
+const metal_backend = @import("metal/mod.zig");
+const d3d12_backend = @import("d3d12/mod.zig");
 
 pub const BackendRuntime = struct {
     allocator: std.mem.Allocator,
@@ -45,16 +45,18 @@ pub const BackendRuntime = struct {
         errdefer allocator.free(loaded_policy.owned_policy_hash);
         const policy = loaded_policy.policy;
         const selected = backend_selection.select_backend(profile, policy);
+        var backend = try backend_registry.init_backend(
+            allocator,
+            selected.backend_id,
+            profile,
+            kernel_root,
+            selected.reason,
+            policy.policy_hash,
+        );
+        backend.telemetry.fallback_used = selected.fallback_used;
         return .{
             .allocator = allocator,
-            .backend = try backend_registry.init_backend(
-                allocator,
-                selected.backend_id,
-                profile,
-                kernel_root,
-                selected.reason,
-                policy.policy_hash,
-            ),
+            .backend = backend,
             .owned_policy_hash = loaded_policy.owned_policy_hash,
         };
     }
@@ -69,17 +71,17 @@ pub const BackendRuntime = struct {
 
     fn refreshBackendTelemetry(self: *BackendRuntime) void {
         switch (self.backend.id) {
-            .doe_metal => {
-                self.backend.telemetry.shader_artifact_manifest_path = metal_runtime_state.current_manifest_path();
-                self.backend.telemetry.shader_artifact_manifest_hash = metal_runtime_state.current_manifest_hash();
-            },
             .doe_vulkan => {
-                self.backend.telemetry.shader_artifact_manifest_path = vulkan_runtime_state.current_manifest_path();
-                self.backend.telemetry.shader_artifact_manifest_hash = vulkan_runtime_state.current_manifest_hash();
+                self.backend.telemetry.shader_artifact_manifest_path = vulkan_backend.manifest_path_from_context(self.backend.context);
+                self.backend.telemetry.shader_artifact_manifest_hash = vulkan_backend.manifest_hash_from_context(self.backend.context);
+            },
+            .doe_metal => {
+                self.backend.telemetry.shader_artifact_manifest_path = metal_backend.manifest_path_from_context(self.backend.context);
+                self.backend.telemetry.shader_artifact_manifest_hash = metal_backend.manifest_hash_from_context(self.backend.context);
             },
             .doe_d3d12 => {
-                self.backend.telemetry.shader_artifact_manifest_path = d3d12_runtime_state.current_manifest_path();
-                self.backend.telemetry.shader_artifact_manifest_hash = d3d12_runtime_state.current_manifest_hash();
+                self.backend.telemetry.shader_artifact_manifest_path = d3d12_backend.manifest_path_from_context(self.backend.context);
+                self.backend.telemetry.shader_artifact_manifest_hash = d3d12_backend.manifest_hash_from_context(self.backend.context);
             },
             else => {},
         }

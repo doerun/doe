@@ -32,3 +32,34 @@ test "backend lane parser handles metal_doe_app and local metal lanes" {
         backend_policy.parse_lane("d3d12_doe_app") == .d3d12_doe_app,
     );
 }
+
+test "backend runtime policy rejects fallback-enabled lane config" {
+    const path = "zig/.tmp_backend_runtime_policy_invalid.json";
+    defer std.fs.cwd().deleteFile(path) catch {};
+
+    try std.fs.cwd().writeFile(.{
+        .sub_path = path,
+        .data =
+            \\{
+            \\  "schemaVersion": 1,
+            \\  "selectionPolicyHashSeed": "backend-runtime-policy-v1",
+            \\  "lanes": {
+            \\    "metal_doe_comparable": {
+            \\      "defaultBackend": "doe_metal",
+            \\      "allowFallback": true,
+            \\      "strictNoFallback": false
+            \\    }
+            \\  }
+            \\}
+        ,
+    });
+
+    try std.testing.expectError(
+        backend_policy.PolicyLoadError.InvalidRuntimePolicy,
+        backend_policy.load_policy_for_lane(
+            std.testing.allocator,
+            path,
+            .metal_doe_comparable,
+        ),
+    );
+}

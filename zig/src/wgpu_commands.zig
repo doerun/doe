@@ -426,7 +426,10 @@ fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.NativeEx
     const p0_procs = p0_procs_mod.loadP0Procs(self.dyn_lib);
     const clear_buffer = if (p0_procs) |loaded| loaded.command_encoder_clear_buffer else null;
     if (clear_buffer == null) {
-        return executeNoopCommand(self, "barrier command translated into empty command buffer");
+        return .{
+            .status = .unsupported,
+            .status_message = "barrier command requires commandEncoderClearBuffer support",
+        };
     }
     const clear_size = loader.alignTo(@max(@as(u64, 16), @as(u64, barrier.dependency_count) * 16), 4);
     const scratch_buffer = try resources.getOrCreateBuffer(
@@ -462,19 +465,23 @@ fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.NativeEx
 }
 
 fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.NativeExecutionResult {
-    return executeKernelDispatchKernel(self, "builtin:noop", "main", dispatch.x, dispatch.y, dispatch.z, 1, 0, false, .{
-        .source = loader.BUILTIN_KERNEL_DEFAULT_SOURCE,
-        .owned = false,
-        .mode = .fallback,
-    }, null);
+    _ = self;
+    _ = dispatch;
+    return .{
+        .status = .unsupported,
+        .status_message = "dispatch requires kernel_dispatch with an explicit WGSL kernel",
+        .dispatch_count = 1,
+    };
 }
 
 fn executeDispatchIndirect(self: *Backend, dispatch: model.DispatchIndirectCommand) !types.NativeExecutionResult {
-    return executeKernelDispatchKernel(self, "builtin:noop", "main", dispatch.x, dispatch.y, dispatch.z, 1, 0, false, .{
-        .source = loader.BUILTIN_KERNEL_DEFAULT_SOURCE,
-        .owned = false,
-        .mode = .fallback,
-    }, null);
+    _ = self;
+    _ = dispatch;
+    return .{
+        .status = .unsupported,
+        .status_message = "dispatch_indirect requires kernel_dispatch with an explicit WGSL kernel",
+        .dispatch_count = 1,
+    };
 }
 
 fn executeDrawIndirect(self: *Backend, render: model.DrawIndirectCommand) !types.NativeExecutionResult {
@@ -905,9 +912,9 @@ fn executeKernelDispatchKernel(
     return .{
         .status = .ok,
         .status_message = switch (source.mode) {
-            .fallback => "dispatch command executed through fallback compute kernel",
             .builtin => "kernel source resolved via built-in kernel map",
             .file => "kernel source loaded and executed",
+            .fallback => "kernel source loaded and executed",
         },
         .setup_ns = setup_ns,
         .encode_ns = encode_ns,
@@ -916,36 +923,6 @@ fn executeKernelDispatchKernel(
         .gpu_timestamp_ns = gpu_timestamp_ns,
         .gpu_timestamp_attempted = timestamps_active,
         .gpu_timestamp_valid = gpu_timestamp_valid,
-    };
-}
-
-fn executeNoopCommand(self: *Backend, reason: []const u8) !types.NativeExecutionResult {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
-        .nextInChain = null,
-        .label = loader.emptyStringView(),
-    });
-    if (encoder == null) {
-        return .{ .status = .@"error", .status_message = "deviceCreateCommandEncoder returned null" };
-    }
-    defer procs.wgpuCommandEncoderRelease(encoder);
-
-    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
-        .nextInChain = null,
-        .label = loader.emptyStringView(),
-    });
-    if (command_buffer == null) {
-        return .{ .status = .@"error", .status_message = "commandEncoderFinish returned null" };
-    }
-    defer procs.wgpuCommandBufferRelease(command_buffer);
-
-    var commands = [_]types.WGPUCommandBuffer{command_buffer};
-    const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
-
-    return .{
-        .status = .ok,
-        .status_message = reason,
-        .submit_wait_ns = submit_wait_ns,
     };
 }
 
@@ -1023,21 +1000,11 @@ fn timestampReadbackStatus(err: anyerror) []const u8 {
 
 fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !types.KernelSource {
     if (kernel_name.len == 0) return error.MissingKernelSource;
-    if (kernelForName(kernel_name)) |builtin_source| {
-        return .{ .source = builtin_source, .owned = false, .mode = .builtin };
-    }
     if (openKernelFile(self, kernel_name)) |source| return source;
     if (self.kernel_root) |root| {
         if (openKernelFromRoot(self, kernel_name, root)) |source| return source;
     }
     return error.MissingKernelSource;
-}
-
-fn kernelForName(kernel_name: []const u8) ?[]const u8 {
-    if (std.mem.eql(u8, kernel_name, "builtin:noop")) return loader.BUILTIN_KERNEL_DEFAULT_SOURCE;
-    if (std.mem.eql(u8, kernel_name, "doe.noop")) return loader.BUILTIN_KERNEL_DEFAULT_SOURCE;
-    if (std.mem.eql(u8, kernel_name, "copy_textures_x32")) return loader.BUILTIN_KERNEL_DEFAULT_SOURCE;
-    return null;
 }
 
 fn openKernelFile(self: *Backend, path: []const u8) ?types.KernelSource {
