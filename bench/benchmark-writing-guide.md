@@ -158,12 +158,13 @@ For same-runtime parity lanes (Doe-vs-Doe or Dawn-vs-Dawn), operation timing rem
 allowed under their lane contracts.
 
 Current selection priorities in compare harness:
-1. Explicit `traceMeta.timingMs`/`timingSource` when present and valid.
+1. Explicit `traceMeta.timingMs`/`timingSource` when present, valid, and compatible with domain timing policy.
 2. Upload-domain row-total execution durations (`doe-execution-row-total-ns`) when execution evidence exists.
-3. Execution total (`doe-execution-total-ns`) when execution evidence exists.
-4. GPU timestamp total (`doe-execution-gpu-timestamp-ns`) as fallback.
-5. Dispatch window (`doe-execution-dispatch-window-ns`) when available.
-6. Trace window or wall-time fallback only when operation sources are unavailable.
+3. Render/render-bundle encode totals (`doe-execution-encode-ns`) when execution evidence exists.
+4. Execution total (`doe-execution-total-ns`) when execution evidence exists.
+5. GPU timestamp total (`doe-execution-gpu-timestamp-ns`) as fallback.
+6. Dispatch window (`doe-execution-dispatch-window-ns`) when available.
+7. Trace window or wall-time fallback only when operation sources are unavailable.
 
 Benchmark intent split (required reporting separation):
 

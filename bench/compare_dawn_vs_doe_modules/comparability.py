@@ -34,6 +34,29 @@ DAWN_OPERATION_TIMING_SOURCES = {
 OBLIGATION_SCHEMA_VERSION = 1
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _COMPARABILITY_OBLIGATIONS_PATH = _REPO_ROOT / "config/comparability-obligations.json"
+RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
+
+
+def _normalized_domain(workload_domain: str) -> str:
+    return workload_domain.strip().lower()
+
+
+def _strict_doe_expected_sources(workload_domain: str) -> set[str]:
+    normalized_domain = _normalized_domain(workload_domain)
+    if normalized_domain == "upload":
+        return {"doe-execution-row-total-ns"}
+    if normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
+        return {"doe-execution-encode-ns"}
+    return {"doe-execution-total-ns"}
+
+
+def _strict_doe_expected_policies(workload_domain: str) -> set[str]:
+    normalized_domain = _normalized_domain(workload_domain)
+    if normalized_domain == "upload":
+        return {"upload-row-total-preferred"}
+    if normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
+        return {"render-encode-preferred"}
+    return {"<none>"}
 
 
 def _obligation(
@@ -103,13 +126,9 @@ def _sources_match_with_runtime_compatibility(
 
     left_set = set(left_sources)
     right_set = set(right_sources)
-    normalized_domain = workload_domain.strip().lower()
+    normalized_domain = _normalized_domain(workload_domain)
     if comparability_mode == "strict":
-        doe_expected = (
-            {"doe-execution-row-total-ns"}
-            if normalized_domain == "upload"
-            else {"doe-execution-total-ns"}
-        )
+        doe_expected = _strict_doe_expected_sources(normalized_domain)
         left_expected: set[str] | None = None
         right_expected: set[str] | None = None
         if is_left_dawn_perf:
@@ -168,14 +187,10 @@ def _timing_selection_policy_match_with_runtime_compatibility(
 
     left_set = set(left_policies)
     right_set = set(right_policies)
-    normalized_domain = workload_domain.strip().lower()
+    normalized_domain = _normalized_domain(workload_domain)
 
     if comparability_mode == "strict":
-        doe_expected = (
-            {"upload-row-total-preferred"}
-            if normalized_domain == "upload"
-            else {"<none>"}
-        )
+        doe_expected = _strict_doe_expected_policies(normalized_domain)
         left_expected: set[str] | None = None
         right_expected: set[str] | None = None
         if is_left_dawn_perf:
@@ -195,6 +210,8 @@ def _timing_selection_policy_match_with_runtime_compatibility(
     doe_allowed = {"<none>"}
     if normalized_domain == "upload":
         doe_allowed = {"upload-row-total-preferred"}
+    elif normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
+        doe_allowed = {"<none>", "render-encode-preferred"}
     dawn_perf_allowed = {"<none>"}
     dawn_delegate_allowed = doe_allowed
 

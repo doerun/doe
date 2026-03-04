@@ -95,21 +95,22 @@ def main() -> int:
                         f"{workload_id}: {side_name} executionUnsupportedCount={exec_unsupported_count} on comparable workload"
                     )
 
+                exec_success_count = parse_int(trace_meta.get("executionSuccessCount"))
+                encode_total_ns = parse_int(trace_meta.get("executionEncodeTotalNs"))
+                submit_wait_total_ns = parse_int(trace_meta.get("executionSubmitWaitTotalNs"))
+
                 # Encode/submit telemetry checks apply only to left (Doe) side.
                 # Right side (Dawn adapter) does not emit these fields.
                 if side_name == "left":
-                    exec_success_count = parse_int(trace_meta.get("executionSuccessCount"))
-                    encode_total_ns = parse_int(trace_meta.get("executionEncodeTotalNs"))
-                    submit_wait_total_ns = parse_int(trace_meta.get("executionSubmitWaitTotalNs"))
                     if exec_success_count > 0 and encode_total_ns == 0 and submit_wait_total_ns == 0:
                         failures.append(
                             f"{workload_id}: {side_name} both encode and submit/wait totals are zero with successful execution"
                         )
 
                     timing_source = canonical_source(sample.get("timingSource"))
-                    if timing_source == "doe-execution-encode-ns" and submit_wait_total_ns != 0:
+                    if timing_source == "doe-execution-encode-ns" and encode_total_ns == 0:
                         failures.append(
-                            f"{workload_id}: {side_name} encode-only timing source carries submit/wait total {submit_wait_total_ns}"
+                            f"{workload_id}: {side_name} encode-only timing source has zero encode total"
                         )
 
                 queue_sync_mode = trace_meta.get("queueSyncMode")

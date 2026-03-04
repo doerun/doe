@@ -429,6 +429,7 @@
       "comparable": true,
       "default": false,
       "leftCommandRepeat": 10,
+      "rightCommandRepeat": 10,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__RedundantPipeline_RedundantBindGroups",
@@ -544,6 +545,7 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 10,
+      "rightCommandRepeat": 10,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -569,6 +571,7 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 10,
+      "rightCommandRepeat": 10,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -594,6 +597,7 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 50,
+      "rightCommandRepeat": 50,
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 1.0,
@@ -705,6 +709,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
+      "rightCommandRepeat": 500,
       "applesToApplesVetted": false,
       "benchmarkClass": "comparable",
       "rightTimingDivisor": 1.0
@@ -810,6 +815,7 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 100,
+      "rightCommandRepeat": 100,
       "extraArgs": [
         "--queue-sync-mode",
         "deferred"
@@ -926,6 +932,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
+      "rightCommandRepeat": 500,
       "applesToApplesVetted": false,
       "benchmarkClass": "comparable",
       "rightTimingDivisor": 1.0
@@ -987,6 +994,7 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftCommandRepeat": 100,
+      "rightCommandRepeat": 100,
       "comparable": true,
       "default": false,
       "leftTimingDivisor": 1.0,

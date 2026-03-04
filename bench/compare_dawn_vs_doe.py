@@ -92,7 +92,6 @@ NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
 }
-RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
 KNOWN_GPU_BACKENDS = {"vulkan", "metal", "d3d12", "webgpu"}
 GPU_BACKEND_ALIASES = {
     "dx12": "d3d12",
@@ -602,21 +601,6 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         local_claim_min_timed_samples=local_min_samples,
         release_claim_min_timed_samples=release_min_samples,
     )
-
-
-def maybe_override_render_encode_timing(
-    *,
-    workload: Workload,
-    measured_ms: float,
-    measured_source: str,
-    measured_meta: dict[str, Any],
-    trace_meta: dict[str, Any],
-    required_timing_class: str,
-) -> tuple[float, str, dict[str, Any]]:
-    _ = workload
-    _ = trace_meta
-    _ = required_timing_class
-    return measured_ms, measured_source, measured_meta
 
 
 def safe_int(value: Any, default: int = 0) -> int:

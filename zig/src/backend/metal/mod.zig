@@ -14,8 +14,12 @@ const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = 64;
 const MANIFEST_CONTENT_CAPACITY: usize = 2048;
+const MANIFEST_MODULE_CAPACITY: usize = 64;
+const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 const HEX = "0123456789abcdef";
+const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
+const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
 pub const ZigMetalBackend = struct {
     allocator: std.mem.Allocator,
@@ -31,6 +35,11 @@ pub const ZigMetalBackend = struct {
     manifest_path_len: usize = 0,
     manifest_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
     manifest_hash_len: usize = 0,
+    last_manifest_meta: ?artifact_meta.ArtifactMeta = null,
+    last_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
+    last_manifest_module_len: usize = 0,
+    last_manifest_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+    last_manifest_status_len: usize = 0,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -60,6 +69,11 @@ pub const ZigMetalBackend = struct {
             .manifest_path_len = 0,
             .manifest_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
             .manifest_hash_len = 0,
+            .last_manifest_meta = null,
+            .last_manifest_module_storage = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
+            .last_manifest_module_len = 0,
+            .last_manifest_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+            .last_manifest_status_len = 0,
         };
 
         ptr.inner.setUploadBehavior(ptr.upload_buffer_usage_mode, ptr.upload_submit_every);
@@ -67,6 +81,11 @@ pub const ZigMetalBackend = struct {
         ptr.inner.setQueueSyncMode(ptr.queue_sync_mode);
         ptr.inner.setGpuTimestampMode(ptr.gpu_timestamp_mode);
         ptr.refresh_capabilities();
+        ptr.emit_shader_artifact_manifest_for_signature(
+            BOOTSTRAP_MANIFEST_MODULE,
+            artifact_meta.classify(.native_metal, false, false),
+            BOOTSTRAP_MANIFEST_STATUS_CODE,
+        ) catch {};
 
         return ptr;
     }
@@ -134,6 +153,19 @@ pub const ZigMetalBackend = struct {
         meta: artifact_meta.ArtifactMeta,
         status_code: []const u8,
     ) common_errors.BackendNativeError!void {
+        const module = command_info.manifest_module(command);
+        if (manifest_signature_matches(self, module, meta, status_code)) {
+            return;
+        }
+        try self.emit_shader_artifact_manifest_for_signature(module, meta, status_code);
+    }
+
+    fn emit_shader_artifact_manifest_for_signature(
+        self: *ZigMetalBackend,
+        module: []const u8,
+        meta: artifact_meta.ArtifactMeta,
+        status_code: []const u8,
+    ) common_errors.BackendNativeError!void {
         self.manifest_emit_count +|= 1;
 
         var path_buffer: [MANIFEST_PATH_CAPACITY]u8 = undefined;
@@ -152,7 +184,7 @@ pub const ZigMetalBackend = struct {
                 meta.timing_source.name(),
                 meta.comparability.name(),
                 meta.is_claimable(),
-                command_info.manifest_module(command),
+                module,
                 status_code,
                 self.previous_manifest_hash(),
             },
@@ -167,6 +199,7 @@ pub const ZigMetalBackend = struct {
 
         persist_manifest_path(self, path);
         persist_manifest_hash(self, hash[0..]);
+        persist_manifest_signature(self, module, meta, status_code);
     }
 };
 
@@ -198,7 +231,6 @@ fn should_emit_shader_artifact(command: model.Command) bool {
         .draw_indirect,
         .draw_indexed_indirect,
         .render_pass,
-        .async_diagnostics,
         => true,
         else => false,
     };
@@ -243,6 +275,45 @@ fn persist_manifest_hash(self: *ZigMetalBackend, value: []const u8) void {
     self.manifest_hash_len = value.len;
 }
 
+fn manifest_signature_matches(
+    self: *const ZigMetalBackend,
+    module: []const u8,
+    meta: artifact_meta.ArtifactMeta,
+    status_code: []const u8,
+) bool {
+    const last_meta = self.last_manifest_meta orelse return false;
+    if (last_meta.backend_kind != meta.backend_kind or
+        last_meta.timing_source != meta.timing_source or
+        last_meta.comparability != meta.comparability)
+    {
+        return false;
+    }
+    if (!std.mem.eql(u8, self.last_manifest_module_storage[0..self.last_manifest_module_len], module)) return false;
+    if (!std.mem.eql(u8, self.last_manifest_status_storage[0..self.last_manifest_status_len], status_code)) return false;
+    return true;
+}
+
+fn persist_manifest_signature(
+    self: *ZigMetalBackend,
+    module: []const u8,
+    meta: artifact_meta.ArtifactMeta,
+    status_code: []const u8,
+) void {
+    self.last_manifest_meta = meta;
+    if (module.len > self.last_manifest_module_storage.len) {
+        self.last_manifest_module_len = 0;
+    } else {
+        std.mem.copyForwards(u8, self.last_manifest_module_storage[0..module.len], module);
+        self.last_manifest_module_len = module.len;
+    }
+    if (status_code.len > self.last_manifest_status_storage.len) {
+        self.last_manifest_status_len = 0;
+    } else {
+        std.mem.copyForwards(u8, self.last_manifest_status_storage[0..status_code.len], status_code);
+        self.last_manifest_status_len = status_code.len;
+    }
+}
+
 fn cast(ctx: *anyopaque) *ZigMetalBackend {
     return @as(*ZigMetalBackend, @ptrCast(@alignCast(ctx)));
 }
@@ -264,15 +335,23 @@ fn deinit(ctx: *anyopaque) void {
 
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
-    const requirements = command_requirements.requirements(command);
-    if (self.capability_set.missing(requirements.required_capabilities)) |missing_cap| {
-        return .{
-            .status = .unsupported,
-            .status_message = capabilities.capability_name(missing_cap),
-            .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
-            .gpu_timestamp_attempted = false,
-            .gpu_timestamp_valid = false,
-        };
+    const skip_capability_guard = skip_capability_guard_for_command(command);
+    var requirements: command_requirements.CommandRequirements = undefined;
+    var has_requirements = false;
+    if (!skip_capability_guard or command_info.is_dispatch(command)) {
+        requirements = command_requirements.requirements(command);
+        has_requirements = true;
+    }
+    if (!skip_capability_guard) {
+        if (self.capability_set.missing(requirements.required_capabilities)) |missing_cap| {
+            return .{
+                .status = .unsupported,
+                .status_message = capabilities.capability_name(missing_cap),
+                .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
+                .gpu_timestamp_attempted = false,
+                .gpu_timestamp_valid = false,
+            };
+        }
     }
 
     var native_result = self.inner.executeCommand(command) catch |err| {
@@ -285,8 +364,11 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
         };
     };
 
-    if (requirements.is_dispatch and native_result.dispatch_count == 0) {
-        native_result.dispatch_count = requirements.operation_count;
+    if (command_info.is_dispatch(command) and native_result.dispatch_count == 0) {
+        native_result.dispatch_count = if (has_requirements)
+            requirements.operation_count
+        else
+            command_info.operation_count(command);
     }
 
     const meta = artifact_meta.classify(
@@ -302,6 +384,19 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
     }
 
     return native_result;
+}
+
+fn skip_capability_guard_for_command(command: model.Command) bool {
+    return switch (command) {
+        .sampler_create,
+        .sampler_destroy,
+        .texture_write,
+        .texture_query,
+        .texture_destroy,
+        .async_diagnostics,
+        => true,
+        else => false,
+    };
 }
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {

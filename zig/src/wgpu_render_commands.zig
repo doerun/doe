@@ -422,6 +422,11 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const command_encoder_write_buffer = p0_state.command_encoder_write_buffer;
     const occlusion_query_set = p0_state.occlusion_query_set;
     const render_indirect_buffer = p0_state.indirect_buffer;
+    const setup_end_ns = std.time.nanoTimestamp();
+    // Treat render-bundle recording as encode work so render-domain strict
+    // comparability can use encode-only timing semantics consistently.
+    const encode_start_ns = std.time.nanoTimestamp();
+
     var prepared_render_bundle: render_api_mod.RenderBundle = null;
     defer if (prepared_render_bundle != null) {
         render_api.render_bundle_release(prepared_render_bundle);
@@ -501,9 +506,6 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             return .{ .status = .@"error", .status_message = "render_draw bundle finish failed" };
         }
     }
-    const setup_end_ns = std.time.nanoTimestamp();
-
-    const encode_start_ns = std.time.nanoTimestamp();
     const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),

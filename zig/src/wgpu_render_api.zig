@@ -82,15 +82,29 @@ pub const RenderApi = struct {
     render_pass_encoder_write_timestamp: ?p0_procs_mod.FnRenderPassEncoderWriteTimestamp,
 };
 
+const LoadState = enum {
+    uninitialized,
+    unavailable,
+    ready,
+};
+
+var load_state: LoadState = .uninitialized;
+var cached_render_api: RenderApi = undefined;
+
 fn loadProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
     var mutable = lib;
     return mutable.lookup(T, name);
 }
 
 pub fn loadRenderApi(procs: types.Procs, dyn_lib: ?std.DynLib) ?RenderApi {
+    switch (load_state) {
+        .ready => return cached_render_api,
+        .unavailable => return null,
+        .uninitialized => {},
+    }
     const lib = dyn_lib orelse return null;
     const p0_procs = p0_procs_mod.loadP0Procs(dyn_lib);
-    return .{
+    const loaded = RenderApi{
         .device_create_render_pipeline = procs.wgpuDeviceCreateRenderPipeline orelse return null,
         .command_encoder_begin_render_pass = procs.wgpuCommandEncoderBeginRenderPass orelse return null,
         .render_pass_encoder_set_pipeline = procs.wgpuRenderPassEncoderSetPipeline orelse return null,
@@ -136,4 +150,7 @@ pub fn loadRenderApi(procs: types.Procs, dyn_lib: ?std.DynLib) ?RenderApi {
         .render_pass_encoder_pixel_local_storage_barrier = if (p0_procs) |loaded| loaded.render_pass_encoder_pixel_local_storage_barrier else null,
         .render_pass_encoder_write_timestamp = if (p0_procs) |loaded| loaded.render_pass_encoder_write_timestamp else null,
     };
+    cached_render_api = loaded;
+    load_state = .ready;
+    return loaded;
 }

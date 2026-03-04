@@ -42,6 +42,25 @@
       "requiredTimingClass": "operation",
       "allowedTimingSources": [
         "doe-execution-dispatch-window-ns",
+        "doe-execution-encode-ns",
+        "doe-execution-total-ns",
+        "dawn-perf-wall-time",
+        "dawn-perf-cpu-time",
+        "dawn-perf-gpu-time",
+        "dawn-perf-wall-ns"
+      ],
+      "allowedTimingSourcesByBackendId": {
+        "dawn_delegate": [
+          "doe-execution-encode-ns"
+        ]
+      },
+      "requiredSyncModel": "per-command"
+    },
+    "render-bundle": {
+      "requiredTimingClass": "operation",
+      "allowedTimingSources": [
+        "doe-execution-dispatch-window-ns",
+        "doe-execution-encode-ns",
         "doe-execution-total-ns",
         "dawn-perf-wall-time",
         "dawn-perf-cpu-time",

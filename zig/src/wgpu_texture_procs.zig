@@ -50,14 +50,28 @@ pub const TextureProcs = struct {
     texture_get_usage: FnTextureGetUsage,
 };
 
+const LoadState = enum {
+    uninitialized,
+    unavailable,
+    ready,
+};
+
+var load_state: LoadState = .uninitialized;
+var cached_procs: TextureProcs = undefined;
+
 fn loadProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
     var mutable = lib;
     return mutable.lookup(T, name);
 }
 
 pub fn loadTextureProcs(dyn_lib: ?std.DynLib) ?TextureProcs {
+    switch (load_state) {
+        .ready => return cached_procs,
+        .unavailable => return null,
+        .uninitialized => {},
+    }
     const lib = dyn_lib orelse return null;
-    return .{
+    const loaded = TextureProcs{
         .device_create_sampler = loadProc(FnDeviceCreateSampler, lib, "wgpuDeviceCreateSampler") orelse return null,
         .sampler_release = loadProc(FnSamplerRelease, lib, "wgpuSamplerRelease") orelse return null,
         .queue_write_texture = loadProc(FnQueueWriteTexture, lib, "wgpuQueueWriteTexture") orelse return null,
@@ -72,6 +86,9 @@ pub fn loadTextureProcs(dyn_lib: ?std.DynLib) ?TextureProcs {
         .texture_get_texture_binding_view_dimension = loadProc(FnTextureGetTextureBindingViewDimension, lib, "wgpuTextureGetTextureBindingViewDimension") orelse return null,
         .texture_get_usage = loadProc(FnTextureGetUsage, lib, "wgpuTextureGetUsage") orelse return null,
     };
+    cached_procs = loaded;
+    load_state = .ready;
+    return loaded;
 }
 
 pub fn queryTextureInfo(procs: TextureProcs, texture: types.WGPUTexture) TextureInfo {

@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Any
 
 
+RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
+
+
 def safe_int(value: Any, default: int = 0) -> int:
     if isinstance(value, bool):
         return default
@@ -171,27 +174,7 @@ def pick_measured_timing_ms(
         }
         return wall_ms, "wall-time", timing_meta
 
-    meta_timing_ms = safe_float(trace_meta.get("timingMs"))
-    meta_source = trace_meta.get("timingSource")
-    if meta_timing_ms is not None and meta_timing_ms >= 0.0:
-        source = meta_source if isinstance(meta_source, str) and meta_source else "trace-meta"
-        if source == "wall-time":
-            timing_meta = {
-                "source": "wall-time",
-                "traceMetaSource": "wall-time",
-                "traceMetaTimingMs": meta_timing_ms,
-                "wallTimeMs": wall_ms,
-                "timingSelectionPolicy": "outer-process-wall-time",
-            }
-            return wall_ms, "wall-time", timing_meta
-        timing_meta = {
-            "source": "trace-meta",
-            "traceMetaSource": source,
-            "traceMetaTimingMs": meta_timing_ms,
-            "wallTimeMs": wall_ms,
-        }
-        return meta_timing_ms, source, timing_meta
-
+    normalized_domain = workload_domain.strip().lower()
     execution_total_ns = safe_int(trace_meta.get("executionTotalNs"), default=-1)
     execution_encode_total_ns = safe_int(trace_meta.get("executionEncodeTotalNs"), default=-1)
     execution_submit_wait_total_ns = safe_int(
@@ -206,7 +189,44 @@ def pick_measured_timing_ms(
         or execution_row_count > 0
         or execution_success_count > 0
     )
-    if workload_domain == "upload" and has_execution_evidence:
+
+    prefer_upload_row_total = normalized_domain == "upload" and has_execution_evidence
+    prefer_render_encode = (
+        normalized_domain in RENDER_ENCODE_TIMING_DOMAINS and has_execution_evidence
+    )
+
+    meta_timing_ms = safe_float(trace_meta.get("timingMs"))
+    meta_source = trace_meta.get("timingSource")
+    if meta_timing_ms is not None and meta_timing_ms >= 0.0:
+        source = meta_source if isinstance(meta_source, str) and meta_source else "trace-meta"
+        canonical_source = canonical_timing_source(source)
+        if source == "wall-time":
+            timing_meta = {
+                "source": "wall-time",
+                "traceMetaSource": "wall-time",
+                "traceMetaTimingMs": meta_timing_ms,
+                "wallTimeMs": wall_ms,
+                "timingSelectionPolicy": "outer-process-wall-time",
+            }
+            return wall_ms, "wall-time", timing_meta
+        if prefer_upload_row_total and canonical_source != "doe-execution-row-total-ns":
+            pass
+        elif prefer_render_encode and canonical_source != "doe-execution-encode-ns":
+            pass
+        else:
+            timing_meta = {
+                "source": "trace-meta",
+                "traceMetaSource": source,
+                "traceMetaTimingMs": meta_timing_ms,
+                "wallTimeMs": wall_ms,
+            }
+            if prefer_upload_row_total and canonical_source == "doe-execution-row-total-ns":
+                timing_meta["timingSelectionPolicy"] = "upload-row-total-preferred"
+            if prefer_render_encode and canonical_source == "doe-execution-encode-ns":
+                timing_meta["timingSelectionPolicy"] = "render-encode-preferred"
+            return meta_timing_ms, source, timing_meta
+
+    if prefer_upload_row_total:
         row_durations_ns = parse_execution_row_total_ns_rows(trace_jsonl)
         if row_durations_ns:
             row_total_ns = sum(row_durations_ns)
@@ -228,6 +248,21 @@ def pick_measured_timing_ms(
                     "timingSelectionPolicy": "upload-row-total-preferred",
                 }
                 return measured_ms, "doe-execution-row-total-ns", timing_meta
+
+    if prefer_render_encode and execution_encode_total_ns > 0:
+        measured_ms = float(execution_encode_total_ns) / 1_000_000.0
+        timing_meta = {
+            "source": "trace-meta",
+            "traceMetaSource": "doe-execution-encode-ns",
+            "traceMetaTimingMs": measured_ms,
+            "executionEncodeTotalNs": execution_encode_total_ns,
+            "executionDispatchCount": execution_dispatch_count,
+            "executionRowCount": execution_row_count,
+            "executionSuccessCount": execution_success_count,
+            "wallTimeMs": wall_ms,
+            "timingSelectionPolicy": "render-encode-preferred",
+        }
+        return measured_ms, "doe-execution-encode-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
         measured_ms = float(execution_total_ns) / 1_000_000.0

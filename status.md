@@ -88,6 +88,15 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - Shared render encode branch-lift (2026-03-04):
   - `zig/src/wgpu_render_draw_loops.zig` now hosts specialized draw-loop helpers for render-pass and render-bundle encode paths (`static/no_change`, `static/redundant`, `redundant/no_change`, `redundant/redundant`).
   - `zig/src/wgpu_render_commands.zig` now routes draw-loop execution through those helpers, removing per-draw mode branches in hot loops while preserving command semantics and API-call shapes.
+- Render-bundle timing-contract closure (2026-03-04):
+  - `bench/compare_dawn_vs_doe_modules/timing_selection.py` now enforces render-domain encode timing selection for strict operation workloads in `render` and `render-bundle` domains (`timingSource=doe-execution-encode-ns`, policy `render-encode-preferred`) and keeps upload row-total policy unchanged.
+  - `bench/compare_dawn_vs_doe_modules/comparability.py` strict Doe-vs-Dawn source/policy expectations now map by domain:
+    - `upload` -> `doe-execution-row-total-ns` / `upload-row-total-preferred`
+    - `render`, `render-bundle` -> `doe-execution-encode-ns` / `render-encode-preferred`
+    - other operation domains -> `doe-execution-total-ns` / `<none>`
+  - `zig/src/wgpu_render_commands.zig` timing boundaries now classify render-bundle recording as encode work (setup window ends before bundle recording), reducing setup/submit contamination in render-bundle per-op timing.
+  - `config/backend-timing-policy.json` now includes explicit `render-bundle` timing policy and allows `doe-execution-encode-ns` for render-family domains.
+  - `bench/comparable_runtime_invariants_gate.py` now validates encode-only timing by requiring non-zero encode totals (instead of forcing submit-wait total to zero), and fixes upload-tail checks to use per-sample execution counters on both sides.
 - single-workload strict sweep utility (2026-03-04):
   - new script: `bench/run_single_workload_sweep.py`
   - runs repeated `compare_dawn_vs_doe.py` invocations for one workload and emits per-run + aggregate (`medianDeltaP50Percent`, `medianDeltaP95Percent`) summary artifacts under a timestamped scratch folder.

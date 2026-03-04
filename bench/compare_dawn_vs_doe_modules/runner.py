@@ -692,7 +692,6 @@ def run_workload(
                 encoding="utf-8",
             )
 
-        # Note: maybe_override_render_encode_timing must be implemented/imported in the final logic
         measured_ms, measured_source, measured_meta = pick_measured_timing_ms(
             wall_ms=elapsed_ms,
             trace_meta=sample_meta,

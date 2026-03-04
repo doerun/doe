@@ -1,5 +1,17 @@
 # Config Migration Notes
 
+## 2026-03-04
+
+### Render-domain timing policy alignment
+
+- Strict Dawn-vs-Doe render-family timing policy now treats render encoding as the comparable operation scope for both `render` and `render-bundle` domains.
+- `config/backend-timing-policy.json` changes:
+  - `domains.render.allowedTimingSources` now includes `doe-execution-encode-ns`.
+  - new `domains.render-bundle` policy was added (same required timing class/sync model and source allowlist structure as `render`).
+- Compare-harness policy alignment:
+  - strict comparability expects Doe-side `doe-execution-encode-ns` with `timingSelectionPolicy=render-encode-preferred` for `render`/`render-bundle`.
+  - upload row-total policy remains unchanged.
+
 ## 2026-03-03
 
 ### Drop-in strict ownership contract simplification

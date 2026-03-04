@@ -88,8 +88,6 @@ pub const BackendRuntime = struct {
     }
 
     pub fn execute_command(self: *BackendRuntime, command: model.Command) !webgpu.NativeExecutionResult {
-        self.refreshBackendTelemetry();
-        defer self.refreshBackendTelemetry();
         return try self.backend.execute_command(command);
     }
 
@@ -118,6 +116,7 @@ pub const BackendRuntime = struct {
     }
 
     pub fn telemetry(self: *BackendRuntime) backend_telemetry.BackendTelemetry {
+        self.refreshBackendTelemetry();
         return self.backend.telemetry;
     }
 };

@@ -59,14 +59,28 @@ pub const SurfaceProcs = struct {
     surface_capabilities_free_members: FnSurfaceCapabilitiesFreeMembers,
 };
 
+const LoadState = enum {
+    uninitialized,
+    unavailable,
+    ready,
+};
+
+var load_state: LoadState = .uninitialized;
+var cached_procs: SurfaceProcs = undefined;
+
 fn loadProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
     var mutable = lib;
     return mutable.lookup(T, name);
 }
 
 pub fn loadSurfaceProcs(dyn_lib: ?std.DynLib) ?SurfaceProcs {
+    switch (load_state) {
+        .ready => return cached_procs,
+        .unavailable => return null,
+        .uninitialized => {},
+    }
     const lib = dyn_lib orelse return null;
-    return .{
+    const loaded = SurfaceProcs{
         .instance_create_surface = loadProc(FnInstanceCreateSurface, lib, "wgpuInstanceCreateSurface") orelse return null,
         .surface_get_capabilities = loadProc(FnSurfaceGetCapabilities, lib, "wgpuSurfaceGetCapabilities") orelse return null,
         .surface_configure = loadProc(FnSurfaceConfigure, lib, "wgpuSurfaceConfigure") orelse return null,
@@ -76,4 +90,7 @@ pub fn loadSurfaceProcs(dyn_lib: ?std.DynLib) ?SurfaceProcs {
         .surface_release = loadProc(FnSurfaceRelease, lib, "wgpuSurfaceRelease") orelse return null,
         .surface_capabilities_free_members = loadProc(FnSurfaceCapabilitiesFreeMembers, lib, "wgpuSurfaceCapabilitiesFreeMembers") orelse return null,
     };
+    cached_procs = loaded;
+    load_state = .ready;
+    return loaded;
 }

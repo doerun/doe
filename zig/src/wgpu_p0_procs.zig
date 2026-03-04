@@ -63,14 +63,23 @@ pub const P0Procs = struct {
     render_pass_encoder_write_timestamp: ?FnRenderPassEncoderWriteTimestamp = null,
 };
 
+const LoadState = enum {
+    uninitialized,
+    ready,
+};
+
+var load_state: LoadState = .uninitialized;
+var cached_procs: P0Procs = undefined;
+
 fn loadProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
     var mutable = lib;
     return mutable.lookup(T, name);
 }
 
 pub fn loadP0Procs(dyn_lib: ?std.DynLib) ?P0Procs {
+    if (load_state == .ready) return cached_procs;
     const lib = dyn_lib orelse return null;
-    return .{
+    const loaded = P0Procs{
         .buffer_destroy = loadProc(FnBufferDestroy, lib, "wgpuBufferDestroy"),
         .command_encoder_clear_buffer = loadProc(FnCommandEncoderClearBuffer, lib, "wgpuCommandEncoderClearBuffer"),
         .command_encoder_write_buffer = loadProc(FnCommandEncoderWriteBuffer, lib, "wgpuCommandEncoderWriteBuffer"),
@@ -88,6 +97,9 @@ pub fn loadP0Procs(dyn_lib: ?std.DynLib) ?P0Procs {
         .render_pass_encoder_pixel_local_storage_barrier = loadProc(FnRenderPassEncoderPixelLocalStorageBarrier, lib, "wgpuRenderPassEncoderPixelLocalStorageBarrier"),
         .render_pass_encoder_write_timestamp = loadProc(FnRenderPassEncoderWriteTimestamp, lib, "wgpuRenderPassEncoderWriteTimestamp"),
     };
+    cached_procs = loaded;
+    load_state = .ready;
+    return loaded;
 }
 
 pub fn destroyBuffer(p0_procs: ?P0Procs, buffer: types.WGPUBuffer) void {

@@ -15,8 +15,12 @@ const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = 64;
 const MANIFEST_CONTENT_CAPACITY: usize = 2048;
+const MANIFEST_MODULE_CAPACITY: usize = 64;
+const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 const HEX = "0123456789abcdef";
+const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
+const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
 pub const ZigD3D12Backend = struct {
     allocator: std.mem.Allocator,
@@ -32,6 +36,11 @@ pub const ZigD3D12Backend = struct {
     manifest_path_len: usize = 0,
     manifest_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
     manifest_hash_len: usize = 0,
+    last_manifest_meta: ?artifact_meta.ArtifactMeta = null,
+    last_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
+    last_manifest_module_len: usize = 0,
+    last_manifest_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+    last_manifest_status_len: usize = 0,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -90,12 +99,22 @@ pub const ZigD3D12Backend = struct {
             .manifest_path_len = 0,
             .manifest_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
             .manifest_hash_len = 0,
+            .last_manifest_meta = null,
+            .last_manifest_module_storage = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
+            .last_manifest_module_len = 0,
+            .last_manifest_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+            .last_manifest_status_len = 0,
         };
 
         ptr.inner.setUploadBehavior(ptr.upload_buffer_usage_mode, ptr.upload_submit_every);
         ptr.inner.setQueueWaitMode(ptr.queue_wait_mode);
         ptr.inner.setQueueSyncMode(ptr.queue_sync_mode);
         ptr.inner.setGpuTimestampMode(ptr.gpu_timestamp_mode);
+        ptr.emit_shader_artifact_manifest_for_signature(
+            BOOTSTRAP_MANIFEST_MODULE,
+            artifact_meta.classify(.native_d3d12, false, false),
+            BOOTSTRAP_MANIFEST_STATUS_CODE,
+        ) catch {};
         return ptr;
     }
 
@@ -153,6 +172,45 @@ pub const ZigD3D12Backend = struct {
         self.manifest_hash_len = value.len;
     }
 
+    fn manifest_signature_matches(
+        self: *const ZigD3D12Backend,
+        module: []const u8,
+        meta: artifact_meta.ArtifactMeta,
+        status_code: []const u8,
+    ) bool {
+        const last_meta = self.last_manifest_meta orelse return false;
+        if (last_meta.backend_kind != meta.backend_kind or
+            last_meta.timing_source != meta.timing_source or
+            last_meta.comparability != meta.comparability)
+        {
+            return false;
+        }
+        if (!std.mem.eql(u8, self.last_manifest_module_storage[0..self.last_manifest_module_len], module)) return false;
+        if (!std.mem.eql(u8, self.last_manifest_status_storage[0..self.last_manifest_status_len], status_code)) return false;
+        return true;
+    }
+
+    fn persist_manifest_signature(
+        self: *ZigD3D12Backend,
+        module: []const u8,
+        meta: artifact_meta.ArtifactMeta,
+        status_code: []const u8,
+    ) void {
+        self.last_manifest_meta = meta;
+        if (module.len > self.last_manifest_module_storage.len) {
+            self.last_manifest_module_len = 0;
+        } else {
+            std.mem.copyForwards(u8, self.last_manifest_module_storage[0..module.len], module);
+            self.last_manifest_module_len = module.len;
+        }
+        if (status_code.len > self.last_manifest_status_storage.len) {
+            self.last_manifest_status_len = 0;
+        } else {
+            std.mem.copyForwards(u8, self.last_manifest_status_storage[0..status_code.len], status_code);
+            self.last_manifest_status_len = status_code.len;
+        }
+    }
+
     fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
         var output: [HASH_HEX_SIZE]u8 = undefined;
         var digest: [32]u8 = undefined;
@@ -174,7 +232,6 @@ pub const ZigD3D12Backend = struct {
             .draw_indirect,
             .draw_indexed_indirect,
             .render_pass,
-            .async_diagnostics,
             => true,
             else => false,
         };
@@ -192,6 +249,19 @@ pub const ZigD3D12Backend = struct {
     fn emit_shader_artifact_manifest(
         self: *ZigD3D12Backend,
         command: model.Command,
+        meta: artifact_meta.ArtifactMeta,
+        status_code: []const u8,
+    ) common_errors.BackendNativeError!void {
+        const module = command_info.manifest_module(command);
+        if (manifest_signature_matches(self, module, meta, status_code)) {
+            return;
+        }
+        try self.emit_shader_artifact_manifest_for_signature(module, meta, status_code);
+    }
+
+    fn emit_shader_artifact_manifest_for_signature(
+        self: *ZigD3D12Backend,
+        module: []const u8,
         meta: artifact_meta.ArtifactMeta,
         status_code: []const u8,
     ) common_errors.BackendNativeError!void {
@@ -213,7 +283,7 @@ pub const ZigD3D12Backend = struct {
                 meta.timing_source.name(),
                 meta.comparability.name(),
                 meta.is_claimable(),
-                command_info.manifest_module(command),
+                module,
                 status_code,
                 self.previous_manifest_hash(),
             },
@@ -228,33 +298,45 @@ pub const ZigD3D12Backend = struct {
 
         self.persist_manifest_path(path);
         self.persist_manifest_hash(hash[0..]);
+        self.persist_manifest_signature(module, meta, status_code);
     }
 
     fn execute_native_command(self: *ZigD3D12Backend, command: model.Command) !webgpu.NativeExecutionResult {
-        const requirements = command_requirements.requirements(command);
+        const skip_capability_guard = skip_capability_guard_for_command(command);
+        var requirements: command_requirements.CommandRequirements = undefined;
+        var has_requirements = false;
+        if (!skip_capability_guard or command_info.is_dispatch(command)) {
+            requirements = command_requirements.requirements(command);
+            has_requirements = true;
+        }
 
-        if (self.capability_set.missing(requirements.required_capabilities)) |missing| {
-            var result = webgpu.NativeExecutionResult{
-                .status = .unsupported,
-                .status_message = capabilities.capability_name(missing),
-                .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
-            };
-            const meta = artifact_meta.classify(.native_d3d12, false, false);
-            if (should_emit_shader_artifact(command)) {
-                self.emit_shader_artifact_manifest(command, meta, artifact_status_code(result)) catch |err| {
-                    result.status = common_errors.map_error_status(err);
-                    result.status_message = common_errors.error_code(err);
+        if (!skip_capability_guard) {
+            if (self.capability_set.missing(requirements.required_capabilities)) |missing| {
+                var result = webgpu.NativeExecutionResult{
+                    .status = .unsupported,
+                    .status_message = capabilities.capability_name(missing),
+                    .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
                 };
+                const meta = artifact_meta.classify(.native_d3d12, false, false);
+                if (should_emit_shader_artifact(command)) {
+                    self.emit_shader_artifact_manifest(command, meta, artifact_status_code(result)) catch |err| {
+                        result.status = common_errors.map_error_status(err);
+                        result.status_message = common_errors.error_code(err);
+                    };
+                }
+                return result;
             }
-            return result;
         }
 
         const started_ns = common_timing.now_ns();
         var result = try self.inner.executeCommand(command);
         const ended_ns = common_timing.now_ns();
 
-        if (requirements.is_dispatch and result.dispatch_count == 0) {
-            result.dispatch_count = requirements.operation_count;
+        if (command_info.is_dispatch(command) and result.dispatch_count == 0) {
+            result.dispatch_count = if (has_requirements)
+                requirements.operation_count
+            else
+                command_info.operation_count(command);
         }
 
         if (result.status == .ok and
@@ -282,6 +364,19 @@ pub const ZigD3D12Backend = struct {
 
 fn cast(ctx: *anyopaque) *ZigD3D12Backend {
     return @as(*ZigD3D12Backend, @ptrCast(@alignCast(ctx)));
+}
+
+fn skip_capability_guard_for_command(command: model.Command) bool {
+    return switch (command) {
+        .sampler_create,
+        .sampler_destroy,
+        .texture_write,
+        .texture_query,
+        .texture_destroy,
+        .async_diagnostics,
+        => true,
+        else => false,
+    };
 }
 
 pub fn manifest_path_from_context(ctx: *anyopaque) ?[]const u8 {
