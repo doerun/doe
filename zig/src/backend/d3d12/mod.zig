@@ -121,25 +121,6 @@ pub const ZigD3D12Backend = struct {
         };
     }
 
-    fn refresh_capabilities(self: *ZigD3D12Backend) void {
-        var caps = self.capability_set;
-        if (surface_procs.loadSurfaceProcs(self.inner.dyn_lib) != null) {
-            caps.declare(.surface_lifecycle);
-            caps.declare(.surface_present);
-        }
-        if (self.inner.has_multi_draw_indirect) {
-            caps.declare(.indirect_draw);
-            caps.declare(.indexed_indirect_draw);
-        }
-        if (self.inner.has_timestamp_query) {
-            caps.declare(.gpu_timestamps);
-        }
-        if (self.inner.has_timestamp_inside_passes) {
-            caps.declare(.timestamp_inside_passes);
-        }
-        self.capability_set = caps;
-    }
-
     fn manifest_path(self: *const ZigD3D12Backend) ?[]const u8 {
         if (self.manifest_path_len == 0) return null;
         return self.manifest_path_storage[0..self.manifest_path_len];
@@ -250,7 +231,6 @@ pub const ZigD3D12Backend = struct {
     }
 
     fn execute_native_command(self: *ZigD3D12Backend, command: model.Command) !webgpu.NativeExecutionResult {
-        self.refresh_capabilities();
         const requirements = command_requirements.requirements(command);
 
         if (self.capability_set.missing(requirements.required_capabilities)) |missing| {
@@ -359,25 +339,30 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
+    const normalized_submit_every = if (submit_every == 0) 1 else submit_every;
+    if (self.upload_buffer_usage_mode == mode and self.upload_submit_every == normalized_submit_every) return;
     self.upload_buffer_usage_mode = mode;
-    self.upload_submit_every = if (submit_every == 0) 1 else submit_every;
+    self.upload_submit_every = normalized_submit_every;
     self.inner.setUploadBehavior(self.upload_buffer_usage_mode, self.upload_submit_every);
 }
 
 fn set_queue_wait_mode(ctx: *anyopaque, mode: webgpu.QueueWaitMode) void {
     const self = cast(ctx);
+    if (self.queue_wait_mode == mode) return;
     self.queue_wait_mode = mode;
     self.inner.setQueueWaitMode(mode);
 }
 
 fn set_queue_sync_mode(ctx: *anyopaque, mode: webgpu.QueueSyncMode) void {
     const self = cast(ctx);
+    if (self.queue_sync_mode == mode) return;
     self.queue_sync_mode = mode;
     self.inner.setQueueSyncMode(mode);
 }
 
 fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
     const self = cast(ctx);
+    if (self.gpu_timestamp_mode == mode) return;
     self.gpu_timestamp_mode = mode;
     self.inner.setGpuTimestampMode(mode);
 }

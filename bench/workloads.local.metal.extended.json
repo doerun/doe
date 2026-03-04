@@ -244,7 +244,7 @@
         "--kernel-root",
         "bench/kernels"
       ],
-      "comparable": true,
+      "comparable": false,
       "default": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -268,7 +268,7 @@
         "--kernel-root",
         "bench/kernels"
       ],
-      "comparable": true,
+      "comparable": false,
       "default": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -292,7 +292,7 @@
         "--kernel-root",
         "bench/kernels"
       ],
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1,
@@ -316,7 +316,7 @@
         "--kernel-root",
         "bench/kernels"
       ],
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1,
@@ -342,7 +342,7 @@
         "--queue-sync-mode",
         "per-command"
       ],
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1,
@@ -366,7 +366,7 @@
         "--kernel-root",
         "bench/kernels"
       ],
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -522,7 +522,7 @@
         "--gpu-timestamp-mode",
         "off"
       ],
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftCommandRepeat": 500,
       "leftTimingDivisor": 1.0,
@@ -746,7 +746,7 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-      "benchmarkClass": "directional",
+      "benchmarkClass": "comparable",
       "rightTimingDivisor": 1.0
     },
     {
@@ -856,7 +856,7 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",

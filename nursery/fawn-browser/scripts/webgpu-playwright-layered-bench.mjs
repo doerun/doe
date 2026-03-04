@@ -700,13 +700,12 @@ async function runScenario(page, template, iterations) {
       async function runRenderTriangleReadback(device) {
         const width = 64;
         const height = 64;
-        const canvas = new OffscreenCanvas(width, height);
-        const context = canvas.getContext("webgpu");
-        if (!context) {
-          throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
-        }
-        const format = navigator.gpu.getPreferredCanvasFormat();
-        context.configure({ device, format, alphaMode: "opaque" });
+        const format = "rgba8unorm";
+        const renderTarget = device.createTexture({
+          size: { width, height, depthOrArrayLayers: 1 },
+          format,
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        });
 
         const shader = device.createShaderModule({
           code: `
@@ -734,12 +733,11 @@ async function runScenario(page, template, iterations) {
           primitive: { topology: "triangle-list" },
         });
 
-        const texture = context.getCurrentTexture();
         const encoder = device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
           colorAttachments: [
             {
-              view: texture.createView(),
+              view: renderTarget.createView(),
               clearValue: { r: 0, g: 0, b: 0, a: 1 },
               loadOp: "clear",
               storeOp: "store",
@@ -756,11 +754,12 @@ async function runScenario(page, template, iterations) {
           usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
         encoder.copyTextureToBuffer(
-          { texture },
+          { texture: renderTarget },
           { buffer: readback, bytesPerRow, rowsPerImage: height },
           { width, height, depthOrArrayLayers: 1 },
         );
         device.queue.submit([encoder.finish()]);
+        await device.queue.onSubmittedWorkDone();
         await readback.mapAsync(GPUMapMode.READ);
         const data = new Uint8Array(readback.getMappedRange());
         const centerOffset = Math.floor(height / 2) * bytesPerRow + Math.floor(width / 2) * 4;

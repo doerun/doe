@@ -184,9 +184,8 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 
 2. compare
 - use local Metal config presets:
-  - `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
-  - `bench/compare_dawn_vs_doe.config.local.metal.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+  - `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
+  - for release-claim checks, reuse the same config with `--claimability release` (and optional explicit `--out` path)
   - optional Dawn-baseline lane forcing for baseline checks: `--local-metal-lane metal_dawn_release`
 
 3. blocking gates

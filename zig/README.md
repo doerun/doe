@@ -41,6 +41,7 @@ WebGPU backend:
 - `src/wgpu_loader.zig` — dynamic library loading, C callbacks, helper functions.
 - `src/wgpu_commands.zig` — command execution orchestration for upload/copy/barrier/dispatch/kernel dispatch plus render command delegation.
 - `src/wgpu_render_commands.zig` — native `render_draw` lowering via render pass, async pipeline diagnostics, and render-bundle execution.
+- `src/wgpu_render_draw_loops.zig` — specialized render-pass/render-bundle draw-loop encoders for explicit pipeline/bind-group mode combinations.
 - `src/wgpu_render_resources.zig` — render uniform/texture/sampler bind-group resource setup and cached texture-view helpers.
 - `src/wgpu_render_api.zig` — render-pass and render-bundle proc table for state/draw/execute APIs.
 - `src/wgpu_render_types.zig` — render bundle/pass/pipeline extern descriptor/value types.
@@ -159,8 +160,8 @@ Execution capabilities:
 - native queue waiting is configurable via `--queue-wait-mode process-events|wait-any` (default: `process-events`; `wait-any` fails explicitly when unsupported).
 - queue synchronization timing is configurable via `--queue-sync-mode per-command|deferred` (default: `per-command`);
   deferred mode skips per-submit waits and performs one final queue flush after the command loop.
-- kernel-dispatch GPU timestamp querying is configurable via `--gpu-timestamp-mode auto|off` (default: `auto`);
-  `off` disables GPU timestamp attempts and forces non-timestamp operation timing selection.
+- kernel-dispatch GPU timestamp querying is configurable via `--gpu-timestamp-mode auto|off|require` (default: `auto`).
+  `auto` falls back to non-timestamp timing when timestamp capture is unavailable/invalid, `off` disables timestamp attempts, and `require` fails execution when timestamp capture is unavailable/invalid.
 - `kernel_dispatch` runs through full compute pipeline lowering with bind groups and optional GPU timestamp queries.
 - render core APIs (`DeviceCreateRenderPipeline`, `CommandEncoderBeginRenderPass`, and `RenderPassEncoder*` state/draw/end/release calls) are wired through the shared `wgpu_types.zig` proc table and loaded in `wgpu_loader.zig`.
 - render-pass state coverage includes bind-group, viewport, scissor, blend-constant, stencil-reference, and render-pipeline bind-group-layout query calls.
@@ -172,7 +173,7 @@ Execution capabilities:
 - wall-time, setup, encode, and submit-wait timing split into trace rows and `--trace-meta`.
 
 Known gaps:
-- GPU timestamp readback returns zero on some adapter/driver combinations (investigation open).
+- adapter/driver timestamp reliability still varies by host; use `--gpu-timestamp-mode require` for fail-fast strict timestamp lanes and `auto`/`off` for directional fallback lanes.
 - render path is currently minimal (`render_draw`) but now applies command-driven pass-state controls (viewport/scissor/blend/stencil, encode mode, dynamic bind-group offsets); broader multi-pass scene orchestration remains open.
 
 Reference commands:

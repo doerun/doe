@@ -37,6 +37,7 @@ pub const QueueSyncMode = enum {
 pub const GpuTimestampMode = enum {
     auto,
     off,
+    require,
 };
 
 pub const ManagedSurface = struct {
@@ -432,7 +433,11 @@ pub const WebGPUBackend = struct {
     }
 
     pub fn gpuTimestampsEnabled(self: *const Self) bool {
-        return self.has_timestamp_query and self.gpu_timestamp_mode == .auto;
+        return self.has_timestamp_query and self.gpu_timestamp_mode != .off;
+    }
+
+    pub fn gpuTimestampsRequired(self: *const Self) bool {
+        return self.gpu_timestamp_mode == .require;
     }
 
     pub fn clearUncapturedError(self: *Self) void {
@@ -889,9 +894,18 @@ pub const WebGPUBackend = struct {
             required_features[feature_count] = types.WGPUFeatureName_MultiDrawIndirect;
             feature_count += 1;
         }
-        if (self.has_pixel_local_storage_coherent) { required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageCoherent; feature_count += 1; }
-        if (self.has_pixel_local_storage_non_coherent) { required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageNonCoherent; feature_count += 1; }
-        if (has_resource_table_feature) { required_features[feature_count] = types.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable; feature_count += 1; }
+        if (self.has_pixel_local_storage_coherent) {
+            required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageCoherent;
+            feature_count += 1;
+        }
+        if (self.has_pixel_local_storage_non_coherent) {
+            required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageNonCoherent;
+            feature_count += 1;
+        }
+        if (has_resource_table_feature) {
+            required_features[feature_count] = types.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable;
+            feature_count += 1;
+        }
         self.timestampLog("request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} resource_table={} count={} adapter_limits={} max_storage_binding={} max_uniform_binding={} max_buffer={}\n", .{
             self.has_timestamp_query,
             self.has_timestamp_inside_passes,

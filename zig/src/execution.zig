@@ -132,21 +132,21 @@ pub const ExecutionContext = struct {
             };
         }
 
-    const command_start = std.time.nanoTimestamp();
-    if (self.backend) |*backend| {
-        const backend_telemetry_snapshot = backend.telemetry();
-        const status = backend.execute_command(command) catch |err| {
-            const command_end = std.time.nanoTimestamp();
-            const elapsed_ns = if (command_end > command_start)
-                @as(u64, @intCast(command_end - command_start))
+        const command_start = std.time.nanoTimestamp();
+        if (self.backend) |*backend| {
+            const backend_telemetry_snapshot = backend.telemetry();
+            const status = backend.execute_command(command) catch |err| {
+                const command_end = std.time.nanoTimestamp();
+                const elapsed_ns = if (command_end > command_start)
+                    @as(u64, @intCast(command_end - command_start))
                 else
                     0;
-            const command_telemetry = backend.telemetry();
-            return .{
-                .backend = backendIdName(backend_telemetry_snapshot.backend_id),
-                .status = .@"error",
-                .status_code = @errorName(err),
-                .duration_ns = elapsed_ns,
+                const command_telemetry = backend.telemetry();
+                return .{
+                    .backend = backendIdName(backend_telemetry_snapshot.backend_id),
+                    .status = .@"error",
+                    .status_code = @errorName(err),
+                    .duration_ns = elapsed_ns,
                     .setup_ns = 0,
                     .encode_ns = 0,
                     .submit_wait_ns = 0,
@@ -154,25 +154,25 @@ pub const ExecutionContext = struct {
                     .gpu_timestamp_ns = 0,
                     .gpu_timestamp_attempted = false,
                     .gpu_timestamp_valid = false,
-                .backend_selection_reason = command_telemetry.backend_selection_reason,
-                .fallback_used = command_telemetry.fallback_used,
-                .selection_policy_hash = command_telemetry.selection_policy_hash,
-                .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
-                .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
-                .backend_lane = backendLaneName(self.backend_lane),
+                    .backend_selection_reason = command_telemetry.backend_selection_reason,
+                    .fallback_used = command_telemetry.fallback_used,
+                    .selection_policy_hash = command_telemetry.selection_policy_hash,
+                    .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
+                    .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
+                    .backend_lane = backendLaneName(self.backend_lane),
+                };
             };
-        };
-        const command_end = std.time.nanoTimestamp();
-        const elapsed_ns = if (command_end > command_start)
-            @as(u64, @intCast(command_end - command_start))
+            const command_end = std.time.nanoTimestamp();
+            const elapsed_ns = if (command_end > command_start)
+                @as(u64, @intCast(command_end - command_start))
             else
                 0;
-        const command_telemetry = backend.telemetry();
+            const command_telemetry = backend.telemetry();
 
-        return .{
-            .backend = backendIdName(backend_telemetry_snapshot.backend_id),
-            .status = if (status.status == .ok) .ok else if (status.status == .@"error") .@"error" else .unsupported,
-            .status_code = status.status_message,
+            return .{
+                .backend = backendIdName(backend_telemetry_snapshot.backend_id),
+                .status = if (status.status == .ok) .ok else if (status.status == .@"error") .@"error" else .unsupported,
+                .status_code = status.status_message,
                 .duration_ns = elapsed_ns,
                 .setup_ns = status.setup_ns,
                 .encode_ns = status.encode_ns,
@@ -181,13 +181,13 @@ pub const ExecutionContext = struct {
                 .gpu_timestamp_ns = status.gpu_timestamp_ns,
                 .gpu_timestamp_attempted = status.gpu_timestamp_attempted,
                 .gpu_timestamp_valid = status.gpu_timestamp_valid,
-            .backend_selection_reason = command_telemetry.backend_selection_reason,
-            .fallback_used = command_telemetry.fallback_used,
-            .selection_policy_hash = command_telemetry.selection_policy_hash,
-            .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
-            .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
-            .backend_lane = backendLaneName(self.backend_lane),
-        };
+                .backend_selection_reason = command_telemetry.backend_selection_reason,
+                .fallback_used = command_telemetry.fallback_used,
+                .selection_policy_hash = command_telemetry.selection_policy_hash,
+                .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
+                .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
+                .backend_lane = backendLaneName(self.backend_lane),
+            };
         }
 
         return .{
@@ -297,6 +297,7 @@ pub fn parseQueueSyncMode(raw: []const u8) ?QueueSyncMode {
 pub fn parseGpuTimestampMode(raw: []const u8) ?GpuTimestampMode {
     if (std.ascii.eqlIgnoreCase(raw, "auto")) return .auto;
     if (std.ascii.eqlIgnoreCase(raw, "off")) return .off;
+    if (std.ascii.eqlIgnoreCase(raw, "require")) return .require;
     return null;
 }
 

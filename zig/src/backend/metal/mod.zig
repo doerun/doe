@@ -5,8 +5,8 @@ const webgpu = @import("../../webgpu_ffi.zig");
 const surface_procs = @import("../../wgpu_surface_procs.zig");
 const backend_iface = @import("../backend_iface.zig");
 const common_errors = @import("../common/errors.zig");
-const common_timing = @import("../common/timing.zig");
 const command_info = @import("../common/command_info.zig");
+const command_requirements = @import("../common/command_requirements.zig");
 const capabilities = @import("../common/capabilities.zig");
 const artifact_meta = @import("../common/artifact_meta.zig");
 
@@ -264,35 +264,29 @@ fn deinit(ctx: *anyopaque) void {
 
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
-    self.refresh_capabilities();
-    const required = capabilities.required_capabilities(command);
-    if (self.capability_set.missing(required)) |missing_cap| {
+    const requirements = command_requirements.requirements(command);
+    if (self.capability_set.missing(requirements.required_capabilities)) |missing_cap| {
         return .{
             .status = .unsupported,
             .status_message = capabilities.capability_name(missing_cap),
-            .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
+            .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
         };
     }
 
-    const execute_start = try common_timing.operation_timing_ns();
     var native_result = self.inner.executeCommand(command) catch |err| {
-        const execute_end = try common_timing.operation_timing_ns();
-        _ = common_timing.ns_delta(execute_end, execute_start);
         return .{
             .status = common_errors.map_error_status(err),
             .status_message = common_errors.error_code(err),
-            .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
+            .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
         };
     };
-    const execute_end = try common_timing.operation_timing_ns();
-    _ = common_timing.ns_delta(execute_end, execute_start);
 
-    if (command_info.is_dispatch(command) and native_result.dispatch_count == 0) {
-        native_result.dispatch_count = command_info.operation_count(command);
+    if (requirements.is_dispatch and native_result.dispatch_count == 0) {
+        native_result.dispatch_count = requirements.operation_count;
     }
 
     const meta = artifact_meta.classify(
@@ -312,25 +306,30 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
+    const normalized_submit_every = if (submit_every == 0) 1 else submit_every;
+    if (self.upload_buffer_usage_mode == mode and self.upload_submit_every == normalized_submit_every) return;
     self.upload_buffer_usage_mode = mode;
-    self.upload_submit_every = if (submit_every == 0) 1 else submit_every;
+    self.upload_submit_every = normalized_submit_every;
     self.inner.setUploadBehavior(self.upload_buffer_usage_mode, self.upload_submit_every);
 }
 
 fn set_queue_wait_mode(ctx: *anyopaque, mode: webgpu.QueueWaitMode) void {
     const self = cast(ctx);
+    if (self.queue_wait_mode == mode) return;
     self.queue_wait_mode = mode;
     self.inner.setQueueWaitMode(mode);
 }
 
 fn set_queue_sync_mode(ctx: *anyopaque, mode: webgpu.QueueSyncMode) void {
     const self = cast(ctx);
+    if (self.queue_sync_mode == mode) return;
     self.queue_sync_mode = mode;
     self.inner.setQueueSyncMode(mode);
 }
 
 fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
     const self = cast(ctx);
+    if (self.gpu_timestamp_mode == mode) return;
     self.gpu_timestamp_mode = mode;
     self.inner.setGpuTimestampMode(mode);
 }

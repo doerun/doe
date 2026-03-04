@@ -192,13 +192,13 @@ fn executeMapAsync(self: *Backend, command: model.MapAsyncCommand) !types.Native
         types.WGPUBufferUsage_MapWrite | types.WGPUBufferUsage_CopySrc;
 
     const buffer = try resources.getOrCreateBuffer(self, loader.BUFFER_MAP_ASYNC_KEY, bytes, usage);
-    
+
     // Unmap first in case it was mapped from a previous iteration
     self.procs.?.wgpuBufferUnmap(buffer);
 
     var map_context = MapAsyncContext{};
     const mode_flag: types.WGPUMapMode = if (command.mode == .read) types.WGPUMapMode_Read else types.WGPUMapMode_Write;
-    
+
     // Map the buffer
     _ = self.procs.?.wgpuBufferMapAsync(
         buffer,
@@ -627,6 +627,16 @@ fn executeKernelDispatchKernel(
     }
 
     const use_timestamps = self.gpuTimestampsEnabled();
+    const timestamps_required = self.gpuTimestampsRequired();
+    if (timestamps_required and !self.has_timestamp_query) {
+        return .{
+            .status = .@"error",
+            .status_message = "gpu timestamp required but feature unavailable",
+            .dispatch_count = repeat_count,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
+        };
+    }
     self.timestampLog(
         "dispatch kernel={s} repeat={} adapter_timestamp_query={} device_timestamp_query={}\n",
         .{ kernel_name, repeat_count, self.adapter_has_timestamp_query, self.has_timestamp_query },
@@ -690,6 +700,15 @@ fn executeKernelDispatchKernel(
             "timestamp_artifacts query_set={} resolve_buffer={} readback_buffer={}\n",
             .{ query_set != null, resolve_buffer != null, readback_buffer != null },
         );
+    }
+    if (timestamps_required and !timestamps_active) {
+        return .{
+            .status = .@"error",
+            .status_message = "gpu timestamp required but artifacts unavailable",
+            .dispatch_count = repeat_count,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
+        };
     }
     defer {
         if (query_set) |qs| {
@@ -879,33 +898,44 @@ fn executeKernelDispatchKernel(
     var gpu_timestamp_ns: u64 = 0;
     var gpu_timestamp_valid = false;
     if (timestamps_active) {
-        gpu_timestamp_ns = self.readTimestampBuffer(readback_buffer) catch |err| {
+        if (self.readTimestampBuffer(readback_buffer)) |timestamp_ns| {
+            gpu_timestamp_ns = timestamp_ns;
+        } else |err| {
             self.timestampLog("timestamp_readback_error={s}\n", .{@errorName(err)});
-            return .{
-                .status = .@"error",
-                .status_message = timestampReadbackStatus(err),
-                .setup_ns = setup_ns,
-                .encode_ns = encode_ns,
-                .submit_wait_ns = submit_wait_ns,
-                .dispatch_count = repeat_count,
-                .gpu_timestamp_attempted = true,
-                .gpu_timestamp_valid = false,
-            };
-        };
+            if (timestamps_required) {
+                return .{
+                    .status = .@"error",
+                    .status_message = timestampReadbackStatus(err),
+                    .setup_ns = setup_ns,
+                    .encode_ns = encode_ns,
+                    .submit_wait_ns = submit_wait_ns,
+                    .dispatch_count = repeat_count,
+                    .gpu_timestamp_attempted = true,
+                    .gpu_timestamp_valid = false,
+                };
+            }
+            self.timestampLog("timestamp_fallback reason={s}\n", .{timestampReadbackStatus(err)});
+            gpu_timestamp_ns = 0;
+        }
         gpu_timestamp_valid = gpu_timestamp_ns > 0;
         self.timestampLog("timestamp_ns={}\n", .{gpu_timestamp_ns});
         if (!gpu_timestamp_valid) {
-            return .{
-                .status = .@"error",
-                .status_message = "gpu timestamp invalid (zero delta)",
-                .setup_ns = setup_ns,
-                .encode_ns = encode_ns,
-                .submit_wait_ns = submit_wait_ns,
-                .dispatch_count = repeat_count,
-                .gpu_timestamp_ns = gpu_timestamp_ns,
-                .gpu_timestamp_attempted = true,
-                .gpu_timestamp_valid = false,
-            };
+            if (!timestamps_required) {
+                self.timestampLog("timestamp_fallback reason=zero_delta\n", .{});
+                gpu_timestamp_ns = 0;
+            } else {
+                return .{
+                    .status = .@"error",
+                    .status_message = "gpu timestamp invalid (zero delta)",
+                    .setup_ns = setup_ns,
+                    .encode_ns = encode_ns,
+                    .submit_wait_ns = submit_wait_ns,
+                    .dispatch_count = repeat_count,
+                    .gpu_timestamp_ns = gpu_timestamp_ns,
+                    .gpu_timestamp_attempted = true,
+                    .gpu_timestamp_valid = false,
+                };
+            }
         }
     }
 

@@ -72,6 +72,25 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   `docs/metal-macos-proof-bundle-runbook.md`
 - Chromium lane release/build defaults now force non-CfT branding args at `gn gen` time (`is_chrome_for_testing=false`, `is_chrome_for_testing_branded=false`, `is_chrome_branded=false`) so stale `args.gn` does not reintroduce Chrome-for-Testing UI branding.
 - Chromium lane browser layered benchmark harness now supports per-mode browser executables (`--dawn-chrome`, `--doe-chrome`) so one run can compare Doe runtime path in `Fawn.app` against a separate Dawn/Chrome binary without mixing launch binaries.
+- Browser layered render readback scenario hardening (2026-03-04):
+  - `nursery/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs` `render_triangle_readback` now renders into an explicit `rgba8unorm` texture (`RENDER_ATTACHMENT|COPY_SRC`) and performs an explicit queue completion before map/readback.
+  - this removes swapchain/current-texture readback nondeterminism that could produce `unexpected render readback color` failures on both Dawn and Doe in headless runs.
+- macOS local-build unblock for `doe-zig-runtime` (2026-03-04):
+  - `zig/src/backend/vulkan/mod.zig` now selects a macOS-only stub runtime import (`native_runtime_stub.zig`) so local Metal-focused builds do not fail link on unresolved Vulkan symbols when no Vulkan loader is present.
+  - Linux/Windows Vulkan native runtime import path remains unchanged (`native_runtime.zig`).
+- Metal backend micro-overhead cleanup (2026-03-04):
+  - `zig/src/backend/metal/mod.zig` removed unused per-command timing probes that were computed and discarded around `inner.executeCommand`.
+  - command behavior/taxonomy contracts are unchanged; this is a hot-path overhead reduction only.
+- Cross-backend hot-path sync cleanup (2026-03-04):
+  - `zig/src/backend/{metal,vulkan,d3d12}/mod.zig` now uses shared command-requirement metadata for dispatch-count fallback paths and backend-unsupported capability reporting.
+  - runtime setter calls (`setUploadBehavior`, queue wait/sync mode, GPU timestamp mode) are now no-op short-circuited when values are unchanged to avoid repeated backend state pushes.
+  - D3D12 no longer re-probes capability flags on every command; capability selection remains deterministic from initialized backend feature state.
+- Shared render encode branch-lift (2026-03-04):
+  - `zig/src/wgpu_render_draw_loops.zig` now hosts specialized draw-loop helpers for render-pass and render-bundle encode paths (`static/no_change`, `static/redundant`, `redundant/no_change`, `redundant/redundant`).
+  - `zig/src/wgpu_render_commands.zig` now routes draw-loop execution through those helpers, removing per-draw mode branches in hot loops while preserving command semantics and API-call shapes.
+- single-workload strict sweep utility (2026-03-04):
+  - new script: `bench/run_single_workload_sweep.py`
+  - runs repeated `compare_dawn_vs_doe.py` invocations for one workload and emits per-run + aggregate (`medianDeltaP50Percent`, `medianDeltaP95Percent`) summary artifacts under a timestamped scratch folder.
 - experimental npm bridge package now provides practical headless integration paths under `nursery/webgpu-core`:
   - Node process-bridge runtime wrapper (`nursery/webgpu-core/src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
@@ -90,7 +109,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
 - drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libdoe_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
-- native runtime now supports `--gpu-timestamp-mode auto|off`; AMD extended `texture_sampling_raster_baseline` uses `off` to keep operation timing comparable when timestamp queries produce zero-delta artifacts.
+- native runtime now supports `--gpu-timestamp-mode auto|off|require`; `auto` degrades to non-timestamp operation timing on invalid/unavailable timestamp capture, while `require` fails fast for strict timestamp lanes.
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.local.metal.extended.json` (no hard-coded 19-workload subset filter).
 - backend lane timing realism hardening (2026-03-02):
   - `zig/src/backend/backend_registry.zig` now routes `doe_metal` lane execution through the real `webgpu.WebGPUBackend` command path while preserving Doe backend IDs in telemetry.
@@ -723,7 +742,7 @@ Execution gap list:
 - typed discovery and adapter/device queue selection are implemented in WebGPU FFI bootstrap.
 - full dispatch/kernel lowering with shader/module/pipeline resolution for a complete kernel payload format and artifact-backed verification.
 - texture copy/materialization command modeling and lowering.
-- deterministic GPU timing capture remains partial (retry envelopes + explicit timestamp readback taxonomy are implemented, but full claim-grade deterministic capture policy is still in progress).
+- deterministic GPU timing capture remains partial (retry envelopes + explicit timestamp readback taxonomy + explicit `auto|off|require` mode policy are implemented, but full claim-grade deterministic capture policy is still in progress).
 - robust retry/failure policy is now bounded for queue wait and timestamp map paths; broader mapped GPU status policy hardening remains.
 - no release-ready benchmark baseline generated against native GPU backend.
 

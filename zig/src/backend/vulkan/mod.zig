@@ -1,13 +1,18 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const backend_iface = @import("../backend_iface.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const command_info = @import("../common/command_info.zig");
+const command_requirements = @import("../common/command_requirements.zig");
 const capabilities = @import("../common/capabilities.zig");
 const artifact_meta = @import("../common/artifact_meta.zig");
-const native_runtime = @import("native_runtime.zig");
+const native_runtime = if (builtin.os.tag == .macos)
+    @import("native_runtime_stub.zig")
+else
+    @import("native_runtime.zig");
 
 const STATUS_MESSAGE_BYTES: usize = 256;
 
@@ -124,12 +129,14 @@ fn ensure_runtime_bootstrapped(self: *ZigVulkanBackend) !*native_runtime.NativeV
     return &self.runtime.?;
 }
 
-fn unsupported_capability_result(self: *ZigVulkanBackend, command: model.Command, missing: capabilities.Capability) webgpu.NativeExecutionResult {
-    _ = self;
+fn unsupported_capability_result(
+    requirements: command_requirements.CommandRequirements,
+    missing: capabilities.Capability,
+) webgpu.NativeExecutionResult {
     return .{
         .status = .unsupported,
         .status_message = capabilities.capability_name(missing),
-        .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
+        .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
     };
 }
 
@@ -282,9 +289,9 @@ fn flush_pending_uploads_if_required(self: *ZigVulkanBackend, command: model.Com
 }
 
 fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !webgpu.NativeExecutionResult {
-    const required = capabilities.required_capabilities(command);
-    if (self.capability_set.missing(required)) |missing| {
-        return unsupported_capability_result(self, command, missing);
+    const requirements = command_requirements.requirements(command);
+    if (self.capability_set.missing(requirements.required_capabilities)) |missing| {
+        return unsupported_capability_result(requirements, missing);
     }
 
     var setup_ns: u64 = 0;
@@ -335,13 +342,14 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
     defer if (backend.runtime) |*runtime| runtime.deinit();
 
     return execute_runtime_command(&backend, command) catch |err| {
+        const requirements = command_requirements.requirements(command);
         return .{
             .status = common_errors.map_error_status(err),
             .status_message = write_status(&backend, "{s}", .{common_errors.error_code(err)}),
             .setup_ns = 0,
             .encode_ns = 0,
             .submit_wait_ns = 0,
-            .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
+            .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
@@ -351,6 +359,7 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
 
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
+    const requirements = command_requirements.requirements(command);
     return execute_runtime_command(self, command) catch |err| {
         return .{
             .status = common_errors.map_error_status(err),
@@ -358,7 +367,7 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
             .setup_ns = 0,
             .encode_ns = 0,
             .submit_wait_ns = 0,
-            .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
+            .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
@@ -368,22 +377,27 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
+    const normalized_submit_every = if (submit_every > 0) submit_every else 1;
+    if (self.upload_buffer_usage_mode == mode and self.upload_submit_every == normalized_submit_every) return;
     self.upload_buffer_usage_mode = mode;
-    self.upload_submit_every = if (submit_every > 0) submit_every else 1;
+    self.upload_submit_every = normalized_submit_every;
 }
 
 fn set_queue_wait_mode(ctx: *anyopaque, mode: webgpu.QueueWaitMode) void {
     const self = cast(ctx);
+    if (self.queue_wait_mode == mode) return;
     self.queue_wait_mode = mode;
 }
 
 fn set_queue_sync_mode(ctx: *anyopaque, mode: webgpu.QueueSyncMode) void {
     const self = cast(ctx);
+    if (self.queue_sync_mode == mode) return;
     self.queue_sync_mode = mode;
 }
 
 fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
     const self = cast(ctx);
+    if (self.gpu_timestamp_mode == mode) return;
     self.gpu_timestamp_mode = mode;
 }
 

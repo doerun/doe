@@ -825,9 +825,7 @@ Historical note:
 
 Additive local-metal presets:
 
-- `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
-- `bench/compare_dawn_vs_doe.config.local.metal.comparable.json`
-- `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+- `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
 
 Host preflight:
 
@@ -835,11 +833,20 @@ Host preflight:
 python3 bench/preflight_metal_host.py
 ```
 
+Single-workload strict sweep (repeat one workload and emit median/tail deltas):
+
+```bash
+python3 bench/run_single_workload_sweep.py \
+  --config bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json \
+  --workload upload_write_buffer_64kb \
+  --repeats 5
+```
+
 Blocking gate sequence for strict local-metal comparable/release lanes:
 
 ```bash
 python3 bench/run_blocking_gates.py \
-  --report bench/out/dawn-vs-doe.local.metal.comparable.json \
+  --report bench/out/dawn-vs-doe.local.metal.extended.comparable.json \
   --with-backend-selection-gate \
   --with-shader-artifact-gate \
   --with-metal-sync-conformance-gate \
@@ -851,8 +858,13 @@ python3 bench/run_blocking_gates.py \
 For release claims, enforce backend telemetry in claim gate:
 
 ```bash
+python3 bench/compare_dawn_vs_doe.py \
+  --config bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json \
+  --claimability release \
+  --out bench/out/dawn-vs-doe.local.metal.extended.release.json
+
 python3 bench/claim_gate.py \
-  --report bench/out/dawn-vs-doe.local.metal.release.json \
+  --report bench/out/dawn-vs-doe.local.metal.extended.release.json \
   --require-comparison-status comparable \
   --require-claim-status claimable \
   --require-claimability-mode release \

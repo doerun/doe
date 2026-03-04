@@ -51,7 +51,7 @@ fn printUsage(stdout: anytype) !void {
         \\doe-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
         \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane vulkan_dawn_release|vulkan_doe_app|d3d12_doe_app|metal_doe_directional|metal_doe_comparable|metal_doe_release|metal_dawn_release|d3d12_doe_directional|d3d12_doe_comparable|d3d12_doe_release|d3d12_dawn_release|vulkan_dawn_directional|vulkan_doe_comparable|vulkan_doe_release|metal_doe_app]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
-        \\ [--gpu-timestamp-mode auto|off]
+        \\ [--gpu-timestamp-mode auto|off|require]
         \\ [--queue-wait-mode process-events|wait-any]
         \\ [--queue-sync-mode per-command|deferred]
         \\ [--kernel-root <path>]
@@ -100,6 +100,7 @@ fn printUsage(stdout: anytype) !void {
         \\--gpu-timestamp-mode controls native GPU timestamp query usage for kernel dispatch timings.
         \\  auto: use GPU timestamps when feature/query artifacts are available (default).
         \\  off: disable GPU timestamp attempts and rely on non-timestamp operation timing sources.
+        \\  require: fail command execution when timestamp capture is unavailable or invalid.
         \\--queue-wait-mode controls queue completion waiting strategy for native execution.
         \\  process-events: callback + process-events loop (default).
         \\  wait-any: callback + wgpuInstanceWaitAny wait path (fails explicitly when unsupported).
@@ -255,7 +256,7 @@ pub fn main() !void {
             } else {
                 try trace.writef(
                     stdout,
-                    "invalid --gpu-timestamp-mode value: {s} (expected auto|off)\n",
+                    "invalid --gpu-timestamp-mode value: {s} (expected auto|off|require)\n",
                     .{argv[i]},
                 );
                 return;

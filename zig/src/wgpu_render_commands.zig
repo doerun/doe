@@ -9,6 +9,7 @@ const render_api_mod = @import("wgpu_render_api.zig");
 const render_indexing = @import("wgpu_render_indexing.zig");
 const render_p0_mod = @import("wgpu_render_p0.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
+const render_draw_loops = @import("wgpu_render_draw_loops.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
@@ -53,6 +54,7 @@ const RenderStencilFaceState = render_types_mod.RenderStencilFaceState;
 const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
 const RenderPipelineDescriptor = render_types_mod.RenderPipelineDescriptor;
 const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingResources;
+
 pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types.NativeExecutionResult {
     if (render.draw_count == 0) {
         return .{ .status = .unsupported, .status_message = "render_draw draw_count must be > 0" };
@@ -467,53 +469,25 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
         }
 
-        var bundle_draw_index: u32 = 0;
         if (indexed_draw) {
-            while (bundle_draw_index < render.draw_count) : (bundle_draw_index += 1) {
-                if (render.pipeline_mode == .redundant) {
-                    render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
-                }
-                if (render.bind_group_mode == .redundant) {
-                    render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
-                }
-                render_api.render_bundle_encoder_draw_indexed(
-                    render_bundle_encoder,
-                    render.index_count.?,
-                    render.instance_count,
-                    render.first_index,
-                    render.base_vertex,
-                    render.first_instance,
-                );
-            }
+            render_draw_loops.encode_render_bundle_draw_indexed(
+                render_api,
+                render_bundle_encoder,
+                render,
+                render_pipeline,
+                render_uniform_resources,
+                dynamic_offsets[0..],
+                render.index_count.?,
+            );
         } else {
-            if (render.pipeline_mode != .redundant and render.bind_group_mode == .redundant) {
-                while (bundle_draw_index < render.draw_count) : (bundle_draw_index += 1) {
-                    render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
-                    render_api.render_bundle_encoder_draw(
-                        render_bundle_encoder,
-                        render.vertex_count,
-                        render.instance_count,
-                        render.first_vertex,
-                        render.first_instance,
-                    );
-                }
-            } else {
-                while (bundle_draw_index < render.draw_count) : (bundle_draw_index += 1) {
-                    if (render.pipeline_mode == .redundant) {
-                        render_api.render_bundle_encoder_set_pipeline(render_bundle_encoder, render_pipeline);
-                    }
-                    if (render.bind_group_mode == .redundant) {
-                        render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
-                    }
-                    render_api.render_bundle_encoder_draw(
-                        render_bundle_encoder,
-                        render.vertex_count,
-                        render.instance_count,
-                        render.first_vertex,
-                        render.first_instance,
-                    );
-                }
-            }
+            render_draw_loops.encode_render_bundle_draw_nonindexed(
+                render_api,
+                render_bundle_encoder,
+                render,
+                render_pipeline,
+                render_uniform_resources,
+                dynamic_offsets[0..],
+            );
         }
 
         prepared_render_bundle = render_api.render_bundle_encoder_finish(
@@ -657,7 +631,6 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     }
 
     if (render.encode_mode == .render_pass) {
-        var draw_index: u32 = 0;
         if (indexed_draw) {
             if (use_multi_draw_indexed) {
                 render_api.render_pass_encoder_multi_draw_indexed_indirect.?(
@@ -669,22 +642,15 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                     0,
                 );
             } else {
-                while (draw_index < render.draw_count) : (draw_index += 1) {
-                    if (render.pipeline_mode == .redundant) {
-                        render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
-                    }
-                    if (render.bind_group_mode == .redundant) {
-                        render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
-                    }
-                    render_api.render_pass_encoder_draw_indexed(
-                        render_pass,
-                        render.index_count.?,
-                        render.instance_count,
-                        render.first_index,
-                        render.base_vertex,
-                        render.first_instance,
-                    );
-                }
+                render_draw_loops.encode_render_pass_draw_indexed(
+                    render_api,
+                    render_pass,
+                    render,
+                    render_pipeline,
+                    render_uniform_resources,
+                    dynamic_offsets[0..],
+                    render.index_count.?,
+                );
             }
         } else {
             if (use_multi_draw) {
@@ -697,21 +663,14 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                     0,
                 );
             } else {
-                while (draw_index < render.draw_count) : (draw_index += 1) {
-                    if (render.pipeline_mode == .redundant) {
-                        render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
-                    }
-                    if (render.bind_group_mode == .redundant) {
-                        render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
-                    }
-                    render_api.render_pass_encoder_draw(
-                        render_pass,
-                        render.vertex_count,
-                        render.instance_count,
-                        render.first_vertex,
-                        render.first_instance,
-                    );
-                }
+                render_draw_loops.encode_render_pass_draw_nonindexed(
+                    render_api,
+                    render_pass,
+                    render,
+                    render_pipeline,
+                    render_uniform_resources,
+                    dynamic_offsets[0..],
+                );
             }
         }
     } else {
