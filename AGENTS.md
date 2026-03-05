@@ -3,7 +3,7 @@
 ## Scope
 
 This file is the source of truth for Fawn work only.  
-Do not apply `dream/AGENTS.md` or `reploid/doppler/AGENTS.md` as process for this project.  
+Do not apply `dream/AGENTS.md` or `doppler/AGENTS.md` as process for this project.
 It is acceptable to reuse selected technical principles from those files, as listed here, when directly useful.
 
 ## Prime Directive
