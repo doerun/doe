@@ -467,122 +467,28 @@ pub const WebGPUBackend = struct {
         return null;
     }
 
-    pub fn syncAfterSubmit(self: *Self) !void {
-        if (self.queue_sync_mode == .per_command) {
-            try self.waitForQueue();
-        }
-    }
-
-    pub fn submitEmpty(self: *Self) !u64 {
-        return try self.submitInternal(0, null);
-    }
-
-    pub fn submitCommandBuffers(self: *Self, command_buffers: []types.WGPUCommandBuffer) !u64 {
-        return try self.submitInternal(command_buffers.len, command_buffers.ptr);
-    }
-
-    fn submitInternal(
-        self: *Self,
-        command_count: usize,
-        command_ptr: ?[*]types.WGPUCommandBuffer,
-    ) !u64 {
-        const procs = self.procs orelse return error.ProceduralNotReady;
-        const submit_start_ns = std.time.nanoTimestamp();
-        procs.wgpuQueueSubmit(self.queue.?, command_count, if (command_count == 0) null else command_ptr.?);
-        try self.syncAfterSubmit();
-        const submit_end_ns = std.time.nanoTimestamp();
-        return if (submit_end_ns > submit_start_ns)
-            @as(u64, @intCast(submit_end_ns - submit_start_ns))
-        else
-            0;
-    }
-
-    pub fn flushQueue(self: *Self) !u64 {
-        const start = std.time.nanoTimestamp();
-        try self.waitForQueue();
-        const end = std.time.nanoTimestamp();
-        return if (end > start) @as(u64, @intCast(end - start)) else 0;
-    }
-
-    pub fn createSurface(
-        self: *Self,
-        descriptor: surface_procs_mod.SurfaceDescriptor,
-    ) !surface_procs_mod.Surface {
-        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
-        const surface = surface_procs.instance_create_surface(self.instance.?, &descriptor);
-        if (surface == null) return error.SurfaceCreationFailed;
-        return surface;
-    }
-
-    pub fn getSurfaceCapabilities(
-        self: *Self,
-        surface: surface_procs_mod.Surface,
-    ) !surface_procs_mod.SurfaceCapabilities {
-        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
-        var capabilities = surface_procs_mod.SurfaceCapabilities{
-            .nextInChain = null,
-            .usages = types.WGPUTextureUsage_None,
-            .formatCount = 0,
-            .formats = null,
-            .presentModeCount = 0,
-            .presentModes = null,
-            .alphaModeCount = 0,
-            .alphaModes = null,
-        };
-        const status = surface_procs.surface_get_capabilities(surface, self.adapter.?, &capabilities);
-        if (status != types.WGPUStatus_Success) return error.SurfaceCapabilitiesFailed;
-        return capabilities;
-    }
-
-    pub fn freeSurfaceCapabilities(
-        self: *Self,
-        capabilities: surface_procs_mod.SurfaceCapabilities,
-    ) void {
-        if (surface_procs_mod.loadSurfaceProcs(self.dyn_lib)) |surface_procs| {
-            surface_procs.surface_capabilities_free_members(capabilities);
-        }
-    }
-
-    pub fn configureSurface(
-        self: *Self,
-        surface: surface_procs_mod.Surface,
-        config: surface_procs_mod.SurfaceConfiguration,
-    ) !void {
-        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
-        surface_procs.surface_configure(surface, &config);
-    }
-
-    pub fn getCurrentSurfaceTexture(
-        self: *Self,
-        surface: surface_procs_mod.Surface,
-    ) !surface_procs_mod.SurfaceTexture {
-        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
-        var surface_texture = surface_procs_mod.SurfaceTexture{
-            .nextInChain = null,
-            .texture = null,
-            .status = 0,
-        };
-        surface_procs.surface_get_current_texture(surface, &surface_texture);
-        return surface_texture;
-    }
-
-    pub fn presentSurface(self: *Self, surface: surface_procs_mod.Surface) !void {
-        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
-        const status = surface_procs.surface_present(surface);
-        if (status != types.WGPUStatus_Success) return error.SurfacePresentFailed;
-    }
-
-    pub fn unconfigureSurface(self: *Self, surface: surface_procs_mod.Surface) !void {
-        const surface_procs = surface_procs_mod.loadSurfaceProcs(self.dyn_lib) orelse return error.SurfaceProcUnavailable;
-        surface_procs.surface_unconfigure(surface);
-    }
-
-    pub fn releaseSurface(self: *Self, surface: surface_procs_mod.Surface) void {
-        if (surface_procs_mod.loadSurfaceProcs(self.dyn_lib)) |surface_procs| {
-            surface_procs.surface_release(surface);
-        }
-    }
-
+    pub const syncAfterSubmit = @import("wgpu_ffi_sync.zig").syncAfterSubmit;
+    pub const submitEmpty = @import("wgpu_ffi_sync.zig").submitEmpty;
+    pub const submitCommandBuffers = @import("wgpu_ffi_sync.zig").submitCommandBuffers;
+    pub const submitInternal = @import("wgpu_ffi_sync.zig").submitInternal;
+    pub const flushQueue = @import("wgpu_ffi_sync.zig").flushQueue;
+    pub const waitForQueue = @import("wgpu_ffi_sync.zig").waitForQueue;
+    pub const waitForQueueOnce = @import("wgpu_ffi_sync.zig").waitForQueueOnce;
+    pub const shouldRetryQueueWait = @import("wgpu_ffi_sync.zig").shouldRetryQueueWait;
+    pub const waitForQueueProcessEvents = @import("wgpu_ffi_sync.zig").waitForQueueProcessEvents;
+    pub const waitForQueueWaitAny = @import("wgpu_ffi_sync.zig").waitForQueueWaitAny;
+    pub const readTimestampBuffer = @import("wgpu_ffi_sync.zig").readTimestampBuffer;
+    pub const readTimestampBufferOnce = @import("wgpu_ffi_sync.zig").readTimestampBufferOnce;
+    pub const shouldRetryTimestampMap = @import("wgpu_ffi_sync.zig").shouldRetryTimestampMap;
+    pub const processEventsUntil = @import("wgpu_ffi_sync.zig").processEventsUntil;
+    pub const createSurface = @import("wgpu_ffi_surface.zig").createSurface;
+    pub const getSurfaceCapabilities = @import("wgpu_ffi_surface.zig").getSurfaceCapabilities;
+    pub const freeSurfaceCapabilities = @import("wgpu_ffi_surface.zig").freeSurfaceCapabilities;
+    pub const configureSurface = @import("wgpu_ffi_surface.zig").configureSurface;
+    pub const getCurrentSurfaceTexture = @import("wgpu_ffi_surface.zig").getCurrentSurfaceTexture;
+    pub const presentSurface = @import("wgpu_ffi_surface.zig").presentSurface;
+    pub const unconfigureSurface = @import("wgpu_ffi_surface.zig").unconfigureSurface;
+    pub const releaseSurface = @import("wgpu_ffi_surface.zig").releaseSurface;
     pub fn prewarmUploadPath(self: *Self, max_upload_bytes: u64) !void {
         if (max_upload_bytes == 0) return;
         if (!self.backendAvailable()) return error.NativeQueueUnavailable;
@@ -605,203 +511,6 @@ pub const WebGPUBackend = struct {
         @memset(self.upload_scratch, 0);
     }
 
-    pub fn waitForQueue(self: *Self) !void {
-        var attempt: u32 = 0;
-        while (attempt < QUEUE_SYNC_RETRY_LIMIT) : (attempt += 1) {
-            if (self.waitForQueueOnce()) |_| {
-                return;
-            } else |err| {
-                if (attempt + 1 < QUEUE_SYNC_RETRY_LIMIT and shouldRetryQueueWait(err)) {
-                    std.Thread.sleep(QUEUE_SYNC_RETRY_BACKOFF_NS);
-                    continue;
-                }
-                return err;
-            }
-        }
-        return error.QueueSubmitTimeout;
-    }
-
-    fn waitForQueueOnce(self: *Self) !void {
-        switch (self.queue_wait_mode) {
-            .process_events => try self.waitForQueueProcessEvents(),
-            .wait_any => try self.waitForQueueWaitAny(),
-        }
-    }
-
-    fn shouldRetryQueueWait(err: anyerror) bool {
-        return switch (err) {
-            error.WaitTimedOut,
-            error.QueueSubmitTimeout,
-            error.WaitAnyIncomplete,
-            => true,
-            else => false,
-        };
-    }
-
-    pub fn waitForQueueProcessEvents(self: *Self) !void {
-        if (self.procs == null) return error.ProceduralNotReady;
-
-        var done_state = types.QueueSubmitState{};
-
-        const queue_done_callback_info = types.WGPUQueueWorkDoneCallbackInfo{
-            .nextInChain = null,
-            .mode = types.WGPUCallbackMode_AllowProcessEvents,
-            .callback = loader.queueWorkDoneCallback,
-            .userdata1 = &done_state,
-            .userdata2 = null,
-        };
-        const queue_done_future = self.procs.?.wgpuQueueOnSubmittedWorkDone(
-            self.queue.?,
-            queue_done_callback_info,
-        );
-        if (queue_done_future.id == 0) return error.QueueFutureUnavailable;
-        try self.processEventsUntil(&done_state.done, loader.QUEUE_WAIT_TIMEOUT_NS);
-        if (!done_state.done) return error.QueueSubmitTimeout;
-        if (done_state.status == .@"error") {
-            return error.QueueSubmissionError;
-        }
-    }
-
-    fn waitForQueueWaitAny(self: *Self) !void {
-        const procs = self.procs orelse return error.ProceduralNotReady;
-
-        var done_state = types.QueueSubmitState{};
-        const queue_done_callback_info = types.WGPUQueueWorkDoneCallbackInfo{
-            .nextInChain = null,
-            .mode = types.WGPUCallbackMode_WaitAnyOnly,
-            .callback = loader.queueWorkDoneCallback,
-            .userdata1 = &done_state,
-            .userdata2 = null,
-        };
-        const queue_done_future = procs.wgpuQueueOnSubmittedWorkDone(
-            self.queue.?,
-            queue_done_callback_info,
-        );
-        if (queue_done_future.id == 0) return error.QueueFutureUnavailable;
-
-        var wait_infos = [_]types.WGPUFutureWaitInfo{
-            .{
-                .future = queue_done_future,
-                .completed = types.WGPU_FALSE,
-            },
-        };
-        const wait_status = procs.wgpuInstanceWaitAny(
-            self.instance.?,
-            wait_infos.len,
-            wait_infos[0..].ptr,
-            loader.QUEUE_WAIT_TIMEOUT_NS,
-        );
-        switch (wait_status) {
-            .success => {},
-            .timedOut => return error.WaitTimedOut,
-            .@"error" => return error.WaitAnyFailed,
-            else => return error.WaitAnyUnsupported,
-        }
-
-        if (!done_state.done) {
-            try self.processEventsUntil(&done_state.done, loader.DEFAULT_WAIT_SLICE_NS);
-        }
-        if (!done_state.done) return error.WaitAnyIncomplete;
-        if (done_state.status == .@"error") {
-            return error.QueueSubmissionError;
-        }
-    }
-
-    pub fn readTimestampBuffer(self: *Self, readback_buffer: types.WGPUBuffer) !u64 {
-        const procs = self.procs orelse return error.ProceduralNotReady;
-        var attempt: u32 = 0;
-        while (attempt < TIMESTAMP_MAP_RETRY_LIMIT) : (attempt += 1) {
-            if (self.readTimestampBufferOnce(procs, readback_buffer)) |delta| {
-                return delta;
-            } else |err| {
-                if (attempt + 1 < TIMESTAMP_MAP_RETRY_LIMIT and shouldRetryTimestampMap(err)) {
-                    self.timestampLog(
-                        "timestamp_readback_retry attempt={} error={s}\n",
-                        .{ attempt + 1, @errorName(err) },
-                    );
-                    std.Thread.sleep(TIMESTAMP_MAP_RETRY_BACKOFF_NS);
-                    continue;
-                }
-                return err;
-            }
-        }
-        return error.BufferMapFailed;
-    }
-
-    fn readTimestampBufferOnce(
-        self: *Self,
-        procs: types.Procs,
-        readback_buffer: types.WGPUBuffer,
-    ) !u64 {
-        var map_state = types.BufferMapState{};
-        const map_callback_info = types.WGPUBufferMapCallbackInfo{
-            .nextInChain = null,
-            .mode = types.WGPUCallbackMode_AllowProcessEvents,
-            .callback = loader.bufferMapCallback,
-            .userdata1 = &map_state,
-            .userdata2 = null,
-        };
-        const map_future = procs.wgpuBufferMapAsync(
-            readback_buffer,
-            types.WGPUMapMode_Read,
-            0,
-            types.TIMESTAMP_BUFFER_SIZE,
-            map_callback_info,
-        );
-        if (map_future.id == 0) {
-            self.timestampLog("map_async_future_id=0\n", .{});
-            return error.BufferMapFailed;
-        }
-        try self.processEventsUntil(&map_state.done, loader.DEFAULT_TIMEOUT_NS);
-        if (!map_state.done) {
-            self.timestampLog("map_async_timeout\n", .{});
-            return error.BufferMapTimeout;
-        }
-        if (map_state.status != types.WGPUMapAsyncStatus_Success) {
-            self.timestampLog("map_async_status={}\n", .{map_state.status});
-            return error.BufferMapFailed;
-        }
-
-        const mapped_ptr = procs.wgpuBufferGetConstMappedRange(readback_buffer, 0, types.TIMESTAMP_BUFFER_SIZE);
-        if (mapped_ptr == null) {
-            self.timestampLog("mapped_range=null\n", .{});
-            return error.BufferMapFailed;
-        }
-        const timestamps = @as(*const [2]u64, @ptrCast(@alignCast(mapped_ptr)));
-        const begin_ts = timestamps[0];
-        const end_ts = timestamps[1];
-        procs.wgpuBufferUnmap(readback_buffer);
-        if (end_ts < begin_ts) {
-            self.timestampLog("mapped_invalid_range begin={} end={}\n", .{ begin_ts, end_ts });
-            return error.TimestampRangeInvalid;
-        }
-        const delta = end_ts - begin_ts;
-        self.timestampLog("mapped_begin={} mapped_end={} mapped_delta={}\n", .{ begin_ts, end_ts, delta });
-        return delta;
-    }
-
-    fn shouldRetryTimestampMap(err: anyerror) bool {
-        return switch (err) {
-            error.BufferMapTimeout,
-            error.BufferMapFailed,
-            => true,
-            else => false,
-        };
-    }
-
-    fn processEventsUntil(self: *Self, done: *const bool, timeout_ns: u64) !void {
-        const start = std.time.nanoTimestamp();
-        var spins: u32 = 0;
-        while (!done.*) {
-            self.procs.?.wgpuInstanceProcessEvents(self.instance.?);
-            const elapsed = std.time.nanoTimestamp() - start;
-            if (elapsed >= timeout_ns) return error.WaitTimedOut;
-            spins += 1;
-            if (spins > 1000) {
-                std.Thread.sleep(1_000);
-            }
-        }
-    }
 
     fn captureAdapterLimits(self: *Self) !void {
         self.has_adapter_limits = false;

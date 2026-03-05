@@ -593,141 +593,76 @@ pub fn initLimits() WGPULimits {
     return limits;
 }
 
-pub const FnWgpuCreateInstance = *const fn (?*anyopaque) callconv(.c) WGPUInstance;
-pub const FnWgpuInstanceRequestAdapter = *const fn (WGPUInstance, ?*const WGPURequestAdapterOptions, WGPURequestAdapterCallbackInfo) callconv(.c) WGPUFuture;
-pub const FnWgpuInstanceWaitAny = *const fn (WGPUInstance, usize, [*]WGPUFutureWaitInfo, u64) callconv(.c) WGPUWaitStatus;
-pub const FnWgpuInstanceProcessEvents = *const fn (WGPUInstance) callconv(.c) void;
-pub const FnWgpuAdapterRequestDevice = *const fn (WGPUAdapter, ?*const WGPUDeviceDescriptor, WGPURequestDeviceCallbackInfo) callconv(.c) WGPUFuture;
-pub const FnWgpuDeviceCreateBuffer = *const fn (WGPUDevice, ?*const WGPUBufferDescriptor) callconv(.c) WGPUBuffer;
-pub const FnWgpuDeviceCreateShaderModule = *const fn (WGPUDevice, ?*const WGPUShaderModuleDescriptor) callconv(.c) WGPUShaderModule;
-pub const FnWgpuShaderModuleRelease = *const fn (WGPUShaderModule) callconv(.c) void;
-pub const FnWgpuDeviceCreateComputePipeline = *const fn (WGPUDevice, ?*const WGPUComputePipelineDescriptor) callconv(.c) WGPUComputePipeline;
-pub const FnWgpuComputePipelineRelease = *const fn (WGPUComputePipeline) callconv(.c) void;
-pub const FnWgpuRenderPipelineRelease = *const fn (WGPURenderPipeline) callconv(.c) void;
-pub const FnWgpuDeviceCreateCommandEncoder = *const fn (WGPUDevice, ?*const WGPUCommandEncoderDescriptor) callconv(.c) WGPUCommandEncoder;
-pub const FnWgpuCommandEncoderBeginComputePass = *const fn (WGPUCommandEncoder, ?*const WGPUComputePassDescriptor) callconv(.c) WGPUComputePassEncoder;
-pub const FnWgpuDeviceCreateRenderPipeline = *const fn (WGPUDevice, *const anyopaque) callconv(.c) WGPURenderPipeline;
-pub const FnWgpuCommandEncoderBeginRenderPass = *const fn (WGPUCommandEncoder, *const anyopaque) callconv(.c) WGPURenderPassEncoder;
-pub const FnWgpuCommandEncoderWriteTimestamp = *const fn (WGPUCommandEncoder, WGPUQuerySet, u32) callconv(.c) void;
-pub const FnWgpuCommandEncoderCopyBufferToBuffer = *const fn (WGPUCommandEncoder, WGPUBuffer, u64, WGPUBuffer, u64, u64) callconv(.c) void;
-pub const FnWgpuCommandEncoderCopyBufferToTexture = *const fn (WGPUCommandEncoder, *const WGPUTexelCopyBufferInfo, *const WGPUTexelCopyTextureInfo, WGPUExtent3D) callconv(.c) void;
-pub const FnWgpuCommandEncoderCopyTextureToBuffer = *const fn (WGPUCommandEncoder, *const WGPUTexelCopyTextureInfo, *const WGPUTexelCopyBufferInfo, WGPUExtent3D) callconv(.c) void;
-pub const FnWgpuCommandEncoderCopyTextureToTexture = *const fn (WGPUCommandEncoder, *const WGPUTexelCopyTextureInfo, *const WGPUTexelCopyTextureInfo, WGPUExtent3D) callconv(.c) void;
-pub const FnWgpuComputePassEncoderSetPipeline = *const fn (WGPUComputePassEncoder, WGPUComputePipeline) callconv(.c) void;
-pub const FnWgpuComputePassEncoderSetBindGroup = *const fn (WGPUComputePassEncoder, u32, WGPUBindGroup, usize, ?[*]const u32) callconv(.c) void;
-pub const FnWgpuComputePassEncoderDispatchWorkgroups = *const fn (WGPUComputePassEncoder, u32, u32, u32) callconv(.c) void;
-pub const FnWgpuComputePassEncoderEnd = *const fn (WGPUComputePassEncoder) callconv(.c) void;
-pub const FnWgpuComputePassEncoderRelease = *const fn (WGPUComputePassEncoder) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderSetPipeline = *const fn (WGPURenderPassEncoder, WGPURenderPipeline) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderSetVertexBuffer = *const fn (WGPURenderPassEncoder, u32, WGPUBuffer, u64, u64) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderSetIndexBuffer = *const fn (WGPURenderPassEncoder, WGPUBuffer, u32, u64, u64) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderSetBindGroup = *const fn (WGPURenderPassEncoder, u32, WGPUBindGroup, usize, ?[*]const u32) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderDraw = *const fn (WGPURenderPassEncoder, u32, u32, u32, u32) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderDrawIndexed = *const fn (WGPURenderPassEncoder, u32, u32, u32, i32, u32) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderDrawIndirect = *const fn (WGPURenderPassEncoder, WGPUBuffer, u64) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderDrawIndexedIndirect = *const fn (WGPURenderPassEncoder, WGPUBuffer, u64) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderEnd = *const fn (WGPURenderPassEncoder) callconv(.c) void;
-pub const FnWgpuRenderPassEncoderRelease = *const fn (WGPURenderPassEncoder) callconv(.c) void;
-pub const FnWgpuCommandEncoderFinish = *const fn (WGPUCommandEncoder, ?*const WGPUCommandBufferDescriptor) callconv(.c) WGPUCommandBuffer;
-pub const FnWgpuDeviceGetQueue = *const fn (WGPUDevice) callconv(.c) WGPUQueue;
-pub const FnWgpuQueueSubmit = *const fn (WGPUQueue, usize, [*c]WGPUCommandBuffer) callconv(.c) void;
-pub const FnWgpuQueueOnSubmittedWorkDone = *const fn (WGPUQueue, WGPUQueueWorkDoneCallbackInfo) callconv(.c) WGPUFuture;
-pub const FnWgpuQueueWriteBuffer = *const fn (WGPUQueue, WGPUBuffer, u64, ?*const anyopaque, usize) callconv(.c) void;
-pub const FnWgpuDeviceCreateTexture = *const fn (WGPUDevice, ?*const WGPUTextureDescriptor) callconv(.c) WGPUTexture;
-pub const FnWgpuTextureCreateView = *const fn (WGPUTexture, ?*const WGPUTextureViewDescriptor) callconv(.c) WGPUTextureView;
-pub const FnWgpuDeviceCreateBindGroupLayout = *const fn (WGPUDevice, ?*const WGPUBindGroupLayoutDescriptor) callconv(.c) WGPUBindGroupLayout;
-pub const FnWgpuBindGroupLayoutRelease = *const fn (WGPUBindGroupLayout) callconv(.c) void;
-pub const FnWgpuDeviceCreateBindGroup = *const fn (WGPUDevice, ?*const WGPUBindGroupDescriptor) callconv(.c) WGPUBindGroup;
-pub const FnWgpuBindGroupRelease = *const fn (WGPUBindGroup) callconv(.c) void;
-pub const FnWgpuDeviceCreatePipelineLayout = *const fn (WGPUDevice, *const WGPUPipelineLayoutDescriptor) callconv(.c) WGPUPipelineLayout;
-pub const FnWgpuPipelineLayoutRelease = *const fn (WGPUPipelineLayout) callconv(.c) void;
-pub const FnWgpuTextureRelease = *const fn (WGPUTexture) callconv(.c) void;
-pub const FnWgpuTextureViewRelease = *const fn (WGPUTextureView) callconv(.c) void;
-pub const FnWgpuInstanceRelease = *const fn (WGPUInstance) callconv(.c) void;
-pub const FnWgpuAdapterRelease = *const fn (WGPUAdapter) callconv(.c) void;
-pub const FnWgpuDeviceRelease = *const fn (WGPUDevice) callconv(.c) void;
-pub const FnWgpuQueueRelease = *const fn (WGPUQueue) callconv(.c) void;
-pub const FnWgpuCommandEncoderRelease = *const fn (WGPUCommandEncoder) callconv(.c) void;
-pub const FnWgpuCommandBufferRelease = *const fn (WGPUCommandBuffer) callconv(.c) void;
-pub const FnWgpuBufferRelease = *const fn (WGPUBuffer) callconv(.c) void;
-pub const FnWgpuAdapterHasFeature = *const fn (WGPUAdapter, WGPUFeatureName) callconv(.c) WGPUBool;
-pub const FnWgpuDeviceHasFeature = *const fn (WGPUDevice, WGPUFeatureName) callconv(.c) WGPUBool;
-pub const FnWgpuDeviceCreateQuerySet = *const fn (WGPUDevice, *const WGPUQuerySetDescriptor) callconv(.c) WGPUQuerySet;
-pub const FnWgpuCommandEncoderResolveQuerySet = *const fn (WGPUCommandEncoder, WGPUQuerySet, u32, u32, WGPUBuffer, u64) callconv(.c) void;
-pub const FnWgpuQuerySetRelease = *const fn (WGPUQuerySet) callconv(.c) void;
-pub const FnWgpuBufferMapAsync = *const fn (WGPUBuffer, WGPUMapMode, usize, usize, WGPUBufferMapCallbackInfo) callconv(.c) WGPUFuture;
-pub const FnWgpuBufferGetConstMappedRange = *const fn (WGPUBuffer, usize, usize) callconv(.c) ?*const anyopaque;
-pub const FnWgpuBufferGetMappedRange = *const fn (WGPUBuffer, usize, usize) callconv(.c) ?*anyopaque;
-pub const FnWgpuBufferUnmap = *const fn (WGPUBuffer) callconv(.c) void;
+const procs = @import("wgpu_types_procs.zig");
 
-pub const Procs = struct {
-    wgpuCreateInstance: FnWgpuCreateInstance,
-    wgpuInstanceRequestAdapter: FnWgpuInstanceRequestAdapter,
-    wgpuInstanceWaitAny: FnWgpuInstanceWaitAny,
-    wgpuInstanceProcessEvents: FnWgpuInstanceProcessEvents,
-    wgpuAdapterRequestDevice: FnWgpuAdapterRequestDevice,
-    wgpuDeviceCreateBuffer: FnWgpuDeviceCreateBuffer,
-    wgpuDeviceCreateShaderModule: FnWgpuDeviceCreateShaderModule,
-    wgpuShaderModuleRelease: FnWgpuShaderModuleRelease,
-    wgpuDeviceCreateComputePipeline: FnWgpuDeviceCreateComputePipeline,
-    wgpuComputePipelineRelease: FnWgpuComputePipelineRelease,
-    wgpuRenderPipelineRelease: ?FnWgpuRenderPipelineRelease,
-    wgpuDeviceCreateCommandEncoder: FnWgpuDeviceCreateCommandEncoder,
-    wgpuCommandEncoderBeginComputePass: FnWgpuCommandEncoderBeginComputePass,
-    wgpuDeviceCreateRenderPipeline: ?FnWgpuDeviceCreateRenderPipeline,
-    wgpuCommandEncoderBeginRenderPass: ?FnWgpuCommandEncoderBeginRenderPass,
-    wgpuCommandEncoderWriteTimestamp: ?FnWgpuCommandEncoderWriteTimestamp,
-    wgpuCommandEncoderCopyBufferToBuffer: FnWgpuCommandEncoderCopyBufferToBuffer,
-    wgpuCommandEncoderCopyBufferToTexture: FnWgpuCommandEncoderCopyBufferToTexture,
-    wgpuCommandEncoderCopyTextureToBuffer: FnWgpuCommandEncoderCopyTextureToBuffer,
-    wgpuCommandEncoderCopyTextureToTexture: FnWgpuCommandEncoderCopyTextureToTexture,
-    wgpuComputePassEncoderSetBindGroup: FnWgpuComputePassEncoderSetBindGroup,
-    wgpuComputePassEncoderSetPipeline: FnWgpuComputePassEncoderSetPipeline,
-    wgpuComputePassEncoderDispatchWorkgroups: FnWgpuComputePassEncoderDispatchWorkgroups,
-    wgpuComputePassEncoderEnd: FnWgpuComputePassEncoderEnd,
-    wgpuComputePassEncoderRelease: FnWgpuComputePassEncoderRelease,
-    wgpuRenderPassEncoderSetPipeline: ?FnWgpuRenderPassEncoderSetPipeline,
-    wgpuRenderPassEncoderSetVertexBuffer: ?FnWgpuRenderPassEncoderSetVertexBuffer,
-    wgpuRenderPassEncoderSetIndexBuffer: ?FnWgpuRenderPassEncoderSetIndexBuffer,
-    wgpuRenderPassEncoderSetBindGroup: ?FnWgpuRenderPassEncoderSetBindGroup,
-    wgpuRenderPassEncoderDraw: ?FnWgpuRenderPassEncoderDraw,
-    wgpuRenderPassEncoderDrawIndexed: ?FnWgpuRenderPassEncoderDrawIndexed,
-    wgpuRenderPassEncoderDrawIndirect: ?FnWgpuRenderPassEncoderDrawIndirect,
-    wgpuRenderPassEncoderDrawIndexedIndirect: ?FnWgpuRenderPassEncoderDrawIndexedIndirect,
-    wgpuRenderPassEncoderEnd: ?FnWgpuRenderPassEncoderEnd,
-    wgpuRenderPassEncoderRelease: ?FnWgpuRenderPassEncoderRelease,
-    wgpuDeviceCreateTexture: FnWgpuDeviceCreateTexture,
-    wgpuTextureCreateView: FnWgpuTextureCreateView,
-    wgpuDeviceCreateBindGroupLayout: FnWgpuDeviceCreateBindGroupLayout,
-    wgpuBindGroupLayoutRelease: FnWgpuBindGroupLayoutRelease,
-    wgpuDeviceCreateBindGroup: FnWgpuDeviceCreateBindGroup,
-    wgpuBindGroupRelease: FnWgpuBindGroupRelease,
-    wgpuDeviceCreatePipelineLayout: FnWgpuDeviceCreatePipelineLayout,
-    wgpuPipelineLayoutRelease: FnWgpuPipelineLayoutRelease,
-    wgpuTextureRelease: FnWgpuTextureRelease,
-    wgpuTextureViewRelease: FnWgpuTextureViewRelease,
-    wgpuCommandEncoderFinish: FnWgpuCommandEncoderFinish,
-    wgpuDeviceGetQueue: FnWgpuDeviceGetQueue,
-    wgpuQueueSubmit: FnWgpuQueueSubmit,
-    wgpuQueueOnSubmittedWorkDone: FnWgpuQueueOnSubmittedWorkDone,
-    wgpuQueueWriteBuffer: FnWgpuQueueWriteBuffer,
-    wgpuInstanceRelease: FnWgpuInstanceRelease,
-    wgpuAdapterRelease: FnWgpuAdapterRelease,
-    wgpuDeviceRelease: FnWgpuDeviceRelease,
-    wgpuQueueRelease: FnWgpuQueueRelease,
-    wgpuCommandEncoderRelease: FnWgpuCommandEncoderRelease,
-    wgpuCommandBufferRelease: FnWgpuCommandBufferRelease,
-    wgpuBufferRelease: FnWgpuBufferRelease,
-    wgpuAdapterHasFeature: FnWgpuAdapterHasFeature,
-    wgpuDeviceHasFeature: ?FnWgpuDeviceHasFeature,
-    wgpuDeviceCreateQuerySet: FnWgpuDeviceCreateQuerySet,
-    wgpuCommandEncoderResolveQuerySet: FnWgpuCommandEncoderResolveQuerySet,
-    wgpuQuerySetRelease: FnWgpuQuerySetRelease,
-    wgpuBufferMapAsync: FnWgpuBufferMapAsync,
-    wgpuBufferGetConstMappedRange: FnWgpuBufferGetConstMappedRange,
-    wgpuBufferGetMappedRange: FnWgpuBufferGetMappedRange,
-    wgpuBufferUnmap: FnWgpuBufferUnmap,
-};
+pub const FnWgpuCreateInstance = procs.FnWgpuCreateInstance;
+pub const FnWgpuInstanceRequestAdapter = procs.FnWgpuInstanceRequestAdapter;
+pub const FnWgpuInstanceWaitAny = procs.FnWgpuInstanceWaitAny;
+pub const FnWgpuInstanceProcessEvents = procs.FnWgpuInstanceProcessEvents;
+pub const FnWgpuAdapterRequestDevice = procs.FnWgpuAdapterRequestDevice;
+pub const FnWgpuDeviceCreateBuffer = procs.FnWgpuDeviceCreateBuffer;
+pub const FnWgpuDeviceCreateShaderModule = procs.FnWgpuDeviceCreateShaderModule;
+pub const FnWgpuShaderModuleRelease = procs.FnWgpuShaderModuleRelease;
+pub const FnWgpuDeviceCreateComputePipeline = procs.FnWgpuDeviceCreateComputePipeline;
+pub const FnWgpuComputePipelineRelease = procs.FnWgpuComputePipelineRelease;
+pub const FnWgpuRenderPipelineRelease = procs.FnWgpuRenderPipelineRelease;
+pub const FnWgpuDeviceCreateCommandEncoder = procs.FnWgpuDeviceCreateCommandEncoder;
+pub const FnWgpuCommandEncoderBeginComputePass = procs.FnWgpuCommandEncoderBeginComputePass;
+pub const FnWgpuDeviceCreateRenderPipeline = procs.FnWgpuDeviceCreateRenderPipeline;
+pub const FnWgpuCommandEncoderBeginRenderPass = procs.FnWgpuCommandEncoderBeginRenderPass;
+pub const FnWgpuCommandEncoderWriteTimestamp = procs.FnWgpuCommandEncoderWriteTimestamp;
+pub const FnWgpuCommandEncoderCopyBufferToBuffer = procs.FnWgpuCommandEncoderCopyBufferToBuffer;
+pub const FnWgpuCommandEncoderCopyBufferToTexture = procs.FnWgpuCommandEncoderCopyBufferToTexture;
+pub const FnWgpuCommandEncoderCopyTextureToBuffer = procs.FnWgpuCommandEncoderCopyTextureToBuffer;
+pub const FnWgpuCommandEncoderCopyTextureToTexture = procs.FnWgpuCommandEncoderCopyTextureToTexture;
+pub const FnWgpuComputePassEncoderSetPipeline = procs.FnWgpuComputePassEncoderSetPipeline;
+pub const FnWgpuComputePassEncoderSetBindGroup = procs.FnWgpuComputePassEncoderSetBindGroup;
+pub const FnWgpuComputePassEncoderDispatchWorkgroups = procs.FnWgpuComputePassEncoderDispatchWorkgroups;
+pub const FnWgpuComputePassEncoderEnd = procs.FnWgpuComputePassEncoderEnd;
+pub const FnWgpuComputePassEncoderRelease = procs.FnWgpuComputePassEncoderRelease;
+pub const FnWgpuRenderPassEncoderSetPipeline = procs.FnWgpuRenderPassEncoderSetPipeline;
+pub const FnWgpuRenderPassEncoderSetVertexBuffer = procs.FnWgpuRenderPassEncoderSetVertexBuffer;
+pub const FnWgpuRenderPassEncoderSetIndexBuffer = procs.FnWgpuRenderPassEncoderSetIndexBuffer;
+pub const FnWgpuRenderPassEncoderSetBindGroup = procs.FnWgpuRenderPassEncoderSetBindGroup;
+pub const FnWgpuRenderPassEncoderDraw = procs.FnWgpuRenderPassEncoderDraw;
+pub const FnWgpuRenderPassEncoderDrawIndexed = procs.FnWgpuRenderPassEncoderDrawIndexed;
+pub const FnWgpuRenderPassEncoderDrawIndirect = procs.FnWgpuRenderPassEncoderDrawIndirect;
+pub const FnWgpuRenderPassEncoderDrawIndexedIndirect = procs.FnWgpuRenderPassEncoderDrawIndexedIndirect;
+pub const FnWgpuRenderPassEncoderEnd = procs.FnWgpuRenderPassEncoderEnd;
+pub const FnWgpuRenderPassEncoderRelease = procs.FnWgpuRenderPassEncoderRelease;
+pub const FnWgpuCommandEncoderFinish = procs.FnWgpuCommandEncoderFinish;
+pub const FnWgpuDeviceGetQueue = procs.FnWgpuDeviceGetQueue;
+pub const FnWgpuQueueSubmit = procs.FnWgpuQueueSubmit;
+pub const FnWgpuQueueOnSubmittedWorkDone = procs.FnWgpuQueueOnSubmittedWorkDone;
+pub const FnWgpuQueueWriteBuffer = procs.FnWgpuQueueWriteBuffer;
+pub const FnWgpuDeviceCreateTexture = procs.FnWgpuDeviceCreateTexture;
+pub const FnWgpuTextureCreateView = procs.FnWgpuTextureCreateView;
+pub const FnWgpuDeviceCreateBindGroupLayout = procs.FnWgpuDeviceCreateBindGroupLayout;
+pub const FnWgpuBindGroupLayoutRelease = procs.FnWgpuBindGroupLayoutRelease;
+pub const FnWgpuDeviceCreateBindGroup = procs.FnWgpuDeviceCreateBindGroup;
+pub const FnWgpuBindGroupRelease = procs.FnWgpuBindGroupRelease;
+pub const FnWgpuDeviceCreatePipelineLayout = procs.FnWgpuDeviceCreatePipelineLayout;
+pub const FnWgpuPipelineLayoutRelease = procs.FnWgpuPipelineLayoutRelease;
+pub const FnWgpuTextureRelease = procs.FnWgpuTextureRelease;
+pub const FnWgpuTextureViewRelease = procs.FnWgpuTextureViewRelease;
+pub const FnWgpuInstanceRelease = procs.FnWgpuInstanceRelease;
+pub const FnWgpuAdapterRelease = procs.FnWgpuAdapterRelease;
+pub const FnWgpuDeviceRelease = procs.FnWgpuDeviceRelease;
+pub const FnWgpuQueueRelease = procs.FnWgpuQueueRelease;
+pub const FnWgpuCommandEncoderRelease = procs.FnWgpuCommandEncoderRelease;
+pub const FnWgpuCommandBufferRelease = procs.FnWgpuCommandBufferRelease;
+pub const FnWgpuBufferRelease = procs.FnWgpuBufferRelease;
+pub const FnWgpuAdapterHasFeature = procs.FnWgpuAdapterHasFeature;
+pub const FnWgpuDeviceHasFeature = procs.FnWgpuDeviceHasFeature;
+pub const FnWgpuDeviceCreateQuerySet = procs.FnWgpuDeviceCreateQuerySet;
+pub const FnWgpuCommandEncoderResolveQuerySet = procs.FnWgpuCommandEncoderResolveQuerySet;
+pub const FnWgpuQuerySetRelease = procs.FnWgpuQuerySetRelease;
+pub const FnWgpuBufferMapAsync = procs.FnWgpuBufferMapAsync;
+pub const FnWgpuBufferGetConstMappedRange = procs.FnWgpuBufferGetConstMappedRange;
+pub const FnWgpuBufferGetMappedRange = procs.FnWgpuBufferGetMappedRange;
+pub const FnWgpuBufferUnmap = procs.FnWgpuBufferUnmap;
+
+pub const Procs = procs.Procs;
 
 pub const BufferRecord = struct {
     buffer: WGPUBuffer,
