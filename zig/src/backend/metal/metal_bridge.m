@@ -297,16 +297,15 @@ MetalHandle metal_bridge_device_new_sampler(
 // Render Pipeline — built-in noop shaders
 // ============================================================
 
+// Degenerate vertex shader: all vertices collapse to the same clip-space point,
+// producing zero-area triangles that the GPU culls before rasterization.
+// This matches Dawn's noop render pipeline behavior for draw-call benchmarks.
 static const char* k_render_msl =
     "#include <metal_stdlib>\n"
     "using namespace metal;\n"
     "vertex float4 v_noop(uint vid [[vertex_id]]) {\n"
-    "    const float4 pos[3] = {\n"
-    "        float4(-1.0f,  1.0f, 0.0f, 1.0f),\n"
-    "        float4( 3.0f,  1.0f, 0.0f, 1.0f),\n"
-    "        float4(-1.0f, -3.0f, 0.0f, 1.0f),\n"
-    "    };\n"
-    "    return pos[vid % 3u];\n"
+    "    (void)vid;\n"
+    "    return float4(0.0f, 0.0f, 0.0f, 1.0f);\n"
     "}\n"
     "fragment float4 f_noop(float4 pos [[position]]) {\n"
     "    return float4(0.0f);\n"
@@ -380,11 +379,11 @@ MetalHandle metal_bridge_encode_render_pass(
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
     id<MTLTexture>              target   = (__bridge id<MTLTexture>)target_h;
 
+    // DontCare avoids clear and writeback bandwidth — matches Dawn noop benchmark behavior.
     MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor new];
     pass.colorAttachments[0].texture     = target;
-    pass.colorAttachments[0].loadAction  = MTLLoadActionClear;
-    pass.colorAttachments[0].storeAction = MTLStoreActionStore;
-    pass.colorAttachments[0].clearColor  = MTLClearColorMake(0, 0, 0, 0);
+    pass.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
+    pass.colorAttachments[0].storeAction = MTLStoreActionDontCare;
 
     id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
     if (cmd_buf == nil) return NULL;
@@ -469,11 +468,11 @@ MetalHandle metal_bridge_encode_icb_render_pass(
     id<MTLIndirectCommandBuffer> icb      = (__bridge id<MTLIndirectCommandBuffer>)icb_h;
     id<MTLTexture>               target   = (__bridge id<MTLTexture>)target_h;
 
+    // DontCare avoids clear and writeback bandwidth — matches Dawn noop benchmark behavior.
     MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor new];
     pass.colorAttachments[0].texture     = target;
-    pass.colorAttachments[0].loadAction  = MTLLoadActionClear;
-    pass.colorAttachments[0].storeAction = MTLStoreActionStore;
-    pass.colorAttachments[0].clearColor  = MTLClearColorMake(0, 0, 0, 0);
+    pass.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
+    pass.colorAttachments[0].storeAction = MTLStoreActionDontCare;
 
     id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
     if (cmd_buf == nil) return NULL;
