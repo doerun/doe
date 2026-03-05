@@ -549,9 +549,55 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         command_encoder_write_buffer.?(encoder, render_indirect_buffer, 0, draw_args_bytes.ptr, @as(u64, draw_args_bytes.len));
     }
 
+    // Temp render texture workaround: redirect to temp texture for affected formats at high mip levels.
+    const needs_temp_render_texture = render.uses_temporary_render_texture and
+        isAffectedRenderFormat(target_format) and
+        target_resource.mip_level >= render.temporary_render_texture_min_mip_level;
+
+    var temp_render_view: ?types.WGPUTextureView = null;
+    if (needs_temp_render_texture) {
+        const temp_handle = render.target_handle +% 0xBEEF_0000_0000_0001;
+        const temp_resource = model.CopyTextureResource{
+            .handle = temp_handle,
+            .kind = .texture,
+            .width = render.target_width,
+            .height = render.target_height,
+            .depth_or_array_layers = 1,
+            .format = render.target_format,
+            .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
+            .dimension = model.WGPUTextureDimension_2D,
+            .view_dimension = model.WGPUTextureViewDimension_2D,
+            .mip_level = 0,
+            .sample_count = 1,
+            .aspect = model.WGPUTextureAspect_All,
+            .bytes_per_row = 0,
+            .rows_per_image = 0,
+            .offset = 0,
+        };
+        const temp_texture = try resources.getOrCreateTexture(
+            self,
+            temp_resource,
+            types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
+        );
+        temp_render_view = render_resource_mod.getOrCreateCachedRenderTextureView(
+            self,
+            &self.render_target_view_cache,
+            temp_handle,
+            temp_texture,
+            render.target_width,
+            render.target_height,
+            target_format,
+            types.WGPUTextureUsage_RenderAttachment,
+        ) catch {
+            return .{ .status = .@"error", .status_message = "render_draw temp render texture view creation failed" };
+        };
+    }
+
+    const effective_view = if (temp_render_view) |tv| tv else target_view;
+
     var color_attachment = RenderPassColorAttachment{
         .nextInChain = null,
-        .view = target_view,
+        .view = effective_view,
         .depthSlice = RENDER_TARGET_DEPTH_SLICE_UNDEFINED,
         .resolveTarget = null,
         .loadOp = RENDER_LOAD_OP_CLEAR,
@@ -601,14 +647,22 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         scissor_width,
         scissor_height,
     );
-    const blend_constant = RenderColor{
-        .r = render.blend_constant[0],
-        .g = render.blend_constant[1],
-        .b = render.blend_constant[2],
-        .a = render.blend_constant[3],
-    };
-    render_api.render_pass_encoder_set_blend_constant(render_pass, &blend_constant);
-    render_api.render_pass_encoder_set_stencil_reference(render_pass, render.stencil_reference);
+    // WebGPU render pass initial state is blend=(0,0,0,0), stencil=0.
+    // Skip these calls when at default values to avoid redundant Metal API overhead.
+    const blend_is_default = render.blend_constant[0] == 0 and render.blend_constant[1] == 0 and
+        render.blend_constant[2] == 0 and render.blend_constant[3] == 0;
+    if (!blend_is_default) {
+        const blend_constant = RenderColor{
+            .r = render.blend_constant[0],
+            .g = render.blend_constant[1],
+            .b = render.blend_constant[2],
+            .a = render.blend_constant[3],
+        };
+        render_api.render_pass_encoder_set_blend_constant(render_pass, &blend_constant);
+    }
+    if (render.stencil_reference != 0) {
+        render_api.render_pass_encoder_set_stencil_reference(render_pass, render.stencil_reference);
+    }
     render_api.render_pass_encoder_set_vertex_buffer(
         render_pass,
         0,
@@ -685,6 +739,49 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     render_p0_mod.endPass(p0_state, render_api, render_pass);
     render_api.render_pass_encoder_end(render_pass);
 
+    // Temp render texture workaround: copy temp texture back to original target
+    if (needs_temp_render_texture) {
+        const temp_handle = render.target_handle +% 0xBEEF_0000_0000_0001;
+        const temp_resource_src = model.CopyTextureResource{
+            .handle = temp_handle,
+            .kind = .texture,
+            .width = render.target_width,
+            .height = render.target_height,
+            .depth_or_array_layers = 1,
+            .format = render.target_format,
+            .usage = types.WGPUTextureUsage_CopySrc,
+            .dimension = model.WGPUTextureDimension_2D,
+            .view_dimension = model.WGPUTextureViewDimension_2D,
+            .mip_level = 0,
+            .sample_count = 1,
+            .aspect = model.WGPUTextureAspect_All,
+            .bytes_per_row = 0,
+            .rows_per_image = 0,
+            .offset = 0,
+        };
+        const temp_src = try resources.getOrCreateTexture(self, temp_resource_src, types.WGPUTextureUsage_CopySrc);
+        procs.wgpuCommandEncoderCopyTextureToTexture(
+            encoder,
+            &types.WGPUTexelCopyTextureInfo{
+                .texture = temp_src,
+                .mipLevel = 0,
+                .origin = .{ .x = 0, .y = 0, .z = 0 },
+                .aspect = loader.normalizeTextureAspect(model.WGPUTextureAspect_All),
+            },
+            &types.WGPUTexelCopyTextureInfo{
+                .texture = target_texture,
+                .mipLevel = target_resource.mip_level,
+                .origin = .{ .x = 0, .y = 0, .z = 0 },
+                .aspect = loader.normalizeTextureAspect(model.WGPUTextureAspect_All),
+            },
+            .{
+                .width = render.target_width,
+                .height = render.target_height,
+                .depthOrArrayLayers = 1,
+            },
+        );
+    }
+
     const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
@@ -716,4 +813,9 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         .dispatch_count = render.draw_count,
         .gpu_timestamp_ns = 0,
     };
+}
+
+fn isAffectedRenderFormat(format: types.WGPUTextureFormat) bool {
+    return format == model.WGPUTextureFormat_R8Unorm or
+        format == model.WGPUTextureFormat_RG8Unorm;
 }

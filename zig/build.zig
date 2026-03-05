@@ -26,10 +26,22 @@ pub fn build(b: *std.Build) void {
         dropin_lib.linkSystemLibrary("d3d12");
         dropin_lib.linkSystemLibrary("dxgi");
         dropin_lib.linkSystemLibrary("dxguid");
+        dropin_lib.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
     } else {
         dropin_lib.linkSystemLibrary("dl");
         if (target.result.os.tag == .linux) {
             dropin_lib.linkSystemLibrary("vulkan");
+        }
+        if (target.result.os.tag == .macos) {
+            dropin_lib.linkFramework("Metal");
+            dropin_lib.linkFramework("Foundation");
+            dropin_lib.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
         }
     }
     const install_dropin = b.addInstallArtifact(dropin_lib, .{});
@@ -90,10 +102,22 @@ pub fn build(b: *std.Build) void {
         exe.linkSystemLibrary("d3d12");
         exe.linkSystemLibrary("dxgi");
         exe.linkSystemLibrary("dxguid");
+        exe.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
     } else {
         exe.linkSystemLibrary("dl");
         if (target.result.os.tag == .linux) {
             exe.linkSystemLibrary("vulkan");
+        }
+        if (target.result.os.tag == .macos) {
+            exe.linkFramework("Metal");
+            exe.linkFramework("Foundation");
+            exe.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
         }
     }
 
@@ -189,10 +213,22 @@ pub fn build(b: *std.Build) void {
         test_exec.linkSystemLibrary("d3d12");
         test_exec.linkSystemLibrary("dxgi");
         test_exec.linkSystemLibrary("dxguid");
+        test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
     } else {
         test_exec.linkSystemLibrary("dl");
         if (target.result.os.tag == .linux) {
             test_exec.linkSystemLibrary("vulkan");
+        }
+        if (target.result.os.tag == .macos) {
+            test_exec.linkFramework("Metal");
+            test_exec.linkFramework("Foundation");
+            test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
         }
     }
     const run_tests = b.addRunArtifact(test_exec);
@@ -211,6 +247,10 @@ pub fn build(b: *std.Build) void {
         d3d12_test_exec.linkSystemLibrary("d3d12");
         d3d12_test_exec.linkSystemLibrary("dxgi");
         d3d12_test_exec.linkSystemLibrary("dxguid");
+        d3d12_test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
     } else {
         d3d12_test_exec.linkSystemLibrary("dl");
         if (target.result.os.tag == .linux) {

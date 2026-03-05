@@ -43,6 +43,10 @@
     },
     "scannedFileCount": { "type": "integer", "minimum": 0 },
     "toggleHitCount": { "type": "integer", "minimum": 0 },
+    "toggleContextCounts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
     "candidateCount": { "type": "integer", "minimum": 0 },
     "hashChain": {
       "type": "object",
@@ -78,7 +82,11 @@
         "properties": {
           "toggle": { "type": "string", "minLength": 1 },
           "sourcePath": { "type": "string", "minLength": 1 },
-          "line": { "type": "integer", "minimum": 1 }
+          "line": { "type": "integer", "minimum": 1 },
+          "toggleContext": {
+            "type": "string",
+            "enum": ["reference", "default_on", "default_off", "force_on", "force_off"]
+          }
         }
       }
     },

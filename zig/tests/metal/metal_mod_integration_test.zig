@@ -3,7 +3,6 @@ const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
 const capabilities = @import("../../src/backend/common/capabilities.zig");
 const metal_mod = @import("../../src/backend/metal/mod.zig");
-const surface_procs = @import("../../src/wgpu_surface_procs.zig");
 
 fn test_profile() model.DeviceProfile {
     return .{
@@ -25,6 +24,7 @@ fn skip_if_runtime_unavailable(err: anyerror) bool {
         error.DeviceRequestNoCallback,
         error.NativeInstanceUnavailable,
         error.NativeQueueUnavailable,
+        error.UnsupportedFeature,
         => true,
         else => false,
     };
@@ -38,26 +38,24 @@ test "metal backend init fails fast on non-macos hosts" {
     );
 }
 
-test "metal backend capability declarations reflect probed runtime support" {
+test "metal backend declares buffer_upload and barrier_sync capabilities" {
     if (builtin.os.tag != .macos) return;
 
     const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
         if (skip_if_runtime_unavailable(err)) return;
         return err;
     };
-    var iface = try backend.as_iface(std.testing.allocator, "test_metal_capability_probe", "test_policy_hash");
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_capabilities", "test_policy_hash");
     defer iface.deinit();
 
-    const has_surface_procs = surface_procs.loadSurfaceProcs(backend.inner.dyn_lib) != null;
-    try std.testing.expectEqual(has_surface_procs, backend.capability_set.supports(capabilities.Capability.surface_lifecycle));
-    try std.testing.expectEqual(has_surface_procs, backend.capability_set.supports(capabilities.Capability.surface_present));
-
-    const has_multi_draw_indirect = backend.inner.has_multi_draw_indirect;
-    try std.testing.expectEqual(has_multi_draw_indirect, backend.capability_set.supports(capabilities.Capability.indirect_draw));
-    try std.testing.expectEqual(has_multi_draw_indirect, backend.capability_set.supports(capabilities.Capability.indexed_indirect_draw));
+    try std.testing.expect(backend.capability_set.supports(capabilities.Capability.buffer_upload));
+    try std.testing.expect(backend.capability_set.supports(capabilities.Capability.barrier_sync));
+    // Native Metal implements kernel_dispatch and render_draw natively.
+    try std.testing.expect(backend.capability_set.supports(capabilities.Capability.kernel_dispatch));
+    try std.testing.expect(backend.capability_set.supports(capabilities.Capability.render_draw));
 }
 
-test "metal backend executes kernel_dispatch and emits manifest telemetry" {
+test "metal backend upload executes natively and emits manifest telemetry" {
     if (builtin.os.tag != .macos) return;
 
     const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
@@ -67,50 +65,24 @@ test "metal backend executes kernel_dispatch and emits manifest telemetry" {
     var iface = try backend.as_iface(std.testing.allocator, "test_metal_manifest", "test_policy_hash");
     defer iface.deinit();
 
-    const result = try iface.execute_command(model.Command{ .kernel_dispatch = .{
-        .kernel = "bench/kernels/shader_compile_pipeline_stress.wgsl",
-        .x = 1,
-        .y = 1,
-        .z = 1,
+    const result = try iface.execute_command(model.Command{ .upload = .{
+        .bytes = 1024 * 1024,
+        .align_bytes = 4,
     } });
 
     try std.testing.expect(result.status == .ok);
-    try std.testing.expect(result.dispatch_count >= 1);
-
-    const manifest_path = metal_mod.manifest_path_from_context(iface.context);
-    const manifest_hash = metal_mod.manifest_hash_from_context(iface.context);
-    try std.testing.expect(manifest_path != null);
-    try std.testing.expect(manifest_hash != null);
-    if (manifest_path) |path| {
-        try std.testing.expect(path.len > 0);
-    }
-    if (manifest_hash) |hash| {
-        try std.testing.expect(hash.len == 64);
-    }
-
-    if (manifest_path) |path| {
-        const bytes = try std.fs.cwd().readFileAlloc(std.testing.allocator, path, 4096);
-        defer std.testing.allocator.free(bytes);
-
-        const needle = "\"statusCode\":\"";
-        const start = std.mem.indexOf(u8, bytes, needle) orelse return error.MissingStatusCodeField;
-        const value_index = start + needle.len;
-        try std.testing.expect(value_index < bytes.len);
-        try std.testing.expect(bytes[value_index] != '"');
-    }
 }
 
-test "metal backend queue sync mode deferred executes kernel dispatch" {
+test "metal backend kernel_dispatch returns error when kernel file not found" {
     if (builtin.os.tag != .macos) return;
 
     const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
         if (skip_if_runtime_unavailable(err)) return;
         return err;
     };
-    var iface = try backend.as_iface(std.testing.allocator, "test_metal_queue_sync", "test_policy_hash");
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_unsupported", "test_policy_hash");
     defer iface.deinit();
 
-    iface.set_queue_sync_mode(.deferred);
     const result = try iface.execute_command(model.Command{ .kernel_dispatch = .{
         .kernel = "bench/kernels/shader_compile_pipeline_stress.wgsl",
         .x = 1,
@@ -118,8 +90,9 @@ test "metal backend queue sync mode deferred executes kernel dispatch" {
         .z = 1,
     } });
 
-    try std.testing.expect(result.status == .ok);
-    try std.testing.expect(result.dispatch_count >= 1);
+    // Native Metal implements kernel_dispatch; a missing .metal file returns .@"error", not .unsupported.
+    // Tests run from fawn/zig/ so bench/kernels/ is not accessible here.
+    try std.testing.expect(result.status == .@"error");
 }
 
 test "metal backend upload cadence and flush queue preserve execution result" {

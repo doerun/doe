@@ -144,7 +144,59 @@ A releasable build emits:
 - run metadata conforming to `fawn/config/run-metadata.schema.json`
 - trace schema version
 
-## 9. Worked Example
+## 9. Quirk Pipeline (automated, no human in the loop)
+
+```
+Dawn vendor repo          agent/                    zig/src/quirk/          zig/src/wgpu_commands_{copy,render}.zig
+      |                      |                           |                           |
+      |  git pull            |                           |                           |
+      v                      v                           v                           v
+ source files ──> mine_upstream_quirks.py ──> quirks.json ──> runtime.zig ──> backend executes
+                    |                           |              |              modified command
+                    |  1. extract Toggle::      |  loaded via  |  match by    (e.g. tex->buf->tex
+                    |  2. extract vendor        |  --quirks    |  profile +   staging path, or
+                    |     guards + limits       |              |  bucket by   render-to-temp-tex)
+                    |  3. auto-promote known    |              |  command kind
+                    |     behavioral toggles    |              |
+                    |     via TOGGLE_PROMOTIONS |              |  --quirk-mode:
+                    |                           |              |    off    = skip
+                    v                           |              |    trace  = match only
+                 manifest.json                  |              |    active = modify + execute
+                 (hash chain,                   |              |
+                  hit counts,                   v              v
+                  provenance)              3 use_temporary_buffer records auto-promoted
+                                          1 use_temporary_render_texture record auto-promoted
+                                          24 no_op workaround records (informational)
+                                          698 toggle records (informational)
+```
+
+### Promotion
+
+The promotion table (`TOGGLE_PROMOTIONS` in `mine_upstream_quirks.py`) maps known Dawn
+toggle names to their real action kind. When the miner encounters a toggle with activation
+context (`default_on` or `force_on`), it auto-promotes the record from `action: toggle`
+to a behavioral action with the correct scope, params, and safety class.
+
+Supported promoted action kinds:
+- `use_temporary_buffer` — copy commands routed through aligned staging buffer (4 Vulkan/D3D12 workarounds)
+- `use_temporary_render_texture` — render pass attachment redirected to temp texture (1 Metal/Intel workaround)
+
+No manual authoring step is required for toggles in the promotion table. Adding support
+for a newly discovered Dawn toggle requires one table entry in `TOGGLE_PROMOTIONS`.
+
+### Runtime consumption
+
+With `--quirk-mode active`, the Zig runtime applies quirk actions to commands before
+backend execution. For `use_temporary_buffer` actions, the backend splits copy commands
+through an aligned staging buffer instead of performing a direct copy. For
+`use_temporary_render_texture` actions, the backend redirects render pass color attachments
+to a temporary texture and copies back after the pass (for affected formats at high mip levels).
+
+Trace output records every match decision regardless of quirk mode, including the matched
+quirk ID, action, scope, safety class, and score. The `quirkMode` field in trace-meta
+makes the active mode auditable.
+
+## 10. Worked Example
 
 See:
 - `fawn/examples/intel_gen12_temp_buffer.md`
@@ -152,7 +204,7 @@ See:
 
 for one full path from upstream quirk signal to normalized record and specialization output.
 
-## 10. Incumbent Advantage Contract
+## 11. Incumbent Advantage Contract
 
 Doe only claims advantage over C++/Rust incumbents when all are true:
 1. same workload + backend class + comparable device family

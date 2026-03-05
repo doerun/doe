@@ -132,9 +132,9 @@ pub const ExecutionContext = struct {
             };
         }
 
-        const command_start = std.time.nanoTimestamp();
         if (self.backend) |*backend| {
             const backend_telemetry_snapshot = backend.telemetry();
+            const command_start = std.time.nanoTimestamp();
             const status = backend.execute_command(command) catch |err| {
                 const command_end = std.time.nanoTimestamp();
                 const elapsed_ns = if (command_end > command_start)

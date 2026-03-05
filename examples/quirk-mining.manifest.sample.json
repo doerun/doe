@@ -17,6 +17,9 @@
   ],
   "scannedFileCount": 2,
   "toggleHitCount": 1,
+  "toggleContextCounts": {
+    "reference": 1
+  },
   "candidateCount": 1,
   "hashChain": {
     "algorithm": "sha256",
@@ -36,7 +39,8 @@
     {
       "toggle": "ShaderRobustnessPerf",
       "sourcePath": "src/dawn/native/vulkan/PhysicalDeviceVk.cpp",
-      "line": 42
+      "line": 42,
+      "toggleContext": "reference"
     }
   ],
   "candidateOutputPath": "examples/quirks/mined_toggle_sample.json"

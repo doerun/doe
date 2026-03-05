@@ -70,6 +70,28 @@
         {
           "type": "object",
           "additionalProperties": false,
+          "required": ["kind", "params"],
+          "properties": {
+            "kind": { "const": "use_temporary_render_texture" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["minMipLevel", "formats"],
+              "properties": {
+                "minMipLevel": { "type": "integer", "minimum": 0 },
+                "formats": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 1
+                },
+                "reason": { "type": "string" }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
           "required": ["kind"],
           "properties": {
             "kind": { "const": "no_op" }

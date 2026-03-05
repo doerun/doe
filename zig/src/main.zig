@@ -1,8 +1,7 @@
 const std = @import("std");
 const model = @import("model.zig");
-const parser = @import("quirk_json.zig");
+const quirk = @import("quirk/mod.zig");
 const command_parser = @import("command_json.zig");
-const runtime = @import("runtime.zig");
 const execution = @import("execution.zig");
 const trace = @import("trace.zig");
 const replay = @import("replay.zig");
@@ -48,7 +47,7 @@ const default_commands = [_]model.Command{
 
 fn printUsage(stdout: anytype) !void {
     try stdout.print(
-        \\doe-zig-runtime --quirks <path> [--commands <path>] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
+        \\doe-zig-runtime --quirks <path> [--commands <path>] [--quirk-mode off|trace|active] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
         \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane vulkan_dawn_release|vulkan_doe_app|d3d12_doe_app|metal_doe_directional|metal_doe_comparable|metal_doe_release|metal_dawn_release|d3d12_doe_directional|d3d12_doe_comparable|d3d12_doe_release|d3d12_dawn_release|vulkan_dawn_directional|vulkan_doe_comparable|vulkan_doe_release|metal_doe_app]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
         \\ [--gpu-timestamp-mode auto|off|require]
@@ -81,6 +80,10 @@ fn printUsage(stdout: anytype) !void {
         \\    optional fields: mode=pipeline_async|capability_introspection|resource_table_immediates|lifecycle_refcount|full, iterations>0
         \\  command can be expressed as "kind", "command", or "command_kind"
         \\  kernel can be expressed as "kernel" or "kernel_name"
+        \\--quirk-mode controls how quirks affect command execution.
+        \\  off: no quirk processing; commands pass through unmodified.
+        \\  trace: quirks are matched and traced, but commands are not modified for execution (default).
+        \\  active: quirks are matched, traced, and command modifications are consumed by backends.
         \\If --quirks is omitted, the embedded sample profile is used.
         \\If --commands is omitted, the embedded sample command list is used.
         \\If --emit-normalized is set, emit canonicalized commands as ndjson and exit.
@@ -122,6 +125,7 @@ fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
 fn optionExpectsValue(option: []const u8) bool {
     return std.mem.eql(u8, option, "--quirks") or
         std.mem.eql(u8, option, "--commands") or
+        std.mem.eql(u8, option, "--quirk-mode") or
         std.mem.eql(u8, option, "--vendor") or
         std.mem.eql(u8, option, "--api") or
         std.mem.eql(u8, option, "--family") or
@@ -163,6 +167,7 @@ pub fn main() !void {
 
     var quirks_text: ?[]const u8 = null;
     var commands_text: ?[]const u8 = null;
+    var quirk_mode: quirk.QuirkMode = .trace;
     var profile_vendor: []const u8 = "intel";
     var profile_api: []const u8 = "vulkan";
     var profile_family: ?[]const u8 = "gen12";
@@ -190,6 +195,14 @@ pub fn main() !void {
         } else if (std.mem.eql(u8, argv[i], "--commands") and i + 1 < argv.len) {
             i += 1;
             commands_text = argv[i];
+        } else if (std.mem.eql(u8, argv[i], "--quirk-mode") and i + 1 < argv.len) {
+            i += 1;
+            if (quirk.QuirkMode.parse(argv[i])) |mode| {
+                quirk_mode = mode;
+            } else {
+                try trace.writef(stdout, "invalid --quirk-mode value: {s} (expected off|trace|active)\n", .{argv[i]});
+                return;
+            }
         } else if (std.mem.eql(u8, argv[i], "--vendor") and i + 1 < argv.len) {
             i += 1;
             profile_vendor = argv[i];
@@ -309,13 +322,16 @@ pub fn main() !void {
         i += 1;
     }
 
-    const quirks_bytes = if (quirks_text) |path| try readFileAlloc(allocator, path) else sample_quirks;
-    const using_quarks_from_file = quirks_text != null;
+    const quirks_bytes = if (quirk_mode.loadsQuirks())
+        (if (quirks_text) |path| try readFileAlloc(allocator, path) else sample_quirks)
+    else
+        "[]";
+    const using_quarks_from_file = quirks_text != null and quirk_mode.loadsQuirks();
 
-    const quirks = try parser.parseQuirks(allocator, quirks_bytes);
+    const quirks = try quirk.parser.parseQuirks(allocator, quirks_bytes);
     defer {
         if (using_quarks_from_file) allocator.free(quirks_bytes);
-        parser.freeQuirks(allocator, quirks);
+        quirk.parser.freeQuirks(allocator, quirks);
     }
     var replay_expectations: ?[]replay.ReplayExpectation = null;
     if (replay_path) |path| {
@@ -357,7 +373,7 @@ pub fn main() !void {
         return;
     }
 
-    var dispatch_context = try runtime.buildProfileDispatchContext(allocator, profile, quirks);
+    var dispatch_context = try quirk.runtime.buildProfileDispatchContext(allocator, profile, quirks);
     defer dispatch_context.deinit();
     var trace_state = trace.TraceState{};
 
@@ -435,6 +451,7 @@ pub fn main() !void {
             }
         else
             null,
+        .quirk_mode = quirk_mode.name(),
     };
 
     if (execution_context) |*ctx| {
@@ -451,7 +468,7 @@ pub fn main() !void {
     var idx: usize = 0;
     while (idx < commands.len) : (idx += 1) {
         const command = commands[idx];
-        const result = runtime.dispatch(profile, dispatch_context, command);
+        const result = quirk.dispatchWithMode(quirk_mode, profile, dispatch_context, command);
         const target = result.command;
         const kernel_name = main_print.commandKernel(target);
         const command_label = main_print.commandName(target);

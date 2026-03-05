@@ -43,6 +43,7 @@ pub const TraceRunSummary = struct {
     profile_family: ?[]const u8,
     profile_driver: []const u8,
     queue_sync_mode: ?[]const u8 = null,
+    quirk_mode: ?[]const u8 = null,
 };
 
 pub fn writef(writer: anytype, comptime format: []const u8, args: anytype) !void {
@@ -110,6 +111,7 @@ pub fn actionName(action: ?model.QuirkAction) []const u8 {
     return switch (actual) {
         .no_op => "no_op",
         .use_temporary_buffer => "use_temporary_buffer",
+        .use_temporary_render_texture => "use_temporary_render_texture",
         .toggle => "toggle",
     };
 }
@@ -389,6 +391,11 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     if (summary.queue_sync_mode) |sync_mode| {
         try writer.writeAll("\"queueSyncMode\":");
         try writeJsonString(&writer, sync_mode);
+        try writer.writeAll(",");
+    }
+    if (summary.quirk_mode) |qmode| {
+        try writer.writeAll("\"quirkMode\":");
+        try writeJsonString(&writer, qmode);
         try writer.writeAll(",");
     }
     try writer.writeAll("\"profile\":{");

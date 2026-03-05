@@ -1,5 +1,69 @@
 # Config Migration Notes
 
+## 2026-03-05
+
+### Quirk-mining manifest: toggleContext and toggleContextCounts
+
+- `config/quirk-mining-manifest.schema.json` adds two new optional fields:
+  - `toggleContextCounts` (top-level): object mapping context token → hit count.
+  - `toggleHits[].toggleContext` (per-hit): context token for how the toggle was observed.
+- Toggle context tokens: `reference`, `default_on`, `default_off`, `force_on`, `force_off`.
+- `agent/mine_upstream_quirks.py` now recognizes context-aware patterns:
+  - `->Default(Toggle::X, true/false)` → `default_on` / `default_off`
+  - `->ForceSet(Toggle::X, true/false)` → `force_on` / `force_off`
+  - `->ForceEnable(Toggle::X)` → `force_on`
+  - `->ForceDisable(Toggle::X)` → `force_off`
+  - bare `Toggle::X` references not matched by the above → `reference`
+- Quirk records themselves are unchanged; context metadata lives in the manifest only.
+- Updated `examples/quirk-mining.manifest.sample.json` to include `toggleContextCounts`
+  and `toggleContext` in sample `toggleHits` entries.
+
+### Lean model: String.trim compatibility fix
+
+- `lean/Fawn/Model.lean`: replaced `text.trimAscii.toString` with `text.trim` for
+  compatibility with the pinned Lean toolchain (4.16.0), where `String.trimAscii`
+  is not available. Semantic behavior is identical for version-string parsing.
+
+### Lean fixtures: Doe-vs-Doe parity obligation fields
+
+- `lean/Fawn/ComparabilityFixtures.lean`: added missing `ComparabilityFacts` fields
+  introduced in 2026-02-26 (Doe-vs-Doe timing-scope parity obligations):
+  - `traceMetaSourceMatchApplies` / `leftRightTraceMetaSourceMatch`
+  - `timingSelectionPolicyMatchApplies` / `leftRightTimingSelectionPolicyMatch`
+  - `queueSyncModeMatchApplies` / `leftRightQueueSyncModeMatch`
+  - `executionShapeMatchApplies` / `leftRightExecutionShapeMatch`
+- `lean/check.sh` now passes cleanly with the pinned 4.16.0 toolchain.
+
+### Apple Metal quirks and CI
+
+- Added `examples/quirks/apple_m3_noop_list.json`: empty quirk list for Apple M3 Metal
+  benchmark runs (analogous to `amd_radv_noop_list.json` for Vulkan).
+- Updated `bench/workloads.local.metal.extended.json`: all 43 workload quirksPath entries
+  changed from `amd_radv_noop_list.json` to `apple_m3_noop_list.json`.
+- Added `.github/workflows/lean-check.yml`: CI workflow that installs elan and runs
+  `lean/check.sh` on every push/PR, making Lean typecheck a CI gate on macOS runners.
+
+### Metal benchmark — third run (2026-03-05)
+
+- Third comparable run with updated config (iterations=20, minTimedSamples=19): 3/23 claimable.
+- Claimable: `upload_write_buffer_4mb` (+4.20% p50, up from +0.68% in Run 2), `render_draw_redundant_pipeline_bindings` (+0.25% p50, stable), `compute_concurrent_execution_single` (+0.18% p50).
+- Render workload characterization confirmed: all render encode timings cluster at 60–61µs for 2000 draws. The reported −1.5% to −3% is a 1µs CPU timer quantization artifact. Both sides call Dawn's `wgpuRenderPassEncoderDraw`; sub-quantization difference is system-state noise.
+- Blend/stencil setup optimization (`wgpu_render_commands.zig`: skip `set_blend_constant` when (0,0,0,0), skip `set_stencil_reference` when 0) is in the setup phase — outside the encode timing window — so it has no measurable effect on reported encode time.
+- Upload outliers (1MB occasional 0.352ms, render_uniform_buffer occasional 0.614ms) are GPU scheduling latency events, not Doe code regressions.
+- Config change: iterations 12→20, minTimedSamples 11→19.
+
+### Metal benchmark — second run (2026-03-05)
+
+- Second full comparable run with current config: 6/23 claimable (up from 5/23 in Run 1).
+- New claimable in Run 2: `upload_write_buffer_1kb` (+0.85% p50), `upload_write_buffer_64kb`
+  (+0.40% p50), `upload_write_buffer_1gb` (+2.27% p50), `render_draw_redundant_pipeline_bindings`
+  (+0.25% p50), `render_bundle_dynamic_pipeline_bindings` (+0.88% p50).
+- Per-operation timing analysis for 1KB/64KB: ~97.5% of execution time is Metal
+  command-buffer submit+wait. Doe Metal has tighter latency distribution (spread=0.005ms)
+  than the Dawn Metal delegate (spread=0.029ms at 64KB); p50 near parity, p95 consistently
+  positive. Sign flips between runs are system-state noise, not a methodology gap.
+- No schema changes in this run; artifact contracts and workload contract unchanged.
+
 ## 2026-03-04
 
 ### Render-domain timing policy alignment

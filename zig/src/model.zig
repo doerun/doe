@@ -288,6 +288,8 @@ pub const RenderDrawCommand = struct {
     target_width: u32 = DEFAULT_RENDER_TARGET_WIDTH,
     target_height: u32 = DEFAULT_RENDER_TARGET_HEIGHT,
     target_format: WGPUTextureFormat = DEFAULT_RENDER_TARGET_FORMAT,
+    uses_temporary_render_texture: bool = false,
+    temporary_render_texture_min_mip_level: u32 = 0,
     pipeline_mode: RenderDrawPipelineMode = .static,
     bind_group_mode: RenderDrawBindGroupMode = .no_change,
     encode_mode: RenderDrawEncodeMode = .render_bundle,
@@ -446,12 +448,17 @@ pub const UseTemporaryBufferAction = struct {
     alignment_bytes: u32,
 };
 
+pub const UseTemporaryRenderTextureAction = struct {
+    min_mip_level: u32,
+};
+
 pub const ToggleAction = struct {
     toggle_name: []const u8,
 };
 
 pub const QuirkAction = union(enum) {
     use_temporary_buffer: UseTemporaryBufferAction,
+    use_temporary_render_texture: UseTemporaryRenderTextureAction,
     toggle: ToggleAction,
     no_op: void,
 };

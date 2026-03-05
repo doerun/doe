@@ -23,13 +23,17 @@ Style guide:
 
 Core:
 - `src/model.zig` — typed contract for API, scope, safety, proof mode, match spec, actions, command kinds, device profile.
-- `src/runtime.zig` — deterministic matcher, selector, and action application with profile-indexed command buckets.
+- `src/quirk/mod.zig` — quirk module entry: `QuirkMode` enum (`off`/`trace`/`active`), `dispatchWithMode()`, re-exports sub-modules.
+- `src/quirk/runtime.zig` — deterministic matcher, selector, and action application with profile-indexed command buckets.
+- `src/quirk/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.
+- `src/quirk/toggle_registry.zig` — toggle behavioral classification (`behavioral`/`informational`/`unhandled`) for known Dawn toggles.
+- `src/runtime.zig` — re-export shim for `quirk/runtime.zig` (backwards compatibility).
+- `src/quirk_json.zig` — re-export shim for `quirk/quirk_json.zig` (backwards compatibility).
 - `src/main.zig` — CLI, arg parsing, dispatch loop, `--trace`/`--replay`/`--trace-meta` orchestration.
 - `src/execution.zig` — execution mode switching (`trace` and `native`) and run result envelope.
 
 Parsing:
 - `src/command_json.zig` — JSON command stream parser for replay-style inputs.
-- `src/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.
 
 Trace and replay:
 - `src/trace.zig` — TraceState, hash functions, name helpers, trace row and meta output.
@@ -77,6 +81,37 @@ Quirk records now use schemaVersion `2` with strict action payloads:
 - `toggle` requires `params.toggle`
 - `no_op` does not accept params
 
+### Quirk pipeline (automated)
+
+Generate quirk records from Dawn source (no manual authoring required):
+
+```bash
+cd fawn
+python3 agent/mine_upstream_quirks.py \
+  --source-root bench/vendor/dawn/src/dawn/native \
+  --source-repo dawn/main \
+  --source-commit $(git -C bench/vendor/dawn rev-parse --short HEAD) \
+  --vendor apple --api metal \
+  --output bench/out/mined-apple-metal-quirks.json \
+  --manifest-output bench/out/mined-apple-metal-quirks.manifest.json
+```
+
+Then run with active quirks:
+
+```bash
+zig build run -- \
+  --quirks ../bench/out/mined-apple-metal-quirks.json \
+  --commands path/to/commands.json \
+  --vendor apple --api metal \
+  --quirk-mode active \
+  --backend native --execute --trace
+```
+
+The miner auto-promotes known behavioral toggles (e.g. `UseTemporaryBufferInCompressedTextureToTextureCopy`)
+from `action: toggle` to `action: use_temporary_buffer` via its `TOGGLE_PROMOTIONS` table.
+With `--quirk-mode active`, promoted records change backend execution (staging buffer insertion).
+With `--quirk-mode trace` (default), records match and trace but do not modify commands.
+
 Drop-in shared library artifact:
 - `zig build dropin` installs `zig/zig-out/lib/libdoe_webgpu.so`
 - when Dawn sidecars are present at `bench/vendor/dawn/out/Release/libwebgpu_dawn.so`,
@@ -118,6 +153,11 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 
 ## Runtime behavior contract (minimal clone slice)
 
+- `--quirk-mode off|trace|active` controls quirk system behavior:
+  - `off` — skip quirk loading and matching entirely
+  - `trace` (default) — match and trace quirk decisions but do not modify execution commands
+  - `active` — full backend consumption: quirk-modified commands reach backends (e.g. `use_temporary_buffer` inserts staging copies)
+- trace-meta output includes `quirkMode` field when set.
 - fixed precedence rules in `runtime.zig`
 - runtime dispatch now pre-filters quirks once per process profile and buckets by command kind before tracing starts.
 - profile matching:

@@ -28,6 +28,7 @@ Before changing Fawn behavior, read:
 - `fawn/process.md`
 - `fawn/status.md`
 - `fawn/upgrade-policy.md`
+- `fawn/licensing.md`
 - `fawn/agent/README.md`
 - `fawn/lean/README.md`
 - `fawn/zig/README.md`

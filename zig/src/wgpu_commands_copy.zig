@@ -163,30 +163,62 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
         },
         .buffer_to_texture => {
             const src_size = try resources.requiredBytes(bytes, copy.src.offset);
-            const src = try resources.getOrCreateBuffer(self, copy.src.handle, src_size, types.WGPUBufferUsage_CopySrc);
             const dst = try resources.getOrCreateTexture(self, copy.dst, types.WGPUTextureUsage_CopyDst);
-            procs.wgpuCommandEncoderCopyBufferToTexture(
-                encoder,
-                &types.WGPUTexelCopyBufferInfo{
-                    .layout = .{
-                        .offset = copy.src.offset,
-                        .bytesPerRow = loader.normalizeCopyLayoutValue(copy.src.bytes_per_row),
-                        .rowsPerImage = loader.normalizeCopyLayoutValue(copy.src.rows_per_image),
+
+            if (copy.uses_temporary_buffer) {
+                const alignment: u64 = @max(copy.temporary_buffer_alignment, 1);
+                const aligned_size = ((bytes + alignment - 1) / alignment) * alignment;
+                const src = try resources.getOrCreateBuffer(self, copy.src.handle, src_size, types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst);
+                const temp_key = copy.src.handle +% 0xFFFF_0000_0000_0001;
+                const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst);
+                procs.wgpuCommandEncoderCopyBufferToBuffer(encoder, src, copy.src.offset, temp, 0, bytes);
+                procs.wgpuCommandEncoderCopyBufferToTexture(
+                    encoder,
+                    &types.WGPUTexelCopyBufferInfo{
+                        .layout = .{
+                            .offset = 0,
+                            .bytesPerRow = loader.normalizeCopyLayoutValue(copy.src.bytes_per_row),
+                            .rowsPerImage = loader.normalizeCopyLayoutValue(copy.src.rows_per_image),
+                        },
+                        .buffer = temp,
                     },
-                    .buffer = src,
-                },
-                &types.WGPUTexelCopyTextureInfo{
-                    .texture = dst,
-                    .mipLevel = copy.dst.mip_level,
-                    .origin = .{ .x = 0, .y = 0, .z = 0 },
-                    .aspect = loader.normalizeTextureAspect(copy.dst.aspect),
-                },
-                .{
-                    .width = copy.dst.width,
-                    .height = copy.dst.height,
-                    .depthOrArrayLayers = copy.dst.depth_or_array_layers,
-                },
-            );
+                    &types.WGPUTexelCopyTextureInfo{
+                        .texture = dst,
+                        .mipLevel = copy.dst.mip_level,
+                        .origin = .{ .x = 0, .y = 0, .z = 0 },
+                        .aspect = loader.normalizeTextureAspect(copy.dst.aspect),
+                    },
+                    .{
+                        .width = copy.dst.width,
+                        .height = copy.dst.height,
+                        .depthOrArrayLayers = copy.dst.depth_or_array_layers,
+                    },
+                );
+            } else {
+                const src = try resources.getOrCreateBuffer(self, copy.src.handle, src_size, types.WGPUBufferUsage_CopySrc);
+                procs.wgpuCommandEncoderCopyBufferToTexture(
+                    encoder,
+                    &types.WGPUTexelCopyBufferInfo{
+                        .layout = .{
+                            .offset = copy.src.offset,
+                            .bytesPerRow = loader.normalizeCopyLayoutValue(copy.src.bytes_per_row),
+                            .rowsPerImage = loader.normalizeCopyLayoutValue(copy.src.rows_per_image),
+                        },
+                        .buffer = src,
+                    },
+                    &types.WGPUTexelCopyTextureInfo{
+                        .texture = dst,
+                        .mipLevel = copy.dst.mip_level,
+                        .origin = .{ .x = 0, .y = 0, .z = 0 },
+                        .aspect = loader.normalizeTextureAspect(copy.dst.aspect),
+                    },
+                    .{
+                        .width = copy.dst.width,
+                        .height = copy.dst.height,
+                        .depthOrArrayLayers = copy.dst.depth_or_array_layers,
+                    },
+                );
+            }
         },
         .texture_to_buffer => {
             const dst_size = try resources.requiredBytes(bytes, copy.dst.offset);
@@ -216,28 +248,84 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
             );
         },
         .texture_to_texture => {
-            const src = try resources.getOrCreateTexture(self, copy.src, types.WGPUTextureUsage_CopySrc);
-            const dst = try resources.getOrCreateTexture(self, copy.dst, types.WGPUTextureUsage_CopyDst);
-            procs.wgpuCommandEncoderCopyTextureToTexture(
-                encoder,
-                &types.WGPUTexelCopyTextureInfo{
-                    .texture = src,
-                    .mipLevel = copy.src.mip_level,
-                    .origin = .{ .x = 0, .y = 0, .z = 0 },
-                    .aspect = loader.normalizeTextureAspect(copy.src.aspect),
-                },
-                &types.WGPUTexelCopyTextureInfo{
-                    .texture = dst,
-                    .mipLevel = copy.dst.mip_level,
-                    .origin = .{ .x = 0, .y = 0, .z = 0 },
-                    .aspect = loader.normalizeTextureAspect(copy.dst.aspect),
-                },
-                .{
-                    .width = copy.src.width,
-                    .height = copy.src.height,
-                    .depthOrArrayLayers = copy.src.depth_or_array_layers,
-                },
-            );
+            if (copy.uses_temporary_buffer) {
+                // Workaround path: tex → temp buffer → tex (avoids direct tex-to-tex copy bugs)
+                const alignment: u64 = @max(copy.temporary_buffer_alignment, 1);
+                const aligned_size = ((bytes + alignment - 1) / alignment) * alignment;
+                const temp_key = copy.src.handle +% 0xFFFF_0000_0000_0002;
+                const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst);
+                const src = try resources.getOrCreateTexture(self, copy.src, types.WGPUTextureUsage_CopySrc);
+                const dst = try resources.getOrCreateTexture(self, copy.dst, types.WGPUTextureUsage_CopyDst);
+
+                procs.wgpuCommandEncoderCopyTextureToBuffer(
+                    encoder,
+                    &types.WGPUTexelCopyTextureInfo{
+                        .texture = src,
+                        .mipLevel = copy.src.mip_level,
+                        .origin = .{ .x = 0, .y = 0, .z = 0 },
+                        .aspect = loader.normalizeTextureAspect(copy.src.aspect),
+                    },
+                    &types.WGPUTexelCopyBufferInfo{
+                        .layout = .{
+                            .offset = 0,
+                            .bytesPerRow = loader.normalizeCopyLayoutValue(copy.src.bytes_per_row),
+                            .rowsPerImage = loader.normalizeCopyLayoutValue(copy.src.rows_per_image),
+                        },
+                        .buffer = temp,
+                    },
+                    .{
+                        .width = copy.src.width,
+                        .height = copy.src.height,
+                        .depthOrArrayLayers = copy.src.depth_or_array_layers,
+                    },
+                );
+
+                procs.wgpuCommandEncoderCopyBufferToTexture(
+                    encoder,
+                    &types.WGPUTexelCopyBufferInfo{
+                        .layout = .{
+                            .offset = 0,
+                            .bytesPerRow = loader.normalizeCopyLayoutValue(copy.dst.bytes_per_row),
+                            .rowsPerImage = loader.normalizeCopyLayoutValue(copy.dst.rows_per_image),
+                        },
+                        .buffer = temp,
+                    },
+                    &types.WGPUTexelCopyTextureInfo{
+                        .texture = dst,
+                        .mipLevel = copy.dst.mip_level,
+                        .origin = .{ .x = 0, .y = 0, .z = 0 },
+                        .aspect = loader.normalizeTextureAspect(copy.dst.aspect),
+                    },
+                    .{
+                        .width = copy.dst.width,
+                        .height = copy.dst.height,
+                        .depthOrArrayLayers = copy.dst.depth_or_array_layers,
+                    },
+                );
+            } else {
+                const src = try resources.getOrCreateTexture(self, copy.src, types.WGPUTextureUsage_CopySrc);
+                const dst = try resources.getOrCreateTexture(self, copy.dst, types.WGPUTextureUsage_CopyDst);
+                procs.wgpuCommandEncoderCopyTextureToTexture(
+                    encoder,
+                    &types.WGPUTexelCopyTextureInfo{
+                        .texture = src,
+                        .mipLevel = copy.src.mip_level,
+                        .origin = .{ .x = 0, .y = 0, .z = 0 },
+                        .aspect = loader.normalizeTextureAspect(copy.src.aspect),
+                    },
+                    &types.WGPUTexelCopyTextureInfo{
+                        .texture = dst,
+                        .mipLevel = copy.dst.mip_level,
+                        .origin = .{ .x = 0, .y = 0, .z = 0 },
+                        .aspect = loader.normalizeTextureAspect(copy.dst.aspect),
+                    },
+                    .{
+                        .width = copy.src.width,
+                        .height = copy.src.height,
+                        .depthOrArrayLayers = copy.src.depth_or_array_layers,
+                    },
+                );
+            }
         },
     }
 
