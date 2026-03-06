@@ -41,11 +41,22 @@ cd /home/x/deco/fawn/zig
 zig build dropin
 
 cd /home/x/deco/fawn/nursery/webgpu
-npm run build:addon
+npm run build:addon          # compile doe_napi.node from source
+npm run smoke                # verify native loading + GPU round-trip
 ```
 
 Use this when working from the Fawn checkout or when rebuilding the addon
 against the local Doe runtime.
+
+### Packaging prebuilds (CI / release)
+
+```bash
+npm run prebuild             # assembles prebuilds/<platform>-<arch>/
+```
+
+Supported prebuild targets: macOS arm64 (Metal), Linux x64 (Vulkan),
+Windows x64 (D3D12). Host GPU drivers are the only external prerequisite.
+Install uses prebuilds when available, falls back to node-gyp from source.
 
 ## What Lives Here
 
@@ -65,19 +76,14 @@ against the local Doe runtime.
   parity.
 - Node provider comparisons are package/runtime evidence. Backend claim lanes
   remain the canonical performance evidence path.
-- On Linux, the default in-process Node path now fails fast with an explicit
-  error instead of hanging when only `libdoe_webgpu.so` is present. Use
-  `createDoeRuntime()` for Doe CLI/runtime benches until the Linux Node Doe
-  path is wired through end-to-end.
-- Explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` is diagnostic-only on Linux and
-  should not be treated as Doe-native evidence.
+- Linux Node Doe-native path is now wired end-to-end (Linux guard removed).
+  No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
+  are present.
 - Bun has API parity with Node (57/57 contract tests). Bun benchmark lane
   is at `bench/bun/compare.js` and compares Doe FFI against the `bun-webgpu`
   package; cube maturity remains prototype until cells
   are populated by comparable artifacts.
-- A fully self-contained install still requires shipping packaged native Doe
-  runtime artifacts and passing clean-machine smoke tests on each supported
-  host. Today the package still relies on local/runtime host setup in some
-  environments.
+- Self-contained install ships prebuilt `doe_napi.node` + `libdoe_webgpu` +
+  Dawn sidecar per platform. Clean-machine smoke test: `npm run smoke`.
 - API details live in `API_CONTRACT.md`.
 - Compatibility scope is documented in `COMPAT_SCOPE.md`.
