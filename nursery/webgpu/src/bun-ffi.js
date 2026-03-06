@@ -140,7 +140,6 @@ function openLibrary(path) {
         wgpuQueueSubmit:          { args: [FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
         wgpuQueueWriteBuffer:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuQueueRelease:         { args: [FFIType.ptr], returns: FFIType.void },
-        doeNativeQueueFlush:      { args: [FFIType.ptr], returns: FFIType.void },
         doeQueueOnSubmittedWorkDoneFlat: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
 
         // Shader
@@ -614,10 +613,6 @@ function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
 const QUEUE_WORK_DONE_STATUS_SUCCESS = 1;
 
 function queueFlush(instancePtr, queuePtr) {
-    if (wgpu.symbols.doeNativeQueueFlush) {
-        wgpu.symbols.doeNativeQueueFlush(queuePtr);
-        return;
-    }
     let cbStatus = null;
     let done = false;
     const cb = new JSCallback(

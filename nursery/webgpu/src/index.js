@@ -551,7 +551,7 @@ export function providerInfo() {
     loaded: !!addon && !!DOE_LIB_PATH,
     loadError: !addon ? 'native addon not found' : !DOE_LIB_PATH ? 'libdoe_webgpu not found' : '',
     defaultCreateArgs: [],
-    doeNative: flavor === 'doe-dropin' && process.platform !== 'linux',
+    doeNative: flavor === 'doe-dropin',
     libraryFlavor: flavor,
     doeLibraryPath: DOE_LIB_PATH ?? '',
   };

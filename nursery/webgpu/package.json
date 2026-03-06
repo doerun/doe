@@ -19,7 +19,9 @@
   "files": [
     "bin/",
     "src/",
+    "scripts/",
     "native/",
+    "prebuilds/",
     "binding.gyp",
     "README.md",
     "API_CONTRACT.md",
@@ -27,10 +29,12 @@
     "headless-webgpu-comparison.md"
   ],
   "scripts": {
-    "install": "node-gyp rebuild",
+    "install": "node scripts/install.js",
     "build:addon": "node-gyp rebuild",
+    "prebuild": "node scripts/prebuild.js",
     "test": "node ./test-node.js",
-    "test:bun": "bun ./test-bun.js"
+    "test:bun": "bun ./test-bun.js",
+    "smoke": "node scripts/smoke-test.js"
   },
   "keywords": [
     "webgpu",

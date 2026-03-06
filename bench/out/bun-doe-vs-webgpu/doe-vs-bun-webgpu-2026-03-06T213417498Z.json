@@ -1,0 +1,73 @@
+{
+  "type": "comparison_report",
+  "timestamp": "2026-03-06T21:34:17.496Z",
+  "iterations": 50,
+  "warmup": 5,
+  "platform": "linux",
+  "arch": "x64",
+  "bunVersion": "1.3.10",
+  "claimable": 0,
+  "total": 4,
+  "comparisons": [
+    {
+      "workload": "compute_dispatch_simple",
+      "domain": "compute",
+      "comparable": false,
+      "status": "compared",
+      "doeMedianMs": 0.017333000000235188,
+      "dawnMedianMs": 0.02159099999994396,
+      "speedup": 1.25,
+      "pctFaster": 19.7,
+      "claimable": false,
+      "doeP95Ms": 0.08040200000004916,
+      "dawnP95Ms": 0.15340999999989435,
+      "doeP99Ms": 1.7676219999998466,
+      "dawnP99Ms": 1.065217999999959
+    },
+    {
+      "workload": "compute_e2e_256",
+      "domain": "compute",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.6394149999999854,
+      "dawnMedianMs": 0.23243800000000192,
+      "speedup": 0.36,
+      "pctFaster": -175.1,
+      "claimable": false,
+      "doeP95Ms": 211.30919299999994,
+      "dawnP95Ms": 194.731987,
+      "doeP99Ms": 237.06851800000015,
+      "dawnP99Ms": 202.331992
+    },
+    {
+      "workload": "compute_e2e_4096",
+      "domain": "compute",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.6945889999999508,
+      "dawnMedianMs": 0.17438900000001922,
+      "speedup": 0.25,
+      "pctFaster": -298.3,
+      "claimable": false,
+      "doeP95Ms": 216.25839199999973,
+      "dawnP95Ms": 209.81778199999985,
+      "doeP99Ms": 228.166829,
+      "dawnP99Ms": 217.263506
+    },
+    {
+      "workload": "compute_e2e_65536",
+      "domain": "compute",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.6780279999998129,
+      "dawnMedianMs": 0.15565300000002935,
+      "speedup": 0.23,
+      "pctFaster": -335.6,
+      "claimable": false,
+      "doeP95Ms": 188.9186380000001,
+      "dawnP95Ms": 1.6446900000000824,
+      "doeP99Ms": 208.9755439999999,
+      "dawnP99Ms": 210.6090039999999
+    }
+  ]
+}
