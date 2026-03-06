@@ -1,43 +1,37 @@
-import Fawn.Model
+import Fawn.Runtime
 
-inductive CommandKind where
-  | upload
-  | copyBuffer
-  | barrier
-  | dispatch
-  | kernelDispatch
-  deriving Repr, DecidableEq
-
-structure Quirk where
-  id : String
-  scope : Scope
-  vendor : String
-  api : Api
-  verificationMode : VerificationMode
-  safetyClass : SafetyClass
-
-def supportsScope (scope : Scope) (command : CommandKind) : Bool :=
-  match scope with
-  | .alignment => command = CommandKind.upload ∨ command = CommandKind.copyBuffer
-  | .layout => command = CommandKind.dispatch ∨ command = CommandKind.copyBuffer ∨ command = CommandKind.kernelDispatch
-  | .barrier => command = CommandKind.barrier ∨ command = CommandKind.dispatch ∨ command = CommandKind.kernelDispatch
-  | .driver_toggle => True
-  | .memory => command = CommandKind.copyBuffer ∨ command = CommandKind.upload
-
-def supports : Quirk → CommandKind → Bool
-  | q, cmd => supportsScope q.scope cmd
-
-def requiresObligation (q : Quirk) : Bool :=
-  match q.verificationMode with
-  | .lean_required => true
-  | _ => false
+-- Dispatch-level theorems proven against the Runtime model.
+-- These operate on the same CommandKind, Quirk, and supportsScope
+-- used by Bridge.lean and the Zig runtime.
 
 theorem toggleAlwaysSupported (q : Quirk) :
-    q.scope = .driver_toggle → ∀ cmd : CommandKind, supports q cmd := by
+    q.scope = .driver_toggle → ∀ cmd : CommandKind, supportsQuirk q cmd := by
   intro h cmd
-  simp [supports, supportsScope, h]
+  simp [supportsQuirk, supportsScope, h]
 
 theorem strongerSafetyRaisesProofDemand :
     ∀ q : Quirk, q.safetyClass = .critical → requiredProofClass q.safetyClass = ProofLevel.proven := by
   intro q h
   simp [h, requiredProofClass]
+
+theorem noOpActionIdentity : ActionKind.no_op.isIdentity = true := by
+  rfl
+
+theorem informationalToggleIdentity : (ActionKind.toggle .informational).isIdentity = true := by
+  rfl
+
+theorem unhandledToggleIdentity : (ActionKind.toggle .unhandled).isIdentity = true := by
+  rfl
+
+theorem behavioralToggleNotIdentity : (ActionKind.toggle .behavioral).isIdentity = false := by
+  rfl
+
+theorem identityActionComplete :
+    ∀ a : ActionKind, a.isIdentity = true ↔
+      (a = .no_op ∨ a = .toggle .informational ∨ a = .toggle .unhandled) := by
+  intro a
+  cases a with
+  | use_temporary_buffer => simp [ActionKind.isIdentity]
+  | use_temporary_render_texture => simp [ActionKind.isIdentity]
+  | toggle e => cases e <;> simp [ActionKind.isIdentity]
+  | no_op => simp [ActionKind.isIdentity]

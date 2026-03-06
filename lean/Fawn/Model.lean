@@ -32,6 +32,14 @@ inductive ProofLevel where
   | rejected
   deriving Repr, DecidableEq
 
+inductive CommandKind where
+  | upload
+  | copyBuffer
+  | barrier
+  | dispatch
+  | kernelDispatch
+  deriving Repr, DecidableEq
+
 structure SemVer where
   major : Nat
   minor : Nat
@@ -97,6 +105,26 @@ def requiredProofClass : SafetyClass → ProofLevel
   | .moderate => ProofLevel.guarded
   | .high => ProofLevel.proven
   | .critical => ProofLevel.proven
+
+inductive ToggleEffect where
+  | behavioral
+  | informational
+  | unhandled
+  deriving Repr, DecidableEq
+
+inductive ActionKind where
+  | use_temporary_buffer
+  | use_temporary_render_texture
+  | toggle (effect : ToggleEffect)
+  | no_op
+  deriving Repr, DecidableEq
+
+/-- An action is identity when it does not modify the command. -/
+def ActionKind.isIdentity : ActionKind → Bool
+  | .no_op => true
+  | .toggle .informational => true
+  | .toggle .unhandled => true
+  | _ => false
 
 theorem critical_is_max_rank : SafetyClass.critical.rank = 3 := by
   rfl

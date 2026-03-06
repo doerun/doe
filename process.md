@@ -108,7 +108,7 @@ v0 is speed-first. Blocking vs advisory:
 2. Correctness gate: blocking
 3. Trace gate: blocking
 4. Drop-in compatibility gate: blocking for artifact-lane acceptance (`dropin_gate.py`)
-5. Verification gate: advisory globally, but per-quirk proof obligation is blocking when `verificationMode=lean_required`
+5. Verification gate: blocking (proof artifact must pass comptime validation when `-Dlean-verified=true`; per-quirk obligation is blocking when `verificationMode=lean_required`)
 6. Performance gate: advisory (ratchet report)
 
 This keeps process weight aligned with v0 maturity.

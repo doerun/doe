@@ -6,6 +6,7 @@ const execution = @import("execution.zig");
 const trace = @import("trace.zig");
 const replay = @import("replay.zig");
 const main_print = @import("main_print.zig");
+const lean_proof = @import("lean_proof.zig");
 
 const sample_quirks =
     \\[

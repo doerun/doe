@@ -185,6 +185,15 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 4. Delete the corresponding Zig runtime branch once proof+artifact path is in place.
 5. If proof is not available, keep the explicit Zig path and continue measuring.
 
+### Active eliminations (`-Dlean-verified=true`)
+
+Four Lean theorems currently eliminate runtime branches:
+
+- Init time: `toggleAlwaysSupported` skips per-scope bucketing checks for `driver_toggle` quirks. `requiredProof_forbidden_reject_from_rank` and `strongerSafetyRaisesProofDemand` narrow the `is_blocking` computation in `finalizeBucket`.
+- Per command: `identityActionComplete` proves that informational toggles, unhandled toggles, and no-op actions are identity transforms. The toggle effect is resolved once at init time; the per-command dispatch path skips `applyAction` (and its 12-entry toggle registry scan) entirely when the action is provably identity.
+
+At 10,000 dispatched commands (autoregressive decode or diffusion step loops), the per-command elimination saves 1-2ms from proof alone. Build without the flag produces identical code to before.
+
 ## Native execution status
 
 Native Zig+WebGPU/FFI execution is implemented across backend modules in `zig/src`:

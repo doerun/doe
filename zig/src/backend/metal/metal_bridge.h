@@ -26,6 +26,15 @@ MetalHandle metal_bridge_encode_blit_copy(
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf);
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf);
 
+// Batch-encode multiple blit copies into a single command buffer.
+// Returns the command buffer (+1 retained) ready for commit+wait.
+MetalHandle metal_bridge_encode_blit_batch(
+    MetalHandle  queue,
+    MetalHandle* src_buffers,
+    MetalHandle* dst_buffers,
+    size_t*      byte_counts,
+    uint32_t     count);
+
 // === Compute Pipeline ===
 
 // Compile MSL source into a MTLLibrary. On error writes a NUL-terminated

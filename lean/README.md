@@ -21,13 +21,12 @@ Current integration boundary (v0):
 
 Current formalization:
 - `Fawn/Model.lean` (core enums, precedence lattice, requirement predicates)
-- `Fawn/Dispatch.lean` (command/scope relation and support lemmas)
-- `Fawn/Runtime.lean` (deterministic matching + scoring + selector for quirk streams)
-- `Fawn/Runtime.lean` now includes driver-range matching and dispatch decision metadata (`DispatchDecision`) with proof obligations in the path.
+- `Fawn/Dispatch.lean` (dispatch-level theorems proven against Runtime's types: `toggleAlwaysSupported`, `strongerSafetyRaisesProofDemand`)
+- `Fawn/Runtime.lean` (deterministic matching + scoring + selector for quirk streams, driver-range matching, dispatch decision metadata)
 - `Fawn/Bridge.lean` (obligation gate evaluation from dispatch decisions)
 - `Fawn/Comparability.lean` (machine-checkable apples-to-apples comparability obligation model and blocking-failure semantics)
 - `Fawn/ComparabilityFixtures.lean` (fixed comparability-facts parity fixtures with expected blocking-obligation proofs)
-- `Fawn/Dispatch.lean` and `Fawn/Runtime.lean` now include `kernelDispatch` as a first-class command kind.
+- `Fawn/Runtime.lean` includes `kernelDispatch` as a first-class command kind.
 - `Fawn/Extract.lean` (proof artifact extraction program)
 
 Bridge layer contract:
@@ -55,4 +54,19 @@ Proof artifact extraction:
 - Artifact schema: `config/proof-artifact.schema.json`.
 - CI runs extraction after typecheck and uploads the artifact (see `.github/workflows/lean-check.yml`).
 - The artifact is generated (not committed); `lean/artifacts/` is gitignored.
-- Zig build can optionally embed the artifact at comptime via `@embedFile` for proof-driven branch elimination.
+- Zig build embeds the artifact at comptime via `-Dlean-verified=true` for proof-driven branch elimination.
+
+## Proof-driven branch elimination (active)
+
+When built with `-Dlean-verified=true`, Lean theorems eliminate runtime branches in the Zig dispatch path. Proofs run at build time. The compiled binary has fewer branches.
+
+| Theorem | Elimination | Path | Scope |
+|---------|------------|------|-------|
+| `toggleAlwaysSupported` | Skip 20 `supportsCommand` switch evaluations per `driver_toggle` quirk | `runtime.zig:buildDispatchContext` | init |
+| `requiredProof_forbidden_reject_from_rank` | `.rejected` proof level → unconditionally blocking (skip `requires_lean` check) | `runtime.zig:finalizeBucket` | init |
+| `strongerSafetyRaisesProofDemand` | Critical safety class → `is_blocking = proof_level != .proven` (skip `requires_lean` check) | `runtime.zig:finalizeBucket` | init |
+| `identityActionComplete` | Informational/unhandled toggle and no-op actions skip `applyAction` entirely | `runtime.zig:dispatch` | per-command |
+
+The per-command elimination (`identityActionComplete`) hoists the toggle registry linear scan (12 entries, case-insensitive string compare) from per-command to init time. Saves ~100-180ns per dispatched command matched by an informational toggle quirk. At 10,000 commands (autoregressive decode or diffusion step loops), this is 1-2ms saved from proof alone.
+
+Build chain: Lean typecheck, `extract.sh` emits `proven-conditions.json`, `build.zig` reads artifact, `lean_proof.zig` validates at comptime, `runtime.zig` uses `lean_proof.lean_verified` as comptime gate, compiler dead-code-eliminates the unreachable branches.

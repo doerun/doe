@@ -102,23 +102,13 @@ def obligationsFromDispatches
     (results : List DispatchResult)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : List QuirkLeanObligation :=
-  match results with
-  | [] => []
-  | head :: tail =>
-    match fromDispatchResult head safetyOverride with
-    | none => obligationsFromDispatches tail safetyOverride
-    | some obligation => obligation :: obligationsFromDispatches tail safetyOverride
+  results.filterMap (fun r => fromDispatchResult r safetyOverride)
 
 def obligationsFromDispatchDecisions
     (results : List DispatchDecision)
     (safetyOverride : SafetyProofOverride := defaultSafetyProofOverride)
     : List QuirkLeanObligation :=
-  match results with
-  | [] => []
-  | head :: tail =>
-    match fromDispatchDecision head safetyOverride with
-    | none => obligationsFromDispatchDecisions tail safetyOverride
-    | some obligation => obligation :: obligationsFromDispatchDecisions tail safetyOverride
+  results.filterMap (fun r => fromDispatchDecision r safetyOverride)
 
 def blockingObligations
     (results : List DispatchResult)

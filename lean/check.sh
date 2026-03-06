@@ -30,9 +30,9 @@ mkdir -p "${BUILD_DIR}/Fawn"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Model.olean" "${ROOT_DIR}/lean/Fawn/Model.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Dispatch.olean" "${ROOT_DIR}/lean/Fawn/Dispatch.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Runtime.olean" "${ROOT_DIR}/lean/Fawn/Runtime.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Dispatch.olean" "${ROOT_DIR}/lean/Fawn/Dispatch.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Comparability.olean" "${ROOT_DIR}/lean/Fawn/Comparability.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \

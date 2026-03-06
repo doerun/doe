@@ -67,7 +67,8 @@ MetalHandle metal_bridge_device_new_command_queue(MetalHandle device_h) {
 MetalHandle metal_bridge_device_new_buffer_shared(MetalHandle device_h, size_t length) {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
     id<MTLBuffer> buf = [device newBufferWithLength:length
-                                           options:MTLResourceStorageModeShared];
+                                           options:MTLResourceStorageModeShared
+                                                   | MTLResourceHazardTrackingModeUntracked];
     if (buf == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(buf);
 }
@@ -75,7 +76,8 @@ MetalHandle metal_bridge_device_new_buffer_shared(MetalHandle device_h, size_t l
 MetalHandle metal_bridge_device_new_buffer_private(MetalHandle device_h, size_t length) {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
     id<MTLBuffer> buf = [device newBufferWithLength:length
-                                           options:MTLResourceStorageModePrivate];
+                                           options:MTLResourceStorageModePrivate
+                                                   | MTLResourceHazardTrackingModeUntracked];
     if (buf == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(buf);
 }
@@ -117,6 +119,32 @@ void metal_bridge_command_buffer_commit(MetalHandle cmd_buf_h) {
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf_h) {
     id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
     [cmd_buf waitUntilCompleted];
+}
+
+MetalHandle metal_bridge_encode_blit_batch(
+    MetalHandle  queue_h,
+    MetalHandle* src_bufs,
+    MetalHandle* dst_bufs,
+    size_t*      byte_counts,
+    uint32_t     count)
+{
+    if (count == 0) return NULL;
+    id<MTLCommandQueue> queue = (__bridge id<MTLCommandQueue>)queue_h;
+
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
+    if (cmd_buf == nil) return NULL;
+
+    id<MTLBlitCommandEncoder> encoder = [cmd_buf blitCommandEncoder];
+    for (uint32_t i = 0; i < count; i++) {
+        id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_bufs[i];
+        id<MTLBuffer> dst = (__bridge id<MTLBuffer>)dst_bufs[i];
+        [encoder copyFromBuffer:src sourceOffset:0
+                       toBuffer:dst destinationOffset:0
+                           size:byte_counts[i]];
+    }
+    [encoder endEncoding];
+
+    return (MetalHandle)CFBridgingRetain(cmd_buf);
 }
 
 // ============================================================
@@ -322,6 +350,8 @@ static MTLSamplerAddressMode wgpu_to_mtl_addr(uint32_t a) {
     }
 }
 
+static MTLSamplerDescriptor* _cachedSamplerDesc = nil;
+
 MetalHandle metal_bridge_device_new_sampler(
     MetalHandle device_h,
     uint32_t    min_filter,
@@ -335,18 +365,20 @@ MetalHandle metal_bridge_device_new_sampler(
     uint16_t    max_aniso)
 {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
-    MTLSamplerDescriptor* desc = [MTLSamplerDescriptor new];
-    desc.minFilter       = wgpu_to_mtl_filter(min_filter);
-    desc.magFilter       = wgpu_to_mtl_filter(mag_filter);
-    desc.mipFilter       = wgpu_to_mtl_mip_filter(mipmap_filter);
-    desc.sAddressMode    = wgpu_to_mtl_addr(addr_u);
-    desc.tAddressMode    = wgpu_to_mtl_addr(addr_v);
-    desc.rAddressMode    = wgpu_to_mtl_addr(addr_w);
-    desc.lodMinClamp     = lod_min;
-    desc.lodMaxClamp     = lod_max;
-    desc.maxAnisotropy   = max_aniso > 0 ? max_aniso : 1;
+    if (_cachedSamplerDesc == nil) {
+        _cachedSamplerDesc = [MTLSamplerDescriptor new];
+    }
+    _cachedSamplerDesc.minFilter       = wgpu_to_mtl_filter(min_filter);
+    _cachedSamplerDesc.magFilter       = wgpu_to_mtl_filter(mag_filter);
+    _cachedSamplerDesc.mipFilter       = wgpu_to_mtl_mip_filter(mipmap_filter);
+    _cachedSamplerDesc.sAddressMode    = wgpu_to_mtl_addr(addr_u);
+    _cachedSamplerDesc.tAddressMode    = wgpu_to_mtl_addr(addr_v);
+    _cachedSamplerDesc.rAddressMode    = wgpu_to_mtl_addr(addr_w);
+    _cachedSamplerDesc.lodMinClamp     = lod_min;
+    _cachedSamplerDesc.lodMaxClamp     = lod_max;
+    _cachedSamplerDesc.maxAnisotropy   = max_aniso > 0 ? max_aniso : 1;
 
-    id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:desc];
+    id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:_cachedSamplerDesc];
     if (sampler == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(sampler);
 }
@@ -416,6 +448,7 @@ MetalHandle metal_bridge_device_new_render_target(
                                                                                 mipmapped:NO];
     desc.usage       = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
     desc.storageMode = MTLStorageModePrivate;
+    desc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
     id<MTLTexture> tex = [device newTextureWithDescriptor:desc];
     if (tex == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(tex);

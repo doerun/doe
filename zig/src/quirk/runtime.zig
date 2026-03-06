@@ -2,6 +2,7 @@ const std = @import("std");
 const model = @import("../model.zig");
 const toggle_registry = @import("toggle_registry.zig");
 const quirk_actions = @import("quirk_actions.zig");
+const lean_proof = @import("../lean_proof.zig");
 
 pub const DispatchDecision = struct {
     matched_quirk_id: ?[]const u8,
@@ -42,6 +43,7 @@ pub const CommandDispatchBucket = struct {
     matched_count: u32 = 0,
     requires_lean: bool = false,
     is_blocking: bool = false,
+    action_is_identity: bool = true,
 };
 
 pub const DispatchContext = struct {
@@ -124,6 +126,30 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
     var map_async = std.ArrayList(ScoredQuirk).empty;
 
     for (quirks) |quirk| {
+        if (lean_proof.lean_verified and quirk.scope == .driver_toggle) {
+            // Lean theorem toggleAlwaysSupported: driver_toggle supports all commands.
+            try appendScored(allocator, &upload, quirk, .upload, scoring_profile);
+            try appendScored(allocator, &copy_buffer_to_texture, quirk, .copy_buffer_to_texture, scoring_profile);
+            try appendScored(allocator, &barrier, quirk, .barrier, scoring_profile);
+            try appendScored(allocator, &dispatch_commands, quirk, .dispatch, scoring_profile);
+            try appendScored(allocator, &kernel_dispatch, quirk, .kernel_dispatch, scoring_profile);
+            try appendScored(allocator, &render_draw, quirk, .render_draw, scoring_profile);
+            try appendScored(allocator, &sampler_create, quirk, .sampler_create, scoring_profile);
+            try appendScored(allocator, &sampler_destroy, quirk, .sampler_destroy, scoring_profile);
+            try appendScored(allocator, &texture_write, quirk, .texture_write, scoring_profile);
+            try appendScored(allocator, &texture_query, quirk, .texture_query, scoring_profile);
+            try appendScored(allocator, &texture_destroy, quirk, .texture_destroy, scoring_profile);
+            try appendScored(allocator, &surface_create, quirk, .surface_create, scoring_profile);
+            try appendScored(allocator, &surface_capabilities, quirk, .surface_capabilities, scoring_profile);
+            try appendScored(allocator, &surface_configure, quirk, .surface_configure, scoring_profile);
+            try appendScored(allocator, &surface_acquire, quirk, .surface_acquire, scoring_profile);
+            try appendScored(allocator, &surface_present, quirk, .surface_present, scoring_profile);
+            try appendScored(allocator, &surface_unconfigure, quirk, .surface_unconfigure, scoring_profile);
+            try appendScored(allocator, &surface_release, quirk, .surface_release, scoring_profile);
+            try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, scoring_profile);
+            try appendScored(allocator, &map_async, quirk, .map_async, scoring_profile);
+            continue;
+        }
         if (supportsCommand(quirk.scope, .upload)) {
             try appendScored(allocator, &upload, quirk, .upload, scoring_profile);
         }
@@ -240,6 +266,30 @@ pub fn buildProfileDispatchContext(
     for (quirks) |quirk| {
         if (!matchesProfile(profile, quirk)) continue;
 
+        if (lean_proof.lean_verified and quirk.scope == .driver_toggle) {
+            // Lean theorem toggleAlwaysSupported: driver_toggle supports all commands.
+            try appendScored(allocator, &upload, quirk, .upload, profile);
+            try appendScored(allocator, &copy_buffer_to_texture, quirk, .copy_buffer_to_texture, profile);
+            try appendScored(allocator, &barrier, quirk, .barrier, profile);
+            try appendScored(allocator, &dispatch_commands, quirk, .dispatch, profile);
+            try appendScored(allocator, &kernel_dispatch, quirk, .kernel_dispatch, profile);
+            try appendScored(allocator, &render_draw, quirk, .render_draw, profile);
+            try appendScored(allocator, &sampler_create, quirk, .sampler_create, profile);
+            try appendScored(allocator, &sampler_destroy, quirk, .sampler_destroy, profile);
+            try appendScored(allocator, &texture_write, quirk, .texture_write, profile);
+            try appendScored(allocator, &texture_query, quirk, .texture_query, profile);
+            try appendScored(allocator, &texture_destroy, quirk, .texture_destroy, profile);
+            try appendScored(allocator, &surface_create, quirk, .surface_create, profile);
+            try appendScored(allocator, &surface_capabilities, quirk, .surface_capabilities, profile);
+            try appendScored(allocator, &surface_configure, quirk, .surface_configure, profile);
+            try appendScored(allocator, &surface_acquire, quirk, .surface_acquire, profile);
+            try appendScored(allocator, &surface_present, quirk, .surface_present, profile);
+            try appendScored(allocator, &surface_unconfigure, quirk, .surface_unconfigure, profile);
+            try appendScored(allocator, &surface_release, quirk, .surface_release, profile);
+            try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, profile);
+            try appendScored(allocator, &map_async, quirk, .map_async, profile);
+            continue;
+        }
         if (supportsCommand(quirk.scope, .upload)) {
             try appendScored(allocator, &upload, quirk, .upload, profile);
         }
@@ -356,8 +406,15 @@ pub fn dispatch(profile: model.DeviceProfile, context: DispatchContext, command:
 
     const quirk = bucket.best.?;
 
+    // Lean theorem informationalToggleIdentity / noOpActionIdentity:
+    // when action_is_identity was resolved true at init time, applyAction is provably identity.
+    const applied_command = if (lean_proof.lean_verified and bucket.action_is_identity)
+        command
+    else
+        applyAction(quirk, command);
+
     return .{
-        .command = applyAction(quirk, command),
+        .command = applied_command,
         .decision = .{
             .matched_quirk_id = quirk.quirk_id,
             .action = quirk.action,
@@ -428,12 +485,30 @@ fn finalizeBucket(
     std.mem.sort(ScoredQuirk, storage.items, {}, compareScoredQuirk);
     const best = storage.items[0];
     const requires_lean = model.requiresProof(best.quirk.verification_mode);
+    const is_blocking = if (lean_proof.lean_verified) blk: {
+        // Lean theorem requiredProof_forbidden_reject_from_rank:
+        // .rejected never meets any safety class requirement → always blocking.
+        if (best.quirk.proof_level == .rejected) break :blk true;
+        // Lean theorem strongerSafetyRaisesProofDemand:
+        // critical safety demands .proven → skip requires_lean check.
+        if (best.quirk.safety_class == .critical) break :blk best.quirk.proof_level != .proven;
+        break :blk requires_lean and best.quirk.proof_level != .proven;
+    } else requires_lean and best.quirk.proof_level != .proven;
+
+    const action_is_identity = switch (best.quirk.action) {
+        .no_op => true,
+        .toggle => |payload| toggle_registry.effect(payload.toggle_name) != .behavioral,
+        .use_temporary_buffer => false,
+        .use_temporary_render_texture => false,
+    };
+
     const result = CommandDispatchBucket{
         .best = best.quirk,
         .best_score = best.score,
         .matched_count = @intCast(storage.items.len),
         .requires_lean = requires_lean,
-        .is_blocking = requires_lean and best.quirk.proof_level != .proven,
+        .is_blocking = is_blocking,
+        .action_is_identity = action_is_identity,
     };
     storage.deinit(allocator);
     return result;

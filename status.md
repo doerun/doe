@@ -658,7 +658,7 @@ Estimated remaining effort is tracked by explicit capability/gate gaps below ins
 ### Missing in progress
 
 1. ~~Expand upstream quirk mining beyond toggle-style heuristics~~ DONE (2026-03-05): miner now captures toggle context-aware patterns (`Default`/`ForceSet`/`ForceEnable`/`ForceDisable`) and non-toggle workaround patterns (vendor-conditional limit overrides, alignment assigns, feature guards). Vendor detection via `gpu_info::IsVendor()` and `IsVendorMesa()` patterns with 20-line context window. Manifest v2 includes `workaroundHitCount`, `workaroundCategoryCounts`, and `workaroundHits`. Tested: 702 toggle + 24 workaround candidates from Dawn native source (5 feature guards across Intel/Nvidia, 19 limit overrides across Qualcomm/Apple/Nvidia). `--toggle-only` flag preserves backward compatibility.
-2. ~~Lean theorem packs with CI proof execution~~ DONE (2026-03-05): `lean/check.sh` now passes cleanly (fixed `String.trimAscii` → `String.trim` for toolchain 4.16.0 compatibility and updated `ComparabilityFixtures.lean` for Doe-vs-Doe parity obligation fields). `.github/workflows/lean-check.yml` added as CI gate on macOS runners. Remaining: Lean theorem packs for `lean_required` quirks with end-to-end proof execution.
+2. ~~Lean theorem packs with CI proof execution~~ DONE (2026-03-05): `lean/check.sh` now passes cleanly (fixed `String.trimAscii` → `String.trim` for toolchain 4.16.0 compatibility and updated `ComparabilityFixtures.lean` for Doe-vs-Doe parity obligation fields). `.github/workflows/lean-check.yml` added as CI gate on macOS runners. Lean proof-to-artifact pipeline complete: `lean/extract.sh` compiles all modules and emits `lean/artifacts/proven-conditions.json`; CI validates and uploads artifact. Zig comptime gate wired: `zig/src/lean_proof.zig` conditionally embeds proof artifact via `-Dlean-verified=true` and validates schemaVersion, status, and required theorems at compile time. Verification gate flipped from advisory to blocking in `config/gates.json`.
 3. Self-hosted AMD Vulkan runner availability/maintenance for automated smoke workflow execution (`.github/workflows/amd-vulkan-smoke.yml`).
 4. Full benchmark harness with measured GPU timings tied to native execution spans.
 5. Extend baseline automation to broader incumbent lanes (including explicit wgpu baselines) and multi-host trend publication.
@@ -1003,8 +1003,8 @@ Execution gap list:
 
 ## v0 Reality
 
-Blocking gates: schema, correctness, trace.
-Advisory gates: verification, performance.
+Blocking gates: schema, correctness, trace, verification.
+Advisory gates: performance.
 
 This matches speed-first priorities while keeping deterministic foundations.
 

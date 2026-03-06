@@ -1,66 +1,12 @@
 # Fawn
 
-**Fawn** is a Chromium based browser that replaces Dawn with Doe as its WebGPU implementation.
+Fawn is a Chromium-based browser that replaces Dawn with Doe as its WebGPU implementation.
 
-**Doe** (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It is a ground-up reimplementation of what Dawn does in C++, built for explicit control of the hot path: no hidden allocators, no vtable dispatch, no bindings layers, direct C ABI calls to Vulkan/Metal/D3D12.
+Doe (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It reimplements what Dawn does in C++, built for explicit control of the hot path: direct C ABI calls to Vulkan/Metal/D3D12, explicit allocators, comptime specialization from device profiles.
 
 ![Fawn logo](nursery/fawn-browser/assets/logo/compiled/linux/fawn-icon-main-256.png)
 
-## Two value propositions
-
-### 1. Zig reimplementation (general-purpose)
-
-Rewriting Dawn's C++ in Zig gives structural performance gains with no proof infrastructure required:
-
-- **Explicit allocators** — no hidden allocation, every alloc/free is visible in source
-- **No abstraction tax** — no vtable dispatch, no RTTI, no implicit indirection
-- **Direct backend calls** — Zig calls Vulkan/Metal C ABIs natively without marshaling
-- **Comptime specialization** — device profile and quirk resolution at build time, not per-command branching at runtime
-- **Small auditable binaries**
-
-C++ and Rust can achieve the same with enough discipline. Zig makes these properties the default. This alone produces measurable wins on CPU-bound GPU workloads.
-
-### 2. Lean proof elimination (isolated applications)
-
-For specific, controlled deployment targets (verified WASM games, known-safe assets, embedded GPU workloads), Lean 4 enables a second tier of gains:
-
-- Prove validation invariants offline — bounds checks, compatibility constraints, structural command validity
-- Delete the corresponding Zig runtime branches entirely, not just optimize them
-- The hot path gets physically shorter: fewer instructions, fewer branches, less code to execute
-
-"Leaning out" means removing runtime code because a proof made it unnecessary. It does not mean adding a proof interpreter to the hot path.
-
-This mode requires ahead-of-time verification of the workload. It is not a general-purpose browser path — it targets isolated applications where the input space is known and provable.
-
-### How both modes work
-
-The architecture splits validation into two categories:
-
-**Hoistable checks** — resolvable from known state at init, build, or proof time:
-- Static compatibility constraints
-- Structural command validity
-- Device limit and profile compatibility
-
-**Dynamic checks** — must stay in the runtime regardless:
-- Device loss and async lifecycle
-- Queue/timeline synchronization
-- Memory residency pressure
-
-For hoistable checks:
-1. Mine driver quirks from upstream Dawn/wgpu source automatically
-2. Normalize them into a schema-first dataset
-3. In Lean mode: prove and delete runtime branches when proof-to-artifact wiring is enforced
-4. In Zig-only mode: pre-filter once at startup by device profile — no per-command quirk matching
-
-The runtime binds a device profile at startup, filters the quirk set once, and buckets by command kind. Command dispatch uses pre-resolved actions without per-command quirk matching or profile-table search in hot loops.
-
-## Why this is the future
-
-WebGPU is becoming the portable GPU API. Every browser ships it. Native embeddings are growing. The workloads running through it — ML inference, real-time rendering, compute pipelines — are getting more demanding, and CPU-side runtime overhead is becoming the bottleneck.
-
-The incumbent runtimes were built for correctness and portability first. The spec is stabilizing now, the conformance surface is known, and the driver quirk space is enumerable. That makes it possible to build a runtime that doesn't trade correctness for performance.
-
-## Where we are faster today
+## Where Doe is faster
 
 Measured on AMD Vulkan (RADV, GFX11), Doe vs Dawn, with strict apples-to-apples comparability enforcement. All results use operation-level timing, are replay-validated via deterministic hash-chain trace artifacts, and pass claimability checks at both local (7+ samples) and release (15+ samples) thresholds.
 
@@ -87,53 +33,99 @@ Measured on AMD Vulkan (RADV, GFX11), Doe vs Dawn, with strict apples-to-apples 
 |----------|-----------|
 | Pipeline stress (ShaderRobustnessPerf) | +9% |
 
-### How we measure
+Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
 
-- Delta: `((dawn_ms - doe_ms) / dawn_ms) * 100` — positive means Doe is faster
+## How it works
+
+The architecture splits validation into two categories.
+
+Hoistable checks are resolvable from known state at init, build, or proof time: static compatibility constraints, structural command validity, device limit and profile compatibility. Dynamic checks must stay in the runtime regardless: device loss, async lifecycle, queue synchronization, memory residency pressure.
+
+For hoistable checks:
+1. Mine driver quirks from upstream Dawn/wgpu source automatically
+2. Normalize them into a schema-first dataset
+3. Pre-filter once at startup by device profile, bucket by command kind
+4. When Lean proofs are available: delete runtime branches entirely via comptime gates
+
+The runtime binds a device profile at startup, filters the quirk set once, and buckets by command kind. Command dispatch uses pre-resolved actions without per-command quirk matching in hot loops.
+
+### Zig runtime
+
+Zig gives structural performance gains with no proof infrastructure required. Every allocation is visible in source. Backend calls go through Vulkan/Metal C ABIs directly without marshaling. Device profile and quirk resolution happens at build time through comptime specialization, not per-command branching at runtime.
+
+### Lean proof elimination
+
+For specific deployment targets (verified WASM games, known-safe assets, embedded GPU workloads), Lean 4 enables a second tier. Prove validation invariants offline, then delete the corresponding Zig runtime branches entirely. The hot path gets physically shorter: fewer instructions, fewer branches, less code to execute.
+
+"Leaning out" means removing runtime code because a proof made it unnecessary.
+
+## Proof-driven branch elimination
+
+When Doe is built with `-Dlean-verified=true`, four Lean theorems currently eliminate runtime branches in the dispatch path. Proofs run at build time. The compiled binary has fewer branches. There is no runtime proof interpreter.
+
+| Theorem | What it eliminates | Scope |
+|---------|-------------------|-------|
+| `toggleAlwaysSupported` | 20 `supportsCommand` switch evaluations per `driver_toggle` quirk | init |
+| `requiredProof_forbidden_reject_from_rank` | `requires_lean` check for rejected proof levels | init |
+| `strongerSafetyRaisesProofDemand` | `requires_lean` check for critical safety class | init |
+| `identityActionComplete` | entire `applyAction` call and 12-entry toggle registry scan | per-command |
+
+The per-command elimination (`identityActionComplete`) hoists the toggle registry linear scan from per-command to init time. Saves ~100-180ns per dispatched command matched by an informational toggle quirk. At 10,000 commands (autoregressive decode or diffusion step loops), this is 1-2ms saved from proof alone.
+
+Build chain: Lean typecheck, `extract.sh` emits `proven-conditions.json`, `build.zig` reads artifact, `lean_proof.zig` validates at comptime, `runtime.zig` uses comptime gate, compiler eliminates unreachable branches.
+
+Build without the flag produces identical code to before.
+
+## Measurement methodology
+
+- Delta: `((dawn_ms - doe_ms) / dawn_ms) * 100`, positive means Doe is faster
 - Timing: operation-level from execution trace metadata, not wall-clock
 - Comparability: strict mode with fail-fast on mismatched workload contracts
 - Claimability: positive deltas required at p50, p95, and p99 for release claims
 - Replay: every sample validated via deterministic hash-chain trace
 - Workloads: matched command shape, repeat count, buffer usage flags, submit cadence, and normalization divisors
 
-Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
+## Current status
 
-## What's left
+Working, not yet claimable:
+- Render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups. Currently slower than compute proxy in directional benchmarks.
+- Texture/raster path with compute texture sampling plus render-draw raster step. Currently slower than dispatch-only proxy.
 
-**Working, not yet claimable:**
-- Render draw path — native render-pass submission with Dawn-like vertex buffers, depth/stencil, pipeline caching, and bind groups. Currently slower than compute proxy in directional benchmarks. Non-claimable by contract.
-- Texture/raster path — compute texture sampling plus render-draw raster step. Currently slower than dispatch-only proxy. Non-claimable by contract.
-
-**Not yet implemented:**
-- Lean theorem packs with CI/build proof execution — proofs exist for core dispatch invariants; automated proof-driven branch elimination is not wired end-to-end
-- Upstream quirk mining automation — prototype works; nightly drift ingest is not running
-- Metal backend — Vulkan-first; Metal is the second lane
-- GPU timestamp readback — returns zero on some adapter/driver combinations
-- Broader device/driver coverage for substantiated incumbent comparison claims
-
-**The path from here:**
-1. Harden render and texture paths to claimable parity
-2. Wire Lean proof-driven branch elimination into the build pipeline
-3. Bring up Metal backend
-4. Expand device coverage beyond AMD Vulkan
-5. Automate nightly quirk mining from upstream
-6. Reach substantiated "beats incumbents" status across the workload matrix
+In progress:
+- Metal backend (Vulkan-first; Metal is the second lane)
+- GPU timestamp readback (returns zero on some adapter/driver combinations)
+- Broader device/driver coverage for substantiated comparison claims
+- Upstream quirk mining automation (prototype works; nightly drift ingest is not running)
 
 ## Project structure
 
 ```
 fawn/
-  thesis.md          — goals, priorities, success criteria
-  architecture.md    — module boundaries, data contracts
-  process.md         — pipeline stages, gate policy
-  status.md          — current state, benchmark snapshots
-  agent/             — upstream quirk mining
-  config/            — schemas, gates, benchmark definitions
-  lean/              — Lean 4 proofs, verification boundary
-  zig/               — runtime (~12,000 LOC)
-  bench/             — benchmark harness, Dawn comparison, visualization
-  trace/             — replay and trace tooling
-  examples/          — worked examples, command seeds
+  thesis.md            goals, priorities, success criteria
+  architecture.md      module boundaries, data contracts
+  process.md           pipeline stages, gate policy
+  status.md            current state, benchmark snapshots
+  licensing.md         license terms
+  agent/               upstream quirk mining
+  config/              schemas, gates, benchmark definitions
+  lean/                Lean 4 proofs, verification boundary
+  zig/                 Doe runtime (~12,000 LOC)
+  bench/               benchmark harness, Dawn comparison, visualization
+  trace/               replay and trace tooling
+  examples/            worked examples, command seeds
+  pkg/webgpu-doe/      npm publish root for @simulatte/webgpu-doe
+```
+
+## Package
+
+The npm package `@simulatte/webgpu-doe` publishes from `pkg/webgpu-doe/`. It contains the prebuilt `libdoe_webgpu` shared library and the drop-in WebGPU entrypoint for use as a Dawn replacement in native embeddings.
+
+```bash
+# build the drop-in library
+cd fawn/zig && zig build dropin
+
+# publish (from package root)
+cd fawn/pkg/webgpu-doe && npm publish --access public
 ```
 
 ## Building and running
@@ -141,7 +133,20 @@ fawn/
 Requires Zig 0.14+. From `fawn/zig/`:
 
 ```bash
+# run with trace output
 zig build run -- --commands path/to/commands.json --backend native --execute --trace
+
+# build with Lean proof elimination
+zig build -Dlean-verified=true
+
+# run tests
+zig build test
+
+# build drop-in shared library
+zig build dropin
+
+# build macOS app bundle
+zig build app
 ```
 
 Run Dawn-vs-Doe comparison (requires Dawn build, see `bench/README.md`):
@@ -150,3 +155,14 @@ Run Dawn-vs-Doe comparison (requires Dawn build, see `bench/README.md`):
 python3 bench/compare_dawn_vs_doe.py \
   --config bench/compare_dawn_vs_doe.config.amd.vulkan.json
 ```
+
+## Verification gates
+
+Blocking in v0: schema, correctness, trace, verification.
+Advisory in v0: performance.
+
+Release requires all blocking gates green. See `process.md` for gate policy and `config/gates.json` for thresholds.
+
+## License
+
+See `licensing.md`.

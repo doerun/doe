@@ -79,8 +79,8 @@ For Dawn-vs-Doe performance work, also read:
 - all artifact inputs and outputs for a stage must be versioned and hash-linked where appropriate.
 
 5. Gate discipline
-- blocking in v0: schema, correctness, trace
-- advisory in v0: verification, performance
+- blocking in v0: schema, correctness, trace, verification
+- advisory in v0: performance
 - release only when blocking gates are green.
 
 6. Dawn apples-to-apples discipline

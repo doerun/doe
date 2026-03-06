@@ -12,6 +12,8 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
+
     const dropin_lib = b.addLibrary(.{
         .name = "doe_webgpu",
         .linkage = .dynamic,
@@ -89,12 +91,26 @@ pub fn build(b: *std.Build) void {
         }
     }
 
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "lean_verified", lean_verified);
+    if (lean_verified) {
+        const proof_artifact = std.fs.cwd().openFile("../lean/artifacts/proven-conditions.json", .{}) catch
+            @panic("lean-verified=true but lean/artifacts/proven-conditions.json not found. Run lean/extract.sh first.");
+        defer proof_artifact.close();
+        const proof_json = proof_artifact.readToEndAlloc(b.allocator, 64 * 1024) catch
+            @panic("failed to read lean proof artifact");
+        build_options.addOption([]const u8, "lean_proof_json", proof_json);
+    }
+
     const exe = b.addExecutable(.{
         .name = "doe-zig-runtime",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options.createModule() },
+            },
         }),
     });
     exe.linkLibC();

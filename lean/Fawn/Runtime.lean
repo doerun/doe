@@ -1,13 +1,5 @@
 import Fawn.Model
 
-inductive CommandKind where
-  | upload
-  | copyBuffer
-  | barrier
-  | dispatch
-  | kernelDispatch
-  deriving Repr, DecidableEq
-
 structure DeviceProfile where
   vendor : String
   api : Api

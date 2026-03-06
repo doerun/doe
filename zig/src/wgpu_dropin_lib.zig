@@ -10,6 +10,7 @@ const dropin_behavior_policy = @import("dropin/dropin_behavior_policy.zig");
 const dropin_symbol_ownership = @import("dropin/dropin_symbol_ownership.zig");
 const dropin_router = @import("dropin/dropin_router.zig");
 const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
+const dropin_abi_procs = @import("dropin/dropin_abi_procs.zig");
 
 const DROPIN_BEHAVIOR_CONFIG_JSON = @embedFile("config/dropin-abi-behavior.json");
 const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = @embedFile("config/dropin-symbol-ownership.json");
@@ -241,7 +242,10 @@ fn routeAndRecordForName(
 }
 
 fn nativeFromSymbol(comptime FnType: type, comptime symbol_name: [:0]const u8) ?FnType {
-    return loadOptionalProc(FnType, symbol_name);
+    // Direct lookup without re-acquiring g_state_lock (caller already holds it).
+    if (g_native_lib == null) return null;
+    var lib = g_native_lib.?;
+    return lib.lookup(FnType, symbol_name);
 }
 
 pub fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) FnType {
@@ -353,72 +357,73 @@ fn toZeroTerminatedSymbolName(
 }
 
 fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
+    const P = dropin_abi_procs;
     if (symbolViewEq(name, "wgpuGetProcAddress")) return fnPtr(&wgpuGetProcAddress);
-    if (symbolViewEq(name, "wgpuCreateInstance")) return fnPtr(&wgpuCreateInstance);
-    if (symbolViewEq(name, "wgpuInstanceRequestAdapter")) return fnPtr(&wgpuInstanceRequestAdapter);
-    if (symbolViewEq(name, "wgpuInstanceWaitAny")) return fnPtr(&wgpuInstanceWaitAny);
-    if (symbolViewEq(name, "wgpuInstanceProcessEvents")) return fnPtr(&wgpuInstanceProcessEvents);
-    if (symbolViewEq(name, "wgpuAdapterRequestDevice")) return fnPtr(&wgpuAdapterRequestDevice);
-    if (symbolViewEq(name, "wgpuDeviceCreateBuffer")) return fnPtr(&wgpuDeviceCreateBuffer);
-    if (symbolViewEq(name, "wgpuDeviceCreateShaderModule")) return fnPtr(&wgpuDeviceCreateShaderModule);
-    if (symbolViewEq(name, "wgpuShaderModuleRelease")) return fnPtr(&wgpuShaderModuleRelease);
-    if (symbolViewEq(name, "wgpuDeviceCreateComputePipeline")) return fnPtr(&wgpuDeviceCreateComputePipeline);
-    if (symbolViewEq(name, "wgpuComputePipelineRelease")) return fnPtr(&wgpuComputePipelineRelease);
-    if (symbolViewEq(name, "wgpuRenderPipelineRelease")) return fnPtr(&wgpuRenderPipelineRelease);
-    if (symbolViewEq(name, "wgpuDeviceCreateCommandEncoder")) return fnPtr(&wgpuDeviceCreateCommandEncoder);
-    if (symbolViewEq(name, "wgpuCommandEncoderBeginComputePass")) return fnPtr(&wgpuCommandEncoderBeginComputePass);
-    if (symbolViewEq(name, "wgpuDeviceCreateRenderPipeline")) return fnPtr(&wgpuDeviceCreateRenderPipeline);
-    if (symbolViewEq(name, "wgpuCommandEncoderBeginRenderPass")) return fnPtr(&wgpuCommandEncoderBeginRenderPass);
-    if (symbolViewEq(name, "wgpuCommandEncoderWriteTimestamp")) return fnPtr(&wgpuCommandEncoderWriteTimestamp);
-    if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToBuffer")) return fnPtr(&wgpuCommandEncoderCopyBufferToBuffer);
-    if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToTexture")) return fnPtr(&wgpuCommandEncoderCopyBufferToTexture);
-    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToBuffer")) return fnPtr(&wgpuCommandEncoderCopyTextureToBuffer);
-    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToTexture")) return fnPtr(&wgpuCommandEncoderCopyTextureToTexture);
-    if (symbolViewEq(name, "wgpuComputePassEncoderSetPipeline")) return fnPtr(&wgpuComputePassEncoderSetPipeline);
-    if (symbolViewEq(name, "wgpuComputePassEncoderSetBindGroup")) return fnPtr(&wgpuComputePassEncoderSetBindGroup);
-    if (symbolViewEq(name, "wgpuComputePassEncoderDispatchWorkgroups")) return fnPtr(&wgpuComputePassEncoderDispatchWorkgroups);
-    if (symbolViewEq(name, "wgpuComputePassEncoderEnd")) return fnPtr(&wgpuComputePassEncoderEnd);
-    if (symbolViewEq(name, "wgpuComputePassEncoderRelease")) return fnPtr(&wgpuComputePassEncoderRelease);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderSetPipeline")) return fnPtr(&wgpuRenderPassEncoderSetPipeline);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderSetVertexBuffer")) return fnPtr(&wgpuRenderPassEncoderSetVertexBuffer);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderSetIndexBuffer")) return fnPtr(&wgpuRenderPassEncoderSetIndexBuffer);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderSetBindGroup")) return fnPtr(&wgpuRenderPassEncoderSetBindGroup);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderDraw")) return fnPtr(&wgpuRenderPassEncoderDraw);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderDrawIndexed")) return fnPtr(&wgpuRenderPassEncoderDrawIndexed);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderDrawIndirect")) return fnPtr(&wgpuRenderPassEncoderDrawIndirect);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderDrawIndexedIndirect")) return fnPtr(&wgpuRenderPassEncoderDrawIndexedIndirect);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderEnd")) return fnPtr(&wgpuRenderPassEncoderEnd);
-    if (symbolViewEq(name, "wgpuRenderPassEncoderRelease")) return fnPtr(&wgpuRenderPassEncoderRelease);
-    if (symbolViewEq(name, "wgpuCommandEncoderFinish")) return fnPtr(&wgpuCommandEncoderFinish);
-    if (symbolViewEq(name, "wgpuDeviceGetQueue")) return fnPtr(&wgpuDeviceGetQueue);
-    if (symbolViewEq(name, "wgpuQueueSubmit")) return fnPtr(&wgpuQueueSubmit);
-    if (symbolViewEq(name, "wgpuQueueOnSubmittedWorkDone")) return fnPtr(&wgpuQueueOnSubmittedWorkDone);
-    if (symbolViewEq(name, "wgpuQueueWriteBuffer")) return fnPtr(&wgpuQueueWriteBuffer);
-    if (symbolViewEq(name, "wgpuDeviceCreateTexture")) return fnPtr(&wgpuDeviceCreateTexture);
-    if (symbolViewEq(name, "wgpuTextureCreateView")) return fnPtr(&wgpuTextureCreateView);
-    if (symbolViewEq(name, "wgpuDeviceCreateBindGroupLayout")) return fnPtr(&wgpuDeviceCreateBindGroupLayout);
-    if (symbolViewEq(name, "wgpuBindGroupLayoutRelease")) return fnPtr(&wgpuBindGroupLayoutRelease);
-    if (symbolViewEq(name, "wgpuDeviceCreateBindGroup")) return fnPtr(&wgpuDeviceCreateBindGroup);
-    if (symbolViewEq(name, "wgpuBindGroupRelease")) return fnPtr(&wgpuBindGroupRelease);
-    if (symbolViewEq(name, "wgpuDeviceCreatePipelineLayout")) return fnPtr(&wgpuDeviceCreatePipelineLayout);
-    if (symbolViewEq(name, "wgpuPipelineLayoutRelease")) return fnPtr(&wgpuPipelineLayoutRelease);
-    if (symbolViewEq(name, "wgpuTextureRelease")) return fnPtr(&wgpuTextureRelease);
-    if (symbolViewEq(name, "wgpuTextureViewRelease")) return fnPtr(&wgpuTextureViewRelease);
-    if (symbolViewEq(name, "wgpuInstanceRelease")) return fnPtr(&wgpuInstanceRelease);
-    if (symbolViewEq(name, "wgpuAdapterRelease")) return fnPtr(&wgpuAdapterRelease);
-    if (symbolViewEq(name, "wgpuDeviceRelease")) return fnPtr(&wgpuDeviceRelease);
-    if (symbolViewEq(name, "wgpuQueueRelease")) return fnPtr(&wgpuQueueRelease);
-    if (symbolViewEq(name, "wgpuCommandEncoderRelease")) return fnPtr(&wgpuCommandEncoderRelease);
-    if (symbolViewEq(name, "wgpuCommandBufferRelease")) return fnPtr(&wgpuCommandBufferRelease);
-    if (symbolViewEq(name, "wgpuBufferRelease")) return fnPtr(&wgpuBufferRelease);
-    if (symbolViewEq(name, "wgpuAdapterHasFeature")) return fnPtr(&wgpuAdapterHasFeature);
-    if (symbolViewEq(name, "wgpuDeviceHasFeature")) return fnPtr(&wgpuDeviceHasFeature);
-    if (symbolViewEq(name, "wgpuDeviceCreateQuerySet")) return fnPtr(&wgpuDeviceCreateQuerySet);
-    if (symbolViewEq(name, "wgpuCommandEncoderResolveQuerySet")) return fnPtr(&wgpuCommandEncoderResolveQuerySet);
-    if (symbolViewEq(name, "wgpuQuerySetRelease")) return fnPtr(&wgpuQuerySetRelease);
-    if (symbolViewEq(name, "wgpuBufferMapAsync")) return fnPtr(&wgpuBufferMapAsync);
-    if (symbolViewEq(name, "wgpuBufferGetConstMappedRange")) return fnPtr(&wgpuBufferGetConstMappedRange);
-    if (symbolViewEq(name, "wgpuBufferUnmap")) return fnPtr(&wgpuBufferUnmap);
+    if (symbolViewEq(name, "wgpuCreateInstance")) return fnPtr(&P.wgpuCreateInstance);
+    if (symbolViewEq(name, "wgpuInstanceRequestAdapter")) return fnPtr(&P.wgpuInstanceRequestAdapter);
+    if (symbolViewEq(name, "wgpuInstanceWaitAny")) return fnPtr(&P.wgpuInstanceWaitAny);
+    if (symbolViewEq(name, "wgpuInstanceProcessEvents")) return fnPtr(&P.wgpuInstanceProcessEvents);
+    if (symbolViewEq(name, "wgpuAdapterRequestDevice")) return fnPtr(&P.wgpuAdapterRequestDevice);
+    if (symbolViewEq(name, "wgpuDeviceCreateBuffer")) return fnPtr(&P.wgpuDeviceCreateBuffer);
+    if (symbolViewEq(name, "wgpuDeviceCreateShaderModule")) return fnPtr(&P.wgpuDeviceCreateShaderModule);
+    if (symbolViewEq(name, "wgpuShaderModuleRelease")) return fnPtr(&P.wgpuShaderModuleRelease);
+    if (symbolViewEq(name, "wgpuDeviceCreateComputePipeline")) return fnPtr(&P.wgpuDeviceCreateComputePipeline);
+    if (symbolViewEq(name, "wgpuComputePipelineRelease")) return fnPtr(&P.wgpuComputePipelineRelease);
+    if (symbolViewEq(name, "wgpuRenderPipelineRelease")) return fnPtr(&P.wgpuRenderPipelineRelease);
+    if (symbolViewEq(name, "wgpuDeviceCreateCommandEncoder")) return fnPtr(&P.wgpuDeviceCreateCommandEncoder);
+    if (symbolViewEq(name, "wgpuCommandEncoderBeginComputePass")) return fnPtr(&P.wgpuCommandEncoderBeginComputePass);
+    if (symbolViewEq(name, "wgpuDeviceCreateRenderPipeline")) return fnPtr(&P.wgpuDeviceCreateRenderPipeline);
+    if (symbolViewEq(name, "wgpuCommandEncoderBeginRenderPass")) return fnPtr(&P.wgpuCommandEncoderBeginRenderPass);
+    if (symbolViewEq(name, "wgpuCommandEncoderWriteTimestamp")) return fnPtr(&P.wgpuCommandEncoderWriteTimestamp);
+    if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToBuffer")) return fnPtr(&P.wgpuCommandEncoderCopyBufferToBuffer);
+    if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToTexture")) return fnPtr(&P.wgpuCommandEncoderCopyBufferToTexture);
+    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToBuffer")) return fnPtr(&P.wgpuCommandEncoderCopyTextureToBuffer);
+    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToTexture")) return fnPtr(&P.wgpuCommandEncoderCopyTextureToTexture);
+    if (symbolViewEq(name, "wgpuComputePassEncoderSetPipeline")) return fnPtr(&P.wgpuComputePassEncoderSetPipeline);
+    if (symbolViewEq(name, "wgpuComputePassEncoderSetBindGroup")) return fnPtr(&P.wgpuComputePassEncoderSetBindGroup);
+    if (symbolViewEq(name, "wgpuComputePassEncoderDispatchWorkgroups")) return fnPtr(&P.wgpuComputePassEncoderDispatchWorkgroups);
+    if (symbolViewEq(name, "wgpuComputePassEncoderEnd")) return fnPtr(&P.wgpuComputePassEncoderEnd);
+    if (symbolViewEq(name, "wgpuComputePassEncoderRelease")) return fnPtr(&P.wgpuComputePassEncoderRelease);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetPipeline")) return fnPtr(&P.wgpuRenderPassEncoderSetPipeline);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetVertexBuffer")) return fnPtr(&P.wgpuRenderPassEncoderSetVertexBuffer);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetIndexBuffer")) return fnPtr(&P.wgpuRenderPassEncoderSetIndexBuffer);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetBindGroup")) return fnPtr(&P.wgpuRenderPassEncoderSetBindGroup);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderDraw")) return fnPtr(&P.wgpuRenderPassEncoderDraw);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderDrawIndexed")) return fnPtr(&P.wgpuRenderPassEncoderDrawIndexed);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderDrawIndirect")) return fnPtr(&P.wgpuRenderPassEncoderDrawIndirect);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderDrawIndexedIndirect")) return fnPtr(&P.wgpuRenderPassEncoderDrawIndexedIndirect);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderEnd")) return fnPtr(&P.wgpuRenderPassEncoderEnd);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderRelease")) return fnPtr(&P.wgpuRenderPassEncoderRelease);
+    if (symbolViewEq(name, "wgpuCommandEncoderFinish")) return fnPtr(&P.wgpuCommandEncoderFinish);
+    if (symbolViewEq(name, "wgpuDeviceGetQueue")) return fnPtr(&P.wgpuDeviceGetQueue);
+    if (symbolViewEq(name, "wgpuQueueSubmit")) return fnPtr(&P.wgpuQueueSubmit);
+    if (symbolViewEq(name, "wgpuQueueOnSubmittedWorkDone")) return fnPtr(&P.wgpuQueueOnSubmittedWorkDone);
+    if (symbolViewEq(name, "wgpuQueueWriteBuffer")) return fnPtr(&P.wgpuQueueWriteBuffer);
+    if (symbolViewEq(name, "wgpuDeviceCreateTexture")) return fnPtr(&P.wgpuDeviceCreateTexture);
+    if (symbolViewEq(name, "wgpuTextureCreateView")) return fnPtr(&P.wgpuTextureCreateView);
+    if (symbolViewEq(name, "wgpuDeviceCreateBindGroupLayout")) return fnPtr(&P.wgpuDeviceCreateBindGroupLayout);
+    if (symbolViewEq(name, "wgpuBindGroupLayoutRelease")) return fnPtr(&P.wgpuBindGroupLayoutRelease);
+    if (symbolViewEq(name, "wgpuDeviceCreateBindGroup")) return fnPtr(&P.wgpuDeviceCreateBindGroup);
+    if (symbolViewEq(name, "wgpuBindGroupRelease")) return fnPtr(&P.wgpuBindGroupRelease);
+    if (symbolViewEq(name, "wgpuDeviceCreatePipelineLayout")) return fnPtr(&P.wgpuDeviceCreatePipelineLayout);
+    if (symbolViewEq(name, "wgpuPipelineLayoutRelease")) return fnPtr(&P.wgpuPipelineLayoutRelease);
+    if (symbolViewEq(name, "wgpuTextureRelease")) return fnPtr(&P.wgpuTextureRelease);
+    if (symbolViewEq(name, "wgpuTextureViewRelease")) return fnPtr(&P.wgpuTextureViewRelease);
+    if (symbolViewEq(name, "wgpuInstanceRelease")) return fnPtr(&P.wgpuInstanceRelease);
+    if (symbolViewEq(name, "wgpuAdapterRelease")) return fnPtr(&P.wgpuAdapterRelease);
+    if (symbolViewEq(name, "wgpuDeviceRelease")) return fnPtr(&P.wgpuDeviceRelease);
+    if (symbolViewEq(name, "wgpuQueueRelease")) return fnPtr(&P.wgpuQueueRelease);
+    if (symbolViewEq(name, "wgpuCommandEncoderRelease")) return fnPtr(&P.wgpuCommandEncoderRelease);
+    if (symbolViewEq(name, "wgpuCommandBufferRelease")) return fnPtr(&P.wgpuCommandBufferRelease);
+    if (symbolViewEq(name, "wgpuBufferRelease")) return fnPtr(&P.wgpuBufferRelease);
+    if (symbolViewEq(name, "wgpuAdapterHasFeature")) return fnPtr(&P.wgpuAdapterHasFeature);
+    if (symbolViewEq(name, "wgpuDeviceHasFeature")) return fnPtr(&P.wgpuDeviceHasFeature);
+    if (symbolViewEq(name, "wgpuDeviceCreateQuerySet")) return fnPtr(&P.wgpuDeviceCreateQuerySet);
+    if (symbolViewEq(name, "wgpuCommandEncoderResolveQuerySet")) return fnPtr(&P.wgpuCommandEncoderResolveQuerySet);
+    if (symbolViewEq(name, "wgpuQuerySetRelease")) return fnPtr(&P.wgpuQuerySetRelease);
+    if (symbolViewEq(name, "wgpuBufferMapAsync")) return fnPtr(&P.wgpuBufferMapAsync);
+    if (symbolViewEq(name, "wgpuBufferGetConstMappedRange")) return fnPtr(&P.wgpuBufferGetConstMappedRange);
+    if (symbolViewEq(name, "wgpuBufferUnmap")) return fnPtr(&P.wgpuBufferUnmap);
     return null;
 }
 
@@ -474,4 +479,6 @@ pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_cap
     return null;
 }
 
-pub usingnamespace @import("dropin/dropin_abi_procs.zig");
+comptime {
+    _ = @import("dropin/dropin_abi_procs.zig");
+}

@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "gateMode": {
     "schema": "blocking",
-    "verification": "advisory",
+    "verification": "blocking",
     "correctness": "blocking",
     "performance": "advisory",
     "trace": "blocking"

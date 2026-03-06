@@ -1,5 +1,6 @@
 import Fawn.Bridge
 import Fawn.ComparabilityFixtures
+import Fawn.Dispatch
 
 private def jsonBool (b : Bool) : String := if b then "true" else "false"
 
@@ -34,7 +35,12 @@ def main : IO Unit := do
   IO.println "    { \"name\": \"strictMissingLeftSamplesExpectedBlocking_exact\", \"module\": \"Fawn.ComparabilityFixtures\", \"category\": \"comparability\" },"
   IO.println "    { \"name\": \"strictMissingLeftSamplesComparable\", \"module\": \"Fawn.ComparabilityFixtures\", \"category\": \"comparability\" },"
   IO.println "    { \"name\": \"allowLeftNoExecutionDensityFailureExpectedBlocking_exact\", \"module\": \"Fawn.ComparabilityFixtures\", \"category\": \"comparability\" },"
-  IO.println "    { \"name\": \"allowLeftNoExecutionDensityFailureComparable\", \"module\": \"Fawn.ComparabilityFixtures\", \"category\": \"comparability\" }"
+  IO.println "    { \"name\": \"allowLeftNoExecutionDensityFailureComparable\", \"module\": \"Fawn.ComparabilityFixtures\", \"category\": \"comparability\" },"
+  IO.println "    { \"name\": \"noOpActionIdentity\", \"module\": \"Fawn.Dispatch\", \"category\": \"dispatch\" },"
+  IO.println "    { \"name\": \"informationalToggleIdentity\", \"module\": \"Fawn.Dispatch\", \"category\": \"dispatch\" },"
+  IO.println "    { \"name\": \"unhandledToggleIdentity\", \"module\": \"Fawn.Dispatch\", \"category\": \"dispatch\" },"
+  IO.println "    { \"name\": \"behavioralToggleNotIdentity\", \"module\": \"Fawn.Dispatch\", \"category\": \"dispatch\" },"
+  IO.println "    { \"name\": \"identityActionComplete\", \"module\": \"Fawn.Dispatch\", \"category\": \"dispatch\" }"
   IO.println "  ],"
   IO.println "  \"evaluatedConditions\": {"
   IO.println ("    \"comparability.strictHappyPath.comparable\": " ++ jsonBool happyPath ++ ",")
@@ -44,7 +50,10 @@ def main : IO Unit := do
   IO.println ("    \"comparability.allowLeftNoExecutionDensityFailure.comparable\": " ++ jsonBool densityFailure ++ ",")
   IO.println ("    \"comparability.allowLeftNoExecutionDensityFailure.failedBlockingCount\": " ++ toString densityFailureBlocking ++ ",")
   IO.println ("    \"dispatch.criticalSafetyRank\": " ++ toString SafetyClass.critical.rank ++ ",")
-  IO.println ("    \"dispatch.provenProofRank\": " ++ toString ProofLevel.proven.rank)
+  IO.println ("    \"dispatch.provenProofRank\": " ++ toString ProofLevel.proven.rank ++ ",")
+  IO.println ("    \"dispatch.noOpIsIdentity\": " ++ jsonBool ActionKind.no_op.isIdentity ++ ",")
+  IO.println ("    \"dispatch.informationalToggleIsIdentity\": " ++ jsonBool (ActionKind.toggle .informational).isIdentity ++ ",")
+  IO.println ("    \"dispatch.behavioralToggleIsIdentity\": " ++ jsonBool (ActionKind.toggle .behavioral).isIdentity)
   IO.println "  },"
   IO.println "  \"eliminationTargets\": ["
   IO.println "    {"
@@ -61,6 +70,11 @@ def main : IO Unit := do
   IO.println "      \"theorem\": \"strongerSafetyRaisesProofDemand\","
   IO.println "      \"condition\": \"critical safety class requires proven proof level\","
   IO.println "      \"runtimePath\": \"quirk/runtime.zig:finalizeBucket\""
+  IO.println "    },"
+  IO.println "    {"
+  IO.println "      \"theorem\": \"identityActionComplete\","
+  IO.println "      \"condition\": \"no_op, informational toggle, and unhandled toggle actions are identity; behavioral toggle is not\","
+  IO.println "      \"runtimePath\": \"quirk/runtime.zig:dispatch\""
   IO.println "    }"
   IO.println "  ]"
   IO.println "}"
