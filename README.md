@@ -94,8 +94,20 @@ Current caveat:
 
 Bun has API parity with Node via direct FFI (57/57 contract tests passing).
 Bun benchmark lane is at `bench/bun/compare.js` and compares Doe FFI against
-the `bun-webgpu` package. Cube maturity remains prototype until cells are
-populated by comparable artifacts.
+the `bun-webgpu` package. Latest validated run (`20260306T215526Z`) shows 7/11
+claimable, with compute e2e rows comparable and claimable after readback
+validation was added to the timed path. The benchmark cube now isolates the
+directional `compute_dispatch_simple` row into its own dispatch-only cell, so
+the Bun `compute_e2e` cell reflects the claimable end-to-end rows instead of
+being dragged diagnostic by mixed methodology. Cube maturity remains prototype
+until cell coverage stabilizes across multiple runs.
+
+Remaining Bun caveats:
+- `buffer_map_write_unmap` is slower for Doe (~19µs overhead from synchronous
+  `bufferMapSync` polling vs bun-webgpu native async path)
+- directional rows (`compute_dispatch_simple`, `submit_empty`) are not
+  comparable by design (Dawn async submit vs Doe synchronous)
+- upload rows are noisier than compute; claimability is system-state dependent
 
 ## How it works
 

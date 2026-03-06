@@ -5,6 +5,7 @@ const vulkan_copy_encode_test = @import("tests/vulkan/vulkan_copy_encode_test.zi
 const vulkan_device_queue_test = @import("tests/vulkan/vulkan_device_queue_test.zig");
 const vulkan_instance_test = @import("tests/vulkan/vulkan_instance_test.zig");
 const vulkan_mod_integration_test = @import("tests/vulkan/vulkan_mod_integration_test.zig");
+const vulkan_native_runtime_test = @import("tests/vulkan/vulkan_native_runtime_test.zig");
 const vulkan_pipeline_cache_test = @import("tests/vulkan/vulkan_pipeline_cache_test.zig");
 const vulkan_render_encode_test = @import("tests/vulkan/vulkan_render_encode_test.zig");
 const vulkan_shader_artifact_manifest_test = @import("tests/vulkan/vulkan_shader_artifact_manifest_test.zig");
@@ -32,6 +33,7 @@ comptime {
     _ = vulkan_device_queue_test;
     _ = vulkan_instance_test;
     _ = vulkan_mod_integration_test;
+    _ = vulkan_native_runtime_test;
     _ = vulkan_pipeline_cache_test;
     _ = vulkan_render_encode_test;
     _ = vulkan_shader_artifact_manifest_test;

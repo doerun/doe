@@ -310,6 +310,21 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
         for workload_set in surface["workloadSets"]:
             if workload_set not in workload_sets:
                 raise ValueError(f"unknown workload set in surface policy: {workload_set}")
+        overrides = surface.get("workloadIdOverrides")
+        if overrides is not None:
+            if not isinstance(overrides, dict):
+                raise ValueError(f"invalid workloadIdOverrides in surface policy: {surface['id']}")
+            for workload_id, workload_set in overrides.items():
+                if workload_id == "":
+                    raise ValueError(f"empty workloadIdOverrides key in surface policy: {surface['id']}")
+                if workload_set not in workload_sets:
+                    raise ValueError(
+                        f"unknown workload set in workloadIdOverrides for {surface['id']}: {workload_set}"
+                    )
+                if workload_set not in surface["workloadSets"]:
+                    raise ValueError(
+                        f"workloadIdOverrides target not enabled on surface {surface['id']}: {workload_set}"
+                    )
 
     return {
         "raw": payload,
@@ -320,7 +335,20 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     }
 
 
-def workload_set_for_domain(policy: dict[str, Any], domain: str) -> str:
+def workload_set_for_row(
+    policy: dict[str, Any],
+    *,
+    surface_id: str,
+    workload_id: str,
+    domain: str,
+) -> str:
+    surface = policy["surfaces"].get(surface_id)
+    if surface is not None:
+        overrides = surface.get("workloadIdOverrides")
+        if isinstance(overrides, dict):
+            overridden = overrides.get(workload_id)
+            if isinstance(overridden, str) and overridden:
+                return overridden
     for workload_set in policy["raw"]["workloadSets"]:
         if domain in workload_set["domains"]:
             return workload_set["id"]
@@ -431,8 +459,14 @@ def normalize_backend_report(
     for workload in payload.get("workloads", []):
         if not isinstance(workload, dict):
             continue
+        workload_id = str(workload.get("id") or "")
         domain = str(workload.get("domain") or "overhead")
-        workload_set = workload_set_for_domain(policy, domain)
+        workload_set = workload_set_for_row(
+            policy,
+            surface_id="backend_native",
+            workload_id=workload_id,
+            domain=domain,
+        )
         comparability = workload.get("comparability")
         claimability = workload.get("claimability")
         comparable = isinstance(comparability, dict) and comparability.get("comparable") is True
@@ -456,7 +490,7 @@ def normalize_backend_report(
                 "surface": "backend_native",
                 "providerPair": "doe_vs_dawn",
                 "workloadSet": workload_set,
-                "workloadId": str(workload.get("id") or ""),
+                "workloadId": workload_id,
                 "workloadDomain": domain,
                 "comparisonStatus": "comparable" if comparable else "diagnostic",
                 "claimStatus": "claimable" if claimable else "diagnostic",
@@ -520,8 +554,14 @@ def normalize_package_report(
     for comparison in payload.get("comparisons", []):
         if not isinstance(comparison, dict):
             continue
+        workload_id = str(comparison.get("workload") or "")
         domain = str(comparison.get("domain") or "overhead")
-        workload_set = workload_set_for_domain(policy, domain)
+        workload_set = workload_set_for_row(
+            policy,
+            surface_id=surface,
+            workload_id=workload_id,
+            domain=domain,
+        )
         compared = comparison.get("status") == "compared"
         comparable = compared and comparison.get("comparable") is not False
         claimable = comparison.get("claimable") is True
@@ -538,7 +578,7 @@ def normalize_package_report(
                 "surface": surface,
                 "providerPair": provider_pair,
                 "workloadSet": workload_set,
-                "workloadId": str(comparison.get("workload") or ""),
+                "workloadId": workload_id,
                 "workloadDomain": domain,
                 "comparisonStatus": "comparable" if comparable else "diagnostic",
                 "claimStatus": "claimable" if claimable else "diagnostic",

@@ -89,8 +89,13 @@ Install uses prebuilds when available, falls back to node-gyp from source.
   are present.
 - Bun has API parity with Node (57/57 contract tests). Bun benchmark lane
   is at `bench/bun/compare.js` and compares Doe FFI against the `bun-webgpu`
-  package; cube maturity remains prototype until cells
-  are populated by comparable artifacts.
+  package. Latest validated run shows 7/11 claimable (compute e2e rows
+  comparable + claimable after readback validation added to the timed path).
+  Benchmark cube policy now isolates directional `compute_dispatch_simple`
+  into a dispatch-only cell so the Bun compute-e2e cube cell reflects the
+  claimable end-to-end rows. `buffer_map_write_unmap` remains slower
+  (~19µs polling overhead).
+  Cube maturity remains prototype until cell coverage stabilizes.
 - Self-contained install ships prebuilt `doe_napi.node` + `libdoe_webgpu` +
   Dawn sidecar per platform. Clean-machine smoke test: `npm run smoke`.
 - API details live in `API_CONTRACT.md`.

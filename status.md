@@ -120,7 +120,11 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu/COMPAT_SCOPE.md`.
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
   - Linux Doe-native in-process path now works end-to-end; `DOE_WEBGPU_LIB` env var no longer required when prebuilds or workspace artifacts are present.
-  - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (57/57 contract tests passing). All Node workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package (cube maturity remains prototype pending populated cells).
+  - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (57/57 contract tests passing). All Node workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package. Latest validated run (`20260306T215526Z`) shows 7/11 claimable; compute e2e rows are comparable + claimable after readback validation was added to the timed path. `buffer_map_write_unmap` remains slower (~19µs `bufferMapSync` polling overhead). Cube maturity remains prototype pending stable multi-run cell coverage.
+  - benchmark cube policy now carries explicit package-surface workload-ID overrides (`config/benchmark-cube-policy.json`) so directional `compute_dispatch_simple` rows land in a `dispatch_only` cell instead of contaminating the Node/Bun `compute_e2e` cells.
+    - latest cube effect on Linux x64 package surfaces:
+      - Bun `compute_e2e`: `claimable` (3 comparable claimable e2e rows)
+      - Node `compute_e2e`: `comparable` (3 comparable rows; still not fully claimable because Node compute e2e remains slower in the latest package lane)
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
   - `bench/measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
@@ -761,6 +765,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 11. ~~Quirk module isolation + behavioral wiring~~ DONE (2026-03-05): quirk system refactored into `zig/src/quirk/` module with `mod.zig` entry point, `QuirkMode` enum (`off`/`trace`/`active`), `--quirk-mode` CLI flag, `dispatchWithMode()` gating, `toggle_registry.zig` behavioral classification, `use_temporary_buffer` backend consumption in `wgpu_commands_copy.zig` (both buffer-to-texture and texture-to-texture staging paths), `use_temporary_render_texture` backend consumption in `wgpu_render_commands.zig` (Metal Intel R8/RG8 unorm mip >= 2 workaround), and `quirkMode` trace-meta emission. Action application logic extracted to `quirk_actions.zig`. 5 promoted behavioral workarounds: 4 `use_temporary_buffer` (Vulkan/D3D12 copy) + 1 `use_temporary_render_texture` (Metal render pass). Non-toggle upstream mining now complete in `agent/mine_upstream_quirks.py`.
 12. `wgpu_render_commands.zig` is at 821 lines (over 777 limit). Next split target: extract temp render texture workaround setup into a helper module. Owner: quirk render path.
 13. **Backend report timing scope mismatch (2026-03-06):** Apple Metal extended comparable report (`20260306T195524Z`) shows Doe sub-microsecond p50 for small uploads (0.208µs for 1KB) vs Dawn ~189µs — producing delta percentages exceeding 90,000%. Doe appears to be reporting encode-only latency without GPU execution wait. AMD Vulkan singles report (`20260302T193052Z`) shows similar asymmetry: Doe 3.3ms vs Dawn 6,157ms for `par_workgroup_non_atomic_1024` due to `leftDivisor=100` / `rightDivisor=1` mismatch. Both are flagged `diagnostic` or `legacy_nonconformant` by the cube, but the dashboard shows the raw delta percentages which are misleading. Follow-up: audit compare harness timing extraction to ensure both sides measure identical operation scope before computing deltas.
+14. **AMD Vulkan bounded copy-dst fast path (2026-03-06):** `zig/src/backend/vulkan/native_runtime.zig` now keeps the reusable mapped fast upload path bounded to `copy_dst` uploads up to `1 MiB` instead of letting large comparable contracts pin arbitrarily large host-visible buffers. Focused validation artifact `bench/out/scratch/upload-fast-path.validation.json` shows strong small/medium upload improvement on this host (`upload_write_buffer_1kb` p50 `+4993.69%`, `upload_write_buffer_64kb` `+2746.63%`, `upload_write_buffer_1mb` `+491.39%`), while `upload_write_buffer_4gb` remains correctly on the slower fallback path (`-97.48%`). Next AMD Vulkan performance step is reducing large-upload fallback overhead (likely command-buffer reuse / submit-path work), not widening the fast path cap.
 
 ## macOS Metal baseline (2026-03-05)
 
@@ -1386,12 +1391,12 @@ Ownership:
     - `mapAsync()` no longer pre-flushes before waiting on `bufferMapAsync`
     - Bun now uses dropin-native sync map helper `doeBufferMapSyncFlat` from `zig/src/dropin/dropin_abi_procs.zig` instead of JS callback allocation + JS-side processEvents polling for every buffer map
     - package-surface compare harnesses now force workload validation prepasses before timing (`bench/bun/compare.js`, `bench/node/compare.js`)
-    - comparable compute workloads now have explicit validation hooks in `bench/node/workloads.js` that verify readback contents and reset input state before warmup/timed iterations
-    - validated Linux x64 Bun compute compare still favors Doe on the current `bun-webgpu` lane:
-      - `compute_e2e_256`: `0.058ms` vs `0.173ms` (`+66.5%`)
-      - `compute_e2e_4096`: `0.057ms` vs `0.219ms` (`+73.8%`)
-      - `compute_e2e_65536`: `0.034ms` vs `0.149ms` (`+77.3%`)
-      - artifact: `bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T21:52:35.075Z.json`
+    - comparable compute workloads now validate readback contents on every timed iteration in `bench/node/workloads.js`, not just in a pre-timed smoke pass
+    - latest validated full Linux x64 Bun package compare still favors Doe on comparable compute rows:
+      - `compute_e2e_256`: `0.052ms` vs `0.206ms` (`+74.7%`)
+      - `compute_e2e_4096`: `0.038ms` vs `0.171ms` (`+77.7%`)
+      - `compute_e2e_65536`: `0.038ms` vs `0.168ms` (`+77.2%`)
+      - artifact: `bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T21:55:26.482Z.json`
   - benchmark compare lane: `bench/bun/compare.js` (Doe FFI vs `bun-webgpu`)
   - cube maturity remains prototype; promote to secondary when Bun cells are populated
 

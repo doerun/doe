@@ -108,9 +108,13 @@
         "full_comparable",
         "uploads",
         "compute_e2e",
+        "dispatch_only",
         "pipeline",
         "overhead"
       ],
+      "workloadIdOverrides": {
+        "compute_dispatch_simple": "dispatch_only"
+      },
       "notes": [
         "Node is the primary supported package surface for @simulatte/webgpu.",
         "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
@@ -134,9 +138,13 @@
         "full_comparable",
         "uploads",
         "compute_e2e",
+        "dispatch_only",
         "pipeline",
         "overhead"
       ],
+      "workloadIdOverrides": {
+        "compute_dispatch_simple": "dispatch_only"
+      },
       "notes": [
         "Bun has API parity with Node via direct FFI. Compare lane: bench/bun/compare.js against the bun-webgpu package.",
         "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
@@ -162,6 +170,11 @@
       "domains": [
         "compute"
       ]
+    },
+    {
+      "id": "dispatch_only",
+      "displayName": "Dispatch Only",
+      "domains": []
     },
     {
       "id": "render",

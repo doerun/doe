@@ -8,6 +8,7 @@ const webgpu = @import("../../webgpu_ffi.zig");
 // 64MB runtime cap. Let allocation/driver failure surface explicitly.
 const MAX_UPLOAD_BYTES: u64 = 0; // retained for parity with other backends
 const MAX_UPLOAD_ZERO_FILL_BYTES: usize = 1024 * 1024;
+const FAST_UPLOAD_BUFFER_MAX_BYTES: u64 = 1024 * 1024;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 const DEFAULT_KERNEL_ROOT = "bench/kernels";
@@ -385,6 +386,10 @@ pub const NativeVulkanRuntime = struct {
     pipeline_layout: VkPipelineLayout = VK_NULL_U64,
     pipeline: VkPipeline = VK_NULL_U64,
     current_shader_hash: u64 = 0,
+    fast_upload_buffer: VkBuffer = VK_NULL_U64,
+    fast_upload_memory: VkDeviceMemory = VK_NULL_U64,
+    fast_upload_capacity: u64 = 0,
+    fast_upload_mapped: ?*anyopaque = null,
 
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
     surfaces: std.AutoHashMapUnmanaged(u64, HeadlessSurface) = .{},
@@ -416,6 +421,7 @@ pub const NativeVulkanRuntime = struct {
         self.surfaces.deinit(self.allocator);
         vk_release_pool(&self.src_pool, self.allocator, self.device);
         vk_release_pool(&self.dst_pool, self.allocator, self.device);
+        self.release_fast_upload_buffer();
         self.destroy_pipeline_objects();
         if (self.has_fence) {
             vkDestroyFence(self.device, self.fence, null);
@@ -485,6 +491,15 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn upload_bytes(self: *NativeVulkanRuntime, bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
         if (bytes == 0) return error.InvalidArgument;
+
+        if (upload_uses_fast_path(mode, bytes)) {
+            try self.ensure_fast_upload_buffer(bytes);
+            if (self.fast_upload_mapped) |raw| {
+                const fill_len = @min(@as(usize, @intCast(bytes)), MAX_UPLOAD_ZERO_FILL_BYTES);
+                @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
+            }
+            return;
+        }
 
         const dst_usage: u32 = switch (mode) {
             .copy_dst_copy_src => VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -835,6 +850,57 @@ pub const NativeVulkanRuntime = struct {
         self.current_shader_hash = shader_hash;
     }
 
+    fn ensure_fast_upload_buffer(self: *NativeVulkanRuntime, bytes: u64) !void {
+        if (self.fast_upload_capacity >= bytes and self.fast_upload_mapped != null) return;
+        self.release_fast_upload_buffer();
+
+        var buffer_info = VkBufferCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = null,
+        };
+        try check_vk(vkCreateBuffer(self.device, &buffer_info, null, &self.fast_upload_buffer));
+        errdefer self.release_fast_upload_buffer();
+
+        var requirements = std.mem.zeroes(VkMemoryRequirements);
+        vkGetBufferMemoryRequirements(self.device, self.fast_upload_buffer, &requirements);
+        const memory_index = try self.find_memory_type_index(
+            requirements.memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        );
+        var alloc_info = VkMemoryAllocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = null,
+            .allocationSize = requirements.size,
+            .memoryTypeIndex = memory_index,
+        };
+        try check_vk(vkAllocateMemory(self.device, &alloc_info, null, &self.fast_upload_memory));
+        try check_vk(vkBindBufferMemory(self.device, self.fast_upload_buffer, self.fast_upload_memory, 0));
+        try check_vk(vkMapMemory(self.device, self.fast_upload_memory, 0, bytes, 0, &self.fast_upload_mapped));
+        self.fast_upload_capacity = bytes;
+    }
+
+    fn release_fast_upload_buffer(self: *NativeVulkanRuntime) void {
+        if (self.fast_upload_mapped != null) {
+            vkUnmapMemory(self.device, self.fast_upload_memory);
+            self.fast_upload_mapped = null;
+        }
+        if (self.fast_upload_buffer != VK_NULL_U64) {
+            vkDestroyBuffer(self.device, self.fast_upload_buffer, null);
+            self.fast_upload_buffer = VK_NULL_U64;
+        }
+        if (self.fast_upload_memory != VK_NULL_U64) {
+            vkFreeMemory(self.device, self.fast_upload_memory, null);
+            self.fast_upload_memory = VK_NULL_U64;
+        }
+        self.fast_upload_capacity = 0;
+    }
+
     fn destroy_pipeline_objects(self: *NativeVulkanRuntime) void {
         if (self.has_pipeline) {
             vkDestroyPipeline(self.device, self.pipeline, null);
@@ -1159,6 +1225,10 @@ fn queue_selection_score(selection: QueueFamilySelection) u64 {
 fn file_exists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
     return true;
+}
+
+pub fn upload_uses_fast_path(mode: webgpu.UploadBufferUsageMode, bytes: u64) bool {
+    return mode == .copy_dst and bytes <= FAST_UPLOAD_BUFFER_MAX_BYTES;
 }
 
 fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
