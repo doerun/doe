@@ -760,6 +760,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 10. ~~Zig source file sharding~~ DONE: all five previously listed files are now under 777 lines (verified 2026-03-05: `wgpu_commands.zig`=160, `webgpu_ffi.zig`=672, `wgpu_types.zig`=753, `wgpu_dropin_lib.zig`=477, `command_json.zig`=570 — prior counts were pre-sharding snapshot).
 11. ~~Quirk module isolation + behavioral wiring~~ DONE (2026-03-05): quirk system refactored into `zig/src/quirk/` module with `mod.zig` entry point, `QuirkMode` enum (`off`/`trace`/`active`), `--quirk-mode` CLI flag, `dispatchWithMode()` gating, `toggle_registry.zig` behavioral classification, `use_temporary_buffer` backend consumption in `wgpu_commands_copy.zig` (both buffer-to-texture and texture-to-texture staging paths), `use_temporary_render_texture` backend consumption in `wgpu_render_commands.zig` (Metal Intel R8/RG8 unorm mip >= 2 workaround), and `quirkMode` trace-meta emission. Action application logic extracted to `quirk_actions.zig`. 5 promoted behavioral workarounds: 4 `use_temporary_buffer` (Vulkan/D3D12 copy) + 1 `use_temporary_render_texture` (Metal render pass). Non-toggle upstream mining now complete in `agent/mine_upstream_quirks.py`.
 12. `wgpu_render_commands.zig` is at 821 lines (over 777 limit). Next split target: extract temp render texture workaround setup into a helper module. Owner: quirk render path.
+13. **Backend report timing scope mismatch (2026-03-06):** Apple Metal extended comparable report (`20260306T195524Z`) shows Doe sub-microsecond p50 for small uploads (0.208µs for 1KB) vs Dawn ~189µs — producing delta percentages exceeding 90,000%. Doe appears to be reporting encode-only latency without GPU execution wait. AMD Vulkan singles report (`20260302T193052Z`) shows similar asymmetry: Doe 3.3ms vs Dawn 6,157ms for `par_workgroup_non_atomic_1024` due to `leftDivisor=100` / `rightDivisor=1` mismatch. Both are flagged `diagnostic` or `legacy_nonconformant` by the cube, but the dashboard shows the raw delta percentages which are misleading. Follow-up: audit compare harness timing extraction to ensure both sides measure identical operation scope before computing deltas.
 
 ## macOS Metal baseline (2026-03-05)
 
@@ -1384,7 +1385,13 @@ Ownership:
     - `queue.onSubmittedWorkDone()` is now a Doe no-op in `nursery/webgpu/src/bun-ffi.js`
     - `mapAsync()` no longer pre-flushes before waiting on `bufferMapAsync`
     - Bun now uses dropin-native sync map helper `doeBufferMapSyncFlat` from `zig/src/dropin/dropin_abi_procs.zig` instead of JS callback allocation + JS-side processEvents polling for every buffer map
-    - result: Linux x64 Bun Doe compute medians dropped from roughly `0.30-0.35ms` into the `0.039-0.044ms` range on the current `bun-webgpu` compare lane, with compute E2E now winning by roughly `4.2x-4.8x` in the latest full compare artifact (`bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T21:45:59.535Z.json`)
+    - package-surface compare harnesses now force workload validation prepasses before timing (`bench/bun/compare.js`, `bench/node/compare.js`)
+    - comparable compute workloads now have explicit validation hooks in `bench/node/workloads.js` that verify readback contents and reset input state before warmup/timed iterations
+    - validated Linux x64 Bun compute compare still favors Doe on the current `bun-webgpu` lane:
+      - `compute_e2e_256`: `0.058ms` vs `0.173ms` (`+66.5%`)
+      - `compute_e2e_4096`: `0.057ms` vs `0.219ms` (`+73.8%`)
+      - `compute_e2e_65536`: `0.034ms` vs `0.149ms` (`+77.3%`)
+      - artifact: `bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T21:52:35.075Z.json`
   - benchmark compare lane: `bench/bun/compare.js` (Doe FFI vs `bun-webgpu`)
   - cube maturity remains prototype; promote to secondary when Bun cells are populated
 

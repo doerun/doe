@@ -68,6 +68,7 @@ That document defines:
   - normalizes backend compare reports plus package-surface compare reports into a single benchmark cube contract.
   - emits timestamped JSON row artifacts, JSON cube summary, and markdown matrix slices under `bench/out/cube/<timestamp>/`.
   - also writes stable latest outputs under `bench/out/cube/latest/`.
+  - package-surface compare harnesses (`bench/node/compare.js`, `bench/bun/compare.js`) now force workload validation prepasses before timing comparable rows so claimable package-surface artifacts fail early on readback/correctness drift.
   - backend rows preserve both canonical and legacy report history:
     - canonical rows come from fully conformant Dawn-vs-Doe reports.
     - legacy rows are kept when old reports still parse but no longer match the active workload-contract hash or obligation contract; these rows are marked `sourceConformance=legacy_nonconformant` and degrade to diagnostic in cube cells.

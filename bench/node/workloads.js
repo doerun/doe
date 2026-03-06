@@ -254,8 +254,17 @@ function makeComputeE2E(threadCount, workgroupSize) {
         data[id.x] = data[id.x] + 1.0;
       }
     `;
-    let storageBuf, stagingBuf, shader, pipeline, bindGroupLayout, bindGroup, pipelineLayout, input;
+    let storageBuf, stagingBuf, shader, pipeline, bindGroupLayout, bindGroup, pipelineLayout, input, expectedValue;
     const validateBytes = Math.min(size, VALIDATE_FLOATS * Float32Array.BYTES_PER_ELEMENT);
+    function assertReadbackMatchesCurrentIteration() {
+      const mapped = new Float32Array(stagingBuf.getMappedRange(0, validateBytes));
+      for (let i = 0; i < Math.min(VALIDATE_FLOATS, threadCount); i++) {
+        if (mapped[i] !== expectedValue) {
+          throw new Error(`expected readback[${i}] === ${expectedValue}, got ${mapped[i]}`);
+        }
+      }
+      expectedValue += 1;
+    }
     return {
       setup() {
         storageBuf = device.createBuffer({
@@ -267,6 +276,7 @@ function makeComputeE2E(threadCount, workgroupSize) {
           usage: G.GPUBufferUsage.MAP_READ | G.GPUBufferUsage.COPY_DST,
         });
         input = new Float32Array(threadCount);
+        expectedValue = 1;
         queue.writeBuffer(storageBuf, 0, input);
         shader = device.createShaderModule({ code: wgsl });
         bindGroupLayout = device.createBindGroupLayout({
@@ -293,21 +303,13 @@ function makeComputeE2E(threadCount, workgroupSize) {
         queue.submit([enc.finish()]);
         await queue.onSubmittedWorkDone();
         await stagingBuf.mapAsync(G.GPUMapMode.READ);
-        stagingBuf.getMappedRange();
+        assertReadbackMatchesCurrentIteration();
         stagingBuf.unmap();
       },
       async validate() {
         await this.run();
-        await stagingBuf.mapAsync(G.GPUMapMode.READ, 0, validateBytes);
-        const mapped = new Float32Array(stagingBuf.getMappedRange(0, validateBytes));
-        for (let i = 0; i < Math.min(VALIDATE_FLOATS, threadCount); i++) {
-          if (mapped[i] !== 1.0) {
-            stagingBuf.unmap();
-            return { ok: false, detail: `expected readback[${i}] === 1, got ${mapped[i]}` };
-          }
-        }
-        stagingBuf.unmap();
         queue.writeBuffer(storageBuf, 0, input);
+        expectedValue = 1;
         return { ok: true };
       },
       teardown() {
