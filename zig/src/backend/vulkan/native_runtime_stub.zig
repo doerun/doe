@@ -68,6 +68,89 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 
+    pub fn adapter_ordinal(self: *NativeVulkanRuntime) ?u32 {
+        _ = self;
+        return null;
+    }
+
+    pub fn queue_family_index_value(self: *NativeVulkanRuntime) ?u32 {
+        _ = self;
+        return null;
+    }
+
+    pub fn present_capable(self: *NativeVulkanRuntime) ?bool {
+        _ = self;
+        return null;
+    }
+
+    pub fn lifecycle_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+        _ = self;
+        _ = iterations;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn pipeline_async_probe(self: *NativeVulkanRuntime, allocator: std.mem.Allocator, path: []const u8, iterations: u32) !u64 {
+        _ = self;
+        _ = allocator;
+        _ = path;
+        _ = iterations;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn resource_table_immediates_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+        _ = self;
+        _ = iterations;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn pixel_local_storage_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+        _ = self;
+        _ = iterations;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn create_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        _ = self;
+        _ = handle;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn get_surface_capabilities(self: *NativeVulkanRuntime, handle: u64) !void {
+        _ = self;
+        _ = handle;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn configure_surface(self: *NativeVulkanRuntime, cmd: anytype) !void {
+        _ = self;
+        _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn acquire_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        _ = self;
+        _ = handle;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn present_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        _ = self;
+        _ = handle;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn unconfigure_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        _ = self;
+        _ = handle;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn release_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        _ = self;
+        _ = handle;
+        return error.UnsupportedFeature;
+    }
+
     pub fn flush_queue(self: *NativeVulkanRuntime) !u64 {
         _ = self;
         return error.UnsupportedFeature;

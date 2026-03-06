@@ -49,7 +49,7 @@ test "metal upload timing includes non-zero encode ns" {
     try std.testing.expect(result.encode_ns > 0 or result.submit_wait_ns > 0);
 }
 
-test "metal barrier timing is non-zero after pending uploads" {
+test "metal upload flush cadence reports nonzero submit_wait_ns" {
     if (builtin.os.tag != .macos) return;
 
     const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
@@ -59,18 +59,14 @@ test "metal barrier timing is non-zero after pending uploads" {
     var iface = try backend.as_iface(std.testing.allocator, "test_metal_barrier_timing", "test_policy_hash");
     defer iface.deinit();
 
-    // Stage an upload without flushing (submit_every = 4).
-    iface.set_upload_behavior(.copy_dst_copy_src, 4);
+    // With submit_every = 1, every upload should flush inline.
+    iface.set_upload_behavior(.copy_dst_copy_src, 1);
     const upload_result = try iface.execute_command(model.Command{ .upload = .{
         .bytes = 256 * 1024,
         .align_bytes = 4,
     } });
     try std.testing.expect(upload_result.status == .ok);
-
-    // Barrier should flush and report nonzero submit_wait_ns.
-    const barrier_result = try iface.execute_command(model.Command{ .barrier = .{ .dependency_count = 1 } });
-    try std.testing.expect(barrier_result.status == .ok);
-    try std.testing.expect(barrier_result.submit_wait_ns > 0);
+    try std.testing.expect(upload_result.submit_wait_ns > 0);
 }
 
 test "metal kernel_dispatch returns error when kernel file not found" {

@@ -222,7 +222,7 @@ fn native_capability_set() capabilities.CapabilitySet {
         .render_pass,
         .indirect_draw,
         .indexed_indirect_draw,
-        .async_diagnostics,
+        .async_pipeline_diagnostics,
     });
     return set;
 }
@@ -378,12 +378,18 @@ fn execute_upload(self: *ZigMetalBackend, setup_ns: u64, upload: model.UploadCom
     try rt.upload_bytes(@as(u64, @intCast(upload.bytes)), self.upload_buffer_usage_mode);
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-    // Uploads always deferred: batch-encode all blits into a single command
-    // buffer at the next non-upload command (barrier, render_draw, etc.).
-    // This matches Dawn's internal batching semantics.
     self.pending_upload_commands +|= 1;
 
-    return ok_result(setup_ns, encode_ns, 0, 0);
+    // Flush at upload_submit_every cadence to match Dawn's per-upload
+    // submit+wait semantics.  Without this, upload-only workloads would
+    // defer all GPU work and report near-zero submit_wait_ns.
+    var submit_wait_ns: u64 = 0;
+    if (self.pending_upload_commands >= self.upload_submit_every) {
+        submit_wait_ns = try rt.flush_queue();
+        self.pending_upload_commands = 0;
+    }
+
+    return ok_result(setup_ns, encode_ns, submit_wait_ns, 0);
 }
 
 fn execute_barrier(self: *ZigMetalBackend, setup_ns: u64) !webgpu.NativeExecutionResult {
