@@ -139,27 +139,35 @@ class DoeGPUBuffer {
 }
 
 class DoeGPUComputePassEncoder {
-  constructor(native) { this._native = native; }
-
-  setPipeline(pipeline) {
-    addon.computePassSetPipeline(this._native, pipeline._native);
+  constructor(encoder) {
+    this._encoder = encoder;
+    this._pipeline = null;
+    this._bindGroups = [];
   }
 
-  setBindGroup(index, bindGroup) {
-    addon.computePassSetBindGroup(this._native, index, bindGroup._native);
-  }
+  setPipeline(pipeline) { this._pipeline = pipeline._native; }
+
+  setBindGroup(index, bindGroup) { this._bindGroups[index] = bindGroup._native; }
 
   dispatchWorkgroups(x, y = 1, z = 1) {
-    addon.computePassDispatchWorkgroups(this._native, x, y, z);
+    this._encoder._commands.push({
+      t: 0, p: this._pipeline, bg: [...this._bindGroups], x, y, z,
+    });
   }
 
   dispatchWorkgroupsIndirect(indirectBuffer, indirectOffset = 0) {
-    addon.computePassDispatchWorkgroupsIndirect(this._native, indirectBuffer._native, indirectOffset);
+    this._encoder._ensureNative();
+    const pass = addon.beginComputePass(this._encoder._native);
+    addon.computePassSetPipeline(pass, this._pipeline);
+    for (let i = 0; i < this._bindGroups.length; i++) {
+      if (this._bindGroups[i]) addon.computePassSetBindGroup(pass, i, this._bindGroups[i]);
+    }
+    addon.computePassDispatchWorkgroupsIndirect(pass, indirectBuffer._native, indirectOffset);
+    addon.computePassEnd(pass);
+    addon.computePassRelease(pass);
   }
 
-  end() {
-    addon.computePassEnd(this._native);
-  }
+  end() {}
 }
 
 class DoeGPUCommandEncoder {
