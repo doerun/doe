@@ -9,7 +9,7 @@
 //
 // Requirements:
 //   - `webgpu` npm package installed (npm install webgpu)
-//   - `@simulatte/webgpu-doe` available via nursery path
+//   - `@simulatte/webgpu` available via nursery path
 
 import { execFile } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';

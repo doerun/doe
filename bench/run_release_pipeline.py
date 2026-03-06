@@ -603,26 +603,31 @@ def main() -> int:
         if args.timestamp_output
         else ""
     )
+    run_group = output_paths.derive_bench_out_group(raw_report_path)
     report_path = output_paths.with_timestamp(
         raw_report_path,
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     workspace_path = output_paths.with_timestamp(
         raw_workspace_path,
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     cycle_gate_report_path = output_paths.with_timestamp(
         Path(args.cycle_gate_out),
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     if args.compare_html_out.strip():
         compare_html_path = output_paths.with_timestamp(
             Path(args.compare_html_out.strip()),
             output_timestamp,
             enabled=args.timestamp_output,
+            group=run_group,
         )
     else:
         compare_html_path = report_path.with_suffix(".html")
@@ -632,6 +637,7 @@ def main() -> int:
             Path(args.compare_analysis_out.strip()),
             output_timestamp,
             enabled=args.timestamp_output,
+            group=run_group,
         )
 
     bench_dir = Path(__file__).resolve().parent
@@ -889,6 +895,7 @@ def main() -> int:
                     Path(args.claim_rehearsal_prefix.strip()),
                     output_timestamp,
                     enabled=args.timestamp_output,
+                    group=run_group,
                 )
                 rehearsal_cmd.extend(["--out-prefix", str(claim_rehearsal_prefix)])
                 claim_rehearsal_manifest_path = Path(

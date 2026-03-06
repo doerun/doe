@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Organize benchmark artifacts under bench/out/<timestamp>/ for stable chronological listing."""
+"""Organize benchmark artifacts under grouped bench/out/<group>/<timestamp>/ folders."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+
+import output_paths
 
 
 TIMESTAMP_RE = re.compile(r"\d{8}T\d{6}Z")
@@ -80,8 +82,7 @@ def plan_moves(out_dir: Path, *, keep_filename_timestamp: bool) -> tuple[list[Mo
         target_name = entry.name
         if not keep_filename_timestamp:
             target_name = strip_timestamp_from_name(entry.name, timestamp)
-        target_dir = out_dir / timestamp
-        target_path = target_dir / target_name
+        target_path = output_paths.with_timestamp(out_dir / target_name, timestamp, enabled=True)
 
         if target_path.exists():
             skipped.append(f"conflict: {entry} -> {target_path}")

@@ -2,11 +2,17 @@
 
 ## Product and package naming
 
-1. Workspace/product: `fawn`
-2. Runtime family: `doe`
-3. Browser distribution package: `@doe/fawn-browser`
-4. Core/headless package: `@doe/webgpu-core`
-5. Full runtime package: `@doe/webgpu`
+1. Workspace/repo product: `fawn`
+2. Runtime/backend family: `doe`
+3. Browser distribution package: `@simulatte/fawn-browser`
+4. Canonical JS/runtime package: `@simulatte/webgpu`
+
+Legacy package identities are retained only as compatibility history:
+
+1. `@doe/webgpu-core` / `@doe/webgpu` - retired package scope experiment
+
+Public package naming now follows the product surface, not the backend implementation.
+Doe remains the runtime/backend identity in artifact names, backend IDs, flags, and reports.
 
 ## Backend ID contract
 

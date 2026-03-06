@@ -1,4 +1,4 @@
-# @doe/webgpu-core API Contract
+# @simulatte/webgpu API Contract
 
 Contract version: `v1`
 
@@ -6,7 +6,7 @@ Scope: browserless benchmarking and CI orchestration for Doe runtime workflows.
 
 ## Node runtime API
 
-Module: `@doe/webgpu-core` (Node default export target)
+Module: `@simulatte/webgpu` (Node default export target)
 
 ### `create(createArgs?)`
 

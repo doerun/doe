@@ -27,8 +27,8 @@ const WORKLOAD_FILTER = args.workload;
 
 async function loadProvider(name) {
   if (name === 'doe') {
-    const doe = await import('../../nursery/webgpu-doe/src/index.js');
-    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu-doe' };
+    const doe = await import('../../nursery/webgpu-core/src/node-runtime.js');
+    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu' };
   }
   if (name === 'dawn') {
     // The `webgpu` npm package uses: import { create, globals } from 'webgpu';

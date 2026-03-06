@@ -1,10 +1,12 @@
-# @doe/webgpu-core
+# @simulatte/webgpu
 
-Headless Doe bridge for browserless benchmarking and CI workflows.
+Canonical Doe WebGPU package for browserless benchmarking, CI workflows, and
+headless runtime integration.
 
-Package naming in this repo:
-- `@doe/webgpu-core`: current published/packaged headless integration surface.
-- `@doe/webgpu`: future full runtime package (general runtime replacement positioning).
+This implementation currently lives under `nursery/webgpu-core/` for directory
+continuity, but the public package identity is `@simulatte/webgpu`.
+The old package names `@doe/webgpu-core` and `@doe/webgpu` are legacy
+identities, not the canonical contract.
 
 ## Positioning
 
@@ -61,7 +63,7 @@ fawn-webgpu-bench --commands /abs/path/commands.json
 
 ```bash
 cd ../doppler
-DOPPLER_NODE_WEBGPU_MODULE=@doe/webgpu-core node tools/doppler-cli.js test-model --surface node
+DOPPLER_NODE_WEBGPU_MODULE=@simulatte/webgpu node tools/doppler-cli.js test-model --surface node
 ```
 
 By default, the in-process provider behind `create(...)` is loaded from module `webgpu`.

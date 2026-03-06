@@ -141,7 +141,7 @@ That document defines:
 Template placeholders:
 `{commands}`, `{quirks}`, `{vendor}`, `{api}`, `{family}`, `{driver}`, `{workload}`, `{dawn_filter}`, `{trace_jsonl}`, `{trace_meta}`, `{extra_args}`.
 
-Benchmark/report-producing scripts now timestamp outputs by default (`YYYYMMDDTHHMMSSZ`) and write artifacts under per-run folders (`bench/out/<timestamp>/...`) to avoid clobbering and keep chronological listing stable. Use `--no-timestamp-output` when you intentionally need an exact fixed output path.
+Benchmark/report-producing scripts now timestamp outputs by default (`YYYYMMDDTHHMMSSZ`) and write artifacts under grouped per-run folders (`bench/out/<group>/<timestamp>/...`) to avoid clobbering, keep related runs together, and preserve chronological history inside each group. Use `--no-timestamp-output` when you intentionally need an exact fixed output path.
 
 Each timestamped run folder now includes `run_manifest.json` with run metadata (`runType`, `config`, `fullRun`, `claimGateRan`, `dropinGateRan`, status fields).
 
@@ -152,7 +152,7 @@ Not every run folder contains HTML. Compare-report runs do (`dawn-vs-doe*.html`,
 ## Artifact cleanup
 
 ```bash
-# normalize existing legacy top-level timestamp-suffixed artifacts into bench/out/<timestamp>/...
+# normalize existing legacy top-level timestamp-suffixed artifacts into grouped run folders
 python3 fawn/bench/organize_out_by_timestamp.py
 
 # backfill historical run manifests where missing
@@ -167,7 +167,7 @@ python3 fawn/bench/cleanup_out.py
 # scratch namespace holds manual/ad-hoc outputs
 ls fawn/bench/out/scratch
 
-# show a readable run index without renaming timestamp folders
+# show a readable run index across grouped timestamp folders
 python3 fawn/bench/list_out_runs.py --limit 25
 
 # additionally prune timestamped artifacts older than 14 days

@@ -524,11 +524,13 @@ def main() -> int:
     bench_cfg = load_json(args.bench_config)
     metric_ids = [m["metricId"] for m in bench_cfg.get("matrix", []) if isinstance(m, dict)]
     baselines = [b["baselineId"] for b in bench_cfg.get("baselines", []) if isinstance(b, dict)]
+    run_group = output_paths.derive_bench_out_group(args.out_report)
 
     out = output_paths.with_timestamp(
         args.out_dir,
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     out.mkdir(parents=True, exist_ok=True)
 
@@ -676,11 +678,13 @@ def main() -> int:
         args.out_report,
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     out_meta = output_paths.with_timestamp(
         args.out_metadata,
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     report["outPath"] = str(out_report)
     metadata["outPath"] = str(out_meta)

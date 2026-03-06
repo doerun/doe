@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Shared helpers for timestamped benchmark artifact paths.
+"""Shared helpers for grouped timestamped benchmark artifact paths.
 
 For benchmark artifacts under bench/out, timestamping defaults to folder layout:
-bench/out/<timestamp>/<artifact>.
+bench/out/<group>/<timestamp>/<artifact>.
 Ad-hoc/scratch-named artifacts are routed to:
 bench/out/scratch/<timestamp>/<artifact>.
 """
@@ -36,6 +36,39 @@ FILE_SUFFIXES = {
     ".log",
     ".csv",
 }
+DROPIN_PREFIXES = (
+    "dropin_report",
+    "dropin_symbol_report",
+    "dropin_behavior_report",
+    "dropin_benchmark_report",
+)
+
+
+def _slugify_token(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "-", value.strip().lower())
+    cleaned = re.sub(r"-{2,}", "-", cleaned).strip("-")
+    return cleaned
+
+
+def _sanitize_group(group: str | Path) -> Path:
+    candidate = Path(str(group).strip())
+    if not str(candidate):
+        raise ValueError("group must not be empty")
+    if candidate.is_absolute():
+        raise ValueError(f"group must be relative: {group}")
+    parts: list[str] = []
+    for part in candidate.parts:
+        if part in ("", "."):
+            continue
+        if part == "..":
+            raise ValueError(f"group must not traverse parents: {group}")
+        slug = _slugify_token(part)
+        if not slug:
+            raise ValueError(f"group contains no usable path token: {group}")
+        parts.append(slug)
+    if not parts:
+        raise ValueError(f"group contains no usable path token: {group}")
+    return Path(*parts)
 
 
 def utc_timestamp_now() -> str:
@@ -86,6 +119,102 @@ def _bench_out_root(path: Path) -> Path | None:
     return Path(*path.parts[: idx + 2])
 
 
+def _strip_known_prefix(name: str) -> str:
+    for prefix in (
+        "dawn-vs-doe.",
+        "runtime-comparisons.",
+        "runtime-comparison.",
+        "release-claim-windows.",
+        "substantiation_report",
+        "test-inventory.",
+        "test-dashboard.",
+        "perf_report",
+        "run_metadata",
+    ):
+        if name.startswith(prefix):
+            return name[len(prefix) :]
+    return name
+
+
+def derive_bench_out_group(path: str | Path) -> Path | None:
+    target = Path(path)
+    bench_out_root = _bench_out_root(target)
+    if bench_out_root is None:
+        return None
+    try:
+        relative_parent = target.parent.relative_to(bench_out_root)
+    except ValueError:
+        return None
+    if relative_parent != Path("."):
+        return relative_parent
+
+    name = target.stem if target.suffix.lower() in FILE_SUFFIXES else target.name
+    lowered = name.lower()
+
+    if any(lowered.startswith(prefix) for prefix in DROPIN_PREFIXES):
+        return Path("dropin")
+    if lowered.startswith("release-claim-windows") or lowered.startswith("substantiation_report"):
+        return Path("release-claim-windows")
+    if lowered.startswith("test-inventory") or lowered.startswith("test-dashboard"):
+        return Path("inventory")
+    if lowered.startswith("perf_report") or lowered.startswith("run_metadata"):
+        return Path("run-bench")
+    if lowered.startswith("vulkan.recheck.app.claim_cycle") or "amd.vulkan.app.claim" in lowered:
+        return Path("amd-vulkan") / "app-claim"
+
+    stripped = _strip_known_prefix(lowered)
+    if stripped.startswith("amd.vulkan.single."):
+        return Path("amd-vulkan") / "singles"
+    if stripped.startswith("local.vulkan.single."):
+        return Path("local-vulkan") / "singles"
+    if stripped.startswith("amd.vulkan.extended.comparable"):
+        return Path("amd-vulkan") / "extended-comparable"
+    if stripped.startswith("amd.vulkan"):
+        return Path("amd-vulkan")
+    if stripped.startswith("local.metal.extended.comparable"):
+        return Path("local-metal") / "extended-comparable"
+    if stripped.startswith("local.metal.release"):
+        return Path("local-metal") / "release"
+    if stripped.startswith("local.metal"):
+        return Path("local-metal")
+    if stripped.startswith("local.vulkan.extended.comparable"):
+        return Path("local-vulkan") / "extended-comparable"
+    if stripped.startswith("local.vulkan.release"):
+        return Path("local-vulkan") / "release"
+    if stripped.startswith("local.vulkan"):
+        return Path("local-vulkan")
+
+    slug = _slugify_token(stripped)
+    if not slug:
+        slug = _slugify_token(name)
+    return Path(slug) if slug else None
+
+
+def collect_timestamp_folders(
+    out_dir: str | Path,
+    *,
+    include_scratch: bool = True,
+) -> list[Path]:
+    root = Path(out_dir)
+    if not root.exists() or not root.is_dir():
+        return []
+    folders = [
+        path
+        for path in root.rglob("*")
+        if path.is_dir() and _is_timestamp_folder(path.name)
+    ]
+    if not include_scratch:
+        folders = [path for path in folders if "scratch" not in path.parts]
+    return sorted(
+        folders,
+        key=lambda path: (
+            path.name,
+            str(path.parent.relative_to(root)) if path.parent != root else "",
+            str(path),
+        ),
+    )
+
+
 def _is_scratch_candidate_name(name: str) -> bool:
     lowered = name.lower()
     return any(token in lowered for token in SCRATCH_NAME_TOKENS)
@@ -96,15 +225,7 @@ def run_folder_for_path(path: str | Path) -> Path | None:
     for candidate in [target, *target.parents]:
         if not _is_timestamp_folder(candidate.name):
             continue
-        parent = candidate.parent
-        grandparent = parent.parent
-        if parent.name == "out" and grandparent.name == "bench":
-            return candidate
-        if (
-            parent.name == "scratch"
-            and grandparent.name == "out"
-            and grandparent.parent.name == "bench"
-        ):
+        if _bench_out_index(candidate) is not None:
             return candidate
     return None
 
@@ -166,6 +287,7 @@ def with_timestamp(
     *,
     enabled: bool = True,
     layout: str = "auto",
+    group: str | Path | None = None,
 ) -> Path:
     target = Path(path)
     if not enabled:
@@ -184,6 +306,16 @@ def with_timestamp(
         bench_out_root = _bench_out_root(target)
         if bench_out_root is not None and _is_scratch_candidate_name(target.name):
             return bench_out_root / "scratch" / timestamp / target.name
+        if bench_out_root is not None:
+            try:
+                relative_parent = target.parent.relative_to(bench_out_root)
+            except ValueError:
+                relative_parent = None
+            if relative_parent is not None and relative_parent != Path("."):
+                return bench_out_root / relative_parent / timestamp / target.name
+            resolved_group = _sanitize_group(group) if group is not None else derive_bench_out_group(target)
+            if resolved_group is not None:
+                return bench_out_root / resolved_group / timestamp / target.name
         return target.parent / timestamp / target.name
     if target.suffix.lower() in FILE_SUFFIXES:
         return target.with_name(f"{target.stem}.{timestamp}{target.suffix}")

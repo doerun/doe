@@ -28,14 +28,14 @@ Headless compute, benchmarking, and evidence infrastructure via Node/Bun/CLI.
 
 ### Deployment Surface
 
-- `@doe/webgpu-core` (Node runtime, Bun FFI)
+- `@simulatte/webgpu` (Node runtime, Bun FFI, CLI)
 - `doe-zig-runtime` CLI binary
 - `libdoe_webgpu.{dylib,so,dll}` via FFI (compute-focused paths)
-- `@doe/webgpu` (full runtime replacement surface; `doe-runtime` tier)
+- browser/runtime replacement packaging beyond the headless package name belongs to the `doe-runtime` tier, not a separate public package name today
 
 ### Supported API
 
-From `@doe/webgpu-core` API contract v1:
+From `@simulatte/webgpu` API contract v1:
 
 | API | Status | Notes |
 |-----|--------|-------|
@@ -85,7 +85,7 @@ CLI tools:
 
 - Artifact reproducibility: any published benchmark artifact must be reproducible from the same inputs, config, and runtime version.
 - Gate stability: blocking gates must not regress (pass→fail) without a tracked config or code change.
-- API stability: `@doe/webgpu-core` API contract v1 surface is stable; breaking changes require version bump.
+- API stability: `@simulatte/webgpu` API contract v1 surface is stable; breaking changes require version bump.
 - No uptime/availability SLA (headless tooling, not a service).
 
 ### Allowed Marketing Claims

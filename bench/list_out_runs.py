@@ -9,6 +9,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+import output_paths
+
 
 TIMESTAMP_RE = re.compile(r"^\d{8}T\d{6}Z$")
 
@@ -40,19 +42,7 @@ def is_timestamp_folder(path: Path) -> bool:
 
 
 def collect_folders(out_dir: Path, *, include_scratch: bool) -> list[Path]:
-    folders = [path for path in out_dir.iterdir() if is_timestamp_folder(path)]
-    if include_scratch:
-        scratch_root = out_dir / "scratch"
-        if scratch_root.is_dir():
-            folders.extend(path for path in scratch_root.iterdir() if is_timestamp_folder(path))
-    return sorted(
-        folders,
-        key=lambda path: (
-            path.name,
-            1 if "scratch" in path.parts else 0,
-            str(path),
-        ),
-    )
+    return output_paths.collect_timestamp_folders(out_dir, include_scratch=include_scratch)
 
 
 def read_manifest(path: Path) -> dict[str, Any]:
@@ -82,6 +72,16 @@ def summarize_files(path: Path) -> str:
     return f"files:{len(names)}"
 
 
+def group_label(out_dir: Path, folder: Path) -> str:
+    try:
+        relative = folder.parent.relative_to(out_dir)
+    except ValueError:
+        return "<external>"
+    if relative == Path("."):
+        return "<root>"
+    return relative.as_posix()
+
+
 def main() -> int:
     args = parse_args()
     out_dir = Path(args.out_dir)
@@ -96,9 +96,11 @@ def main() -> int:
         run_type = str(manifest.get("runType", "unknown"))
         status = str(manifest.get("status", "unknown"))
         scope = "scratch" if "scratch" in folder.parts else "canonical"
+        group = group_label(out_dir, folder)
         row = (
             f"{folder.name}  "
             f"{scope:9}  "
+            f"{group:28}  "
             f"{run_type:24}  "
             f"{status:18}  "
             f"{summarize_files(folder)}"
@@ -112,7 +114,7 @@ def main() -> int:
         print("no timestamp folders found")
         return 0
 
-    print("timestamp          scope      run_type                  status              summary")
+    print("timestamp          scope      group                         run_type                  status              summary")
     for row in rows:
         print(row)
     return 0

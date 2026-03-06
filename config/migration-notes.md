@@ -294,6 +294,19 @@
   - `DOE_WGPU_TIMESTAMP_DEBUG=1`
 - Trace gate semantic-parity eligibility now matches Doe runtime module identity (`module` starts with `doe-`) and rejects non-Doe runtime module pairs in `required` mode.
 
+### Package naming split (`@simulatte/*` public scope)
+
+- Public npm/package scope now uses `@simulatte/*`.
+- Canonical runtime/headless package is now `@simulatte/webgpu`.
+- Browser package naming is reserved as `@simulatte/fawn-browser`.
+- Doe remains the backend/runtime family name for:
+  - backend IDs (`doe_vulkan`, `doe_metal`, `doe_d3d12`)
+  - compare/report families (`doe-vs-dawn`)
+  - runtime artifacts (`doe-zig-runtime`, `libdoe_webgpu.so`)
+- Legacy package names are retained only as compatibility history:
+  - `@doe/webgpu-core`
+  - `@doe/webgpu`
+
 ## 2026-02-22
 
 ### `benchmark-methodology-thresholds` contract enforcement

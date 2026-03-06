@@ -1,7 +1,7 @@
 function scaffoldError() {
   const message =
-    "[@doe/webgpu] package is currently scaffolded. " +
-    "Use @doe/webgpu-core for runtime and CLI usage today.";
+    "[nursery/webgpu] is an internal placeholder only. " +
+    "Use the canonical package implementation in nursery/webgpu-core (`@simulatte/webgpu`).";
   const err = new Error(message);
   err.code = "DOE_WEBGPU_NOT_READY";
   return err;
@@ -22,9 +22,9 @@ export function runDawnVsDoeCompare() {
 
 export function providerInfo() {
   return {
-    package: "@doe/webgpu",
-    status: "scaffold",
-    note: "Full runtime entrypoints are not implemented yet.",
+    package: "@simulatte/webgpu-placeholder",
+    status: "placeholder",
+    note: "Canonical package identity is @simulatte/webgpu from nursery/webgpu-core.",
   };
 }
 

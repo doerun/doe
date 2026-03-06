@@ -1578,15 +1578,18 @@ def main() -> int:
         if args.timestamp_output
         else ""
     )
+    run_group = output_paths.derive_bench_out_group(args.out)
     workspace = output_paths.with_timestamp(
         args.workspace,
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     out = output_paths.with_timestamp(
         args.out,
         output_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     report: dict[str, Any] = {
         "schemaVersion": 4,

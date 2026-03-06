@@ -2,7 +2,7 @@
 
 This document outlines qualitative differences and target use-cases for headless WebGPU workloads in JavaScript environments. It is intentionally scoped as a comparison draft, not a claim report.
 
-| Feature / Trait | **Fawn Doe** (`doe-webgpu-core`) | **Node WebGPU** (`webgpu`) | **Bun WebGPU** (`bun-webgpu`) |
+| Feature / Trait | **Fawn Doe** (`@simulatte/webgpu`) | **Node WebGPU** (`webgpu`) | **Bun WebGPU** (`bun-webgpu`) |
 | :--- | :--- | :--- | :--- |
 | **Underlying Engine** | `libdoe_webgpu` (Zig + Lean pipeline) | Google Dawn (C++) | Google Dawn (C++) |
 | **Primary Focus** | Deterministic Compute, ML/AI, Verifiability | Browser Parity, Graphics | Browser Parity, Graphics |
@@ -32,7 +32,7 @@ This list is limited to real WebGPU runtime implementations (not types/tooling).
 
 Notes:
 
-1. `@doe/webgpu-core` is still pre-publication, so no direct npm star baseline exists in this snapshot yet.
+1. `@simulatte/webgpu` is still pre-publication, so no direct npm star baseline exists in this snapshot yet.
 2. This section is for runtime head-to-head comparability only; stars are a popularity signal, not a quality or correctness signal.
 3. For this repo’s “official” definition, maintainer/org governance is the gate.
 

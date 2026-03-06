@@ -131,11 +131,33 @@ def main() -> int:
         cutoff = datetime.now(timezone.utc) - timedelta(days=args.retention_days)
 
     candidates: list[Candidate] = []
+    seen_paths: set[Path] = set()
+
+    for folder in output_paths.collect_timestamp_folders(out_dir, include_scratch=True):
+        if folder in seen_paths:
+            continue
+        seen_paths.add(folder)
+        candidate = classify(
+            folder,
+            remove_untimestamped=False,
+            cutoff=cutoff,
+        )
+        if candidate is not None:
+            candidates.append(candidate)
+
     for entry in sorted(out_dir.iterdir(), key=lambda item: item.name):
+        if entry in seen_paths:
+            continue
+        if entry.name == "scratch":
+            continue
+        if entry.is_dir():
+            child_timestamps = output_paths.collect_timestamp_folders(entry, include_scratch=True)
+            if child_timestamps:
+                continue
         candidate = classify(
             entry,
             remove_untimestamped=args.remove_untimestamped,
-            cutoff=cutoff,
+            cutoff=None,
         )
         if candidate is not None:
             candidates.append(candidate)

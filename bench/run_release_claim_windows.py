@@ -317,15 +317,18 @@ def main() -> int:
         if base_timestamp
         else None
     )
+    run_group = output_paths.derive_bench_out_group(args.out)
     out_path = output_paths.with_timestamp(
         args.out,
         base_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
     substantiation_report_path = output_paths.with_timestamp(
         args.substantiation_report,
         base_timestamp,
         enabled=args.timestamp_output,
+        group=run_group,
     )
 
     bench_dir = Path(__file__).resolve().parent
@@ -349,6 +352,7 @@ def main() -> int:
                 raw_report_path,
                 window_timestamp,
                 enabled=True,
+                group=run_group,
             )
 
         command = [

@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import output_paths
+
 
 TIMESTAMP_RE = re.compile(r"^\d{8}T\d{6}Z$")
 
@@ -118,19 +120,7 @@ def manifest_payload(folder: Path, *, status: str = "unknown_historical") -> dic
 
 
 def collect_timestamp_folders(out_dir: Path, *, include_scratch: bool) -> list[Path]:
-    folders: list[Path] = []
-    for path in sorted(out_dir.iterdir(), key=lambda item: item.name):
-        if path.is_dir() and is_timestamp_folder(path):
-            folders.append(path)
-
-    if include_scratch:
-        scratch_root = out_dir / "scratch"
-        if scratch_root.is_dir():
-            for path in sorted(scratch_root.iterdir(), key=lambda item: item.name):
-                if path.is_dir() and is_timestamp_folder(path):
-                    folders.append(path)
-
-    return folders
+    return output_paths.collect_timestamp_folders(out_dir, include_scratch=include_scratch)
 
 
 def main() -> int:

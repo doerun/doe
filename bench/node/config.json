@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "description": "Node.js WebGPU benchmark: Doe (@simulatte/webgpu-doe) vs Dawn (webgpu npm)",
+  "description": "Node.js WebGPU benchmark: Doe (@simulatte/webgpu) vs Dawn (webgpu npm)",
   "providers": {
     "doe": {
-      "package": "@simulatte/webgpu-doe",
-      "source": "nursery/webgpu-doe/src/index.js",
+      "package": "@simulatte/webgpu",
+      "source": "nursery/webgpu-core/src/node-runtime.js",
       "notes": "Native Zig+Metal runtime, ~2MB"
     },
     "dawn": {

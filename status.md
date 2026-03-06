@@ -100,12 +100,13 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - single-workload strict sweep utility (2026-03-04):
   - new script: `bench/run_single_workload_sweep.py`
   - runs repeated `compare_dawn_vs_doe.py` invocations for one workload and emits per-run + aggregate (`medianDeltaP50Percent`, `medianDeltaP95Percent`) summary artifacts under a timestamped scratch folder.
-- experimental npm bridge package now provides practical headless integration paths under `nursery/webgpu-core`:
+- experimental npm bridge package now provides practical headless integration paths under `nursery/webgpu-core`, with canonical public package identity `@simulatte/webgpu`:
   - Node process-bridge runtime wrapper (`nursery/webgpu-core/src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`) through both Node and Bun entrypoints.
   - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu-core/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu-core/COMPAT_SCOPE.md`.
+  - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
   - Bun direct-FFI path remains available as prototype (`nursery/webgpu-core/src/bun-ffi.js`) for low-level C-ABI integration experiments.
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
@@ -252,7 +253,7 @@ Legend: ● implemented ◐ partial ○ missing
 
 ### Architecture notes
 
-- **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` / NPM `@simulatte/webgpu-doe` for Node headless path and Doppler inference. 729 + 155 lines.
+- **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` for the earlier Node headless path and Doppler inference. 729 + 155 lines.
 - **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by Doppler. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
 - **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Facade layer + `vulkan_runtime_state.zig` cost simulation for telemetry.
 - **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Expects pre-compiled CSO/DXBC bytecode.
@@ -877,7 +878,7 @@ Per-operation timing analysis (1KB/64KB): execution is dominated by Metal comman
 **Infrastructure completed (2026-03-05):**
 - `examples/quirks/apple_m3_noop_list.json` created (empty list, analogous to `amd_radv_noop_list.json`)
 - `bench/workloads.local.metal.extended.json` updated: all 43 quirksPath entries now use `apple_m3_noop_list.json`
-- Metal mining run: `bench/out/mined-apple-metal-quirks.json` (87 candidates, 43 unique toggles from `bench/vendor/dawn/src/dawn/native/metal/`) with context breakdown: `default_on=24`, `default_off=1`, `force_on=2`, `reference=60`
+- Metal mining run: `bench/out/metal-quirks/mined-apple-metal-quirks.json` (87 candidates, 43 unique toggles from `bench/vendor/dawn/src/dawn/native/metal/`) with context breakdown: `default_on=24`, `default_off=1`, `force_on=2`, `reference=60`
 
 ## Metal native execution architecture fix (2026-03-05)
 

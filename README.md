@@ -6,32 +6,47 @@ Doe (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It re
 
 ![Fawn logo](nursery/fawn-browser/assets/logo/compiled/linux/fawn-icon-main-256.png)
 
-## Where Doe is faster
+## Benchmark snapshot
 
-Measured on AMD Vulkan (RADV, GFX11), Doe vs Dawn, with strict apples-to-apples comparability enforcement. All results use operation-level timing, are replay-validated via deterministic hash-chain trace artifacts, and pass claimability checks at both local (7+ samples) and release (15+ samples) thresholds.
+Current benchmark evidence is split across two active claim lanes.
 
-### Buffer upload throughput
+### AMD Vulkan (RADV, GFX11)
 
-| Workload | p50 faster | p95 faster |
-|----------|-----------|-----------|
-| 1 KB | +23% | +18% |
-| 64 KB | +45% | +40% |
-| 1 MB | +36% | +33% |
-| 4 MB | +35% | +30% |
-| 16 MB | +37% | +34% |
+Latest local strict comparable matrix artifact:
+`bench/out/amd-vulkan/extended-comparable/20260302T182311Z/dawn-vs-doe.amd.vulkan.extended.comparable.json`
 
-### Compute dispatch
+- top-level result: `comparisonStatus=comparable`, `claimStatus=diagnostic`
+- comparable workloads: 14
+- claimable workloads in that full local matrix: 12
+- claimable in the full matrix:
+  - uploads: `1 MB`, `4 MB`, `16 MB`
+  - compute: `workgroup atomic (1024)`, `workgroup non-atomic (1024)`
+  - matrix-vector multiply: `3` variants
+  - shader compilation: `Pipeline stress (ShaderRobustnessPerf)`
+  - contract lanes: `resource_table_immediates_macro_500`, `surface_presentation_contract`, `concurrent_execution_single_contract`
+- current full-matrix non-claimables: `1 KB` and `64 KB` upload
 
-| Workload | p50 faster |
-|----------|-----------|
-| Workgroup atomic (1024) | +12% |
-| Workgroup non-atomic (1024) | +12% |
+Focused AMD Vulkan reruns in the same local artifact set show claimable single-workload results for
+`1 KB` and `64 KB` upload as well:
 
-### Shader compilation
+- `bench/out/amd-vulkan/singles/20260302T192559Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_1kb.json`
+- `bench/out/amd-vulkan/singles/20260302T192649Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_64kb.json`
 
-| Workload | p50 faster |
-|----------|-----------|
-| Pipeline stress (ShaderRobustnessPerf) | +9% |
+So AMD Vulkan is the strongest local Dawn-vs-Doe evidence lane in this checkout, but the latest full
+comparable matrix is not yet fully claimable end-to-end.
+
+### Apple Metal (M3)
+
+Current status snapshot (`status.md`, dated 2026-03-06) reports:
+
+- `19 of 30` workloads claimable on Apple M3
+- stable range: `18-19 / 30`
+- claimable workload families:
+  - uploads: `1 KB`, `64 KB`, `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`, `4 GB`
+  - compute: workgroup atomic, workgroup non-atomic, `3` matrix-vector variants,
+    concurrent execution, zero-init workgroup memory
+  - render: redundant pipeline/bindings, draw-throughput macro `200k`
+  - misc: async pipeline diagnostics, pixel local storage barrier
 
 Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
 
@@ -87,15 +102,16 @@ Build without the flag produces identical code to before.
 
 ## Current status
 
-Working, not yet claimable:
-- Render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups. Currently slower than compute proxy in directional benchmarks.
-- Texture/raster path with compute texture sampling plus render-draw raster step. Currently slower than dispatch-only proxy.
+Working, with claimable benchmark evidence on two device families:
+- AMD Vulkan: latest local strict comparable matrix is `comparable` with `12 / 14` workloads claimable; focused reruns also show claimable `1 KB` and `64 KB` upload slices.
+- Apple Metal M3: current status snapshot reports `19 / 30` workloads claimable, stable range `18-19 / 30`.
 
-In progress:
-- Metal backend (Vulkan-first; Metal is the second lane)
+Still in progress:
+- render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; still slower than the strongest Dawn paths on part of the matrix
+- texture/raster path with compute texture sampling plus render-draw raster step; still slower than dispatch-only proxy lanes
 - GPU timestamp readback (returns zero on some adapter/driver combinations)
-- Broader device/driver coverage for substantiated comparison claims
-- Upstream quirk mining automation (prototype works; nightly drift ingest is not running)
+- broader device/driver coverage for substantiated comparison claims
+- upstream quirk mining automation (prototype works; nightly drift ingest is not running)
 
 ## Project structure
 
@@ -113,19 +129,22 @@ fawn/
   bench/               benchmark harness, Dawn comparison, visualization
   trace/               replay and trace tooling
   examples/            worked examples, command seeds
-  pkg/webgpu-doe/      npm publish root for @simulatte/webgpu-doe
+  nursery/webgpu-core/ canonical npm package implementation for @simulatte/webgpu
 ```
 
 ## Package
 
-The npm package `@simulatte/webgpu-doe` publishes from `pkg/webgpu-doe/`. It contains the prebuilt `libdoe_webgpu` shared library and the drop-in WebGPU entrypoint for use as a Dawn replacement in native embeddings.
+The canonical npm package is `@simulatte/webgpu`. Its current implementation
+lives in `nursery/webgpu-core/` while directory consolidation is deferred. It
+contains the headless Doe bridge, Node/Bun provider entrypoints, and CLI tools
+for benchmarking/CI workflows.
 
 ```bash
 # build the drop-in library
 cd fawn/zig && zig build dropin
 
-# publish (from package root)
-cd fawn/pkg/webgpu-doe && npm publish --access public
+# publish (from current package implementation root)
+cd fawn/nursery/webgpu-core && npm publish --access public
 ```
 
 ## Building and running

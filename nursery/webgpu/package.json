@@ -1,7 +1,8 @@
 {
-  "name": "@doe/webgpu",
+  "name": "@simulatte/webgpu-placeholder",
   "version": "0.0.1",
-  "description": "Full Doe WebGPU runtime packaging (scaffold; in-progress)",
+  "description": "Internal placeholder only; canonical package lives in nursery/webgpu-core",
+  "private": true,
   "type": "module",
   "main": "./src/index.js",
   "exports": {
