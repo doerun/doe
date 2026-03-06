@@ -172,11 +172,11 @@ def derive_bench_out_group(path: str | Path) -> Path | None:
     if stripped.startswith("amd.vulkan"):
         return Path("amd-vulkan")
     if stripped.startswith("local.metal.extended.comparable"):
-        return Path("local-metal") / "extended-comparable"
+        return Path("apple-metal") / "extended-comparable"
     if stripped.startswith("local.metal.release"):
-        return Path("local-metal") / "release"
+        return Path("apple-metal") / "release"
     if stripped.startswith("local.metal"):
-        return Path("local-metal")
+        return Path("apple-metal")
     if stripped.startswith("local.vulkan.extended.comparable"):
         return Path("local-vulkan") / "extended-comparable"
     if stripped.startswith("local.vulkan.release"):

@@ -37,16 +37,13 @@ comparable matrix is not yet fully claimable end-to-end.
 
 ### Apple Metal (M3)
 
-Current status snapshot (`status.md`, dated 2026-03-06) reports:
+Latest local strict comparable matrix artifact:
+`bench/out/apple-metal/20260306T143316Z/dawn-vs-doe.local.metal.extended.comparable.json`
 
-- `19 of 30` workloads claimable on Apple M3
-- stable range: `18-19 / 30`
-- claimable workload families:
-  - uploads: `1 KB`, `64 KB`, `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`, `4 GB`
-  - compute: workgroup atomic, workgroup non-atomic, `3` matrix-vector variants,
-    concurrent execution, zero-init workgroup memory
-  - render: redundant pipeline/bindings, draw-throughput macro `200k`
-  - misc: async pipeline diagnostics, pixel local storage barrier
+- top-level result: `comparisonStatus=comparable`, `claimStatus=claimable`
+- comparable workloads: 30
+- claimable workloads: `30 / 30`
+- Doe faster than Dawn on every workload
 
 Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
 
@@ -104,7 +101,7 @@ Build without the flag produces identical code to before.
 
 Working, with claimable benchmark evidence on two device families:
 - AMD Vulkan: latest local strict comparable matrix is `comparable` with `12 / 14` workloads claimable; focused reruns also show claimable `1 KB` and `64 KB` upload slices.
-- Apple Metal M3: current status snapshot reports `19 / 30` workloads claimable, stable range `18-19 / 30`.
+- Apple Metal M3: `30 / 30` workloads claimable. Doe faster than Dawn on every workload.
 
 Still in progress:
 - render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; still slower than the strongest Dawn paths on part of the matrix
