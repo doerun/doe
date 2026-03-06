@@ -1,8 +1,8 @@
 const std = @import("std");
 const types = @import("../wgpu_types.zig");
+const dropin_lib = @import("../wgpu_dropin_lib.zig");
 
-// These will be provided by wgpu_dropin_lib.zig
-extern fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) FnType;
+const loadRequiredProc = dropin_lib.loadRequiredProc;
 
 pub export fn wgpuCreateInstance(a0: ?*anyopaque) callconv(.c) types.WGPUInstance {
     const proc = loadRequiredProc(types.FnWgpuCreateInstance, "wgpuCreateInstance");
