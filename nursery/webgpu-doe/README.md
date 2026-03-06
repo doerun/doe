@@ -29,15 +29,22 @@ JavaScript (DoeGPUDevice, DoeGPUBuffer, ...)
 
 No Dawn dependency. All GPU calls go directly from Zig to Metal.
 
-## Performance
+## Performance claims (Metal, Apple Silicon)
 
-Doe is faster than Dawn on all 30 benchmark workloads tested on Apple Silicon
-(buffer upload, compute dispatch, render pass, texture operations, atomics,
-concurrent execution). Results are apples-to-apples comparisons using matched
-workloads, dispatch geometry, and timing methodology. See `fawn/bench/` for
-methodology and raw data.
+Apples-to-apples vs Dawn (Chromium's WebGPU), matched workloads and timing:
 
-Binary size: ~2 MB vs Dawn's ~11 MB.
+- **Compute e2e** — 1.5x faster (0.23ms vs 0.35ms, 4096 threads)
+- **Buffer upload** — faster across 1 KB to 4 GB (8 sizes claimable)
+- **Atomics** — workgroup atomic and non-atomic both claimable
+- **Matrix-vector multiply** — 3 variants claimable (naive, swizzle, workgroup-shared)
+- **Concurrent execution** — claimable
+- **Zero-init workgroup memory** — claimable
+- **Draw throughput** — 200k draws claimable
+- **Binary size** — ~2 MB vs Dawn's ~11 MB
+
+19 of 30 workloads are claimable. The remaining 11 are bottlenecked by
+per-command Metal command buffer creation overhead (~350us vs Dawn's ~30us).
+See `fawn/bench/` for methodology and raw data.
 
 ## API surface
 

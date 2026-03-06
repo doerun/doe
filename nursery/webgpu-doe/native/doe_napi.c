@@ -813,7 +813,7 @@ static napi_value doe_create_shader_module(napi_env env, napi_callback_info info
 
     WGPUShaderModule mod = pfn_wgpuDeviceCreateShaderModule(device, &desc);
     free(code);
-    if (!mod) NAPI_THROW(env, "createShaderModule failed");
+    if (!mod) NAPI_THROW(env, "createShaderModule failed (WGSL translation or compilation error — check stderr for details)");
     return wrap_ptr(env, mod);
 }
 
@@ -856,7 +856,7 @@ static napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info i
 
     WGPUComputePipeline pipeline = pfn_wgpuDeviceCreateComputePipeline(device, &desc);
     free(ep);
-    if (!pipeline) NAPI_THROW(env, "createComputePipeline failed");
+    if (!pipeline) NAPI_THROW(env, "createComputePipeline failed (shader module invalid or entry point not found — check stderr for details)");
     return wrap_ptr(env, pipeline);
 }
 
