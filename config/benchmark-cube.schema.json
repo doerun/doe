@@ -45,7 +45,8 @@
       "additionalProperties": false,
       "required": [
         "rowsPath",
-        "matrixMarkdownPath"
+        "matrixMarkdownPath",
+        "dashboardHtmlPath"
       ],
       "properties": {
         "rowsPath": {
@@ -53,6 +54,10 @@
           "minLength": 1
         },
         "matrixMarkdownPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dashboardHtmlPath": {
           "type": "string",
           "minLength": 1
         }

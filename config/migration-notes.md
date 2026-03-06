@@ -24,6 +24,7 @@
   - `bench/out/cube/<timestamp>/cube.rows.json`
   - `bench/out/cube/<timestamp>/cube.summary.json`
   - `bench/out/cube/<timestamp>/cube.matrix.md`
+  - `bench/out/cube/<timestamp>/cube.dashboard.html`
   - stable latest mirrors under `bench/out/cube/latest/`
 - Existing historical backend reports are now merged into cube rows even when they
   no longer satisfy current conformance contracts:
@@ -694,6 +695,40 @@ Contract updates in this change:
 - Current native Vulkan execution reports those command classes as unsupported
   (`async_diagnostics` and `surface_lifecycle` respectively), so they remain
   directional-only until the native backend implements them.
+
+### AMD Vulkan strict identity preflight + native-supported strict configs (2026-03-06)
+
+- `bench/preflight_bench_host.py` now probes Doe's selected Vulkan adapter
+  ordinal via `doe-zig-runtime --trace-meta`, resolves that ordinal through
+  `vulkaninfo --summary`, and fails strict AMD runs unless Doe and Dawn agree on
+  vendor/device identity.
+- `config/trace-meta.schema.json` now allows explicit Vulkan adapter-selection
+  fields for strict evidence artifacts: `adapterOrdinal`, `adapterName`,
+  `vendorId`, `deviceId`, `queueFamilyIndex`, and `presentCapable`.
+- `config/run-metadata.schema.json` now allows the same adapter-selection data
+  under an optional `adapter` object for downstream evidence products.
+- `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` and
+  `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json` now point at
+  `bench/workloads.amd.vulkan.extended.native-supported.json` so strict AMD
+  comparable/release lanes only cite command classes that are currently native
+  by contract.
+
+### Vulkan async-diagnostics submode split (2026-03-06)
+
+- `zig/src/backend/common/capabilities.zig` now treats `async_diagnostics` as
+  explicit sub-capabilities instead of one coarse family bucket:
+  `async_pipeline_diagnostics`, `async_capability_introspection`,
+  `async_resource_table_immediates`, `async_lifecycle_refcount`, and
+  `async_pixel_local_storage`.
+- Native Vulkan now declares and executes only the honest submodes currently
+  supported in `zig/src/backend/vulkan/mod.zig`:
+  `capability_introspection` and `lifecycle_refcount`.
+- Remaining Vulkan async-diagnostics submodes stay explicit unsupported with
+  submode-specific taxonomy, so workload/config surfaces cannot overclaim family
+  support from partial implementation.
+- AMD Vulkan workload contracts now carry `asyncDiagnosticsMode` where relevant
+  so reports/evidence preserve the specific submode rather than only the coarse
+  `async_diagnostics` family label.
 
 ### Vulkan large-upload cap removal (2026-03-06)
 

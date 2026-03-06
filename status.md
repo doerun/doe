@@ -12,7 +12,7 @@ Runtime command semantics are now first-class for indirect/render-pass benchmark
 Strict Dawn-vs-Doe operation comparability now uses direct per-side timing normalization only:
 - comparable workloads in `bench/workloads*.json` use `leftTimingDivisor=1.0` and `rightTimingDivisor=1.0`.
 - strict compare fails fast if comparable Dawn-vs-Doe workloads attempt side-specific divisor scaling.
-AMD Vulkan comparison presets now include claimable comparable slices (local + release policies) over the full extended workload matrix.
+AMD Vulkan strict comparable/release presets now point at the native-supported workload contract, not the broader aspirational extended matrix.
 - Backend naming cutover is complete for runtime-visible surfaces: Doe is now the only backend identity (`doe-zig-runtime`, `libdoe_webgpu.so`, Chromium `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path`).
 - Doe identity cleanup for runtime-visible diagnostics is complete:
   - drop-in helper exports are now `doeWgpuDropinLastErrorCode` / `doeWgpuDropinClearLastError`
@@ -104,16 +104,16 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - Node provider source lives in `nursery/webgpu/` (`src/index.js`, `binding.gyp`, `native/doe_napi.c`) and the package now fails fast on Linux instead of hanging when only `libdoe_webgpu.so` is available for the in-process path.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
-  - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`), while Linux Doe-native in-process support remains unfinished and Bun direct-FFI remains a prototype path.
+  - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`), while Linux Doe-native in-process support remains unfinished.
   - benchmark cube contracts now exist for cross-surface reporting:
     - policy: `config/benchmark-cube-policy.json`
     - schemas: `config/benchmark-cube.schema.json`, `config/benchmark-cube-row.schema.json`
     - builder: `bench/build_benchmark_cube.py`
-    - outputs: `bench/out/cube/<timestamp>/cube.{rows,summary}.json` plus `cube.matrix.md` and stable latest mirrors in `bench/out/cube/latest/`
+    - outputs: `bench/out/cube/<timestamp>/cube.{rows,summary}.json` plus `cube.matrix.md`, `cube.dashboard.html`, and stable latest mirrors in `bench/out/cube/latest/`
   - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu/COMPAT_SCOPE.md`.
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
   - current Node comparison claims were withdrawn pending a real Doe-native in-process path; explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` diagnostics are non-claimable delegate runs only.
-  - Bun direct-FFI path remains available as prototype (`nursery/webgpu/src/bun-ffi.js`) for low-level C-ABI integration experiments.
+  - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (57/57 contract tests passing). All Node workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package (cube maturity remains prototype pending populated cells).
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
   - `bench/measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
@@ -662,7 +662,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 
 80. Strict AMD Vulkan host preflight now probes Dawn adapter visibility directly:
 - `bench/preflight_bench_host.py` now runs a Dawn adapter probe (`dawn_perf_tests --gtest_list_tests --backend=vulkan --adapter-vendor-id=0x1002`) and parses reported adapters before allowing strict AMD runs.
-- strict preflight now fails fast when the requested AMD Vulkan adapter is not Dawn-visible, even if `/dev/dri/renderD128` appears readable/writable via OS-level checks.
+- strict preflight now also probes Doe's selected Vulkan adapter ordinal from trace-meta and resolves it through `vulkaninfo --summary`; strict AMD runs fail unless Doe and Dawn agree on vendor/device identity.
 - this prevents false-green preflight outcomes that would otherwise fail later in compare execution with adapter-unavailable or render-node permission-denied errors.
 
 81. Native execution reliability hardening now includes explicit retry envelopes and stricter copy/kernel validation:
@@ -1080,6 +1080,15 @@ Execution gap list:
   The current native Vulkan backend reports `async_diagnostics` and
   `surface_lifecycle` unsupported, so those workloads are directional-only
   until the native backend implements those command classes.
+- 2026-03-06 strict AMD config follow-up: `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+  and `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json` now consume the
+  native-supported workload contract directly, so strict AMD evidence no longer
+  implies coverage beyond the currently native-backed subset.
+- 2026-03-06 async-diagnostics submode follow-up: native Vulkan now executes
+  `capability_introspection` and `lifecycle_refcount` directly; remaining
+  `async_diagnostics` submodes (`pipeline_async`, `resource_table_immediates`,
+  `pixel_local_storage`, `full`) still fail with explicit submode taxonomy until
+  their native runtime paths exist.
 
 8. Local Metal comparability hotfix (2026-02-26):
 - introduced Metal-only workload contract file: `bench/workloads.local.metal.extended.json`.
@@ -1349,6 +1358,16 @@ Ownership:
     - `FAWN_WEBGPU_BUN_PROVIDER=doe` forces Doe provider (error if lib missing)
     - `FAWN_WEBGPU_BUN_PROVIDER=provider` disables Doe auto-provider
     - default `auto` prefers Doe when the library is present, otherwise falls back to provider module.
+- Bun FFI path now at full API parity with Node (2026-03-06):
+  - 57/57 contract tests passing (`bun ./test-bun.js`)
+  - all 11 Node benchmark workloads run successfully under Bun via `bench/bun/runner.js`
+  - Zig flat helpers added: `doeBufferMapAsyncFlat`, `doeQueueOnSubmittedWorkDoneFlat` in `zig/src/dropin/dropin_abi_procs.zig`
+  - WGPUBufferBindingType enum corrected (uniform=2, storage=3, read-only-storage=4)
+  - queueFlush validates future ID and callback status
+  - processEvents polling replaces unsupported wgpuInstanceWaitAny on Vulkan/Dawn
+  - getMappedRange supports both read (copy-out) and write (direct native buffer) modes
+  - benchmark compare lane: `bench/bun/compare.js` (Doe FFI vs `bun-webgpu`)
+  - cube maturity remains prototype; promote to secondary when Bun cells are populated
 
 ## Upload timing realism fix (2026-03-02)
 

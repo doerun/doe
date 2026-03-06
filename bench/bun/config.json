@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "description": "Bun WebGPU benchmark: Doe (@simulatte/webgpu FFI) vs bun-webgpu",
+  "providers": {
+    "doe": {
+      "package": "@simulatte/webgpu",
+      "source": "nursery/webgpu/src/bun.js",
+      "notes": "Doe FFI provider backed by libdoe_webgpu via Bun FFI"
+    },
+    "bun-webgpu": {
+      "package": "bun-webgpu",
+      "notes": "bun-webgpu package provider (setupGlobals -> navigator.gpu)"
+    }
+  },
+  "run": {
+    "iterations": 50,
+    "warmup": 5,
+    "minTimedSamples": 19,
+    "outDir": "bench/out/bun-doe-vs-webgpu"
+  },
+  "comparability": {
+    "timingSource": "performance.now",
+    "timingClass": "operation",
+    "notes": "Both providers measured at JS API boundary via performance.now(). Apples-to-apples: same workload code, same dispatch geometry, same buffer sizes."
+  },
+  "claimability": {
+    "minSamples": 19,
+    "requireP50Faster": true,
+    "requireP95Faster": true,
+    "notes": "Doe must beat bun-webgpu at both p50 and p95 with >=19 timed samples."
+  }
+}

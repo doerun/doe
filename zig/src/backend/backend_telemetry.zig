@@ -7,6 +7,9 @@ pub const BackendTelemetry = struct {
     selection_policy_hash: []const u8,
     shader_artifact_manifest_path: ?[]const u8,
     shader_artifact_manifest_hash: ?[]const u8,
+    adapter_ordinal: ?u32,
+    queue_family_index: ?u32,
+    present_capable: ?bool,
 };
 
 pub fn default_telemetry() BackendTelemetry {
@@ -17,5 +20,8 @@ pub fn default_telemetry() BackendTelemetry {
         .selection_policy_hash = "backend-runtime-policy-v1",
         .shader_artifact_manifest_path = null,
         .shader_artifact_manifest_hash = null,
+        .adapter_ordinal = null,
+        .queue_family_index = null,
+        .present_capable = null,
     };
 }

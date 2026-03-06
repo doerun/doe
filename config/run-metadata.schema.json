@@ -30,6 +30,18 @@
       }
     },
     "gpu": { "type": "string" },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ordinal": { "type": "integer", "minimum": 0 },
+        "name": { "type": ["string", "null"] },
+        "vendorId": { "type": ["string", "null"] },
+        "deviceId": { "type": ["string", "null"] },
+        "queueFamilyIndex": { "type": "integer", "minimum": 0 },
+        "presentCapable": { "type": "boolean" }
+      }
+    },
     "driver": { "type": "string" },
     "backend": { "type": "string", "enum": ["vulkan", "metal", "d3d12", "webgpu"] },
     "toolchains": {

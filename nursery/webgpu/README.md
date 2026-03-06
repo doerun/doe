@@ -7,25 +7,34 @@ This directory is the package root for `@simulatte/webgpu`. It contains the
 Node provider source, the addon build contract, the Bun FFI entrypoint, and
 the CLI helpers used by benchmark and CI workflows.
 
-Current surface maturity is intentionally uneven:
+Surface maturity:
 
-- Node is the primary supported package surface.
-- Bun remains a prototype FFI path and is not yet at Node parity.
+- Node is the primary supported package surface (N-API bridge).
+- Bun has API parity with Node via direct FFI to `libdoe_webgpu` (57/57
+  contract tests passing). Cube maturity remains prototype until Bun cells
+  are populated by comparable benchmark artifacts.
 - Package-surface comparisons should be read through the benchmark cube outputs
   under `bench/out/cube/`, not as a replacement for strict backend reports.
 
-## What Lives Here
-
-- `src/index.js`: default Node provider entrypoint
-- `src/node-runtime.js`: compatibility alias for the Node entrypoint
-- `src/bun-ffi.js`: Bun prototype FFI path
-- `src/runtime_cli.js`: Doe CLI/runtime helpers
-- `native/doe_napi.c`: N-API bridge for the in-process Node provider
-- `binding.gyp`: addon build contract
-- `bin/fawn-webgpu-bench.js`: command-stream bench wrapper
-- `bin/fawn-webgpu-compare.js`: Dawn-vs-Doe compare wrapper
-
 ## Quickstart
+
+```bash
+npm install @simulatte/webgpu
+```
+
+```js
+import { providerInfo, requestDevice } from "@simulatte/webgpu";
+
+console.log(providerInfo());
+
+const device = await requestDevice();
+console.log(device.limits.maxBufferSize);
+```
+
+Turnkey package install is the target shape. Current host/runtime caveats are
+listed below.
+
+## From Source
 
 ```bash
 cd /home/x/deco/fawn/zig
@@ -35,13 +44,22 @@ cd /home/x/deco/fawn/nursery/webgpu
 npm run build:addon
 ```
 
-Then install from npm or use this checkout directly:
+Use this when working from the Fawn checkout or when rebuilding the addon
+against the local Doe runtime.
 
-```bash
-npm install @simulatte/webgpu
-```
+## What Lives Here
 
-## Notes
+- `src/index.js`: default Node provider entrypoint
+- `src/node-runtime.js`: compatibility alias for the Node entrypoint
+- `src/bun-ffi.js`: Bun FFI provider (full API parity with Node)
+- `src/bun.js`: Bun re-export entrypoint
+- `src/runtime_cli.js`: Doe CLI/runtime helpers
+- `native/doe_napi.c`: N-API bridge for the in-process Node provider
+- `binding.gyp`: addon build contract
+- `bin/fawn-webgpu-bench.js`: command-stream bench wrapper
+- `bin/fawn-webgpu-compare.js`: Dawn-vs-Doe compare wrapper
+
+## Current Caveats
 
 - This package is for headless benchmarking and CI workflows, not full browser
   parity.
@@ -53,7 +71,13 @@ npm install @simulatte/webgpu
   path is wired through end-to-end.
 - Explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` is diagnostic-only on Linux and
   should not be treated as Doe-native evidence.
-- Bun compatibility is still tracked as prototype work until a real compare
-  lane and matching artifact coverage exist.
+- Bun has API parity with Node (57/57 contract tests). Bun benchmark lane
+  is at `bench/bun/compare.js` and compares Doe FFI against the `bun-webgpu`
+  package; cube maturity remains prototype until cells
+  are populated by comparable artifacts.
+- A fully self-contained install still requires shipping packaged native Doe
+  runtime artifacts and passing clean-machine smoke tests on each supported
+  host. Today the package still relies on local/runtime host setup in some
+  environments.
 - API details live in `API_CONTRACT.md`.
 - Compatibility scope is documented in `COMPAT_SCOPE.md`.

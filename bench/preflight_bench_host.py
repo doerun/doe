@@ -9,11 +9,13 @@ import os
 import re
 import shlex
 import subprocess
+import tempfile
 from pathlib import Path
 
 ADAPTER_HEADER_RE = re.compile(r'^\s*-\s+"(?P<name>[^"]+)"\s+-\s+"(?P<driver>.+)"\s*$')
 ADAPTER_FIELD_RE = re.compile(r'^\s*(?P<key>\w+):\s*(?P<value>.+?)\s*$')
 INCOMPATIBLE_DRIVER_RE = re.compile(r"Could not open device (?P<device>/dev/dri/[^:]+): Permission denied")
+VULKANINFO_GPU_RE = re.compile(r"^GPU(?P<ordinal>\d+):\s*$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -98,6 +100,109 @@ def format_adapter_summary(adapters: list[dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
+def parse_vulkaninfo_summary(output: str) -> list[dict[str, str]]:
+    gpus: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    for raw_line in output.splitlines():
+        header = VULKANINFO_GPU_RE.match(raw_line.strip())
+        if header:
+            if current is not None:
+                gpus.append(current)
+            current = {"ordinal": header.group("ordinal")}
+            continue
+        if current is None:
+            continue
+        if "=" not in raw_line:
+            continue
+        key, value = raw_line.split("=", 1)
+        current[key.strip()] = value.strip()
+    if current is not None:
+        gpus.append(current)
+    return gpus
+
+
+def probe_vulkaninfo_gpus() -> tuple[list[dict[str, str]], str]:
+    command = ["vulkaninfo", "--summary"]
+    try:
+        completed = subprocess.run(command, text=True, capture_output=True, check=False)
+    except OSError as error:
+        return [], f"failed to execute vulkaninfo: {error}"
+    if completed.returncode != 0:
+        return [], f"vulkaninfo failed (rc={completed.returncode})"
+    return parse_vulkaninfo_summary(completed.stdout), "ok"
+
+
+def probe_doe_adapter(runtime_bin: Path) -> tuple[dict[str, object] | None, str]:
+    if not runtime_bin.exists():
+        return None, f"missing Doe runtime: {runtime_bin}"
+
+    with tempfile.TemporaryDirectory(prefix="fawn-doe-preflight-") as tmpdir:
+        tmp_path = Path(tmpdir)
+        commands_path = tmp_path / "commands.json"
+        trace_meta_path = tmp_path / "trace-meta.json"
+        commands_path.write_text(
+            json.dumps([{"kind": "barrier", "dependency_count": 1}], ensure_ascii=True),
+            encoding="utf-8",
+        )
+        command = [
+            "env",
+            "LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:" + os.environ.get("LD_LIBRARY_PATH", ""),
+            str(runtime_bin),
+            "--commands",
+            str(commands_path),
+            "--vendor",
+            "amd",
+            "--api",
+            "vulkan",
+            "--family",
+            "gfx11",
+            "--driver",
+            "24.0.0",
+            "--backend",
+            "native",
+            "--backend-lane",
+            "vulkan_doe_comparable",
+            "--execute",
+            "--trace-meta",
+            str(trace_meta_path),
+        ]
+        try:
+            completed = subprocess.run(command, text=True, capture_output=True, check=False)
+        except OSError as error:
+            return None, f"failed to execute Doe adapter probe: {error}"
+        if completed.returncode != 0:
+            return None, f"Doe adapter probe failed (rc={completed.returncode}): {shlex.join(command)}"
+        try:
+            payload = json.loads(trace_meta_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            return None, f"failed to read Doe trace-meta probe: {error}"
+        if not isinstance(payload, dict):
+            return None, "Doe trace-meta probe did not produce an object"
+        return payload, "ok"
+
+
+def resolve_doe_vulkan_identity(
+    runtime_bin: Path,
+) -> tuple[dict[str, str] | None, dict[str, object] | None, str]:
+    trace_meta, probe_message = probe_doe_adapter(runtime_bin)
+    if trace_meta is None:
+        return None, None, probe_message
+
+    adapter_ordinal = trace_meta.get("adapterOrdinal")
+    if not isinstance(adapter_ordinal, int) or adapter_ordinal < 0:
+        return None, trace_meta, "Doe adapter probe did not emit adapterOrdinal"
+
+    gpus, vulkaninfo_message = probe_vulkaninfo_gpus()
+    if not gpus:
+        return None, trace_meta, vulkaninfo_message
+
+    ordinal_text = str(adapter_ordinal)
+    for gpu in gpus:
+        if gpu.get("ordinal") == ordinal_text:
+            return gpu, trace_meta, "ok"
+    return None, trace_meta, f"vulkaninfo did not report GPU ordinal {adapter_ordinal}"
+
+
 def probe_dawn_adapter(dawn_binary: Path, backend: str, vendor_id: str) -> tuple[bool, str]:
     if not dawn_binary.exists():
         return False, f"missing dawn binary: {dawn_binary}"
@@ -134,6 +239,24 @@ def probe_dawn_adapter(dawn_binary: Path, backend: str, vendor_id: str) -> tuple
     if permission_denied:
         reason += "\nHint: Vulkan reported permission denied opening /dev/dri render nodes."
     return False, reason
+
+
+def probe_dawn_adapters(dawn_binary: Path, backend: str, vendor_id: str) -> tuple[list[dict[str, str]], str]:
+    if not dawn_binary.exists():
+        return [], f"missing dawn binary: {dawn_binary}"
+    command = [
+        str(dawn_binary),
+        "--gtest_list_tests",
+        f"--backend={backend}",
+        f"--adapter-vendor-id={vendor_id}",
+    ]
+    try:
+        completed = subprocess.run(command, text=True, capture_output=True, check=False)
+    except OSError as error:
+        return [], f"failed to execute Dawn adapter probe: {error}"
+    if completed.returncode != 0:
+        return [], f"Dawn adapter probe failed (rc={completed.returncode}): {shlex.join(command)}"
+    return parse_dawn_adapters(f"{completed.stdout}\n{completed.stderr}"), "ok"
 
 
 def main() -> int:
@@ -183,6 +306,14 @@ def main() -> int:
         amd_vendor_id = "0x1002"
         amd_backend = "vulkan"
         ok_adapter_probe, msg_adapter_probe = probe_dawn_adapter(dawn_bin, amd_backend, amd_vendor_id)
+        dawn_adapters, dawn_adapters_message = probe_dawn_adapters(dawn_bin, amd_backend, amd_vendor_id)
+        doe_identity, doe_trace_meta, doe_probe_message = resolve_doe_vulkan_identity(runtime_bin)
+        doe_matches_amd = (
+            doe_identity is not None
+            and str(doe_identity.get("vendorID", "")).strip().lower() == amd_vendor_id
+        )
+        dawn_identity_match = False
+        dawn_identity_message = dawn_adapters_message
         checks.append(
             {
                 "name": "strictAmdDawnAdapterProbe",
@@ -192,14 +323,66 @@ def main() -> int:
         )
         checks.append(
             {
-                "name": "strictAmdVendorRequirement",
-                "ok": ok_render and in_render_group and ok_adapter_probe,
+                "name": "strictAmdDoeAdapterProbe",
+                "ok": doe_identity is not None,
                 "message": (
                     "ok"
-                    if ok_render and in_render_group and ok_adapter_probe
+                    if doe_identity is not None
+                    else doe_probe_message
+                ),
+            }
+        )
+        checks.append(
+            {
+                "name": "strictAmdDoeAdapterIdentity",
+                "ok": doe_matches_amd,
+                "message": (
+                    "ok"
+                    if doe_matches_amd
+                    else (
+                        "Doe selected a non-AMD Vulkan adapter"
+                        if doe_identity is not None
+                        else "Doe adapter identity unavailable"
+                    )
+                ),
+            }
+        )
+        if doe_identity is not None and dawn_adapters:
+            doe_vendor = str(doe_identity.get("vendorID", "")).strip().lower()
+            doe_device = str(doe_identity.get("deviceID", "")).strip().lower()
+            doe_name = str(doe_identity.get("deviceName", "")).strip()
+            dawn_identity_match = any(
+                str(adapter.get("backend", "")).strip().lower() == amd_backend
+                and str(adapter.get("vendorId", "")).split(",")[0].strip().lower() == doe_vendor
+                and str(adapter.get("deviceId", "")).split(",")[0].strip().lower() == doe_device
+                for adapter in dawn_adapters
+            )
+            dawn_identity_message = (
+                "ok"
+                if dawn_identity_match
+                else (
+                    "strict AMD Vulkan comparability requires Doe and Dawn to resolve to the same "
+                    f"vendor/device identity; Doe selected {doe_name} "
+                    f"(vendorId={doe_vendor}, deviceId={doe_device})"
+                )
+            )
+            checks.append(
+                {
+                    "name": "strictAmdDoeDawnIdentityMatch",
+                    "ok": dawn_identity_match,
+                    "message": dawn_identity_message,
+                }
+            )
+        checks.append(
+            {
+                "name": "strictAmdIdentityRequirement",
+                "ok": ok_render and in_render_group and ok_adapter_probe and doe_matches_amd and dawn_identity_match,
+                "message": (
+                    "ok"
+                    if ok_render and in_render_group and ok_adapter_probe and doe_matches_amd and dawn_identity_match
                     else (
                         "strict AMD Vulkan runs require accessible render node, render group, and "
-                        f"a Dawn-visible {amd_backend} adapter for vendor {amd_vendor_id}"
+                        f"matching Doe/Dawn {amd_backend} vendor/device identity for vendor {amd_vendor_id}"
                     )
                 ),
             }

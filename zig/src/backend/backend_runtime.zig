@@ -74,6 +74,9 @@ pub const BackendRuntime = struct {
             .doe_vulkan => {
                 self.backend.telemetry.shader_artifact_manifest_path = vulkan_backend.manifest_path_from_context(self.backend.context);
                 self.backend.telemetry.shader_artifact_manifest_hash = vulkan_backend.manifest_hash_from_context(self.backend.context);
+                self.backend.telemetry.adapter_ordinal = vulkan_backend.adapter_ordinal_from_context(self.backend.context);
+                self.backend.telemetry.queue_family_index = vulkan_backend.queue_family_index_from_context(self.backend.context);
+                self.backend.telemetry.present_capable = vulkan_backend.present_capable_from_context(self.backend.context);
             },
             .doe_metal => {
                 self.backend.telemetry.shader_artifact_manifest_path = metal_backend.manifest_path_from_context(self.backend.context);

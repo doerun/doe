@@ -36,6 +36,9 @@ pub const ExecutionResult = struct {
     shader_artifact_manifest_path: ?[]const u8,
     shader_artifact_manifest_hash: ?[]const u8,
     backend_lane: ?[]const u8,
+    adapter_ordinal: ?u32,
+    queue_family_index: ?u32,
+    present_capable: ?bool,
 };
 
 pub const ExecutionContext = struct {
@@ -107,6 +110,9 @@ pub const ExecutionContext = struct {
             .shader_artifact_manifest_path = null,
             .shader_artifact_manifest_hash = null,
             .backend_lane = null,
+            .adapter_ordinal = null,
+            .queue_family_index = null,
+            .present_capable = null,
         };
 
         if (self.mode == .trace) return mode_result;
@@ -129,6 +135,9 @@ pub const ExecutionContext = struct {
                 .shader_artifact_manifest_path = null,
                 .shader_artifact_manifest_hash = null,
                 .backend_lane = backendLaneName(self.backend_lane),
+                .adapter_ordinal = null,
+                .queue_family_index = null,
+                .present_capable = null,
             };
         }
 
@@ -160,6 +169,9 @@ pub const ExecutionContext = struct {
                     .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
                     .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
                     .backend_lane = backendLaneName(self.backend_lane),
+                    .adapter_ordinal = command_telemetry.adapter_ordinal,
+                    .queue_family_index = command_telemetry.queue_family_index,
+                    .present_capable = command_telemetry.present_capable,
                 };
             };
             const command_end = std.time.nanoTimestamp();
@@ -187,6 +199,9 @@ pub const ExecutionContext = struct {
                 .shader_artifact_manifest_path = command_telemetry.shader_artifact_manifest_path,
                 .shader_artifact_manifest_hash = command_telemetry.shader_artifact_manifest_hash,
                 .backend_lane = backendLaneName(self.backend_lane),
+                .adapter_ordinal = command_telemetry.adapter_ordinal,
+                .queue_family_index = command_telemetry.queue_family_index,
+                .present_capable = command_telemetry.present_capable,
             };
         }
 
@@ -208,6 +223,9 @@ pub const ExecutionContext = struct {
             .shader_artifact_manifest_path = null,
             .shader_artifact_manifest_hash = null,
             .backend_lane = backendLaneName(self.backend_lane),
+            .adapter_ordinal = null,
+            .queue_family_index = null,
+            .present_capable = null,
         };
     }
 

@@ -140,6 +140,7 @@ function openLibrary(path) {
         wgpuQueueSubmit:          { args: [FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
         wgpuQueueWriteBuffer:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuQueueRelease:         { args: [FFIType.ptr], returns: FFIType.void },
+        doeNativeQueueFlush:      { args: [FFIType.ptr], returns: FFIType.void },
         doeQueueOnSubmittedWorkDoneFlat: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
 
         // Shader
@@ -613,6 +614,10 @@ function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
 const QUEUE_WORK_DONE_STATUS_SUCCESS = 1;
 
 function queueFlush(instancePtr, queuePtr) {
+    if (wgpu.symbols.doeNativeQueueFlush) {
+        wgpu.symbols.doeNativeQueueFlush(queuePtr);
+        return;
+    }
     let cbStatus = null;
     let done = false;
     const cb = new JSCallback(
@@ -648,9 +653,16 @@ class DoeGPUBuffer {
     async mapAsync(mode, offset = 0, size = this.size) {
         if (this._queue) queueFlush(this._instance, this._queue);
         bufferMapSync(this._instance, this._native, mode, offset, size);
+        this._mapMode = mode;
     }
 
     getMappedRange(offset = 0, size = this.size) {
+        const isWrite = (this._mapMode & 0x0002) !== 0;
+        if (isWrite) {
+            const dataPtr = wgpu.symbols.wgpuBufferGetMappedRange(this._native, BigInt(offset), BigInt(size));
+            if (!dataPtr) throw new Error("[fawn-webgpu] getMappedRange (write) returned NULL");
+            return toArrayBuffer(dataPtr, 0, size);
+        }
         const dataPtr = wgpu.symbols.wgpuBufferGetConstMappedRange(this._native, BigInt(offset), BigInt(size));
         if (!dataPtr) throw new Error("[fawn-webgpu] getMappedRange returned NULL");
         const nativeView = toArrayBuffer(dataPtr, 0, size);
@@ -661,6 +673,7 @@ class DoeGPUBuffer {
 
     unmap() {
         wgpu.symbols.wgpuBufferUnmap(this._native);
+        this._mapMode = 0;
     }
 
     destroy() {
@@ -746,7 +759,8 @@ class DoeGPUQueue {
     }
 
     async onSubmittedWorkDone() {
-        queueFlush(this._instance, this._native);
+        // Match the Node provider contract: Doe submit commits synchronously,
+        // and mapAsync flushes when readback synchronization is required.
     }
 }
 

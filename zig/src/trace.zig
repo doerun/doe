@@ -36,6 +36,9 @@ pub const TraceRunSummary = struct {
     shader_artifact_manifest_path: ?[]const u8,
     shader_artifact_manifest_hash: ?[]const u8,
     backend_lane: ?[]const u8,
+    adapter_ordinal: ?u32 = null,
+    queue_family_index: ?u32 = null,
+    present_capable: ?bool = null,
     final_hash: u64,
     final_previous_hash: u64,
     profile_vendor: []const u8,
@@ -387,6 +390,15 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
         try writer.writeAll("\"backendLane\":");
         try writeJsonString(&writer, lane);
         try writer.writeAll(",");
+    }
+    if (summary.adapter_ordinal) |ordinal| {
+        try writef(writer, "\"adapterOrdinal\":{},", .{ordinal});
+    }
+    if (summary.queue_family_index) |queue_family_index| {
+        try writef(writer, "\"queueFamilyIndex\":{},", .{queue_family_index});
+    }
+    if (summary.present_capable) |present_capable| {
+        try writef(writer, "\"presentCapable\":{},", .{present_capable});
     }
     if (summary.queue_sync_mode) |sync_mode| {
         try writer.writeAll("\"queueSyncMode\":");

@@ -69,11 +69,6 @@ function ensureLibrary() {
       '@simulatte/webgpu: libdoe_webgpu not found. Build it with `cd fawn/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
     );
   }
-  if (process.platform === 'linux' && libraryFlavor(DOE_LIB_PATH) === 'doe-dropin') {
-    throw new Error(
-      '@simulatte/webgpu: Linux Node WebGPU is not wired to Doe through libdoe_webgpu.so yet. Use createDoeRuntime() for Doe benches, or set DOE_WEBGPU_LIB to a delegate library only for non-claimable diagnostics.'
-    );
-  }
   addon.loadLibrary(DOE_LIB_PATH);
   libraryLoaded = true;
 }

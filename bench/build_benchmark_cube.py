@@ -14,6 +14,7 @@ from typing import Any
 
 import jsonschema
 
+import benchmark_cube_dashboard_html
 import output_paths
 import report_conformance
 
@@ -106,6 +107,11 @@ def parse_args() -> argparse.Namespace:
         help="Output markdown matrix path.",
     )
     parser.add_argument(
+        "--dashboard-html-out",
+        default="bench/out/cube/cube.dashboard.html",
+        help="Output HTML dashboard path.",
+    )
+    parser.add_argument(
         "--latest-summary",
         default="bench/out/cube/latest/cube.summary.json",
         help="Stable latest summary path.",
@@ -119,6 +125,11 @@ def parse_args() -> argparse.Namespace:
         "--latest-matrix-md",
         default="bench/out/cube/latest/cube.matrix.md",
         help="Stable latest markdown matrix path.",
+    )
+    parser.add_argument(
+        "--latest-dashboard-html",
+        default="bench/out/cube/latest/cube.dashboard.html",
+        help="Stable latest HTML dashboard path.",
     )
     parser.add_argument(
         "--timestamp",
@@ -979,6 +990,12 @@ def main() -> None:
         enabled=args.timestamp_output,
         group="cube",
     )
+    dashboard_html_out = output_paths.with_timestamp(
+        args.dashboard_html_out,
+        timestamp,
+        enabled=args.timestamp_output,
+        group="cube",
+    )
 
     cells = build_cells(policy=policy, rows=rows, reports=reports)
     status_counts = Counter(cell["status"] for cell in cells)
@@ -995,6 +1012,7 @@ def main() -> None:
         "artifacts": {
             "rowsPath": str(rows_out),
             "matrixMarkdownPath": str(matrix_md_out),
+            "dashboardHtmlPath": str(dashboard_html_out),
         },
         "sourceCounts": source_counts,
         "rowCount": len(rows),
@@ -1004,15 +1022,18 @@ def main() -> None:
     validate_schema(repo_root / "config" / "benchmark-cube.schema.json", summary_payload)
 
     matrix_markdown = render_matrix_markdown(summary_payload, policy)
+    dashboard_html = benchmark_cube_dashboard_html.build_dashboard_html(summary_payload, policy)
     write_json(rows_out, rows)
     write_json(summary_out, summary_payload)
     write_text(matrix_md_out, matrix_markdown + "\n")
+    write_text(dashboard_html_out, dashboard_html + "\n")
     write_json(Path(args.latest_rows), rows)
     write_json(Path(args.latest_summary), summary_payload)
     write_text(Path(args.latest_matrix_md), matrix_markdown + "\n")
+    write_text(Path(args.latest_dashboard_html), dashboard_html + "\n")
 
     output_paths.write_run_manifest_for_outputs(
-        [rows_out, summary_out, matrix_md_out],
+        [rows_out, summary_out, matrix_md_out, dashboard_html_out],
         {
             "runType": "benchmark-cube",
             "config": str(policy_path.relative_to(repo_root)),
@@ -1020,6 +1041,7 @@ def main() -> None:
             "summaryPath": str(summary_out),
             "rowsPath": str(rows_out),
             "matrixMarkdownPath": str(matrix_md_out),
+            "dashboardHtmlPath": str(dashboard_html_out),
         },
     )
 

@@ -86,7 +86,8 @@
       ],
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
-        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
       ]
     },
     {
@@ -137,7 +138,7 @@
         "overhead"
       ],
       "notes": [
-        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Bun has API parity with Node via direct FFI. Compare lane: bench/bun/compare.js against the bun-webgpu package.",
         "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
       ]
     }

@@ -13,7 +13,11 @@ pub const Capability = enum {
     texture_destroy,
     surface_lifecycle,
     surface_present,
-    async_diagnostics,
+    async_pipeline_diagnostics,
+    async_capability_introspection,
+    async_resource_table_immediates,
+    async_lifecycle_refcount,
+    async_pixel_local_storage,
     map_async,
     gpu_timestamps,
     timestamp_inside_passes,
@@ -81,7 +85,20 @@ pub fn required_capabilities(command: model.Command) CapabilitySet {
             set.declare(.surface_lifecycle);
             set.declare(.surface_present);
         },
-        .async_diagnostics => set.declare(.async_diagnostics),
+        .async_diagnostics => |diagnostics| switch (diagnostics.mode) {
+            .pipeline_async => set.declare(.async_pipeline_diagnostics),
+            .capability_introspection => set.declare(.async_capability_introspection),
+            .resource_table_immediates => set.declare(.async_resource_table_immediates),
+            .lifecycle_refcount => set.declare(.async_lifecycle_refcount),
+            .pixel_local_storage => set.declare(.async_pixel_local_storage),
+            .full => {
+                set.declare(.async_pipeline_diagnostics);
+                set.declare(.async_capability_introspection);
+                set.declare(.async_resource_table_immediates);
+                set.declare(.async_lifecycle_refcount);
+                set.declare(.async_pixel_local_storage);
+            },
+        },
         .map_async => set.declare(.map_async),
     }
     return set;
@@ -101,7 +118,11 @@ pub fn capability_name(cap: Capability) []const u8 {
         .texture_destroy => "texture_destroy",
         .surface_lifecycle => "surface_lifecycle",
         .surface_present => "surface_present",
-        .async_diagnostics => "async_diagnostics",
+        .async_pipeline_diagnostics => "async_pipeline_diagnostics",
+        .async_capability_introspection => "async_capability_introspection",
+        .async_resource_table_immediates => "async_resource_table_immediates",
+        .async_lifecycle_refcount => "async_lifecycle_refcount",
+        .async_pixel_local_storage => "async_pixel_local_storage",
         .map_async => "map_async",
         .gpu_timestamps => "gpu_timestamps",
         .timestamp_inside_passes => "timestamp_inside_passes",

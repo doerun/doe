@@ -457,6 +457,9 @@ pub fn main() !void {
         .shader_artifact_manifest_path = null,
         .shader_artifact_manifest_hash = null,
         .backend_lane = execution.backendLaneName(backend_lane),
+        .adapter_ordinal = null,
+        .queue_family_index = null,
+        .present_capable = null,
         .queue_sync_mode = if (execution_context != null)
             switch (queue_sync_mode) {
                 .per_command => "per-command",
@@ -508,6 +511,9 @@ pub fn main() !void {
             if (executed.shader_artifact_manifest_path) |path| trace_summary.shader_artifact_manifest_path = path;
             if (executed.shader_artifact_manifest_hash) |hash| trace_summary.shader_artifact_manifest_hash = hash;
             if (executed.backend_lane) |lane| trace_summary.backend_lane = lane;
+            if (executed.adapter_ordinal) |ordinal| trace_summary.adapter_ordinal = ordinal;
+            if (executed.queue_family_index) |queue_family_index| trace_summary.queue_family_index = queue_family_index;
+            if (executed.present_capable) |present_capable| trace_summary.present_capable = present_capable;
             switch (executed.status) {
                 .ok => trace_summary.execution_success_count += 1,
                 .@"error" => trace_summary.execution_error_count += 1,

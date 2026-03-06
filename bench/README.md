@@ -165,6 +165,7 @@ Benchmark cube output follows the same discipline:
   - `cube.rows.json`
   - `cube.summary.json`
   - `cube.matrix.md`
+  - `cube.dashboard.html` (HTML dashboard with inline SVG heatmaps)
 
 ## Artifact cleanup
 
@@ -660,8 +661,8 @@ A ready-to-run AMD Vulkan preset is now included:
 
 Additional AMD Vulkan presets:
 
-- release claim mode on extended apples-to-apples comparable matrix (current strict comparable subset from `bench/workloads.amd.vulkan.extended.json`, release sample floor): `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json`
-- extended comparable matrix local-claim preset (same workload family, lower sample floor): `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+- release claim mode on the AMD native-supported strict comparable matrix (release sample floor): `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json`
+- local-claim preset for the same AMD native-supported strict comparable matrix: `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
 - directional diagnostics (remaining non-claim macro set): `bench/compare_dawn_vs_doe.config.amd.vulkan.directional.json`
 - directional macro diagnostics (focused non-claim macro subset): `bench/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json`
 - strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json`
@@ -736,9 +737,10 @@ python3 bench/preflight_bench_host.py --strict-amd-vulkan
 ```
 
 Strict AMD preflight now includes a Dawn adapter probe (`dawn_perf_tests --gtest_list_tests`
-with `--backend=vulkan --adapter-vendor-id=0x1002`) and fails early when the requested
-adapter is not Dawn-visible. This catches cases where `/dev/dri/renderD128` appears readable
-via OS-level checks but Dawn still cannot open the render node at runtime.
+with `--backend=vulkan --adapter-vendor-id=0x1002`) plus a Doe-side adapter probe resolved
+through `vulkaninfo --summary`. Strict runs fail early unless Doe and Dawn agree on the same
+AMD vendor/device identity. This catches cases where `/dev/dri/renderD128` appears readable
+via OS-level checks but the two runtimes would land on different effective adapters.
 
 ## Apples-to-apples timing configuration
 

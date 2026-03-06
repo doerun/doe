@@ -32,6 +32,9 @@ pub const DawnDelegateBackend = struct {
                 .selection_policy_hash = policy_hash,
                 .shader_artifact_manifest_path = null,
                 .shader_artifact_manifest_hash = null,
+                .adapter_ordinal = null,
+                .queue_family_index = null,
+                .present_capable = null,
             },
         };
     }

@@ -122,3 +122,45 @@ test "vulkan dispatch requires kernel_dispatch capability path" {
     try std.testing.expectEqualStrings("compute_dispatch", result.status_message);
     try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
 }
+
+test "vulkan async capability introspection executes natively" {
+    if (builtin.os.tag == .macos) return;
+
+    const result = try vulkan_mod.run_contract_path_for_test(
+        model.Command{ .async_diagnostics = .{
+            .mode = .capability_introspection,
+            .iterations = 2,
+        } },
+        webgpu.QueueSyncMode.per_command,
+    );
+    if (skip_if_runtime_unavailable(result)) return;
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+    try std.testing.expectEqual(@as(u32, 2), result.dispatch_count);
+}
+
+test "vulkan async lifecycle refcount executes natively" {
+    if (builtin.os.tag == .macos) return;
+
+    const result = try vulkan_mod.run_contract_path_for_test(
+        model.Command{ .async_diagnostics = .{
+            .mode = .lifecycle_refcount,
+            .iterations = 3,
+        } },
+        webgpu.QueueSyncMode.per_command,
+    );
+    if (skip_if_runtime_unavailable(result)) return;
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+    try std.testing.expectEqual(@as(u32, 3), result.dispatch_count);
+}
+
+test "vulkan async pipeline diagnostics stays explicitly unsupported" {
+    const result = try vulkan_mod.run_contract_path_for_test(
+        model.Command{ .async_diagnostics = .{
+            .mode = .pipeline_async,
+            .iterations = 1,
+        } },
+        webgpu.QueueSyncMode.per_command,
+    );
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
+    try std.testing.expectEqualStrings("async_pipeline_diagnostics", result.status_message);
+}

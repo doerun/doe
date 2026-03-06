@@ -36,6 +36,7 @@ const VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO: i32 = 39;
 const VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO: i32 = 40;
 const VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO: i32 = 42;
 
+const VK_QUEUE_GRAPHICS_BIT: u32 = 0x00000001;
 const VK_QUEUE_COMPUTE_BIT: u32 = 0x00000002;
 const VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT: u32 = 0x00000002;
 const VK_COMMAND_BUFFER_LEVEL_PRIMARY: i32 = 0;
@@ -317,6 +318,19 @@ const VkPoolEntry = struct {
 
 const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
 
+const QueueFamilySelection = struct {
+    index: u32,
+    supports_graphics: bool,
+    timestamp_valid_bits: u32,
+    queue_count: u32,
+};
+
+const PhysicalDeviceSelection = struct {
+    index: u32,
+    queue: QueueFamilySelection,
+    score: u64,
+};
+
 pub const NativeVulkanRuntime = struct {
     allocator: std.mem.Allocator,
     kernel_root: ?[]const u8,
@@ -326,7 +340,10 @@ pub const NativeVulkanRuntime = struct {
     device: VkDevice = null,
     queue: VkQueue = null,
 
+    adapter_ordinal_value: ?u32 = null,
     queue_family_index: u32 = 0,
+    queue_family_index_value_cache: ?u32 = null,
+    present_capable_value: ?bool = null,
     command_pool: VkCommandPool = VK_NULL_U64,
     primary_command_buffer: VkCommandBuffer = null,
     fence: VkFence = VK_NULL_U64,
@@ -571,6 +588,28 @@ pub const NativeVulkanRuntime = struct {
         _ = try self.flush_queue();
     }
 
+    pub fn lifecycle_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+        const count = if (iterations > 0) iterations else 1;
+        const start_ns = common_timing.now_ns();
+        var index: u32 = 0;
+        while (index < count) : (index += 1) {
+            try self.create_destroy_lifecycle_buffer(256);
+        }
+        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+    }
+
+    pub fn adapter_ordinal(self: *const NativeVulkanRuntime) ?u32 {
+        return self.adapter_ordinal_value;
+    }
+
+    pub fn queue_family_index_value(self: *const NativeVulkanRuntime) ?u32 {
+        return self.queue_family_index_value_cache;
+    }
+
+    pub fn present_capable(self: *const NativeVulkanRuntime) ?bool {
+        return self.present_capable_value;
+    }
+
     fn bootstrap(self: *NativeVulkanRuntime) !void {
         try self.create_instance();
         try self.select_physical_device();
@@ -594,8 +633,12 @@ pub const NativeVulkanRuntime = struct {
         const devices = try self.allocator.alloc(VkPhysicalDevice, count);
         defer self.allocator.free(devices);
         try check_vk(vkEnumeratePhysicalDevices(self.instance, &count, devices.ptr));
-        self.physical_device = devices[0];
-        self.queue_family_index = try self.find_compute_queue_family();
+        const selection = try self.select_preferred_physical_device(devices[0..count]);
+        self.physical_device = devices[selection.index];
+        self.adapter_ordinal_value = selection.index;
+        self.queue_family_index = selection.queue.index;
+        self.queue_family_index_value_cache = selection.queue.index;
+        self.present_capable_value = selection.queue.supports_graphics;
     }
 
     fn create_device_and_queue(self: *NativeVulkanRuntime) !void {
@@ -766,6 +809,64 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 
+    fn select_preferred_physical_device(self: *NativeVulkanRuntime, devices: []const VkPhysicalDevice) !PhysicalDeviceSelection {
+        var best: ?PhysicalDeviceSelection = null;
+        for (devices, 0..) |device, index| {
+            const queue = self.select_queue_family_for_device(device) catch continue;
+            const score = self.score_physical_device(device, queue);
+            const candidate = PhysicalDeviceSelection{
+                .index = @as(u32, @intCast(index)),
+                .queue = queue,
+                .score = score,
+            };
+            if (best == null or candidate.score > best.?.score) {
+                best = candidate;
+            }
+        }
+        return best orelse error.UnsupportedFeature;
+    }
+
+    fn select_queue_family_for_device(self: *NativeVulkanRuntime, device: VkPhysicalDevice) !QueueFamilySelection {
+        var count: u32 = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &count, null);
+        if (count == 0) return error.UnsupportedFeature;
+        const props = try self.allocator.alloc(VkQueueFamilyProperties, count);
+        defer self.allocator.free(props);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &count, props.ptr);
+
+        var best: ?QueueFamilySelection = null;
+        for (props, 0..) |family, idx| {
+            if ((family.queueFlags & VK_QUEUE_COMPUTE_BIT) == 0 or family.queueCount == 0) continue;
+            const candidate = QueueFamilySelection{
+                .index = @as(u32, @intCast(idx)),
+                .supports_graphics = (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0,
+                .timestamp_valid_bits = family.timestampValidBits,
+                .queue_count = family.queueCount,
+            };
+            if (best == null or queue_selection_score(candidate) > queue_selection_score(best.?)) {
+                best = candidate;
+            }
+        }
+        return best orelse error.UnsupportedFeature;
+    }
+
+    fn score_physical_device(self: *NativeVulkanRuntime, device: VkPhysicalDevice, queue: QueueFamilySelection) u64 {
+        _ = self;
+        var memory_props = std.mem.zeroes(VkPhysicalDeviceMemoryProperties);
+        vkGetPhysicalDeviceMemoryProperties(device, &memory_props);
+
+        var device_local_heap_bytes: u64 = 0;
+        var type_index: u32 = 0;
+        while (type_index < memory_props.memoryTypeCount) : (type_index += 1) {
+            const memory_type = memory_props.memoryTypes[type_index];
+            if ((memory_type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) continue;
+            if (memory_type.heapIndex >= memory_props.memoryHeapCount) continue;
+            device_local_heap_bytes +|= memory_props.memoryHeaps[memory_type.heapIndex].size;
+        }
+
+        return queue_selection_score(queue) + (device_local_heap_bytes / (1024 * 1024));
+    }
+
     fn find_memory_type_index(self: *NativeVulkanRuntime, type_bits: u32, required_flags: u32) !u32 {
         var memory_props = std.mem.zeroes(VkPhysicalDeviceMemoryProperties);
         vkGetPhysicalDeviceMemoryProperties(self.physical_device, &memory_props);
@@ -776,6 +877,39 @@ pub const NativeVulkanRuntime = struct {
             if ((memory_props.memoryTypes[i].propertyFlags & required_flags) == required_flags) return i;
         }
         return error.UnsupportedFeature;
+    }
+
+    fn create_destroy_lifecycle_buffer(self: *NativeVulkanRuntime, bytes: u64) !void {
+        var buffer: VkBuffer = VK_NULL_U64;
+        var memory: VkDeviceMemory = VK_NULL_U64;
+        var buffer_info = VkBufferCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = null,
+        };
+        try check_vk(vkCreateBuffer(self.device, &buffer_info, null, &buffer));
+        defer if (buffer != VK_NULL_U64) vkDestroyBuffer(self.device, buffer, null);
+
+        var requirements = std.mem.zeroes(VkMemoryRequirements);
+        vkGetBufferMemoryRequirements(self.device, buffer, &requirements);
+        const memory_index = try self.find_memory_type_index(
+            requirements.memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        );
+        var alloc_info = VkMemoryAllocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = null,
+            .allocationSize = requirements.size,
+            .memoryTypeIndex = memory_index,
+        };
+        try check_vk(vkAllocateMemory(self.device, &alloc_info, null, &memory));
+        defer if (memory != VK_NULL_U64) vkFreeMemory(self.device, memory, null);
+        try check_vk(vkBindBufferMemory(self.device, buffer, memory, 0));
     }
 
     fn resolve_kernel_path(self: *const NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
@@ -817,6 +951,14 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 };
+
+fn queue_selection_score(selection: QueueFamilySelection) u64 {
+    var score: u64 = 0;
+    score +|= @as(u64, selection.queue_count) * 100;
+    if (selection.supports_graphics) score +|= 10_000;
+    if (selection.timestamp_valid_bits > 0) score +|= 1_000;
+    return score;
+}
 
 fn file_exists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;

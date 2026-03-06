@@ -67,6 +67,8 @@ pub const ZigVulkanBackend = struct {
             .kernel_dispatch,
             .buffer_upload,
             .barrier_sync,
+            .async_capability_introspection,
+            .async_lifecycle_refcount,
             .gpu_timestamps,
         });
 
@@ -127,6 +129,9 @@ pub const ZigVulkanBackend = struct {
                 .selection_policy_hash = policy_hash,
                 .shader_artifact_manifest_path = null,
                 .shader_artifact_manifest_hash = null,
+                .adapter_ordinal = null,
+                .queue_family_index = null,
+                .present_capable = null,
             },
         };
     }
@@ -214,6 +219,30 @@ pub fn manifest_hash_from_context(ctx: *anyopaque) ?[]const u8 {
     return cast(ctx).manifest_hash();
 }
 
+pub fn adapter_ordinal_from_context(ctx: *anyopaque) ?u32 {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.adapter_ordinal();
+    }
+    return null;
+}
+
+pub fn queue_family_index_from_context(ctx: *anyopaque) ?u32 {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.queue_family_index_value();
+    }
+    return null;
+}
+
+pub fn present_capable_from_context(ctx: *anyopaque) ?bool {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.present_capable();
+    }
+    return null;
+}
+
 fn deinit(ctx: *anyopaque) void {
     const self = cast(ctx);
     const allocator = self.allocator;
@@ -262,11 +291,13 @@ fn annotate_result(self: *ZigVulkanBackend, command: model.Command, result: webg
         out.gpu_timestamp_valid,
         out.gpu_timestamp_attempted,
     );
-    out.status_message = write_status(
-        self,
-        "{s} timing={s} comparability={s}",
-        .{ command_info.manifest_module(command), meta.timing_source.name(), meta.comparability.name() },
-    );
+    if (out.status == .ok or out.status_message.len == 0) {
+        out.status_message = write_status(
+            self,
+            "{s} timing={s} comparability={s}",
+            .{ command_info.manifest_module(command), meta.timing_source.name(), meta.comparability.name() },
+        );
+    }
 
     if (should_emit_shader_artifact(command)) {
         const status_code = artifact_status_code(out);
@@ -417,6 +448,74 @@ fn execute_kernel_dispatch(self: *ZigVulkanBackend, setup_ns: u64, kernel_dispat
     );
 }
 
+fn execute_async_diagnostics(
+    self: *ZigVulkanBackend,
+    setup_ns: u64,
+    diagnostics: model.AsyncDiagnosticsCommand,
+) !webgpu.NativeExecutionResult {
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const iterations = if (diagnostics.iterations > 0) diagnostics.iterations else 1;
+
+    switch (diagnostics.mode) {
+        .capability_introspection => {
+            const encode_start = common_timing.now_ns();
+            _ = runtime.adapter_ordinal();
+            _ = runtime.queue_family_index_value();
+            _ = runtime.present_capable();
+            const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
+            return .{
+                .status = .ok,
+                .status_message = "",
+                .setup_ns = setup_ns,
+                .encode_ns = encode_ns,
+                .submit_wait_ns = 0,
+                .dispatch_count = iterations,
+                .gpu_timestamp_ns = 0,
+                .gpu_timestamp_attempted = false,
+                .gpu_timestamp_valid = false,
+            };
+        },
+        .lifecycle_refcount => {
+            const encode_ns = try runtime.lifecycle_probe(iterations);
+            return .{
+                .status = .ok,
+                .status_message = "",
+                .setup_ns = setup_ns,
+                .encode_ns = encode_ns,
+                .submit_wait_ns = 0,
+                .dispatch_count = iterations,
+                .gpu_timestamp_ns = 0,
+                .gpu_timestamp_attempted = false,
+                .gpu_timestamp_valid = false,
+            };
+        },
+        .pipeline_async => return .{
+            .status = .unsupported,
+            .status_message = "async_pipeline_diagnostics",
+            .setup_ns = setup_ns,
+            .dispatch_count = iterations,
+        },
+        .resource_table_immediates => return .{
+            .status = .unsupported,
+            .status_message = "async_resource_table_immediates",
+            .setup_ns = setup_ns,
+            .dispatch_count = iterations,
+        },
+        .pixel_local_storage => return .{
+            .status = .unsupported,
+            .status_message = "async_pixel_local_storage",
+            .setup_ns = setup_ns,
+            .dispatch_count = iterations,
+        },
+        .full => return .{
+            .status = .unsupported,
+            .status_message = "async_diagnostics_full",
+            .setup_ns = setup_ns,
+            .dispatch_count = iterations,
+        },
+    }
+}
+
 fn flush_pending_uploads_if_required(self: *ZigVulkanBackend, command: model.Command) !u64 {
     switch (command) {
         .upload => return 0,
@@ -449,6 +548,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .barrier => try execute_barrier(self, setup_ns),
         .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
         .kernel_dispatch => |kernel_dispatch| try execute_kernel_dispatch(self, setup_ns, kernel_dispatch),
+        .async_diagnostics => |diagnostics| try execute_async_diagnostics(self, setup_ns, diagnostics),
         else => return error.Unsupported,
     };
     result.submit_wait_ns +|= pending_submit_wait_ns;
@@ -462,6 +562,8 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .kernel_dispatch,
         .buffer_upload,
         .barrier_sync,
+        .async_capability_introspection,
+        .async_lifecycle_refcount,
         .gpu_timestamps,
     });
 

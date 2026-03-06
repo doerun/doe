@@ -134,6 +134,7 @@ class Workload:
     left_timing_divisor: float
     right_timing_divisor: float
     timing_normalization_note: str
+    async_diagnostics_mode: str
     comparability_candidate: bool
     comparability_candidate_tier: str
     comparability_candidate_notes: str
@@ -938,6 +939,7 @@ def load_workloads(
             left_timing_divisor=left_timing_divisor,
             right_timing_divisor=float(item.get("rightTimingDivisor", 1.0)),
             timing_normalization_note=item.get("timingNormalizationNote", ""),
+            async_diagnostics_mode=str(item.get("asyncDiagnosticsMode", "")).strip(),
             comparability_candidate=comparability_candidate,
             comparability_candidate_tier=comparability_candidate_tier,
             comparability_candidate_notes=comparability_candidate_notes,
@@ -1823,6 +1825,7 @@ def main() -> int:
                 "description": workload.description,
                 "domain": workload.domain,
                 "comparabilityNotes": workload.comparability_notes,
+                "asyncDiagnosticsMode": workload.async_diagnostics_mode or None,
                 "timingNormalization": {
                     "leftDivisor": workload.left_timing_divisor,
                     "rightDivisor": workload.right_timing_divisor,
