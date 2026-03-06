@@ -5,18 +5,14 @@
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": {
-      "bun": "./src/bun.js",
-      "default": "./src/index.js"
-    },
-    "./bun": "./src/bun.js",
+    ".": "./src/index.js",
     "./node": "./src/index.js"
   },
   "files": [
-    "src/",
+    "src/index.js",
     "native/",
     "binding.gyp",
-    "prebuilds/"
+    "README.md"
   ],
   "scripts": {
     "install": "node-gyp rebuild",

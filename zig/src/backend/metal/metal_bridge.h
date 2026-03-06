@@ -26,6 +26,18 @@ MetalHandle metal_bridge_encode_blit_copy(
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf);
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf);
 
+// === Shared Event (lightweight GPU fence) ===
+
+MetalHandle metal_bridge_device_new_shared_event(MetalHandle device);
+uint64_t    metal_bridge_shared_event_signaled_value(MetalHandle event);
+// Encode a signal on the command buffer; GPU sets event value after completion.
+void metal_bridge_command_buffer_encode_signal_event(
+    MetalHandle cmd_buf,
+    MetalHandle event,
+    uint64_t    value);
+// Spin-wait until the event reaches the given value.
+void metal_bridge_shared_event_wait(MetalHandle event, uint64_t value);
+
 // Batch-encode multiple blit copies into a single command buffer.
 // Returns the command buffer (+1 retained) ready for commit+wait.
 MetalHandle metal_bridge_encode_blit_batch(

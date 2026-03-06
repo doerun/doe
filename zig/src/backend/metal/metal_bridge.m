@@ -2,6 +2,7 @@
 #import <Foundation/Foundation.h>
 #include "metal_bridge.h"
 #include <string.h>
+#include <sched.h>
 
 // CFBridging provides correct ARC-safe transfer across the void* boundary.
 // Each returned MetalHandle is +1 retained and owned by the caller.
@@ -119,6 +120,42 @@ void metal_bridge_command_buffer_commit(MetalHandle cmd_buf_h) {
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf_h) {
     id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
     [cmd_buf waitUntilCompleted];
+}
+
+// ============================================================
+// Shared Event (lightweight GPU fence)
+// ============================================================
+
+MetalHandle metal_bridge_device_new_shared_event(MetalHandle device_h) {
+    id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
+    id<MTLSharedEvent> event = [device newSharedEvent];
+    if (event == nil) return NULL;
+    return (MetalHandle)CFBridgingRetain(event);
+}
+
+uint64_t metal_bridge_shared_event_signaled_value(MetalHandle event_h) {
+    id<MTLSharedEvent> event = (__bridge id<MTLSharedEvent>)event_h;
+    return event.signaledValue;
+}
+
+void metal_bridge_command_buffer_encode_signal_event(
+    MetalHandle cmd_buf_h,
+    MetalHandle event_h,
+    uint64_t    value)
+{
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLSharedEvent>   event   = (__bridge id<MTLSharedEvent>)event_h;
+    [cmd_buf encodeSignalEvent:event value:value];
+}
+
+void metal_bridge_shared_event_wait(MetalHandle event_h, uint64_t value) {
+    id<MTLSharedEvent> event = (__bridge id<MTLSharedEvent>)event_h;
+    // Spin-wait with yield: signaledValue is a mapped GPU register read,
+    // no kernel round-trip needed. Much faster than waitUntilCompleted.
+    while (event.signaledValue < value) {
+        // sched_yield() lets other threads run without sleeping.
+        sched_yield();
+    }
 }
 
 MetalHandle metal_bridge_encode_blit_batch(
