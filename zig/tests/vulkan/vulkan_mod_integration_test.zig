@@ -153,7 +153,9 @@ test "vulkan async lifecycle refcount executes natively" {
     try std.testing.expectEqual(@as(u32, 3), result.dispatch_count);
 }
 
-test "vulkan async pipeline diagnostics stays explicitly unsupported" {
+test "vulkan async pipeline diagnostics execute natively" {
+    if (builtin.os.tag == .macos) return;
+
     const result = try vulkan_mod.run_contract_path_for_test(
         model.Command{ .async_diagnostics = .{
             .mode = .pipeline_async,
@@ -161,6 +163,61 @@ test "vulkan async pipeline diagnostics stays explicitly unsupported" {
         } },
         webgpu.QueueSyncMode.per_command,
     );
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
-    try std.testing.expectEqualStrings("async_pipeline_diagnostics", result.status_message);
+    if (skip_if_runtime_unavailable(result)) return;
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+    try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
+}
+
+test "vulkan resource table immediates executes through explicit emulation policy" {
+    if (builtin.os.tag == .macos) return;
+
+    const result = try vulkan_mod.run_contract_path_for_test(
+        model.Command{ .async_diagnostics = .{
+            .mode = .resource_table_immediates,
+            .iterations = 2,
+            .feature_policy = .emulate_when_unavailable,
+        } },
+        webgpu.QueueSyncMode.per_command,
+    );
+    if (skip_if_runtime_unavailable(result)) return;
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+    try std.testing.expectEqual(@as(u32, 2), result.dispatch_count);
+}
+
+test "vulkan pixel local storage executes through explicit emulation policy" {
+    if (builtin.os.tag == .macos) return;
+
+    const result = try vulkan_mod.run_contract_path_for_test(
+        model.Command{ .async_diagnostics = .{
+            .mode = .pixel_local_storage,
+            .iterations = 2,
+            .feature_policy = .emulate_when_unavailable,
+        } },
+        webgpu.QueueSyncMode.per_command,
+    );
+    if (skip_if_runtime_unavailable(result)) return;
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+    try std.testing.expectEqual(@as(u32, 2), result.dispatch_count);
+}
+
+test "vulkan headless surface lifecycle executes natively" {
+    if (builtin.os.tag == .macos) return;
+
+    const backend = try vulkan_mod.ZigVulkanBackend.init(std.testing.allocator, test_profile(), null);
+    var iface = try backend.as_iface(std.testing.allocator, "test_surface_lifecycle", "test_policy_hash");
+    defer iface.deinit();
+
+    const create = try iface.execute_command(model.Command{ .surface_create = .{ .handle = 41001 } });
+    if (skip_if_runtime_unavailable(create)) return;
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, create.status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_capabilities = .{ .handle = 41001 } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_configure = .{
+        .handle = 41001,
+        .width = 64,
+        .height = 64,
+    } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_acquire = .{ .handle = 41001 } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_present = .{ .handle = 41001 } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_unconfigure = .{ .handle = 41001 } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_release = .{ .handle = 41001 } })).status);
 }

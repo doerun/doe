@@ -7,6 +7,10 @@
 // Usage:
 //   node compare.js [--iterations 50] [--warmup 5] [--workload id] [--out dir]
 //
+// Validation:
+//   Runs workload validation prepasses before timing so comparable package-surface
+//   claims fail early on incorrect readback or contract drift.
+//
 // Requirements:
 //   - `webgpu` npm package installed (npm install webgpu)
 //   - `@simulatte/webgpu` available via nursery path
@@ -26,7 +30,6 @@ const { values: args } = parseArgs({
     warmup:     { type: 'string', default: '5' },
     workload:   { type: 'string', default: '' },
     out:        { type: 'string', default: '' },
-    validate:   { type: 'boolean', default: false },
   },
 });
 
@@ -39,7 +42,7 @@ function runProvider(provider, extraArgs) {
       '--warmup', args.warmup,
     ];
     if (args.workload) cmdArgs.push('--workload', args.workload);
-    if (args.validate) cmdArgs.push('--validate');
+    cmdArgs.push('--validate');
     cmdArgs.push(...extraArgs);
 
     execFile(process.execPath, cmdArgs, { maxBuffer: 64 * 1024 * 1024 }, (err, stdout, stderr) => {

@@ -1,4 +1,5 @@
 const std = @import("std");
+const model = @import("../../model.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
@@ -26,6 +27,7 @@ const VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO: i32 = 2;
 const VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO: i32 = 3;
 const VK_STRUCTURE_TYPE_SUBMIT_INFO: i32 = 4;
 const VK_STRUCTURE_TYPE_FENCE_CREATE_INFO: i32 = 8;
+const VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO: i32 = 11;
 const VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO: i32 = 12;
 const VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO: i32 = 16;
 const VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO: i32 = 17;
@@ -43,6 +45,10 @@ const VK_COMMAND_BUFFER_LEVEL_PRIMARY: i32 = 0;
 const VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: u32 = 0x00000001;
 const VK_PIPELINE_BIND_POINT_COMPUTE: i32 = 1;
 const VK_SHADER_STAGE_COMPUTE_BIT: u32 = 0x00000020;
+const VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT: u32 = 0x00000800;
+const VK_QUERY_TYPE_TIMESTAMP: u32 = 2;
+const VK_QUERY_RESULT_64_BIT: u32 = 0x00000001;
+const VK_QUERY_RESULT_WAIT_BIT: u32 = 0x00000002;
 
 const VK_BUFFER_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
 const VK_BUFFER_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
@@ -71,6 +77,7 @@ const VkDeviceMemory = u64;
 const VkShaderModule = u64;
 const VkPipelineLayout = u64;
 const VkPipeline = u64;
+const VkQueryPool = u64;
 const VK_NULL_U64: u64 = 0;
 
 const VkAllocationCallbacks = opaque {};
@@ -226,6 +233,15 @@ const VkBufferCopy = extern struct {
     size: VkDeviceSize,
 };
 
+const VkQueryPoolCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    queryType: u32,
+    queryCount: u32,
+    pipelineStatistics: VkFlags,
+};
+
 const VkExtent3D = extern struct {
     width: u32,
     height: u32,
@@ -293,6 +309,10 @@ extern fn vkCreatePipelineLayout(device: VkDevice, pCreateInfo: *const VkPipelin
 extern fn vkDestroyPipelineLayout(device: VkDevice, pipelineLayout: VkPipelineLayout, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkCreateComputePipelines(device: VkDevice, pipelineCache: VkPipelineCache, createInfoCount: u32, pCreateInfos: [*]const VkComputePipelineCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pPipelines: [*]VkPipeline) callconv(.c) VkResult;
 extern fn vkDestroyPipeline(device: VkDevice, pipeline: VkPipeline, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+extern fn vkCreateQueryPool(device: VkDevice, pCreateInfo: *const VkQueryPoolCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pQueryPool: *VkQueryPool) callconv(.c) VkResult;
+extern fn vkDestroyQueryPool(device: VkDevice, queryPool: VkQueryPool, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+extern fn vkCmdWriteTimestamp(commandBuffer: VkCommandBuffer, pipelineStage: VkFlags, queryPool: VkQueryPool, query: u32) callconv(.c) void;
+extern fn vkGetQueryPoolResults(device: VkDevice, queryPool: VkQueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: ?*anyopaque, stride: VkDeviceSize, flags: VkFlags) callconv(.c) VkResult;
 
 pub const DispatchMetrics = struct {
     encode_ns: u64 = 0,
@@ -331,6 +351,18 @@ const PhysicalDeviceSelection = struct {
     score: u64,
 };
 
+const HeadlessSurface = struct {
+    configured: bool = false,
+    acquired: bool = false,
+    width: u32 = 0,
+    height: u32 = 0,
+    format: model.WGPUTextureFormat = model.WGPUTextureFormat_RGBA8Unorm,
+    usage: model.WGPUFlags = model.WGPUTextureUsage_RenderAttachment,
+    alpha_mode: u32 = 0x00000001,
+    present_mode: u32 = 0x00000002,
+    desired_maximum_frame_latency: u32 = 2,
+};
+
 pub const NativeVulkanRuntime = struct {
     allocator: std.mem.Allocator,
     kernel_root: ?[]const u8,
@@ -344,6 +376,7 @@ pub const NativeVulkanRuntime = struct {
     queue_family_index: u32 = 0,
     queue_family_index_value_cache: ?u32 = null,
     present_capable_value: ?bool = null,
+    timestamp_query_supported_value: bool = false,
     command_pool: VkCommandPool = VK_NULL_U64,
     primary_command_buffer: VkCommandBuffer = null,
     fence: VkFence = VK_NULL_U64,
@@ -354,6 +387,7 @@ pub const NativeVulkanRuntime = struct {
     current_shader_hash: u64 = 0,
 
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
+    surfaces: std.AutoHashMapUnmanaged(u64, HeadlessSurface) = .{},
 
     src_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
     dst_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
@@ -379,6 +413,7 @@ pub const NativeVulkanRuntime = struct {
         _ = self.flush_queue() catch {};
         self.release_pending_uploads();
         self.pending_uploads.deinit(self.allocator);
+        self.surfaces.deinit(self.allocator);
         vk_release_pool(&self.src_pool, self.allocator, self.device);
         vk_release_pool(&self.dst_pool, self.allocator, self.device);
         self.destroy_pipeline_objects();
@@ -440,6 +475,12 @@ pub const NativeVulkanRuntime = struct {
         const hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(words));
         if (self.has_pipeline and hash == self.current_shader_hash) return;
         try self.build_pipeline_for_words(words, hash);
+    }
+
+    pub fn rebuild_compute_shader_spirv(self: *NativeVulkanRuntime, words: []const u32) !void {
+        if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
+        const hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(words));
+        try self.build_pipeline_for_words(words, hash +% 1);
     }
 
     pub fn upload_bytes(self: *NativeVulkanRuntime, bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
@@ -538,13 +579,27 @@ pub const NativeVulkanRuntime = struct {
         }
         const submit_end = common_timing.now_ns();
 
-        _ = gpu_timestamp_mode;
+        var gpu_timestamp_ns: u64 = 0;
+        var gpu_timestamp_attempted = false;
+        var gpu_timestamp_valid = false;
+        if (gpu_timestamp_mode != .off) {
+            if (queue_sync_mode != .per_command) {
+                if (gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
+            } else if (self.timestamp_query_supported()) {
+                gpu_timestamp_attempted = true;
+                gpu_timestamp_ns = try self.collect_dispatch_gpu_timestamp();
+                gpu_timestamp_valid = gpu_timestamp_ns > 0;
+                if (gpu_timestamp_mode == .require and !gpu_timestamp_valid) return error.TimingPolicyMismatch;
+            } else if (gpu_timestamp_mode == .require) {
+                return error.TimingPolicyMismatch;
+            }
+        }
         return .{
             .encode_ns = encode_ns,
             .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
-            .gpu_timestamp_ns = 0,
-            .gpu_timestamp_attempted = false,
-            .gpu_timestamp_valid = false,
+            .gpu_timestamp_ns = gpu_timestamp_ns,
+            .gpu_timestamp_attempted = gpu_timestamp_attempted,
+            .gpu_timestamp_valid = gpu_timestamp_valid,
         };
     }
 
@@ -598,6 +653,44 @@ pub const NativeVulkanRuntime = struct {
         return common_timing.ns_delta(common_timing.now_ns(), start_ns);
     }
 
+    pub fn pipeline_async_probe(self: *NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8, iterations: u32) !u64 {
+        const spirv_words = try self.load_kernel_spirv(allocator, kernel_name);
+        defer allocator.free(spirv_words);
+
+        const count = if (iterations > 0) iterations else 1;
+        const start_ns = common_timing.now_ns();
+        var index: u32 = 0;
+        while (index < count) : (index += 1) {
+            try self.rebuild_compute_shader_spirv(spirv_words);
+        }
+        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+    }
+
+    pub fn resource_table_immediates_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+        const count = if (iterations > 0) iterations else 1;
+        const start_ns = common_timing.now_ns();
+        var index: u32 = 0;
+        while (index < count) : (index += 1) {
+            try self.create_destroy_lifecycle_buffer(256);
+            try self.upload_bytes(64, .copy_dst);
+            _ = try self.flush_queue();
+        }
+        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+    }
+
+    pub fn pixel_local_storage_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+        const count = if (iterations > 0) iterations else 1;
+        const start_ns = common_timing.now_ns();
+        var index: u32 = 0;
+        while (index < count) : (index += 1) {
+            try self.create_destroy_lifecycle_buffer(512);
+            try self.upload_bytes(128, .copy_dst);
+            _ = try self.barrier(.process_events);
+        }
+        _ = try self.flush_queue();
+        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+    }
+
     pub fn adapter_ordinal(self: *const NativeVulkanRuntime) ?u32 {
         return self.adapter_ordinal_value;
     }
@@ -608,6 +701,58 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn present_capable(self: *const NativeVulkanRuntime) ?bool {
         return self.present_capable_value;
+    }
+
+    pub fn create_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        if (handle == 0) return error.InvalidArgument;
+        const result = try self.surfaces.getOrPut(self.allocator, handle);
+        if (result.found_existing) return error.InvalidState;
+        result.value_ptr.* = .{};
+    }
+
+    pub fn get_surface_capabilities(self: *NativeVulkanRuntime, handle: u64) !void {
+        _ = self.surfaces.get(handle) orelse return error.SurfaceUnavailable;
+    }
+
+    pub fn configure_surface(self: *NativeVulkanRuntime, cmd: model.SurfaceConfigureCommand) !void {
+        if (cmd.width == 0 or cmd.height == 0) return error.InvalidArgument;
+        const surface = self.surfaces.getPtr(cmd.handle) orelse return error.SurfaceUnavailable;
+        surface.* = .{
+            .configured = true,
+            .acquired = false,
+            .width = cmd.width,
+            .height = cmd.height,
+            .format = cmd.format,
+            .usage = if (cmd.usage == 0) model.WGPUTextureUsage_RenderAttachment else cmd.usage,
+            .alpha_mode = if (cmd.alpha_mode == 0) 0x00000001 else cmd.alpha_mode,
+            .present_mode = if (cmd.present_mode == 0) 0x00000002 else cmd.present_mode,
+            .desired_maximum_frame_latency = if (cmd.desired_maximum_frame_latency == 0) 2 else cmd.desired_maximum_frame_latency,
+        };
+    }
+
+    pub fn acquire_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
+        if (!surface.configured or surface.acquired) return error.SurfaceUnavailable;
+        surface.acquired = true;
+    }
+
+    pub fn present_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
+        if (!surface.configured or !surface.acquired) return error.SurfaceUnavailable;
+        surface.acquired = false;
+        _ = try self.flush_queue();
+    }
+
+    pub fn unconfigure_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
+        surface.configured = false;
+        surface.acquired = false;
+        surface.width = 0;
+        surface.height = 0;
+    }
+
+    pub fn release_surface(self: *NativeVulkanRuntime, handle: u64) !void {
+        if (!self.surfaces.remove(handle)) return error.SurfaceUnavailable;
     }
 
     fn bootstrap(self: *NativeVulkanRuntime) !void {
@@ -639,6 +784,7 @@ pub const NativeVulkanRuntime = struct {
         self.queue_family_index = selection.queue.index;
         self.queue_family_index_value_cache = selection.queue.index;
         self.present_capable_value = selection.queue.supports_graphics;
+        self.timestamp_query_supported_value = selection.queue.timestamp_valid_bits > 0;
     }
 
     fn create_device_and_queue(self: *NativeVulkanRuntime) !void {
@@ -796,19 +942,6 @@ pub const NativeVulkanRuntime = struct {
         self.pending_uploads.clearRetainingCapacity();
     }
 
-    fn find_compute_queue_family(self: *NativeVulkanRuntime) !u32 {
-        var count: u32 = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(self.physical_device, &count, null);
-        if (count == 0) return error.UnsupportedFeature;
-        const props = try self.allocator.alloc(VkQueueFamilyProperties, count);
-        defer self.allocator.free(props);
-        vkGetPhysicalDeviceQueueFamilyProperties(self.physical_device, &count, props.ptr);
-        for (props, 0..) |family, idx| {
-            if ((family.queueFlags & VK_QUEUE_COMPUTE_BIT) != 0 and family.queueCount > 0) return @as(u32, @intCast(idx));
-        }
-        return error.UnsupportedFeature;
-    }
-
     fn select_preferred_physical_device(self: *NativeVulkanRuntime, devices: []const VkPhysicalDevice) !PhysicalDeviceSelection {
         var best: ?PhysicalDeviceSelection = null;
         for (devices, 0..) |device, index| {
@@ -912,6 +1045,69 @@ pub const NativeVulkanRuntime = struct {
         try check_vk(vkBindBufferMemory(self.device, buffer, memory, 0));
     }
 
+    fn timestamp_query_supported(self: *const NativeVulkanRuntime) bool {
+        if (!self.has_device or self.queue == null) return false;
+        return self.queue_family_index_value_cache != null and self.timestamp_query_supported_value;
+    }
+
+    fn collect_dispatch_gpu_timestamp(self: *NativeVulkanRuntime) !u64 {
+        var query_pool: VkQueryPool = VK_NULL_U64;
+        defer if (query_pool != VK_NULL_U64) vkDestroyQueryPool(self.device, query_pool, null);
+
+        var create_info = VkQueryPoolCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .queryType = VK_QUERY_TYPE_TIMESTAMP,
+            .queryCount = 2,
+            .pipelineStatistics = 0,
+        };
+        try check_vk(vkCreateQueryPool(self.device, &create_info, null, &query_pool));
+
+        try check_vk(vkResetCommandPool(self.device, self.command_pool, 0));
+        var begin_info = VkCommandBufferBeginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = null,
+        };
+        try check_vk(vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+        vkCmdWriteTimestamp(self.primary_command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, query_pool, 0);
+        vkCmdBindPipeline(self.primary_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
+        vkCmdDispatch(self.primary_command_buffer, 1, 1, 1);
+        vkCmdWriteTimestamp(self.primary_command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, query_pool, 1);
+        try check_vk(vkEndCommandBuffer(self.primary_command_buffer));
+
+        var submit_info = VkSubmitInfo{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = null,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = null,
+            .pWaitDstStageMask = null,
+            .commandBufferCount = 1,
+            .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = null,
+        };
+        try check_vk(vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+        try check_vk(vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+        try check_vk(vkWaitForFences(self.device, 1, @ptrCast(&self.fence), VK_TRUE, WAIT_TIMEOUT_NS));
+
+        var results: [2]u64 = .{ 0, 0 };
+        try check_vk(vkGetQueryPoolResults(
+            self.device,
+            query_pool,
+            0,
+            2,
+            @sizeOf(@TypeOf(results)),
+            &results,
+            @sizeOf(u64),
+            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT,
+        ));
+        if (results[1] <= results[0]) return 0;
+        return results[1] - results[0];
+    }
+
     fn resolve_kernel_path(self: *const NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
         const direct = try allocator.dupe(u8, kernel_name);
         if (file_exists(direct)) return direct;
@@ -938,12 +1134,12 @@ pub const NativeVulkanRuntime = struct {
             return try allocator.dupe(u8, source_path);
         }
 
-        const sibling_spv = try std.fmt.allocPrint(allocator, "{s}.spv", .{ source_path });
+        const sibling_spv = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path});
         if (file_exists(sibling_spv)) return sibling_spv;
         allocator.free(sibling_spv);
 
         if (std.mem.lastIndexOfScalar(u8, source_path, '.')) |idx| {
-            const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{ source_path[0..idx] });
+            const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0..idx]});
             if (file_exists(replaced)) return replaced;
             allocator.free(replaced);
         }

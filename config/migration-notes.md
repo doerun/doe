@@ -722,13 +722,29 @@ Contract updates in this change:
   `async_pixel_local_storage`.
 - Native Vulkan now declares and executes only the honest submodes currently
   supported in `zig/src/backend/vulkan/mod.zig`:
-  `capability_introspection` and `lifecycle_refcount`.
-- Remaining Vulkan async-diagnostics submodes stay explicit unsupported with
-  submode-specific taxonomy, so workload/config surfaces cannot overclaim family
-  support from partial implementation.
+  `capability_introspection`, `lifecycle_refcount`, and `pipeline_async`.
+- Native Vulkan now executes `resource_table_immediates` and
+  `pixel_local_storage` through explicit Doe-native emulation paths when the
+  workload contract requests `featurePolicy=emulate_when_unavailable`.
+- `full` remains explicit unsupported for strict mode, so workload/config
+  surfaces cannot overclaim family support from partial implementation.
 - AMD Vulkan workload contracts now carry `asyncDiagnosticsMode` where relevant
   so reports/evidence preserve the specific submode rather than only the coarse
   `async_diagnostics` family label.
+
+### Vulkan native headless surface/timestamp follow-up (2026-03-06)
+
+- `zig/src/backend/vulkan/mod.zig` and
+  `zig/src/backend/vulkan/native_runtime.zig` now execute `surface_create`,
+  `surface_capabilities`, `surface_configure`, `surface_acquire`,
+  `surface_present`, `surface_unconfigure`, and `surface_release` through a
+  native Doe headless surface lifecycle/present path.
+- This surface path is native evidence only; AMD workload contracts still keep
+  `surface_presentation` directional-only until the benchmark methodology is
+  apples-to-apples against Dawn.
+- Native Vulkan dispatch now records real GPU timestamps in per-command mode
+  when the selected queue family exposes timestamp support; `GpuTimestampMode.require`
+  fails fast when strict timestamp policy cannot be satisfied.
 
 ### Vulkan large-upload cap removal (2026-03-06)
 

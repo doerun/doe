@@ -24,7 +24,7 @@ import { parseArgs } from 'node:util';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, '..');
-const WORKSPACE_ROOT = resolve(PACKAGE_ROOT, '..', '..', '..');
+const WORKSPACE_ROOT = resolve(PACKAGE_ROOT, '..', '..');
 
 const { values: args } = parseArgs({
   options: {

@@ -1475,17 +1475,18 @@ static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
     return NULL;
 }
 
-/* flushAndMapSync(queue, buffer, mode, offset, size) — flush + map in one N-API call. */
+/* flushAndMapSync(instance, queue, buffer, mode, offset, size) — flush + map in one N-API call. */
 static napi_value doe_flush_and_map_sync(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 5);
+    NAPI_ASSERT_ARGC(env, info, 6);
     CHECK_LIB_LOADED(env);
-    WGPUQueue queue = unwrap_ptr(env, _args[0]);
-    WGPUBuffer buf = unwrap_ptr(env, _args[1]);
+    WGPUInstance inst = unwrap_ptr(env, _args[0]);
+    WGPUQueue queue = unwrap_ptr(env, _args[1]);
+    WGPUBuffer buf = unwrap_ptr(env, _args[2]);
     uint32_t mode;
-    napi_get_value_uint32(env, _args[2], &mode);
+    napi_get_value_uint32(env, _args[3], &mode);
     int64_t offset_i, size_i;
-    napi_get_value_int64(env, _args[3], &offset_i);
-    napi_get_value_int64(env, _args[4], &size_i);
+    napi_get_value_int64(env, _args[4], &offset_i);
+    napi_get_value_int64(env, _args[5], &size_i);
 
     if (!queue || !buf) NAPI_THROW(env, "flushAndMapSync requires queue and buffer");
 
@@ -1494,17 +1495,25 @@ static napi_value doe_flush_and_map_sync(napi_env env, napi_callback_info info) 
         pfn_doeNativeQueueFlush(queue);
     }
 
-    /* Map the buffer (immediate in Doe — sets mapped=true). */
+    /* Map the buffer synchronously via processEvents polling. */
     BufferMapResult result = {0, 0};
     WGPUBufferMapCallbackInfo cb_info = {
         .nextInChain = NULL,
-        .mode = WGPU_CALLBACK_MODE_WAIT_ANY_ONLY,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
         .callback = buffer_map_callback,
         .userdata1 = &result,
         .userdata2 = NULL,
     };
-    pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
-    return NULL;
+    WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
+        (size_t)offset_i, (size_t)size_i, cb_info);
+    if (future.id == 0) NAPI_THROW(env, "flushAndMapSync: bufferMapAsync future unavailable");
+    if (!process_events_until(inst, &result.done, DOE_DEFAULT_TIMEOUT_NS) ||
+        result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+        NAPI_THROW(env, "flushAndMapSync: bufferMapAsync failed");
+
+    napi_value ok;
+    napi_get_boolean(env, true, &ok);
+    return ok;
 }
 
 static napi_value doe_queue_release(napi_env env, napi_callback_info info) {

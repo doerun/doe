@@ -1,0 +1,79 @@
+{
+  "type": "comparison_report",
+  "timestamp": "2026-03-06T21:44:07.617Z",
+  "iterations": 50,
+  "warmup": 5,
+  "platform": "linux",
+  "arch": "x64",
+  "bunVersion": "1.3.10",
+  "claimable": 0,
+  "total": 4,
+  "comparisons": [
+    {
+      "workload": "buffer_map_write_unmap",
+      "status": "doe_missing",
+      "doeMedianMs": null,
+      "dawnMedianMs": 0.08740500000004658
+    },
+    {
+      "workload": "buffer_upload_1mb",
+      "domain": "upload",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.02393500000002291,
+      "dawnMedianMs": 0.02373499999998785,
+      "speedup": 0.99,
+      "pctFaster": -0.8,
+      "claimable": false,
+      "doeP95Ms": 0.7302860000000067,
+      "dawnP95Ms": 0.7939460000000054,
+      "doeP99Ms": 2.1146659999999997,
+      "dawnP99Ms": 1.0297610000000077
+    },
+    {
+      "workload": "buffer_upload_16mb",
+      "domain": "upload",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 3.8558980000000247,
+      "dawnMedianMs": 3.3780780000000163,
+      "speedup": 0.88,
+      "pctFaster": -14.1,
+      "claimable": false,
+      "doeP95Ms": 10.077676999999994,
+      "dawnP95Ms": 4.448766000000035,
+      "doeP99Ms": 13.42664000000002,
+      "dawnP99Ms": 5.099181999999985
+    },
+    {
+      "workload": "buffer_upload_64kb",
+      "domain": "upload",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.0033860000000061063,
+      "dawnMedianMs": 0.0025150000000166983,
+      "speedup": 0.74,
+      "pctFaster": -34.6,
+      "claimable": false,
+      "doeP95Ms": 0.012864000000007536,
+      "dawnP95Ms": 0.16633300000000872,
+      "doeP99Ms": 0.039844999999985475,
+      "dawnP99Ms": 0.33356900000001133
+    },
+    {
+      "workload": "buffer_upload_1kb",
+      "domain": "upload",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.0032060000000058153,
+      "dawnMedianMs": 0.002144000000015467,
+      "speedup": 0.67,
+      "pctFaster": -49.5,
+      "claimable": false,
+      "doeP95Ms": 0.010358999999994012,
+      "dawnP95Ms": 0.007344000000017559,
+      "doeP99Ms": 0.12018699999998717,
+      "dawnP99Ms": 0.1597009999999841
+    }
+  ]
+}

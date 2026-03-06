@@ -1,0 +1,1 @@
+{"backendId":"doe_vulkan","backendKind":"native_vulkan","timingSource":"cpu_wall_clock","comparability":"directional","claimable":false,"module":"kernel_dispatch","statusCode":"missing Vulkan SPIR-V artifact for WGSL kernel workgroup_atomic.wgsl; add explicit .spv artifact in kernel-root","previousManifestHash":"af2022233be74671fd18ee38d66eb6a45af7f30c6c5cc66a38f41d733bf7beff"}

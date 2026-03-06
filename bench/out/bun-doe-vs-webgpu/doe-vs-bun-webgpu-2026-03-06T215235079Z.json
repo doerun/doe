@@ -1,0 +1,73 @@
+{
+  "type": "comparison_report",
+  "timestamp": "2026-03-06T21:52:35.075Z",
+  "iterations": 50,
+  "warmup": 5,
+  "platform": "linux",
+  "arch": "x64",
+  "bunVersion": "1.3.10",
+  "claimable": 3,
+  "total": 4,
+  "comparisons": [
+    {
+      "workload": "compute_e2e_65536",
+      "domain": "compute",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.03374299999998698,
+      "dawnMedianMs": 0.14880999999996902,
+      "speedup": 4.41,
+      "pctFaster": 77.3,
+      "claimable": true,
+      "doeP95Ms": 0.15215700000001675,
+      "dawnP95Ms": 1.553288000000009,
+      "doeP99Ms": 0.24350899999998887,
+      "dawnP99Ms": 5.518441999999993
+    },
+    {
+      "workload": "compute_e2e_4096",
+      "domain": "compute",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.05735799999999358,
+      "dawnMedianMs": 0.21876200000002655,
+      "speedup": 3.81,
+      "pctFaster": 73.8,
+      "claimable": true,
+      "doeP95Ms": 0.38521599999998557,
+      "dawnP95Ms": 1.4926329999999552,
+      "doeP99Ms": 1.91999899999999,
+      "dawnP99Ms": 5.434474000000023
+    },
+    {
+      "workload": "compute_e2e_256",
+      "domain": "compute",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.0579490000000078,
+      "dawnMedianMs": 0.17294599999999605,
+      "speedup": 2.98,
+      "pctFaster": 66.5,
+      "claimable": true,
+      "doeP95Ms": 0.41319900000000587,
+      "dawnP95Ms": 2.35214400000001,
+      "doeP99Ms": 0.9128809999999987,
+      "dawnP99Ms": 5.221501999999987
+    },
+    {
+      "workload": "compute_dispatch_simple",
+      "domain": "compute",
+      "comparable": false,
+      "status": "compared",
+      "doeMedianMs": 0.01157100000000355,
+      "dawnMedianMs": 0.023995000000013533,
+      "speedup": 2.07,
+      "pctFaster": 51.8,
+      "claimable": false,
+      "doeP95Ms": 0.04548600000001102,
+      "dawnP95Ms": 0.11438600000002452,
+      "doeP99Ms": 0.060154000000011365,
+      "dawnP99Ms": 3.387344999999982
+    }
+  ]
+}

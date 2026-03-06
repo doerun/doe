@@ -67,8 +67,13 @@ pub const ZigVulkanBackend = struct {
             .kernel_dispatch,
             .buffer_upload,
             .barrier_sync,
+            .surface_lifecycle,
+            .surface_present,
+            .async_pipeline_diagnostics,
             .async_capability_introspection,
+            .async_resource_table_immediates,
             .async_lifecycle_refcount,
+            .async_pixel_local_storage,
             .gpu_timestamps,
         });
 
@@ -463,57 +468,72 @@ fn execute_async_diagnostics(
             _ = runtime.queue_family_index_value();
             _ = runtime.present_capable();
             const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-            return .{
-                .status = .ok,
-                .status_message = "",
-                .setup_ns = setup_ns,
-                .encode_ns = encode_ns,
-                .submit_wait_ns = 0,
-                .dispatch_count = iterations,
-                .gpu_timestamp_ns = 0,
-                .gpu_timestamp_attempted = false,
-                .gpu_timestamp_valid = false,
-            };
+            return result_without_gpu_timestamps(setup_ns, encode_ns, 0, iterations);
         },
         .lifecycle_refcount => {
             const encode_ns = try runtime.lifecycle_probe(iterations);
-            return .{
-                .status = .ok,
-                .status_message = "",
-                .setup_ns = setup_ns,
-                .encode_ns = encode_ns,
-                .submit_wait_ns = 0,
-                .dispatch_count = iterations,
-                .gpu_timestamp_ns = 0,
-                .gpu_timestamp_attempted = false,
-                .gpu_timestamp_valid = false,
+            return result_without_gpu_timestamps(setup_ns, encode_ns, 0, iterations);
+        },
+        .pipeline_async => return result_without_gpu_timestamps(setup_ns, try runtime.pipeline_async_probe(self.allocator, "shader_compile_pipeline_stress.spv", iterations), 0, iterations),
+        .resource_table_immediates => switch (diagnostics.feature_policy) {
+            .strict => return .{ .status = .unsupported, .status_message = "async_resource_table_immediates", .setup_ns = setup_ns, .dispatch_count = iterations },
+            .emulate_when_unavailable => return result_without_gpu_timestamps(setup_ns, try runtime.resource_table_immediates_emulation_probe(iterations), 0, iterations),
+        },
+        .pixel_local_storage => switch (diagnostics.feature_policy) {
+            .strict => return .{ .status = .unsupported, .status_message = "async_pixel_local_storage", .setup_ns = setup_ns, .dispatch_count = iterations },
+            .emulate_when_unavailable => return result_without_gpu_timestamps(setup_ns, try runtime.pixel_local_storage_emulation_probe(iterations), 0, iterations),
+        },
+        .full => {
+            const capability_ns = blk: {
+                const encode_start = common_timing.now_ns();
+                _ = runtime.adapter_ordinal();
+                _ = runtime.queue_family_index_value();
+                _ = runtime.present_capable();
+                break :blk common_timing.ns_delta(common_timing.now_ns(), encode_start);
             };
-        },
-        .pipeline_async => return .{
-            .status = .unsupported,
-            .status_message = "async_pipeline_diagnostics",
-            .setup_ns = setup_ns,
-            .dispatch_count = iterations,
-        },
-        .resource_table_immediates => return .{
-            .status = .unsupported,
-            .status_message = "async_resource_table_immediates",
-            .setup_ns = setup_ns,
-            .dispatch_count = iterations,
-        },
-        .pixel_local_storage => return .{
-            .status = .unsupported,
-            .status_message = "async_pixel_local_storage",
-            .setup_ns = setup_ns,
-            .dispatch_count = iterations,
-        },
-        .full => return .{
-            .status = .unsupported,
-            .status_message = "async_diagnostics_full",
-            .setup_ns = setup_ns,
-            .dispatch_count = iterations,
+            var encode_ns = capability_ns;
+            encode_ns +|= try runtime.pipeline_async_probe(self.allocator, "shader_compile_pipeline_stress.spv", iterations);
+            encode_ns +|= try runtime.lifecycle_probe(iterations);
+            switch (diagnostics.feature_policy) {
+                .strict => return .{ .status = .unsupported, .status_message = "async_diagnostics_full", .setup_ns = setup_ns, .dispatch_count = iterations },
+                .emulate_when_unavailable => {
+                    encode_ns +|= try runtime.resource_table_immediates_emulation_probe(iterations);
+                    encode_ns +|= try runtime.pixel_local_storage_emulation_probe(iterations);
+                },
+            }
+            return result_without_gpu_timestamps(setup_ns, encode_ns, 0, iterations);
         },
     }
+}
+
+fn execute_surface_command(self: *ZigVulkanBackend, setup_ns: u64, command: model.Command) !webgpu.NativeExecutionResult {
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const start_ns = common_timing.now_ns();
+    switch (command) {
+        .surface_create => |cmd| try runtime.create_surface(cmd.handle),
+        .surface_capabilities => |cmd| try runtime.get_surface_capabilities(cmd.handle),
+        .surface_configure => |cmd| try runtime.configure_surface(cmd),
+        .surface_acquire => |cmd| try runtime.acquire_surface(cmd.handle),
+        .surface_present => |cmd| try runtime.present_surface(cmd.handle),
+        .surface_unconfigure => |cmd| try runtime.unconfigure_surface(cmd.handle),
+        .surface_release => |cmd| try runtime.release_surface(cmd.handle),
+        else => return error.InvalidArgument,
+    }
+    return result_without_gpu_timestamps(setup_ns, common_timing.ns_delta(common_timing.now_ns(), start_ns), 0, 0);
+}
+
+fn result_without_gpu_timestamps(setup_ns: u64, encode_ns: u64, submit_wait_ns: u64, dispatch_count: u32) webgpu.NativeExecutionResult {
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns,
+        .encode_ns = encode_ns,
+        .submit_wait_ns = submit_wait_ns,
+        .dispatch_count = dispatch_count,
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+    };
 }
 
 fn flush_pending_uploads_if_required(self: *ZigVulkanBackend, command: model.Command) !u64 {
@@ -549,6 +569,14 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
         .kernel_dispatch => |kernel_dispatch| try execute_kernel_dispatch(self, setup_ns, kernel_dispatch),
         .async_diagnostics => |diagnostics| try execute_async_diagnostics(self, setup_ns, diagnostics),
+        .surface_create,
+        .surface_capabilities,
+        .surface_configure,
+        .surface_acquire,
+        .surface_present,
+        .surface_unconfigure,
+        .surface_release,
+        => try execute_surface_command(self, setup_ns, command),
         else => return error.Unsupported,
     };
     result.submit_wait_ns +|= pending_submit_wait_ns;
@@ -562,8 +590,13 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .kernel_dispatch,
         .buffer_upload,
         .barrier_sync,
+        .surface_lifecycle,
+        .surface_present,
+        .async_pipeline_diagnostics,
         .async_capability_introspection,
+        .async_resource_table_immediates,
         .async_lifecycle_refcount,
+        .async_pixel_local_storage,
         .gpu_timestamps,
     });
 

@@ -52,6 +52,15 @@ Latest local strict comparable matrix artifact:
 - claimable workloads: `30 / 30`
 - Doe faster than Dawn on every workload
 
+**Data quality caveat (under investigation):** Small-upload workloads in the
+Metal extended comparable report show Doe p50 timings in the sub-microsecond
+range (e.g. 0.208µs for 1KB upload) while Dawn reports ~189µs for the same
+workload. This produces delta percentages exceeding 90,000% which are not
+credible speedups. Doe appears to be measuring encode-only latency (no GPU
+execution wait) while Dawn includes the full operation. These cells show as
+`claimable` because the source report marks them that way, but the timing
+scope mismatch must be resolved before they are citable.
+
 Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
 
 ### Node package comparison (`@simulatte/webgpu` vs npm `webgpu`)
@@ -77,15 +86,16 @@ should be read as package/runtime positioning evidence, not as a replacement for
 strict Dawn-vs-Doe backend reports.
 
 Current caveat:
-- Linux Node use now fails fast instead of hanging when only `libdoe_webgpu.so`
-  is available, because the in-process Doe Vulkan Node path is not wired
-  through that drop-in yet.
-- Explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` remains available only for
-  non-claimable delegate diagnostics and should not be cited as Doe-vs-Dawn
-  evidence.
+- Linux Node Doe-native path is wired end-to-end (Linux guard removed).
+  No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
+  are present.
+- Self-contained install ships prebuilt `doe_napi.node` + `libdoe_webgpu` +
+  Dawn sidecar per platform. Falls back to node-gyp from source.
 
-Bun remains a prototype FFI surface. It is exported from the package, but it is
-not yet represented by a real compare lane with parity-grade benchmark artifacts.
+Bun has API parity with Node via direct FFI (57/57 contract tests passing).
+Bun benchmark lane is at `bench/bun/compare.js` and compares Doe FFI against
+the `bun-webgpu` package. Cube maturity remains prototype until cells are
+populated by comparable artifacts.
 
 ## How it works
 
@@ -177,8 +187,9 @@ The canonical npm package is `@simulatte/webgpu`, rooted in `nursery/webgpu/`.
 It contains the Doe-native Node provider, addon build contract, Bun FFI path,
 and CLI tools for benchmarking and CI workflows.
 
-Node is the primary supported package surface today. Bun remains prototype until
-the package compare lane and artifact coverage catch up.
+Node is the primary supported package surface. Bun has API parity (57/57
+contract tests) via direct FFI; cube maturity remains prototype until cells
+are populated by comparable benchmark artifacts.
 
 ```bash
 # install from npm

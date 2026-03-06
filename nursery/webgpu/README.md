@@ -3,6 +3,14 @@
 Canonical Doe WebGPU package for browserless benchmarking, CI workflows, and
 headless runtime integration.
 
+Doe is a WebGPU backend written in Zig that replaces Dawn (Chromium's C++
+WebGPU implementation). Zig gives direct C ABI calls to Vulkan/Metal/D3D12
+without marshaling, explicit allocator control, and comptime specialization
+from device profiles — structurally fewer branches and allocations per
+dispatched command. Where Lean 4 proofs can discharge a validation invariant
+at build time, the corresponding runtime branch is deleted entirely — the
+hot path gets physically shorter.
+
 This directory is the package root for `@simulatte/webgpu`. It contains the
 Node provider source, the addon build contract, the Bun FFI entrypoint, and
 the CLI helpers used by benchmark and CI workflows.
@@ -37,10 +45,10 @@ listed below.
 ## From Source
 
 ```bash
-cd /home/x/deco/fawn/zig
-zig build dropin
+# From the Fawn workspace root:
+cd zig && zig build dropin   # build libdoe_webgpu + Dawn sidecar
 
-cd /home/x/deco/fawn/nursery/webgpu
+cd nursery/webgpu
 npm run build:addon          # compile doe_napi.node from source
 npm run smoke                # verify native loading + GPU round-trip
 ```

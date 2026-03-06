@@ -246,6 +246,7 @@ export const workloads = [
 function makeComputeE2E(threadCount, workgroupSize) {
   return (device, queue, G) => {
     const size = threadCount * 4;
+    const VALIDATE_FLOATS = 4;
     const wgsl = `
       @group(0) @binding(0) var<storage, read_write> data: array<f32>;
       @compute @workgroup_size(${workgroupSize})
@@ -253,7 +254,8 @@ function makeComputeE2E(threadCount, workgroupSize) {
         data[id.x] = data[id.x] + 1.0;
       }
     `;
-    let storageBuf, stagingBuf, shader, pipeline, bindGroupLayout, bindGroup, pipelineLayout;
+    let storageBuf, stagingBuf, shader, pipeline, bindGroupLayout, bindGroup, pipelineLayout, input;
+    const validateBytes = Math.min(size, VALIDATE_FLOATS * Float32Array.BYTES_PER_ELEMENT);
     return {
       setup() {
         storageBuf = device.createBuffer({
@@ -264,7 +266,7 @@ function makeComputeE2E(threadCount, workgroupSize) {
           size,
           usage: G.GPUBufferUsage.MAP_READ | G.GPUBufferUsage.COPY_DST,
         });
-        const input = new Float32Array(threadCount);
+        input = new Float32Array(threadCount);
         queue.writeBuffer(storageBuf, 0, input);
         shader = device.createShaderModule({ code: wgsl });
         bindGroupLayout = device.createBindGroupLayout({
@@ -293,6 +295,20 @@ function makeComputeE2E(threadCount, workgroupSize) {
         await stagingBuf.mapAsync(G.GPUMapMode.READ);
         stagingBuf.getMappedRange();
         stagingBuf.unmap();
+      },
+      async validate() {
+        await this.run();
+        await stagingBuf.mapAsync(G.GPUMapMode.READ, 0, validateBytes);
+        const mapped = new Float32Array(stagingBuf.getMappedRange(0, validateBytes));
+        for (let i = 0; i < Math.min(VALIDATE_FLOATS, threadCount); i++) {
+          if (mapped[i] !== 1.0) {
+            stagingBuf.unmap();
+            return { ok: false, detail: `expected readback[${i}] === 1, got ${mapped[i]}` };
+          }
+        }
+        stagingBuf.unmap();
+        queue.writeBuffer(storageBuf, 0, input);
+        return { ok: true };
       },
       teardown() {
         storageBuf.destroy();

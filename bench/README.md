@@ -371,6 +371,10 @@ Extended workload domains now include:
 - hard-gated pilot promotions now treated as strict comparable include `render_multidraw` and `render_multidraw_indexed` (`applesToApplesVetted=true`).
 - hard-gated contract promotions now also include `resource_lifecycle` and `compute_indirect_timestamp` (`applesToApplesVetted=true`).
 - `surface_presentation` is directional-only (`comparable=false`) because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.
+- AMD native Vulkan now executes `surface_presentation` through a Doe-owned
+  headless surface lifecycle/present path, and executes `resource_table_immediates`
+  / `render_pixel_local_storage_barrier` through explicit native emulation when
+  the workload contract opts into `featurePolicy=emulate_when_unavailable`.
 - `compute_concurrent_execution_single` is the strict comparable replacement for Dawn `ConcurrentExecutionTest ... RunSingle`.
 - compute kernels matched to Dawn compute suites: `WorkgroupAtomicPerf` (atomic/non-atomic) and `MatrixVectorMultiplyPerf` (Rows=32768, Cols=2048, F32/F32 Naive).
   Matvec variants in config:

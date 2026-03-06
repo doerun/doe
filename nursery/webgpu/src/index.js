@@ -115,7 +115,7 @@ class DoeGPUBuffer {
   }
 
   async mapAsync(mode, offset = 0, size = this.size) {
-    if (this._queue) addon.flushAndMapSync(this._queue, this._native, mode, offset, size);
+    if (this._queue) addon.flushAndMapSync(this._instance, this._queue, this._native, mode, offset, size);
     else addon.bufferMapSync(this._instance, this._native, mode, offset, size);
   }
 

@@ -3,6 +3,26 @@ const types = @import("../wgpu_types.zig");
 const dropin_lib = @import("../wgpu_dropin_lib.zig");
 
 const loadRequiredProc = dropin_lib.loadRequiredProc;
+const BUFFER_MAP_SYNC_TIMEOUT_NS = 5 * std.time.ns_per_s;
+
+const BufferMapSyncResult = struct {
+    done: bool = false,
+    status: types.WGPUMapAsyncStatus = 0,
+};
+
+fn buffer_map_sync_callback(
+    status: types.WGPUMapAsyncStatus,
+    message: types.WGPUStringView,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) void {
+    _ = message;
+    _ = userdata2;
+    const raw = userdata1 orelse return;
+    const result: *BufferMapSyncResult = @ptrCast(@alignCast(raw));
+    result.status = status;
+    result.done = true;
+}
 
 pub export fn wgpuCreateInstance(a0: ?*anyopaque) callconv(.c) types.WGPUInstance {
     const proc = loadRequiredProc(types.FnWgpuCreateInstance, "wgpuCreateInstance");
@@ -380,6 +400,33 @@ pub export fn doeBufferMapAsyncFlat(
     };
     const proc = loadRequiredProc(types.FnWgpuBufferMapAsync, "wgpuBufferMapAsync");
     return proc(buffer, mode, offset, size, info);
+}
+
+pub export fn doeBufferMapSyncFlat(
+    instance: types.WGPUInstance,
+    buffer: types.WGPUBuffer,
+    mode: types.WGPUMapMode,
+    offset: usize,
+    size: usize,
+) callconv(.c) types.WGPUMapAsyncStatus {
+    var result = BufferMapSyncResult{};
+    const info = types.WGPUBufferMapCallbackInfo{
+        .nextInChain = null,
+        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .callback = buffer_map_sync_callback,
+        .userdata1 = @ptrCast(&result),
+        .userdata2 = null,
+    };
+    const map_proc = loadRequiredProc(types.FnWgpuBufferMapAsync, "wgpuBufferMapAsync");
+    const future = map_proc(buffer, mode, offset, size, info);
+    if (future.id == 0) return 0;
+    const process_events = loadRequiredProc(types.FnWgpuInstanceProcessEvents, "wgpuInstanceProcessEvents");
+    const start_ns = std.time.nanoTimestamp();
+    while (!result.done) {
+        process_events(instance);
+        if (std.time.nanoTimestamp() - start_ns >= BUFFER_MAP_SYNC_TIMEOUT_NS) return 0;
+    }
+    return result.status;
 }
 
 // FFI-friendly queue work-done: flattened args for runtimes that cannot pass WGPUQueueWorkDoneCallbackInfo by value.

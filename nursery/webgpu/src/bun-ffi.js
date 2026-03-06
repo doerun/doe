@@ -107,6 +107,7 @@ function resolveDoeLibraryPath() {
 }
 
 const DOE_LIB_PATH = resolveDoeLibraryPath();
+const DOE_LIBRARY_FLAVOR = libraryFlavor(DOE_LIB_PATH);
 let wgpu = null;
 
 // ---------------------------------------------------------------------------
@@ -135,6 +136,7 @@ function openLibrary(path) {
         wgpuBufferGetConstMappedRange: { args: [FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.ptr },
         wgpuBufferGetMappedRange: { args: [FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.ptr },
         doeBufferMapAsyncFlat:    { args: [FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u64, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
+        doeBufferMapSyncFlat:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u64], returns: FFIType.u32 },
 
         // Queue
         wgpuQueueSubmit:          { args: [FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
@@ -590,6 +592,14 @@ function requestDeviceSync(instancePtr, adapterPtr) {
 }
 
 function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
+    if (wgpu.symbols.doeBufferMapSyncFlat) {
+        const status = wgpu.symbols.doeBufferMapSyncFlat(
+            instancePtr, bufferPtr, BigInt(mode), BigInt(offset), BigInt(size));
+        if (status !== MAP_ASYNC_STATUS_SUCCESS) {
+            throw new Error(`[fawn-webgpu] bufferMapAsync failed (status=${status})`);
+        }
+        return;
+    }
     let mapStatus = null;
     let done = false;
     const cb = new JSCallback(
@@ -610,28 +620,6 @@ function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
     }
 }
 
-const QUEUE_WORK_DONE_STATUS_SUCCESS = 1;
-
-function queueFlush(instancePtr, queuePtr) {
-    let cbStatus = null;
-    let done = false;
-    const cb = new JSCallback(
-        (status, _msgData, _msgLen, _ud1, _ud2) => { cbStatus = status; done = true; },
-        { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
-    );
-    try {
-        const futureId = wgpu.symbols.doeQueueOnSubmittedWorkDoneFlat(
-            queuePtr, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
-        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] queueFlush future unavailable");
-        processEventsUntilDone(instancePtr, () => done);
-        if (cbStatus !== QUEUE_WORK_DONE_STATUS_SUCCESS) {
-            throw new Error(`[fawn-webgpu] queueFlush failed (status=${cbStatus})`);
-        }
-    } finally {
-        cb.close();
-    }
-}
-
 // ---------------------------------------------------------------------------
 // WebGPU wrapper classes — matches index.js surface exactly
 // ---------------------------------------------------------------------------
@@ -646,7 +634,6 @@ class DoeGPUBuffer {
     }
 
     async mapAsync(mode, offset = 0, size = this.size) {
-        if (this._queue) queueFlush(this._instance, this._queue);
         bufferMapSync(this._instance, this._native, mode, offset, size);
         this._mapMode = mode;
     }
@@ -660,6 +647,9 @@ class DoeGPUBuffer {
         }
         const dataPtr = wgpu.symbols.wgpuBufferGetConstMappedRange(this._native, BigInt(offset), BigInt(size));
         if (!dataPtr) throw new Error("[fawn-webgpu] getMappedRange returned NULL");
+        if (DOE_LIBRARY_FLAVOR === "doe-dropin") {
+            return toArrayBuffer(dataPtr, 0, size);
+        }
         const nativeView = toArrayBuffer(dataPtr, 0, size);
         const copy = new ArrayBuffer(size);
         new Uint8Array(copy).set(new Uint8Array(nativeView));
@@ -1032,13 +1022,13 @@ function libraryFlavor(libraryPath) {
 }
 
 export function providerInfo() {
-    const flavor = libraryFlavor(DOE_LIB_PATH);
+    const flavor = DOE_LIBRARY_FLAVOR;
     return {
         module: "@simulatte/webgpu",
         loaded: !!DOE_LIB_PATH,
         loadError: !DOE_LIB_PATH ? "libdoe_webgpu not found" : "",
         defaultCreateArgs: [],
-        doeNative: flavor === "doe-dropin" && process.platform !== "linux",
+        doeNative: flavor === "doe-dropin",
         libraryFlavor: flavor,
         doeLibraryPath: DOE_LIB_PATH ?? "",
     };
