@@ -120,8 +120,8 @@ class DoeGPUBuffer {
   }
 
   async mapAsync(mode, offset = 0, size = this.size) {
-    if (this._queue) addon.queueFlush(this._queue);
-    addon.bufferMapSync(this._instance, this._native, mode, offset, size);
+    if (this._queue) addon.flushAndMapSync(this._queue, this._native, mode, offset, size);
+    else addon.bufferMapSync(this._instance, this._native, mode, offset, size);
   }
 
   getMappedRange(offset = 0, size = this.size) {
@@ -171,14 +171,38 @@ class DoeGPUComputePassEncoder {
 }
 
 class DoeGPUCommandEncoder {
-  constructor(native) { this._native = native; }
+  constructor(device) {
+    this._device = device;
+    this._commands = [];
+    this._native = null;
+  }
+
+  _ensureNative() {
+    if (this._native) return;
+    this._native = addon.createCommandEncoder(this._device);
+    for (const cmd of this._commands) {
+      if (cmd.t === 0) {
+        const pass = addon.beginComputePass(this._native);
+        addon.computePassSetPipeline(pass, cmd.p);
+        for (let i = 0; i < cmd.bg.length; i++) {
+          if (cmd.bg[i]) addon.computePassSetBindGroup(pass, i, cmd.bg[i]);
+        }
+        addon.computePassDispatchWorkgroups(pass, cmd.x, cmd.y, cmd.z);
+        addon.computePassEnd(pass);
+        addon.computePassRelease(pass);
+      } else if (cmd.t === 1) {
+        addon.commandEncoderCopyBufferToBuffer(this._native, cmd.s, cmd.so, cmd.d, cmd.do, cmd.sz);
+      }
+    }
+    this._commands = [];
+  }
 
   beginComputePass(descriptor) {
-    const pass = addon.beginComputePass(this._native);
-    return new DoeGPUComputePassEncoder(pass);
+    return new DoeGPUComputePassEncoder(this);
   }
 
   beginRenderPass(descriptor) {
+    this._ensureNative();
     const colorAttachments = (descriptor.colorAttachments || []).map((a) => ({
       view: a.view._native,
       clearValue: a.clearValue || { r: 0, g: 0, b: 0, a: 1 },
@@ -188,25 +212,38 @@ class DoeGPUCommandEncoder {
   }
 
   copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) {
-    addon.commandEncoderCopyBufferToBuffer(
-      this._native, src._native, srcOffset, dst._native, dstOffset, size);
+    if (this._native) {
+      addon.commandEncoderCopyBufferToBuffer(this._native, src._native, srcOffset, dst._native, dstOffset, size);
+    } else {
+      this._commands.push({ t: 1, s: src._native, so: srcOffset, d: dst._native, do: dstOffset, sz: size });
+    }
   }
 
   finish() {
-    const cmd = addon.commandEncoderFinish(this._native);
-    return { _native: cmd };
+    if (this._native) {
+      const cmd = addon.commandEncoderFinish(this._native);
+      return { _native: cmd, _batched: false };
+    }
+    return { _commands: this._commands, _batched: true };
   }
 }
 
 class DoeGPUQueue {
-  constructor(native, instance) {
+  constructor(native, instance, device) {
     this._native = native;
     this._instance = instance;
+    this._device = device;
   }
 
   submit(commandBuffers) {
-    const natives = commandBuffers.map((c) => c._native);
-    addon.queueSubmit(this._native, natives);
+    if (commandBuffers.length > 0 && commandBuffers.every((c) => c._batched)) {
+      const allCommands = [];
+      for (const cb of commandBuffers) allCommands.push(...cb._commands);
+      addon.submitBatched(this._device, this._native, allCommands);
+    } else {
+      const natives = commandBuffers.map((c) => c._native);
+      addon.queueSubmit(this._native, natives);
+    }
   }
 
   writeBuffer(buffer, bufferOffset, data, dataOffset = 0, size) {
@@ -336,7 +373,7 @@ class DoeGPUDevice {
     this._native = native;
     this._instance = instance;
     const q = addon.deviceGetQueue(native);
-    this.queue = new DoeGPUQueue(q, instance);
+    this.queue = new DoeGPUQueue(q, instance, native);
     this.limits = DOE_LIMITS;
     this.features = DOE_FEATURES;
   }
@@ -426,8 +463,7 @@ class DoeGPUDevice {
   }
 
   createCommandEncoder(descriptor) {
-    const native = addon.createCommandEncoder(this._native);
-    return new DoeGPUCommandEncoder(native);
+    return new DoeGPUCommandEncoder(this._native);
   }
 
   destroy() {

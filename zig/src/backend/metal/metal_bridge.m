@@ -122,6 +122,28 @@ void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf_h) {
     [cmd_buf waitUntilCompleted];
 }
 
+void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf_h) {
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    while ([cmd_buf status] < MTLCommandBufferStatusCompleted) {
+        /* spin */
+    }
+}
+
+static volatile int32_t _atomic_done = 0;
+void metal_bridge_command_buffer_setup_atomic_wait(MetalHandle cmd_buf_h) {
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    __atomic_store_n(&_atomic_done, 0, __ATOMIC_RELEASE);
+    [cmd_buf addCompletedHandler:^(id<MTLCommandBuffer> _Nonnull cb) {
+        __atomic_store_n(&_atomic_done, 1, __ATOMIC_RELEASE);
+    }];
+}
+
+void metal_bridge_command_buffer_atomic_wait(void) {
+    while (!__atomic_load_n(&_atomic_done, __ATOMIC_ACQUIRE)) {
+        /* spin — no kernel call */
+    }
+}
+
 // ============================================================
 // Streaming Blit Encoder
 // ============================================================

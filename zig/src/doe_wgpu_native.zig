@@ -96,15 +96,15 @@ pub const DoeDevice = struct {
     queue: ?*DoeQueue = null, // cached; getQueue returns this
 };
 
-const DeferredCopy = struct {
+pub const DeferredCopy = struct {
     src: [*]const u8,
     dst: [*]u8,
     size: usize,
 };
 const MAX_DEFERRED_COPIES: u32 = 16;
 
-const DoeQueue = struct {
-    const TYPE_MAGIC = MAGIC_QUEUE;
+pub const DoeQueue = struct {
+    pub const TYPE_MAGIC = MAGIC_QUEUE;
     magic: u32 = TYPE_MAGIC,
     dev: *DoeDevice,
     pending_cmd: ?*anyopaque = null,
@@ -115,7 +115,7 @@ const DoeQueue = struct {
 };
 
 pub const DoeBuffer = struct {
-    const TYPE_MAGIC = MAGIC_BUFFER;
+    pub const TYPE_MAGIC = MAGIC_BUFFER;
     magic: u32 = TYPE_MAGIC,
     mtl: ?*anyopaque = null,
     size: u64 = 0,
@@ -167,7 +167,7 @@ pub const DoeShaderModule = struct {
 };
 
 pub const DoeComputePipeline = struct {
-    const TYPE_MAGIC = MAGIC_COMPUTE_PIPE;
+    pub const TYPE_MAGIC = MAGIC_COMPUTE_PIPE;
     magic: u32 = TYPE_MAGIC,
     mtl_pso: ?*anyopaque = null,
     bindings: [MAX_SHADER_BINDINGS]BindingInfo = undefined,
@@ -189,7 +189,7 @@ const DoePipelineLayout = struct {
 };
 
 pub const DoeBindGroup = struct {
-    const TYPE_MAGIC = MAGIC_BIND_GROUP;
+    pub const TYPE_MAGIC = MAGIC_BIND_GROUP;
     magic: u32 = TYPE_MAGIC,
     buffers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
     offsets: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
@@ -449,9 +449,12 @@ pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
 
 /// Wait for any pending GPU work on the queue, then release the command buffer.
 /// Also executes deferred CPU copies that depend on the completed GPU work.
+/// Uses MTLSharedEvent for GPU→CPU sync (direct memory poll, no GCD intermediary).
 fn flushPendingWork(q: *DoeQueue) void {
     if (q.pending_cmd) |cmd| {
-        metal_bridge_command_buffer_wait_fast();
+        if (q.mtl_event) |ev| {
+            metal_bridge_shared_event_wait(ev, q.event_counter);
+        }
         metal_bridge_release(cmd);
         q.pending_cmd = null;
     }
@@ -670,8 +673,9 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
     }
 
     if (has_gpu_work) {
-        // Register completion handler BEFORE commit (Metal requirement).
-        metal_bridge_command_buffer_setup_fast_wait(mtl_cmd);
+        // Signal shared event after GPU work completes (direct GPU→CPU sync).
+        q.event_counter += 1;
+        metal_bridge_command_buffer_encode_signal_event(mtl_cmd, q.mtl_event, q.event_counter);
         metal_bridge_command_buffer_commit(mtl_cmd);
         q.pending_cmd = mtl_cmd;
     } else {
@@ -684,6 +688,11 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
 pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
     flushPendingWork(q);
+}
+
+const compute_fast = @import("doe_compute_fast.zig");
+comptime {
+    _ = compute_fast;
 }
 
 pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque, offset: u64, data: [*]const u8, size: usize) callconv(.c) void {

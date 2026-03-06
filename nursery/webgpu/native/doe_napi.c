@@ -410,6 +410,7 @@ DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
 DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t, WGPURequestAdapterCallback, void*, void*));
 DECL_PFN(WGPUFuture, doeRequestDeviceFlat, (WGPUAdapter, const void*, uint32_t, WGPURequestDeviceCallback, void*, void*));
 DECL_PFN(void, doeNativeQueueFlush, (void*));
+DECL_PFN(void, doeNativeComputeDispatchFlush, (void*, void*, void**, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint64_t, void*, uint64_t, uint64_t));
 typedef struct {
     void* nextInChain;
     uint32_t mode;
@@ -620,6 +621,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
     pfn_doeNativeQueueFlush = (PFN_doeNativeQueueFlush)LIB_SYM(g_lib, "doeNativeQueueFlush");
+    pfn_doeNativeComputeDispatchFlush = (PFN_doeNativeComputeDispatchFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchFlush");
 
     /* Validate all critical function pointers were resolved. */
     if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceRequestAdapter ||
@@ -1374,8 +1376,8 @@ static napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
 }
 
 /* submitBatched(device, queue, commandsArray)
- * Each element: { t: 0=dispatch|1=copy, p: pipeline, bg: [bindGroups], x,y,z, s,so,d,do,sz }
- * Eliminates per-command N-API round-trips by encoding everything in one native call. */
+ * Fast path: single dispatch + optional copy → doeNativeComputeDispatchFlush (direct Metal, no Zig command recording).
+ * Fallback: standard wgpu path for multi-dispatch or unsupported patterns. */
 #define BATCH_MAX_BIND_GROUPS 4
 static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 3);
@@ -1389,19 +1391,60 @@ static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
     napi_get_array_length(env, commands, &cmd_count);
     if (cmd_count == 0) return NULL;
 
+    /* Fast path: exactly 1 dispatch + 0-1 copy, and direct dispatch function available. */
+    if (pfn_doeNativeComputeDispatchFlush && cmd_count >= 1 && cmd_count <= 2) {
+        napi_value cmd0;
+        napi_get_element(env, commands, 0, &cmd0);
+        uint32_t t0 = get_uint32_prop(env, cmd0, "t");
+        if (t0 == 0) {
+            void* pipeline = unwrap_ptr(env, get_prop(env, cmd0, "p"));
+            napi_value bgs = get_prop(env, cmd0, "bg");
+            uint32_t bg_count = 0;
+            napi_get_array_length(env, bgs, &bg_count);
+            if (bg_count > BATCH_MAX_BIND_GROUPS) bg_count = BATCH_MAX_BIND_GROUPS;
+            void* bg_ptrs[BATCH_MAX_BIND_GROUPS] = {NULL};
+            for (uint32_t j = 0; j < bg_count; j++) {
+                napi_value bg_val;
+                napi_get_element(env, bgs, j, &bg_val);
+                bg_ptrs[j] = unwrap_ptr(env, bg_val);
+            }
+            uint32_t dx = get_uint32_prop(env, cmd0, "x");
+            uint32_t dy = get_uint32_prop(env, cmd0, "y");
+            uint32_t dz = get_uint32_prop(env, cmd0, "z");
+
+            void* copy_src = NULL; uint64_t copy_src_off = 0;
+            void* copy_dst = NULL; uint64_t copy_dst_off = 0;
+            uint64_t copy_size = 0;
+            if (cmd_count == 2) {
+                napi_value cmd1;
+                napi_get_element(env, commands, 1, &cmd1);
+                if (get_uint32_prop(env, cmd1, "t") == 1) {
+                    copy_src = unwrap_ptr(env, get_prop(env, cmd1, "s"));
+                    copy_src_off = (uint64_t)get_int64_prop(env, cmd1, "so");
+                    copy_dst = unwrap_ptr(env, get_prop(env, cmd1, "d"));
+                    copy_dst_off = (uint64_t)get_int64_prop(env, cmd1, "do");
+                    copy_size = (uint64_t)get_int64_prop(env, cmd1, "sz");
+                }
+            }
+            pfn_doeNativeComputeDispatchFlush(
+                queue, pipeline, (void**)bg_ptrs, bg_count,
+                dx, dy, dz,
+                copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size);
+            return NULL;
+        }
+    }
+
+    /* Fallback: standard wgpu path. */
     WGPUCommandEncoder encoder = pfn_wgpuDeviceCreateCommandEncoder(device, NULL);
     if (!encoder) NAPI_THROW(env, "submitBatched: createCommandEncoder failed");
-
     for (uint32_t i = 0; i < cmd_count; i++) {
         napi_value cmd;
         napi_get_element(env, commands, i, &cmd);
         uint32_t type = get_uint32_prop(env, cmd, "t");
-
-        if (type == 0) { /* dispatch */
+        if (type == 0) {
             WGPUComputePassEncoder pass = pfn_wgpuCommandEncoderBeginComputePass(encoder, NULL);
             void* pipeline = unwrap_ptr(env, get_prop(env, cmd, "p"));
             pfn_wgpuComputePassEncoderSetPipeline(pass, pipeline);
-
             napi_value bgs = get_prop(env, cmd, "bg");
             uint32_t bg_count = 0;
             napi_get_array_length(env, bgs, &bg_count);
@@ -1409,30 +1452,22 @@ static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
             for (uint32_t j = 0; j < bg_count; j++) {
                 napi_value bg_val;
                 napi_get_element(env, bgs, j, &bg_val);
-                napi_valuetype vt;
-                napi_typeof(env, bg_val, &vt);
-                if (vt == napi_external) {
-                    void* bg = unwrap_ptr(env, bg_val);
-                    if (bg) pfn_wgpuComputePassEncoderSetBindGroup(pass, j, bg, 0, NULL);
-                }
+                void* bg = unwrap_ptr(env, bg_val);
+                if (bg) pfn_wgpuComputePassEncoderSetBindGroup(pass, j, bg, 0, NULL);
             }
-
-            uint32_t x = get_uint32_prop(env, cmd, "x");
-            uint32_t y = get_uint32_prop(env, cmd, "y");
-            uint32_t z = get_uint32_prop(env, cmd, "z");
-            pfn_wgpuComputePassEncoderDispatchWorkgroups(pass, x, y, z);
+            pfn_wgpuComputePassEncoderDispatchWorkgroups(pass,
+                get_uint32_prop(env, cmd, "x"), get_uint32_prop(env, cmd, "y"), get_uint32_prop(env, cmd, "z"));
             pfn_wgpuComputePassEncoderEnd(pass);
             pfn_wgpuComputePassEncoderRelease(pass);
-        } else if (type == 1) { /* copy buffer to buffer */
+        } else if (type == 1) {
             void* src = unwrap_ptr(env, get_prop(env, cmd, "s"));
-            int64_t src_off = get_int64_prop(env, cmd, "so");
             void* dst = unwrap_ptr(env, get_prop(env, cmd, "d"));
-            int64_t dst_off = get_int64_prop(env, cmd, "do");
-            int64_t size = get_int64_prop(env, cmd, "sz");
-            pfn_wgpuCommandEncoderCopyBufferToBuffer(encoder, src, (uint64_t)src_off, dst, (uint64_t)dst_off, (uint64_t)size);
+            pfn_wgpuCommandEncoderCopyBufferToBuffer(encoder, src,
+                (uint64_t)get_int64_prop(env, cmd, "so"), dst,
+                (uint64_t)get_int64_prop(env, cmd, "do"),
+                (uint64_t)get_int64_prop(env, cmd, "sz"));
         }
     }
-
     WGPUCommandBuffer cmd_buf = pfn_wgpuCommandEncoderFinish(encoder, NULL);
     pfn_wgpuQueueSubmit(queue, 1, &cmd_buf);
     pfn_wgpuCommandBufferRelease(cmd_buf);
@@ -1850,6 +1885,8 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("queueSubmit", doe_queue_submit),
         EXPORT_FN("queueWriteBuffer", doe_queue_write_buffer),
         EXPORT_FN("queueFlush", doe_queue_flush),
+        EXPORT_FN("submitBatched", doe_submit_batched),
+        EXPORT_FN("flushAndMapSync", doe_flush_and_map_sync),
         EXPORT_FN("queueRelease", doe_queue_release),
         EXPORT_FN("createTexture", doe_create_texture),
         EXPORT_FN("textureRelease", doe_texture_release),
