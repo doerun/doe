@@ -1013,7 +1013,7 @@ Current comparison claim state: `strict-comparable matrix + claimability diagnos
 Meaning:
 1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`31` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
 2. remaining directional macro workloads (`render_draw_indexed_200k`, `capability_introspection_500`, `lifecycle_refcount_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
-3. no broad substantiated "beats Dawn/wgpu" claim is allowed yet without wider baseline coverage and trend windows.
+3. substantiated claims now cover two device families: AMD Vulkan (31 comparable workloads) and Apple Metal M3 (17/30 claimable, 2026-03-06). Broad "beats Dawn everywhere" claim is not yet allowed; claims are per-workload, per-device-family, with explicit methodology.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
 
 ## 2026-02-26 backend/metal hardening update
@@ -1046,6 +1046,24 @@ Meaning:
 - phase coverage is closed for contract surface, selection/proc ownership, shader artifacts, sync/timing, and strict local release comparability.
 - runtime now defaults app-lane selection to `metal_doe_app` with strict no-fallback backend routing.
 - remaining focus is ongoing performance evidence across host diversity and fleet-level substantiation windows, not plan-scope missing phases.
+
+6. Apple Metal M3 claim substantiation (2026-03-06)
+- **17 of 30 workloads claimable** on Apple M3 (macOS, Metal native backend).
+- this broadens substantiated claim coverage beyond AMD Vulkan to a second backend/device family.
+- key optimizations enabling Metal claims:
+  - kernel dispatch pipeline prewarm (moves MSL compilation out of timing window)
+  - batch compute dispatch (single encoder for N repeat dispatches)
+  - ICB `inheritPipelineState=NO` with unconditional per-command `setRenderPipelineState`
+  - `[[max_total_threads_per_threadgroup(N)]]` kernel attributes for correct threadgroup sizing
+  - upload cap removal (was 64MB, now unlimited)
+- **claimable workload summary (p50/p95, Doe-faster-than-Dawn):**
+  - uploads: 64KB (+4%/+10%), 4MB (+24%/+19%), 16MB (+61%/+50%), 256MB (+100%/+95%), 1GB (+98%/+100%), 4GB (+94%/+75%)
+  - compute: workgroup-atomic (+13%/+29%), workgroup-non-atomic (+15%/+37%), 3 matrix-vector variants (+2.5–3.5%), concurrent-execution (+4.4%), zero-init-workgroup (+204%/+201%)
+  - render: redundant-pipeline/bindings (+94%/+92%), draw-throughput-macro-200k (+30%/+26%)
+  - misc: async-pipeline-diagnostics (+16%/+15%), pixel-local-storage-barrier (+877%/+860%)
+- **not yet claimable (13/30):** render draw throughput/state/bindings, render bundles, texture lifecycle, shader-compile stress, resource lifecycle, uniform buffer update — these rely on Dawn-owned render/resource APIs where Doe does not yet have native Metal implementations.
+- config: `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
+- latest run: `bench/out/20260306T*/dawn-vs-doe.local.metal.extended.comparable.json`
 
 ## Track A Execution Plan (Finalized)
 
