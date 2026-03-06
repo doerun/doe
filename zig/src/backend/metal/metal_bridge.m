@@ -207,14 +207,21 @@ void metal_bridge_shared_event_wait(MetalHandle event_h, uint64_t value) {
     id<MTLSharedEvent> event = (__bridge id<MTLSharedEvent>)event_h;
     // Quick check: often the GPU has already completed by the time we get here.
     if (event.signaledValue >= value) return;
-    // Brief spin with ARM yield hint (no timeslice forfeit, ~64 iterations).
-    for (int i = 0; i < 64; i++) {
+    // Spin phase 1: tight loop with ARM yield (~50us at 3.5GHz).
+    for (int i = 0; i < 8192; i++) {
         if (event.signaledValue >= value) return;
 #if defined(__aarch64__) || defined(__arm64__)
         __asm__ volatile ("yield");
 #endif
     }
-    // Fallback: yield to OS scheduler for longer waits.
+    // Spin phase 2: longer spin for GPU scheduling delays (~200us).
+    for (int i = 0; i < 32768; i++) {
+        if (event.signaledValue >= value) return;
+#if defined(__aarch64__) || defined(__arm64__)
+        __asm__ volatile ("yield");
+#endif
+    }
+    // Fallback: yield to OS scheduler for truly long waits.
     while (event.signaledValue < value) {
         sched_yield();
     }
