@@ -47,6 +47,21 @@ pub const NativeMetalRuntime = struct {
         return error.UnsupportedFeature;
     }
 
+    pub fn ensure_kernel_pipeline(self: *NativeMetalRuntime, kernel: []const u8) !?*anyopaque {
+        _ = self; _ = kernel;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn ensure_compute_buffer(self: *NativeMetalRuntime, handle: u64, size: u64) !?*anyopaque {
+        _ = self; _ = handle; _ = size;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn ensure_render_pipeline(self: *NativeMetalRuntime, fmt: u32) !void {
+        _ = self; _ = fmt;
+        return error.UnsupportedFeature;
+    }
+
     pub fn sampler_create(self: *NativeMetalRuntime, cmd: model.SamplerCreateCommand) !void {
         _ = self; _ = cmd;
         return error.UnsupportedFeature;

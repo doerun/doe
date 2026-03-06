@@ -8,7 +8,8 @@ Doe (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It re
 
 ## Benchmark snapshot
 
-Current benchmark evidence is split across two active claim lanes.
+Current benchmark evidence is split across strict backend claim lanes and a
+separate package-surface comparison lane.
 
 ### AMD Vulkan (RADV, GFX11)
 
@@ -46,6 +47,27 @@ Latest local strict comparable matrix artifact:
 - Doe faster than Dawn on every workload
 
 Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
+
+### Node package comparison (`@simulatte/webgpu` vs npm `webgpu`)
+
+Latest local Node provider report:
+`bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T152824871Z.json`
+
+- scope: Node.js provider-surface comparison, not strict backend claim substantiation
+- host: `darwin arm64`, Node `v22.20.0`
+- comparable workloads: `8`
+- claimable wins for `@simulatte/webgpu`: `5 / 8`
+- strongest local wins in this lane are upload-heavy workloads:
+  - `buffer_upload_1kb`: `+74.2%`
+  - `buffer_upload_64kb`: `+47.1%`
+  - `buffer_upload_1mb`: `+17.1%`
+  - `buffer_upload_16mb`: `+78.0%`
+  - `buffer_map_write_unmap`: `+47.1%`
+- compute end-to-end workloads in this Node lane are still slower than npm `webgpu`
+
+This Node comparison uses package-level workload timing (`performance.now()`) and
+should be read as package/runtime positioning evidence, not as a replacement for
+strict Dawn-vs-Doe backend reports.
 
 ## How it works
 
@@ -99,13 +121,15 @@ Build without the flag produces identical code to before.
 
 ## Current status
 
-Working, with claimable benchmark evidence on two device families:
+Working, with claimable benchmark evidence on two device families and one
+separate Node package-comparison lane:
 - AMD Vulkan: latest local strict comparable matrix is `comparable` with `12 / 14` workloads claimable; focused reruns also show claimable `1 KB` and `64 KB` upload slices.
 - Apple Metal M3: `30 / 30` workloads claimable. Doe faster than Dawn on every workload.
+- Node package surface: latest local `@simulatte/webgpu` vs npm `webgpu` report shows `5 / 8` claimable comparable wins, concentrated in upload-heavy workloads.
 
 Still in progress:
-- render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; still slower than the strongest Dawn paths on part of the matrix
-- texture/raster path with compute texture sampling plus render-draw raster step; still slower than dispatch-only proxy lanes
+- render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; remaining work is about broader coverage and stronger margins outside the current local strict comparable claim snapshot
+- texture/raster path with compute texture sampling plus render-draw raster step; broader texture-heavy and raster-heavy matrices still need more evidence than the current local strict claim set
 - GPU timestamp readback (returns zero on some adapter/driver combinations)
 - broader device/driver coverage for substantiated comparison claims
 - upstream quirk mining automation (prototype works; nightly drift ingest is not running)
@@ -137,6 +161,9 @@ contains the headless Doe bridge, Node/Bun provider entrypoints, and CLI tools
 for benchmarking/CI workflows.
 
 ```bash
+# install from npm
+npm install @simulatte/webgpu
+
 # build the drop-in library
 cd fawn/zig && zig build dropin
 
@@ -146,7 +173,7 @@ cd fawn/nursery/webgpu-core && npm publish --access public
 
 ## Building and running
 
-Requires Zig 0.14+. From `fawn/zig/`:
+Requires Zig 0.15.2 (see `config/toolchains.json`). From `fawn/zig/`:
 
 ```bash
 # run with trace output
@@ -174,7 +201,8 @@ python3 bench/compare_dawn_vs_doe.py \
 
 ## Verification gates
 
-Blocking in v0: schema, correctness, trace, verification.
+Blocking in v0: schema, correctness, trace, verification, and drop-in
+compatibility for artifact lanes.
 Advisory in v0: performance.
 
 Release requires all blocking gates green. See `process.md` for gate policy and `config/gates.json` for thresholds.

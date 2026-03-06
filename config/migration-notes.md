@@ -645,6 +645,15 @@ Contract updates in this change:
   - `render_pixel_local_storage_barrier_500`
   - `render_uniform_buffer_update_writebuffer_partial_single`
 
+### AMD Vulkan extended comparable normalization parity fix (2026-03-06)
+
+- Corrected the strict AMD Vulkan extended comparable workload contract for
+  `resource_table_immediates_500` in `bench/workloads.amd.vulkan.extended.json`
+  by adding the missing mirrored `rightCommandRepeat=500`.
+- This restores strict left/right normalization symmetry for that comparable
+  workload so current Dawn-vs-Doe AMD Vulkan matrix reruns can execute instead
+  of failing fast during contract validation.
+
 ### Benchmark deltaPercent formula drift note (2026-02-26, superseded)
 
 - A temporary migration moved `bench/compare_dawn_vs_doe.py` to ratio-style speedup semantics:

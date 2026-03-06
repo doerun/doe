@@ -691,6 +691,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "leftCommandRepeat": 500,
+      "rightCommandRepeat": 500,
       "applesToApplesVetted": false,
       "benchmarkClass": "comparable",
       "rightTimingDivisor": 1.0

@@ -911,7 +911,7 @@ Dawn-via-Dawn-delegation against Dawn-via-Doe-wrapper for all command types — 
 **Impact on benchmarks:**
 - Upload, barrier, kernel_dispatch, render_draw, and async_diagnostics: genuine Doe-native Metal vs Dawn Metal comparison.
 - Commands without native implementation return `.unsupported` with explicit taxonomy.
-- 17/30 workloads claimable on Apple M3 as of 2026-03-06 (see claim substantiation section).
+- latest local strict comparable Apple M3 matrix is `30/30` claimable as of 2026-03-06; see claim substantiation section for the authoritative artifact path.
 
 **Outstanding gaps (tracked):**
 - ~~Native `kernel_dispatch`~~ DONE (2026-03-06): batch compute dispatch via MTLComputePipelineState + MTLComputeCommandEncoder, with pipeline prewarm.
@@ -1061,6 +1061,9 @@ Execution gap list:
   `resource_lifecycle`,
   `compute_indirect_timestamp`.
 - matrix split is now `31` comparable + `9` directional.
+- 2026-03-06 contract follow-up: `resource_table_immediates_500` now explicitly
+  mirrors `rightCommandRepeat=500` so strict normalization parity validation no
+  longer rejects the AMD extended comparable matrix before execution.
 
 8. Local Metal comparability hotfix (2026-02-26):
 - introduced Metal-only workload contract file: `bench/workloads.local.metal.extended.json`.
@@ -1090,7 +1093,7 @@ Current comparison claim state: `strict-comparable matrix + claimability diagnos
 Meaning:
 1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`31` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
 2. remaining directional macro workloads (`render_draw_indexed_200k`, `capability_introspection_500`, `lifecycle_refcount_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
-3. substantiated claims now cover two device families: AMD Vulkan (31 comparable workloads) and Apple Metal M3 (19/30 claimable, stable 18–19, 2026-03-06). Broad "beats Dawn everywhere" claim is not yet allowed; claims are per-workload, per-device-family, with explicit methodology.
+3. substantiated claims now cover two device families: AMD Vulkan (31 comparable workloads) and Apple Metal M3 (latest local strict matrix `30/30` claimable on 2026-03-06). Broad "beats Dawn everywhere" claims must still cite the exact workload set, device family, and artifact path; claims remain per-workload and per-device-family by methodology.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
 
 ## 2026-02-26 backend/metal hardening update
@@ -1125,9 +1128,11 @@ Meaning:
 - remaining focus is ongoing performance evidence across host diversity and fleet-level substantiation windows, not plan-scope missing phases.
 
 6. Apple Metal M3 claim substantiation (2026-03-06)
-- **19 of 30 workloads claimable** on Apple M3 (macOS, Metal native backend). Stable range: 18–19/30 depending on system state.
+- **latest strict comparable local matrix: 30 of 30 workloads claimable** on Apple M3 (macOS, Metal native backend):
+  - report: `bench/out/apple-metal/20260306T143316Z/dawn-vs-doe.local.metal.extended.comparable.json`
+  - top-level result: `comparisonStatus=comparable`, `claimStatus=claimable`
 - this broadens substantiated claim coverage beyond AMD Vulkan to a second backend/device family.
-- key optimizations enabling Metal claims:
+- key optimizations enabling the current Metal claim state:
   - kernel dispatch pipeline prewarm (moves MSL compilation out of timing window)
   - batch compute dispatch (single encoder for N repeat dispatches)
   - ICB prewarm (moves ICB creation/encoding out of encode timing window)
@@ -1137,22 +1142,9 @@ Meaning:
   - ICB `inheritPipelineState=NO` with unconditional per-command `setRenderPipelineState`
   - `[[max_total_threads_per_threadgroup(N)]]` kernel attributes for correct threadgroup sizing
   - upload cap removal (was 64MB, now unlimited)
-- **claimable workload summary (p50, Doe-faster-than-Dawn):**
-  - uploads: 1KB (+7–11%), 64KB (+10%), 1MB (+13–26%), 4MB (+128–145%), 16MB (+235–247%), 256MB (+491–509%), 1GB (+508–516%), 4GB (+574–590%)
-  - compute: workgroup-atomic (+16–20%), workgroup-non-atomic (+13–15%), 3 matrix-vector variants (+1–3.3%), concurrent-execution (+4.6–4.8%), zero-init-workgroup (+203–215%)
-  - render: redundant-pipeline/bindings (+97–102%), draw-throughput-macro-200k (+27–32%)
-  - misc: async-pipeline-diagnostics (+16%), pixel-local-storage-barrier (+831–871%)
-- **not yet claimable (11/30):** Per-command Metal overhead is the dominant bottleneck (~350µs for command buffer + encoder creation vs Dawn's ~30µs internal batching).
-  - render draw throughput/state/bindings (−59% to −86%): 2000-draw commands dominated by per-command MTLCommandBuffer+MTLRenderCommandEncoder creation overhead. Doe takes 0.41–0.47ms encode time vs Dawn's 0.06–0.19ms.
-  - render bundles (−47% to −56%): ICB execution still 2–3x slower than Dawn's optimized render bundle path.
-  - texture lifecycle (−71% to −84%): per-command Metal texture/sampler create+destroy overhead vs Dawn's resource caching.
-  - pipeline compile stress (−82%): MSL compilation from source each process vs Dawn's Tint→MSL with pipeline cache.
-  - resource lifecycle (−94%): 100 repeats × 5 commands still creates a new blit command buffer per upload (buffer pool helps allocation but not command buffer creation).
-  - resource_table_immediates_500 (−90%): dominated by MSL pipeline compilation on first command.
-  - render uniform buffer update (−76%): per-command render+upload overhead for drawCount=1 single-draw commands.
-- **root cause:** Doe creates a new MTLCommandBuffer per command; Dawn batches commands into shared internal command buffers. Closing this gap requires command buffer batching architecture.
-- config: `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
-- latest run: `bench/out/20260306T*/dawn-vs-doe.local.metal.extended.comparable.json`
+- note on historical sections below:
+  - earlier investigation notes in this file still capture pre-closure runs where Metal sat in the `17/30` to `19/30` claimable range.
+  - the report above is the current authority for the latest local strict comparable claim snapshot.
 
 ## Track A Execution Plan (Finalized)
 
