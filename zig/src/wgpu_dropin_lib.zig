@@ -346,8 +346,8 @@ pub fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u
     }
     const route = symbolRouteForName(symbol_name);
 
-    // For doe_metal owner, resolve from linked native implementations (no sidecar needed).
-    if (route.owner == .doe_metal) {
+    // For doe_metal or shared owner, try linked native implementations first (no sidecar needed).
+    if (route.owner == .doe_metal or route.owner == .shared) {
         if (resolveDoeNativeProc(FnType, symbol_name)) |proc| {
             routeAndRecordForName(symbol_name, route, true);
             Cache.proc = proc;
