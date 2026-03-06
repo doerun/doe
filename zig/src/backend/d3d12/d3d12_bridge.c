@@ -127,3 +127,76 @@ void d3d12_bridge_fence_wait(D3D12Handle fence_h, uint64_t value) {
     WaitForSingleObject(event, INFINITE);
     CloseHandle(event);
 }
+
+D3D12Handle d3d12_bridge_device_create_root_signature_empty(D3D12Handle device_h) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_ROOT_SIGNATURE_DESC desc;
+    desc.NumParameters     = 0;
+    desc.pParameters       = NULL;
+    desc.NumStaticSamplers = 0;
+    desc.pStaticSamplers   = NULL;
+    desc.Flags             = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+    ID3DBlob* blob  = NULL;
+    ID3DBlob* error = NULL;
+    HRESULT hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error);
+    if (error) error->lpVtbl->Release(error);
+    if (FAILED(hr) || blob == NULL) return NULL;
+
+    ID3D12RootSignature* root_sig = NULL;
+    hr = device->lpVtbl->CreateRootSignature(
+        device, 0,
+        blob->lpVtbl->GetBufferPointer(blob),
+        blob->lpVtbl->GetBufferSize(blob),
+        &IID_ID3D12RootSignature, (void**)&root_sig);
+    blob->lpVtbl->Release(blob);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)root_sig;
+}
+
+D3D12Handle d3d12_bridge_device_create_compute_pipeline(D3D12Handle device_h, D3D12Handle root_sig_h,
+                                                         const void* bytecode, size_t bytecode_size) {
+    ID3D12Device*         device   = (ID3D12Device*)device_h;
+    ID3D12RootSignature*  root_sig = (ID3D12RootSignature*)root_sig_h;
+
+    D3D12_COMPUTE_PIPELINE_STATE_DESC desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.pRootSignature                = root_sig;
+    desc.CS.pShaderBytecode            = bytecode;
+    desc.CS.BytecodeLength             = bytecode_size;
+    desc.NodeMask                      = 0;
+    desc.Flags                         = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+    ID3D12PipelineState* pso = NULL;
+    HRESULT hr = device->lpVtbl->CreateComputePipelineState(device, &desc, &IID_ID3D12PipelineState, (void**)&pso);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)pso;
+}
+
+void d3d12_bridge_command_list_set_compute_root_signature(D3D12Handle cmd_list_h, D3D12Handle root_sig_h) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12RootSignature* root_sig  = (ID3D12RootSignature*)root_sig_h;
+    cmd->lpVtbl->SetComputeRootSignature(cmd, root_sig);
+}
+
+void d3d12_bridge_command_list_set_pipeline_state(D3D12Handle cmd_list_h, D3D12Handle pso_h) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12PipelineState* pso       = (ID3D12PipelineState*)pso_h;
+    cmd->lpVtbl->SetPipelineState(cmd, pso);
+}
+
+void d3d12_bridge_command_list_dispatch(D3D12Handle cmd_list_h, uint32_t x, uint32_t y, uint32_t z) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    cmd->lpVtbl->Dispatch(cmd, x, y, z);
+}
+
+int d3d12_bridge_command_allocator_reset(D3D12Handle allocator_h) {
+    ID3D12CommandAllocator* alloc = (ID3D12CommandAllocator*)allocator_h;
+    return SUCCEEDED(alloc->lpVtbl->Reset(alloc)) ? 0 : -1;
+}
+
+int d3d12_bridge_command_list_reset(D3D12Handle cmd_list_h, D3D12Handle allocator_h) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12CommandAllocator* alloc  = (ID3D12CommandAllocator*)allocator_h;
+    return SUCCEEDED(cmd->lpVtbl->Reset(cmd, alloc, NULL)) ? 0 : -1;
+}

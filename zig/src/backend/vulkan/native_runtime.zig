@@ -305,7 +305,15 @@ const PendingUpload = struct {
     dst_buffer: VkBuffer,
     dst_memory: VkDeviceMemory,
     command_buffer: VkCommandBuffer,
+    byte_count: u64 = 0,
 };
+
+const VkPoolEntry = struct {
+    buffer: VkBuffer,
+    memory: VkDeviceMemory,
+};
+
+const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
 
 pub const NativeVulkanRuntime = struct {
     allocator: std.mem.Allocator,
@@ -328,6 +336,9 @@ pub const NativeVulkanRuntime = struct {
 
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
 
+    src_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
+    dst_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
+
     has_instance: bool = false,
     has_device: bool = false,
     has_command_pool: bool = false,
@@ -349,6 +360,8 @@ pub const NativeVulkanRuntime = struct {
         _ = self.flush_queue() catch {};
         self.release_pending_uploads();
         self.pending_uploads.deinit(self.allocator);
+        vk_release_pool(&self.src_pool, self.allocator, self.device);
+        vk_release_pool(&self.dst_pool, self.allocator, self.device);
         self.destroy_pipeline_objects();
         if (self.has_fence) {
             vkDestroyFence(self.device, self.fence, null);
@@ -646,42 +659,56 @@ pub const NativeVulkanRuntime = struct {
         var dst_buffer: VkBuffer = VK_NULL_U64;
         var src_memory: VkDeviceMemory = VK_NULL_U64;
         var dst_memory: VkDeviceMemory = VK_NULL_U64;
+        var src_fresh = true;
 
-        var src_info = VkBufferCreateInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .sharingMode = VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
-        try check_vk(vkCreateBuffer(self.device, &src_info, null, &src_buffer));
-        errdefer vkDestroyBuffer(self.device, src_buffer, null);
+        // Try pool first for src (host-visible staging buffer).
+        if (vk_pool_pop(&self.src_pool, bytes)) |entry| {
+            src_buffer = entry.buffer;
+            src_memory = entry.memory;
+            src_fresh = false;
+        } else {
+            var src_info = VkBufferCreateInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .sharingMode = VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
+            try check_vk(vkCreateBuffer(self.device, &src_info, null, &src_buffer));
+            errdefer vkDestroyBuffer(self.device, src_buffer, null);
 
-        var dst_info = VkBufferCreateInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = dst_usage, .sharingMode = VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
-        try check_vk(vkCreateBuffer(self.device, &dst_info, null, &dst_buffer));
-        errdefer vkDestroyBuffer(self.device, dst_buffer, null);
-
-        var src_req = std.mem.zeroes(VkMemoryRequirements);
-        vkGetBufferMemoryRequirements(self.device, src_buffer, &src_req);
-        var dst_req = std.mem.zeroes(VkMemoryRequirements);
-        vkGetBufferMemoryRequirements(self.device, dst_buffer, &dst_req);
-
-        const src_mem_index = try self.find_memory_type_index(src_req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        const dst_mem_index = try self.find_memory_type_index(dst_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        var src_alloc = VkMemoryAllocateInfo{ .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .pNext = null, .allocationSize = src_req.size, .memoryTypeIndex = src_mem_index };
-        try check_vk(vkAllocateMemory(self.device, &src_alloc, null, &src_memory));
-        errdefer vkFreeMemory(self.device, src_memory, null);
-
-        var dst_alloc = VkMemoryAllocateInfo{ .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .pNext = null, .allocationSize = dst_req.size, .memoryTypeIndex = dst_mem_index };
-        try check_vk(vkAllocateMemory(self.device, &dst_alloc, null, &dst_memory));
-        errdefer vkFreeMemory(self.device, dst_memory, null);
-
-        try check_vk(vkBindBufferMemory(self.device, src_buffer, src_memory, 0));
-        try check_vk(vkBindBufferMemory(self.device, dst_buffer, dst_memory, 0));
-
-        var mapped: ?*anyopaque = null;
-        try check_vk(vkMapMemory(self.device, src_memory, 0, src_req.size, 0, &mapped));
-        if (mapped) |raw| {
-            const fill_len = @min(@as(usize, @intCast(bytes)), MAX_UPLOAD_ZERO_FILL_BYTES);
-            const ptr = @as([*]u8, @ptrCast(raw));
-            @memset(ptr[0..fill_len], 0);
+            var src_req = std.mem.zeroes(VkMemoryRequirements);
+            vkGetBufferMemoryRequirements(self.device, src_buffer, &src_req);
+            const src_mem_index = try self.find_memory_type_index(src_req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            var src_alloc_info = VkMemoryAllocateInfo{ .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .pNext = null, .allocationSize = src_req.size, .memoryTypeIndex = src_mem_index };
+            try check_vk(vkAllocateMemory(self.device, &src_alloc_info, null, &src_memory));
+            errdefer vkFreeMemory(self.device, src_memory, null);
+            try check_vk(vkBindBufferMemory(self.device, src_buffer, src_memory, 0));
         }
-        vkUnmapMemory(self.device, src_memory);
+
+        // Try pool for dst (device-local storage buffer).
+        if (vk_pool_pop(&self.dst_pool, bytes)) |entry| {
+            dst_buffer = entry.buffer;
+            dst_memory = entry.memory;
+        } else {
+            const permissive_dst_usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            const effective_usage = if (dst_usage == 0) permissive_dst_usage else dst_usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            var dst_info = VkBufferCreateInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = effective_usage, .sharingMode = VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
+            try check_vk(vkCreateBuffer(self.device, &dst_info, null, &dst_buffer));
+            errdefer vkDestroyBuffer(self.device, dst_buffer, null);
+
+            var dst_req = std.mem.zeroes(VkMemoryRequirements);
+            vkGetBufferMemoryRequirements(self.device, dst_buffer, &dst_req);
+            const dst_mem_index = try self.find_memory_type_index(dst_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            var dst_alloc_info = VkMemoryAllocateInfo{ .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .pNext = null, .allocationSize = dst_req.size, .memoryTypeIndex = dst_mem_index };
+            try check_vk(vkAllocateMemory(self.device, &dst_alloc_info, null, &dst_memory));
+            errdefer vkFreeMemory(self.device, dst_memory, null);
+            try check_vk(vkBindBufferMemory(self.device, dst_buffer, dst_memory, 0));
+        }
+        // Only zero-fill fresh (non-pooled) src allocations.
+        if (src_fresh) {
+            var mapped: ?*anyopaque = null;
+            try check_vk(vkMapMemory(self.device, src_memory, 0, bytes, 0, &mapped));
+            if (mapped) |raw| {
+                const fill_len = @min(@as(usize, @intCast(bytes)), MAX_UPLOAD_ZERO_FILL_BYTES);
+                @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
+            }
+            vkUnmapMemory(self.device, src_memory);
+        }
 
         var cmd: VkCommandBuffer = null;
         var alloc = VkCommandBufferAllocateInfo{ .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, .pNext = null, .commandPool = self.command_pool, .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, .commandBufferCount = 1 };
@@ -699,15 +726,24 @@ pub const NativeVulkanRuntime = struct {
             .dst_buffer = dst_buffer,
             .dst_memory = dst_memory,
             .command_buffer = cmd,
+            .byte_count = bytes,
         };
     }
 
     fn release_pending_uploads(self: *NativeVulkanRuntime) void {
         for (self.pending_uploads.items) |item| {
-            if (item.src_buffer != VK_NULL_U64) vkDestroyBuffer(self.device, item.src_buffer, null);
-            if (item.dst_buffer != VK_NULL_U64) vkDestroyBuffer(self.device, item.dst_buffer, null);
-            if (item.src_memory != VK_NULL_U64) vkFreeMemory(self.device, item.src_memory, null);
-            if (item.dst_memory != VK_NULL_U64) vkFreeMemory(self.device, item.dst_memory, null);
+            if (item.src_buffer != VK_NULL_U64 and item.src_memory != VK_NULL_U64) {
+                vk_pool_push_or_destroy(&self.src_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.src_buffer, .memory = item.src_memory });
+            } else {
+                if (item.src_buffer != VK_NULL_U64) vkDestroyBuffer(self.device, item.src_buffer, null);
+                if (item.src_memory != VK_NULL_U64) vkFreeMemory(self.device, item.src_memory, null);
+            }
+            if (item.dst_buffer != VK_NULL_U64 and item.dst_memory != VK_NULL_U64) {
+                vk_pool_push_or_destroy(&self.dst_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory });
+            } else {
+                if (item.dst_buffer != VK_NULL_U64) vkDestroyBuffer(self.device, item.dst_buffer, null);
+                if (item.dst_memory != VK_NULL_U64) vkFreeMemory(self.device, item.dst_memory, null);
+            }
         }
         self.pending_uploads.clearRetainingCapacity();
     }
@@ -792,4 +828,44 @@ fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
         -7, -9, -10, -11 => error.UnsupportedFeature,
         else => error.InvalidState,
     };
+}
+
+const VkPool = std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry));
+
+fn vk_pool_pop(pool: *VkPool, size: u64) ?VkPoolEntry {
+    if (pool.getPtr(size)) |list| {
+        if (list.items.len > 0) return list.pop();
+    }
+    return null;
+}
+
+fn vk_pool_push_or_destroy(pool: *VkPool, allocator: std.mem.Allocator, device: VkDevice, size: u64, entry: VkPoolEntry) void {
+    const gop = pool.getOrPut(allocator, size) catch {
+        vkDestroyBuffer(device, entry.buffer, null);
+        vkFreeMemory(device, entry.memory, null);
+        return;
+    };
+    if (!gop.found_existing) gop.value_ptr.* = .{};
+    if (gop.value_ptr.items.len >= MAX_POOL_ENTRIES_PER_SIZE) {
+        vkDestroyBuffer(device, entry.buffer, null);
+        vkFreeMemory(device, entry.memory, null);
+        return;
+    }
+    gop.value_ptr.append(allocator, entry) catch {
+        vkDestroyBuffer(device, entry.buffer, null);
+        vkFreeMemory(device, entry.memory, null);
+    };
+}
+
+fn vk_release_pool(pool: *VkPool, allocator: std.mem.Allocator, device: VkDevice) void {
+    var it = pool.valueIterator();
+    while (it.next()) |list| {
+        for (list.items) |entry| {
+            vkDestroyBuffer(device, entry.buffer, null);
+            vkFreeMemory(device, entry.memory, null);
+        }
+        var m = list.*;
+        m.deinit(allocator);
+    }
+    pool.deinit(allocator);
 }

@@ -1,34 +1,56 @@
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
+const common_errors = @import("../common/errors.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 
 const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
+const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
+const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
+const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
 const HEAP_TYPE_DEFAULT: c_int = 1;
 const HEAP_TYPE_UPLOAD: c_int = 2;
 
-// D3D12 bridge C functions — symbols provided by d3d12_bridge.c.
 extern fn d3d12_bridge_create_device() callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_device_create_command_queue(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_fence(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator: ?*anyopaque) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_command_list_copy_buffer(cmd_list: ?*anyopaque, dst: ?*anyopaque, src: ?*anyopaque, size: usize) callconv(.c) void;
 extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, value: u64) callconv(.c) void;
 extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
+extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_device_create_compute_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, bytecode: [*]const u8, bytecode_size: usize) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_command_list_set_compute_root_signature(cmd_list: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_command_list_set_pipeline_state(cmd_list: ?*anyopaque, pipeline: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_command_list_dispatch(cmd_list: ?*anyopaque, x: u32, y: u32, z: u32) callconv(.c) void;
+extern fn d3d12_bridge_command_allocator_reset(allocator_h: ?*anyopaque) callconv(.c) c_int;
+extern fn d3d12_bridge_command_list_reset(cmd_list: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) c_int;
 
 const PendingUpload = struct {
     cmd_allocator: ?*anyopaque,
     cmd_list: ?*anyopaque,
     src_buffer: ?*anyopaque,
     dst_buffer: ?*anyopaque,
+    byte_count: usize,
+};
+
+const PoolEntry = struct {
+    buffer: ?*anyopaque,
+};
+
+pub const DispatchMetrics = struct {
+    encode_ns: u64 = 0,
+    submit_wait_ns: u64 = 0,
+    dispatch_count: u32 = 0,
 };
 
 pub const NativeD3D12Runtime = struct {
     allocator: std.mem.Allocator,
+    kernel_root: ?[]const u8 = null,
     device: ?*anyopaque = null,
     queue: ?*anyopaque = null,
     fence: ?*anyopaque = null,
@@ -38,8 +60,20 @@ pub const NativeD3D12Runtime = struct {
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
     has_deferred_submissions: bool = false,
 
-    pub fn init(allocator: std.mem.Allocator) !NativeD3D12Runtime {
-        var self = NativeD3D12Runtime{ .allocator = allocator };
+    upload_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(PoolEntry)) = .{},
+    default_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(PoolEntry)) = .{},
+
+    root_signature: ?*anyopaque = null,
+    compute_pipeline: ?*anyopaque = null,
+    compute_allocator: ?*anyopaque = null,
+    compute_cmd_list: ?*anyopaque = null,
+    current_shader_hash: u64 = 0,
+    has_root_signature: bool = false,
+    has_compute_pipeline: bool = false,
+    has_compute_cmd: bool = false,
+
+    pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeD3D12Runtime {
+        var self = NativeD3D12Runtime{ .allocator = allocator, .kernel_root = kernel_root };
         errdefer self.deinit();
         try self.bootstrap();
         return self;
@@ -49,19 +83,12 @@ pub const NativeD3D12Runtime = struct {
         _ = self.flush_queue() catch {};
         self.release_pending_uploads();
         self.pending_uploads.deinit(self.allocator);
-        if (self.fence) |f| {
-            d3d12_bridge_release(f);
-            self.fence = null;
-        }
-        if (self.queue) |q| {
-            d3d12_bridge_release(q);
-            self.queue = null;
-        }
-        if (self.device) |d| {
-            d3d12_bridge_release(d);
-            self.device = null;
-            self.has_device = false;
-        }
+        d3d12_release_pool(&self.upload_pool, self.allocator);
+        d3d12_release_pool(&self.default_pool, self.allocator);
+        self.destroy_compute_objects();
+        if (self.fence) |f| { d3d12_bridge_release(f); self.fence = null; }
+        if (self.queue) |q| { d3d12_bridge_release(q); self.queue = null; }
+        if (self.device) |d| { d3d12_bridge_release(d); self.device = null; self.has_device = false; }
     }
 
     pub fn upload_bytes(self: *NativeD3D12Runtime, bytes: u64, _mode: webgpu.UploadBufferUsageMode) !void {
@@ -76,11 +103,13 @@ pub const NativeD3D12Runtime = struct {
         const cmd_list = d3d12_bridge_device_create_command_list(self.device, cmd_alloc) orelse return error.InvalidState;
         errdefer d3d12_bridge_release(cmd_list);
 
-        const src_buf = d3d12_bridge_device_create_buffer(self.device, len, HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
-        errdefer d3d12_bridge_release(src_buf);
+        const src_buf = d3d12_pool_pop(&self.upload_pool, len) orelse
+            (d3d12_bridge_device_create_buffer(self.device, len, HEAP_TYPE_UPLOAD) orelse return error.InvalidState);
+        errdefer d3d12_pool_push_or_release(&self.upload_pool, self.allocator, len, src_buf);
 
-        const dst_buf = d3d12_bridge_device_create_buffer(self.device, len, HEAP_TYPE_DEFAULT) orelse return error.InvalidState;
-        errdefer d3d12_bridge_release(dst_buf);
+        const dst_buf = d3d12_pool_pop(&self.default_pool, len) orelse
+            (d3d12_bridge_device_create_buffer(self.device, len, HEAP_TYPE_DEFAULT) orelse return error.InvalidState);
+        errdefer d3d12_pool_push_or_release(&self.default_pool, self.allocator, len, dst_buf);
 
         d3d12_bridge_command_list_copy_buffer(cmd_list, dst_buf, src_buf, len);
         d3d12_bridge_command_list_close(cmd_list);
@@ -90,6 +119,7 @@ pub const NativeD3D12Runtime = struct {
             .cmd_list = cmd_list,
             .src_buffer = src_buf,
             .dst_buffer = dst_buf,
+            .byte_count = len,
         });
         self.has_deferred_submissions = true;
     }
@@ -130,6 +160,64 @@ pub const NativeD3D12Runtime = struct {
         _ = try self.flush_queue();
     }
 
+    pub fn load_kernel_cso(self: *const NativeD3D12Runtime, alloc: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
+        if (kernel_name.len == 0) return error.InvalidArgument;
+        const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
+
+        const cso_path = try std.fmt.allocPrint(alloc, "{s}/{s}.cso", .{ root, strip_extension(kernel_name) });
+        defer alloc.free(cso_path);
+        if (file_exists(cso_path)) {
+            return std.fs.cwd().readFileAlloc(alloc, cso_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+        }
+
+        const dxbc_path = try std.fmt.allocPrint(alloc, "{s}/{s}.dxbc", .{ root, strip_extension(kernel_name) });
+        defer alloc.free(dxbc_path);
+        if (file_exists(dxbc_path)) {
+            return std.fs.cwd().readFileAlloc(alloc, dxbc_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+        }
+
+        return error.ShaderCompileFailed;
+    }
+
+    pub fn set_compute_shader(self: *NativeD3D12Runtime, bytecode: []const u8) !void {
+        if (bytecode.len == 0) return error.ShaderCompileFailed;
+        const hash = std.hash.Wyhash.hash(0, bytecode);
+        if (self.has_compute_pipeline and hash == self.current_shader_hash) return;
+        try self.build_compute_pipeline(bytecode, hash);
+    }
+
+    pub fn run_dispatch(self: *NativeD3D12Runtime, x: u32, y: u32, z: u32, repeat: u32) !DispatchMetrics {
+        if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
+        if (!self.has_compute_pipeline) return error.Unsupported;
+
+        if (self.has_deferred_submissions) _ = try self.flush_queue();
+
+        const run_count: u32 = if (repeat == 0) 1 else repeat;
+        const encode_start = common_timing.now_ns();
+
+        if (d3d12_bridge_command_allocator_reset(self.compute_allocator) != 0) return error.InvalidState;
+        if (d3d12_bridge_command_list_reset(self.compute_cmd_list, self.compute_allocator) != 0) return error.InvalidState;
+
+        d3d12_bridge_command_list_set_compute_root_signature(self.compute_cmd_list, self.root_signature);
+        d3d12_bridge_command_list_set_pipeline_state(self.compute_cmd_list, self.compute_pipeline);
+
+        var i: u32 = 0;
+        while (i < run_count) : (i += 1) {
+            d3d12_bridge_command_list_dispatch(self.compute_cmd_list, x, y, z);
+        }
+        d3d12_bridge_command_list_close(self.compute_cmd_list);
+        const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
+
+        d3d12_bridge_queue_execute_command_list(self.queue, self.compute_cmd_list);
+        self.fence_value +|= 1;
+        d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
+        const submit_start = common_timing.now_ns();
+        d3d12_bridge_fence_wait(self.fence, self.fence_value);
+        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+
+        return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
+    }
+
     fn bootstrap(self: *NativeD3D12Runtime) !void {
         self.device = d3d12_bridge_create_device() orelse return error.UnsupportedFeature;
         self.queue = d3d12_bridge_device_create_command_queue(self.device) orelse return error.InvalidState;
@@ -137,13 +225,109 @@ pub const NativeD3D12Runtime = struct {
         self.has_device = true;
     }
 
+    fn build_compute_pipeline(self: *NativeD3D12Runtime, bytecode: []const u8, shader_hash: u64) !void {
+        if (!self.has_root_signature) {
+            self.root_signature = d3d12_bridge_device_create_root_signature_empty(self.device) orelse return error.InvalidState;
+            self.has_root_signature = true;
+        }
+
+        if (self.has_compute_pipeline) {
+            d3d12_bridge_release(self.compute_pipeline);
+            self.compute_pipeline = null;
+            self.has_compute_pipeline = false;
+        }
+
+        self.compute_pipeline = d3d12_bridge_device_create_compute_pipeline(
+            self.device, self.root_signature, bytecode.ptr, bytecode.len,
+        ) orelse return error.ShaderCompileFailed;
+        self.has_compute_pipeline = true;
+        self.current_shader_hash = shader_hash;
+
+        if (!self.has_compute_cmd) {
+            self.compute_allocator = d3d12_bridge_device_create_command_allocator(self.device) orelse return error.InvalidState;
+            self.compute_cmd_list = d3d12_bridge_device_create_command_list(self.device, self.compute_allocator) orelse return error.InvalidState;
+            d3d12_bridge_command_list_close(self.compute_cmd_list);
+            self.has_compute_cmd = true;
+        }
+    }
+
+    fn destroy_compute_objects(self: *NativeD3D12Runtime) void {
+        if (self.has_compute_cmd) {
+            d3d12_bridge_release(self.compute_cmd_list);
+            d3d12_bridge_release(self.compute_allocator);
+            self.compute_cmd_list = null;
+            self.compute_allocator = null;
+            self.has_compute_cmd = false;
+        }
+        if (self.has_compute_pipeline) {
+            d3d12_bridge_release(self.compute_pipeline);
+            self.compute_pipeline = null;
+            self.has_compute_pipeline = false;
+        }
+        if (self.has_root_signature) {
+            d3d12_bridge_release(self.root_signature);
+            self.root_signature = null;
+            self.has_root_signature = false;
+        }
+    }
+
     fn release_pending_uploads(self: *NativeD3D12Runtime) void {
         for (self.pending_uploads.items) |item| {
             d3d12_bridge_release(item.cmd_list);
             d3d12_bridge_release(item.cmd_allocator);
-            d3d12_bridge_release(item.src_buffer);
-            d3d12_bridge_release(item.dst_buffer);
+            d3d12_pool_push_or_release(&self.upload_pool, self.allocator, item.byte_count, item.src_buffer);
+            d3d12_pool_push_or_release(&self.default_pool, self.allocator, item.byte_count, item.dst_buffer);
         }
         self.pending_uploads.clearRetainingCapacity();
     }
 };
+
+fn strip_extension(name: []const u8) []const u8 {
+    const suffixes = [_][]const u8{ ".wgsl", ".hlsl", ".cso", ".dxbc" };
+    for (suffixes) |sfx| {
+        if (std.mem.endsWith(u8, name, sfx)) return name[0 .. name.len - sfx.len];
+    }
+    return name;
+}
+
+fn file_exists(path: []const u8) bool {
+    std.fs.cwd().access(path, .{}) catch return false;
+    return true;
+}
+
+const D3D12Pool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(PoolEntry));
+
+fn d3d12_pool_pop(pool: *D3D12Pool, size: usize) ?*anyopaque {
+    if (pool.getPtr(size)) |list| {
+        if (list.items.len > 0) {
+            const entry = list.pop() orelse return null;
+            return entry.buffer;
+        }
+    }
+    return null;
+}
+
+fn d3d12_pool_push_or_release(pool: *D3D12Pool, allocator: std.mem.Allocator, size: usize, buf: ?*anyopaque) void {
+    const gop = pool.getOrPut(allocator, size) catch {
+        d3d12_bridge_release(buf);
+        return;
+    };
+    if (!gop.found_existing) gop.value_ptr.* = .{};
+    if (gop.value_ptr.items.len >= MAX_POOL_ENTRIES_PER_SIZE) {
+        d3d12_bridge_release(buf);
+        return;
+    }
+    gop.value_ptr.append(allocator, .{ .buffer = buf }) catch {
+        d3d12_bridge_release(buf);
+    };
+}
+
+fn d3d12_release_pool(pool: *D3D12Pool, allocator: std.mem.Allocator) void {
+    var it = pool.valueIterator();
+    while (it.next()) |list| {
+        for (list.items) |entry| d3d12_bridge_release(entry.buffer);
+        var m = list.*;
+        m.deinit(allocator);
+    }
+    pool.deinit(allocator);
+}

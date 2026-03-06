@@ -28,6 +28,7 @@ const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
 pub const ZigD3D12Backend = struct {
     allocator: std.mem.Allocator,
+    kernel_root_owned: ?[]u8 = null,
     runtime: ?native_runtime.NativeD3D12Runtime = null,
 
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
@@ -62,15 +63,18 @@ pub const ZigD3D12Backend = struct {
         profile: model.DeviceProfile,
         kernel_root: ?[]const u8,
     ) !*ZigD3D12Backend {
-        _ = kernel_root;
         if (profile.api != .d3d12) return common_errors.BackendNativeError.UnsupportedFeature;
         if (builtin.os.tag != .windows) return common_errors.BackendNativeError.UnsupportedFeature;
+
+        const owned_root = if (kernel_root) |root| try allocator.dupe(u8, root) else null;
+        errdefer if (owned_root) |r| allocator.free(r);
 
         const ptr = try allocator.create(ZigD3D12Backend);
         errdefer allocator.destroy(ptr);
 
         ptr.* = .{
             .allocator = allocator,
+            .kernel_root_owned = owned_root,
             .runtime = null,
             .upload_buffer_usage_mode = .copy_dst_copy_src,
             .upload_submit_every = 1,
@@ -203,6 +207,7 @@ fn native_capability_set() capabilities.CapabilitySet {
     set.declare_all(&.{
         .buffer_upload,
         .barrier_sync,
+        .kernel_dispatch,
     });
     return set;
 }
@@ -326,12 +331,16 @@ fn deinit(ctx: *anyopaque) void {
         rt.deinit();
         self.runtime = null;
     }
+    if (self.kernel_root_owned) |r| {
+        allocator.free(r);
+        self.kernel_root_owned = null;
+    }
     allocator.destroy(self);
 }
 
 fn ensure_runtime_bootstrapped(self: *ZigD3D12Backend) !*native_runtime.NativeD3D12Runtime {
     if (self.runtime == null) {
-        self.runtime = try native_runtime.NativeD3D12Runtime.init(self.allocator);
+        self.runtime = try native_runtime.NativeD3D12Runtime.init(self.allocator, self.kernel_root_owned);
     }
     return &self.runtime.?;
 }
@@ -380,6 +389,31 @@ fn execute_barrier(self: *ZigD3D12Backend, setup_ns: u64) !webgpu.NativeExecutio
     };
 }
 
+fn execute_kernel_dispatch(self: *ZigD3D12Backend, setup_ns: u64, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const bytecode = try rt.load_kernel_cso(self.allocator, kd.kernel);
+    defer self.allocator.free(bytecode);
+    try rt.set_compute_shader(bytecode);
+
+    var warmup_i: u32 = 0;
+    while (warmup_i < kd.warmup_dispatch_count) : (warmup_i += 1) {
+        _ = try rt.run_dispatch(kd.x, kd.y, kd.z, 1);
+    }
+
+    const metrics = try rt.run_dispatch(kd.x, kd.y, kd.z, kd.repeat);
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns,
+        .encode_ns = metrics.encode_ns,
+        .submit_wait_ns = metrics.submit_wait_ns,
+        .dispatch_count = metrics.dispatch_count,
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+    };
+}
+
 fn flush_pending_uploads_if_required(self: *ZigD3D12Backend, command: model.Command) !u64 {
     switch (command) {
         .upload => return 0,
@@ -415,6 +449,7 @@ fn execute_native_command(self: *ZigD3D12Backend, command: model.Command) !webgp
     var result = switch (command) {
         .upload => |upload| try execute_upload(self, setup_ns, upload),
         .barrier => try execute_barrier(self, setup_ns),
+        .kernel_dispatch => |kd| try execute_kernel_dispatch(self, setup_ns, kd),
         else => return error.Unsupported,
     };
     result.submit_wait_ns +|= pending_submit_wait_ns;

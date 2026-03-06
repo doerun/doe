@@ -14,7 +14,17 @@ const native_runtime = if (builtin.os.tag == .macos)
 else
     @import("native_runtime.zig");
 
+const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
+const MANIFEST_PATH_CAPACITY: usize = 256;
+const HASH_HEX_SIZE: usize = 64;
+const MANIFEST_CONTENT_CAPACITY: usize = 2048;
+const MANIFEST_MODULE_CAPACITY: usize = 64;
+const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
+const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+const HEX = "0123456789abcdef";
+const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
+const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
 pub const ZigVulkanBackend = struct {
     allocator: std.mem.Allocator,
@@ -32,6 +42,22 @@ pub const ZigVulkanBackend = struct {
 
     status_message_storage: [STATUS_MESSAGE_BYTES]u8 = [_]u8{0} ** STATUS_MESSAGE_BYTES,
     status_message_len: usize = 0,
+
+    manifest_emit_count: u64 = 0,
+    manifest_path_storage: [MANIFEST_PATH_CAPACITY]u8 = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
+    manifest_path_len: usize = 0,
+    manifest_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
+    manifest_hash_len: usize = 0,
+    last_manifest_meta: ?artifact_meta.ArtifactMeta = null,
+    last_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
+    last_manifest_module_len: usize = 0,
+    last_manifest_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+    last_manifest_status_len: usize = 0,
+    pending_artifact_write: bool = false,
+    pending_artifact_module: []const u8 = "",
+    pending_artifact_meta: artifact_meta.ArtifactMeta = undefined,
+    pending_artifact_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+    pending_artifact_status_len: usize = 0,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*ZigVulkanBackend {
         if (profile.api != .vulkan) return error.UnsupportedFeature;
@@ -62,7 +88,28 @@ pub const ZigVulkanBackend = struct {
             .capability_set = caps,
             .status_message_storage = [_]u8{0} ** STATUS_MESSAGE_BYTES,
             .status_message_len = 0,
+            .manifest_emit_count = 0,
+            .manifest_path_storage = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
+            .manifest_path_len = 0,
+            .manifest_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
+            .manifest_hash_len = 0,
+            .last_manifest_meta = null,
+            .last_manifest_module_storage = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
+            .last_manifest_module_len = 0,
+            .last_manifest_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+            .last_manifest_status_len = 0,
+            .pending_artifact_write = false,
+            .pending_artifact_module = "",
+            .pending_artifact_meta = undefined,
+            .pending_artifact_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
+            .pending_artifact_status_len = 0,
         };
+
+        ptr.emit_shader_artifact_manifest_for_signature(
+            BOOTSTRAP_MANIFEST_MODULE,
+            artifact_meta.classify(.native_vulkan, false, false),
+            BOOTSTRAP_MANIFEST_STATUS_CODE,
+        ) catch {};
 
         return ptr;
     }
@@ -83,6 +130,74 @@ pub const ZigVulkanBackend = struct {
             },
         };
     }
+
+    fn manifest_path(self: *const ZigVulkanBackend) ?[]const u8 {
+        if (self.manifest_path_len == 0) return null;
+        return self.manifest_path_storage[0..self.manifest_path_len];
+    }
+
+    fn manifest_hash(self: *const ZigVulkanBackend) ?[]const u8 {
+        if (self.manifest_hash_len == 0) return null;
+        return self.manifest_hash_storage[0..self.manifest_hash_len];
+    }
+
+    fn previous_manifest_hash(self: *const ZigVulkanBackend) []const u8 {
+        return self.manifest_hash() orelse ZERO_HASH;
+    }
+
+    fn flush_pending_artifact(self: *ZigVulkanBackend) void {
+        if (!self.pending_artifact_write) return;
+        self.pending_artifact_write = false;
+        const status_code = self.pending_artifact_status_storage[0..self.pending_artifact_status_len];
+        if (manifest_signature_matches(self, self.pending_artifact_module, self.pending_artifact_meta, status_code)) return;
+        self.emit_shader_artifact_manifest_for_signature(
+            self.pending_artifact_module,
+            self.pending_artifact_meta,
+            status_code,
+        ) catch {};
+    }
+
+    fn emit_shader_artifact_manifest_for_signature(
+        self: *ZigVulkanBackend,
+        module: []const u8,
+        meta: artifact_meta.ArtifactMeta,
+        status_code: []const u8,
+    ) common_errors.BackendNativeError!void {
+        self.manifest_emit_count +|= 1;
+
+        var path_buffer: [MANIFEST_PATH_CAPACITY]u8 = undefined;
+        const path = std.fmt.bufPrint(
+            &path_buffer,
+            "{s}/vulkan_shader_artifact_{d}.json",
+            .{ SHADER_ARTIFACT_DIR, self.manifest_emit_count },
+        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        var content_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
+        const content = std.fmt.bufPrint(
+            &content_buffer,
+            "{{\"backendId\":\"doe_vulkan\",\"backendKind\":\"{s}\",\"timingSource\":\"{s}\",\"comparability\":\"{s}\",\"claimable\":{},\"module\":\"{s}\",\"statusCode\":\"{s}\",\"previousManifestHash\":\"{s}\"}}\n",
+            .{
+                meta.backend_kind.name(),
+                meta.timing_source.name(),
+                meta.comparability.name(),
+                meta.is_claimable(),
+                module,
+                status_code,
+                self.previous_manifest_hash(),
+            },
+        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        const hash = sha256_hex(content);
+
+        std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+        const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+        defer file.close();
+        file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        persist_manifest_path(self, path);
+        persist_manifest_hash(self, hash[0..]);
+        persist_manifest_signature(self, module, meta, status_code);
+    }
 };
 
 fn cast(ctx: *anyopaque) *ZigVulkanBackend {
@@ -90,13 +205,13 @@ fn cast(ctx: *anyopaque) *ZigVulkanBackend {
 }
 
 pub fn manifest_path_from_context(ctx: *anyopaque) ?[]const u8 {
-    _ = ctx;
-    return null;
+    const self = cast(ctx);
+    self.flush_pending_artifact();
+    return self.manifest_path();
 }
 
 pub fn manifest_hash_from_context(ctx: *anyopaque) ?[]const u8 {
-    _ = ctx;
-    return null;
+    return cast(ctx).manifest_hash();
 }
 
 fn deinit(ctx: *anyopaque) void {
@@ -152,6 +267,17 @@ fn annotate_result(self: *ZigVulkanBackend, command: model.Command, result: webg
         "{s} timing={s} comparability={s}",
         .{ command_info.manifest_module(command), meta.timing_source.name(), meta.comparability.name() },
     );
+
+    if (should_emit_shader_artifact(command)) {
+        const status_code = artifact_status_code(out);
+        const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
+        std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
+        self.pending_artifact_status_len = copy_len;
+        self.pending_artifact_module = command_info.manifest_module(command);
+        self.pending_artifact_meta = meta;
+        self.pending_artifact_write = true;
+    }
+
     return out;
 }
 
@@ -418,6 +544,91 @@ fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]con
     _ = ctx;
     _ = kernel;
     _ = bindings;
+}
+
+fn should_emit_shader_artifact(command: model.Command) bool {
+    return switch (command) {
+        .dispatch, .dispatch_indirect, .kernel_dispatch, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => true,
+        else => false,
+    };
+}
+
+fn artifact_status_code(result: webgpu.NativeExecutionResult) []const u8 {
+    if (result.status_message.len != 0) return result.status_message;
+    return switch (result.status) {
+        .ok => "ok",
+        .unsupported => "unsupported",
+        .@"error" => "error",
+    };
+}
+
+fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
+    var output: [HASH_HEX_SIZE]u8 = undefined;
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+    for (digest, 0..) |byte, index| {
+        const output_index = index * 2;
+        output[output_index] = HEX[(byte >> 4) & 0x0F];
+        output[output_index + 1] = HEX[byte & 0x0F];
+    }
+    return output;
+}
+
+fn persist_manifest_path(self: *ZigVulkanBackend, value: []const u8) void {
+    if (value.len > self.manifest_path_storage.len) {
+        self.manifest_path_len = 0;
+        return;
+    }
+    std.mem.copyForwards(u8, self.manifest_path_storage[0..value.len], value);
+    self.manifest_path_len = value.len;
+}
+
+fn persist_manifest_hash(self: *ZigVulkanBackend, value: []const u8) void {
+    if (value.len > self.manifest_hash_storage.len) {
+        self.manifest_hash_len = 0;
+        return;
+    }
+    std.mem.copyForwards(u8, self.manifest_hash_storage[0..value.len], value);
+    self.manifest_hash_len = value.len;
+}
+
+fn manifest_signature_matches(
+    self: *const ZigVulkanBackend,
+    module: []const u8,
+    meta: artifact_meta.ArtifactMeta,
+    status_code: []const u8,
+) bool {
+    const last_meta = self.last_manifest_meta orelse return false;
+    if (last_meta.backend_kind != meta.backend_kind or
+        last_meta.timing_source != meta.timing_source or
+        last_meta.comparability != meta.comparability)
+    {
+        return false;
+    }
+    if (!std.mem.eql(u8, self.last_manifest_module_storage[0..self.last_manifest_module_len], module)) return false;
+    if (!std.mem.eql(u8, self.last_manifest_status_storage[0..self.last_manifest_status_len], status_code)) return false;
+    return true;
+}
+
+fn persist_manifest_signature(
+    self: *ZigVulkanBackend,
+    module: []const u8,
+    meta: artifact_meta.ArtifactMeta,
+    status_code: []const u8,
+) void {
+    self.last_manifest_meta = meta;
+    if (module.len > self.last_manifest_module_storage.len) {
+        self.last_manifest_module_len = 0;
+    } else {
+        std.mem.copyForwards(u8, self.last_manifest_module_storage[0..module.len], module);
+        self.last_manifest_module_len = module.len;
+    }
+    if (status_code.len > self.last_manifest_status_storage.len) {
+        self.last_manifest_status_len = 0;
+    } else {
+        std.mem.copyForwards(u8, self.last_manifest_status_storage[0..status_code.len], status_code);
+        self.last_manifest_status_len = status_code.len;
+    }
 }
 
 const VTABLE = backend_iface.BackendVTable{
