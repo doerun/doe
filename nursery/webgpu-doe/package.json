@@ -1,0 +1,45 @@
+{
+  "name": "@simulatte/webgpu-doe",
+  "version": "0.1.0",
+  "description": "Native Doe WebGPU runtime for Node.js — Zig-built Metal/Vulkan/D3D12 backends via N-API",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": {
+      "bun": "./src/bun.js",
+      "default": "./src/index.js"
+    },
+    "./bun": "./src/bun.js",
+    "./node": "./src/index.js"
+  },
+  "files": [
+    "src/",
+    "native/",
+    "binding.gyp",
+    "prebuilds/"
+  ],
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "build": "node-gyp rebuild"
+  },
+  "gypfile": true,
+  "keywords": [
+    "webgpu",
+    "doe",
+    "gpu",
+    "compute",
+    "headless",
+    "node",
+    "bun",
+    "native",
+    "napi",
+    "metal",
+    "vulkan"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clocksmith/fawn",
+    "directory": "nursery/webgpu-doe"
+  },
+  "license": "ISC"
+}
