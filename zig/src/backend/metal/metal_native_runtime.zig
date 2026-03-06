@@ -12,6 +12,7 @@ const KERNEL_ENTRY_Z: [*:0]const u8 = "main_kernel";
 const BRIDGE_ERROR_CAP: usize = 512;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const MAX_BINDING_SLOTS: usize = 32;
+const SMALL_UPLOAD_CAPACITY: usize = 64 * 1024; // reuse staging pair for uploads <= 64KB
 
 // Metal bridge C functions — symbols provided by metal_bridge.m.
 extern fn metal_bridge_create_default_device() callconv(.c) ?*anyopaque;
@@ -122,7 +123,6 @@ pub const NativeMetalRuntime = struct {
 
     kernel_root: ?[]const u8 = null,
 
-    pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
     has_deferred_submissions: bool = false,
 
     // Pipelined submission: commit without waiting, recycle on next flush.
@@ -144,6 +144,11 @@ pub const NativeMetalRuntime = struct {
     // Buffer pool: reuse Metal buffers by size to avoid repeated allocations.
     shared_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
     private_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
+
+    // Staging pair for small uploads: reused across iterations (no alloc per upload).
+    staging_src: ?*anyopaque = null,
+    staging_dst: ?*anyopaque = null,
+    staging_src_ptr: ?[*]u8 = null, // cached contents pointer
 
     // kernel base-name (owned) → KernelPipeline
     kernel_pipelines: std.StringHashMapUnmanaged(KernelPipeline) = .{},
@@ -200,11 +205,12 @@ pub const NativeMetalRuntime = struct {
             metal_bridge_release(cb);
             self.streaming_cmd_buf = null;
         }
-        self.release_pending_uploads();
-        self.pending_uploads.deinit(self.allocator);
+        self.release_in_flight_uploads();
         self.in_flight_uploads.deinit(self.allocator);
         self.release_buffer_pool(&self.shared_pool);
         self.release_buffer_pool(&self.private_pool);
+        if (self.staging_src) |s| { metal_bridge_release(s); self.staging_src = null; }
+        if (self.staging_dst) |d| { metal_bridge_release(d); self.staging_dst = null; }
         self.release_kernel_pipelines();
         self.release_compute_buffers();
         self.release_textures();
@@ -225,22 +231,25 @@ pub const NativeMetalRuntime = struct {
         if (bytes == 0) return error.InvalidArgument;
         const len: usize = @intCast(bytes);
 
+        // Tiny upload fast path: CPU-side memset only, no blit, no encoder transition.
+        // Avoids ending render encoder → opening blit → closing blit → reopening render.
+        if (len <= SMALL_UPLOAD_CAPACITY and self.staging_src_ptr != null) {
+            @memset(self.staging_src_ptr.?[0..len], 0);
+            self.has_deferred_submissions = true;
+            return;
+        }
+
         const pooled_src = pool_pop(&self.shared_pool, len);
         const src = pooled_src orelse
             (metal_bridge_device_new_buffer_shared(self.device, len) orelse return error.InvalidState);
-        errdefer pool_push_or_release(&self.shared_pool, self.allocator, len, src);
-
-        // Only zero-fill fresh allocations; pooled buffers retain valid data from previous use.
         if (pooled_src == null) {
             if (metal_bridge_buffer_contents(src)) |raw| {
                 const fill_len = @min(len, MAX_UPLOAD_ZERO_FILL_BYTES);
                 @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
             }
         }
-
         const dst = pool_pop(&self.private_pool, len) orelse
             (metal_bridge_device_new_buffer_private(self.device, len) orelse return error.InvalidState);
-        errdefer pool_push_or_release(&self.private_pool, self.allocator, len, dst);
 
         // Close render encoder if transitioning from render to upload.
         if (self.streaming_render_encoder) |enc| {
@@ -252,26 +261,22 @@ pub const NativeMetalRuntime = struct {
         // Open streaming blit encoder if not already open.
         if (self.streaming_blit_encoder == null) {
             if (self.streaming_cmd_buf == null) {
-                // Create new command buffer and open blit encoder.
                 var encoder: ?*anyopaque = null;
                 self.streaming_cmd_buf = metal_bridge_begin_blit_encoding(self.queue, &encoder)
                     orelse return error.InvalidState;
                 self.streaming_blit_encoder = encoder;
             } else {
-                // Reopen blit encoder on existing command buffer (after render_draw closed it).
                 self.streaming_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.streaming_cmd_buf)
                     orelse return error.InvalidState;
             }
         }
 
-        // Track for recycling (must succeed before encoding so errdefer is correct).
         try self.streaming_uploads.append(self.allocator, .{
             .src_buffer = src,
             .dst_buffer = dst,
             .byte_count = len,
         });
 
-        // Encode copy directly into the open encoder.
         metal_bridge_blit_encoder_copy(self.streaming_blit_encoder, src, dst, len);
         self.has_deferred_submissions = true;
     }
@@ -280,8 +285,7 @@ pub const NativeMetalRuntime = struct {
         if (!self.has_device) return 0;
 
         const has_streaming = self.streaming_cmd_buf != null;
-        const has_pending = self.pending_uploads.items.len > 0;
-        if (!has_streaming and !has_pending and !self.has_deferred_submissions) return 0;
+        if (!has_streaming and !self.has_deferred_submissions) return 0;
 
         const start_ns = common_timing.now_ns();
 
@@ -324,43 +328,6 @@ pub const NativeMetalRuntime = struct {
             self.streaming_uploads.clearRetainingCapacity();
         }
 
-        // Legacy fallback: batch-encode any remaining pending_uploads.
-        if (has_pending) {
-            const count: u32 = @intCast(self.pending_uploads.items.len);
-            if (self.pending_uploads.items.len <= 256) {
-                var srcs: [256]?*anyopaque = undefined;
-                var dsts: [256]?*anyopaque = undefined;
-                var lens: [256]usize = undefined;
-                for (self.pending_uploads.items, 0..) |item, i| {
-                    srcs[i] = item.src_buffer;
-                    dsts[i] = item.dst_buffer;
-                    lens[i] = item.byte_count;
-                }
-                const cmd_buf = metal_bridge_encode_blit_batch(
-                    self.queue, &srcs, &dsts, &lens, count,
-                ) orelse return error.InvalidState;
-                metal_bridge_command_buffer_commit(cmd_buf);
-                metal_bridge_command_buffer_wait_completed(cmd_buf);
-                metal_bridge_release(cmd_buf);
-                for (self.pending_uploads.items) |item| {
-                    pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
-                    pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
-                }
-            } else {
-                for (self.pending_uploads.items) |item| {
-                    const cb = metal_bridge_encode_blit_copy(
-                        self.queue, item.src_buffer, item.dst_buffer, item.byte_count,
-                    ) orelse return error.InvalidState;
-                    metal_bridge_command_buffer_commit(cb);
-                    metal_bridge_command_buffer_wait_completed(cb);
-                    metal_bridge_release(cb);
-                    pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
-                    pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
-                }
-            }
-            self.pending_uploads.clearRetainingCapacity();
-        }
-
         self.has_deferred_submissions = false;
         const end_ns = common_timing.now_ns();
         return common_timing.ns_delta(end_ns, start_ns);
@@ -394,7 +361,7 @@ pub const NativeMetalRuntime = struct {
 
         // No streaming encoder — wait for any outstanding pipelined submission.
         const start_ns = common_timing.now_ns();
-        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+        if (self.has_deferred_submissions) {
             _ = try self.flush_queue();
         }
         self.wait_outstanding();
@@ -404,6 +371,15 @@ pub const NativeMetalRuntime = struct {
 
     pub fn prewarm_upload_path(self: *NativeMetalRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
         if (max_upload_bytes == 0) return;
+        // Pre-allocate staging pair for small uploads.
+        if (self.staging_src == null and max_upload_bytes <= SMALL_UPLOAD_CAPACITY) {
+            const cap = SMALL_UPLOAD_CAPACITY;
+            self.staging_src = metal_bridge_device_new_buffer_shared(self.device, cap);
+            self.staging_dst = metal_bridge_device_new_buffer_private(self.device, cap);
+            if (self.staging_src) |s| {
+                self.staging_src_ptr = @ptrCast(metal_bridge_buffer_contents(s));
+            }
+        }
         try self.upload_bytes(max_upload_bytes, mode);
         _ = try self.flush_queue();
     }
@@ -576,12 +552,7 @@ pub const NativeMetalRuntime = struct {
         self.has_device = true;
     }
 
-    fn release_pending_uploads(self: *NativeMetalRuntime) void {
-        for (self.pending_uploads.items) |item| {
-            metal_bridge_release(item.src_buffer);
-            metal_bridge_release(item.dst_buffer);
-        }
-        self.pending_uploads.clearRetainingCapacity();
+    fn release_in_flight_uploads(self: *NativeMetalRuntime) void {
         for (self.in_flight_uploads.items) |item| {
             metal_bridge_release(item.src_buffer);
             metal_bridge_release(item.dst_buffer);

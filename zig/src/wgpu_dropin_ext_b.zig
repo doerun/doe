@@ -181,11 +181,6 @@ pub export fn wgpuSamplerAddRef(a0: types.WGPUSampler) callconv(.c) void {
     proc(a0);
 }
 
-pub export fn wgpuSamplerRelease(a0: types.WGPUSampler) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUSampler) callconv(.c) void, "wgpuSamplerRelease");
-    proc(a0);
-}
-
 pub export fn wgpuShaderModuleAddRef(a0: types.WGPUShaderModule) callconv(.c) void {
     const proc = resolveRequiredProc(*const fn (types.WGPUShaderModule) callconv(.c) void, "wgpuShaderModuleAddRef");
     proc(a0);

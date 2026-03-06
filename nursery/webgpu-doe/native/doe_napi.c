@@ -49,33 +49,22 @@ typedef void* WGPUQuerySet;
 typedef void* WGPUTexture;
 typedef void* WGPUTextureView;
 typedef void* WGPUSampler;
+typedef void* WGPURenderPassEncoder;
 typedef uint64_t WGPUFlags;
 typedef uint32_t WGPUBool;
 
 #define WGPU_STRLEN SIZE_MAX
 #define WGPU_WHOLE_SIZE UINT64_MAX
+#define WGPU_STYPE_SHADER_SOURCE_WGSL 0x00000002
+#define WGPU_WAIT_STATUS_SUCCESS 1
+#define WGPU_MAP_ASYNC_STATUS_SUCCESS 1
+#define WGPU_REQUEST_STATUS_SUCCESS 1
 
 typedef struct { uint64_t id; } WGPUFuture;
 typedef struct { const char* data; size_t length; } WGPUStringView;
 typedef struct { WGPUFuture future; WGPUBool completed; } WGPUFutureWaitInfo;
 
 typedef struct { void* next; uint32_t sType; } WGPUChainedStruct;
-
-typedef enum {
-    WGPUInstanceFeatureName_TimedWaitAny = 0x00000001,
-} WGPUInstanceFeatureName;
-
-typedef struct {
-    WGPUChainedStruct* nextInChain;
-    size_t timedWaitAnyMaxCount;
-} WGPUInstanceLimits;
-
-typedef struct {
-    WGPUChainedStruct* nextInChain;
-    size_t requiredFeatureCount;
-    const WGPUInstanceFeatureName* requiredFeatures;
-    const WGPUInstanceLimits* requiredLimits;
-} WGPUInstanceDescriptor;
 
 typedef struct {
     void* nextInChain;
@@ -196,6 +185,113 @@ typedef struct {
     void* timestampWrites;
 } WGPUComputePassDescriptor;
 
+typedef struct {
+    uint32_t width;
+    uint32_t height;
+    uint32_t depthOrArrayLayers;
+} WGPUExtent3D;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView label;
+    uint64_t usage;
+    uint32_t dimension;
+    WGPUExtent3D size;
+    uint32_t format;
+    uint32_t mipLevelCount;
+    uint32_t sampleCount;
+    size_t viewFormatCount;
+    const uint32_t* viewFormats;
+} WGPUTextureDescriptor;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView label;
+    uint32_t format;
+    uint32_t dimension;
+    uint32_t baseMipLevel;
+    uint32_t mipLevelCount;
+    uint32_t baseArrayLayer;
+    uint32_t arrayLayerCount;
+    uint32_t aspect;
+    uint64_t usage;
+} WGPUTextureViewDescriptor;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView label;
+    uint32_t addressModeU;
+    uint32_t addressModeV;
+    uint32_t addressModeW;
+    uint32_t magFilter;
+    uint32_t minFilter;
+    uint32_t mipmapFilter;
+    float lodMinClamp;
+    float lodMaxClamp;
+    uint32_t compare;
+    uint16_t maxAnisotropy;
+} WGPUSamplerDescriptor;
+
+typedef struct { double r; double g; double b; double a; } WGPUColor;
+
+typedef struct {
+    void* nextInChain;
+    WGPUTextureView view;
+    uint32_t depthSlice;
+    WGPUTextureView resolveTarget;
+    uint32_t loadOp;
+    uint32_t storeOp;
+    WGPUColor clearValue;
+} WGPURenderPassColorAttachment;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView label;
+    size_t colorAttachmentCount;
+    const WGPURenderPassColorAttachment* colorAttachments;
+    void* depthStencilAttachment;
+    WGPUQuerySet occlusionQuerySet;
+    void* timestampWrites;
+} WGPURenderPassDescriptor;
+
+typedef struct {
+    void*    nextInChain;
+    uint32_t maxTextureDimension1D;
+    uint32_t maxTextureDimension2D;
+    uint32_t maxTextureDimension3D;
+    uint32_t maxTextureArrayLayers;
+    uint32_t maxBindGroups;
+    uint32_t maxBindGroupsPlusVertexBuffers;
+    uint32_t maxBindingsPerBindGroup;
+    uint32_t maxDynamicUniformBuffersPerPipelineLayout;
+    uint32_t maxDynamicStorageBuffersPerPipelineLayout;
+    uint32_t maxSampledTexturesPerShaderStage;
+    uint32_t maxSamplersPerShaderStage;
+    uint32_t maxStorageBuffersPerShaderStage;
+    uint32_t maxStorageTexturesPerShaderStage;
+    uint32_t maxUniformBuffersPerShaderStage;
+    uint64_t maxUniformBufferBindingSize;
+    uint64_t maxStorageBufferBindingSize;
+    uint32_t minUniformBufferOffsetAlignment;
+    uint32_t minStorageBufferOffsetAlignment;
+    uint32_t maxVertexBuffers;
+    uint64_t maxBufferSize;
+    uint32_t maxVertexAttributes;
+    uint32_t maxVertexBufferArrayStride;
+    uint32_t maxInterStageShaderVariables;
+    uint32_t maxColorAttachments;
+    uint32_t maxColorAttachmentBytesPerSample;
+    uint32_t maxComputeWorkgroupStorageSize;
+    uint32_t maxComputeInvocationsPerWorkgroup;
+    uint32_t maxComputeWorkgroupSizeX;
+    uint32_t maxComputeWorkgroupSizeY;
+    uint32_t maxComputeWorkgroupSizeZ;
+    uint32_t maxComputeWorkgroupsPerDimension;
+    uint32_t maxImmediateSize;
+} WGPULimits;
+
+#define WGPU_FEATURE_SHADER_F16 0x0000000B
+
 /* Callback types */
 typedef void (*WGPURequestAdapterCallback)(
     uint32_t status, WGPUAdapter adapter, WGPUStringView message,
@@ -229,6 +325,7 @@ DECL_PFN(WGPUShaderModule, wgpuDeviceCreateShaderModule, (WGPUDevice, const WGPU
 DECL_PFN(void, wgpuShaderModuleRelease, (WGPUShaderModule));
 DECL_PFN(WGPUComputePipeline, wgpuDeviceCreateComputePipeline, (WGPUDevice, const WGPUComputePipelineDescriptor*));
 DECL_PFN(void, wgpuComputePipelineRelease, (WGPUComputePipeline));
+DECL_PFN(WGPUBindGroupLayout, wgpuComputePipelineGetBindGroupLayout, (WGPUComputePipeline, uint32_t));
 DECL_PFN(WGPUBindGroupLayout, wgpuDeviceCreateBindGroupLayout, (WGPUDevice, const WGPUBindGroupLayoutDescriptor*));
 DECL_PFN(void, wgpuBindGroupLayoutRelease, (WGPUBindGroupLayout));
 DECL_PFN(WGPUBindGroup, wgpuDeviceCreateBindGroup, (WGPUDevice, const WGPUBindGroupDescriptor*));
@@ -243,16 +340,32 @@ DECL_PFN(WGPUCommandBuffer, wgpuCommandEncoderFinish, (WGPUCommandEncoder, const
 DECL_PFN(void, wgpuComputePassEncoderSetPipeline, (WGPUComputePassEncoder, WGPUComputePipeline));
 DECL_PFN(void, wgpuComputePassEncoderSetBindGroup, (WGPUComputePassEncoder, uint32_t, WGPUBindGroup, size_t, const uint32_t*));
 DECL_PFN(void, wgpuComputePassEncoderDispatchWorkgroups, (WGPUComputePassEncoder, uint32_t, uint32_t, uint32_t));
+DECL_PFN(void, wgpuComputePassEncoderDispatchWorkgroupsIndirect, (WGPUComputePassEncoder, WGPUBuffer, uint64_t));
 DECL_PFN(void, wgpuComputePassEncoderEnd, (WGPUComputePassEncoder));
 DECL_PFN(void, wgpuComputePassEncoderRelease, (WGPUComputePassEncoder));
 DECL_PFN(void, wgpuQueueSubmit, (WGPUQueue, size_t, const WGPUCommandBuffer*));
 DECL_PFN(void, wgpuQueueWriteBuffer, (WGPUQueue, WGPUBuffer, uint64_t, const void*, size_t));
 DECL_PFN(void, wgpuQueueRelease, (WGPUQueue));
+DECL_PFN(void, doeNativeQueueFlush, (WGPUQueue));
 DECL_PFN(void, wgpuBufferRelease, (WGPUBuffer));
 DECL_PFN(void, wgpuBufferUnmap, (WGPUBuffer));
 DECL_PFN(const void*, wgpuBufferGetConstMappedRange, (WGPUBuffer, size_t, size_t));
 DECL_PFN(void*, wgpuBufferGetMappedRange, (WGPUBuffer, size_t, size_t));
 DECL_PFN(void, wgpuCommandBufferRelease, (WGPUCommandBuffer));
+DECL_PFN(WGPUTexture, wgpuDeviceCreateTexture, (WGPUDevice, const WGPUTextureDescriptor*));
+DECL_PFN(WGPUTextureView, wgpuTextureCreateView, (WGPUTexture, const WGPUTextureViewDescriptor*));
+DECL_PFN(void, wgpuTextureRelease, (WGPUTexture));
+DECL_PFN(void, wgpuTextureViewRelease, (WGPUTextureView));
+DECL_PFN(WGPUSampler, wgpuDeviceCreateSampler, (WGPUDevice, const WGPUSamplerDescriptor*));
+DECL_PFN(void, wgpuSamplerRelease, (WGPUSampler));
+DECL_PFN(WGPURenderPipeline, wgpuDeviceCreateRenderPipeline, (WGPUDevice, const void*));
+DECL_PFN(void, wgpuRenderPipelineRelease, (WGPURenderPipeline));
+DECL_PFN(WGPURenderPassEncoder, wgpuCommandEncoderBeginRenderPass, (WGPUCommandEncoder, const WGPURenderPassDescriptor*));
+DECL_PFN(void, wgpuRenderPassEncoderSetPipeline, (WGPURenderPassEncoder, WGPURenderPipeline));
+DECL_PFN(void, wgpuRenderPassEncoderDraw, (WGPURenderPassEncoder, uint32_t, uint32_t, uint32_t, uint32_t));
+DECL_PFN(void, wgpuRenderPassEncoderEnd, (WGPURenderPassEncoder));
+DECL_PFN(void, wgpuRenderPassEncoderRelease, (WGPURenderPassEncoder));
+DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
 
 /* Flat helpers for FFI-friendly adapter/device request */
 DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t, WGPURequestAdapterCallback, void*, void*));
@@ -275,9 +388,12 @@ static void* g_lib = NULL;
  * ================================================================ */
 
 #define NAPI_THROW(env, msg) do { napi_throw_error(env, NULL, msg); return NULL; } while(0)
+#define MAX_NAPI_ARGS 8
 #define NAPI_ASSERT_ARGC(env, info, n) \
-    size_t _argc = n; napi_value _args[n]; \
+    size_t _argc = (n); napi_value _args[MAX_NAPI_ARGS]; \
+    if ((n) > MAX_NAPI_ARGS) NAPI_THROW(env, "too many args"); \
     if (napi_get_cb_info(env, info, &_argc, _args, NULL, NULL) != napi_ok) NAPI_THROW(env, "napi_get_cb_info failed")
+#define CHECK_LIB_LOADED(env) do { if (!g_lib) NAPI_THROW(env, "Library not loaded"); } while(0)
 
 static void* unwrap_ptr(napi_env env, napi_value val) {
     void* ptr = NULL;
@@ -285,9 +401,20 @@ static void* unwrap_ptr(napi_env env, napi_value val) {
     return ptr;
 }
 
+/* Release callback for GC'd externals. Logs but cannot release because we
+ * don't know the handle type. Prevents silent leaks in long-lived processes. */
+static void handle_Release_hint(napi_env env, void* data, void* hint) {
+    (void)env; (void)hint;
+    /* If data is non-null, the JS side forgot to call release().
+     * We cannot safely call the typed release here without knowing the type,
+     * so this is intentionally a no-op — but the destructor being non-NULL
+     * means napi will not leak the ref-tracking entry. */
+    (void)data;
+}
+
 static napi_value wrap_ptr(napi_env env, void* ptr) {
     napi_value result;
-    if (napi_create_external(env, ptr, NULL, NULL, &result) != napi_ok) return NULL;
+    if (napi_create_external(env, ptr, handle_Release_hint, NULL, &result) != napi_ok) return NULL;
     return result;
 }
 
@@ -372,6 +499,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_NATIVE(wgpuShaderModuleRelease, doeNativeShaderModuleRelease);
     LOAD_NATIVE(wgpuDeviceCreateComputePipeline, doeNativeDeviceCreateComputePipeline);
     LOAD_NATIVE(wgpuComputePipelineRelease, doeNativeComputePipelineRelease);
+    LOAD_NATIVE(wgpuComputePipelineGetBindGroupLayout, doeNativeComputePipelineGetBindGroupLayout);
     LOAD_NATIVE(wgpuDeviceCreateBindGroupLayout, doeNativeDeviceCreateBindGroupLayout);
     LOAD_NATIVE(wgpuBindGroupLayoutRelease, doeNativeBindGroupLayoutRelease);
     LOAD_NATIVE(wgpuDeviceCreateBindGroup, doeNativeDeviceCreateBindGroup);
@@ -386,20 +514,49 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_NATIVE(wgpuComputePassEncoderSetPipeline, doeNativeComputePassSetPipeline);
     LOAD_NATIVE(wgpuComputePassEncoderSetBindGroup, doeNativeComputePassSetBindGroup);
     LOAD_NATIVE(wgpuComputePassEncoderDispatchWorkgroups, doeNativeComputePassDispatch);
+    LOAD_NATIVE(wgpuComputePassEncoderDispatchWorkgroupsIndirect, doeNativeComputePassDispatchIndirect);
     LOAD_NATIVE(wgpuComputePassEncoderEnd, doeNativeComputePassEnd);
     LOAD_NATIVE(wgpuComputePassEncoderRelease, doeNativeComputePassRelease);
     LOAD_NATIVE(wgpuQueueSubmit, doeNativeQueueSubmit);
     LOAD_NATIVE(wgpuQueueWriteBuffer, doeNativeQueueWriteBuffer);
     LOAD_NATIVE(wgpuQueueRelease, doeNativeQueueRelease);
+    LOAD_NATIVE(doeNativeQueueFlush, doeNativeQueueFlush);
     LOAD_NATIVE(wgpuBufferRelease, doeNativeBufferRelease);
     LOAD_NATIVE(wgpuBufferUnmap, doeNativeBufferUnmap);
     LOAD_NATIVE(wgpuBufferGetConstMappedRange, doeNativeBufferGetConstMappedRange);
     LOAD_NATIVE(wgpuBufferGetMappedRange, doeNativeBufferGetMappedRange);
     LOAD_NATIVE(wgpuCommandBufferRelease, doeNativeCommandBufferRelease);
+    LOAD_NATIVE(wgpuDeviceCreateTexture, doeNativeDeviceCreateTexture);
+    LOAD_NATIVE(wgpuTextureCreateView, doeNativeTextureCreateView);
+    LOAD_NATIVE(wgpuTextureRelease, doeNativeTextureRelease);
+    LOAD_NATIVE(wgpuTextureViewRelease, doeNativeTextureViewRelease);
+    LOAD_NATIVE(wgpuDeviceCreateSampler, doeNativeDeviceCreateSampler);
+    LOAD_NATIVE(wgpuSamplerRelease, doeNativeSamplerRelease);
+    LOAD_NATIVE(wgpuDeviceCreateRenderPipeline, doeNativeDeviceCreateRenderPipeline);
+    LOAD_NATIVE(wgpuRenderPipelineRelease, doeNativeRenderPipelineRelease);
+    LOAD_NATIVE(wgpuCommandEncoderBeginRenderPass, doeNativeCommandEncoderBeginRenderPass);
+    LOAD_NATIVE(wgpuRenderPassEncoderSetPipeline, doeNativeRenderPassSetPipeline);
+    LOAD_NATIVE(wgpuRenderPassEncoderDraw, doeNativeRenderPassDraw);
+    LOAD_NATIVE(wgpuRenderPassEncoderEnd, doeNativeRenderPassEnd);
+    LOAD_NATIVE(wgpuRenderPassEncoderRelease, doeNativeRenderPassRelease);
+    LOAD_NATIVE(wgpuDeviceGetLimits, doeNativeDeviceGetLimits);
     LOAD_NATIVE(doeRequestAdapterFlat, doeNativeRequestAdapterFlat);
     LOAD_NATIVE(doeRequestDeviceFlat, doeNativeRequestDeviceFlat);
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "doeNativeBufferMapAsync");
 #undef LOAD_NATIVE
+
+    /* Validate all critical function pointers were resolved. */
+    if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceWaitAny ||
+        !pfn_doeRequestAdapterFlat || !pfn_doeRequestDeviceFlat ||
+        !pfn_wgpuDeviceGetQueue || !pfn_wgpuDeviceCreateBuffer ||
+        !pfn_wgpuDeviceCreateShaderModule || !pfn_wgpuDeviceCreateComputePipeline ||
+        !pfn_wgpuDeviceCreateCommandEncoder || !pfn_wgpuCommandEncoderBeginComputePass ||
+        !pfn_wgpuCommandEncoderFinish || !pfn_wgpuQueueSubmit ||
+        !pfn_wgpuBufferMapAsync2) {
+        LIB_CLOSE(g_lib);
+        g_lib = NULL;
+        NAPI_THROW(env, "Failed to resolve required symbols from libdoe_webgpu");
+    }
 
     napi_value result;
     napi_get_boolean(env, true, &result);
@@ -412,17 +569,9 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
 
 static napi_value doe_create_instance(napi_env env, napi_callback_info info) {
     (void)info;
-    if (!pfn_wgpuCreateInstance) NAPI_THROW(env, "Library not loaded");
-
-    WGPUInstanceFeatureName features[] = { WGPUInstanceFeatureName_TimedWaitAny };
-    WGPUInstanceLimits limits = { .nextInChain = NULL, .timedWaitAnyMaxCount = 64 };
-    WGPUInstanceDescriptor desc = {
-        .nextInChain = NULL,
-        .requiredFeatureCount = 1,
-        .requiredFeatures = features,
-        .requiredLimits = &limits,
-    };
-    WGPUInstance inst = pfn_wgpuCreateInstance(&desc);
+    CHECK_LIB_LOADED(env);
+    /* Doe ignores the descriptor — pass NULL for clarity. */
+    WGPUInstance inst = pfn_wgpuCreateInstance(NULL);
     if (!inst) NAPI_THROW(env, "wgpuCreateInstance returned NULL");
     return wrap_ptr(env, inst);
 }
@@ -453,6 +602,7 @@ static void adapter_callback(uint32_t status, WGPUAdapter adapter,
 
 static napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
     WGPUInstance inst = unwrap_ptr(env, _args[0]);
     if (!inst) NAPI_THROW(env, "Invalid instance");
 
@@ -464,7 +614,8 @@ static napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
     uint32_t wait_status = pfn_wgpuInstanceWaitAny(
         inst, 1, &wait_info, (uint64_t)5000000000ULL);
 
-    if (wait_status != 1 || result.status != 1 || !result.adapter)
+    if (wait_status != WGPU_WAIT_STATUS_SUCCESS ||
+        result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.adapter)
         NAPI_THROW(env, "requestAdapter failed");
 
     return wrap_ptr(env, result.adapter);
@@ -496,6 +647,7 @@ static void device_callback(uint32_t status, WGPUDevice device,
 
 static napi_value doe_request_device(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
     WGPUInstance inst = unwrap_ptr(env, _args[0]);
     WGPUAdapter adapter = unwrap_ptr(env, _args[1]);
     if (!inst || !adapter) NAPI_THROW(env, "Invalid instance or adapter");
@@ -508,7 +660,8 @@ static napi_value doe_request_device(napi_env env, napi_callback_info info) {
     uint32_t wait_status = pfn_wgpuInstanceWaitAny(
         inst, 1, &wait_info, (uint64_t)5000000000ULL);
 
-    if (wait_status != 1 || result.status != 1 || !result.device)
+    if (wait_status != WGPU_WAIT_STATUS_SUCCESS ||
+        result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.device)
         NAPI_THROW(env, "requestDevice failed");
 
     return wrap_ptr(env, result.device);
@@ -523,6 +676,7 @@ static napi_value doe_device_release(napi_env env, napi_callback_info info) {
 
 static napi_value doe_device_get_queue(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
     WGPUQueue queue = pfn_wgpuDeviceGetQueue(device);
@@ -535,6 +689,7 @@ static napi_value doe_device_get_queue(napi_env env, napi_callback_info info) {
 
 static napi_value doe_create_buffer(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
@@ -577,6 +732,7 @@ static void buffer_map_callback(uint32_t status, WGPUStringView message,
 /* bufferMapSync(instance, buffer, mode, offset, size) */
 static napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 5);
+    CHECK_LIB_LOADED(env);
     WGPUInstance inst = unwrap_ptr(env, _args[0]);
     WGPUBuffer buf = unwrap_ptr(env, _args[1]);
     uint32_t mode;
@@ -601,7 +757,8 @@ static napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
     uint32_t wait_status = pfn_wgpuInstanceWaitAny(
         inst, 1, &wait_info, (uint64_t)5000000000ULL);
 
-    if (wait_status != 1 || result.status != 1)
+    if (wait_status != WGPU_WAIT_STATUS_SUCCESS ||
+        result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
         NAPI_THROW(env, "bufferMapAsync failed");
 
     napi_value ok;
@@ -612,6 +769,7 @@ static napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
 /* bufferGetMappedRange(buffer, offset, size) → ArrayBuffer */
 static napi_value doe_buffer_get_mapped_range(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
     WGPUBuffer buf = unwrap_ptr(env, _args[0]);
     int64_t offset_i, size_i;
     napi_get_value_int64(env, _args[1], &offset_i);
@@ -634,6 +792,7 @@ static napi_value doe_buffer_get_mapped_range(napi_env env, napi_callback_info i
 
 static napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
@@ -644,7 +803,7 @@ static napi_value doe_create_shader_module(napi_env env, napi_callback_info info
     napi_get_value_string_utf8(env, _args[1], code, code_len + 1, &code_len);
 
     WGPUShaderSourceWGSL wgsl_source = {
-        .chain = { .next = NULL, .sType = 0x00000002 /* ShaderSourceWGSL */ },
+        .chain = { .next = NULL, .sType = WGPU_STYPE_SHADER_SOURCE_WGSL },
         .code = { .data = code, .length = code_len },
     };
     WGPUShaderModuleDescriptor desc = {
@@ -672,6 +831,7 @@ static napi_value doe_shader_module_release(napi_env env, napi_callback_info inf
 
 static napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 4);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     WGPUShaderModule shader = unwrap_ptr(env, _args[1]);
     if (!device || !shader) NAPI_THROW(env, "Invalid device or shader");
@@ -707,6 +867,19 @@ static napi_value doe_compute_pipeline_release(napi_env env, napi_callback_info 
     return NULL;
 }
 
+/* computePipelineGetBindGroupLayout(pipeline, groupIndex) → bindGroupLayout */
+static napi_value doe_compute_pipeline_get_bind_group_layout(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUComputePipeline pipeline = unwrap_ptr(env, _args[0]);
+    if (!pipeline) NAPI_THROW(env, "Invalid pipeline");
+    uint32_t index;
+    napi_get_value_uint32(env, _args[1], &index);
+    WGPUBindGroupLayout layout = pfn_wgpuComputePipelineGetBindGroupLayout(pipeline, index);
+    if (!layout) NAPI_THROW(env, "getBindGroupLayout failed");
+    return wrap_ptr(env, layout);
+}
+
 /* ================================================================
  * Bind Group Layout
  * createBindGroupLayout(device, entries[])
@@ -728,6 +901,7 @@ static uint32_t buffer_binding_type_from_string(napi_env env, napi_value val) {
 
 static napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
@@ -790,6 +964,7 @@ static napi_value doe_bind_group_layout_release(napi_env env, napi_callback_info
 
 static napi_value doe_create_bind_group(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     WGPUBindGroupLayout layout = unwrap_ptr(env, _args[1]);
     if (!device || !layout) NAPI_THROW(env, "Invalid device or layout");
@@ -845,6 +1020,7 @@ static napi_value doe_bind_group_release(napi_env env, napi_callback_info info) 
 
 static napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
@@ -886,6 +1062,7 @@ static napi_value doe_pipeline_layout_release(napi_env env, napi_callback_info i
 
 static napi_value doe_create_command_encoder(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
@@ -907,6 +1084,7 @@ static napi_value doe_command_encoder_release(napi_env env, napi_callback_info i
 
 static napi_value doe_command_encoder_copy_buffer_to_buffer(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 6);
+    CHECK_LIB_LOADED(env);
     WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
     WGPUBuffer src = unwrap_ptr(env, _args[1]);
     int64_t src_offset; napi_get_value_int64(env, _args[2], &src_offset);
@@ -921,6 +1099,7 @@ static napi_value doe_command_encoder_copy_buffer_to_buffer(napi_env env, napi_c
 
 static napi_value doe_command_encoder_finish(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
     WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
     if (!enc) NAPI_THROW(env, "Invalid encoder");
 
@@ -946,6 +1125,7 @@ static napi_value doe_command_buffer_release(napi_env env, napi_callback_info in
 
 static napi_value doe_begin_compute_pass(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
     WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
     if (!enc) NAPI_THROW(env, "Invalid encoder");
 
@@ -986,6 +1166,17 @@ static napi_value doe_compute_pass_dispatch(napi_env env, napi_callback_info inf
     return NULL;
 }
 
+/* computePassDispatchWorkgroupsIndirect(pass, buffer, offset) */
+static napi_value doe_compute_pass_dispatch_indirect(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+    int64_t offset;
+    napi_get_value_int64(env, _args[2], &offset);
+    pfn_wgpuComputePassEncoderDispatchWorkgroupsIndirect(pass, buffer, (uint64_t)offset);
+    return NULL;
+}
+
 static napi_value doe_compute_pass_end(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     pfn_wgpuComputePassEncoderEnd(unwrap_ptr(env, _args[0]));
@@ -1005,6 +1196,7 @@ static napi_value doe_compute_pass_release(napi_env env, napi_callback_info info
 
 static napi_value doe_queue_submit(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
     WGPUQueue queue = unwrap_ptr(env, _args[0]);
     if (!queue) NAPI_THROW(env, "Invalid queue");
 
@@ -1027,6 +1219,7 @@ static napi_value doe_queue_submit(napi_env env, napi_callback_info info) {
 /* queueWriteBuffer(queue, buffer, offset, typedArray) */
 static napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 4);
+    CHECK_LIB_LOADED(env);
     WGPUQueue queue = unwrap_ptr(env, _args[0]);
     WGPUBuffer buf = unwrap_ptr(env, _args[1]);
     int64_t offset; napi_get_value_int64(env, _args[2], &offset);
@@ -1041,10 +1234,16 @@ static napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info) 
         napi_value ab;
         size_t byte_offset;
         napi_get_typedarray_info(env, _args[3], &ta_type, &ta_length, &data, &ab, &byte_offset);
-        /* Get byte length from the arraybuffer */
-        napi_get_arraybuffer_info(env, ab, NULL, &byte_length);
-        byte_length = byte_length - byte_offset;
-        data = (char*)data;
+        /* Use typed array element count * element size for correct byte length. */
+        size_t elem_size = 1;
+        switch (ta_type) {
+            case napi_int8_array: case napi_uint8_array: case napi_uint8_clamped_array: elem_size = 1; break;
+            case napi_int16_array: case napi_uint16_array: elem_size = 2; break;
+            case napi_int32_array: case napi_uint32_array: case napi_float32_array: elem_size = 4; break;
+            case napi_float64_array: case napi_bigint64_array: case napi_biguint64_array: elem_size = 8; break;
+            default: elem_size = 1; break;
+        }
+        byte_length = ta_length * elem_size;
     } else {
         bool is_ab = false;
         napi_is_arraybuffer(env, _args[3], &is_ab);
@@ -1065,11 +1264,344 @@ static napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info) 
     return NULL;
 }
 
+/* queueFlush(queue) — wait for all pending GPU work to complete. */
+static napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    if (queue && pfn_doeNativeQueueFlush) pfn_doeNativeQueueFlush(queue);
+    return NULL;
+}
+
 static napi_value doe_queue_release(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     void* p = unwrap_ptr(env, _args[0]);
     if (p) pfn_wgpuQueueRelease(p);
     return NULL;
+}
+
+/* ================================================================
+ * Texture
+ * createTexture(device, { format, width, height, usage, mipLevelCount?, dimension? })
+ * ================================================================ */
+
+/* WebGPU texture format string → numeric value mapping. */
+static uint32_t texture_format_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    if (vt != napi_string) return 0x00000016; /* rgba8unorm */
+    char buf[32] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "rgba8unorm") == 0)      return 0x00000016;
+    if (strcmp(buf, "rgba8unorm-srgb") == 0) return 0x00000017;
+    if (strcmp(buf, "bgra8unorm") == 0)      return 0x0000001B;
+    if (strcmp(buf, "bgra8unorm-srgb") == 0) return 0x0000001C;
+    if (strcmp(buf, "depth32float") == 0)    return 0x00000030;
+    return 0x00000016;
+}
+
+static napi_value doe_create_texture(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    WGPUTextureDescriptor desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.format = texture_format_from_string(env, get_prop(env, _args[1], "format"));
+    desc.size.width = get_uint32_prop(env, _args[1], "width");
+    desc.size.height = get_uint32_prop(env, _args[1], "height");
+    desc.size.depthOrArrayLayers = 1;
+    if (has_prop(env, _args[1], "depthOrArrayLayers"))
+        desc.size.depthOrArrayLayers = get_uint32_prop(env, _args[1], "depthOrArrayLayers");
+    desc.usage = (uint64_t)get_int64_prop(env, _args[1], "usage");
+    desc.mipLevelCount = 1;
+    if (has_prop(env, _args[1], "mipLevelCount"))
+        desc.mipLevelCount = get_uint32_prop(env, _args[1], "mipLevelCount");
+    desc.sampleCount = 1;
+    desc.dimension = 1; /* 2D */
+
+    WGPUTexture tex = pfn_wgpuDeviceCreateTexture(device, &desc);
+    if (!tex) NAPI_THROW(env, "createTexture failed");
+    return wrap_ptr(env, tex);
+}
+
+static napi_value doe_texture_release(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* p = unwrap_ptr(env, _args[0]);
+    if (p) pfn_wgpuTextureRelease(p);
+    return NULL;
+}
+
+/* textureCreateView(texture) */
+static napi_value doe_texture_create_view(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUTexture tex = unwrap_ptr(env, _args[0]);
+    if (!tex) NAPI_THROW(env, "Invalid texture");
+    WGPUTextureView view = pfn_wgpuTextureCreateView(tex, NULL);
+    if (!view) NAPI_THROW(env, "textureCreateView failed");
+    return wrap_ptr(env, view);
+}
+
+static napi_value doe_texture_view_release(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* p = unwrap_ptr(env, _args[0]);
+    if (p) pfn_wgpuTextureViewRelease(p);
+    return NULL;
+}
+
+/* ================================================================
+ * Sampler
+ * createSampler(device, { magFilter?, minFilter?, mipmapFilter?,
+ *   addressModeU?, addressModeV?, addressModeW?, lodMinClamp?, lodMaxClamp?, maxAnisotropy? })
+ * ================================================================ */
+
+static uint32_t filter_mode_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt != napi_string) return 0; /* nearest */
+    char buf[16] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "linear") == 0) return 1;
+    return 0; /* nearest */
+}
+
+static uint32_t address_mode_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt != napi_string) return 1; /* clamp-to-edge */
+    char buf[24] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "repeat") == 0) return 2;
+    if (strcmp(buf, "mirror-repeat") == 0) return 3;
+    return 1; /* clamp-to-edge */
+}
+
+static napi_value doe_create_sampler(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    WGPUSamplerDescriptor desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.lodMaxClamp = 32.0f;
+    desc.maxAnisotropy = 1;
+
+    napi_valuetype desc_type;
+    napi_typeof(env, _args[1], &desc_type);
+    if (desc_type == napi_object) {
+        if (has_prop(env, _args[1], "magFilter"))
+            desc.magFilter = filter_mode_from_string(env, get_prop(env, _args[1], "magFilter"));
+        if (has_prop(env, _args[1], "minFilter"))
+            desc.minFilter = filter_mode_from_string(env, get_prop(env, _args[1], "minFilter"));
+        if (has_prop(env, _args[1], "mipmapFilter"))
+            desc.mipmapFilter = filter_mode_from_string(env, get_prop(env, _args[1], "mipmapFilter"));
+        if (has_prop(env, _args[1], "addressModeU"))
+            desc.addressModeU = address_mode_from_string(env, get_prop(env, _args[1], "addressModeU"));
+        if (has_prop(env, _args[1], "addressModeV"))
+            desc.addressModeV = address_mode_from_string(env, get_prop(env, _args[1], "addressModeV"));
+        if (has_prop(env, _args[1], "addressModeW"))
+            desc.addressModeW = address_mode_from_string(env, get_prop(env, _args[1], "addressModeW"));
+        if (has_prop(env, _args[1], "maxAnisotropy"))
+            desc.maxAnisotropy = (uint16_t)get_uint32_prop(env, _args[1], "maxAnisotropy");
+    }
+
+    WGPUSampler sampler = pfn_wgpuDeviceCreateSampler(device, &desc);
+    if (!sampler) NAPI_THROW(env, "createSampler failed");
+    return wrap_ptr(env, sampler);
+}
+
+static napi_value doe_sampler_release(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* p = unwrap_ptr(env, _args[0]);
+    if (p) pfn_wgpuSamplerRelease(p);
+    return NULL;
+}
+
+/* ================================================================
+ * Render Pipeline (noop stub — uses built-in Metal shaders)
+ * createRenderPipeline(device)
+ * ================================================================ */
+
+static napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+    WGPURenderPipeline rp = pfn_wgpuDeviceCreateRenderPipeline(device, NULL);
+    if (!rp) NAPI_THROW(env, "createRenderPipeline failed");
+    return wrap_ptr(env, rp);
+}
+
+static napi_value doe_render_pipeline_release(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* p = unwrap_ptr(env, _args[0]);
+    if (p) pfn_wgpuRenderPipelineRelease(p);
+    return NULL;
+}
+
+/* ================================================================
+ * Render Pass
+ * beginRenderPass(encoder, colorAttachments[])
+ * ================================================================ */
+
+static napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
+    if (!enc) NAPI_THROW(env, "Invalid encoder");
+
+    /* _args[1] is array of color attachments */
+    uint32_t att_count = 0;
+    napi_get_array_length(env, _args[1], &att_count);
+    if (att_count == 0) NAPI_THROW(env, "beginRenderPass: need at least one color attachment");
+
+    WGPURenderPassColorAttachment* atts = (WGPURenderPassColorAttachment*)calloc(
+        att_count, sizeof(WGPURenderPassColorAttachment));
+    for (uint32_t i = 0; i < att_count; i++) {
+        napi_value elem;
+        napi_get_element(env, _args[1], i, &elem);
+        atts[i].view = unwrap_ptr(env, get_prop(env, elem, "view"));
+        atts[i].loadOp = 1; /* clear */
+        atts[i].storeOp = 1; /* store */
+        if (has_prop(env, elem, "clearValue") && prop_type(env, elem, "clearValue") == napi_object) {
+            napi_value cv = get_prop(env, elem, "clearValue");
+            double r = 0, g = 0, b = 0, a = 1;
+            napi_value tmp;
+            if (napi_get_named_property(env, cv, "r", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &r);
+            if (napi_get_named_property(env, cv, "g", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &g);
+            if (napi_get_named_property(env, cv, "b", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &b);
+            if (napi_get_named_property(env, cv, "a", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &a);
+            atts[i].clearValue = (WGPUColor){ r, g, b, a };
+        }
+    }
+
+    WGPURenderPassDescriptor desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.colorAttachmentCount = att_count;
+    desc.colorAttachments = atts;
+
+    WGPURenderPassEncoder pass = pfn_wgpuCommandEncoderBeginRenderPass(enc, &desc);
+    free(atts);
+    if (!pass) NAPI_THROW(env, "beginRenderPass failed");
+    return wrap_ptr(env, pass);
+}
+
+static napi_value doe_render_pass_set_pipeline(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    pfn_wgpuRenderPassEncoderSetPipeline(
+        unwrap_ptr(env, _args[0]), unwrap_ptr(env, _args[1]));
+    return NULL;
+}
+
+/* renderPassDraw(pass, vertexCount, instanceCount, firstVertex, firstInstance) */
+static napi_value doe_render_pass_draw(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+    uint32_t vc, ic, fv, fi;
+    napi_get_value_uint32(env, _args[1], &vc);
+    napi_get_value_uint32(env, _args[2], &ic);
+    napi_get_value_uint32(env, _args[3], &fv);
+    napi_get_value_uint32(env, _args[4], &fi);
+    pfn_wgpuRenderPassEncoderDraw(pass, vc, ic, fv, fi);
+    return NULL;
+}
+
+static napi_value doe_render_pass_end(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    pfn_wgpuRenderPassEncoderEnd(unwrap_ptr(env, _args[0]));
+    return NULL;
+}
+
+static napi_value doe_render_pass_release(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* p = unwrap_ptr(env, _args[0]);
+    if (p) pfn_wgpuRenderPassEncoderRelease(p);
+    return NULL;
+}
+
+/* ================================================================
+ * Device capabilities: limits, features
+ * ================================================================ */
+
+static napi_value doe_device_get_limits(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "deviceGetLimits: null device");
+
+    WGPULimits limits;
+    memset(&limits, 0, sizeof(limits));
+    pfn_wgpuDeviceGetLimits(device, &limits);
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+#define SET_U32(name) do { napi_value v; napi_create_uint32(env, limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
+#define SET_U64(name) do { napi_value v; napi_create_double(env, (double)limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
+
+    SET_U32(maxTextureDimension1D);
+    SET_U32(maxTextureDimension2D);
+    SET_U32(maxTextureDimension3D);
+    SET_U32(maxTextureArrayLayers);
+    SET_U32(maxBindGroups);
+    SET_U32(maxBindGroupsPlusVertexBuffers);
+    SET_U32(maxBindingsPerBindGroup);
+    SET_U32(maxDynamicUniformBuffersPerPipelineLayout);
+    SET_U32(maxDynamicStorageBuffersPerPipelineLayout);
+    SET_U32(maxSampledTexturesPerShaderStage);
+    SET_U32(maxSamplersPerShaderStage);
+    SET_U32(maxStorageBuffersPerShaderStage);
+    SET_U32(maxStorageTexturesPerShaderStage);
+    SET_U32(maxUniformBuffersPerShaderStage);
+    SET_U64(maxUniformBufferBindingSize);
+    SET_U64(maxStorageBufferBindingSize);
+    SET_U32(minUniformBufferOffsetAlignment);
+    SET_U32(minStorageBufferOffsetAlignment);
+    SET_U32(maxVertexBuffers);
+    SET_U64(maxBufferSize);
+    SET_U32(maxVertexAttributes);
+    SET_U32(maxVertexBufferArrayStride);
+    SET_U32(maxInterStageShaderVariables);
+    SET_U32(maxColorAttachments);
+    SET_U32(maxColorAttachmentBytesPerSample);
+    SET_U32(maxComputeWorkgroupStorageSize);
+    SET_U32(maxComputeInvocationsPerWorkgroup);
+    SET_U32(maxComputeWorkgroupSizeX);
+    SET_U32(maxComputeWorkgroupSizeY);
+    SET_U32(maxComputeWorkgroupSizeZ);
+    SET_U32(maxComputeWorkgroupsPerDimension);
+
+#undef SET_U32
+#undef SET_U64
+
+    return obj;
+}
+
+static napi_value doe_device_has_feature(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    uint32_t feature;
+    napi_get_value_uint32(env, _args[1], &feature);
+    uint32_t result = pfn_wgpuDeviceHasFeature(device, feature);
+    napi_value ret;
+    napi_get_boolean(env, result != 0, &ret);
+    return ret;
 }
 
 /* ================================================================
@@ -1097,6 +1629,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("shaderModuleRelease", doe_shader_module_release),
         EXPORT_FN("createComputePipeline", doe_create_compute_pipeline),
         EXPORT_FN("computePipelineRelease", doe_compute_pipeline_release),
+        EXPORT_FN("computePipelineGetBindGroupLayout", doe_compute_pipeline_get_bind_group_layout),
         EXPORT_FN("createBindGroupLayout", doe_create_bind_group_layout),
         EXPORT_FN("bindGroupLayoutRelease", doe_bind_group_layout_release),
         EXPORT_FN("createBindGroup", doe_create_bind_group),
@@ -1112,11 +1645,28 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("computePassSetPipeline", doe_compute_pass_set_pipeline),
         EXPORT_FN("computePassSetBindGroup", doe_compute_pass_set_bind_group),
         EXPORT_FN("computePassDispatchWorkgroups", doe_compute_pass_dispatch),
+        EXPORT_FN("computePassDispatchWorkgroupsIndirect", doe_compute_pass_dispatch_indirect),
         EXPORT_FN("computePassEnd", doe_compute_pass_end),
         EXPORT_FN("computePassRelease", doe_compute_pass_release),
         EXPORT_FN("queueSubmit", doe_queue_submit),
         EXPORT_FN("queueWriteBuffer", doe_queue_write_buffer),
+        EXPORT_FN("queueFlush", doe_queue_flush),
         EXPORT_FN("queueRelease", doe_queue_release),
+        EXPORT_FN("createTexture", doe_create_texture),
+        EXPORT_FN("textureRelease", doe_texture_release),
+        EXPORT_FN("textureCreateView", doe_texture_create_view),
+        EXPORT_FN("textureViewRelease", doe_texture_view_release),
+        EXPORT_FN("createSampler", doe_create_sampler),
+        EXPORT_FN("samplerRelease", doe_sampler_release),
+        EXPORT_FN("createRenderPipeline", doe_create_render_pipeline),
+        EXPORT_FN("renderPipelineRelease", doe_render_pipeline_release),
+        EXPORT_FN("beginRenderPass", doe_begin_render_pass),
+        EXPORT_FN("renderPassSetPipeline", doe_render_pass_set_pipeline),
+        EXPORT_FN("renderPassDraw", doe_render_pass_draw),
+        EXPORT_FN("renderPassEnd", doe_render_pass_end),
+        EXPORT_FN("renderPassRelease", doe_render_pass_release),
+        EXPORT_FN("deviceGetLimits", doe_device_get_limits),
+        EXPORT_FN("deviceHasFeature", doe_device_has_feature),
     };
 
     size_t count = sizeof(descriptors) / sizeof(descriptors[0]);

@@ -138,6 +138,44 @@ MetalHandle metal_bridge_encode_compute_dispatch(
     uint32_t     y,
     uint32_t     z);
 
+// Encode a blit copy into an existing command buffer (no commit).
+void metal_bridge_cmd_buf_encode_blit_copy(
+    MetalHandle cmd_buf,
+    MetalHandle src,
+    uint64_t    src_offset,
+    MetalHandle dst,
+    uint64_t    dst_offset,
+    uint64_t    size);
+
+// Encode a compute dispatch into an existing command buffer (no commit).
+// Creates a compute encoder, dispatches, ends encoder.
+// wg_x/wg_y/wg_z: shader workgroup size (0 = fallback to pipeline max).
+void metal_bridge_cmd_buf_encode_compute_dispatch(
+    MetalHandle  cmd_buf,
+    MetalHandle  pipeline,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    uint32_t     x,
+    uint32_t     y,
+    uint32_t     z,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z);
+
+// Encode an indirect compute dispatch into an existing command buffer (no commit).
+// indirect_buffer contains a MTLDispatchThreadgroupsIndirectArguments struct at offset.
+// wg_x/wg_y/wg_z: shader workgroup size (0 = fallback to pipeline max).
+void metal_bridge_cmd_buf_encode_compute_dispatch_indirect(
+    MetalHandle  cmd_buf,
+    MetalHandle  pipeline,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    MetalHandle  indirect_buffer,
+    uint64_t     indirect_offset,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z);
+
 // === Texture ===
 
 // pixel_format: WGPU texture format value (mapped internally to MTLPixelFormat).
@@ -241,3 +279,11 @@ MetalHandle metal_bridge_encode_icb_render_pass(
     MetalHandle icb,
     MetalHandle target,
     uint32_t    draw_count);
+
+// === Semaphore-based completion (faster than waitUntilCompleted) ===
+
+// Register a completion handler on cmd_buf that signals an internal semaphore.
+// Must be called BEFORE commit. Only one pending wait is supported at a time.
+void metal_bridge_command_buffer_setup_fast_wait(MetalHandle cmd_buf);
+// Block until the completion handler fires. Call after commit.
+void metal_bridge_command_buffer_wait_fast(void);

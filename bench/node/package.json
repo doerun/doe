@@ -1,0 +1,17 @@
+{
+  "name": "fawn-bench-node",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Node.js WebGPU benchmarks: Doe vs Dawn",
+  "scripts": {
+    "bench:doe": "node runner.js --provider doe",
+    "bench:dawn": "node runner.js --provider dawn",
+    "compare": "node compare.js --out ../out/node-doe-vs-dawn",
+    "compare:quick": "node compare.js --iterations 10 --warmup 2",
+    "validate:doe": "node runner.js --provider doe --validate --iterations 1 --warmup 0"
+  },
+  "dependencies": {
+    "webgpu": "^0.3.8"
+  }
+}

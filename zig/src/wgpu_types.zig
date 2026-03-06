@@ -86,6 +86,7 @@ pub const WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses: WGPUFe
 pub const WGPUFeatureName_PixelLocalStorageCoherent: WGPUFeatureName = 0x0005000A;
 pub const WGPUFeatureName_PixelLocalStorageNonCoherent: WGPUFeatureName = 0x0005000B;
 pub const WGPUFeatureName_MultiDrawIndirect: WGPUFeatureName = 0x00050031;
+pub const WGPUFeatureName_ShaderF16: WGPUFeatureName = 0x0000000B;
 pub const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable: WGPUFeatureName = 0x0005003A;
 
 pub const WGPUQueryType = u32;
@@ -587,6 +588,60 @@ pub const WGPUDeviceDescriptor = extern struct {
     uncapturedErrorCallbackInfo: WGPUUncapturedErrorCallbackInfo,
 };
 
+pub const WGPUSamplerDescriptor = extern struct {
+    nextInChain: ?*anyopaque,
+    label: WGPUStringView,
+    addressModeU: u32,
+    addressModeV: u32,
+    addressModeW: u32,
+    magFilter: u32,
+    minFilter: u32,
+    mipmapFilter: u32,
+    lodMinClamp: f32,
+    lodMaxClamp: f32,
+    compare: u32,
+    maxAnisotropy: u16,
+};
+
+pub const WGPUColor = extern struct {
+    r: f64,
+    g: f64,
+    b: f64,
+    a: f64,
+};
+
+pub const WGPURenderPassColorAttachment = extern struct {
+    nextInChain: ?*anyopaque,
+    view: WGPUTextureView,
+    depthSlice: u32,
+    resolveTarget: WGPUTextureView,
+    loadOp: u32,
+    storeOp: u32,
+    clearValue: WGPUColor,
+};
+
+pub const WGPURenderPassDepthStencilAttachment = extern struct {
+    view: WGPUTextureView,
+    depthLoadOp: u32,
+    depthStoreOp: u32,
+    depthClearValue: f32,
+    depthReadOnly: WGPUBool,
+    stencilLoadOp: u32,
+    stencilStoreOp: u32,
+    stencilClearValue: u32,
+    stencilReadOnly: WGPUBool,
+};
+
+pub const WGPURenderPassDescriptor = extern struct {
+    nextInChain: ?*anyopaque,
+    label: WGPUStringView,
+    colorAttachmentCount: usize,
+    colorAttachments: ?[*]const WGPURenderPassColorAttachment,
+    depthStencilAttachment: ?*const WGPURenderPassDepthStencilAttachment,
+    occlusionQuerySet: WGPUQuerySet,
+    timestampWrites: ?*const WGPUPassTimestampWrites,
+};
+
 pub fn initLimits() WGPULimits {
     var limits = std.mem.zeroes(WGPULimits);
     limits.nextInChain = null;
@@ -661,6 +716,8 @@ pub const FnWgpuBufferMapAsync = procs.FnWgpuBufferMapAsync;
 pub const FnWgpuBufferGetConstMappedRange = procs.FnWgpuBufferGetConstMappedRange;
 pub const FnWgpuBufferGetMappedRange = procs.FnWgpuBufferGetMappedRange;
 pub const FnWgpuBufferUnmap = procs.FnWgpuBufferUnmap;
+pub const FnWgpuDeviceCreateSampler = procs.FnWgpuDeviceCreateSampler;
+pub const FnWgpuSamplerRelease = procs.FnWgpuSamplerRelease;
 
 pub const Procs = procs.Procs;
 

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "description": "Node.js WebGPU benchmark: Doe (@simulatte/webgpu-doe) vs Dawn (webgpu npm)",
+  "providers": {
+    "doe": {
+      "package": "@simulatte/webgpu-doe",
+      "source": "nursery/webgpu-doe/src/index.js",
+      "notes": "Native Zig+Metal runtime, ~2MB"
+    },
+    "dawn": {
+      "package": "webgpu",
+      "version": "0.3.8",
+      "notes": "Dawn node plugin, ~11MB"
+    }
+  },
+  "run": {
+    "iterations": 50,
+    "warmup": 5,
+    "minTimedSamples": 19,
+    "outDir": "bench/out/node-doe-vs-dawn"
+  },
+  "comparability": {
+    "timingSource": "performance.now",
+    "timingClass": "operation",
+    "notes": "Both providers measured at JS API boundary via performance.now(). Apples-to-apples: same workload code, same dispatch geometry, same buffer sizes."
+  },
+  "claimability": {
+    "minSamples": 19,
+    "requireP50Faster": true,
+    "requireP95Faster": true,
+    "notes": "Doe must beat Dawn at both p50 and p95 with ≥19 timed samples."
+  }
+}

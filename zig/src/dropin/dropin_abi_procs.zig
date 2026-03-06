@@ -369,3 +369,13 @@ pub export fn wgpuBufferUnmap(a0: types.WGPUBuffer) callconv(.c) void {
     const proc = loadRequiredProc(types.FnWgpuBufferUnmap, "wgpuBufferUnmap");
     proc(a0);
 }
+
+pub export fn wgpuDeviceCreateSampler(a0: types.WGPUDevice, a1: ?*const types.WGPUSamplerDescriptor) callconv(.c) types.WGPUSampler {
+    const proc = loadRequiredProc(types.FnWgpuDeviceCreateSampler, "wgpuDeviceCreateSampler");
+    return proc(a0, a1);
+}
+
+pub export fn wgpuSamplerRelease(a0: types.WGPUSampler) callconv(.c) void {
+    const proc = loadRequiredProc(types.FnWgpuSamplerRelease, "wgpuSamplerRelease");
+    proc(a0);
+}

@@ -93,14 +93,16 @@ export const globals = {
 };
 
 class DoeGPUBuffer {
-  constructor(native, instance, size, usage) {
+  constructor(native, instance, size, usage, queue) {
     this._native = native;
     this._instance = instance;
+    this._queue = queue;
     this.size = size;
     this.usage = usage;
   }
 
   async mapAsync(mode, offset = 0, size = this.size) {
+    if (this._queue) addon.queueFlush(this._queue);
     addon.bufferMapSync(this._instance, this._native, mode, offset, size);
   }
 
@@ -133,6 +135,10 @@ class DoeGPUComputePassEncoder {
     addon.computePassDispatchWorkgroups(this._native, x, y, z);
   }
 
+  dispatchWorkgroupsIndirect(indirectBuffer, indirectOffset = 0) {
+    addon.computePassDispatchWorkgroupsIndirect(this._native, indirectBuffer._native, indirectOffset);
+  }
+
   end() {
     addon.computePassEnd(this._native);
   }
@@ -144,6 +150,15 @@ class DoeGPUCommandEncoder {
   beginComputePass(descriptor) {
     const pass = addon.beginComputePass(this._native);
     return new DoeGPUComputePassEncoder(pass);
+  }
+
+  beginRenderPass(descriptor) {
+    const colorAttachments = (descriptor.colorAttachments || []).map((a) => ({
+      view: a.view._native,
+      clearValue: a.clearValue || { r: 0, g: 0, b: 0, a: 1 },
+    }));
+    const pass = addon.beginRenderPass(this._native, colorAttachments);
+    return new DoeGPURenderPassEncoder(pass);
   }
 
   copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) {
@@ -176,6 +191,52 @@ class DoeGPUQueue {
     }
     addon.queueWriteBuffer(this._native, buffer._native, bufferOffset, view);
   }
+
+  async onSubmittedWorkDone() {
+    addon.queueFlush(this._native);
+  }
+}
+
+class DoeGPURenderPassEncoder {
+  constructor(native) { this._native = native; }
+
+  setPipeline(pipeline) {
+    addon.renderPassSetPipeline(this._native, pipeline._native);
+  }
+
+  draw(vertexCount, instanceCount = 1, firstVertex = 0, firstInstance = 0) {
+    addon.renderPassDraw(this._native, vertexCount, instanceCount, firstVertex, firstInstance);
+  }
+
+  end() {
+    addon.renderPassEnd(this._native);
+  }
+}
+
+class DoeGPUTexture {
+  constructor(native) { this._native = native; }
+
+  createView(descriptor) {
+    const view = addon.textureCreateView(this._native);
+    return new DoeGPUTextureView(view);
+  }
+
+  destroy() {
+    addon.textureRelease(this._native);
+    this._native = null;
+  }
+}
+
+class DoeGPUTextureView {
+  constructor(native) { this._native = native; }
+}
+
+class DoeGPUSampler {
+  constructor(native) { this._native = native; }
+}
+
+class DoeGPURenderPipeline {
+  constructor(native) { this._native = native; }
 }
 
 class DoeGPUShaderModule {
@@ -184,6 +245,11 @@ class DoeGPUShaderModule {
 
 class DoeGPUComputePipeline {
   constructor(native) { this._native = native; }
+
+  getBindGroupLayout(index) {
+    const layout = addon.computePipelineGetBindGroupLayout(this._native, index);
+    return new DoeGPUBindGroupLayout(layout);
+  }
 }
 
 class DoeGPUBindGroupLayout {
@@ -198,17 +264,56 @@ class DoeGPUPipelineLayout {
   constructor(native) { this._native = native; }
 }
 
+// Metal defaults for Apple Silicon — matches doe_device_caps.zig METAL_LIMITS.
+const DOE_LIMITS = Object.freeze({
+  maxTextureDimension1D: 16384,
+  maxTextureDimension2D: 16384,
+  maxTextureDimension3D: 2048,
+  maxTextureArrayLayers: 2048,
+  maxBindGroups: 4,
+  maxBindGroupsPlusVertexBuffers: 24,
+  maxBindingsPerBindGroup: 1000,
+  maxDynamicUniformBuffersPerPipelineLayout: 8,
+  maxDynamicStorageBuffersPerPipelineLayout: 4,
+  maxSampledTexturesPerShaderStage: 16,
+  maxSamplersPerShaderStage: 16,
+  maxStorageBuffersPerShaderStage: 8,
+  maxStorageTexturesPerShaderStage: 4,
+  maxUniformBuffersPerShaderStage: 12,
+  maxUniformBufferBindingSize: 65536,
+  maxStorageBufferBindingSize: 134217728,
+  minUniformBufferOffsetAlignment: 256,
+  minStorageBufferOffsetAlignment: 32,
+  maxVertexBuffers: 8,
+  maxBufferSize: 268435456,
+  maxVertexAttributes: 16,
+  maxVertexBufferArrayStride: 2048,
+  maxInterStageShaderVariables: 16,
+  maxColorAttachments: 8,
+  maxColorAttachmentBytesPerSample: 32,
+  maxComputeWorkgroupStorageSize: 32768,
+  maxComputeInvocationsPerWorkgroup: 1024,
+  maxComputeWorkgroupSizeX: 1024,
+  maxComputeWorkgroupSizeY: 1024,
+  maxComputeWorkgroupSizeZ: 64,
+  maxComputeWorkgroupsPerDimension: 65535,
+});
+
+const DOE_FEATURES = Object.freeze(new Set(['shader-f16']));
+
 class DoeGPUDevice {
   constructor(native, instance) {
     this._native = native;
     this._instance = instance;
     const q = addon.deviceGetQueue(native);
     this.queue = new DoeGPUQueue(q);
+    this.limits = DOE_LIMITS;
+    this.features = DOE_FEATURES;
   }
 
   createBuffer(descriptor) {
     const buf = addon.createBuffer(this._native, descriptor);
-    return new DoeGPUBuffer(buf, this._instance, descriptor.size, descriptor.usage);
+    return new DoeGPUBuffer(buf, this._instance, descriptor.size, descriptor.usage, this.queue._native);
   }
 
   createShaderModule(descriptor) {
@@ -226,6 +331,10 @@ class DoeGPUDevice {
       this._native, shader._native, entryPoint,
       layout?._native ?? null);
     return new DoeGPUComputePipeline(native);
+  }
+
+  async createComputePipelineAsync(descriptor) {
+    return this.createComputePipeline(descriptor);
   }
 
   createBindGroupLayout(descriptor) {
@@ -264,6 +373,28 @@ class DoeGPUDevice {
     return new DoeGPUPipelineLayout(native);
   }
 
+  createTexture(descriptor) {
+    const native = addon.createTexture(this._native, {
+      format: descriptor.format || 'rgba8unorm',
+      width: descriptor.size?.[0] ?? descriptor.size?.width ?? descriptor.size ?? 1,
+      height: descriptor.size?.[1] ?? descriptor.size?.height ?? 1,
+      depthOrArrayLayers: descriptor.size?.[2] ?? descriptor.size?.depthOrArrayLayers ?? 1,
+      usage: descriptor.usage || 0,
+      mipLevelCount: descriptor.mipLevelCount || 1,
+    });
+    return new DoeGPUTexture(native);
+  }
+
+  createSampler(descriptor = {}) {
+    const native = addon.createSampler(this._native, descriptor);
+    return new DoeGPUSampler(native);
+  }
+
+  createRenderPipeline(descriptor) {
+    const native = addon.createRenderPipeline(this._native);
+    return new DoeGPURenderPipeline(native);
+  }
+
   createCommandEncoder(descriptor) {
     const native = addon.createCommandEncoder(this._native);
     return new DoeGPUCommandEncoder(native);
@@ -279,6 +410,8 @@ class DoeGPUAdapter {
   constructor(native, instance) {
     this._native = native;
     this._instance = instance;
+    this.features = DOE_FEATURES;
+    this.limits = DOE_LIMITS;
   }
 
   async requestDevice(descriptor) {

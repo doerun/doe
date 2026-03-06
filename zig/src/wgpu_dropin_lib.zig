@@ -252,6 +252,80 @@ fn nativeFromSymbol(comptime FnType: type, comptime symbol_name: [:0]const u8) ?
     return lib.lookup(FnType, symbol_name);
 }
 
+/// Resolve a standard wgpu* symbol to the corresponding doeNative* implementation.
+/// Returns null for symbols not yet implemented natively.
+fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u8) ?FnType {
+    if (comptime @import("builtin").os.tag != .macos) return null;
+    const N = @import("doe_wgpu_native.zig");
+    // Instance / Adapter / Device lifecycle
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCreateInstance")) return @ptrCast(&N.doeNativeCreateInstance);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceRelease")) return @ptrCast(&N.doeNativeInstanceRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceWaitAny")) return @ptrCast(&N.doeNativeInstanceWaitAny);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceProcessEvents")) return @ptrCast(&N.doeNativeInstanceProcessEvents);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceRequestAdapter")) return @ptrCast(&N.doeNativeInstanceRequestAdapter);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterRequestDevice")) return @ptrCast(&N.doeNativeAdapterRequestDevice);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterRelease")) return @ptrCast(&N.doeNativeAdapterRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceRelease")) return @ptrCast(&N.doeNativeDeviceRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceGetQueue")) return @ptrCast(&N.doeNativeDeviceGetQueue);
+    // Buffer
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateBuffer")) return @ptrCast(&N.doeNativeDeviceCreateBuffer);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferRelease")) return @ptrCast(&N.doeNativeBufferRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferUnmap")) return @ptrCast(&N.doeNativeBufferUnmap);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferMapAsync")) return @ptrCast(&N.doeNativeBufferMapAsync);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferGetConstMappedRange")) return @ptrCast(&N.doeNativeBufferGetConstMappedRange);
+    // Shader / Compute Pipeline
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateShaderModule")) return @ptrCast(&N.doeNativeDeviceCreateShaderModule);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuShaderModuleRelease")) return @ptrCast(&N.doeNativeShaderModuleRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateComputePipeline")) return @ptrCast(&N.doeNativeDeviceCreateComputePipeline);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePipelineRelease")) return @ptrCast(&N.doeNativeComputePipelineRelease);
+    // Bind Group / Pipeline Layout
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateBindGroupLayout")) return @ptrCast(&N.doeNativeDeviceCreateBindGroupLayout);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuBindGroupLayoutRelease")) return @ptrCast(&N.doeNativeBindGroupLayoutRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateBindGroup")) return @ptrCast(&N.doeNativeDeviceCreateBindGroup);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuBindGroupRelease")) return @ptrCast(&N.doeNativeBindGroupRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreatePipelineLayout")) return @ptrCast(&N.doeNativeDeviceCreatePipelineLayout);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuPipelineLayoutRelease")) return @ptrCast(&N.doeNativePipelineLayoutRelease);
+    // Command Encoder / Compute Pass
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateCommandEncoder")) return @ptrCast(&N.doeNativeDeviceCreateCommandEncoder);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderRelease")) return @ptrCast(&N.doeNativeCommandEncoderRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderBeginComputePass")) return @ptrCast(&N.doeNativeCommandEncoderBeginComputePass);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderSetPipeline")) return @ptrCast(&N.doeNativeComputePassSetPipeline);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderSetBindGroup")) return @ptrCast(&N.doeNativeComputePassSetBindGroup);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderDispatchWorkgroups")) return @ptrCast(&N.doeNativeComputePassDispatch);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderEnd")) return @ptrCast(&N.doeNativeComputePassEnd);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderRelease")) return @ptrCast(&N.doeNativeComputePassRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderCopyBufferToBuffer")) return @ptrCast(&N.doeNativeCopyBufferToBuffer);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderFinish")) return @ptrCast(&N.doeNativeCommandEncoderFinish);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandBufferRelease")) return @ptrCast(&N.doeNativeCommandBufferRelease);
+    // Queue
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueSubmit")) return @ptrCast(&N.doeNativeQueueSubmit);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueWriteBuffer")) return @ptrCast(&N.doeNativeQueueWriteBuffer);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueRelease")) return @ptrCast(&N.doeNativeQueueRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueOnSubmittedWorkDone")) return @ptrCast(&N.doeNativeQueueOnSubmittedWorkDone);
+    // Feature queries
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterHasFeature")) return @ptrCast(&N.doeNativeAdapterHasFeature);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceHasFeature")) return @ptrCast(&N.doeNativeDeviceHasFeature);
+    // Limits
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceGetLimits")) return @ptrCast(&N.doeNativeDeviceGetLimits);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterGetLimits")) return @ptrCast(&N.doeNativeAdapterGetLimits);
+    // Texture / Render (v0.2)
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateTexture")) return @ptrCast(&N.doeNativeDeviceCreateTexture);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureCreateView")) return @ptrCast(&N.doeNativeTextureCreateView);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureRelease")) return @ptrCast(&N.doeNativeTextureRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureViewRelease")) return @ptrCast(&N.doeNativeTextureViewRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateRenderPipeline")) return @ptrCast(&N.doeNativeDeviceCreateRenderPipeline);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPipelineRelease")) return @ptrCast(&N.doeNativeRenderPipelineRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderBeginRenderPass")) return @ptrCast(&N.doeNativeCommandEncoderBeginRenderPass);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetPipeline")) return @ptrCast(&N.doeNativeRenderPassSetPipeline);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDraw")) return @ptrCast(&N.doeNativeRenderPassDraw);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderEnd")) return @ptrCast(&N.doeNativeRenderPassEnd);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderRelease")) return @ptrCast(&N.doeNativeRenderPassRelease);
+    // Sampler
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateSampler")) return @ptrCast(&N.doeNativeDeviceCreateSampler);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuSamplerRelease")) return @ptrCast(&N.doeNativeSamplerRelease);
+    return null;
+}
+
 pub fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) FnType {
     const Cache = struct {
         const symbol_key = symbol_name;
@@ -271,6 +345,18 @@ pub fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u
         return Cache.proc.?;
     }
     const route = symbolRouteForName(symbol_name);
+
+    // For doe_metal owner, resolve from linked native implementations (no sidecar needed).
+    if (route.owner == .doe_metal) {
+        if (resolveDoeNativeProc(FnType, symbol_name)) |proc| {
+            routeAndRecordForName(symbol_name, route, true);
+            Cache.proc = proc;
+            Cache.initialized.store(1, .release);
+            setLastError(.ok);
+            return proc;
+        }
+    }
+
     if (!ensureNativeLibraryLocked()) {
         routeAndRecordForName(symbol_name, route, false);
         abortMissingRequiredSymbol(symbol_name);
@@ -428,6 +514,8 @@ fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     if (symbolViewEq(name, "wgpuBufferMapAsync")) return fnPtr(&P.wgpuBufferMapAsync);
     if (symbolViewEq(name, "wgpuBufferGetConstMappedRange")) return fnPtr(&P.wgpuBufferGetConstMappedRange);
     if (symbolViewEq(name, "wgpuBufferUnmap")) return fnPtr(&P.wgpuBufferUnmap);
+    if (symbolViewEq(name, "wgpuDeviceCreateSampler")) return fnPtr(&P.wgpuDeviceCreateSampler);
+    if (symbolViewEq(name, "wgpuSamplerRelease")) return fnPtr(&P.wgpuSamplerRelease);
     return null;
 }
 
@@ -458,7 +546,8 @@ pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_cap
         return null;
     };
 
-    if (route.owner == .doe_metal or route.owner == .doe_vulkan or route.owner == .doe_d3d12) {
+    // doe_metal proceeds to resolveLocalProc (which delegates to loadRequiredProc → resolveDoeNativeProc).
+    if (route.owner == .doe_vulkan or route.owner == .doe_d3d12) {
         if (!route.fallback_used) {
             routeAndRecordForName(symbol_name, route, false);
             setLastError(.symbol_missing);

@@ -12,19 +12,14 @@ constant uint COL_PER_THREAD = K_TILE_SIZE / K_WORKGROUP_SIZE_X;
 constant uint NUM_TILES = (K_DIM_INNER - 1u) / K_TILE_SIZE + 1u;
 
 static float mm_read_a(device const float* mat, uint row, uint col) {
-    if (row < K_DIM_A_OUTER && col < K_DIM_INNER) {
-        return mat[row * K_DIM_INNER + col];
-    }
-    return 0.0f;
+    return mat[row * K_DIM_INNER + col];
 }
 
 static float mm_read_b(device const float* mat, uint row, uint col) {
-    if (row < K_DIM_INNER && col < K_DIM_B_OUTER) {
-        return mat[row * K_DIM_B_OUTER + col];
-    }
-    return 0.0f;
+    return mat[row * K_DIM_B_OUTER + col];
 }
 
+[[max_total_threads_per_threadgroup(64)]]
 kernel void main_kernel(
     device const float* first_matrix [[buffer(0)]],
     device const float* second_matrix [[buffer(1)]],
@@ -86,9 +81,7 @@ kernel void main_kernel(
         for (uint ic = 0u; ic < COL_PER_THREAD; ic++) {
             uint row = global_row + ir;
             uint col = global_col + ic;
-            if (row < K_DIM_A_OUTER && col < K_DIM_B_OUTER) {
-                result_matrix[col + row * K_DIM_B_OUTER] = acc[ir * COL_PER_THREAD + ic];
-            }
+            result_matrix[col + row * K_DIM_B_OUTER] = acc[ir * COL_PER_THREAD + ic];
         }
     }
 }

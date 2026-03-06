@@ -1,5 +1,18 @@
-// doe_wgsl_msl.zig — Minimal WGSL → MSL translator for compute shaders.
-// Handles the subset needed by WebGPU compute: storage buffers, builtins, basic types.
+// doe_wgsl_msl.zig — WGSL → MSL translator for compute, vertex, and fragment shaders.
+//
+// Supports:
+// - Compute: storage buffers, builtins, body pass-through.
+// - Vertex: @location(N) inputs → VertexIn struct, @builtin(position) output.
+// - Fragment: @location(N) outputs → FragmentOut struct.
+// - Body: vec*() constructor rewriting (vec4f→float4 etc).
+//
+// Limitations (v0.2):
+// - Only the first `fn` is parsed as the entry point. Helper functions not supported.
+// - WGSL struct declarations (inter-stage structs) are not parsed.
+// - let/var type annotations not rewritten. Body rewriting is limited to
+//   type constructors (vec4f→float4) and does not handle texture builtins.
+// - @workgroup_size is not parsed or emitted.
+// - Comments/strings containing braces or keywords can confuse the parser.
 
 const std = @import("std");
 
@@ -9,12 +22,30 @@ pub const TranslateError = error{
     OutOfMemory,
 };
 
+pub const MAX_OUTPUT: usize = 64 * 1024;
+pub const MAX_BINDINGS: usize = 16;
+const MAX_LOCATIONS: usize = 16;
+
+const ShaderStage = enum { compute, vertex, fragment };
+
 const Binding = struct {
     group: u32,
     binding: u32,
     name: []const u8,
     is_read_only: bool,
-    elem_type: []const u8, // MSL element type (e.g. "float", "uint")
+    elem_type: []const u8,
+};
+
+const BuiltinParam = struct {
+    param_name: []const u8,
+    msl_type: []const u8,
+    msl_attr: []const u8,
+};
+
+const LocationParam = struct {
+    location: u32,
+    name: []const u8,
+    msl_type: []const u8,
 };
 
 const Builtin = struct {
@@ -32,78 +63,119 @@ const BUILTINS = [_]Builtin{
     .{ .name = "local_invocation_index", .wgsl_type = "u32", .msl_attr = "thread_index_in_threadgroup", .msl_type = "uint" },
 };
 
-pub const MAX_OUTPUT: usize = 64 * 1024;
-pub const MAX_BINDINGS: usize = 16;
+// WGSL type constructor → MSL type replacement pairs.
+const VEC_REPLACEMENTS = [_]struct { wgsl: []const u8, msl: []const u8 }{
+    // Scalar casts.
+    .{ .wgsl = "f32(", .msl = "float(" },
+    .{ .wgsl = "f16(", .msl = "half(" },
+    .{ .wgsl = "i32(", .msl = "int(" },
+    .{ .wgsl = "u32(", .msl = "uint(" },
+    .{ .wgsl = "bool(", .msl = "bool(" },
+    // Vector constructors.
+    .{ .wgsl = "vec2f(", .msl = "float2(" },
+    .{ .wgsl = "vec3f(", .msl = "float3(" },
+    .{ .wgsl = "vec4f(", .msl = "float4(" },
+    .{ .wgsl = "vec2u(", .msl = "uint2(" },
+    .{ .wgsl = "vec3u(", .msl = "uint3(" },
+    .{ .wgsl = "vec4u(", .msl = "uint4(" },
+    .{ .wgsl = "vec2i(", .msl = "int2(" },
+    .{ .wgsl = "vec3i(", .msl = "int3(" },
+    .{ .wgsl = "vec4i(", .msl = "int4(" },
+    .{ .wgsl = "vec2<f32>(", .msl = "float2(" },
+    .{ .wgsl = "vec3<f32>(", .msl = "float3(" },
+    .{ .wgsl = "vec4<f32>(", .msl = "float4(" },
+    .{ .wgsl = "vec2<u32>(", .msl = "uint2(" },
+    .{ .wgsl = "vec3<u32>(", .msl = "uint3(" },
+    .{ .wgsl = "vec4<u32>(", .msl = "uint4(" },
+    .{ .wgsl = "vec2<i32>(", .msl = "int2(" },
+    .{ .wgsl = "vec3<i32>(", .msl = "int3(" },
+    .{ .wgsl = "vec4<i32>(", .msl = "int4(" },
+    .{ .wgsl = "vec2h(", .msl = "half2(" },
+    .{ .wgsl = "vec3h(", .msl = "half3(" },
+    .{ .wgsl = "vec4h(", .msl = "half4(" },
+    .{ .wgsl = "vec2<f16>(", .msl = "half2(" },
+    .{ .wgsl = "vec3<f16>(", .msl = "half3(" },
+    .{ .wgsl = "vec4<f16>(", .msl = "half4(" },
+};
 
-/// Translate a WGSL compute shader to MSL. Returns the MSL source length written.
-pub fn translate(wgsl: []const u8, out: []u8) TranslateError!usize {
-    var bindings: [MAX_BINDINGS]Binding = undefined;
-    var binding_count: usize = 0;
+pub const BindingMeta = struct {
+    group: u32,
+    binding: u32,
+};
 
-    var entry_name: []const u8 = "main";
-    var body_start: usize = 0;
-    var body_end: usize = 0;
-    var builtin_params: [8]BuiltinParam = undefined;
-    var builtin_count: usize = 0;
-
-    // Parse bindings and entry point from WGSL source.
-    const line_iter = std.mem.splitScalar(u8, wgsl, '\n');
-    var in_fn = false;
-    var brace_depth: i32 = 0;
-    var pos: usize = 0;
-
-    // First pass: find bindings and entry point structure.
+/// Extract binding metadata from WGSL source. Returns number of bindings found.
+pub fn extractBindings(wgsl: []const u8, out: []BindingMeta) usize {
+    var count: usize = 0;
     var lines = std.mem.splitScalar(u8, wgsl, '\n');
     while (lines.next()) |line| {
         const trimmed = std.mem.trim(u8, line, " \t\r");
+        if (parseBinding(trimmed)) |b| {
+            if (count < out.len) {
+                out[count] = .{ .group = b.group, .binding = b.binding };
+                count += 1;
+            }
+        }
+    }
+    return count;
+}
 
+/// Translate a WGSL shader to MSL. Returns the MSL source length written.
+pub fn translate(wgsl: []const u8, out: []u8) TranslateError!usize {
+    const stage = detectStage(wgsl);
+    return switch (stage) {
+        .compute => translateCompute(wgsl, out),
+        .vertex => translateVertex(wgsl, out),
+        .fragment => translateFragment(wgsl, out),
+    };
+}
+
+// ============================================================
+// Stage detection
+// ============================================================
+
+fn detectStage(wgsl: []const u8) ShaderStage {
+    var lines = std.mem.splitScalar(u8, wgsl, '\n');
+    while (lines.next()) |line| {
+        const trimmed = std.mem.trim(u8, line, " \t\r");
+        if (std.mem.indexOf(u8, trimmed, "@vertex") != null) return .vertex;
+        if (std.mem.indexOf(u8, trimmed, "@fragment") != null) return .fragment;
+        if (std.mem.indexOf(u8, trimmed, "@compute") != null) return .compute;
+    }
+    return .compute;
+}
+
+// ============================================================
+// Compute translation (original logic, unchanged behavior)
+// ============================================================
+
+fn translateCompute(wgsl: []const u8, out: []u8) TranslateError!usize {
+    var bindings: [MAX_BINDINGS]Binding = undefined;
+    var binding_count: usize = 0;
+    var builtin_params: [8]BuiltinParam = undefined;
+    var builtin_count: usize = 0;
+
+    var lines = std.mem.splitScalar(u8, wgsl, '\n');
+    while (lines.next()) |line| {
+        const trimmed = std.mem.trim(u8, line, " \t\r");
+        // Strip WGSL extension directives — Metal supports f16 natively.
+        if (std.mem.startsWith(u8, trimmed, "enable ")) continue;
         if (parseBinding(trimmed)) |b| {
             if (binding_count < MAX_BINDINGS) {
                 bindings[binding_count] = b;
                 binding_count += 1;
             }
         }
-
         if (std.mem.startsWith(u8, trimmed, "fn ")) {
-            entry_name = parseFnName(trimmed) orelse "main";
             builtin_count = parseFnBuiltins(trimmed, &builtin_params);
         }
     }
-    _ = line_iter;
 
-    // Find function body (everything between outermost braces of fn).
-    pos = 0;
-    in_fn = false;
-    var body_brace_start: usize = 0;
-    for (wgsl, 0..) |ch, i| {
-        if (!in_fn) {
-            if (i + 3 <= wgsl.len and std.mem.eql(u8, wgsl[i .. i + 3], "fn ")) {
-                in_fn = true;
-            }
-        }
-        if (in_fn) {
-            if (ch == '{') {
-                if (brace_depth == 0) body_brace_start = i + 1;
-                brace_depth += 1;
-            } else if (ch == '}') {
-                brace_depth -= 1;
-                if (brace_depth == 0) {
-                    body_start = body_brace_start;
-                    body_end = i;
-                    break;
-                }
-            }
-        }
-    }
+    const body = findFnBody(wgsl) orelse return TranslateError.InvalidWgsl;
 
-    if (body_end == 0) return TranslateError.InvalidWgsl;
-
-    // Generate MSL.
     var w = Writer{ .buf = out, .pos = 0 };
     try w.write("#include <metal_stdlib>\nusing namespace metal;\n\n");
     try w.write("kernel void main_kernel(\n");
 
-    // Buffer parameters.
     var param_idx: usize = 0;
     for (bindings[0..binding_count]) |b| {
         if (param_idx > 0) try w.write(",\n");
@@ -118,8 +190,6 @@ pub fn translate(wgsl: []const u8, out: []u8) TranslateError!usize {
         try w.write(")]]");
         param_idx += 1;
     }
-
-    // Builtin parameters.
     for (builtin_params[0..builtin_count]) |bp| {
         if (param_idx > 0) try w.write(",\n");
         try w.write("    ");
@@ -133,23 +203,186 @@ pub fn translate(wgsl: []const u8, out: []u8) TranslateError!usize {
     }
 
     try w.write("\n) {\n");
+    try writeBodyRewritten(&w, body);
+    try w.write("}\n");
+    return w.pos;
+}
 
-    // Function body — pass through with type replacements.
-    const body = wgsl[body_start..body_end];
-    try writeTransformedBody(&w, body);
+// ============================================================
+// Vertex translation
+// ============================================================
+
+fn translateVertex(wgsl: []const u8, out: []u8) TranslateError!usize {
+    var inputs: [MAX_LOCATIONS]LocationParam = undefined;
+    var input_count: usize = 0;
+
+    // Parse the fn line for @location(N) params.
+    var lines = std.mem.splitScalar(u8, wgsl, '\n');
+    while (lines.next()) |line| {
+        const trimmed = std.mem.trim(u8, line, " \t\r");
+        if (std.mem.startsWith(u8, trimmed, "fn ") or
+            (std.mem.indexOf(u8, trimmed, "fn ") != null and std.mem.indexOf(u8, trimmed, "@vertex") != null))
+        {
+            input_count = parseFnLocations(trimmed, &inputs);
+            break;
+        }
+    }
+
+    // Parse return type for @builtin(position) and @location outputs.
+    const ret_info = parseReturnInfo(wgsl);
+    const body = findFnBody(wgsl) orelse return TranslateError.InvalidWgsl;
+
+    var w = Writer{ .buf = out, .pos = 0 };
+    try w.write("#include <metal_stdlib>\nusing namespace metal;\n\n");
+
+    // VertexIn struct (from @location params).
+    if (input_count > 0) {
+        try w.write("struct VertexIn {\n");
+        for (inputs[0..input_count]) |inp| {
+            try w.write("    ");
+            try w.write(inp.msl_type);
+            try w.write(" ");
+            try w.write(inp.name);
+            try w.write(" [[attribute(");
+            try w.writeInt(inp.location);
+            try w.write(")]];\n");
+        }
+        try w.write("};\n\n");
+    }
+
+    // VertexOut struct.
+    try w.write("struct VertexOut {\n");
+    if (ret_info.has_position) {
+        try w.write("    float4 _position [[position]];\n");
+    }
+    for (ret_info.locations[0..ret_info.location_count]) |loc| {
+        try w.write("    ");
+        try w.write(loc.msl_type);
+        try w.write(" _loc");
+        try w.writeInt(loc.location);
+        try w.write(" [[user(loc");
+        try w.writeInt(loc.location);
+        try w.write(")]];\n");
+    }
+    try w.write("};\n\n");
+
+    // Function signature.
+    try w.write("vertex VertexOut main_vertex(\n");
+    var param_idx: usize = 0;
+    if (input_count > 0) {
+        try w.write("    VertexIn in [[stage_in]]");
+        param_idx += 1;
+    }
+    try w.write("\n) {\n");
+
+    // Body with vec constructor rewriting.
+    try writeBodyRewritten(&w, body);
 
     try w.write("}\n");
     return w.pos;
 }
 
-const BuiltinParam = struct {
-    param_name: []const u8,
-    msl_type: []const u8,
-    msl_attr: []const u8,
-};
+// ============================================================
+// Fragment translation
+// ============================================================
+
+fn translateFragment(wgsl: []const u8, out: []u8) TranslateError!usize {
+    // Parse return @location(N) outputs.
+    const ret_info = parseReturnInfo(wgsl);
+    const body = findFnBody(wgsl) orelse return TranslateError.InvalidWgsl;
+
+    // Parse input @location params (inter-stage from vertex).
+    var inputs: [MAX_LOCATIONS]LocationParam = undefined;
+    var input_count: usize = 0;
+    var frag_lines = std.mem.splitScalar(u8, wgsl, '\n');
+    while (frag_lines.next()) |line| {
+        const trimmed = std.mem.trim(u8, line, " \t\r");
+        if (std.mem.startsWith(u8, trimmed, "fn ") or
+            (std.mem.indexOf(u8, trimmed, "fn ") != null and std.mem.indexOf(u8, trimmed, "@fragment") != null))
+        {
+            input_count = parseFnLocations(trimmed, &inputs);
+            break;
+        }
+    }
+
+    var w = Writer{ .buf = out, .pos = 0 };
+    try w.write("#include <metal_stdlib>\nusing namespace metal;\n\n");
+
+    // FragmentIn struct (from vertex outputs).
+    if (input_count > 0) {
+        try w.write("struct FragmentIn {\n");
+        for (inputs[0..input_count]) |inp| {
+            try w.write("    ");
+            try w.write(inp.msl_type);
+            try w.write(" ");
+            try w.write(inp.name);
+            try w.write(" [[user(loc");
+            try w.writeInt(inp.location);
+            try w.write(")]];\n");
+        }
+        try w.write("};\n\n");
+    }
+
+    // FragmentOut struct.
+    try w.write("struct FragmentOut {\n");
+    if (ret_info.location_count > 0) {
+        for (ret_info.locations[0..ret_info.location_count]) |loc| {
+            try w.write("    ");
+            try w.write(loc.msl_type);
+            try w.write(" color");
+            try w.writeInt(loc.location);
+            try w.write(" [[color(");
+            try w.writeInt(loc.location);
+            try w.write(")]];\n");
+        }
+    } else {
+        try w.write("    float4 color0 [[color(0)]];\n");
+    }
+    try w.write("};\n\n");
+
+    // Function signature.
+    try w.write("fragment FragmentOut main_fragment(\n");
+    if (input_count > 0) {
+        try w.write("    FragmentIn in [[stage_in]]");
+    }
+    try w.write("\n) {\n");
+
+    try writeBodyRewritten(&w, body);
+
+    try w.write("}\n");
+    return w.pos;
+}
+
+// ============================================================
+// Shared parsing helpers
+// ============================================================
+
+fn findFnBody(wgsl: []const u8) ?[]const u8 {
+    var in_fn = false;
+    var brace_depth: i32 = 0;
+    var body_brace_start: usize = 0;
+    for (wgsl, 0..) |ch, i| {
+        if (!in_fn) {
+            if (i + 3 <= wgsl.len and std.mem.eql(u8, wgsl[i .. i + 3], "fn ")) {
+                in_fn = true;
+            }
+        }
+        if (in_fn) {
+            if (ch == '{') {
+                if (brace_depth == 0) body_brace_start = i + 1;
+                brace_depth += 1;
+            } else if (ch == '}') {
+                brace_depth -= 1;
+                if (brace_depth == 0) {
+                    return wgsl[body_brace_start..i];
+                }
+            }
+        }
+    }
+    return null;
+}
 
 fn parseBinding(line: []const u8) ?Binding {
-    // Match: @group(G) @binding(B) var<storage, read_write|read> NAME : TYPE;
     const group_prefix = "@group(";
     const gi = std.mem.indexOf(u8, line, group_prefix) orelse return null;
     const g_start = gi + group_prefix.len;
@@ -162,20 +395,17 @@ fn parseBinding(line: []const u8) ?Binding {
     const b_end = std.mem.indexOfPos(u8, line, b_start, ")") orelse return null;
     const binding = std.fmt.parseInt(u32, line[b_start..b_end], 10) catch return null;
 
-    const is_read_only = std.mem.indexOf(u8, line, "read>") != null and
-        std.mem.indexOf(u8, line, "read_write>") == null;
-
-    // Find variable name: var<...> NAME
     const var_idx = std.mem.indexOf(u8, line, "var<") orelse return null;
     const gt_idx = std.mem.indexOfPos(u8, line, var_idx, ">") orelse return null;
+    const storage_spec = line[var_idx .. gt_idx + 1];
+    const is_read_only = std.mem.indexOf(u8, storage_spec, "read_write") == null;
+
     const after_gt = std.mem.trim(u8, line[gt_idx + 1 ..], " \t");
     const name_end = std.mem.indexOfAny(u8, after_gt, " :\t;") orelse after_gt.len;
     const name = after_gt[0..name_end];
     if (name.len == 0) return null;
 
-    // Parse element type from array<T> or array<T, N>.
     const elem_type = parseElemType(line) orelse "float";
-
     return Binding{
         .group = group,
         .binding = binding,
@@ -189,7 +419,6 @@ fn parseElemType(line: []const u8) ?[]const u8 {
     const arr_idx = std.mem.indexOf(u8, line, "array<") orelse return null;
     const start = arr_idx + 6;
     const end = std.mem.indexOfPos(u8, line, start, ">") orelse return null;
-    // Handle array<T, N> by taking up to comma.
     const inner = line[start..end];
     const comma = std.mem.indexOf(u8, inner, ",");
     const type_str = std.mem.trim(u8, if (comma) |c| inner[0..c] else inner, " \t");
@@ -213,17 +442,7 @@ fn wgslTypeToMsl(t: []const u8) []const u8 {
     return "float";
 }
 
-fn parseFnName(line: []const u8) ?[]const u8 {
-    const fn_idx = std.mem.indexOf(u8, line, "fn ") orelse return null;
-    const start = fn_idx + 3;
-    const rest = std.mem.trim(u8, line[start..], " \t");
-    const end = std.mem.indexOfAny(u8, rest, " (\t") orelse rest.len;
-    const name = rest[0..end];
-    return if (name.len > 0) name else null;
-}
-
 fn parseFnBuiltins(line: []const u8, out: []BuiltinParam) usize {
-    // Find parameters between ( and )
     const paren_start = std.mem.indexOf(u8, line, "(") orelse return 0;
     const paren_end = std.mem.lastIndexOf(u8, line, ")") orelse return 0;
     if (paren_start >= paren_end) return 0;
@@ -233,16 +452,13 @@ fn parseFnBuiltins(line: []const u8, out: []BuiltinParam) usize {
     var iter = std.mem.splitScalar(u8, params, ',');
     while (iter.next()) |param| {
         const trimmed = std.mem.trim(u8, param, " \t");
-        if (std.mem.indexOf(u8, trimmed, "@builtin(")) |bi| {
-            const b_start = bi + 9;
+        if (std.mem.indexOf(u8, trimmed, "@builtin(")) |bii| {
+            const b_start = bii + 9;
             const b_end = std.mem.indexOfPos(u8, trimmed, b_start, ")") orelse continue;
             const builtin_name = trimmed[b_start..b_end];
-
-            // Find param name after ") NAME: TYPE"
             const after_close = std.mem.trim(u8, trimmed[b_end + 1 ..], " \t");
             const name_end = std.mem.indexOfAny(u8, after_close, " :\t") orelse after_close.len;
             const param_name = after_close[0..name_end];
-
             for (BUILTINS) |b| {
                 if (std.mem.eql(u8, builtin_name, b.name)) {
                     if (count < out.len) {
@@ -261,31 +477,151 @@ fn parseFnBuiltins(line: []const u8, out: []BuiltinParam) usize {
     return count;
 }
 
-fn writeTransformedBody(w: *Writer, body: []const u8) TranslateError!void {
-    // Line-by-line pass-through with WGSL→MSL keyword replacements.
-    var lines = std.mem.splitScalar(u8, body, '\n');
+/// Parse @location(N) parameters from a fn signature line.
+fn parseFnLocations(line: []const u8, out: []LocationParam) usize {
+    const paren_start = std.mem.indexOf(u8, line, "(") orelse return 0;
+    const paren_end = std.mem.lastIndexOf(u8, line, ")") orelse return 0;
+    if (paren_start >= paren_end) return 0;
+    const params = line[paren_start + 1 .. paren_end];
+
+    var count: usize = 0;
+    var iter = std.mem.splitScalar(u8, params, ',');
+    while (iter.next()) |param| {
+        const trimmed = std.mem.trim(u8, param, " \t");
+        const loc_prefix = "@location(";
+        const li = std.mem.indexOf(u8, trimmed, loc_prefix) orelse continue;
+        const l_start = li + loc_prefix.len;
+        const l_end = std.mem.indexOfPos(u8, trimmed, l_start, ")") orelse continue;
+        const location = std.fmt.parseInt(u32, trimmed[l_start..l_end], 10) catch continue;
+
+        // Parse "name: type" after the annotation.
+        const after = std.mem.trim(u8, trimmed[l_end + 1 ..], " \t");
+        const name_end = std.mem.indexOfAny(u8, after, " :\t") orelse after.len;
+        const name = after[0..name_end];
+        if (name.len == 0) continue;
+
+        // Find the type after ':'
+        const colon = std.mem.indexOfPos(u8, after, name_end, ":") orelse continue;
+        const type_str = std.mem.trim(u8, after[colon + 1 ..], " \t");
+        const type_end = std.mem.indexOfAny(u8, type_str, " ,)\t") orelse type_str.len;
+
+        if (count < out.len) {
+            out[count] = .{
+                .location = location,
+                .name = name,
+                .msl_type = wgslTypeToMsl(type_str[0..type_end]),
+            };
+            count += 1;
+        }
+    }
+    return count;
+}
+
+const ReturnInfo = struct {
+    has_position: bool,
+    locations: [MAX_LOCATIONS]LocationParam,
+    location_count: usize,
+    ret_type: []const u8, // MSL type for single-value returns
+};
+
+/// Parse return type annotations from the fn signature.
+/// Handles: -> @builtin(position) vec4f, -> @location(0) vec4f
+fn parseReturnInfo(wgsl: []const u8) ReturnInfo {
+    var info = ReturnInfo{
+        .has_position = false,
+        .locations = undefined,
+        .location_count = 0,
+        .ret_type = "float4",
+    };
+
+    // Find the fn line containing '->'.
+    var lines = std.mem.splitScalar(u8, wgsl, '\n');
     while (lines.next()) |line| {
         const trimmed = std.mem.trim(u8, line, " \t\r");
-        // Skip WGSL-only declarations that were already handled.
+        const arrow = std.mem.indexOf(u8, trimmed, "->") orelse continue;
+        if (std.mem.indexOf(u8, trimmed, "fn ") == null) continue;
+
+        const after_arrow = std.mem.trim(u8, trimmed[arrow + 2 ..], " \t");
+
+        // Check for @builtin(position)
+        if (std.mem.indexOf(u8, after_arrow, "@builtin(position)") != null) {
+            info.has_position = true;
+            // Find the type after the annotation.
+            if (std.mem.indexOf(u8, after_arrow, ")")) |close| {
+                const ret_type_str = std.mem.trim(u8, after_arrow[close + 1 ..], " \t{");
+                if (ret_type_str.len > 0) {
+                    info.ret_type = wgslTypeToMsl(ret_type_str);
+                }
+            }
+        }
+
+        // Check for @location(N) in return
+        const loc_prefix = "@location(";
+        var pos: usize = 0;
+        while (std.mem.indexOfPos(u8, after_arrow, pos, loc_prefix)) |li| {
+            const l_start = li + loc_prefix.len;
+            const l_end = std.mem.indexOfPos(u8, after_arrow, l_start, ")") orelse break;
+            const location = std.fmt.parseInt(u32, after_arrow[l_start..l_end], 10) catch break;
+            // Type follows the annotation.
+            const after_loc = std.mem.trim(u8, after_arrow[l_end + 1 ..], " \t");
+            const type_end = std.mem.indexOfAny(u8, after_loc, " ,{\t") orelse after_loc.len;
+            if (info.location_count < MAX_LOCATIONS) {
+                info.locations[info.location_count] = .{
+                    .location = location,
+                    .name = "",
+                    .msl_type = wgslTypeToMsl(after_loc[0..type_end]),
+                };
+                info.location_count += 1;
+            }
+            pos = l_end + 1;
+        }
+
+        break;
+    }
+    return info;
+}
+
+// ============================================================
+// Body writing
+// ============================================================
+
+/// Write body with WGSL→MSL type constructor rewriting.
+fn writeBodyRewritten(w: *Writer, body: []const u8) TranslateError!void {
+    var body_lines = std.mem.splitScalar(u8, body, '\n');
+    while (body_lines.next()) |line| {
+        const trimmed = std.mem.trim(u8, line, " \t\r");
         if (trimmed.len == 0) {
             try w.write("\n");
             continue;
         }
-        // Replace WGSL type keywords in the line.
-        try writeLineWithReplacements(w, line);
+        try rewriteLine(w, line);
         try w.write("\n");
     }
 }
 
-fn writeLineWithReplacements(w: *Writer, line: []const u8) TranslateError!void {
-    // Simple token-level replacement for WGSL→MSL types in function body.
-    // For the compute subset, most syntax is identical. Key differences:
-    // - `let` → `const auto` is not needed (MSL auto works, but let's use types)
-    // - `var x: f32` → `float x` would require full parsing
-    // For now, pass through as-is — MSL and WGSL share C-like expression syntax.
-    // The function body (arithmetic, indexing, assignments) is compatible.
-    try w.write(line);
+/// Rewrite a single line: replace WGSL vec constructors with MSL equivalents.
+fn rewriteLine(w: *Writer, line: []const u8) TranslateError!void {
+    var i: usize = 0;
+    while (i < line.len) {
+        var matched = false;
+        for (VEC_REPLACEMENTS) |rep| {
+            if (i + rep.wgsl.len <= line.len and std.mem.eql(u8, line[i..][0..rep.wgsl.len], rep.wgsl)) {
+                try w.write(rep.msl);
+                i += rep.wgsl.len;
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            try w.write(line[i..][0..1]);
+            i += 1;
+        }
+    }
 }
+
+// ============================================================
+// Writer
+// ============================================================
 
 const Writer = struct {
     buf: []u8,

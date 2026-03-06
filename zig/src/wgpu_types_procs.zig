@@ -69,6 +69,8 @@ pub const FnWgpuBufferMapAsync = *const fn (types.WGPUBuffer, types.WGPUMapMode,
 pub const FnWgpuBufferGetConstMappedRange = *const fn (types.WGPUBuffer, usize, usize) callconv(.c) ?*const anyopaque;
 pub const FnWgpuBufferGetMappedRange = *const fn (types.WGPUBuffer, usize, usize) callconv(.c) ?*anyopaque;
 pub const FnWgpuBufferUnmap = *const fn (types.WGPUBuffer) callconv(.c) void;
+pub const FnWgpuDeviceCreateSampler = *const fn (types.WGPUDevice, ?*const types.WGPUSamplerDescriptor) callconv(.c) types.WGPUSampler;
+pub const FnWgpuSamplerRelease = *const fn (types.WGPUSampler) callconv(.c) void;
 
 pub const Procs = struct {
     wgpuCreateInstance: FnWgpuCreateInstance,

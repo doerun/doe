@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-03-03
+Date: 2026-03-06
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -194,6 +194,82 @@ Planned implementation slices:
 8. parity harness updates for execution results and benchmark artifacts.
 
 Estimated remaining effort is tracked by explicit capability/gate gaps below instead of LOC placeholders.
+
+## Backend implementation matrix (2026-03-06)
+
+Capability coverage across Doe backends. Audited against `metal_bridge.h` contract surface.
+
+Legend: ● implemented ◐ partial ○ missing
+
+### Core lifecycle
+
+| Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
+|---|---|---|---|---|
+| Instance/device discovery | ● | ● | ◐ Linux only | ◐ Windows only |
+| Command queue | ● | ● | ◐ Linux only | ● |
+| Buffer create + CPU access | ● | ● | ◐ no Map/Unmap | ◐ no Map/Unmap |
+| Blit/copy (single) | ● | ● | ● Linux only | ● |
+| Blit/copy (batch/streaming) | ● | ● streaming | ○ | ○ |
+| Command buffer lifecycle | ● | ● | ◐ Linux only | ● |
+| GPU fence/sync | ● shared event | ● shared event | ○ | ● fence-based |
+| Limits reporting | ● | N/A | ○ | ○ |
+| Feature queries (shader-f16) | ● | N/A | ○ | ○ |
+| onSubmittedWorkDone | ● | N/A | ○ | ○ |
+
+### Compute
+
+| Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
+|---|---|---|---|---|
+| Shader translation (WGSL) | ● WGSL→MSL (AST-based) | ○ expects .metal | ○ SPIR-V load only | ○ CSO/DXBC load only |
+| Compute pipeline create | ● | ● | ◐ Linux only | ● |
+| Compute dispatch | ● | ● | ◐ Linux only | ● |
+| dispatchWorkgroupsIndirect | ● | ○ | ○ | ○ |
+| Bind groups | ● groups 0-3 | ○ telemetry only | ○ | ○ |
+
+### Resources
+
+| Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
+|---|---|---|---|---|
+| Texture create | ● | ● | ○ | ○ |
+| Texture write/query | ● | ● | ○ | ○ |
+| Texture view | ● | ○ | ○ | ○ |
+| Sampler create | ● | ● | ○ | ○ |
+
+### Render
+
+| Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
+|---|---|---|---|---|
+| Render pipeline create | ● | ● | ○ | ○ |
+| Render pass encode | ● | ● | ○ | ○ |
+| Render encoder draw | ● | ● | ○ | ○ |
+| ICB (indirect cmd buffer) | ○ | ● | ○ | ○ |
+
+### Presentation
+
+| Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
+|---|---|---|---|---|
+| Surface/swapchain | ○ | ○ stub only | ○ | ○ |
+
+### Architecture notes
+
+- **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` / NPM `@simulatte/webgpu-doe` for Node headless path and Doppler inference. 729 + 155 lines.
+- **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by Doppler. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
+- **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Facade layer + `vulkan_runtime_state.zig` cost simulation for telemetry.
+- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Expects pre-compiled CSO/DXBC bytecode.
+
+### WGSL compiler (`src/doe_wgsl/`)
+
+AST-based WGSL compiler replacing the old regex-based line translator. Architecture: lexer → parser → AST → backend emitter.
+
+- **MSL emitter**: Production. Covers Doppler's full compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
+- **SPIR-V emitter**: Not started. Required for Vulkan backend.
+- **HLSL emitter**: Not started. Required for D3D12 backend.
+
+### Key gaps for doe-runtime promotion
+
+1. Vulkan + D3D12 lack textures, samplers, render pipeline, and render pass entirely.
+2. No WGSL→SPIR-V or WGSL→HLSL shader translation exists. MSL emitter is complete.
+3. Surface/swapchain is missing on all backends.
 
 ## Developer flow state (engineering, governance, and release pipeline)
 

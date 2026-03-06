@@ -183,10 +183,17 @@ void metal_bridge_command_buffer_encode_signal_event(
 
 void metal_bridge_shared_event_wait(MetalHandle event_h, uint64_t value) {
     id<MTLSharedEvent> event = (__bridge id<MTLSharedEvent>)event_h;
-    // Spin-wait with yield: signaledValue is a mapped GPU register read,
-    // no kernel round-trip needed. Much faster than waitUntilCompleted.
+    // Quick check: often the GPU has already completed by the time we get here.
+    if (event.signaledValue >= value) return;
+    // Brief spin with ARM yield hint (no timeslice forfeit, ~64 iterations).
+    for (int i = 0; i < 64; i++) {
+        if (event.signaledValue >= value) return;
+#if defined(__aarch64__) || defined(__arm64__)
+        __asm__ volatile ("yield");
+#endif
+    }
+    // Fallback: yield to OS scheduler for longer waits.
     while (event.signaledValue < value) {
-        // sched_yield() lets other threads run without sleeping.
         sched_yield();
     }
 }
@@ -423,14 +430,117 @@ MetalHandle metal_bridge_encode_compute_dispatch(
         }
     }
 
-    MTLSize tg_size    = MTLSizeMake(pipeline.maxTotalThreadsPerThreadgroup > 0
-                                     ? (NSUInteger)pipeline.maxTotalThreadsPerThreadgroup
-                                     : 256, 1, 1);
+    NSUInteger max_tg = pipeline.maxTotalThreadsPerThreadgroup;
+    if (max_tg == 0) max_tg = 256;
+    MTLSize tg_size;
+    if (y > 1) {
+        NSUInteger tg_x = (NSUInteger)sqrt((double)max_tg);
+        while (tg_x > 1 && max_tg % tg_x != 0) tg_x--;
+        tg_size = MTLSizeMake(tg_x, max_tg / tg_x, 1);
+    } else {
+        tg_size = MTLSizeMake(max_tg, 1, 1);
+    }
     MTLSize grid_size  = MTLSizeMake(x, y, z);
     [encoder dispatchThreadgroups:grid_size threadsPerThreadgroup:tg_size];
     [encoder endEncoding];
 
     return (MetalHandle)CFBridgingRetain(cmd_buf);
+}
+
+void metal_bridge_cmd_buf_encode_blit_copy(
+    MetalHandle cmd_buf_h,
+    MetalHandle src_h,
+    uint64_t    src_offset,
+    MetalHandle dst_h,
+    uint64_t    dst_offset,
+    uint64_t    size)
+{
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_h;
+    id<MTLBuffer> dst = (__bridge id<MTLBuffer>)dst_h;
+    id<MTLBlitCommandEncoder> encoder = [cmd_buf blitCommandEncoder];
+    [encoder copyFromBuffer:src sourceOffset:(NSUInteger)src_offset
+                   toBuffer:dst destinationOffset:(NSUInteger)dst_offset
+                       size:(NSUInteger)size];
+    [encoder endEncoding];
+}
+
+void metal_bridge_cmd_buf_encode_compute_dispatch(
+    MetalHandle  cmd_buf_h,
+    MetalHandle  pipeline_h,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    uint32_t     x,
+    uint32_t     y,
+    uint32_t     z,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z)
+{
+    id<MTLCommandBuffer>         cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLComputePipelineState>  pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
+
+    id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
+    [encoder setComputePipelineState:pipeline];
+
+    for (uint32_t i = 0; i < buffer_count; i++) {
+        if (buffers[i] != NULL) {
+            id<MTLBuffer> buf = (__bridge id<MTLBuffer>)buffers[i];
+            [encoder setBuffer:buf offset:0 atIndex:i];
+        }
+    }
+
+    // Use shader-declared workgroup size when available; fall back to pipeline max.
+    MTLSize tg_size;
+    if (wg_x > 0) {
+        tg_size = MTLSizeMake(wg_x, wg_y > 0 ? wg_y : 1, wg_z > 0 ? wg_z : 1);
+    } else {
+        NSUInteger max_tg = pipeline.maxTotalThreadsPerThreadgroup;
+        if (max_tg == 0) max_tg = 256;
+        tg_size = MTLSizeMake(max_tg, 1, 1);
+    }
+    MTLSize grid_size = MTLSizeMake(x, y, z);
+    [encoder dispatchThreadgroups:grid_size threadsPerThreadgroup:tg_size];
+    [encoder endEncoding];
+}
+
+void metal_bridge_cmd_buf_encode_compute_dispatch_indirect(
+    MetalHandle  cmd_buf_h,
+    MetalHandle  pipeline_h,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    MetalHandle  indirect_buffer_h,
+    uint64_t     indirect_offset,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z)
+{
+    id<MTLCommandBuffer>         cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLComputePipelineState>  pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
+    id<MTLBuffer>                indirect = (__bridge id<MTLBuffer>)indirect_buffer_h;
+
+    id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
+    [encoder setComputePipelineState:pipeline];
+
+    for (uint32_t i = 0; i < buffer_count; i++) {
+        if (buffers[i] != NULL) {
+            id<MTLBuffer> buf = (__bridge id<MTLBuffer>)buffers[i];
+            [encoder setBuffer:buf offset:0 atIndex:i];
+        }
+    }
+
+    MTLSize tg_size;
+    if (wg_x > 0) {
+        tg_size = MTLSizeMake(wg_x, wg_y > 0 ? wg_y : 1, wg_z > 0 ? wg_z : 1);
+    } else {
+        NSUInteger max_tg = pipeline.maxTotalThreadsPerThreadgroup;
+        if (max_tg == 0) max_tg = 256;
+        tg_size = MTLSizeMake(max_tg, 1, 1);
+    }
+    [encoder dispatchThreadgroupsWithIndirectBuffer:indirect
+                               indirectBufferOffset:(NSUInteger)indirect_offset
+                              threadsPerThreadgroup:tg_size];
+    [encoder endEncoding];
 }
 
 MetalHandle metal_bridge_encode_compute_dispatch_batch(
@@ -449,9 +559,17 @@ MetalHandle metal_bridge_encode_compute_dispatch_batch(
     id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
 
-    MTLSize tg_size   = MTLSizeMake(pipeline.maxTotalThreadsPerThreadgroup > 0
-                                    ? (NSUInteger)pipeline.maxTotalThreadsPerThreadgroup
-                                    : 256, 1, 1);
+    NSUInteger max_tg = pipeline.maxTotalThreadsPerThreadgroup;
+    if (max_tg == 0) max_tg = 256;
+    MTLSize tg_size;
+    if (y > 1) {
+        // 2D grid: distribute threadgroup threads across X and Y.
+        NSUInteger tg_x = (NSUInteger)sqrt((double)max_tg);
+        while (tg_x > 1 && max_tg % tg_x != 0) tg_x--;
+        tg_size = MTLSizeMake(tg_x, max_tg / tg_x, 1);
+    } else {
+        tg_size = MTLSizeMake(max_tg, 1, 1);
+    }
     MTLSize grid_size = MTLSizeMake(x, y, z);
 
     // Single encoder for all repeats: set pipeline/buffers once, dispatch N times.
@@ -740,6 +858,31 @@ void metal_bridge_icb_encode_draws(
                baseInstance:0];
     }
 }
+
+// ============================================================
+// Semaphore-based completion (faster than waitUntilCompleted)
+// ============================================================
+
+static dispatch_semaphore_t _completion_sem = NULL;
+
+void metal_bridge_command_buffer_setup_fast_wait(MetalHandle cmd_buf_h) {
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    if (_completion_sem == NULL) {
+        _completion_sem = dispatch_semaphore_create(0);
+    }
+    [cmd_buf addCompletedHandler:^(id<MTLCommandBuffer> _Nonnull cb) {
+        dispatch_semaphore_signal(_completion_sem);
+    }];
+}
+
+void metal_bridge_command_buffer_wait_fast(void) {
+    if (_completion_sem == NULL) return;
+    dispatch_semaphore_wait(_completion_sem, DISPATCH_TIME_FOREVER);
+}
+
+// ============================================================
+// Indirect Command Buffer (render bundle emulation)
+// ============================================================
 
 MetalHandle metal_bridge_encode_icb_render_pass(
     MetalHandle queue_h,

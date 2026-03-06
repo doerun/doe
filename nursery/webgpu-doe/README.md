@@ -5,14 +5,13 @@ Headless WebGPU for Node.js, powered by the
 
 ## What this is
 
-Doe is a Zig WebGPU implementation with native Metal and Vulkan backends. It
-implements the standard `wgpu*` C ABI so it can serve as a drop-in replacement
-for Dawn or wgpu-native in any application that uses the WebGPU C API.
+A native Metal WebGPU implementation for Node.js — no Dawn, no IPC, no
+11 MB sidecar. Doe compiles WGSL to MSL at runtime via an AST-based
+shader compiler and dispatches directly to Metal via a Zig + ObjC bridge.
 
 This package ships:
 
-- **`libdoe_webgpu`** — the Doe drop-in library (Zig, ~2 MB)
-- **`libwebgpu_dawn`** — Dawn sidecar for GPU execution (~11 MB)
+- **`libdoe_webgpu`** — Doe native runtime (~2 MB, Zig + Metal)
 - **`doe_napi.node`** — N-API addon bridging `libdoe_webgpu` to JavaScript
 - **`src/index.js`** — JS wrapper providing WebGPU-shaped classes and constants
 
@@ -23,34 +22,71 @@ JavaScript (DoeGPUDevice, DoeGPUBuffer, ...)
     |
   N-API addon (doe_napi.c)
     |
-  libdoe_webgpu.dylib  ← Doe drop-in, Zig routing layer
+  libdoe_webgpu.dylib  ← Doe native Metal backend, ~2 MB
     |
-  libwebgpu_dawn.dylib ← GPU execution (Metal on macOS, Vulkan on Linux)
+  Metal.framework       ← GPU execution (Apple Silicon)
 ```
 
-### Current state (v0.1.x)
+No Dawn dependency. All GPU calls go directly from Zig to Metal.
 
-The `wgpu*` C ABI calls are routed through Dawn for GPU execution. Doe provides
-the routing layer, symbol ownership policy, and diagnostic instrumentation.
+## Performance
 
-### Roadmap: native Zig backends
+Doe is faster than Dawn on all 30 benchmark workloads tested on Apple Silicon
+(buffer upload, compute dispatch, render pass, texture operations, atomics,
+concurrent execution). Results are apples-to-apples comparisons using matched
+workloads, dispatch geometry, and timing methodology. See `fawn/bench/` for
+methodology and raw data.
 
-Doe has real, working native GPU backends:
+Binary size: ~2 MB vs Dawn's ~11 MB.
 
-| Backend | Platform | Capabilities |
-|---------|----------|-------------|
-| Metal | macOS | buffer upload, compute dispatch (MSL), render, textures, sync |
-| Vulkan | Linux | buffer upload, compute dispatch (SPIR-V), barrier sync, timestamps |
-| D3D12 | Windows | buffer upload, sync (compute dispatch in progress) |
+## API surface
 
-These backends make real GPU API calls (Metal framework via ObjC bridge, Vulkan
-C ABI, D3D12 COM). They are not simulations.
+Compute:
 
-The `wgpu*` C ABI functions are being implemented natively against these
-backends, one function at a time. The Doe routing layer supports per-symbol
-ownership, so each function can independently flip from Dawn delegation to
-native Zig execution. The Dawn sidecar dependency will shrink as coverage grows
-and will eventually be eliminated.
+- `create()` / `setupGlobals()` / `requestAdapter()` / `requestDevice()`
+- `device.createBuffer()` / `device.createShaderModule()` (WGSL)
+- `device.createComputePipeline()` / `device.createBindGroupLayout()`
+- `device.createBindGroup()` / `device.createPipelineLayout()`
+- `device.createCommandEncoder()` / `encoder.beginComputePass()`
+- `pass.setPipeline()` / `pass.setBindGroup()` / `pass.dispatchWorkgroups()`
+- `pass.dispatchWorkgroupsIndirect()`
+- `pipeline.getBindGroupLayout()`
+- `device.createComputePipelineAsync()`
+- `encoder.copyBufferToBuffer()` / `queue.submit()` / `queue.writeBuffer()`
+- `buffer.mapAsync()` / `buffer.getMappedRange()` / `buffer.unmap()`
+- `queue.onSubmittedWorkDone()`
+
+Render:
+
+- `device.createTexture()` / `texture.createView()` / `device.createSampler()`
+- `device.createRenderPipeline()` / `encoder.beginRenderPass()`
+- `renderPass.setPipeline()` / `renderPass.draw()` / `renderPass.end()`
+
+Device capabilities:
+
+- `device.limits` / `adapter.limits` — full Metal device limits
+- `device.features` / `adapter.features` — reports `shader-f16`
+
+Not yet supported: canvas/surface presentation, vertex/index buffer binding
+in render passes, full render pipeline descriptor parsing.
+
+## Backend readiness
+
+| Backend | Compute | Render | WGSL compiler | Status |
+|---------|---------|--------|---------------|--------|
+| **Metal** (macOS) | Production | Basic (no vertex/index) | WGSL -> MSL (AST-based) | Ready |
+| **Vulkan** (Linux) | WIP | Not started | WGSL -> SPIR-V needed | Experimental |
+| **D3D12** (Windows) | WIP | Not started | WGSL -> HLSL/DXIL needed | Experimental |
+
+**Metal** is the primary backend. All Doppler compute workloads run on Metal today:
+bind groups 0-3, buffer map/unmap, indirect dispatch, shader-f16, subgroups,
+override constants, workgroup shared memory, multiple entry points.
+
+**Vulkan** and **D3D12** have real native runtime paths (not stubs) with instance
+creation, compute dispatch, and buffer upload — but lack shader translation,
+bind group management, buffer map/unmap, textures, and render pipelines.
+
+See [`fawn/status.md`](../../status.md) for the full backend implementation matrix.
 
 ## Platform support
 
@@ -58,12 +94,8 @@ and will eventually be eliminated.
 |----------|-------------|--------|
 | macOS | arm64 | Prebuilt, tested |
 | macOS | x64 | Not yet built |
-| Linux | x64 | Not yet built |
-| Linux | arm64 | Not yet built |
-| Windows | x64 | Not yet built |
-
-v0.1.0 ships prebuilt binaries for macOS arm64 only. Other platforms require
-building from source (see [Building from source](#building-from-source)).
+| Linux | x64 | Not yet built (Vulkan backend experimental) |
+| Windows | x64 | Not yet built (D3D12 backend experimental) |
 
 ## Install
 
@@ -82,6 +114,9 @@ import { create, globals } from '@simulatte/webgpu-doe';
 const gpu = create();
 const adapter = await gpu.requestAdapter();
 const device = await adapter.requestDevice();
+
+console.log(device.limits.maxComputeWorkgroupSizeX); // 1024
+console.log(device.features.has('shader-f16'));       // true
 
 // Standard WebGPU compute workflow
 const buffer = device.createBuffer({
@@ -119,21 +154,6 @@ console.log(providerInfo());
 // { module: '@simulatte/webgpu-doe', loaded: true, doeNative: true, ... }
 ```
 
-## API surface (v0.1.0)
-
-Headless compute:
-
-- `create()` / `setupGlobals()` / `requestAdapter()` / `requestDevice()`
-- `device.createBuffer()` / `device.createShaderModule()` (WGSL)
-- `device.createComputePipeline()` / `device.createBindGroupLayout()`
-- `device.createBindGroup()` / `device.createPipelineLayout()`
-- `device.createCommandEncoder()` / `encoder.beginComputePass()`
-- `pass.setPipeline()` / `pass.setBindGroup()` / `pass.dispatchWorkgroups()`
-- `encoder.copyBufferToBuffer()` / `queue.submit()` / `queue.writeBuffer()`
-- `buffer.mapAsync()` / `buffer.getMappedRange()` / `buffer.unmap()`
-
-Not yet supported: render passes, textures, samplers, canvas presentation.
-
 ## Configuration
 
 The library search order:
@@ -143,11 +163,9 @@ The library search order:
 3. `<workspace>/zig/zig-out/lib/libdoe_webgpu.{ext}` (monorepo layout)
 4. `<cwd>/zig/zig-out/lib/libdoe_webgpu.{ext}`
 
-The Dawn sidecar is found automatically when co-located with `libdoe_webgpu`.
-
 ## Building from source
 
-Requires [Zig](https://ziglang.org/download/) (0.15+) and a Dawn build.
+Requires [Zig](https://ziglang.org/download/) (0.15+).
 
 ```sh
 git clone https://github.com/clocksmith/fawn
@@ -155,8 +173,6 @@ cd fawn/zig
 zig build dropin
 # Output: zig-out/lib/libdoe_webgpu.{dylib,so}
 ```
-
-Dawn build instructions: see `fawn/bench/vendor/dawn/`.
 
 ## License
 

@@ -166,11 +166,6 @@ pub export fn wgpuDeviceCreateResourceTable(a0: types.WGPUDevice, a1: *const p1r
     return proc(a0, a1);
 }
 
-pub export fn wgpuDeviceCreateSampler(a0: types.WGPUDevice, a1: ?*const anyopaque) callconv(.c) types.WGPUSampler {
-    const proc = resolveRequiredProc(*const fn (types.WGPUDevice, ?*const anyopaque) callconv(.c) types.WGPUSampler, "wgpuDeviceCreateSampler");
-    return proc(a0, a1);
-}
-
 pub export fn wgpuDeviceDestroy(a0: types.WGPUDevice) callconv(.c) void {
     const proc = resolveRequiredProc(*const fn (types.WGPUDevice) callconv(.c) void, "wgpuDeviceDestroy");
     proc(a0);
