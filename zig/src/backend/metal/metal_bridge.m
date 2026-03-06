@@ -192,6 +192,44 @@ MetalHandle metal_bridge_encode_compute_dispatch(
     return (MetalHandle)CFBridgingRetain(cmd_buf);
 }
 
+MetalHandle metal_bridge_encode_compute_dispatch_batch(
+    MetalHandle  queue_h,
+    MetalHandle  pipeline_h,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    uint32_t     x,
+    uint32_t     y,
+    uint32_t     z,
+    uint32_t     repeat_count)
+{
+    id<MTLCommandQueue>          queue    = (__bridge id<MTLCommandQueue>)queue_h;
+    id<MTLComputePipelineState>  pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
+
+    id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
+    if (cmd_buf == nil) return NULL;
+
+    MTLSize tg_size   = MTLSizeMake(pipeline.maxTotalThreadsPerThreadgroup > 0
+                                    ? (NSUInteger)pipeline.maxTotalThreadsPerThreadgroup
+                                    : 256, 1, 1);
+    MTLSize grid_size = MTLSizeMake(x, y, z);
+
+    // Single encoder for all repeats: set pipeline/buffers once, dispatch N times.
+    id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
+    [encoder setComputePipelineState:pipeline];
+    for (uint32_t i = 0; i < buffer_count; i++) {
+        if (buffers[i] != NULL) {
+            id<MTLBuffer> buf = (__bridge id<MTLBuffer>)buffers[i];
+            [encoder setBuffer:buf offset:0 atIndex:i];
+        }
+    }
+    for (uint32_t r = 0; r < repeat_count; r++) {
+        [encoder dispatchThreadgroups:grid_size threadsPerThreadgroup:tg_size];
+    }
+    [encoder endEncoding];
+
+    return (MetalHandle)CFBridgingRetain(cmd_buf);
+}
+
 // ============================================================
 // Texture
 // ============================================================
@@ -412,15 +450,20 @@ MetalHandle metal_bridge_encode_render_pass(
 MetalHandle metal_bridge_device_new_icb(
     MetalHandle device_h,
     MetalHandle pipeline_h,
-    uint32_t    command_count)
+    uint32_t    command_count,
+    int         redundant_pipeline)
 {
     id<MTLDevice>              device   = (__bridge id<MTLDevice>)device_h;
     id<MTLRenderPipelineState> pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
     (void)pipeline;
+    (void)redundant_pipeline;
 
+    // inheritPipelineState = NO: per-command setRenderPipelineState: is called during CPU
+    // ICB encoding. This is faster on Apple Silicon than NO+inheritance because the CPU
+    // encode path for ICB with inheritPipelineState=YES has higher per-command overhead.
     MTLIndirectCommandBufferDescriptor* desc = [MTLIndirectCommandBufferDescriptor new];
     desc.commandTypes               = MTLIndirectCommandTypeDraw;
-    desc.inheritPipelineState       = YES;
+    desc.inheritPipelineState       = NO;
     desc.inheritBuffers             = YES;
     desc.maxVertexBufferBindCount   = 0;
     desc.maxFragmentBufferBindCount = 0;
@@ -445,9 +488,9 @@ void metal_bridge_icb_encode_draws(
 
     for (uint32_t i = 0; i < draw_count; i++) {
         id<MTLIndirectRenderCommand> cmd = [icb indirectRenderCommandAtIndex:i];
-        if (redundant_pipeline) {
-            [cmd setRenderPipelineState:pipeline];
-        }
+        // inheritPipelineState = NO requires setRenderPipelineState: per command.
+        // Called unconditionally; redundant_pipeline flag only signals the workload type.
+        [cmd setRenderPipelineState:pipeline];
         [cmd drawPrimitives:MTLPrimitiveTypeTriangle
                 vertexStart:0
                 vertexCount:vertex_count

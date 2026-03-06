@@ -6,6 +6,7 @@ constant uint kPackedCols = 512u;
 constant uint kWorkgroupSize = 64u;
 constant uint kColsPerInvocation = (kPackedCols + kWorkgroupSize - 1u) / kWorkgroupSize;
 
+[[max_total_threads_per_threadgroup(64)]]
 kernel void main_kernel(
     device const float4* matrixData [[buffer(0)]],
     device const float4* vectorData [[buffer(1)]],

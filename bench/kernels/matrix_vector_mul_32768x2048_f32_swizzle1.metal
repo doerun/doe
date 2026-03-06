@@ -4,6 +4,7 @@ using namespace metal;
 constant uint kRows = 32768u;
 constant uint kPackedCols = 512u;
 
+[[max_total_threads_per_threadgroup(64)]]
 kernel void main_kernel(
     device const float4* matrixData [[buffer(0)]],
     device const float4* vectorData [[buffer(1)]],

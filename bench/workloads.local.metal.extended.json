@@ -1020,9 +1020,9 @@
       ],
       "comparable": true,
       "default": false,
-      "leftTimingDivisor": 2400,
-      "rightTimingDivisor": 1,
-      "timingNormalizationNote": "Dawn VulkanZeroInitializeWorkgroupMemoryExtensionTest already reports per-iteration metrics (iterationsPerStep=50 internal normalization). Fawn repeats dispatch 50 times and applies leftTimingDivisor normalization only.",
+      "leftTimingDivisor": 1.0,
+      "rightTimingDivisor": 1.0,
+      "timingNormalizationNote": "Both sides run repeat=50 dispatches per sample via the kernel_dispatch command repeat field. Divisors are symmetric at 1.0; per-dispatch timing is implicit in the repeat count.",
       "dawnFilter": "VulkanZeroInitializeWorkgroupMemoryExtensionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__workgroupSize_256",
       "benchmarkClass": "comparable"
     }

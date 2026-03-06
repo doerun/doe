@@ -3,6 +3,7 @@ using namespace metal;
 
 constant uint kWorkgroupSize = 256u;
 
+[[max_total_threads_per_threadgroup(256)]]
 kernel void main_kernel(
     device uint* outVal [[buffer(0)]],
     uint lid [[thread_position_in_threadgroup]],

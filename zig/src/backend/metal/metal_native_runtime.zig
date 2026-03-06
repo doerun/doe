@@ -3,7 +3,9 @@ const common_timing = @import("../common/timing.zig");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 
-const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
+// Metal on Apple Silicon supports large shared buffers up to device maxBufferLength.
+// No artificial cap here — let allocation failure propagate as InvalidState.
+const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
 const MAX_UPLOAD_ZERO_FILL_BYTES: usize = 1024 * 1024;
 const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
 const KERNEL_ENTRY_Z: [*:0]const u8 = "main_kernel";
@@ -27,6 +29,7 @@ extern fn metal_bridge_device_new_library_msl(device: ?*anyopaque, src: [*]const
 extern fn metal_bridge_library_new_function(library: ?*anyopaque, name: [*:0]const u8) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_compute_pipeline(device: ?*anyopaque, function: ?*anyopaque, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_encode_compute_dispatch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_encode_compute_dispatch_batch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32, repeat_count: u32) callconv(.c) ?*anyopaque;
 
 // Texture bridge
 extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, pixel_format: u32, usage: u32) callconv(.c) ?*anyopaque;
@@ -43,7 +46,7 @@ extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_filter: u32, 
 extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_render_target(device: ?*anyopaque, width: u32, height: u32, pixel_format: u32) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_encode_render_pass(queue: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, redundant_bindgroup: c_int) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_icb(device: ?*anyopaque, pipeline: ?*anyopaque, command_count: u32) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_device_new_icb(device: ?*anyopaque, pipeline: ?*anyopaque, command_count: u32, redundant_pipeline: c_int) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_icb_encode_draws(icb: ?*anyopaque, pipeline: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int) callconv(.c) void;
 extern fn metal_bridge_encode_icb_render_pass(queue: ?*anyopaque, pipeline: ?*anyopaque, icb: ?*anyopaque, target: ?*anyopaque, draw_count: u32) callconv(.c) ?*anyopaque;
 
@@ -155,7 +158,6 @@ pub const NativeMetalRuntime = struct {
     pub fn upload_bytes(self: *NativeMetalRuntime, bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
         _ = mode;
         if (bytes == 0) return error.InvalidArgument;
-        if (bytes > MAX_UPLOAD_BYTES) return error.UnsupportedFeature;
         const len: usize = @intCast(bytes);
 
         const src = metal_bridge_device_new_buffer_shared(self.device, len) orelse return error.InvalidState;
@@ -211,7 +213,7 @@ pub const NativeMetalRuntime = struct {
 
     pub fn prewarm_upload_path(self: *NativeMetalRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
         if (max_upload_bytes == 0) return;
-        try self.upload_bytes(@min(max_upload_bytes, MAX_UPLOAD_BYTES), mode);
+        try self.upload_bytes(max_upload_bytes, mode);
         _ = try self.flush_queue();
     }
 
@@ -244,33 +246,30 @@ pub const NativeMetalRuntime = struct {
         }
 
         const run_count: u32 = if (repeat == 0) 1 else repeat;
-        const total_count: u32 = warmup + run_count;
-        var encode_ns: u64 = 0;
-        var submit_wait_ns: u64 = 0;
+        const buf_ptr: ?[*]?*anyopaque = if (slot_count > 0) &buf_slots else null;
 
-        var i: u32 = 0;
-        while (i < total_count) : (i += 1) {
-            const is_warmup = i < warmup;
-
-            const t_enc_start = common_timing.now_ns();
-            const cmd_buf = metal_bridge_encode_compute_dispatch(
-                self.queue, pipeline,
-                if (slot_count > 0) &buf_slots else null,
-                slot_count, x, y, z,
+        // Warmup: batch all warmup dispatches into one command buffer.
+        if (warmup > 0) {
+            const wcb = metal_bridge_encode_compute_dispatch_batch(
+                self.queue, pipeline, buf_ptr, slot_count, x, y, z, warmup,
             ) orelse return error.InvalidState;
-            const enc_ns = common_timing.ns_delta(common_timing.now_ns(), t_enc_start);
-
-            metal_bridge_command_buffer_commit(cmd_buf);
-            const t_sub_start = common_timing.now_ns();
-            metal_bridge_command_buffer_wait_completed(cmd_buf);
-            const sub_ns = common_timing.ns_delta(common_timing.now_ns(), t_sub_start);
-            metal_bridge_release(cmd_buf);
-
-            if (!is_warmup) {
-                encode_ns +|= enc_ns;
-                submit_wait_ns +|= sub_ns;
-            }
+            metal_bridge_command_buffer_commit(wcb);
+            metal_bridge_command_buffer_wait_completed(wcb);
+            metal_bridge_release(wcb);
         }
+
+        // Timed run: batch all repeat dispatches into one command buffer.
+        const t_enc_start = common_timing.now_ns();
+        const cmd_buf = metal_bridge_encode_compute_dispatch_batch(
+            self.queue, pipeline, buf_ptr, slot_count, x, y, z, run_count,
+        ) orelse return error.InvalidState;
+        const encode_ns = common_timing.ns_delta(common_timing.now_ns(), t_enc_start);
+
+        metal_bridge_command_buffer_commit(cmd_buf);
+        const t_sub_start = common_timing.now_ns();
+        metal_bridge_command_buffer_wait_completed(cmd_buf);
+        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), t_sub_start);
+        metal_bridge_release(cmd_buf);
 
         return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
     }
@@ -467,7 +466,7 @@ pub const NativeMetalRuntime = struct {
         return buf;
     }
 
-    fn ensure_render_pipeline(self: *NativeMetalRuntime, fmt: u32) !void {
+    pub fn ensure_render_pipeline(self: *NativeMetalRuntime, fmt: u32) !void {
         if (self.render_pipeline != null and self.render_pipeline_format == fmt) return;
         if (self.render_pipeline) |p| metal_bridge_release(p);
         if (self.cached_icb) |icb| { metal_bridge_release(icb); self.cached_icb = null; }
@@ -499,7 +498,7 @@ pub const NativeMetalRuntime = struct {
         };
         if (self.cached_icb != null and std.meta.eql(self.cached_icb_key, key)) return self.cached_icb;
         if (self.cached_icb) |icb| metal_bridge_release(icb);
-        const icb = metal_bridge_device_new_icb(self.device, self.render_pipeline, draw_count) orelse return error.InvalidState;
+        const icb = metal_bridge_device_new_icb(self.device, self.render_pipeline, draw_count, redundant_pl) orelse return error.InvalidState;
         metal_bridge_icb_encode_draws(icb, self.render_pipeline, draw_count, vertex_count, instance_count, redundant_pl);
         self.cached_icb = icb;
         self.cached_icb_key = key;

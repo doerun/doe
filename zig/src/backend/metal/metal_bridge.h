@@ -141,7 +141,8 @@ MetalHandle metal_bridge_encode_render_pass(
 MetalHandle metal_bridge_device_new_icb(
     MetalHandle device,
     MetalHandle pipeline,
-    uint32_t    command_count);
+    uint32_t    command_count,
+    int         redundant_pipeline);
 
 // Encode draw commands into an existing ICB. redundant_pipeline: call
 // setRenderPipelineState per command (vs. inherit from encoder).

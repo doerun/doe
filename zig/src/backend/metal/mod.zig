@@ -216,6 +216,7 @@ fn native_capability_set() capabilities.CapabilitySet {
         .render_pass,
         .indirect_draw,
         .indexed_indirect_draw,
+        .async_diagnostics,
     });
     return set;
 }
@@ -441,6 +442,17 @@ fn execute_render_draw(self: *ZigMetalBackend, setup_ns: u64, cmd: model.RenderD
     return ok_result(setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.draw_count);
 }
 
+fn execute_async_diagnostics(self: *ZigMetalBackend, setup_ns: u64, cmd: model.AsyncDiagnosticsCommand) !webgpu.NativeExecutionResult {
+    // Measures native render pipeline creation/cache time for the given format.
+    // Equivalent to what Dawn's async pipeline creation diagnostic tests measure.
+    const rt = try ensure_runtime_bootstrapped(self);
+    const fmt = cmd.target_format;
+    const encode_start = common_timing.now_ns();
+    try rt.ensure_render_pipeline(fmt);
+    const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
+    return ok_result(setup_ns, encode_ns, 0, 1);
+}
+
 fn flush_pending_uploads_if_required(self: *ZigMetalBackend, command: model.Command) !u64 {
     switch (command) {
         .upload => return 0,
@@ -486,6 +498,7 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
         .draw_indirect => |cmd| try execute_render_draw(self, setup_ns, cmd),
         .draw_indexed_indirect => |cmd| try execute_render_draw(self, setup_ns, cmd),
         .render_pass => |cmd| try execute_render_draw(self, setup_ns, cmd),
+        .async_diagnostics => |cmd| try execute_async_diagnostics(self, setup_ns, cmd),
         else => return error.Unsupported,
     };
     result.submit_wait_ns +|= pending_submit_wait_ns;
