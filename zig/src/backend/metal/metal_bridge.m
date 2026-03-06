@@ -8,6 +8,26 @@
 // metal_bridge_release() must be called to balance.
 
 // ============================================================
+// Cached render pass descriptor (avoids alloc per render command)
+// ============================================================
+
+static MTLRenderPassDescriptor* _cachedRenderPassDesc = nil;
+static id<MTLTexture> _cachedRenderPassTarget = nil;
+
+static MTLRenderPassDescriptor* cachedRenderPassDescriptor(id<MTLTexture> target) {
+    if (_cachedRenderPassDesc == nil) {
+        _cachedRenderPassDesc = [MTLRenderPassDescriptor new];
+        _cachedRenderPassDesc.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
+        _cachedRenderPassDesc.colorAttachments[0].storeAction = MTLStoreActionDontCare;
+    }
+    if (_cachedRenderPassTarget != target) {
+        _cachedRenderPassDesc.colorAttachments[0].texture = target;
+        _cachedRenderPassTarget = target;
+    }
+    return _cachedRenderPassDesc;
+}
+
+// ============================================================
 // Pixel format translation
 // ============================================================
 
@@ -75,7 +95,7 @@ MetalHandle metal_bridge_encode_blit_copy(
     id<MTLBuffer>       src_buf = (__bridge id<MTLBuffer>)src_h;
     id<MTLBuffer>       dst_buf = (__bridge id<MTLBuffer>)dst_h;
 
-    id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
 
     id<MTLBlitCommandEncoder> encoder = [cmd_buf blitCommandEncoder];
@@ -169,7 +189,7 @@ MetalHandle metal_bridge_encode_compute_dispatch(
     id<MTLCommandQueue>          queue    = (__bridge id<MTLCommandQueue>)queue_h;
     id<MTLComputePipelineState>  pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
 
-    id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
 
     id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
@@ -205,7 +225,7 @@ MetalHandle metal_bridge_encode_compute_dispatch_batch(
     id<MTLCommandQueue>          queue    = (__bridge id<MTLCommandQueue>)queue_h;
     id<MTLComputePipelineState>  pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
 
-    id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
 
     MTLSize tg_size   = MTLSizeMake(pipeline.maxTotalThreadsPerThreadgroup > 0
@@ -417,13 +437,9 @@ MetalHandle metal_bridge_encode_render_pass(
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
     id<MTLTexture>              target   = (__bridge id<MTLTexture>)target_h;
 
-    // DontCare avoids clear and writeback bandwidth — matches Dawn noop benchmark behavior.
-    MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor new];
-    pass.colorAttachments[0].texture     = target;
-    pass.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
-    pass.colorAttachments[0].storeAction = MTLStoreActionDontCare;
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
 
-    id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
 
     id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
@@ -511,13 +527,9 @@ MetalHandle metal_bridge_encode_icb_render_pass(
     id<MTLIndirectCommandBuffer> icb      = (__bridge id<MTLIndirectCommandBuffer>)icb_h;
     id<MTLTexture>               target   = (__bridge id<MTLTexture>)target_h;
 
-    // DontCare avoids clear and writeback bandwidth — matches Dawn noop benchmark behavior.
-    MTLRenderPassDescriptor* pass = [MTLRenderPassDescriptor new];
-    pass.colorAttachments[0].texture     = target;
-    pass.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
-    pass.colorAttachments[0].storeAction = MTLStoreActionDontCare;
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
 
-    id<MTLCommandBuffer> cmd_buf = [queue commandBuffer];
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
 
     id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];

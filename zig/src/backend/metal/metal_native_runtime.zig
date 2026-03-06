@@ -74,7 +74,10 @@ const PendingUpload = struct {
     src_buffer: ?*anyopaque,
     dst_buffer: ?*anyopaque,
     command_buffer: ?*anyopaque,
+    buffer_size: usize,
 };
+
+const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
 
 const KernelPipeline = struct {
     library: ?*anyopaque,
@@ -103,6 +106,10 @@ pub const NativeMetalRuntime = struct {
 
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
     has_deferred_submissions: bool = false,
+
+    // Buffer pool: reuse Metal buffers by size to avoid repeated allocations.
+    shared_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
+    private_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
 
     // kernel base-name (owned) → KernelPipeline
     kernel_pipelines: std.StringHashMapUnmanaged(KernelPipeline) = .{},
@@ -141,6 +148,8 @@ pub const NativeMetalRuntime = struct {
         _ = self.flush_queue() catch {};
         self.release_pending_uploads();
         self.pending_uploads.deinit(self.allocator);
+        self.release_buffer_pool(&self.shared_pool);
+        self.release_buffer_pool(&self.private_pool);
         self.release_kernel_pipelines();
         self.release_compute_buffers();
         self.release_textures();
@@ -160,16 +169,18 @@ pub const NativeMetalRuntime = struct {
         if (bytes == 0) return error.InvalidArgument;
         const len: usize = @intCast(bytes);
 
-        const src = metal_bridge_device_new_buffer_shared(self.device, len) orelse return error.InvalidState;
-        errdefer metal_bridge_release(src);
+        const src = pool_pop(&self.shared_pool, len) orelse
+            (metal_bridge_device_new_buffer_shared(self.device, len) orelse return error.InvalidState);
+        errdefer pool_push_or_release(&self.shared_pool, self.allocator, len, src);
 
         if (metal_bridge_buffer_contents(src)) |raw| {
             const fill_len = @min(len, MAX_UPLOAD_ZERO_FILL_BYTES);
             @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
         }
 
-        const dst = metal_bridge_device_new_buffer_private(self.device, len) orelse return error.InvalidState;
-        errdefer metal_bridge_release(dst);
+        const dst = pool_pop(&self.private_pool, len) orelse
+            (metal_bridge_device_new_buffer_private(self.device, len) orelse return error.InvalidState);
+        errdefer pool_push_or_release(&self.private_pool, self.allocator, len, dst);
 
         const cmd_buf = metal_bridge_encode_blit_copy(self.queue, src, dst, len) orelse return error.InvalidState;
         errdefer metal_bridge_release(cmd_buf);
@@ -178,6 +189,7 @@ pub const NativeMetalRuntime = struct {
             .src_buffer = src,
             .dst_buffer = dst,
             .command_buffer = cmd_buf,
+            .buffer_size = len,
         });
         self.has_deferred_submissions = true;
     }
@@ -196,7 +208,7 @@ pub const NativeMetalRuntime = struct {
             self.has_deferred_submissions = false;
         }
 
-        self.release_pending_uploads();
+        self.recycle_pending_uploads();
         const end_ns = common_timing.now_ns();
         return common_timing.ns_delta(end_ns, start_ns);
     }
@@ -394,6 +406,25 @@ pub const NativeMetalRuntime = struct {
         self.pending_uploads.clearRetainingCapacity();
     }
 
+    fn recycle_pending_uploads(self: *NativeMetalRuntime) void {
+        for (self.pending_uploads.items) |item| {
+            metal_bridge_release(item.command_buffer);
+            pool_push_or_release(&self.shared_pool, self.allocator, item.buffer_size, item.src_buffer);
+            pool_push_or_release(&self.private_pool, self.allocator, item.buffer_size, item.dst_buffer);
+        }
+        self.pending_uploads.clearRetainingCapacity();
+    }
+
+    fn release_buffer_pool(self: *NativeMetalRuntime, pool: *std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque))) void {
+        var it = pool.valueIterator();
+        while (it.next()) |list| {
+            for (list.items) |buf| metal_bridge_release(buf);
+            var m = list.*;
+            m.deinit(self.allocator);
+        }
+        pool.deinit(self.allocator);
+    }
+
     fn release_kernel_pipelines(self: *NativeMetalRuntime) void {
         var it = self.kernel_pipelines.iterator();
         while (it.next()) |e| {
@@ -515,4 +546,30 @@ fn strip_extension(name: []const u8) []const u8 {
         if (std.mem.endsWith(u8, name, sfx)) return name[0 .. name.len - sfx.len];
     }
     return name;
+}
+
+const BufferPool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));
+
+fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
+    if (pool.getPtr(size)) |list| {
+        if (list.items.len > 0) return list.pop() orelse null;
+    }
+    return null;
+}
+
+fn pool_push_or_release(pool: *BufferPool, allocator: std.mem.Allocator, size: usize, buf: ?*anyopaque) void {
+    const entry = pool.getOrPut(allocator, size) catch {
+        metal_bridge_release(buf);
+        return;
+    };
+    if (!entry.found_existing) {
+        entry.value_ptr.* = .{};
+    }
+    if (entry.value_ptr.items.len >= MAX_POOL_ENTRIES_PER_SIZE) {
+        metal_bridge_release(buf);
+        return;
+    }
+    entry.value_ptr.append(allocator, buf) catch {
+        metal_bridge_release(buf);
+    };
 }

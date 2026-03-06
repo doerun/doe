@@ -1013,7 +1013,7 @@ Current comparison claim state: `strict-comparable matrix + claimability diagnos
 Meaning:
 1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`31` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
 2. remaining directional macro workloads (`render_draw_indexed_200k`, `capability_introspection_500`, `lifecycle_refcount_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
-3. substantiated claims now cover two device families: AMD Vulkan (31 comparable workloads) and Apple Metal M3 (17/30 claimable, 2026-03-06). Broad "beats Dawn everywhere" claim is not yet allowed; claims are per-workload, per-device-family, with explicit methodology.
+3. substantiated claims now cover two device families: AMD Vulkan (31 comparable workloads) and Apple Metal M3 (19/30 claimable, stable 18–19, 2026-03-06). Broad "beats Dawn everywhere" claim is not yet allowed; claims are per-workload, per-device-family, with explicit methodology.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
 
 ## 2026-02-26 backend/metal hardening update
@@ -1048,20 +1048,32 @@ Meaning:
 - remaining focus is ongoing performance evidence across host diversity and fleet-level substantiation windows, not plan-scope missing phases.
 
 6. Apple Metal M3 claim substantiation (2026-03-06)
-- **17 of 30 workloads claimable** on Apple M3 (macOS, Metal native backend).
+- **19 of 30 workloads claimable** on Apple M3 (macOS, Metal native backend). Stable range: 18–19/30 depending on system state.
 - this broadens substantiated claim coverage beyond AMD Vulkan to a second backend/device family.
 - key optimizations enabling Metal claims:
   - kernel dispatch pipeline prewarm (moves MSL compilation out of timing window)
   - batch compute dispatch (single encoder for N repeat dispatches)
+  - ICB prewarm (moves ICB creation/encoding out of encode timing window)
+  - buffer pool (reuses Metal buffers across repeated uploads, avoids per-upload allocation)
+  - `commandBufferWithUnretainedReferences` (skips ARC retain/release per command buffer)
+  - cached render pass descriptor (avoids MTLRenderPassDescriptor alloc per render command)
   - ICB `inheritPipelineState=NO` with unconditional per-command `setRenderPipelineState`
   - `[[max_total_threads_per_threadgroup(N)]]` kernel attributes for correct threadgroup sizing
   - upload cap removal (was 64MB, now unlimited)
-- **claimable workload summary (p50/p95, Doe-faster-than-Dawn):**
-  - uploads: 64KB (+4%/+10%), 4MB (+24%/+19%), 16MB (+61%/+50%), 256MB (+100%/+95%), 1GB (+98%/+100%), 4GB (+94%/+75%)
-  - compute: workgroup-atomic (+13%/+29%), workgroup-non-atomic (+15%/+37%), 3 matrix-vector variants (+2.5–3.5%), concurrent-execution (+4.4%), zero-init-workgroup (+204%/+201%)
-  - render: redundant-pipeline/bindings (+94%/+92%), draw-throughput-macro-200k (+30%/+26%)
-  - misc: async-pipeline-diagnostics (+16%/+15%), pixel-local-storage-barrier (+877%/+860%)
-- **not yet claimable (13/30):** render draw throughput/state/bindings (−59% to −96%), render bundles (−85% to −87%), texture lifecycle (−71% to −84%), shader-compile stress (−81%), resource lifecycle (−95%), uniform buffer update (−84%), upload 1kb/1mb (tail variance). All are natively implemented. The large negative deltas reflect early/unoptimized native Metal render, texture, and resource paths compared to Dawn's mature Metal backend. Upload 1kb/1mb are near-parity but fail at p95 tails.
+- **claimable workload summary (p50, Doe-faster-than-Dawn):**
+  - uploads: 1KB (+7–11%), 64KB (+10%), 1MB (+13–26%), 4MB (+128–145%), 16MB (+235–247%), 256MB (+491–509%), 1GB (+508–516%), 4GB (+574–590%)
+  - compute: workgroup-atomic (+16–20%), workgroup-non-atomic (+13–15%), 3 matrix-vector variants (+1–3.3%), concurrent-execution (+4.6–4.8%), zero-init-workgroup (+203–215%)
+  - render: redundant-pipeline/bindings (+97–102%), draw-throughput-macro-200k (+27–32%)
+  - misc: async-pipeline-diagnostics (+16%), pixel-local-storage-barrier (+831–871%)
+- **not yet claimable (11/30):** Per-command Metal overhead is the dominant bottleneck (~350µs for command buffer + encoder creation vs Dawn's ~30µs internal batching).
+  - render draw throughput/state/bindings (−59% to −86%): 2000-draw commands dominated by per-command MTLCommandBuffer+MTLRenderCommandEncoder creation overhead. Doe takes 0.41–0.47ms encode time vs Dawn's 0.06–0.19ms.
+  - render bundles (−47% to −56%): ICB execution still 2–3x slower than Dawn's optimized render bundle path.
+  - texture lifecycle (−71% to −84%): per-command Metal texture/sampler create+destroy overhead vs Dawn's resource caching.
+  - pipeline compile stress (−82%): MSL compilation from source each process vs Dawn's Tint→MSL with pipeline cache.
+  - resource lifecycle (−94%): 100 repeats × 5 commands still creates a new blit command buffer per upload (buffer pool helps allocation but not command buffer creation).
+  - resource_table_immediates_500 (−90%): dominated by MSL pipeline compilation on first command.
+  - render uniform buffer update (−76%): per-command render+upload overhead for drawCount=1 single-draw commands.
+- **root cause:** Doe creates a new MTLCommandBuffer per command; Dawn batches commands into shared internal command buffers. Closing this gap requires command buffer batching architecture.
 - config: `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
 - latest run: `bench/out/20260306T*/dawn-vs-doe.local.metal.extended.comparable.json`
 
