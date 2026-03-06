@@ -56,11 +56,21 @@ Full comparison reports, trace artifacts, and visualization tooling are in `benc
 
 ### Node package comparison (`@simulatte/webgpu` vs npm `webgpu`)
 
-The Node provider source now lives under `nursery/webgpu/` and is wrapped by
-the published `@simulatte/webgpu` package surface.
-Historical Node comparison artifacts from the temporary wrapper-only state
-should not be cited; rerun the Node lane from the current tree before using it
-as evidence.
+Latest local Node provider report:
+`bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T204920113Z.json`
+
+- scope: Node.js provider-surface comparison, not strict backend claim substantiation
+- host: `darwin arm64`, Node `v22.20.0`
+- comparable workloads: `8`
+- claimable wins for `@simulatte/webgpu`: `5 / 8`
+- strongest local wins in this lane are upload-heavy workloads:
+  - `buffer_upload_1kb`: `+78.8%` (4.71x)
+  - `buffer_upload_16mb`: `+78.7%` (4.69x)
+  - `buffer_upload_64kb`: `+55.6%` (2.25x)
+  - `buffer_map_write_unmap`: `+43.9%` (1.78x)
+  - `buffer_upload_1mb`: `+9.5%` (1.10x)
+- compute end-to-end workloads in this Node lane are still slower than npm `webgpu`
+  (Doe synchronous `waitUntilCompleted` adds ~100us per command buffer)
 
 This Node comparison uses package-level workload timing (`performance.now()`) and
 should be read as package/runtime positioning evidence, not as a replacement for
@@ -129,10 +139,11 @@ Build without the flag produces identical code to before.
 
 ## Current status
 
-Working, with claimable benchmark evidence on two device families:
+Working, with claimable benchmark evidence on two device families and one
+separate Node package-comparison lane:
 - AMD Vulkan: latest local strict comparable matrix is `comparable` with `12 / 14` workloads claimable; focused reruns also show claimable `1 KB` and `64 KB` upload slices.
 - Apple Metal M3: `30 / 30` workloads claimable. Doe faster than Dawn on every workload.
-- Node package surface: source is restored in-tree under `nursery/webgpu/`, but Linux in-process Doe Node remains unfinished and currently fails fast rather than hanging.
+- Node package surface: `5 / 8` claimable comparable wins, concentrated in upload-heavy workloads.
 
 Still in progress:
 - render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; remaining work is about broader coverage and stronger margins outside the current local strict comparable claim snapshot

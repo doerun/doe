@@ -120,7 +120,7 @@ class DoeGPUBuffer {
   }
 
   async mapAsync(mode, offset = 0, size = this.size) {
-    if (this._queue) addon.queueFlush(this._instance, this._queue);
+    if (this._queue) addon.queueFlush(this._queue);
     addon.bufferMapSync(this._instance, this._native, mode, offset, size);
   }
 
@@ -214,7 +214,8 @@ class DoeGPUQueue {
   }
 
   async onSubmittedWorkDone() {
-    addon.queueFlush(this._instance, this._native);
+    // No-op: Doe submit commits synchronously. GPU completion is ensured
+    // by mapAsync when data is actually needed.
   }
 }
 
