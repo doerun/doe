@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Benchmark Cube Summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "policy",
+    "artifacts",
+    "sourceCounts",
+    "rowCount",
+    "cells",
+    "statusCounts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rowsPath",
+        "matrixMarkdownPath"
+      ],
+      "properties": {
+        "rowsPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "matrixMarkdownPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sourceCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backendReports",
+        "nodeReports",
+        "bunReports"
+      ],
+      "properties": {
+        "backendReports": {
+          "$ref": "#/$defs/sourceCount"
+        },
+        "nodeReports": {
+          "$ref": "#/$defs/sourceCount"
+        },
+        "bunReports": {
+          "$ref": "#/$defs/sourceCount"
+        }
+      }
+    },
+    "rowCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cells": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/cell"
+      }
+    },
+    "statusCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unsupported",
+        "unimplemented",
+        "diagnostic",
+        "comparable",
+        "claimable"
+      ],
+      "properties": {
+        "unsupported": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unimplemented": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "diagnostic": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "comparable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "claimable": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sourceCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "discovered",
+        "included",
+        "skipped"
+        ,
+        "canonicalIncluded",
+        "legacyIncluded"
+      ],
+      "properties": {
+        "discovered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "included": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canonicalIncluded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "legacyIncluded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface",
+        "providerPair",
+        "hostProfile",
+        "workloadSet",
+        "scopeType",
+        "maturity",
+        "primarySupport",
+        "status",
+        "reportCount",
+        "rowCount",
+        "notes"
+      ],
+      "properties": {
+        "surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerPair": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hostProfile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workloadSet": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scopeType": {
+          "type": "string",
+          "enum": [
+            "full_matrix",
+            "workload_set"
+          ]
+        },
+        "maturity": {
+          "type": "string",
+          "enum": [
+            "primary",
+            "secondary",
+            "prototype"
+          ]
+        },
+        "primarySupport": {
+          "type": "string",
+          "enum": [
+            "backend",
+            "node",
+            "bun"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "unsupported",
+            "unimplemented",
+            "diagnostic",
+            "comparable",
+            "claimable"
+          ]
+        },
+        "reportCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rowCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "latestRunId": {
+          "type": "string"
+        },
+        "latestGeneratedAt": {
+          "type": "string"
+        },
+        "latestReportPath": {
+          "type": "string"
+        },
+        "sourceConformance": {
+          "type": "string",
+          "enum": [
+            "canonical",
+            "legacy_nonconformant"
+          ]
+        },
+        "sourceConformanceReason": {
+          "type": "string"
+        },
+        "comparisonStatus": {
+          "type": "string"
+        },
+        "claimStatus": {
+          "type": "string"
+        },
+        "deltaP50MedianPercent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

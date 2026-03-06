@@ -6,6 +6,10 @@
       "data": "config/schema-targets.json"
     },
     {
+      "schema": "config/benchmark-cube-policy.schema.json",
+      "data": "config/benchmark-cube-policy.json"
+    },
+    {
       "schema": "config/claim-cycle.schema.json",
       "data": "config/claim-cycle.active.json"
     },

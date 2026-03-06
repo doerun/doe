@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Benchmark Cube Row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "generatedAt",
+    "sourceReportType",
+    "sourceReportPath",
+    "sourceConformance",
+    "host",
+    "surface",
+    "providerPair",
+    "workloadSet",
+    "workloadId",
+    "workloadDomain",
+    "comparisonStatus",
+    "claimStatus",
+    "maturity",
+    "metrics"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sourceReportType": {
+      "type": "string",
+      "enum": [
+        "backend_compare_report",
+        "node_package_compare_report",
+        "bun_package_compare_report"
+      ]
+    },
+    "sourceReportPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceConformance": {
+      "type": "string",
+      "enum": [
+        "canonical",
+        "legacy_nonconformant"
+      ]
+    },
+    "sourceConformanceReason": {
+      "type": "string"
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profileId",
+        "os",
+        "arch"
+      ],
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "os": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "backend": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gpuVendor": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "backend_native",
+        "node_package",
+        "bun_package"
+      ]
+    },
+    "providerPair": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workloadSet": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workloadId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workloadDomain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "comparisonStatus": {
+      "type": "string",
+      "enum": [
+        "unsupported",
+        "unimplemented",
+        "diagnostic",
+        "comparable",
+        "claimable"
+      ]
+    },
+    "claimStatus": {
+      "type": "string",
+      "enum": [
+        "unsupported",
+        "unimplemented",
+        "diagnostic",
+        "comparable",
+        "claimable"
+      ]
+    },
+    "maturity": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "secondary",
+        "prototype"
+      ]
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "leftP50Ms",
+        "rightP50Ms",
+        "deltaP50Percent",
+        "leftP95Ms",
+        "rightP95Ms",
+        "leftP99Ms",
+        "rightP99Ms",
+        "leftSampleCount",
+        "rightSampleCount"
+      ],
+      "properties": {
+        "leftP50Ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rightP50Ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "deltaP50Percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "leftP95Ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rightP95Ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "leftP99Ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rightP99Ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "leftSampleCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "rightSampleCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

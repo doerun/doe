@@ -11,6 +11,12 @@ Doe (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It re
 Current benchmark evidence is split across strict backend claim lanes and a
 separate package-surface comparison lane.
 
+The canonical aggregation layer for those surfaces now lives in the benchmark
+cube artifacts:
+- timestamped runs under `bench/out/cube/<timestamp>/`
+- stable latest outputs under `bench/out/cube/latest/`
+- builder: `python3 bench/build_benchmark_cube.py`
+
 ### AMD Vulkan (RADV, GFX11)
 
 Latest local strict comparable matrix artifact:
@@ -67,6 +73,9 @@ Current caveat:
 - Explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` remains available only for
   non-claimable delegate diagnostics and should not be cited as Doe-vs-Dawn
   evidence.
+
+Bun remains a prototype FFI surface. It is exported from the package, but it is
+not yet represented by a real compare lane with parity-grade benchmark artifacts.
 
 ## How it works
 
@@ -156,6 +165,9 @@ fawn/
 The canonical npm package is `@simulatte/webgpu`, rooted in `nursery/webgpu/`.
 It contains the Doe-native Node provider, addon build contract, Bun FFI path,
 and CLI tools for benchmarking and CI workflows.
+
+Node is the primary supported package surface today. Bun remains prototype until
+the package compare lane and artifact coverage catch up.
 
 ```bash
 # install from npm

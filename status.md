@@ -105,6 +105,11 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`), while Linux Doe-native in-process support remains unfinished and Bun direct-FFI remains a prototype path.
+  - benchmark cube contracts now exist for cross-surface reporting:
+    - policy: `config/benchmark-cube-policy.json`
+    - schemas: `config/benchmark-cube.schema.json`, `config/benchmark-cube-row.schema.json`
+    - builder: `bench/build_benchmark_cube.py`
+    - outputs: `bench/out/cube/<timestamp>/cube.{rows,summary}.json` plus `cube.matrix.md` and stable latest mirrors in `bench/out/cube/latest/`
   - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu/COMPAT_SCOPE.md`.
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
   - current Node comparison claims were withdrawn pending a real Doe-native in-process path; explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` diagnostics are non-claimable delegate runs only.
@@ -1068,6 +1073,13 @@ Execution gap list:
 - 2026-03-06 runtime follow-up: Vulkan native upload path no longer enforces the
   stale `64MB` artificial cap, so promoted comparable large-upload workloads
   (`256MB`, `1GB`, `4GB`) now fail only on real allocation/runtime limits.
+- 2026-03-06 native-subset contract follow-up: the AMD Vulkan
+  `bench/workloads.amd.vulkan.extended.native-supported.json` subset no longer
+  marks `resource_table_immediates_500` or `surface_presentation` as
+  `comparable=true`.
+  The current native Vulkan backend reports `async_diagnostics` and
+  `surface_lifecycle` unsupported, so those workloads are directional-only
+  until the native backend implements those command classes.
 
 8. Local Metal comparability hotfix (2026-02-26):
 - introduced Metal-only workload contract file: `bench/workloads.local.metal.extended.json`.

@@ -7,14 +7,12 @@ import { createDoeRuntime, runDawnVsDoeCompare } from "./runtime_cli.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, "..");
 
-const CALLBACK_MODE_WAIT_ANY_ONLY = 1;
-const WAIT_STATUS_SUCCESS = 1;
+const CALLBACK_MODE_ALLOW_PROCESS_EVENTS = 2;
 const REQUEST_ADAPTER_STATUS_SUCCESS = 1;
 const REQUEST_DEVICE_STATUS_SUCCESS = 1;
 const MAP_ASYNC_STATUS_SUCCESS = 1;
-const QUEUE_WORK_DONE_STATUS_SUCCESS = 1;
-const WAIT_TIMEOUT_NS = BigInt(5_000_000_000);
 const STYPE_SHADER_SOURCE_WGSL = 0x00000002;
+const PROCESS_EVENTS_TIMEOUT_NS = 5_000_000_000;
 
 // Struct layout constants for 64-bit platforms (LP64 / LLP64).
 const PTR_SIZE = 8;
@@ -299,7 +297,7 @@ function buildComputePipelineDescriptor(shaderModulePtr, entryPoint, layoutPtr) 
 //
 // NOTE: The exact layout is ABI-dependent. We use the wgpu.h canonical layout.
 // BindGroupLayoutEntry total = 136 bytes on 64-bit.
-const BIND_GROUP_LAYOUT_ENTRY_SIZE = 136;
+const BIND_GROUP_LAYOUT_ENTRY_SIZE = 120;
 
 function buildBindGroupLayoutDescriptor(entries) {
     const entryBufs = new Uint8Array(entries.length * BIND_GROUP_LAYOUT_ENTRY_SIZE);
@@ -308,20 +306,28 @@ function buildBindGroupLayoutDescriptor(entries) {
     for (let i = 0; i < entries.length; i++) {
         const e = entries[i];
         const off = i * BIND_GROUP_LAYOUT_ENTRY_SIZE;
-        // nextInChain
+        // nextInChain: ptr@0
         writePtr(entryView, off + 0, null);
-        // binding
+        // binding: u32@8
         entryView.setUint32(off + 8, e.binding, true);
-        // visibility (WGPUShaderStageFlags = u64)
+        // visibility: u64@16 (WGPUShaderStageFlags, after 4-byte pad at @12)
         entryView.setBigUint64(off + 16, BigInt(e.visibility || 0), true);
-        // buffer.nextInChain
-        writePtr(entryView, off + 24, null);
+        // bindingArraySize: u32@24
+        entryView.setUint32(off + 24, 0, true);
+        // buffer sub-struct starts at @32:
+        //   buffer.nextInChain: ptr@32
+        writePtr(entryView, off + 32, null);
         if (e.buffer) {
-            const typeMap = { uniform: 1, storage: 2, "read-only-storage": 3 };
-            entryView.setUint32(off + 32, typeMap[e.buffer.type || "uniform"] || 1, true);
-            entryView.setUint32(off + 40, e.buffer.hasDynamicOffset ? 1 : 0, true);
+            // WGPUBufferBindingType: Undefined=1, Uniform=2, Storage=3, ReadOnlyStorage=4
+            const typeMap = { uniform: 2, storage: 3, "read-only-storage": 4 };
+            //   buffer.type: u32@40
+            entryView.setUint32(off + 40, typeMap[e.buffer.type || "uniform"] || 2, true);
+            //   buffer.hasDynamicOffset: u32@44
+            entryView.setUint32(off + 44, e.buffer.hasDynamicOffset ? 1 : 0, true);
+            //   buffer.minBindingSize: u64@48
             entryView.setBigUint64(off + 48, BigInt(e.buffer.minBindingSize || 0), true);
         }
+        // sampler/texture/storageTexture sub-structs (@56..120) remain zeroed
     }
 
     // WGPUBindGroupLayoutDescriptor: { nextInChain:ptr@0, label:sv@8, entryCount:size_t@24, entries:ptr@32 } = 40
@@ -369,19 +375,21 @@ function buildBindGroupDescriptor(layoutPtr, entries) {
     return { desc: new Uint8Array(descBuf), _refs: [entryBufs] };
 }
 
-// WGPUPipelineLayoutDescriptor: { nextInChain:ptr@0, label:sv@8, bindGroupLayoutCount:size_t@24, bindGroupLayouts:ptr@32 } = 40
+// WGPUPipelineLayoutDescriptor: { nextInChain:ptr@0, label:sv@8, bindGroupLayoutCount:size_t@24,
+//   bindGroupLayouts:ptr@32, immediateSize:u32@40, pad@44 } = 48
 function buildPipelineLayoutDescriptor(layouts) {
     const ptrs = new BigUint64Array(layouts.length);
     for (let i = 0; i < layouts.length; i++) {
         ptrs[i] = BigInt(layouts[i]);
     }
 
-    const descBuf = new ArrayBuffer(40);
+    const descBuf = new ArrayBuffer(48);
     const descView = new DataView(descBuf);
     writePtr(descView, 0, null);
     writeStringView(descView, 8, null);
     descView.setBigUint64(24, BigInt(layouts.length), true);
     writePtr(descView, 32, layouts.length > 0 ? bunPtr(ptrs) : null);
+    descView.setUint32(40, 0, true); // immediateSize
 
     return { desc: new Uint8Array(descBuf), _refs: [ptrs] };
 }
@@ -513,33 +521,39 @@ function buildRenderPassDescriptor(descriptor) {
 
 // ---------------------------------------------------------------------------
 // Callback trampolines for async-to-sync bridging
+//
+// Uses CALLBACK_MODE_ALLOW_PROCESS_EVENTS + wgpuInstanceProcessEvents polling,
+// matching the N-API addon strategy. wgpuInstanceWaitAny with timed waits is
+// not supported on all backends (e.g. Vulkan/Dawn).
 // ---------------------------------------------------------------------------
 
-function waitForFuture(instancePtr, futureId) {
-    const waitInfo = new ArrayBuffer(16);
-    const waitView = new DataView(waitInfo);
-    waitView.setBigUint64(0, BigInt(futureId), true);
-    waitView.setUint32(8, 0, true);
-    const status = wgpu.symbols.wgpuInstanceWaitAny(instancePtr, BigInt(1), waitInfo, WAIT_TIMEOUT_NS);
-    if (status !== WAIT_STATUS_SUCCESS) {
-        throw new Error(`[fawn-webgpu] wgpuInstanceWaitAny failed with status ${status}`);
+function processEventsUntilDone(instancePtr, isDone, timeoutNs = PROCESS_EVENTS_TIMEOUT_NS) {
+    const start = Number(process.hrtime.bigint());
+    while (!isDone()) {
+        wgpu.symbols.wgpuInstanceProcessEvents(instancePtr);
+        if (Number(process.hrtime.bigint()) - start >= timeoutNs) {
+            throw new Error("[fawn-webgpu] processEvents timeout");
+        }
     }
 }
 
 function requestAdapterSync(instancePtr) {
     let resolvedAdapter = null;
     let resolvedStatus = null;
+    let done = false;
     const cb = new JSCallback(
         (status, adapter, _msgData, _msgLen, _ud1, _ud2) => {
             resolvedStatus = status;
             resolvedAdapter = adapter;
+            done = true;
         },
         { args: [FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     );
     try {
         const futureId = wgpu.symbols.doeRequestAdapterFlat(
-            instancePtr, null, CALLBACK_MODE_WAIT_ANY_ONLY, cb.ptr, null, null);
-        waitForFuture(instancePtr, futureId);
+            instancePtr, null, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
+        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] requestAdapter future unavailable");
+        processEventsUntilDone(instancePtr, () => done);
         if (resolvedStatus !== REQUEST_ADAPTER_STATUS_SUCCESS || !resolvedAdapter) {
             throw new Error(`[fawn-webgpu] requestAdapter failed (status=${resolvedStatus})`);
         }
@@ -552,17 +566,20 @@ function requestAdapterSync(instancePtr) {
 function requestDeviceSync(instancePtr, adapterPtr) {
     let resolvedDevice = null;
     let resolvedStatus = null;
+    let done = false;
     const cb = new JSCallback(
         (status, device, _msgData, _msgLen, _ud1, _ud2) => {
             resolvedStatus = status;
             resolvedDevice = device;
+            done = true;
         },
         { args: [FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     );
     try {
         const futureId = wgpu.symbols.doeRequestDeviceFlat(
-            adapterPtr, null, CALLBACK_MODE_WAIT_ANY_ONLY, cb.ptr, null, null);
-        waitForFuture(instancePtr, futureId);
+            adapterPtr, null, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
+        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] requestDevice future unavailable");
+        processEventsUntilDone(instancePtr, () => done);
         if (resolvedStatus !== REQUEST_DEVICE_STATUS_SUCCESS || !resolvedDevice) {
             throw new Error(`[fawn-webgpu] requestDevice failed (status=${resolvedStatus})`);
         }
@@ -574,15 +591,17 @@ function requestDeviceSync(instancePtr, adapterPtr) {
 
 function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
     let mapStatus = null;
+    let done = false;
     const cb = new JSCallback(
-        (status, _msgData, _msgLen, _ud1, _ud2) => { mapStatus = status; },
+        (status, _msgData, _msgLen, _ud1, _ud2) => { mapStatus = status; done = true; },
         { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     );
     try {
         const futureId = wgpu.symbols.doeBufferMapAsyncFlat(
             bufferPtr, BigInt(mode), BigInt(offset), BigInt(size),
-            CALLBACK_MODE_WAIT_ANY_ONLY, cb.ptr, null, null);
-        waitForFuture(instancePtr, futureId);
+            CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
+        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] bufferMapAsync future unavailable");
+        processEventsUntilDone(instancePtr, () => done);
         if (mapStatus !== MAP_ASYNC_STATUS_SUCCESS) {
             throw new Error(`[fawn-webgpu] bufferMapAsync failed (status=${mapStatus})`);
         }
@@ -591,16 +610,23 @@ function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
     }
 }
 
+const QUEUE_WORK_DONE_STATUS_SUCCESS = 1;
+
 function queueFlush(instancePtr, queuePtr) {
+    let cbStatus = null;
     let done = false;
     const cb = new JSCallback(
-        (_status, _msgData, _msgLen, _ud1, _ud2) => { done = true; },
+        (status, _msgData, _msgLen, _ud1, _ud2) => { cbStatus = status; done = true; },
         { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     );
     try {
         const futureId = wgpu.symbols.doeQueueOnSubmittedWorkDoneFlat(
-            queuePtr, CALLBACK_MODE_WAIT_ANY_ONLY, cb.ptr, null, null);
-        waitForFuture(instancePtr, futureId);
+            queuePtr, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
+        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] queueFlush future unavailable");
+        processEventsUntilDone(instancePtr, () => done);
+        if (cbStatus !== QUEUE_WORK_DONE_STATUS_SUCCESS) {
+            throw new Error(`[fawn-webgpu] queueFlush failed (status=${cbStatus})`);
+        }
     } finally {
         cb.close();
     }
@@ -875,6 +901,7 @@ class DoeGPUDevice {
     }
 
     createRenderPipeline(_descriptor) {
+        // Stub: descriptor is not marshaled yet (matches Node N-API stub).
         const native = wgpu.symbols.wgpuDeviceCreateRenderPipeline(this._native, null);
         return new DoeGPURenderPipeline(native);
     }
@@ -988,13 +1015,22 @@ export async function requestDevice(options = {}) {
     return adapter.requestDevice(options?.deviceDescriptor);
 }
 
+function libraryFlavor(libraryPath) {
+    if (!libraryPath) return "missing";
+    if (/libdoe_webgpu\.(so|dylib|dll)$/.test(libraryPath)) return "doe-dropin";
+    if (/lib(webgpu|webgpu_dawn|wgpu_native)\.(so|dylib|dll)/.test(libraryPath)) return "delegate";
+    return "unknown";
+}
+
 export function providerInfo() {
+    const flavor = libraryFlavor(DOE_LIB_PATH);
     return {
         module: "@simulatte/webgpu",
         loaded: !!DOE_LIB_PATH,
         loadError: !DOE_LIB_PATH ? "libdoe_webgpu not found" : "",
         defaultCreateArgs: [],
-        doeNative: true,
+        doeNative: flavor === "doe-dropin" && process.platform !== "linux",
+        libraryFlavor: flavor,
         doeLibraryPath: DOE_LIB_PATH ?? "",
     };
 }

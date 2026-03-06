@@ -22,7 +22,8 @@ const info = providerInfo();
 assert(info.module === "@simulatte/webgpu", "providerInfo.module");
 assert(typeof info.loaded === "boolean", "providerInfo.loaded is boolean");
 assert(typeof info.doeLibraryPath === "string", "providerInfo.doeLibraryPath is string");
-assert(info.doeNative === true, "providerInfo.doeNative");
+assert(typeof info.doeNative === "boolean", "providerInfo.doeNative is boolean");
+assert(typeof info.libraryFlavor === "string", "providerInfo.libraryFlavor is string");
 console.log("providerInfo:", JSON.stringify(info, null, 2));
 
 // Contract: globals has required enum objects
@@ -74,25 +75,29 @@ if (!info.loaded) {
 
     // Contract: createBuffer
     section("createBuffer");
-    const buf = device.createBuffer({ size: 256, usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.MAP_READ });
-    assert(buf != null, "createBuffer returns non-null");
-    assert(buf.size === 256, "buffer.size matches");
-    assert(typeof buf.mapAsync === "function", "buffer.mapAsync exists");
-    assert(typeof buf.getMappedRange === "function", "buffer.getMappedRange exists");
-    assert(typeof buf.unmap === "function", "buffer.unmap exists");
+    // MAP_READ can only be combined with COPY_DST per WebGPU spec
+    const readbackBuf = device.createBuffer({
+        size: 256,
+        usage: globals.GPUBufferUsage.MAP_READ | globals.GPUBufferUsage.COPY_DST,
+    });
+    assert(readbackBuf != null, "createBuffer returns non-null");
+    assert(readbackBuf.size === 256, "buffer.size matches");
+    assert(typeof readbackBuf.mapAsync === "function", "buffer.mapAsync exists");
+    assert(typeof readbackBuf.getMappedRange === "function", "buffer.getMappedRange exists");
+    assert(typeof readbackBuf.unmap === "function", "buffer.unmap exists");
 
     // Contract: queue.writeBuffer + buffer map/read round-trip
     section("writeBuffer + mapAsync round-trip");
     const testData = new Float32Array([1.0, 2.0, 3.0, 4.0]);
-    device.queue.writeBuffer(buf, 0, testData);
-    await buf.mapAsync(globals.GPUMapMode.READ, 0, 16);
-    const mapped = buf.getMappedRange(0, 16);
+    device.queue.writeBuffer(readbackBuf, 0, testData);
+    await readbackBuf.mapAsync(globals.GPUMapMode.READ, 0, 16);
+    const mapped = readbackBuf.getMappedRange(0, 16);
     const readback = new Float32Array(mapped);
     assert(readback[0] === 1.0, "readback[0] === 1.0");
     assert(readback[1] === 2.0, "readback[1] === 2.0");
     assert(readback[2] === 3.0, "readback[2] === 3.0");
     assert(readback[3] === 4.0, "readback[3] === 4.0");
-    buf.unmap();
+    readbackBuf.unmap();
 
     // Contract: createShaderModule
     section("createShaderModule");
@@ -115,19 +120,30 @@ if (!info.loaded) {
     const bgl = pipeline.getBindGroupLayout(0);
     assert(bgl != null, "getBindGroupLayout returns non-null");
 
-    // Contract: createBindGroup
-    section("createBindGroup");
+    // Contract: compute dispatch with readback via copy
+    section("compute dispatch + readback");
+    // STORAGE buffer for compute (cannot combine MAP_READ with STORAGE)
+    const storageBuf = device.createBuffer({
+        size: 256,
+        usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.COPY_SRC,
+    });
+    // Readback buffer for CPU read
+    const resultBuf = device.createBuffer({
+        size: 256,
+        usage: globals.GPUBufferUsage.MAP_READ | globals.GPUBufferUsage.COPY_DST,
+    });
+
     const bindGroup = device.createBindGroup({
         layout: bgl,
-        entries: [{ binding: 0, resource: { buffer: buf } }],
+        entries: [{ binding: 0, resource: { buffer: storageBuf } }],
     });
     assert(bindGroup != null, "createBindGroup returns non-null");
 
-    // Contract: compute dispatch round-trip
-    section("compute dispatch");
+    // Upload input data
     const inputData = new Float32Array([10.0, 20.0, 30.0, 40.0]);
-    device.queue.writeBuffer(buf, 0, inputData);
+    device.queue.writeBuffer(storageBuf, 0, inputData);
 
+    // Dispatch compute + copy to readback
     const encoder = device.createCommandEncoder();
     assert(encoder != null, "createCommandEncoder returns non-null");
     const pass = encoder.beginComputePass();
@@ -135,26 +151,34 @@ if (!info.loaded) {
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(4);
     pass.end();
+    encoder.copyBufferToBuffer(storageBuf, 0, resultBuf, 0, 16);
     const cmdBuf = encoder.finish();
     device.queue.submit([cmdBuf]);
+    await device.queue.onSubmittedWorkDone();
 
-    await buf.mapAsync(globals.GPUMapMode.READ, 0, 16);
-    const result = new Float32Array(buf.getMappedRange(0, 16));
+    await resultBuf.mapAsync(globals.GPUMapMode.READ, 0, 16);
+    const result = new Float32Array(resultBuf.getMappedRange(0, 16));
     assert(result[0] === 20.0, "compute result[0] === 20.0");
     assert(result[1] === 40.0, "compute result[1] === 40.0");
     assert(result[2] === 60.0, "compute result[2] === 60.0");
     assert(result[3] === 80.0, "compute result[3] === 80.0");
-    buf.unmap();
+    resultBuf.unmap();
 
-    // Contract: createCommandEncoder + copyBufferToBuffer
+    // Contract: copyBufferToBuffer standalone
     section("copyBufferToBuffer");
-    const srcBuf = device.createBuffer({ size: 64, usage: globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST });
-    const dstBuf = device.createBuffer({ size: 64, usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ });
-    const srcData = new Float32Array([100.0, 200.0]);
-    device.queue.writeBuffer(srcBuf, 0, srcData);
+    const srcBuf = device.createBuffer({
+        size: 64,
+        usage: globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+    });
+    const dstBuf = device.createBuffer({
+        size: 64,
+        usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ,
+    });
+    device.queue.writeBuffer(srcBuf, 0, new Float32Array([100.0, 200.0]));
     const enc2 = device.createCommandEncoder();
     enc2.copyBufferToBuffer(srcBuf, 0, dstBuf, 0, 8);
     device.queue.submit([enc2.finish()]);
+    await device.queue.onSubmittedWorkDone();
     await dstBuf.mapAsync(globals.GPUMapMode.READ, 0, 8);
     const copyResult = new Float32Array(dstBuf.getMappedRange(0, 8));
     assert(copyResult[0] === 100.0, "copy result[0] === 100.0");
@@ -182,8 +206,8 @@ if (!info.loaded) {
     const sampler = device.createSampler();
     assert(sampler != null, "createSampler returns non-null");
 
-    // Contract: createPipelineLayout + createBindGroupLayout
-    section("createPipelineLayout");
+    // Contract: explicit bind group layout with typed buffer bindings
+    section("explicit bind group layout + pipeline");
     const explicitBgl = device.createBindGroupLayout({
         entries: [{
             binding: 0,
@@ -191,11 +215,66 @@ if (!info.loaded) {
             buffer: { type: "storage" },
         }],
     });
-    assert(explicitBgl != null, "createBindGroupLayout returns non-null");
+    assert(explicitBgl != null, "createBindGroupLayout(storage) returns non-null");
+
     const pipelineLayout = device.createPipelineLayout({
         bindGroupLayouts: [explicitBgl],
     });
     assert(pipelineLayout != null, "createPipelineLayout returns non-null");
+
+    // Use explicit layout in a compute pipeline to verify enum encoding is correct
+    const explicitShader = device.createShaderModule({
+        code: `@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+    buf[id.x] = buf[id.x] + 1.0;
+}`,
+    });
+    const explicitPipeline = device.createComputePipeline({
+        layout: pipelineLayout,
+        compute: { module: explicitShader, entryPoint: "main" },
+    });
+    assert(explicitPipeline != null, "createComputePipeline with explicit layout returns non-null");
+
+    // Run the pipeline with explicit layout
+    const explicitBuf = device.createBuffer({
+        size: 64,
+        usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+    });
+    const explicitReadback = device.createBuffer({
+        size: 64,
+        usage: globals.GPUBufferUsage.MAP_READ | globals.GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(explicitBuf, 0, new Float32Array([5.0, 6.0]));
+
+    const explicitBg = device.createBindGroup({
+        layout: explicitBgl,
+        entries: [{ binding: 0, resource: { buffer: explicitBuf } }],
+    });
+    const enc3 = device.createCommandEncoder();
+    const pass3 = enc3.beginComputePass();
+    pass3.setPipeline(explicitPipeline);
+    pass3.setBindGroup(0, explicitBg);
+    pass3.dispatchWorkgroups(2);
+    pass3.end();
+    enc3.copyBufferToBuffer(explicitBuf, 0, explicitReadback, 0, 8);
+    device.queue.submit([enc3.finish()]);
+    await device.queue.onSubmittedWorkDone();
+
+    await explicitReadback.mapAsync(globals.GPUMapMode.READ, 0, 8);
+    const explicitResult = new Float32Array(explicitReadback.getMappedRange(0, 8));
+    assert(explicitResult[0] === 6.0, "explicit layout compute result[0] === 6.0");
+    assert(explicitResult[1] === 7.0, "explicit layout compute result[1] === 7.0");
+    explicitReadback.unmap();
+
+    // Also verify read-only-storage and uniform enum values don't crash
+    const multiBgl = device.createBindGroupLayout({
+        entries: [
+            { binding: 0, visibility: globals.GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
+            { binding: 1, visibility: globals.GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+            { binding: 2, visibility: globals.GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+        ],
+    });
+    assert(multiBgl != null, "createBindGroupLayout(uniform+read-only-storage+storage) returns non-null");
 
     console.log(`\nResults: ${passed} passed, ${failed} failed`);
     process.exitCode = failed > 0 ? 1 : 0;

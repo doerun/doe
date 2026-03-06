@@ -7,6 +7,13 @@ This directory is the package root for `@simulatte/webgpu`. It contains the
 Node provider source, the addon build contract, the Bun FFI entrypoint, and
 the CLI helpers used by benchmark and CI workflows.
 
+Current surface maturity is intentionally uneven:
+
+- Node is the primary supported package surface.
+- Bun remains a prototype FFI path and is not yet at Node parity.
+- Package-surface comparisons should be read through the benchmark cube outputs
+  under `bench/out/cube/`, not as a replacement for strict backend reports.
+
 ## What Lives Here
 
 - `src/index.js`: default Node provider entrypoint
@@ -38,11 +45,15 @@ npm install @simulatte/webgpu
 
 - This package is for headless benchmarking and CI workflows, not full browser
   parity.
+- Node provider comparisons are package/runtime evidence. Backend claim lanes
+  remain the canonical performance evidence path.
 - On Linux, the default in-process Node path now fails fast with an explicit
   error instead of hanging when only `libdoe_webgpu.so` is present. Use
   `createDoeRuntime()` for Doe CLI/runtime benches until the Linux Node Doe
   path is wired through end-to-end.
 - Explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` is diagnostic-only on Linux and
   should not be treated as Doe-native evidence.
+- Bun compatibility is still tracked as prototype work until a real compare
+  lane and matching artifact coverage exist.
 - API details live in `API_CONTRACT.md`.
 - Compatibility scope is documented in `COMPAT_SCOPE.md`.

@@ -64,6 +64,14 @@ That document defines:
   - only includes conformant compare reports (`schemaVersion=4`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
   - emits timestamped JSON trend dataset + markdown summary plus stable latest outputs.
   - groups history by matrix/runtime pair and tracks latest/best/worst p50 delta snapshots.
+- `build_benchmark_cube.py`
+  - normalizes backend compare reports plus package-surface compare reports into a single benchmark cube contract.
+  - emits timestamped JSON row artifacts, JSON cube summary, and markdown matrix slices under `bench/out/cube/<timestamp>/`.
+  - also writes stable latest outputs under `bench/out/cube/latest/`.
+  - backend rows preserve both canonical and legacy report history:
+    - canonical rows come from fully conformant Dawn-vs-Doe reports.
+    - legacy rows are kept when old reports still parse but no longer match the active workload-contract hash or obligation contract; these rows are marked `sourceConformance=legacy_nonconformant` and degrade to diagnostic in cube cells.
+  - Node/Bun package rows stay explicit about maturity and missing-cell status instead of silently fabricating parity.
 - `substantiation_gate.py`
   - validates claim substantiation evidence from one or more comparison reports and/or release-window summaries using `config/substantiation-policy.json` (minimum comparable+claimable report count and minimum unique left-side profile diversity).
   - `targetUniqueLeftProfiles` can now be enforced as blocking via `releaseEvidence.enforceTargetUniqueLeftProfiles` (default in repo policy: `true`).
@@ -148,6 +156,15 @@ Each timestamped run folder now includes `run_manifest.json` with run metadata (
 Ad-hoc/manual artifact names (for example `*layoutcheck*`, `*contractcheck*`, `tmp.*`) are routed to `bench/out/scratch/<timestamp>/...` so canonical runs stay clean.
 
 Not every run folder contains HTML. Compare-report runs do (`dawn-vs-doe*.html`, default-on in release pipeline), while gate-only/trace-workspace runs may only contain JSON/NDJSON plus `run_manifest.json`.
+
+Benchmark cube output follows the same discipline:
+
+- timestamped run folder: `bench/out/cube/<timestamp>/`
+- stable latest mirror: `bench/out/cube/latest/`
+- current artifacts:
+  - `cube.rows.json`
+  - `cube.summary.json`
+  - `cube.matrix.md`
 
 ## Artifact cleanup
 

@@ -1,5 +1,36 @@
 # Config Migration Notes
 
+## 2026-03-06
+
+### Benchmark cube reporting contracts
+
+- Added benchmark cube reporting contracts for cross-surface evidence aggregation:
+  - `config/benchmark-cube-policy.schema.json` + `config/benchmark-cube-policy.json`
+  - `config/benchmark-cube-row.schema.json`
+  - `config/benchmark-cube.schema.json`
+- `config/schema-targets.json` now validates `config/benchmark-cube-policy.json`
+  through schema gate like other canonical config contracts.
+- The benchmark cube introduces explicit cross-surface reporting dimensions:
+  - host profile
+  - surface (`backend_native`, `node_package`, `bun_package`)
+  - provider pair
+  - workload set
+  - maturity / missing-cell status
+- Initial policy position is explicit:
+  - backend compare reports remain the canonical claim lane
+  - Node is the primary supported package surface
+  - Bun remains prototype until a real compare lane populates those cells
+- Initial artifact builder is `bench/build_benchmark_cube.py`, which emits:
+  - `bench/out/cube/<timestamp>/cube.rows.json`
+  - `bench/out/cube/<timestamp>/cube.summary.json`
+  - `bench/out/cube/<timestamp>/cube.matrix.md`
+  - stable latest mirrors under `bench/out/cube/latest/`
+- Existing historical backend reports are now merged into cube rows even when they
+  no longer satisfy current conformance contracts:
+  - such rows are tagged `sourceConformance=legacy_nonconformant`
+  - cube cells degrade them to `diagnostic` instead of dropping them or treating
+    them as canonical claim evidence
+
 ## 2026-03-05
 
 ### Quirk-mining manifest: toggleContext and toggleContextCounts
@@ -654,6 +685,15 @@ Contract updates in this change:
 - This restores strict left/right normalization symmetry for that comparable
   workload so current Dawn-vs-Doe AMD Vulkan matrix reruns can execute instead
   of failing fast during contract validation.
+
+### AMD Vulkan native-supported subset contract tightening (2026-03-06)
+
+- Updated `bench/workloads.amd.vulkan.extended.native-supported.json` so the
+  AMD native Vulkan subset no longer marks `resource_table_immediates_500` or
+  `surface_presentation` as strict comparable workloads.
+- Current native Vulkan execution reports those command classes as unsupported
+  (`async_diagnostics` and `surface_lifecycle` respectively), so they remain
+  directional-only until the native backend implements them.
 
 ### Vulkan large-upload cap removal (2026-03-06)
 

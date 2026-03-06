@@ -1,0 +1,969 @@
+{
+  "artifacts": {
+    "matrixMarkdownPath": "bench/out/cube/20260306T231000Z/cube.matrix.md",
+    "rowsPath": "bench/out/cube/20260306T231000Z/cube.rows.json"
+  },
+  "cells": [
+    {
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "contracts"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": -70.63706583034545,
+      "hostProfile": "linux_amd_vulkan",
+      "latestGeneratedAt": "2026-03-06T20:56:37.425472Z",
+      "latestReportPath": "bench/out/amd-vulkan/20260306T205637Z/dawn-vs-doe.amd.vulkan.extended.native-supported.comparable.json",
+      "latestRunId": "20260306T205637Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "full_matrix",
+      "status": "comparable",
+      "surface": "backend_native",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "pipeline"
+    },
+    {
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "render"
+    },
+    {
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "texture"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": -70.63706583034545,
+      "hostProfile": "linux_amd_vulkan",
+      "latestGeneratedAt": "2026-03-06T20:56:37.425472Z",
+      "latestReportPath": "bench/out/amd-vulkan/20260306T205637Z/dawn-vs-doe.amd.vulkan.extended.native-supported.comparable.json",
+      "latestRunId": "20260306T205637Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "workload_set",
+      "status": "comparable",
+      "surface": "backend_native",
+      "workloadSet": "uploads"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 4.566140261504503,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T19:55:24.693198Z",
+      "latestReportPath": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "latestRunId": "20260306T195524Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 2,
+      "rowCount": 7,
+      "scopeType": "workload_set",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 3185.7142857142862,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T19:55:24.693198Z",
+      "latestReportPath": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "latestRunId": "20260306T195524Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 2,
+      "rowCount": 3,
+      "scopeType": "workload_set",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "contracts"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 297.92052779190107,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T19:55:24.693198Z",
+      "latestReportPath": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "latestRunId": "20260306T195524Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 2,
+      "rowCount": 30,
+      "scopeType": "full_matrix",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 849.7102602010646,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T19:55:24.693198Z",
+      "latestReportPath": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "latestRunId": "20260306T195524Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 2,
+      "rowCount": 2,
+      "scopeType": "workload_set",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "pipeline"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 490.1434809731754,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T19:55:24.693198Z",
+      "latestReportPath": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "latestRunId": "20260306T195524Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 2,
+      "rowCount": 7,
+      "scopeType": "workload_set",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "render"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 119.4244604316547,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T19:55:24.693198Z",
+      "latestReportPath": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "latestRunId": "20260306T195524Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 2,
+      "rowCount": 3,
+      "scopeType": "workload_set",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "texture"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 63903.6032564996,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T19:55:24.693198Z",
+      "latestReportPath": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "latestRunId": "20260306T195524Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 2,
+      "rowCount": 8,
+      "scopeType": "workload_set",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "uploads"
+    },
+    {
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "contracts"
+    },
+    {
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "pipeline"
+    },
+    {
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "render"
+    },
+    {
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "texture"
+    },
+    {
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "backend_native",
+      "workloadSet": "uploads"
+    },
+    {
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun remains a prototype FFI path until a real compare lane exists.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_bun_vs_bun_webgpu",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "bun_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -7.449999999999999,
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
+      "latestRunId": "20260306T195054Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 1,
+      "rowCount": 4,
+      "scopeType": "workload_set",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -5.4,
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
+      "latestRunId": "20260306T195054Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 1,
+      "rowCount": 11,
+      "scopeType": "full_matrix",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -24.4,
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
+      "latestRunId": "20260306T195054Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "workload_set",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -11.9,
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
+      "latestRunId": "20260306T195054Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "workload_set",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 1.9,
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
+      "latestRunId": "20260306T195054Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 1,
+      "rowCount": 5,
+      "scopeType": "workload_set",
+      "status": "comparable",
+      "surface": "node_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -54.8,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T20:49:20.112000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T204920113Z.json",
+      "latestRunId": "20260306T204920Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 8,
+      "rowCount": 4,
+      "scopeType": "workload_set",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -52.5,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T20:49:20.112000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T204920113Z.json",
+      "latestRunId": "20260306T204920Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 8,
+      "rowCount": 11,
+      "scopeType": "full_matrix",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -146.3,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T20:49:20.112000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T204920113Z.json",
+      "latestRunId": "20260306T204920Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 8,
+      "rowCount": 1,
+      "scopeType": "workload_set",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": -228.9,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T20:49:20.112000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T204920113Z.json",
+      "latestRunId": "20260306T204920Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 8,
+      "rowCount": 1,
+      "scopeType": "workload_set",
+      "status": "diagnostic",
+      "surface": "node_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "deltaP50MedianPercent": 55.6,
+      "hostProfile": "mac_apple_silicon",
+      "latestGeneratedAt": "2026-03-06T20:49:20.112000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T204920113Z.json",
+      "latestRunId": "20260306T204920Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 8,
+      "rowCount": 5,
+      "scopeType": "workload_set",
+      "status": "claimable",
+      "surface": "node_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "node_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "surface": "node_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "node_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "node_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_node_vs_dawn_node",
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "surface": "node_package",
+      "workloadSet": "uploads"
+    }
+  ],
+  "generatedAt": "2026-03-06T20:58:57.017129Z",
+  "policy": {
+    "path": "config/benchmark-cube-policy.json",
+    "sha256": "06191e1899383081375b27801d54f63c884074e77fd17677b9f327d047a0993f"
+  },
+  "rowCount": 158,
+  "schemaVersion": 1,
+  "sourceCounts": {
+    "backendReports": {
+      "discovered": 13,
+      "included": 3,
+      "skipped": 10
+    },
+    "bunReports": {
+      "discovered": 0,
+      "included": 0,
+      "skipped": 0
+    },
+    "nodeReports": {
+      "discovered": 9,
+      "included": 9,
+      "skipped": 0
+    }
+  },
+  "statusCounts": {
+    "claimable": 8,
+    "comparable": 3,
+    "diagnostic": 8,
+    "unimplemented": 32,
+    "unsupported": 0
+  }
+}
