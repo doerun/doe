@@ -50,8 +50,8 @@ Full comparison reports, trace artifacts, and visualization tooling are in `benc
 
 ### Node package comparison (`@simulatte/webgpu` vs npm `webgpu`)
 
-The Doe-native Node provider source now lives under `nursery/webgpu/` and is
-wrapped by the published `@simulatte/webgpu` package surface.
+The Node provider source now lives under `nursery/webgpu/` and is wrapped by
+the published `@simulatte/webgpu` package surface.
 Historical Node comparison artifacts from the temporary wrapper-only state
 should not be cited; rerun the Node lane from the current tree before using it
 as evidence.
@@ -59,6 +59,14 @@ as evidence.
 This Node comparison uses package-level workload timing (`performance.now()`) and
 should be read as package/runtime positioning evidence, not as a replacement for
 strict Dawn-vs-Doe backend reports.
+
+Current caveat:
+- Linux Node use now fails fast instead of hanging when only `libdoe_webgpu.so`
+  is available, because the in-process Doe Vulkan Node path is not wired
+  through that drop-in yet.
+- Explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` remains available only for
+  non-claimable delegate diagnostics and should not be cited as Doe-vs-Dawn
+  evidence.
 
 ## How it works
 
@@ -115,7 +123,7 @@ Build without the flag produces identical code to before.
 Working, with claimable benchmark evidence on two device families:
 - AMD Vulkan: latest local strict comparable matrix is `comparable` with `12 / 14` workloads claimable; focused reruns also show claimable `1 KB` and `64 KB` upload slices.
 - Apple Metal M3: `30 / 30` workloads claimable. Doe faster than Dawn on every workload.
-- Node package surface: Doe-native provider restored in-tree under `nursery/webgpu/`; Node comparison evidence should be regenerated from the restored path.
+- Node package surface: source is restored in-tree under `nursery/webgpu/`, but Linux in-process Doe Node remains unfinished and currently fails fast rather than hanging.
 
 Still in progress:
 - render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; remaining work is about broader coverage and stronger margins outside the current local strict comparable claim snapshot

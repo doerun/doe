@@ -101,13 +101,13 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - new script: `bench/run_single_workload_sweep.py`
   - runs repeated `compare_dawn_vs_doe.py` invocations for one workload and emits per-run + aggregate (`medianDeltaP50Percent`, `medianDeltaP95Percent`) summary artifacts under a timestamped scratch folder.
 - experimental npm bridge package now provides practical headless integration paths under `@simulatte/webgpu`, rooted in `nursery/webgpu/`:
-  - Doe-native Node provider source lives in `nursery/webgpu/` (`src/index.js`, `binding.gyp`, `native/doe_napi.c`) and loads `libdoe_webgpu` through N-API.
+  - Node provider source lives in `nursery/webgpu/` (`src/index.js`, `binding.gyp`, `native/doe_napi.c`) and the package now fails fast on Linux instead of hanging when only `libdoe_webgpu.so` is available for the in-process path.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
-  - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`) through the Doe-native Node entrypoint, while Bun direct-FFI remains a prototype path.
+  - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`), while Linux Doe-native in-process support remains unfinished and Bun direct-FFI remains a prototype path.
   - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu/COMPAT_SCOPE.md`.
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
-  - current Node comparison claims were withdrawn pending regeneration from the restored Doe-native provider path.
+  - current Node comparison claims were withdrawn pending a real Doe-native in-process path; explicit `DOE_WEBGPU_LIB=.../libwebgpu.so` diagnostics are non-claimable delegate runs only.
   - Bun direct-FFI path remains available as prototype (`nursery/webgpu/src/bun-ffi.js`) for low-level C-ABI integration experiments.
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.

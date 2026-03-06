@@ -34,6 +34,7 @@ function resolveDoeLibraryPath() {
 
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
+    process.env.FAWN_DOE_LIB,
     resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libdoe_webgpu.${ext}`),
     resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libdoe_webgpu.${ext}`),
     resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libdoe_webgpu.${ext}`),
@@ -43,6 +44,17 @@ function resolveDoeLibraryPath() {
     if (candidate && existsSync(candidate)) return candidate;
   }
   return null;
+}
+
+function libraryFlavor(libraryPath) {
+  if (!libraryPath) return 'missing';
+  if (libraryPath.endsWith('libdoe_webgpu.so') || libraryPath.endsWith('libdoe_webgpu.dylib') || libraryPath.endsWith('libdoe_webgpu.dll')) {
+    return 'doe-dropin';
+  }
+  if (libraryPath.endsWith('libwebgpu.so') || libraryPath.endsWith('libwebgpu.dylib') || libraryPath.endsWith('libwebgpu_dawn.so') || libraryPath.endsWith('libwgpu_native.so') || libraryPath.endsWith('libwgpu_native.so.0')) {
+    return 'delegate';
+  }
+  return 'unknown';
 }
 
 function ensureLibrary() {
@@ -55,6 +67,11 @@ function ensureLibrary() {
   if (!DOE_LIB_PATH) {
     throw new Error(
       '@simulatte/webgpu: libdoe_webgpu not found. Build it with `cd fawn/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
+    );
+  }
+  if (process.platform === 'linux' && libraryFlavor(DOE_LIB_PATH) === 'doe-dropin') {
+    throw new Error(
+      '@simulatte/webgpu: Linux Node WebGPU is not wired to Doe through libdoe_webgpu.so yet. Use createDoeRuntime() for Doe benches, or set DOE_WEBGPU_LIB to a delegate library only for non-claimable diagnostics.'
     );
   }
   addon.loadLibrary(DOE_LIB_PATH);
@@ -488,12 +505,14 @@ export async function requestDevice(options = {}) {
 }
 
 export function providerInfo() {
+  const flavor = libraryFlavor(DOE_LIB_PATH);
   return {
     module: '@simulatte/webgpu',
     loaded: !!addon && !!DOE_LIB_PATH,
     loadError: !addon ? 'native addon not found' : !DOE_LIB_PATH ? 'libdoe_webgpu not found' : '',
     defaultCreateArgs: [],
-    doeNative: true,
+    doeNative: flavor === 'doe-dropin' && process.platform !== 'linux',
+    libraryFlavor: flavor,
     doeLibraryPath: DOE_LIB_PATH ?? '',
   };
 }

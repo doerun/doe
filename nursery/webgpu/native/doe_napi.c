@@ -306,6 +306,22 @@ typedef void (*WGPURequestDeviceCallback)(
     uint32_t status, WGPUDevice device, WGPUStringView message,
     void* userdata1, void* userdata2);
 
+typedef struct {
+    void* nextInChain;
+    uint32_t mode;
+    WGPURequestAdapterCallback callback;
+    void* userdata1;
+    void* userdata2;
+} WGPURequestAdapterCallbackInfo;
+
+typedef struct {
+    void* nextInChain;
+    uint32_t mode;
+    WGPURequestDeviceCallback callback;
+    void* userdata1;
+    void* userdata2;
+} WGPURequestDeviceCallbackInfo;
+
 typedef void (*WGPUBufferMapCallback)(
     uint32_t status, WGPUStringView message,
     void* userdata1, void* userdata2);
@@ -333,10 +349,12 @@ typedef struct {
 
 DECL_PFN(WGPUInstance, wgpuCreateInstance, (const void*));
 DECL_PFN(void, wgpuInstanceRelease, (WGPUInstance));
+DECL_PFN(WGPUFuture, wgpuInstanceRequestAdapter, (WGPUInstance, const void*, WGPURequestAdapterCallbackInfo));
 DECL_PFN(uint32_t, wgpuInstanceWaitAny, (WGPUInstance, size_t, WGPUFutureWaitInfo*, uint64_t));
 DECL_PFN(void, wgpuInstanceProcessEvents, (WGPUInstance));
 DECL_PFN(void, wgpuAdapterRelease, (WGPUAdapter));
 DECL_PFN(WGPUBool, wgpuAdapterHasFeature, (WGPUAdapter, uint32_t));
+DECL_PFN(WGPUFuture, wgpuAdapterRequestDevice, (WGPUAdapter, const void*, WGPURequestDeviceCallbackInfo));
 DECL_PFN(void, wgpuDeviceRelease, (WGPUDevice));
 DECL_PFN(WGPUBool, wgpuDeviceHasFeature, (WGPUDevice, uint32_t));
 DECL_PFN(WGPUQueue, wgpuDeviceGetQueue, (WGPUDevice));
@@ -387,7 +405,8 @@ DECL_PFN(void, wgpuRenderPassEncoderEnd, (WGPURenderPassEncoder));
 DECL_PFN(void, wgpuRenderPassEncoderRelease, (WGPURenderPassEncoder));
 DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
 
-/* Flat helpers for FFI-friendly adapter/device request */
+/* Flat helpers are optional. When absent, the addon assembles the callback-info
+ * structs directly and calls the standard WebGPU request entrypoints. */
 DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t, WGPURequestAdapterCallback, void*, void*));
 DECL_PFN(WGPUFuture, doeRequestDeviceFlat, (WGPUAdapter, const void*, uint32_t, WGPURequestDeviceCallback, void*, void*));
 typedef struct {
@@ -541,10 +560,12 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
 
     LOAD_SYM(wgpuCreateInstance);
     LOAD_SYM(wgpuInstanceRelease);
+    LOAD_SYM(wgpuInstanceRequestAdapter);
     LOAD_SYM(wgpuInstanceWaitAny);
     LOAD_SYM(wgpuInstanceProcessEvents);
     LOAD_SYM(wgpuAdapterRelease);
     LOAD_SYM(wgpuAdapterHasFeature);
+    LOAD_SYM(wgpuAdapterRequestDevice);
     LOAD_SYM(wgpuDeviceRelease);
     LOAD_SYM(wgpuDeviceHasFeature);
     LOAD_SYM(wgpuDeviceGetQueue);
@@ -594,13 +615,14 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuRenderPassEncoderEnd);
     LOAD_SYM(wgpuRenderPassEncoderRelease);
     LOAD_SYM(wgpuDeviceGetLimits);
-    LOAD_SYM(doeRequestAdapterFlat);
-    LOAD_SYM(doeRequestDeviceFlat);
+    pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeRequestAdapterFlat");
+    pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
 
     /* Validate all critical function pointers were resolved. */
-    if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceWaitAny ||
-        !pfn_doeRequestAdapterFlat || !pfn_doeRequestDeviceFlat ||
+    if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceRequestAdapter ||
+        !pfn_wgpuInstanceWaitAny || !pfn_wgpuInstanceProcessEvents ||
+        !pfn_wgpuAdapterRequestDevice ||
         !pfn_wgpuDeviceGetQueue || !pfn_wgpuDeviceCreateBuffer ||
         !pfn_wgpuDeviceCreateShaderModule || !pfn_wgpuDeviceCreateComputePipeline ||
         !pfn_wgpuDeviceCreateCommandEncoder || !pfn_wgpuCommandEncoderBeginComputePass ||
@@ -638,7 +660,7 @@ static napi_value doe_instance_release(napi_env env, napi_callback_info info) {
 }
 
 /* ================================================================
- * Adapter (synchronous requestAdapter via WaitAny)
+ * Adapter (synchronous requestAdapter via callback + processEvents)
  * ================================================================ */
 
 typedef struct {
@@ -663,8 +685,20 @@ static napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
     if (!inst) NAPI_THROW(env, "Invalid instance");
 
     AdapterRequestResult result = {0, NULL, 0};
-    WGPUFuture future = pfn_doeRequestAdapterFlat(
-        inst, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, adapter_callback, &result, NULL);
+    WGPUFuture future;
+    if (pfn_doeRequestAdapterFlat) {
+        future = pfn_doeRequestAdapterFlat(
+            inst, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, adapter_callback, &result, NULL);
+    } else {
+        const WGPURequestAdapterCallbackInfo callback_info = {
+            .nextInChain = NULL,
+            .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+            .callback = adapter_callback,
+            .userdata1 = &result,
+            .userdata2 = NULL,
+        };
+        future = pfn_wgpuInstanceRequestAdapter(inst, NULL, callback_info);
+    }
     if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
     if (!process_events_until(inst, &result.done, DOE_DEFAULT_TIMEOUT_NS) ||
         result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.adapter)
@@ -681,7 +715,7 @@ static napi_value doe_adapter_release(napi_env env, napi_callback_info info) {
 }
 
 /* ================================================================
- * Device (synchronous requestDevice via WaitAny)
+ * Device (synchronous requestDevice via callback + processEvents)
  * ================================================================ */
 
 typedef struct {
@@ -707,8 +741,20 @@ static napi_value doe_request_device(napi_env env, napi_callback_info info) {
     if (!inst || !adapter) NAPI_THROW(env, "Invalid instance or adapter");
 
     DeviceRequestResult result = {0, NULL, 0};
-    WGPUFuture future = pfn_doeRequestDeviceFlat(
-        adapter, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, device_callback, &result, NULL);
+    WGPUFuture future;
+    if (pfn_doeRequestDeviceFlat) {
+        future = pfn_doeRequestDeviceFlat(
+            adapter, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, device_callback, &result, NULL);
+    } else {
+        const WGPURequestDeviceCallbackInfo callback_info = {
+            .nextInChain = NULL,
+            .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+            .callback = device_callback,
+            .userdata1 = &result,
+            .userdata2 = NULL,
+        };
+        future = pfn_wgpuAdapterRequestDevice(adapter, NULL, callback_info);
+    }
     if (future.id == 0) NAPI_THROW(env, "requestDevice future unavailable");
     if (!process_events_until(inst, &result.done, DOE_DEFAULT_TIMEOUT_NS) ||
         result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.device)

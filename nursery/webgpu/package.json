@@ -30,7 +30,7 @@
     "install": "node-gyp rebuild",
     "build:addon": "node-gyp rebuild",
     "test": "node ./test-node.js",
-    "test:bun": "bun ./test.js"
+    "test:bun": "bun ./test-bun.js"
   },
   "keywords": [
     "webgpu",

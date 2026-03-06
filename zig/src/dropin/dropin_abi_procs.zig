@@ -360,6 +360,47 @@ pub export fn wgpuBufferMapAsync(a0: types.WGPUBuffer, a1: types.WGPUMapMode, a2
     return proc(a0, a1, a2, a3, a4);
 }
 
+// FFI-friendly buffer map: flattened args for runtimes that cannot pass WGPUBufferMapCallbackInfo by value.
+pub export fn doeBufferMapAsyncFlat(
+    buffer: types.WGPUBuffer,
+    mode: types.WGPUMapMode,
+    offset: usize,
+    size: usize,
+    cb_mode: types.WGPUCallbackMode,
+    callback: types.WGPUBufferMapCallback,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) types.WGPUFuture {
+    const info = types.WGPUBufferMapCallbackInfo{
+        .nextInChain = null,
+        .mode = cb_mode,
+        .callback = callback,
+        .userdata1 = userdata1,
+        .userdata2 = userdata2,
+    };
+    const proc = loadRequiredProc(types.FnWgpuBufferMapAsync, "wgpuBufferMapAsync");
+    return proc(buffer, mode, offset, size, info);
+}
+
+// FFI-friendly queue work-done: flattened args for runtimes that cannot pass WGPUQueueWorkDoneCallbackInfo by value.
+pub export fn doeQueueOnSubmittedWorkDoneFlat(
+    queue: types.WGPUQueue,
+    cb_mode: types.WGPUCallbackMode,
+    callback: types.WGPUQueueWorkDoneCallback,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) types.WGPUFuture {
+    const info = types.WGPUQueueWorkDoneCallbackInfo{
+        .nextInChain = null,
+        .mode = cb_mode,
+        .callback = callback,
+        .userdata1 = userdata1,
+        .userdata2 = userdata2,
+    };
+    const proc = loadRequiredProc(types.FnWgpuQueueOnSubmittedWorkDone, "wgpuQueueOnSubmittedWorkDone");
+    return proc(queue, info);
+}
+
 pub export fn wgpuBufferGetConstMappedRange(a0: types.WGPUBuffer, a1: usize, a2: usize) callconv(.c) ?*const anyopaque {
     const proc = loadRequiredProc(types.FnWgpuBufferGetConstMappedRange, "wgpuBufferGetConstMappedRange");
     return proc(a0, a1, a2);
