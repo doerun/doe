@@ -1,1 +1,2 @@
-export { createDoeRuntime, runDawnVsDoeCompare, providerInfo } from "./package-entry.js";
+export * from "./bun-ffi.js";
+export { default } from "./bun-ffi.js";

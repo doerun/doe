@@ -298,6 +298,7 @@
 
 - Public npm/package scope now uses `@simulatte/*`.
 - Canonical runtime/headless package is now `@simulatte/webgpu`.
+- Canonical `@simulatte/webgpu` package root now lives entirely under `nursery/webgpu/`.
 - Browser package naming is reserved as `@simulatte/fawn-browser`.
 - Doe remains the backend/runtime family name for:
   - backend IDs (`doe_vulkan`, `doe_metal`, `doe_d3d12`)
@@ -653,6 +654,16 @@ Contract updates in this change:
 - This restores strict left/right normalization symmetry for that comparable
   workload so current Dawn-vs-Doe AMD Vulkan matrix reruns can execute instead
   of failing fast during contract validation.
+
+### Vulkan large-upload cap removal (2026-03-06)
+
+- Removed the stale `64MB` artificial upload cap from
+  `zig/src/backend/vulkan/native_runtime.zig`.
+- Vulkan upload prewarm now uses the full requested upload size when no
+  backend-specific cap is configured, matching the large-upload comparable
+  contract promotion for `256MB`, `1GB`, and `4GB` workloads.
+- Allocation/driver failure now surfaces directly from the Vulkan runtime
+  instead of being preclassified as `UnsupportedFeature` by a static cap.
 
 ### Benchmark deltaPercent formula drift note (2026-02-26, superseded)
 

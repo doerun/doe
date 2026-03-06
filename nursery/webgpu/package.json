@@ -1,23 +1,47 @@
 {
-  "name": "@simulatte/webgpu-placeholder",
-  "version": "0.0.1",
-  "description": "Internal placeholder only; canonical package lives in nursery/webgpu-core",
-  "private": true,
+  "name": "@simulatte/webgpu",
+  "version": "0.2.0",
+  "description": "Doe WebGPU bridge for browserless AI/ML benchmarking and CI",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./src/node-runtime.js",
   "exports": {
-    ".": "./src/index.js",
-    "./node": "./src/node.js",
-    "./bun": "./src/bun.js"
+    ".": {
+      "bun": "./src/bun.js",
+      "default": "./src/node-runtime.js"
+    },
+    "./bun": "./src/bun.js",
+    "./node": "./src/node-runtime.js"
+  },
+  "bin": {
+    "fawn-webgpu-bench": "./bin/fawn-webgpu-bench.js",
+    "fawn-webgpu-compare": "./bin/fawn-webgpu-compare.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "native/",
+    "binding.gyp",
+    "README.md",
+    "API_CONTRACT.md",
+    "COMPAT_SCOPE.md",
+    "headless-webgpu-comparison.md"
+  ],
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "build:addon": "node-gyp rebuild",
+    "test": "node ./test-node.js",
+    "test:bun": "bun ./test.js"
   },
   "keywords": [
     "webgpu",
     "doe",
-    "runtime",
-    "vulkan",
-    "metal",
-    "dx12",
-    "wgpu"
+    "headless",
+    "benchmarking",
+    "ai",
+    "ml",
+    "ci",
+    "bun"
   ],
+  "author": "Fawn",
   "license": "ISC"
 }

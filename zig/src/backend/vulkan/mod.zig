@@ -388,7 +388,21 @@ fn execute_dispatch_command(
 
 fn execute_kernel_dispatch(self: *ZigVulkanBackend, setup_ns: u64, kernel_dispatch: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
     const runtime = try ensure_runtime_bootstrapped(self);
-    const spirv_words = try runtime.load_kernel_spirv(self.allocator, kernel_dispatch.kernel);
+    const spirv_words = runtime.load_kernel_spirv(self.allocator, kernel_dispatch.kernel) catch |err| {
+        if (err == error.UnsupportedFeature and std.mem.endsWith(u8, kernel_dispatch.kernel, ".wgsl")) {
+            return .{
+                .status = .unsupported,
+                .status_message = write_status(
+                    self,
+                    "missing Vulkan SPIR-V artifact for WGSL kernel {s}; add explicit .spv artifact in kernel-root",
+                    .{kernel_dispatch.kernel},
+                ),
+                .setup_ns = setup_ns,
+                .dispatch_count = if (kernel_dispatch.repeat > 0) kernel_dispatch.repeat else 1,
+            };
+        }
+        return err;
+    };
     defer self.allocator.free(spirv_words);
     try runtime.set_compute_shader_spirv(spirv_words);
 

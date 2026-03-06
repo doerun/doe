@@ -4,8 +4,8 @@
   "providers": {
     "doe": {
       "package": "@simulatte/webgpu",
-      "source": "nursery/webgpu-core/src/node-runtime.js",
-      "notes": "Native Zig+Metal runtime, ~2MB"
+      "source": "nursery/webgpu/src/index.js",
+      "notes": "Doe-native N-API provider backed by libdoe_webgpu"
     },
     "dawn": {
       "package": "webgpu",

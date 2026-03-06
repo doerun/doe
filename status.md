@@ -100,14 +100,15 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - single-workload strict sweep utility (2026-03-04):
   - new script: `bench/run_single_workload_sweep.py`
   - runs repeated `compare_dawn_vs_doe.py` invocations for one workload and emits per-run + aggregate (`medianDeltaP50Percent`, `medianDeltaP95Percent`) summary artifacts under a timestamped scratch folder.
-- experimental npm bridge package now provides practical headless integration paths under `nursery/webgpu-core`, with canonical public package identity `@simulatte/webgpu`:
-  - Node process-bridge runtime wrapper (`nursery/webgpu-core/src/node-runtime.js`) for `doe-zig-runtime` execution from JS without Playwright/browser harnesses.
+- experimental npm bridge package now provides practical headless integration paths under `@simulatte/webgpu`, rooted in `nursery/webgpu/`:
+  - Doe-native Node provider source lives in `nursery/webgpu/` (`src/index.js`, `binding.gyp`, `native/doe_napi.c`) and loads `libdoe_webgpu` through N-API.
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
-  - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`) through both Node and Bun entrypoints.
-  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu-core/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu-core/COMPAT_SCOPE.md`.
+  - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`) through the Doe-native Node entrypoint, while Bun direct-FFI remains a prototype path.
+  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu/COMPAT_SCOPE.md`.
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
-  - Bun direct-FFI path remains available as prototype (`nursery/webgpu-core/src/bun-ffi.js`) for low-level C-ABI integration experiments.
+  - current Node comparison claims were withdrawn pending regeneration from the restored Doe-native provider path.
+  - Bun direct-FFI path remains available as prototype (`nursery/webgpu/src/bun-ffi.js`) for low-level C-ABI integration experiments.
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
   - `bench/measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
@@ -1064,6 +1065,9 @@ Execution gap list:
 - 2026-03-06 contract follow-up: `resource_table_immediates_500` now explicitly
   mirrors `rightCommandRepeat=500` so strict normalization parity validation no
   longer rejects the AMD extended comparable matrix before execution.
+- 2026-03-06 runtime follow-up: Vulkan native upload path no longer enforces the
+  stale `64MB` artificial cap, so promoted comparable large-upload workloads
+  (`256MB`, `1GB`, `4GB`) now fail only on real allocation/runtime limits.
 
 8. Local Metal comparability hotfix (2026-02-26):
 - introduced Metal-only workload contract file: `bench/workloads.local.metal.extended.json`.
@@ -1328,7 +1332,7 @@ Ownership:
     - single-manifest kernel dispatch emission (`zig/tests/metal/metal_mod_integration_test.zig`)
     - upload byte-budget + usage mode accounting (`zig/tests/metal/metal_upload_path_test.zig`)
 - Bun in-process Doe provider now auto-activates when `libdoe_webgpu` is discoverable:
-  - file: `nursery/webgpu-core/src/bun-ffi.js`
+  - file: `nursery/webgpu/src/bun-ffi.js`
   - modes:
     - `FAWN_WEBGPU_BUN_PROVIDER=doe` forces Doe provider (error if lib missing)
     - `FAWN_WEBGPU_BUN_PROVIDER=provider` disables Doe auto-provider

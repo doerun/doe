@@ -3,7 +3,9 @@ const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 
-const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
+// Vulkan upload path should follow device allocation limits, not an artificial
+// 64MB runtime cap. Let allocation/driver failure surface explicitly.
+const MAX_UPLOAD_BYTES: u64 = 0; // retained for parity with other backends
 const MAX_UPLOAD_ZERO_FILL_BYTES: usize = 1024 * 1024;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
@@ -425,7 +427,6 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn upload_bytes(self: *NativeVulkanRuntime, bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
         if (bytes == 0) return error.InvalidArgument;
-        if (bytes > MAX_UPLOAD_BYTES) return error.UnsupportedFeature;
 
         const dst_usage: u32 = switch (mode) {
             .copy_dst_copy_src => VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -562,7 +563,11 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn prewarm_upload_path(self: *NativeVulkanRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
         if (max_upload_bytes == 0) return;
-        try self.upload_bytes(@min(max_upload_bytes, MAX_UPLOAD_BYTES), mode);
+        const prewarm_bytes = if (MAX_UPLOAD_BYTES == 0)
+            max_upload_bytes
+        else
+            @min(max_upload_bytes, MAX_UPLOAD_BYTES);
+        try self.upload_bytes(prewarm_bytes, mode);
         _ = try self.flush_queue();
     }
 
