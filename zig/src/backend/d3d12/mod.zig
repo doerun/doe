@@ -516,6 +516,12 @@ pub fn run_contract_path_for_test(
     return try iface.execute_command(command);
 }
 
+fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
+    _ = ctx;
+    _ = kernel;
+    _ = bindings;
+}
+
 const VTABLE = backend_iface.BackendVTable{
     .deinit = deinit,
     .execute_command = execute_command,
@@ -525,4 +531,5 @@ const VTABLE = backend_iface.BackendVTable{
     .set_gpu_timestamp_mode = set_gpu_timestamp_mode,
     .flush_queue = flush_queue,
     .prewarm_upload_path = prewarm_upload_path,
+    .prewarm_kernel_dispatch = prewarm_kernel_dispatch,
 };

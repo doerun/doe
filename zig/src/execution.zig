@@ -269,6 +269,17 @@ pub const ExecutionContext = struct {
             try backend.prewarm_upload_path(max_upload_bytes);
         }
     }
+
+    pub fn prewarmKernelDispatch(
+        self: *ExecutionContext,
+        kernel: []const u8,
+        bindings: ?[]const model.KernelBinding,
+    ) !void {
+        if (self.mode != .native) return;
+        if (self.backend) |*backend| {
+            try backend.prewarm_kernel_dispatch(kernel, bindings);
+        }
+    }
 };
 
 pub const UploadBufferUsageMode = webgpu.UploadBufferUsageMode;

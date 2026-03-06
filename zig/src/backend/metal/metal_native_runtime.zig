@@ -426,7 +426,7 @@ pub const NativeMetalRuntime = struct {
         self.render_pipeline_format = 0;
     }
 
-    fn ensure_kernel_pipeline(self: *NativeMetalRuntime, kernel: []const u8) !?*anyopaque {
+    pub fn ensure_kernel_pipeline(self: *NativeMetalRuntime, kernel: []const u8) !?*anyopaque {
         const base = strip_extension(kernel);
         if (self.kernel_pipelines.get(base)) |kp| return kp.pipeline;
 
@@ -459,7 +459,7 @@ pub const NativeMetalRuntime = struct {
         return pso;
     }
 
-    fn ensure_compute_buffer(self: *NativeMetalRuntime, handle: u64, size: u64) !?*anyopaque {
+    pub fn ensure_compute_buffer(self: *NativeMetalRuntime, handle: u64, size: u64) !?*anyopaque {
         if (self.compute_buffers.get(handle)) |b| return b;
         const buf = metal_bridge_device_new_buffer_shared(self.device, @intCast(size)) orelse return error.InvalidState;
         try self.compute_buffers.put(self.allocator, handle, buf);

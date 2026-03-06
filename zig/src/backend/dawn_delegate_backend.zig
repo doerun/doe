@@ -83,6 +83,15 @@ fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     try self.inner.prewarmUploadPath(max_upload_bytes);
 }
 
+fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
+    // Dawn's internal pipeline cache handles repeat-compilation efficiently.
+    // Prewarming with layout=null creates pipelines incompatible with bind groups,
+    // so prewarm is a no-op for the delegate path.
+    _ = ctx;
+    _ = kernel;
+    _ = bindings;
+}
+
 const VTABLE = backend_iface.BackendVTable{
     .deinit = deinit,
     .execute_command = execute_command,
@@ -92,4 +101,5 @@ const VTABLE = backend_iface.BackendVTable{
     .set_gpu_timestamp_mode = set_gpu_timestamp_mode,
     .flush_queue = flush_queue,
     .prewarm_upload_path = prewarm_upload_path,
+    .prewarm_kernel_dispatch = prewarm_kernel_dispatch,
 };

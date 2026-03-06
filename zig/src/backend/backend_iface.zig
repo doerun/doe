@@ -12,6 +12,7 @@ pub const BackendVTable = struct {
     set_gpu_timestamp_mode: *const fn (ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void,
     flush_queue: *const fn (ctx: *anyopaque) anyerror!u64,
     prewarm_upload_path: *const fn (ctx: *anyopaque, max_upload_bytes: u64) anyerror!void,
+    prewarm_kernel_dispatch: *const fn (ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void,
 };
 
 pub const BackendIface = struct {
@@ -50,5 +51,9 @@ pub const BackendIface = struct {
 
     pub fn prewarm_upload_path(self: *BackendIface, max_upload_bytes: u64) !void {
         try self.vtable.prewarm_upload_path(self.context, max_upload_bytes);
+    }
+
+    pub fn prewarm_kernel_dispatch(self: *BackendIface, kernel: []const u8, bindings: ?[]const model.KernelBinding) !void {
+        try self.vtable.prewarm_kernel_dispatch(self.context, kernel, bindings);
     }
 };

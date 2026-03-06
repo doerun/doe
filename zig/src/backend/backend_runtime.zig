@@ -115,6 +115,10 @@ pub const BackendRuntime = struct {
         try self.backend.prewarm_upload_path(max_upload_bytes);
     }
 
+    pub fn prewarm_kernel_dispatch(self: *BackendRuntime, kernel: []const u8, bindings: ?[]const model.KernelBinding) !void {
+        try self.backend.prewarm_kernel_dispatch(kernel, bindings);
+    }
+
     pub fn telemetry(self: *BackendRuntime) backend_telemetry.BackendTelemetry {
         self.refreshBackendTelemetry();
         return self.backend.telemetry;

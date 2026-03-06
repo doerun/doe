@@ -453,6 +453,18 @@ fn execute_async_diagnostics(self: *ZigMetalBackend, setup_ns: u64, cmd: model.A
     return ok_result(setup_ns, encode_ns, 0, 1);
 }
 
+fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
+    const self = cast(ctx);
+    const rt = try ensure_runtime_bootstrapped(self);
+    _ = try rt.ensure_kernel_pipeline(kernel);
+    if (bindings) |bs| {
+        for (bs) |b| {
+            if (b.resource_kind != .buffer) continue;
+            _ = try rt.ensure_compute_buffer(b.resource_handle, b.buffer_size);
+        }
+    }
+}
+
 fn flush_pending_uploads_if_required(self: *ZigMetalBackend, command: model.Command) !u64 {
     switch (command) {
         .upload => return 0,
@@ -620,4 +632,5 @@ const VTABLE = backend_iface.BackendVTable{
     .set_gpu_timestamp_mode = set_gpu_timestamp_mode,
     .flush_queue = flush_queue,
     .prewarm_upload_path = prewarm_upload_path,
+    .prewarm_kernel_dispatch = prewarm_kernel_dispatch,
 };

@@ -11,6 +11,7 @@ const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
 const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const commands = @import("wgpu_commands.zig");
+const compute_commands = @import("wgpu_commands_compute.zig");
 const env_flags = @import("env_flags.zig");
 
 pub const NativeExecutionStatus = types.NativeExecutionStatus;
@@ -511,6 +512,28 @@ pub const WebGPUBackend = struct {
         @memset(self.upload_scratch, 0);
     }
 
+    pub fn prewarmKernelPipeline(self: *Self, kernel: []const u8, bindings: ?[]const model.KernelBinding) !void {
+        if (!self.backendAvailable()) return;
+        const source = compute_commands.resolveKernelSource(self, kernel) catch return;
+        defer if (source.owned) self.allocator.free(source.source);
+        const entry_point = "main";
+        const cache_key = compute_commands.pipelineCacheKey(source.source, entry_point);
+        if (self.pipeline_cache.get(cache_key) != null) return;
+        const procs = self.procs orelse return;
+        const shader_module = resources.createShaderModule(self, source.source) catch return;
+        const pipeline = resources.createComputePipeline(self, kernel, shader_module, entry_point, null) catch {
+            procs.wgpuShaderModuleRelease(shader_module);
+            return;
+        };
+        self.pipeline_cache.put(cache_key, .{ .shader_module = shader_module, .pipeline = pipeline }) catch {};
+        if (bindings) |bs| {
+            for (bs) |b| {
+                if (b.resource_kind != .buffer) continue;
+                const usage = types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst | types.WGPUBufferUsage_CopySrc;
+                _ = resources.getOrCreateBuffer(self, b.resource_handle, b.buffer_size, usage) catch {};
+            }
+        }
+    }
 
     fn captureAdapterLimits(self: *Self) !void {
         self.has_adapter_limits = false;

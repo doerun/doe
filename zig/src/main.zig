@@ -158,6 +158,17 @@ fn maxUploadBytes(commands: []const model.Command) u64 {
     return max_bytes;
 }
 
+fn prewarmKernelDispatches(ctx: *execution.ExecutionContext, commands: []const model.Command) void {
+    for (commands) |command| {
+        switch (command) {
+            .kernel_dispatch => |kd| {
+                ctx.prewarmKernelDispatch(kd.kernel, kd.bindings) catch {};
+            },
+            else => {},
+        }
+    }
+}
+
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
     const argv = try std.process.argsAlloc(allocator);
@@ -394,6 +405,7 @@ pub fn main() !void {
             if (max_upload_bytes > 0) {
                 try ctx.prewarmUploadPath(max_upload_bytes);
             }
+            prewarmKernelDispatches(ctx, commands);
         }
     }
     defer {
