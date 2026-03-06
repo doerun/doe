@@ -207,15 +207,9 @@ void metal_bridge_shared_event_wait(MetalHandle event_h, uint64_t value) {
     id<MTLSharedEvent> event = (__bridge id<MTLSharedEvent>)event_h;
     // Quick check: often the GPU has already completed by the time we get here.
     if (event.signaledValue >= value) return;
-    // Spin phase 1: tight loop with ARM yield (~50us at 3.5GHz).
-    for (int i = 0; i < 8192; i++) {
-        if (event.signaledValue >= value) return;
-#if defined(__aarch64__) || defined(__arm64__)
-        __asm__ volatile ("yield");
-#endif
-    }
-    // Spin phase 2: longer spin for GPU scheduling delays (~200us).
-    for (int i = 0; i < 32768; i++) {
+    // Spin with ARM yield hint. Covers ~500us of GPU scheduling delay at ~5ns/iter.
+    // Most dispatches complete within 50-200us; extended spin avoids sched_yield tail.
+    for (int i = 0; i < 100000; i++) {
         if (event.signaledValue >= value) return;
 #if defined(__aarch64__) || defined(__arm64__)
         __asm__ volatile ("yield");
@@ -886,6 +880,77 @@ void metal_bridge_icb_encode_draws(
               instanceCount:instance_count
                baseInstance:0];
     }
+}
+
+// ============================================================
+// Combined compute dispatch + blit copy + event signal + commit
+// Single ObjC call eliminates per-step bridge overhead.
+// ============================================================
+
+MetalHandle metal_bridge_compute_dispatch_copy_signal_commit(
+    MetalHandle  queue_h,
+    MetalHandle  pipeline_h,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    uint32_t     x,
+    uint32_t     y,
+    uint32_t     z,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z,
+    MetalHandle  copy_src_h,
+    uint64_t     copy_src_off,
+    MetalHandle  copy_dst_h,
+    uint64_t     copy_dst_off,
+    uint64_t     copy_size,
+    MetalHandle  event_h,
+    uint64_t     event_value)
+{
+    id<MTLCommandQueue>         queue    = (__bridge id<MTLCommandQueue>)queue_h;
+    id<MTLComputePipelineState> pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
+
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
+    if (cmd_buf == nil) return NULL;
+
+    // Compute dispatch
+    id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
+    [encoder setComputePipelineState:pipeline];
+    for (uint32_t i = 0; i < buffer_count; i++) {
+        if (buffers[i] != NULL) {
+            id<MTLBuffer> buf = (__bridge id<MTLBuffer>)buffers[i];
+            [encoder setBuffer:buf offset:0 atIndex:i];
+        }
+    }
+    MTLSize tg_size;
+    if (wg_x > 0) {
+        tg_size = MTLSizeMake(wg_x, wg_y > 0 ? wg_y : 1, wg_z > 0 ? wg_z : 1);
+    } else {
+        NSUInteger max_tg = pipeline.maxTotalThreadsPerThreadgroup;
+        if (max_tg == 0) max_tg = 256;
+        tg_size = MTLSizeMake(max_tg, 1, 1);
+    }
+    [encoder dispatchThreadgroups:MTLSizeMake(x, y, z) threadsPerThreadgroup:tg_size];
+    [encoder endEncoding];
+
+    // Blit copy (if requested)
+    if (copy_size > 0 && copy_src_h != NULL && copy_dst_h != NULL) {
+        id<MTLBuffer> src = (__bridge id<MTLBuffer>)copy_src_h;
+        id<MTLBuffer> dst = (__bridge id<MTLBuffer>)copy_dst_h;
+        id<MTLBlitCommandEncoder> blit = [cmd_buf blitCommandEncoder];
+        [blit copyFromBuffer:src sourceOffset:(NSUInteger)copy_src_off
+                    toBuffer:dst destinationOffset:(NSUInteger)copy_dst_off
+                        size:(NSUInteger)copy_size];
+        [blit endEncoding];
+    }
+
+    // Signal event + commit
+    if (event_h != NULL) {
+        id<MTLSharedEvent> event = (__bridge id<MTLSharedEvent>)event_h;
+        [cmd_buf encodeSignalEvent:event value:event_value];
+    }
+    [cmd_buf commit];
+
+    return (MetalHandle)CFBridgingRetain(cmd_buf);
 }
 
 // ============================================================

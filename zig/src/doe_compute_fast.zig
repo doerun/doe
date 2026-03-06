@@ -1,15 +1,28 @@
 const native = @import("doe_wgpu_native.zig");
 
-extern fn metal_bridge_create_command_buffer(queue: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_cmd_buf_encode_compute_dispatch(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
-extern fn metal_bridge_command_buffer_commit(cmd: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_encode_signal_event(cmd: ?*anyopaque, event: ?*anyopaque, value: u64) callconv(.c) void;
+extern fn metal_bridge_compute_dispatch_copy_signal_commit(
+    queue: ?*anyopaque,
+    pipeline: ?*anyopaque,
+    bufs: ?[*]?*anyopaque,
+    buf_count: u32,
+    x: u32,
+    y: u32,
+    z: u32,
+    wg_x: u32,
+    wg_y: u32,
+    wg_z: u32,
+    copy_src: ?*anyopaque,
+    copy_src_off: u64,
+    copy_dst: ?*anyopaque,
+    copy_dst_off: u64,
+    copy_size: u64,
+    event: ?*anyopaque,
+    event_value: u64,
+) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_shared_event_wait(event: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?[*]u8;
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 const MAX_BIND = native.MAX_BIND;
-const MAX_DEFERRED_COPIES = 16;
 
 fn cast(comptime T: type, raw: ?*anyopaque) ?*T {
     const ptr = raw orelse return null;
@@ -26,15 +39,11 @@ fn flushPendingWork(q: *native.DoeQueue) void {
         metal_bridge_release(cmd);
         q.pending_cmd = null;
     }
-    for (q.deferred_copies[0..q.deferred_copy_count]) |dc| {
-        @memcpy(dc.dst[0..dc.size], dc.src[0..dc.size]);
-    }
-    q.deferred_copy_count = 0;
 }
 
-/// Single-call compute dispatch + deferred copy + commit.
-/// Bypasses Zig command recording. Wait deferred to flushPendingWork (mapAsync).
-/// Uses MTLSharedEvent for GPU→CPU signaling (no GCD completion handler overhead).
+/// Single-call compute dispatch + GPU blit copy + event signal + commit.
+/// Everything happens in one ObjC bridge call for minimal overhead.
+/// Wait deferred to flushPendingWork (mapAsync).
 pub export fn doeNativeComputeDispatchFlush(
     q_raw: ?*anyopaque,
     pipe_raw: ?*anyopaque,
@@ -52,7 +61,8 @@ pub export fn doeNativeComputeDispatchFlush(
     const q = cast(native.DoeQueue, q_raw) orelse return;
     const pipe = cast(native.DoeComputePipeline, pipe_raw) orelse return;
     flushPendingWork(q);
-    const mtl_cmd = metal_bridge_create_command_buffer(q.dev.mtl_queue) orelse return;
+
+    // Flatten bind groups into linear Metal buffer array.
     var bufs: [MAX_BIND * 4]?*anyopaque = [_]?*anyopaque{null} ** (MAX_BIND * 4);
     var buf_total: u32 = 0;
     for (0..@min(bg_count, 4)) |i| {
@@ -65,29 +75,28 @@ pub export fn doeNativeComputeDispatchFlush(
             }
         }
     }
-    metal_bridge_cmd_buf_encode_compute_dispatch(
-        mtl_cmd, pipe.mtl_pso, @ptrCast(&bufs), buf_total,
-        dx, dy, dz, pipe.wg_x, pipe.wg_y, pipe.wg_z,
-    );
+
+    // Resolve copy buffer Metal handles.
+    var mtl_copy_src: ?*anyopaque = null;
+    var mtl_copy_dst: ?*anyopaque = null;
     if (copy_size > 0) {
-        const sb = cast(native.DoeBuffer, copy_src);
-        const db = cast(native.DoeBuffer, copy_dst);
-        if (sb != null and db != null) {
-            const sp = metal_bridge_buffer_contents(sb.?.mtl);
-            const dp = metal_bridge_buffer_contents(db.?.mtl);
-            if (sp != null and dp != null and q.deferred_copy_count < MAX_DEFERRED_COPIES) {
-                q.deferred_copies[q.deferred_copy_count] = .{
-                    .src = sp.? + @as(usize, @intCast(copy_src_off)),
-                    .dst = dp.? + @as(usize, @intCast(copy_dst_off)),
-                    .size = @intCast(copy_size),
-                };
-                q.deferred_copy_count += 1;
-            }
-        }
+        if (cast(native.DoeBuffer, copy_src)) |sb| mtl_copy_src = sb.mtl;
+        if (cast(native.DoeBuffer, copy_dst)) |db| mtl_copy_dst = db.mtl;
     }
-    // Signal shared event after compute work completes on GPU.
+
     q.event_counter += 1;
-    metal_bridge_command_buffer_encode_signal_event(mtl_cmd, q.mtl_event, q.event_counter);
-    metal_bridge_command_buffer_commit(mtl_cmd);
+    const mtl_cmd = metal_bridge_compute_dispatch_copy_signal_commit(
+        q.dev.mtl_queue,
+        pipe.mtl_pso,
+        @ptrCast(&bufs),
+        buf_total,
+        dx, dy, dz,
+        pipe.wg_x, pipe.wg_y, pipe.wg_z,
+        mtl_copy_src, copy_src_off,
+        mtl_copy_dst, copy_dst_off,
+        copy_size,
+        q.mtl_event,
+        q.event_counter,
+    ) orelse return;
     q.pending_cmd = mtl_cmd;
 }

@@ -14,8 +14,8 @@
     }
   },
   "run": {
-    "iterations": 50,
-    "warmup": 5,
+    "iterations": 200,
+    "warmup": 20,
     "minTimedSamples": 19,
     "outDir": "bench/out/node-doe-vs-dawn"
   },
