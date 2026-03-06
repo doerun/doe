@@ -26,6 +26,9 @@ bench/out/scratch/
 bench/out/**/tmp.*
 bench/out/**/tmp.*/
 
+# Generated Lean proof artifacts
+lean/artifacts/
+
 # Editor/temp artifacts
 *.swp
 *.tmp

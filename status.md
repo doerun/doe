@@ -819,8 +819,8 @@ Dawn-via-Dawn-delegation against Dawn-via-Doe-wrapper for all command types — 
 - `zig/src/backend/metal/metal_native_runtime_stub.zig`: non-macOS stub (returns `error.UnsupportedFeature`).
 - `zig/src/backend/metal/mod.zig`: `ZigMetalBackend` rewritten to use `NativeMetalRuntime` directly.
   `inner: webgpu.WebGPUBackend` removed. Dawn is not loaded or used in `metal_zig` mode.
-  Capabilities reduced to `{buffer_upload, barrier_sync}` — only implemented operations.
-  All other commands (kernel_dispatch, render_draw, dispatch, etc.) return explicit `.unsupported` status.
+  Initial capabilities were `{buffer_upload, barrier_sync}` only; subsequently expanded to include
+  `kernel_dispatch`, `render_draw`, `async_diagnostics`, texture lifecycle, and more (see capability set in code).
 - `zig/build.zig`: Metal + Foundation framework linking added for macOS targets (exe, dropin, test).
 - Tests in `zig/tests/metal/metal_mod_integration_test.zig` and `metal_timing_semantics_test.zig` updated
   to reflect new native-only architecture: `kernel_dispatch` now correctly expected to return `.unsupported`.
@@ -828,17 +828,17 @@ Dawn-via-Dawn-delegation against Dawn-via-Doe-wrapper for all command types — 
 **Architecture contract going forward:**
 - `doe_metal` backend = native Metal execution only. No Dawn delegation.
 - `dawn_oracle` / `dawn_delegate` backend = Dawn execution (for correctness comparison).
-- Native kernel_dispatch/render_draw for `doe_metal` are not yet implemented; they return explicit `.unsupported`.
-- Upload and barrier are fully native: MTLDevice, MTLCommandQueue, MTLBuffer, MTLBlitCommandEncoder.
+- Upload, barrier, kernel_dispatch, render_draw, and async_diagnostics are all natively implemented.
+- Native Metal runtime uses MTLDevice, MTLCommandQueue, MTLBuffer, MTLBlitCommandEncoder, MTLComputePipelineState, MTLComputeCommandEncoder.
 
 **Impact on benchmarks:**
-- Upload and barrier workloads: genuine Doe-native Metal vs Dawn Metal comparison.
-- Render/dispatch workloads: return `.unsupported` in `metal_zig` lanes — no longer falsely reporting Dawn-vs-Dawn timing as "Doe" results.
-- A future benchmark pass after this fix will reflect genuine native Metal upload/barrier performance.
+- Upload, barrier, kernel_dispatch, render_draw, and async_diagnostics: genuine Doe-native Metal vs Dawn Metal comparison.
+- Commands without native implementation return `.unsupported` with explicit taxonomy.
+- 17/30 workloads claimable on Apple M3 as of 2026-03-06 (see claim substantiation section).
 
 **Outstanding gaps (tracked):**
-- Native `kernel_dispatch` (WGSL → MSL compilation, MTLComputePipelineDescriptor) not yet implemented.
-- Native `render_draw` (MTLRenderPipelineDescriptor, MTLRenderCommandEncoder) not yet implemented.
+- ~~Native `kernel_dispatch`~~ DONE (2026-03-06): batch compute dispatch via MTLComputePipelineState + MTLComputeCommandEncoder, with pipeline prewarm.
+- ~~Native `render_draw`~~ DONE: render_draw now executes through native Metal with ICB support.
 - GPU timestamps via MTLCounterSampleBuffer not yet wired.
 - Drop-in library build has a pre-existing `pub usingnamespace` Zig 0.15 compile error (unrelated to this fix).
 
@@ -1061,7 +1061,7 @@ Meaning:
   - compute: workgroup-atomic (+13%/+29%), workgroup-non-atomic (+15%/+37%), 3 matrix-vector variants (+2.5–3.5%), concurrent-execution (+4.4%), zero-init-workgroup (+204%/+201%)
   - render: redundant-pipeline/bindings (+94%/+92%), draw-throughput-macro-200k (+30%/+26%)
   - misc: async-pipeline-diagnostics (+16%/+15%), pixel-local-storage-barrier (+877%/+860%)
-- **not yet claimable (13/30):** render draw throughput/state/bindings, render bundles, texture lifecycle, shader-compile stress, resource lifecycle, uniform buffer update — these rely on Dawn-owned render/resource APIs where Doe does not yet have native Metal implementations.
+- **not yet claimable (13/30):** render draw throughput/state/bindings (−59% to −96%), render bundles (−85% to −87%), texture lifecycle (−71% to −84%), shader-compile stress (−81%), resource lifecycle (−95%), uniform buffer update (−84%), upload 1kb/1mb (tail variance). All are natively implemented. The large negative deltas reflect early/unoptimized native Metal render, texture, and resource paths compared to Dawn's mature Metal backend. Upload 1kb/1mb are near-parity but fail at p95 tails.
 - config: `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
 - latest run: `bench/out/20260306T*/dawn-vs-doe.local.metal.extended.comparable.json`
 

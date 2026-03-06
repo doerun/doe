@@ -17,7 +17,6 @@ Current integration boundary (v0):
 - Lean files in `fawn/lean/Fawn` are the formal contract/model source for verification semantics.
 - Blocking CI gates are currently schema/correctness/trace (and claim when enabled) through `fawn/bench` scripts.
 - Zig/Python runtime/gate logic mirrors Lean obligation fields and policy (`verificationMode`, `proofLevel`, blocking/advisory outcomes).
-- End-to-end Lean proof execution and automated proof-to-branch-elimination are planned but not yet wired.
 - Manual Lean typecheck/build is available through `./lean/check.sh` (uses pinned toolchain version from `config/toolchains.json`).
 
 Current formalization:
@@ -29,6 +28,7 @@ Current formalization:
 - `Fawn/Comparability.lean` (machine-checkable apples-to-apples comparability obligation model and blocking-failure semantics)
 - `Fawn/ComparabilityFixtures.lean` (fixed comparability-facts parity fixtures with expected blocking-obligation proofs)
 - `Fawn/Dispatch.lean` and `Fawn/Runtime.lean` now include `kernelDispatch` as a first-class command kind.
+- `Fawn/Extract.lean` (proof artifact extraction program)
 
 Bridge layer contract:
 - input: runtime `DispatchResult` stream
@@ -48,3 +48,11 @@ Bridge layer contract:
 Usage model:
 - proofs are authored manually; no auto-generated theorem output is expected for `fawn`.
 - runtime obligations should map from `verificationMode` + safety class to theorem entry points in a separate integration layer.
+
+Proof artifact extraction:
+- `./lean/extract.sh` compiles all Lean modules and runs `Fawn/Extract.lean` to produce `lean/artifacts/proven-conditions.json`.
+- The artifact lists all verified theorems, evaluates decidable propositions, and maps theorems to Zig runtime elimination targets.
+- Artifact schema: `config/proof-artifact.schema.json`.
+- CI runs extraction after typecheck and uploads the artifact (see `.github/workflows/lean-check.yml`).
+- The artifact is generated (not committed); `lean/artifacts/` is gitignored.
+- Zig build can optionally embed the artifact at comptime via `@embedFile` for proof-driven branch elimination.

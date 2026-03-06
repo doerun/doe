@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Proof Artifact",
+  "description": "Machine-readable artifact emitted by Lean proof extraction. Compilation of the extraction module verifies all listed theorems. Decidable propositions are additionally evaluated at runtime.",
+  "type": "object",
+  "required": ["schemaVersion", "status", "theorems", "evaluatedConditions", "eliminationTargets"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["verified", "failed"],
+      "description": "verified means all theorems typechecked and all evaluations completed."
+    },
+    "theorems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "module", "category"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Lean theorem name."
+          },
+          "module": {
+            "type": "string",
+            "description": "Lean module containing the theorem."
+          },
+          "category": {
+            "type": "string",
+            "enum": ["dispatch", "comparability"],
+            "description": "Functional category for the theorem."
+          }
+        }
+      }
+    },
+    "evaluatedConditions": {
+      "type": "object",
+      "description": "Decidable propositions evaluated at extraction time. Keys are dotted condition identifiers, values are booleans or integers.",
+      "additionalProperties": {
+        "type": ["boolean", "integer"]
+      }
+    },
+    "eliminationTargets": {
+      "type": "array",
+      "description": "Mapping from proven theorems to runtime branches that can be eliminated.",
+      "items": {
+        "type": "object",
+        "required": ["theorem", "condition", "runtimePath"],
+        "additionalProperties": false,
+        "properties": {
+          "theorem": {
+            "type": "string",
+            "description": "Lean theorem name that proves the condition."
+          },
+          "condition": {
+            "type": "string",
+            "description": "Human-readable description of the proven invariant."
+          },
+          "runtimePath": {
+            "type": "string",
+            "description": "Zig source path and function where the runtime branch can be eliminated."
+          }
+        }
+      }
+    }
+  }
+}

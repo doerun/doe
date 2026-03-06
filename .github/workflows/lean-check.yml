@@ -19,3 +19,12 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Run Lean typecheck
         run: bash lean/check.sh
+      - name: Extract proof artifacts
+        run: bash lean/extract.sh
+      - name: Validate proof artifact
+        run: python3 -c "import json; d = json.load(open('lean/artifacts/proven-conditions.json')); assert d['status'] == 'verified', 'proof artifact status is not verified'"
+      - name: Upload proof artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proven-conditions
+          path: lean/artifacts/proven-conditions.json

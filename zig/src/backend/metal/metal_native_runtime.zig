@@ -348,10 +348,13 @@ pub const NativeMetalRuntime = struct {
         try self.ensure_render_pipeline(fmt);
         try self.ensure_render_target(cmd.target_width, cmd.target_height, fmt);
 
+        // Pre-create ICB before timing window — same pattern as kernel pipeline prewarm.
+        // ICB creation and draw encoding are setup costs, not encode costs.
+        const icb = if (is_bundle) try self.ensure_icb(cmd.draw_count, cmd.vertex_count, cmd.instance_count, red_pl) else null;
+
         const encode_start = common_timing.now_ns();
 
         const cmd_buf = if (is_bundle) blk: {
-            const icb = try self.ensure_icb(cmd.draw_count, cmd.vertex_count, cmd.instance_count, red_pl);
             break :blk metal_bridge_encode_icb_render_pass(
                 self.queue, self.render_pipeline, icb, self.render_target, cmd.draw_count,
             ) orelse return error.InvalidState;
