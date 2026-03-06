@@ -47,6 +47,64 @@ MetalHandle metal_bridge_encode_blit_batch(
     size_t*      byte_counts,
     uint32_t     count);
 
+// === Streaming Blit Encoder ===
+
+// Create a command buffer with a blit encoder ready for appending copies.
+// Returns the command buffer (+1 retained). encoder_out receives the encoder.
+MetalHandle metal_bridge_begin_blit_encoding(MetalHandle queue, MetalHandle* encoder_out);
+// Append a copy to an open blit encoder.
+void metal_bridge_blit_encoder_copy(
+    MetalHandle encoder,
+    MetalHandle src,
+    MetalHandle dst,
+    size_t      byte_count);
+// End the current blit encoder. Call before commit or before starting a new encoder.
+void metal_bridge_end_blit_encoding(MetalHandle encoder);
+
+// === Streaming Command Buffer ===
+
+// Create a command buffer without any encoder (+1 retained).
+MetalHandle metal_bridge_create_command_buffer(MetalHandle queue);
+// Open a blit encoder on an existing command buffer. Returns unretained encoder.
+MetalHandle metal_bridge_cmd_buf_blit_encoder(MetalHandle cmd_buf);
+// Encode a render pass on an existing command buffer (no commit).
+void metal_bridge_cmd_buf_encode_render_pass(
+    MetalHandle cmd_buf,
+    MetalHandle pipeline,
+    MetalHandle target,
+    uint32_t    draw_count,
+    uint32_t    vertex_count,
+    uint32_t    instance_count,
+    int         redundant_pipeline,
+    int         redundant_bindgroup);
+// Encode an ICB render pass on an existing command buffer (no commit).
+void metal_bridge_cmd_buf_encode_icb_render_pass(
+    MetalHandle cmd_buf,
+    MetalHandle pipeline,
+    MetalHandle icb,
+    MetalHandle target,
+    uint32_t    draw_count);
+// Create render encoder on cmd_buf (unretained). Pipeline is set.
+MetalHandle metal_bridge_cmd_buf_render_encoder(
+    MetalHandle cmd_buf,
+    MetalHandle pipeline,
+    MetalHandle target);
+// Draw loop on an open render encoder.
+void metal_bridge_render_encoder_draw(
+    MetalHandle encoder,
+    uint32_t    draw_count,
+    uint32_t    vertex_count,
+    uint32_t    instance_count,
+    int         redundant_pipeline,
+    MetalHandle pipeline);
+// Execute ICB on an open render encoder.
+void metal_bridge_render_encoder_execute_icb(
+    MetalHandle encoder,
+    MetalHandle icb,
+    uint32_t    draw_count);
+// End a render encoder.
+void metal_bridge_render_encoder_end(MetalHandle encoder);
+
 // === Compute Pipeline ===
 
 // Compile MSL source into a MTLLibrary. On error writes a NUL-terminated

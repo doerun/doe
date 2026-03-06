@@ -11,13 +11,18 @@ const DOE_LIB_PATH = resolveDoeLibraryPath();
 let libraryLoaded = false;
 
 function loadAddon() {
+  const prebuildPath = resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, 'doe_napi.node');
   try {
-    return require('../build/Release/doe_napi.node');
+    return require(prebuildPath);
   } catch {
     try {
-      return require('../build/Debug/doe_napi.node');
+      return require('../build/Release/doe_napi.node');
     } catch {
-      return null;
+      try {
+        return require('../build/Debug/doe_napi.node');
+      } catch {
+        return null;
+      }
     }
   }
 }

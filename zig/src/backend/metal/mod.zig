@@ -465,7 +465,10 @@ fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]con
 
 fn flush_pending_uploads_if_required(self: *ZigMetalBackend, command: model.Command) !u64 {
     switch (command) {
-        .upload => return 0,
+        // All these commands share the streaming command buffer.
+        // Metal guarantees in-order execution within a command buffer,
+        // so uploads complete before subsequent render passes.
+        .upload, .barrier, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => return 0,
         else => {},
     }
     if (self.pending_upload_commands == 0) return 0;

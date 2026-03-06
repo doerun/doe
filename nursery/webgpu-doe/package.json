@@ -1,7 +1,7 @@
 {
   "name": "@simulatte/webgpu-doe",
   "version": "0.1.0",
-  "description": "Native Doe WebGPU runtime for Node.js — Zig-built Metal/Vulkan/D3D12 backends via N-API",
+  "description": "Doe WebGPU runtime for Node.js — native Zig GPU backends (Metal, Vulkan) via N-API",
   "type": "module",
   "main": "./src/index.js",
   "exports": {
@@ -12,13 +12,18 @@
     "src/index.js",
     "native/",
     "binding.gyp",
+    "prebuilds/",
     "README.md"
   ],
   "scripts": {
-    "install": "node-gyp rebuild",
-    "build": "node-gyp rebuild"
+    "build:addon": "node-gyp rebuild"
   },
-  "gypfile": true,
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
   "keywords": [
     "webgpu",
     "doe",
@@ -26,11 +31,11 @@
     "compute",
     "headless",
     "node",
-    "bun",
     "native",
     "napi",
     "metal",
-    "vulkan"
+    "vulkan",
+    "zig"
   ],
   "repository": {
     "type": "git",

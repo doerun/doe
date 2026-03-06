@@ -1,36 +1,69 @@
 # @simulatte/webgpu-doe
 
-Native WebGPU runtime for Node.js via the Doe drop-in library.
+Headless WebGPU for Node.js, powered by the
+[Doe](https://github.com/clocksmith/fawn) runtime.
 
-Doe (`libdoe_webgpu`) is a Zig-built WebGPU routing layer that provides the
-standard `wgpu*` C ABI. This package wraps it as a Node.js N-API addon, giving
-JavaScript code a WebGPU compute surface without depending on browser runtimes.
+## What this is
 
-## Status
+Doe is a Zig WebGPU implementation with native Metal and Vulkan backends. It
+implements the standard `wgpu*` C ABI so it can serve as a drop-in replacement
+for Dawn or wgpu-native in any application that uses the WebGPU C API.
 
-**v0.1.0 — bring your own libs.** This release ships the N-API binding source
-and JS wrapper. You must build `libdoe_webgpu` yourself and point the package
-to it. Prebuilt binaries are planned for a future release.
+This package ships:
 
-## Requirements
+- **`libdoe_webgpu`** — the Doe drop-in library (Zig, ~2 MB)
+- **`libwebgpu_dawn`** — Dawn sidecar for GPU execution (~11 MB)
+- **`doe_napi.node`** — N-API addon bridging `libdoe_webgpu` to JavaScript
+- **`src/index.js`** — JS wrapper providing WebGPU-shaped classes and constants
 
-- Node.js >= 18
-- A C compiler (node-gyp builds the N-API addon on `npm install`)
-- `libdoe_webgpu` shared library (`.dylib` / `.so` / `.dll`)
-- Dawn sidecar library (`libwebgpu_dawn`) — loaded by `libdoe_webgpu` at runtime
+## Architecture
 
-## Building libdoe_webgpu
-
-From the [fawn](https://github.com/clocksmith/fawn) repository:
-
-```sh
-cd fawn/zig
-zig build dropin
-# produces zig-out/lib/libdoe_webgpu.{dylib,so}
+```
+JavaScript (DoeGPUDevice, DoeGPUBuffer, ...)
+    |
+  N-API addon (doe_napi.c)
+    |
+  libdoe_webgpu.dylib  ← Doe drop-in, Zig routing layer
+    |
+  libwebgpu_dawn.dylib ← GPU execution (Metal on macOS, Vulkan on Linux)
 ```
 
-The Dawn sidecar must also be built or obtained separately. See
-`fawn/bench/vendor/dawn/` for build instructions.
+### Current state (v0.1.x)
+
+The `wgpu*` C ABI calls are routed through Dawn for GPU execution. Doe provides
+the routing layer, symbol ownership policy, and diagnostic instrumentation.
+
+### Roadmap: native Zig backends
+
+Doe has real, working native GPU backends:
+
+| Backend | Platform | Capabilities |
+|---------|----------|-------------|
+| Metal | macOS | buffer upload, compute dispatch (MSL), render, textures, sync |
+| Vulkan | Linux | buffer upload, compute dispatch (SPIR-V), barrier sync, timestamps |
+| D3D12 | Windows | buffer upload, sync (compute dispatch in progress) |
+
+These backends make real GPU API calls (Metal framework via ObjC bridge, Vulkan
+C ABI, D3D12 COM). They are not simulations.
+
+The `wgpu*` C ABI functions are being implemented natively against these
+backends, one function at a time. The Doe routing layer supports per-symbol
+ownership, so each function can independently flip from Dawn delegation to
+native Zig execution. The Dawn sidecar dependency will shrink as coverage grows
+and will eventually be eliminated.
+
+## Platform support
+
+| Platform | Architecture | Status |
+|----------|-------------|--------|
+| macOS | arm64 | Prebuilt, tested |
+| macOS | x64 | Not yet built |
+| Linux | x64 | Not yet built |
+| Linux | arm64 | Not yet built |
+| Windows | x64 | Not yet built |
+
+v0.1.0 ships prebuilt binaries for macOS arm64 only. Other platforms require
+building from source (see [Building from source](#building-from-source)).
 
 ## Install
 
@@ -38,32 +71,10 @@ The Dawn sidecar must also be built or obtained separately. See
 npm install @simulatte/webgpu-doe
 ```
 
-node-gyp compiles the N-API addon automatically. If the build fails, ensure you
-have a working C toolchain (`xcode-select --install` on macOS, `build-essential`
-on Debian/Ubuntu).
-
-## Configuration
-
-The package searches for `libdoe_webgpu` in these locations (first match wins):
-
-1. `DOE_WEBGPU_LIB` environment variable (full path to the shared library)
-2. `<package>/prebuilds/<platform>-<arch>/libdoe_webgpu.{ext}` (future prebuilds)
-3. `<workspace>/zig/zig-out/lib/libdoe_webgpu.{ext}` (monorepo dev layout)
-4. `<cwd>/zig/zig-out/lib/libdoe_webgpu.{ext}`
-
-Dawn's sidecar library must be discoverable at runtime. On macOS/Linux, set
-`DYLD_LIBRARY_PATH` or `LD_LIBRARY_PATH` to include the directory containing
-`libwebgpu_dawn.dylib` / `libwebgpu_dawn.so`.
-
-```sh
-export DOE_WEBGPU_LIB=/path/to/libdoe_webgpu.dylib
-export DYLD_LIBRARY_PATH=/path/to/dawn/out/Release
-node your-app.js
-```
+The N-API addon compiles from C source on install via node-gyp. This requires
+a C compiler (`xcode-select --install` on macOS).
 
 ## Usage
-
-### Direct API
 
 ```js
 import { create, globals } from '@simulatte/webgpu-doe';
@@ -72,10 +83,23 @@ const gpu = create();
 const adapter = await gpu.requestAdapter();
 const device = await adapter.requestDevice();
 
+// Standard WebGPU compute workflow
 const buffer = device.createBuffer({
   size: 64,
   usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_SRC,
 });
+
+const shader = device.createShaderModule({
+  code: `
+    @group(0) @binding(0) var<storage, read_write> data: array<f32>;
+    @compute @workgroup_size(64)
+    fn main(@builtin(global_invocation_id) id: vec3u) {
+      data[id.x] = data[id.x] * 2.0;
+    }
+  `,
+});
+
+// ... create pipeline, bind group, encode, dispatch, readback
 ```
 
 ### Setup globals (navigator.gpu)
@@ -84,33 +108,55 @@ const buffer = device.createBuffer({
 import { setupGlobals } from '@simulatte/webgpu-doe';
 
 setupGlobals(globalThis);
-
 const adapter = await navigator.gpu.requestAdapter();
-const device = await adapter.requestDevice();
 ```
 
-### Convenience helpers
+### Provider info
 
 ```js
-import { requestAdapter, requestDevice } from '@simulatte/webgpu-doe';
-
-const adapter = await requestAdapter();
-const device = await requestDevice();
+import { providerInfo } from '@simulatte/webgpu-doe';
+console.log(providerInfo());
+// { module: '@simulatte/webgpu-doe', loaded: true, doeNative: true, ... }
 ```
 
-## Supported surface
+## API surface (v0.1.0)
 
-v0.1.0 covers the headless compute surface:
+Headless compute:
 
-- Instance creation, adapter/device request
-- Buffer create, map, unmap, destroy
-- Shader module creation (WGSL)
-- Compute pipeline, bind group layout, bind group, pipeline layout
-- Command encoder, compute pass (setPipeline, setBindGroup, dispatch, end)
-- Buffer-to-buffer copy
-- Queue submit, queue writeBuffer
+- `create()` / `setupGlobals()` / `requestAdapter()` / `requestDevice()`
+- `device.createBuffer()` / `device.createShaderModule()` (WGSL)
+- `device.createComputePipeline()` / `device.createBindGroupLayout()`
+- `device.createBindGroup()` / `device.createPipelineLayout()`
+- `device.createCommandEncoder()` / `encoder.beginComputePass()`
+- `pass.setPipeline()` / `pass.setBindGroup()` / `pass.dispatchWorkgroups()`
+- `encoder.copyBufferToBuffer()` / `queue.submit()` / `queue.writeBuffer()`
+- `buffer.mapAsync()` / `buffer.getMappedRange()` / `buffer.unmap()`
 
-Render passes, textures, and canvas presentation are not yet supported.
+Not yet supported: render passes, textures, samplers, canvas presentation.
+
+## Configuration
+
+The library search order:
+
+1. `DOE_WEBGPU_LIB` environment variable (full path)
+2. `<package>/prebuilds/<platform>-<arch>/libdoe_webgpu.{ext}`
+3. `<workspace>/zig/zig-out/lib/libdoe_webgpu.{ext}` (monorepo layout)
+4. `<cwd>/zig/zig-out/lib/libdoe_webgpu.{ext}`
+
+The Dawn sidecar is found automatically when co-located with `libdoe_webgpu`.
+
+## Building from source
+
+Requires [Zig](https://ziglang.org/download/) (0.15+) and a Dawn build.
+
+```sh
+git clone https://github.com/clocksmith/fawn
+cd fawn/zig
+zig build dropin
+# Output: zig-out/lib/libdoe_webgpu.{dylib,so}
+```
+
+Dawn build instructions: see `fawn/bench/vendor/dawn/`.
 
 ## License
 

@@ -123,6 +123,39 @@ void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf_h) {
 }
 
 // ============================================================
+// Streaming Blit Encoder
+// ============================================================
+
+MetalHandle metal_bridge_begin_blit_encoding(MetalHandle queue_h, MetalHandle* encoder_out) {
+    id<MTLCommandQueue> queue = (__bridge id<MTLCommandQueue>)queue_h;
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
+    if (cmd_buf == nil) return NULL;
+    id<MTLBlitCommandEncoder> encoder = [cmd_buf blitCommandEncoder];
+    if (encoder == nil) return NULL;
+    *encoder_out = (__bridge MetalHandle)encoder; // unretained — lifetime tied to cmd_buf
+    return (MetalHandle)CFBridgingRetain(cmd_buf);
+}
+
+void metal_bridge_blit_encoder_copy(
+    MetalHandle encoder_h,
+    MetalHandle src_h,
+    MetalHandle dst_h,
+    size_t      byte_count)
+{
+    id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+    id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_h;
+    id<MTLBuffer> dst = (__bridge id<MTLBuffer>)dst_h;
+    [encoder copyFromBuffer:src sourceOffset:0
+                   toBuffer:dst destinationOffset:0
+                       size:byte_count];
+}
+
+void metal_bridge_end_blit_encoding(MetalHandle encoder_h) {
+    id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+    [encoder endEncoding];
+}
+
+// ============================================================
 // Shared Event (lightweight GPU fence)
 // ============================================================
 
@@ -182,6 +215,129 @@ MetalHandle metal_bridge_encode_blit_batch(
     [encoder endEncoding];
 
     return (MetalHandle)CFBridgingRetain(cmd_buf);
+}
+
+// ============================================================
+// Streaming Command Buffer (shared across blit/render/compute)
+// ============================================================
+
+MetalHandle metal_bridge_create_command_buffer(MetalHandle queue_h) {
+    id<MTLCommandQueue> queue = (__bridge id<MTLCommandQueue>)queue_h;
+    id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
+    if (cmd_buf == nil) return NULL;
+    return (MetalHandle)CFBridgingRetain(cmd_buf);
+}
+
+MetalHandle metal_bridge_cmd_buf_blit_encoder(MetalHandle cmd_buf_h) {
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLBlitCommandEncoder> encoder = [cmd_buf blitCommandEncoder];
+    if (encoder == nil) return NULL;
+    return (__bridge MetalHandle)encoder; // unretained — lifetime tied to cmd_buf
+}
+
+void metal_bridge_cmd_buf_encode_render_pass(
+    MetalHandle cmd_buf_h,
+    MetalHandle pipeline_h,
+    MetalHandle target_h,
+    uint32_t    draw_count,
+    uint32_t    vertex_count,
+    uint32_t    instance_count,
+    int         redundant_pipeline,
+    int         redundant_bindgroup)
+{
+    (void)redundant_bindgroup;
+    id<MTLCommandBuffer>        cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
+    id<MTLTexture>              target   = (__bridge id<MTLTexture>)target_h;
+
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
+    [encoder setRenderPipelineState:pipeline];
+
+    for (uint32_t i = 0; i < draw_count; i++) {
+        if (redundant_pipeline) {
+            [encoder setRenderPipelineState:pipeline];
+        }
+        [encoder drawPrimitives:MTLPrimitiveTypeTriangle
+                    vertexStart:0
+                    vertexCount:vertex_count
+                  instanceCount:instance_count];
+    }
+    [encoder endEncoding];
+}
+
+void metal_bridge_cmd_buf_encode_icb_render_pass(
+    MetalHandle cmd_buf_h,
+    MetalHandle pipeline_h,
+    MetalHandle icb_h,
+    MetalHandle target_h,
+    uint32_t    draw_count)
+{
+    id<MTLCommandBuffer>         cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLRenderPipelineState>   pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
+    id<MTLIndirectCommandBuffer> icb      = (__bridge id<MTLIndirectCommandBuffer>)icb_h;
+    id<MTLTexture>               target   = (__bridge id<MTLTexture>)target_h;
+
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
+    [encoder setRenderPipelineState:pipeline];
+    [encoder executeCommandsInBuffer:icb withRange:NSMakeRange(0, draw_count)];
+    [encoder endEncoding];
+}
+
+// === Cached render encoder (kept open across render_draw calls) ===
+
+MetalHandle metal_bridge_cmd_buf_render_encoder(
+    MetalHandle cmd_buf_h,
+    MetalHandle pipeline_h,
+    MetalHandle target_h)
+{
+    id<MTLCommandBuffer>        cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
+    id<MTLTexture>              target   = (__bridge id<MTLTexture>)target_h;
+
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
+    if (encoder == nil) return NULL;
+    [encoder setRenderPipelineState:pipeline];
+    return (MetalHandle)CFBridgingRetain(encoder); // +1 retained; caller must release
+}
+
+void metal_bridge_render_encoder_draw(
+    MetalHandle encoder_h,
+    uint32_t    draw_count,
+    uint32_t    vertex_count,
+    uint32_t    instance_count,
+    int         redundant_pipeline,
+    MetalHandle pipeline_h)
+{
+    id<MTLRenderCommandEncoder> encoder  = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
+
+    for (uint32_t i = 0; i < draw_count; i++) {
+        if (redundant_pipeline) {
+            [encoder setRenderPipelineState:pipeline];
+        }
+        [encoder drawPrimitives:MTLPrimitiveTypeTriangle
+                    vertexStart:0
+                    vertexCount:vertex_count
+                  instanceCount:instance_count];
+    }
+}
+
+void metal_bridge_render_encoder_execute_icb(
+    MetalHandle encoder_h,
+    MetalHandle icb_h,
+    uint32_t    draw_count)
+{
+    id<MTLRenderCommandEncoder>  encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLIndirectCommandBuffer> icb     = (__bridge id<MTLIndirectCommandBuffer>)icb_h;
+    [encoder executeCommandsInBuffer:icb withRange:NSMakeRange(0, draw_count)];
+}
+
+void metal_bridge_render_encoder_end(MetalHandle encoder_h) {
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    [encoder endEncoding];
 }
 
 // ============================================================
