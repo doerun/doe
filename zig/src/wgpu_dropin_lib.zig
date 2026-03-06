@@ -25,6 +25,10 @@ comptime {
     _ = dropin_symbol_ownership;
     _ = dropin_router;
     _ = dropin_diagnostics;
+    // Native Metal backend — exports doeNative* C ABI symbols on macOS.
+    if (@import("builtin").os.tag == .macos) {
+        _ = @import("doe_wgpu_native.zig");
+    }
 }
 
 fn activeBehaviorMode() dropin_behavior_policy.BehaviorMode {

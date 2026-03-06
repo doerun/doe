@@ -47,7 +47,7 @@ pub fn translate(wgsl: []const u8, out: []u8) TranslateError!usize {
     var builtin_count: usize = 0;
 
     // Parse bindings and entry point from WGSL source.
-    var line_iter = std.mem.splitScalar(u8, wgsl, '\n');
+    const line_iter = std.mem.splitScalar(u8, wgsl, '\n');
     var in_fn = false;
     var brace_depth: i32 = 0;
     var pos: usize = 0;

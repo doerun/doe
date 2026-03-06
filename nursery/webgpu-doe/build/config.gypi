@@ -497,15 +497,15 @@
     "nodedir": "/Users/xyz/Library/Caches/node-gyp/22.20.0",
     "python": "/opt/homebrew/opt/python@3.14/bin/python3.14",
     "standalone_static_library": 1,
-    "prefix": "/Users/xyz/.nvm/versions/node/v22.20.0",
-    "user_agent": "npm/10.9.3 node/v22.20.0 darwin arm64 workspaces/false",
-    "cache": "/Users/xyz/.npm",
-    "node_gyp": "/Users/xyz/.nvm/versions/node/v22.20.0/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js",
-    "npm_version": "10.9.3",
+    "global_prefix": "/Users/xyz/.nvm/versions/node/v22.20.0",
+    "local_prefix": "/Users/xyz/deco/fawn/nursery/webgpu-doe",
+    "globalconfig": "/Users/xyz/.nvm/versions/node/v22.20.0/etc/npmrc",
     "init_module": "/Users/xyz/.npm-init.js",
     "userconfig": "/Users/xyz/.npmrc",
-    "globalconfig": "/Users/xyz/.nvm/versions/node/v22.20.0/etc/npmrc",
-    "local_prefix": "/Users/xyz/deco/fawn/nursery/webgpu-doe",
-    "global_prefix": "/Users/xyz/.nvm/versions/node/v22.20.0"
+    "npm_version": "10.9.3",
+    "node_gyp": "/Users/xyz/.nvm/versions/node/v22.20.0/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js",
+    "cache": "/Users/xyz/.npm",
+    "user_agent": "npm/10.9.3 node/v22.20.0 darwin arm64 workspaces/false",
+    "prefix": "/Users/xyz/.nvm/versions/node/v22.20.0"
   }
 }

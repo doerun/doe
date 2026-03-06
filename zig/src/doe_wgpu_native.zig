@@ -106,7 +106,7 @@ fn cast(comptime T: type, p: ?*anyopaque) ?*T {
     return @ptrCast(@alignCast(ptr));
 }
 
-fn opaque(p: anytype) ?*anyopaque {
+fn toOpaque(p: anytype) ?*anyopaque {
     return @ptrCast(p);
 }
 
@@ -118,7 +118,7 @@ pub export fn doeNativeCreateInstance(desc: ?*anyopaque) callconv(.c) ?*anyopaqu
     _ = desc;
     const inst = make(DoeInstance) orelse return null;
     inst.* = .{};
-    return opaque(inst);
+    return toOpaque(inst);
 }
 
 pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -130,7 +130,7 @@ pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [
     _ = timeout_ns;
     // All operations are synchronous — mark all futures as completed.
     for (infos[0..count]) |*info| info.completed = 1;
-    return 0; // WGPUWaitStatus_Success
+    return 1; // WGPUWaitStatus_Success = 0x00000001
 }
 
 // Flat adapter request: callback(status, adapter, message, userdata1, userdata2)
@@ -154,7 +154,7 @@ pub export fn doeNativeRequestAdapterFlat(
         return .{ .id = 1 };
     };
     adapter.* = .{ .device = device };
-    if (callback) |cb| cb(1, opaque(adapter), .{ .data = null, .length = 0 }, userdata1, userdata2);
+    if (callback) |cb| cb(1, toOpaque(adapter), .{ .data = null, .length = 0 }, userdata1, userdata2);
     return .{ .id = 1 };
 }
 
@@ -181,7 +181,7 @@ pub export fn doeNativeRequestDeviceFlat(
         return .{ .id = 2 };
     };
     dev.* = .{ .mtl_device = adapter.device, .mtl_queue = queue };
-    if (callback) |cb| cb(1, opaque(dev), .{ .data = null, .length = 0 }, userdata1, userdata2);
+    if (callback) |cb| cb(1, toOpaque(dev), .{ .data = null, .length = 0 }, userdata1, userdata2);
     return .{ .id = 2 };
 }
 
@@ -196,7 +196,7 @@ pub export fn doeNativeDeviceGetQueue(raw: ?*anyopaque) callconv(.c) ?*anyopaque
     const dev = cast(DoeDevice, raw) orelse return null;
     const q = make(DoeQueue) orelse return null;
     q.* = .{ .dev = dev };
-    return opaque(q);
+    return toOpaque(q);
 }
 
 // ============================================================
@@ -212,7 +212,7 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
     buf.mtl = metal_bridge_device_new_buffer_shared(dev.mtl_device, @intCast(d.size));
     if (buf.mtl == null) { alloc.destroy(buf); return null; }
     if (d.mappedAtCreation != 0) buf.mapped = true;
-    return opaque(buf);
+    return toOpaque(buf);
 }
 
 pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -238,7 +238,7 @@ pub export fn doeNativeBufferMapAsync(
     _ = size;
     // Shared buffers are always CPU-accessible. Just mark mapped and call back.
     if (cast(DoeBuffer, buf_raw)) |b| b.mapped = true;
-    if (cb_info.callback) |cb| cb(0, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+    cb_info.callback(1, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2); // WGPUMapAsyncStatus_Success = 1
     return .{ .id = 3 };
 }
 
@@ -290,7 +290,7 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
         return null;
     };
     sm.* = .{ .mtl_library = lib };
-    return opaque(sm);
+    return toOpaque(sm);
 }
 
 pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -323,7 +323,7 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
         return null;
     };
     cp.* = .{ .mtl_pso = pso };
-    return opaque(cp);
+    return toOpaque(cp);
 }
 
 pub export fn doeNativeComputePipelineRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -342,7 +342,7 @@ pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?
     const d = desc orelse return null;
     const bgl = make(DoeBindGroupLayout) orelse return null;
     bgl.* = .{ .entry_count = @intCast(d.entryCount) };
-    return opaque(bgl);
+    return toOpaque(bgl);
 }
 
 pub export fn doeNativeBindGroupLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -362,7 +362,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
             if (e.binding + 1 > bg.count) bg.count = e.binding + 1;
         }
     }
-    return opaque(bg);
+    return toOpaque(bg);
 }
 
 pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -374,7 +374,7 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
     _ = desc;
     const pl = make(DoePipelineLayout) orelse return null;
     pl.* = .{};
-    return opaque(pl);
+    return toOpaque(pl);
 }
 
 pub export fn doeNativePipelineLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -390,7 +390,7 @@ pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const enc = make(DoeCommandEncoder) orelse return null;
     enc.* = .{ .dev = dev };
-    return opaque(enc);
+    return toOpaque(enc);
 }
 
 pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -405,7 +405,7 @@ pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const pass = make(DoeComputePass) orelse return null;
     pass.* = .{ .enc = enc };
-    return opaque(pass);
+    return toOpaque(pass);
 }
 
 pub export fn doeNativeComputePassSetPipeline(pass_raw: ?*anyopaque, pip_raw: ?*anyopaque) callconv(.c) void {
@@ -453,7 +453,7 @@ pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const 
     const cb = make(DoeCommandBuffer) orelse return null;
     cb.* = .{ .dev = enc.dev, .cmds = enc.cmds };
     enc.cmds = .{}; // Transfer ownership.
-    return opaque(cb);
+    return toOpaque(cb);
 }
 
 pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -476,8 +476,9 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
         for (cb.cmds.items) |cmd| {
             switch (cmd) {
                 .dispatch => |d| {
+                    var bufs_copy = d.bufs;
                     const mtl_cmd = metal_bridge_encode_compute_dispatch(
-                        queue, d.pso, &d.bufs, d.buf_count, d.x, d.y, d.z,
+                        queue, d.pso, @as(?[*]?*anyopaque, &bufs_copy), d.buf_count, d.x, d.y, d.z,
                     );
                     if (mtl_cmd) |c| {
                         metal_bridge_command_buffer_commit(c);
@@ -511,6 +512,19 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
 }
 
 // ============================================================
+// Feature queries (stubs — report no optional features).
+pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
+    _ = raw;
+    _ = feature;
+    return 0;
+}
+
+pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
+    _ = raw;
+    _ = feature;
+    return 0;
+}
+
 // Instance process events (no-op for sync).
 pub export fn doeNativeInstanceProcessEvents(raw: ?*anyopaque) callconv(.c) void {
     _ = raw;
