@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2
+
+### Docs
+
+- Rewrote the package README intro and readiness notes to describe the shipped
+  package in concrete terms and remove slogan-style release language
+- Clarified that the published package currently targets `darwin-arm64`
+
 ## 0.1.1
 
 ### WGSL compiler

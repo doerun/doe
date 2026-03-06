@@ -1,108 +1,8 @@
 # @simulatte/webgpu-doe
 
-Headless WebGPU for Node.js, powered by the
-[Doe](https://github.com/clocksmith/fawn) runtime.
+Headless WebGPU for Node.js on the Doe runtime.
 
-## What this is
-
-A native Metal WebGPU implementation for Node.js — no Dawn, no IPC, no
-11 MB sidecar. Doe compiles WGSL to MSL at runtime via an AST-based
-shader compiler and dispatches directly to Metal via a Zig + ObjC bridge.
-
-This package ships:
-
-- **`libdoe_webgpu`** — Doe native runtime (~2 MB, Zig + Metal)
-- **`doe_napi.node`** — N-API addon bridging `libdoe_webgpu` to JavaScript
-- **`src/index.js`** — JS wrapper providing WebGPU-shaped classes and constants
-
-## Architecture
-
-```
-JavaScript (DoeGPUDevice, DoeGPUBuffer, ...)
-    |
-  N-API addon (doe_napi.c)
-    |
-  libdoe_webgpu.dylib  ← Doe native Metal backend, ~2 MB
-    |
-  Metal.framework       ← GPU execution (Apple Silicon)
-```
-
-No Dawn dependency. All GPU calls go directly from Zig to Metal.
-
-## Performance claims (Metal, Apple Silicon)
-
-Apples-to-apples vs Dawn (Chromium's WebGPU), matched workloads and timing:
-
-- **Compute e2e** — 1.5x faster (0.23ms vs 0.35ms, 4096 threads)
-- **Buffer upload** — faster across 1 KB to 4 GB (8 sizes claimable)
-- **Atomics** — workgroup atomic and non-atomic both claimable
-- **Matrix-vector multiply** — 3 variants claimable (naive, swizzle, workgroup-shared)
-- **Concurrent execution** — claimable
-- **Zero-init workgroup memory** — claimable
-- **Draw throughput** — 200k draws claimable
-- **Binary size** — ~2 MB vs Dawn's ~11 MB
-
-19 of 30 workloads are claimable. The remaining 11 are bottlenecked by
-per-command Metal command buffer creation overhead (~350us vs Dawn's ~30us).
-See `fawn/bench/` for methodology and raw data.
-
-## API surface
-
-Compute:
-
-- `create()` / `setupGlobals()` / `requestAdapter()` / `requestDevice()`
-- `device.createBuffer()` / `device.createShaderModule()` (WGSL)
-- `device.createComputePipeline()` / `device.createBindGroupLayout()`
-- `device.createBindGroup()` / `device.createPipelineLayout()`
-- `device.createCommandEncoder()` / `encoder.beginComputePass()`
-- `pass.setPipeline()` / `pass.setBindGroup()` / `pass.dispatchWorkgroups()`
-- `pass.dispatchWorkgroupsIndirect()`
-- `pipeline.getBindGroupLayout()`
-- `device.createComputePipelineAsync()`
-- `encoder.copyBufferToBuffer()` / `queue.submit()` / `queue.writeBuffer()`
-- `buffer.mapAsync()` / `buffer.getMappedRange()` / `buffer.unmap()`
-- `queue.onSubmittedWorkDone()`
-
-Render:
-
-- `device.createTexture()` / `texture.createView()` / `device.createSampler()`
-- `device.createRenderPipeline()` / `encoder.beginRenderPass()`
-- `renderPass.setPipeline()` / `renderPass.draw()` / `renderPass.end()`
-
-Device capabilities:
-
-- `device.limits` / `adapter.limits` — full Metal device limits
-- `device.features` / `adapter.features` — reports `shader-f16`
-
-Not yet supported: canvas/surface presentation, vertex/index buffer binding
-in render passes, full render pipeline descriptor parsing.
-
-## Backend readiness
-
-| Backend | Compute | Render | WGSL compiler | Status |
-|---------|---------|--------|---------------|--------|
-| **Metal** (macOS) | Production | Basic (no vertex/index) | WGSL -> MSL (AST-based) | Ready |
-| **Vulkan** (Linux) | WIP | Not started | WGSL -> SPIR-V needed | Experimental |
-| **D3D12** (Windows) | WIP | Not started | WGSL -> HLSL/DXIL needed | Experimental |
-
-**Metal** is the primary backend. All Doppler compute workloads run on Metal today:
-bind groups 0-3, buffer map/unmap, indirect dispatch, shader-f16, subgroups,
-override constants, workgroup shared memory, multiple entry points.
-
-**Vulkan** and **D3D12** have real native runtime paths (not stubs) with instance
-creation, compute dispatch, and buffer upload — but lack shader translation,
-bind group management, buffer map/unmap, textures, and render pipelines.
-
-See [`fawn/status.md`](../../status.md) for the full backend implementation matrix.
-
-## Platform support
-
-| Platform | Architecture | Status |
-|----------|-------------|--------|
-| macOS | arm64 | Prebuilt, tested |
-| macOS | x64 | Not yet built |
-| Linux | x64 | Not yet built (Vulkan backend experimental) |
-| Windows | x64 | Not yet built (D3D12 backend experimental) |
+**[Fawn](https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe)** · **[npm](https://www.npmjs.com/package/@simulatte/webgpu-doe)** · **[simulatte.world](https://simulatte.world)**
 
 ## Install
 
@@ -110,10 +10,11 @@ See [`fawn/status.md`](../../status.md) for the full backend implementation matr
 npm install @simulatte/webgpu-doe
 ```
 
-The N-API addon compiles from C source on install via node-gyp. This requires
-a C compiler (`xcode-select --install` on macOS).
+The published package currently targets `darwin-arm64`. The N-API addon builds
+from C source during install via `node-gyp`, so a local C toolchain is
+required (`xcode-select --install` on macOS).
 
-## Usage
+## Quick start
 
 ```js
 import { create, globals } from '@simulatte/webgpu-doe';
@@ -144,7 +45,93 @@ const shader = device.createShaderModule({
 // ... create pipeline, bind group, encode, dispatch, readback
 ```
 
-### Setup globals (navigator.gpu)
+The package loads `libdoe_webgpu` and exposes a WebGPU-shaped API for
+headless compute and basic render work. See [more examples](#more-examples)
+below for `navigator.gpu` setup and provider inspection.
+
+## Why Doe
+
+- Native path: JavaScript calls into an N-API addon, which loads
+  `libdoe_webgpu` and submits work through Doe's Metal backend.
+- Runtime ownership: WGSL is compiled to MSL inside Doe's AST-based compiler
+  instead of going through Dawn.
+- Small package payload: the shared library is about 2 MB on `darwin-arm64`.
+- WebGPU-shaped surface: `requestAdapter`, `requestDevice`, buffer mapping,
+  bind groups, compute pipelines, command encoders, and basic render passes are
+  exposed directly from the package.
+
+## Status
+
+Current package target:
+- macOS arm64: prebuilt library and tested package path
+
+Backend readiness:
+
+| Backend | Compute | Render | WGSL compiler | Status |
+|---------|---------|--------|---------------|--------|
+| **Metal** (macOS) | Production | Basic (no vertex/index) | WGSL -> MSL (AST-based) | Ready for package use |
+| **Vulkan** (Linux) | WIP | Not started | WGSL -> SPIR-V needed | Experimental |
+| **D3D12** (Windows) | WIP | Not started | WGSL -> HLSL/DXIL needed | Experimental |
+
+Metal currently covers the package's intended use: bind groups 0-3, buffer
+map/unmap, indirect dispatch, `shader-f16`, subgroups, override constants,
+workgroup shared memory, multiple entry points, textures, samplers, and basic
+render-pass execution.
+
+Vulkan and D3D12 already have native runtime paths for instance creation,
+compute dispatch, and buffer upload, but they still need shader translation,
+bind group management, buffer map/unmap, textures, and render pipelines.
+
+Performance snapshot from the Fawn Dawn-vs-Doe harness on Apple Silicon with
+strict comparability checks:
+
+- Compute e2e: 1.5x faster (0.23ms vs 0.35ms, 4096 threads)
+- Buffer upload: faster across 1 KB to 4 GB (8 sizes claimable)
+- Atomics: workgroup atomic and non-atomic both claimable
+- Matrix-vector multiply: 3 variants claimable
+- Concurrent execution: claimable
+- Zero-init workgroup memory: claimable
+- Draw throughput: 200k draws claimable
+- Binary size: about 2 MB vs Dawn's about 11 MB
+
+19 of 30 workloads are currently claimable. The remaining 11 are limited by
+per-command Metal command buffer creation overhead (~350us vs Dawn's ~30us).
+See `fawn/bench/` and [`status.md`](../../status.md) for methodology and the
+broader backend matrix.
+
+## API surface
+
+Compute:
+
+- `create()` / `setupGlobals()` / `requestAdapter()` / `requestDevice()`
+- `device.createBuffer()` / `device.createShaderModule()` (WGSL)
+- `device.createComputePipeline()` / `device.createComputePipelineAsync()`
+- `device.createBindGroupLayout()` / `device.createBindGroup()`
+- `device.createPipelineLayout()` / `pipeline.getBindGroupLayout()`
+- `device.createCommandEncoder()` / `encoder.beginComputePass()`
+- `pass.setPipeline()` / `pass.setBindGroup()` / `pass.dispatchWorkgroups()`
+- `pass.dispatchWorkgroupsIndirect()`
+- `encoder.copyBufferToBuffer()` / `queue.submit()` / `queue.writeBuffer()`
+- `buffer.mapAsync()` / `buffer.getMappedRange()` / `buffer.unmap()`
+- `queue.onSubmittedWorkDone()`
+
+Render:
+
+- `device.createTexture()` / `texture.createView()` / `device.createSampler()`
+- `device.createRenderPipeline()` / `encoder.beginRenderPass()`
+- `renderPass.setPipeline()` / `renderPass.draw()` / `renderPass.end()`
+
+Device capabilities:
+
+- `device.limits` / `adapter.limits`
+- `device.features` / `adapter.features` with `shader-f16`
+
+Current gaps:
+- Canvas and surface presentation
+- Vertex and index buffer binding in render passes
+- Full render pipeline descriptor parsing
+
+## More examples
 
 ```js
 import { setupGlobals } from '@simulatte/webgpu-doe';
