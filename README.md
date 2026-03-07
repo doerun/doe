@@ -20,17 +20,19 @@ cube artifacts:
 ### AMD Vulkan (RADV, GFX11)
 
 Latest local strict comparable matrix artifact:
-`bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json`
+`bench/out/amd-vulkan/20260307T031517Z/dawn-vs-doe.amd.vulkan.release.json`
 
-- top-level result: `comparisonStatus=comparable`, `claimStatus=claimable`
-- current strict release lane workload count: 8
+- top-level result: `comparisonStatus=comparable`, `claimStatus=diagnostic`
+- current strict release lane workload count: 7
 - current claimables in the release lane:
-  - uploads: `1 KB`, `64 KB`, `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`, `4 GB`
-- current non-claimables in the release lane: none
-- current release read: claimable local AMD Vulkan evidence lane for this strict upload matrix
+  - uploads: `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`
+- current non-claimables in the release lane:
+  - uploads: `1 KB`, `64 KB`
+- current release read: strict upload comparability is fixed; remaining
+  claim-gate failures are real small-upload losses, not structural mismatch
 
-This lane is now fully claimable end-to-end on the local AMD Vulkan host for the strict
-8-workload upload release matrix.
+This lane is now a workload-specific strict comparable AMD Vulkan evidence
+lane. It is not a broad "Doe Vulkan is faster than Dawn" claim.
 
 ### Apple Metal (M3)
 
@@ -71,8 +73,9 @@ Latest full local Node provider report:
   - directional/non-comparable: `submit_empty`, `pipeline_create`, `compute_dispatch_simple`
 
 This Node comparison uses package-level workload timing (`performance.now()`) and
-should be read as package/runtime positioning evidence, not as a replacement for
-strict Dawn-vs-Doe backend reports.
+should be read as host-local package/runtime positioning evidence, not as a
+replacement for strict Dawn-vs-Doe backend reports or a broad "the package is
+faster" claim.
 
 Current caveat:
 - Linux Node Doe-native path is wired end-to-end (Linux guard removed).
@@ -83,13 +86,15 @@ Current caveat:
 
 Bun has API parity with Node via direct FFI (57/57 contract tests passing).
 Bun benchmark lane is at `bench/bun/compare.js` and compares Doe FFI against
-the `bun-webgpu` package. Latest validated run (`20260306T215526Z`) shows 7/11
-claimable, with compute e2e rows comparable and claimable after readback
-validation was added to the timed path. The benchmark cube now isolates the
-directional `compute_dispatch_simple` row into its own dispatch-only cell, so
-the Bun `compute_e2e` cell reflects the claimable end-to-end rows instead of
-being dragged diagnostic by mixed methodology. Cube maturity remains prototype
-until cell coverage stabilizes across multiple runs.
+the `bun-webgpu` package. Latest validated local run (`2026-03-06T21:55:26Z`)
+observed 7/11 claimable rows, with compute e2e rows comparable and claimable
+after readback validation was added to the timed path. The benchmark cube now
+isolates the directional `compute_dispatch_simple` row into its own
+dispatch-only cell, so the Bun `compute_e2e` cell reflects the claimable
+end-to-end rows instead of being dragged diagnostic by mixed methodology. Cube
+maturity remains prototype until cell coverage stabilizes across multiple runs,
+so treat this as preliminary package-surface evidence rather than a
+publication-grade performance claim.
 
 Remaining Bun caveats:
 - `buffer_map_write_unmap` is slower for Doe (~19µs overhead from synchronous

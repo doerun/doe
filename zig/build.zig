@@ -103,26 +103,51 @@ pub fn build(b: *std.Build) void {
         "share/doe-build-metadata.json",
     );
     dropin_step.dependOn(&install_dropin_build_metadata.step);
-    const dawn_sidecar = "../bench/vendor/dawn/out/Release/libwebgpu_dawn.so";
-    const webgpu_sidecar = "../bench/vendor/dawn/out/Release/libwebgpu.so";
-    const wgpu_native_sidecar = "../bench/vendor/dawn/out/Release/libwgpu_native.so";
-    if (fileExists(dawn_sidecar)) {
+    const dawn_sidecar = switch (target.result.os.tag) {
+        .macos => "../bench/vendor/dawn/out/Release/libwebgpu_dawn.dylib",
+        .linux => "../bench/vendor/dawn/out/Release/libwebgpu_dawn.so",
+        .windows => "../bench/vendor/dawn/out/Release/webgpu_dawn.dll",
+        else => "",
+    };
+    const dawn_sidecar_install_name = switch (target.result.os.tag) {
+        .macos => "libwebgpu_dawn.dylib",
+        .linux => "libwebgpu_dawn.so",
+        .windows => "webgpu_dawn.dll",
+        else => "",
+    };
+    const webgpu_sidecar = switch (target.result.os.tag) {
+        .macos => "../bench/vendor/dawn/out/Release/libwebgpu.dylib",
+        .linux => "../bench/vendor/dawn/out/Release/libwebgpu.so",
+        .windows => "../bench/vendor/dawn/out/Release/webgpu.dll",
+        else => "",
+    };
+    const webgpu_sidecar_install_name = switch (target.result.os.tag) {
+        .macos => "libwebgpu.dylib",
+        .linux => "libwebgpu.so",
+        .windows => "webgpu.dll",
+        else => "",
+    };
+    const wgpu_native_sidecar = switch (target.result.os.tag) {
+        .linux => "../bench/vendor/dawn/out/Release/libwgpu_native.so",
+        else => "",
+    };
+    if (dawn_sidecar.len != 0 and fileExists(dawn_sidecar)) {
         const install_webgpu_dawn = b.addInstallFileWithDir(
             b.path(dawn_sidecar),
             .lib,
-            "libwebgpu_dawn.so",
+            dawn_sidecar_install_name,
         );
         dropin_step.dependOn(&install_webgpu_dawn.step);
     }
-    if (fileExists(webgpu_sidecar)) {
+    if (webgpu_sidecar.len != 0 and fileExists(webgpu_sidecar)) {
         const install_webgpu = b.addInstallFileWithDir(
             b.path(webgpu_sidecar),
             .lib,
-            "libwebgpu.so",
+            webgpu_sidecar_install_name,
         );
         dropin_step.dependOn(&install_webgpu.step);
     }
-    if (fileExists(wgpu_native_sidecar)) {
+    if (wgpu_native_sidecar.len != 0 and fileExists(wgpu_native_sidecar)) {
         const install_wgpu_native = b.addInstallFileWithDir(
             b.path(wgpu_native_sidecar),
             .lib,

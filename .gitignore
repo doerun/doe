@@ -20,6 +20,9 @@ __pycache__/
 
 # Local benchmark outputs and overrides
 bench/compare_dawn_vs_doe.config.local.*.json
+!bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
+!bench/compare_dawn_vs_doe.config.local.vulkan.release.json
+!bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
 bench/out/20??????T??????Z
 bench/out/20??????T??????Z/
 bench/out/scratch/

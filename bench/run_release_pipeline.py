@@ -424,7 +424,7 @@ def infer_local_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
     if ".local.vulkan.release" in config_name:
         return "vulkan_doe_release"
     if ".local.vulkan.directional" in config_name:
-        return "vulkan_dawn_directional"
+        return "vulkan_doe_app"
     if ".local.vulkan.extended" in config_name or ".local.vulkan.comparable" in config_name:
         return "vulkan_doe_comparable"
     return ""

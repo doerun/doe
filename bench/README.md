@@ -693,7 +693,7 @@ Preset behavior:
 - Upload workloads are configured for strict apples-to-apples matching against Dawn `BufferUploadPerf WriteBuffer`:
   `leftUploadBufferUsage=copy-dst`, `leftIgnoreFirstOps=1`, and explicit per-size
   `leftCommandRepeat`/`leftTimingDivisor`/`leftUploadSubmitEvery` values in
-  `bench/workloads.amd.vulkan.extended.json`.
+  `bench/workloads.amd.vulkan.extended.native-supported.json`.
 
 Run from `fawn/` directory:
 

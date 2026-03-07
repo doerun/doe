@@ -74,7 +74,7 @@ def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
     if ".local.vulkan.comparable" in config_path or ".local.vulkan.extended.comparable" in config_path:
         return "vulkan_doe_comparable"
     if ".local.vulkan.directional" in config_path:
-        return "vulkan_dawn_directional"
+        return "vulkan_doe_app"
     return "vulkan_dawn_release"
 
 

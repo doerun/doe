@@ -3,6 +3,10 @@
 Canonical WebGPU package for browserless benchmarking, CI workflows, and
 headless runtime integration.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/clocksmith/fawn/main/nursery/webgpu/assets/fawn-icon-main-256.png" alt="Fawn logo" width="196" />
+</p>
+
 It is built on Doe, Fawn's Zig WebGPU runtime and Dawn-replacement path for
 Fawn/Chromium. Doe uses Zig for explicit low-overhead systems paths, explicit
 allocator control, and keeping hot runtime paths minimal across
@@ -37,6 +41,16 @@ node_package, bun_package) × provider pair (e.g. doe_vs_dawn) × workload set
 (e.g. compute_e2e, render, upload). Each intersection is a **cell** with its
 own comparability and claimability status. Cube outputs live in
 `bench/out/cube/` and include a dashboard, matrix summary, and per-row data.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/clocksmith/fawn/main/nursery/webgpu/assets/package-surface-cube-snapshot.svg" alt="Static package-surface benchmark cube snapshot" width="920" />
+</p>
+
+Static snapshot above:
+
+- source: `bench/out/cube/latest/cube.summary.json`
+- renderer: `npm run build:readme-assets`
+- scope: package surfaces only; backend-native strict claim lanes remain separate
 
 ## Quickstart
 
@@ -99,20 +113,25 @@ metadata is present.
 
 - This package is for headless benchmarking and CI workflows, not full browser
   parity.
-- Node provider comparisons are package/runtime evidence. Backend claim lanes
-  remain the canonical performance evidence path.
+- Node provider comparisons are host-local package/runtime evidence measured
+  with package-level timers. They are useful surface-positioning data, not
+  backend claim substantiation or a broad "the package is faster" claim.
+- `@simulatte/webgpu` does not yet have a single broad cross-surface speed
+  claim. Current performance evidence is split across Node package-surface
+  runs, prototype Bun package-surface runs, and workload-specific strict
+  backend reports.
 - Linux Node Doe-native path is now wired end-to-end (Linux guard removed).
   No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
   are present.
 - Bun has API parity with Node (57/57 contract tests). Bun benchmark lane
   is at `bench/bun/compare.js` and compares Doe FFI against the `bun-webgpu`
-  package. Latest validated run shows 7/11 claimable (compute e2e rows
-  comparable + claimable after readback validation added to the timed path).
-  Benchmark cube policy now isolates directional `compute_dispatch_simple`
-  into a dispatch-only cell so the Bun compute-e2e cube cell reflects the
-  claimable end-to-end rows. `buffer_map_write_unmap` remains slower
-  (~19µs polling overhead).
-  Cube maturity remains prototype until cell coverage stabilizes.
+  package. Latest validated local run observed 7/11 claimable rows, but this
+  remains prototype-quality package-surface evidence rather than a
+  publication-grade performance claim. Benchmark cube policy now isolates
+  directional `compute_dispatch_simple` into a dispatch-only cell so the Bun
+  compute-e2e cube cell reflects the claimable end-to-end rows.
+  `buffer_map_write_unmap` remains slower (~19µs polling overhead). Cube
+  maturity remains prototype until cell coverage stabilizes.
 - Self-contained install ships prebuilt `doe_napi.node` + `libwebgpu_doe` +
   Dawn sidecar per platform. Clean-machine smoke test: `npm run smoke`.
 - API details live in `API_CONTRACT.md`.

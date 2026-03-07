@@ -11,8 +11,8 @@
   "run": {
     "iterations": 8,
     "warmup": 1,
-    "out": "bench/out/dawn-vs-doe.local.vulkan.extended.comparable.json",
-    "workspace": "bench/out/runtime-comparisons.local.vulkan.extended.comparable",
+    "out": "bench/out/dawn-vs-doe.local.vulkan.comparable.json",
+    "workspace": "bench/out/runtime-comparisons.local.vulkan.comparable",
     "workloadFilter": "",
     "includeExtendedWorkloads": true,
     "includeNoncomparableWorkloads": false,

@@ -89,6 +89,22 @@
 - `bench/build_claim_scope_report.py` now carries this selected-scope vs
   headline-process-wall context into citation-safe artifacts.
 
+### Local Vulkan preset aliases restored
+
+- Restored the documented local Vulkan compare config aliases:
+  - `bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.local.vulkan.release.json`
+  - `bench/compare_dawn_vs_doe.config.local.vulkan.directional.json`
+- `.gitignore` now explicitly unignores those three aliases so the documented
+  presets remain versioned instead of machine-local.
+- `bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json` now
+  uses the canonical strict lane name `vulkan_doe_comparable` instead of the
+  stale nonexistent `vulkan_local_comparable`.
+- Helper lane inference in `bench/backend_selection_gate.py` and
+  `bench/run_release_pipeline.py` now treats local Vulkan directional presets as
+  Doe-left diagnostics (`vulkan_doe_app`) rather than incorrectly inferring the
+  Dawn-owned `vulkan_dawn_directional` lane.
+
 ## 2026-03-06
 
 ### Benchmark cube reporting contracts

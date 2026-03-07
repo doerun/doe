@@ -1,6 +1,6 @@
 {
   "name": "@simulatte/webgpu",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Doe WebGPU bridge for browserless AI/ML benchmarking and CI",
   "type": "module",
   "main": "./src/node-runtime.js",
@@ -17,6 +17,7 @@
     "fawn-webgpu-compare": "./bin/fawn-webgpu-compare.js"
   },
   "files": [
+    "assets/",
     "bin/",
     "src/",
     "scripts/",
@@ -33,6 +34,7 @@
   "scripts": {
     "install": "node scripts/install.js",
     "build:addon": "node-gyp rebuild",
+    "build:readme-assets": "node scripts/generate-readme-assets.js",
     "prebuild": "node scripts/prebuild.js",
     "test": "node ./test-node.js",
     "test:bun": "bun ./test-bun.js",
@@ -48,6 +50,15 @@
     "ci",
     "bun"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clocksmith/fawn.git",
+    "directory": "nursery/webgpu"
+  },
+  "homepage": "https://github.com/clocksmith/fawn/tree/main/nursery/webgpu",
+  "bugs": {
+    "url": "https://github.com/clocksmith/fawn/issues"
+  },
   "author": "Fawn",
   "license": "ISC"
 }
