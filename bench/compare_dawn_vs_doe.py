@@ -1649,6 +1649,7 @@ def main() -> int:
             "headlineMetricUse": "timed-command process-wall end-to-end ranking metric",
             "headlineMetricScope": "timed-command-process-wall",
             "narrowSelectedScopeClass": "narrow-hot-path",
+            "narrowHotPathEligibleForClaims": False,
             "guidance": (
                 "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, "
                 "deltaPercent is a phase-specific diagnostic, not an end-to-end latency claim."
@@ -1805,6 +1806,7 @@ def main() -> int:
             left=left,
             right=right,
             delta=delta,
+            timing_interpretation=timing_interpretation,
             comparability=comparability,
             benchmark_policy=benchmark_policy,
         )

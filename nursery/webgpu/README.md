@@ -3,14 +3,21 @@
 Canonical WebGPU package for browserless benchmarking, CI workflows, and
 headless runtime integration.
 
-It is built on Doe, Fawn's Zig WebGPU runtime. Doe is being developed as a
-drop-in WebGPU runtime and Dawn-replacement path for Fawn/Chromium. The native
-runtime targets Vulkan/Metal/D3D12 with explicit allocator control. In this
-package, Node uses an N-API addon and Bun uses Bun FFI to load
+It is built on Doe, Fawn's Zig WebGPU runtime and Dawn-replacement path for
+Fawn/Chromium. Doe uses Zig for explicit low-overhead systems paths, explicit
+allocator control, and keeping hot runtime paths minimal across
+Vulkan/Metal/D3D12 backends. Optional `-Dlean-verified=true` builds use Lean 4
+where proved invariants can be hoisted out of runtime branches instead of being
+re-checked on every command; package consumers should not assume that path by
+default.
+
+Doe also keeps adapter and driver quirks explicit. Profile selection happens at
+startup, quirk data is schema-backed, and the runtime binds the selected
+profile instead of relying on hidden per-command fallback logic.
+
+In this package, Node uses an N-API addon and Bun uses Bun FFI to load
 `libwebgpu_doe`. Current package builds still ship a Dawn sidecar where proc
-resolution requires it. Optional `-Dlean-verified=true` builds in the broader
-Fawn runtime can remove specific proved branches in the quirk dispatch path;
-package consumers should not assume that path by default.
+resolution requires it.
 
 This directory is the package root for `@simulatte/webgpu`. It contains the
 Node provider source, the addon build contract, the Bun FFI entrypoint, and

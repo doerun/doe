@@ -77,6 +77,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - `bench/compare_dawn_vs_doe.py` now emits additive `timingInterpretation` fields so selected claim metrics and end-to-end process-wall views are reported separately.
   - `timingInterpretation.selectedTiming` marks narrow-scope rows such as render encode-only results as `scopeClass=narrow-hot-path`.
   - `timingInterpretation.headlineProcessWall` reports timed-command process-wall deltas, giving an honest top-line ranking view without changing existing `deltaPercent` claim semantics.
+  - claimability now rejects `scopeClass=narrow-hot-path` in all claim modes: those rows remain comparable engineering evidence but are no longer claimable speed evidence.
   - `bench/build_claim_scope_report.py` now propagates selected-scope vs headline-process-wall context into citation-safe artifacts.
 - final macOS Metal Dawn-vs-Doe evidence execution is now codified as an operator runbook:
   `docs/metal-macos-proof-bundle-runbook.md`

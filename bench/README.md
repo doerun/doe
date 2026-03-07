@@ -290,6 +290,7 @@ python3 fawn/bench/compare_dawn_vs_doe.py \
   `--claimability local|release` enforces sample-floor and positive-tail checks for claimable speed reports.
   use `--claim-min-timed-samples N` to override mode defaults loaded from `config/benchmark-methodology-thresholds.json` (`claimabilityDefaults.localMinTimedSamples`, `claimabilityDefaults.releaseMinTimedSamples`).
   claimability failures return non-zero exit status (`3`) and report `claimStatus=diagnostic`.
+  workloads whose selected timing scope is `narrow-hot-path` are non-claimable in all claim modes even when comparability is green; they are engineering diagnostics, not end-to-end speed claims.
 - trace replay gate supports semantic parity lanes:
   `bench/trace_gate.py --semantic-parity-mode auto|required`.
   use `required` only for runtime-to-runtime parity artifacts (for example Doe vs Dawn traces), because Dawn comparison traces are not semantic-envelope compatible.
@@ -362,7 +363,7 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
 - compare reports now also emit `timingInterpretation` per workload:
   - `selectedTiming` describes what `deltaPercent` actually measures (`operation-total`, `operation-encode`, `process-wall`, etc.).
   - `headlineProcessWall` reports the timed-command process-wall view for honest end-to-end ranking.
-  - when `selectedTiming.scopeClass=narrow-hot-path`, treat `deltaPercent` as a phase-specific diagnostic and use `headlineProcessWall.deltaPercent` for top-line comparisons.
+  - when `selectedTiming.scopeClass=narrow-hot-path`, `deltaPercent` is a phase-specific diagnostic and the workload is not claimable; use `headlineProcessWall.deltaPercent` for top-line comparisons instead.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
   in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=1` because Dawn already reports per-dispatch via `iterationsPerStep=100`).
 - non-comparable mappings can be explicitly flagged in workload contracts and excluded by default.

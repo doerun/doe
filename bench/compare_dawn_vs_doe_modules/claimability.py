@@ -236,6 +236,7 @@ def assess_claimability(
     left: dict[str, Any],
     right: dict[str, Any],
     delta: dict[str, Any],
+    timing_interpretation: dict[str, Any],
     comparability: dict[str, Any],
     benchmark_policy: Any,
 ) -> dict[str, Any]:
@@ -266,6 +267,14 @@ def assess_claimability(
         if note:
             reason += f" ({note})"
         reasons.append(reason)
+
+    selected_timing = timing_interpretation.get("selectedTiming", {})
+    if not isinstance(selected_timing, dict):
+        selected_timing = {}
+    if selected_timing.get("scopeClass") == "narrow-hot-path":
+        reasons.append(
+            "selected timing scope is narrow-hot-path; not eligible for end-to-end speed claims"
+        )
 
     left_count = safe_int(left.get("stats", {}).get("count"), default=0)
     right_count = safe_int(right.get("stats", {}).get("count"), default=0)

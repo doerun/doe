@@ -82,6 +82,10 @@
 - `timingInterpretation.headlineProcessWall` reports timed-command process-wall
   deltas so encode-only render/report rows cannot be mistaken for end-to-end
   latency wins.
+- claimability now rejects `timingInterpretation.selectedTiming.scopeClass =
+  narrow-hot-path` in all claim modes:
+  comparable rows remain comparable, but they are emitted as diagnostic rather
+  than claimable because the selected metric is not an end-to-end speed claim.
 - `bench/build_claim_scope_report.py` now carries this selected-scope vs
   headline-process-wall context into citation-safe artifacts.
 
