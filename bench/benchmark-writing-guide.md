@@ -183,6 +183,7 @@ Before accepting claimable results from any run:
 4. Flag any workload where the speed delta comes primarily from setup or submit_wait that only one side measures.
 5. For upload workloads on UMA hardware, verify both sides use the same transfer path (staging+copy vs shared-memory memset). If paths differ, mark `pathAsymmetry: true` and treat the workload as non-comparable for strict claim lanes.
    Current strict Doe Vulkan lanes should also prove this from config: `config/backend-runtime-policy.json` must set `uploadPathPolicy: "staged_copy_only"` on `vulkan_doe_comparable` / `vulkan_doe_release`.
+   Once strict lanes are staged-copy-only and timing phases match, remove the stale `pathAsymmetry` flag from the strict comparable workload contract; keep it only on directional/non-strict contracts or rows with a separate unresolved plausibility issue.
 6. Reject any "X/Y claimable" summary that has not passed per-workload structural equivalence checks.
 
 ## 6) Timing selection and normalization policy
