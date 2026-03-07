@@ -123,7 +123,7 @@ When logic should stay out of Zig:
 Current v0 integration note:
 - Lean contract/model files define obligation semantics and parity targets.
 - Runtime and gate enforcement of those semantics is currently executed in Zig/Python.
-- End-to-end Lean proof execution plus automated branch elimination is a roadmap item, not a completed CI path.
+- Lean proof execution, artifact extraction, and targeted Zig branch elimination are wired for the `-Dlean-verified=true` build path, with proof artifact generation and validation in CI; proof coverage is still selective rather than end-to-end across the whole runtime.
 
 ## 7. WASM Notes
 

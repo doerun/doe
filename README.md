@@ -2,7 +2,7 @@
 
 Fawn is a Chromium-based browser that replaces Dawn with Doe as its WebGPU implementation.
 
-Doe (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It reimplements what Dawn does in C++, built for explicit control of the hot path: direct C ABI calls to Vulkan/Metal/D3D12, explicit allocators, comptime specialization from device profiles.
+Doe (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It targets explicit allocator control, native Vulkan/Metal/D3D12 backends, and startup-time profile/quirk selection that keeps hot-path policy work out of per-command execution.
 
 ![Fawn logo](nursery/fawn-browser/assets/logo/compiled/linux/fawn-icon-main-256.png)
 
@@ -114,11 +114,11 @@ The runtime binds a device profile at startup, filters the quirk set once, and b
 
 ### Zig runtime
 
-Zig gives structural performance gains with no proof infrastructure required. Every allocation is visible in source. Backend calls go through Vulkan/Metal C ABIs directly without marshaling. Device profile and quirk resolution happens at build time through comptime specialization, not per-command branching at runtime.
+Zig keeps allocation and backend control explicit in source. Backend calls go through native Vulkan/Metal C ABIs, and profile/quirk resolution happens once at startup rather than via per-command matching in hot loops.
 
 ### Lean proof elimination
 
-For specific deployment targets (verified WASM games, known-safe assets, embedded GPU workloads), Lean 4 enables a second tier. Prove validation invariants offline, then delete the corresponding Zig runtime branches entirely. The hot path gets physically shorter: fewer instructions, fewer branches, less code to execute.
+Lean 4 provides an optional second tier. When the runtime is built with `-Dlean-verified=true`, proved conditions can remove specific Zig branches from the quirk dispatch path.
 
 "Leaning out" means removing runtime code because a proof made it unnecessary.
 
