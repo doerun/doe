@@ -69,4 +69,4 @@ nursery/fawn-browser/.external-macos.env
 
 # Nested mirror artifacts (accidental local copies)
 bench/vendor/
-fawn/bench/vendor/
+fawn/
