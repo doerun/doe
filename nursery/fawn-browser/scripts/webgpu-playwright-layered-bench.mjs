@@ -40,9 +40,9 @@ function defaultDoeLibPath() {
   const envDoeLib = process.env.FAWN_DOE_LIB;
   const candidates = [
     envDoeLib,
-    resolve(ROOT, `zig/zig-out/lib/libdoe_webgpu.${preferredExt}`),
-    resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.so"),
-    resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.dylib"),
+    resolve(ROOT, `zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
+    resolve(ROOT, "zig/zig-out/lib/libwebgpu_doe.so"),
+    resolve(ROOT, "zig/zig-out/lib/libwebgpu_doe.dylib"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -99,7 +99,7 @@ Options:
   --chrome PATH             Chrome binary path
   --dawn-chrome PATH        Browser executable for dawn mode (defaults to --chrome)
   --doe-chrome PATH         Browser executable for doe mode (defaults to --chrome)
-  --doe-lib PATH            libdoe_webgpu.{so,dylib} path (for doe mode)
+  --doe-lib PATH            libwebgpu_doe.{so,dylib} path (for doe mode)
   --manifest PATH           Projection manifest JSON path
   --workflows PATH          Browser workflow manifest JSON path
   --out PATH                Output report JSON path (default: nursery/fawn-browser/artifacts/<timestamp>/${DEFAULT_OUT_FILE})

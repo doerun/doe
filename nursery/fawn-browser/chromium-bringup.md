@@ -111,7 +111,7 @@ Do not begin with compositor/layout/media refactors.
 
 Use existing drop-in artifact lane as initial test substrate:
 
-1. `zig/zig-out/lib/libdoe_webgpu.{so,dylib}`
+1. `zig/zig-out/lib/libwebgpu_doe.{so,dylib}`
 2. symbol and behavior gate tools in `bench/`.
 
 Initial criterion is deterministic compatibility and observability, not performance.

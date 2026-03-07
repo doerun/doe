@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Zig Build Metadata",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifact",
+    "leanVerifiedBuild",
+    "proofArtifactSha256"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifact": { "type": "string", "const": "libwebgpu_doe" },
+    "leanVerifiedBuild": { "type": "boolean" },
+    "proofArtifactSha256": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

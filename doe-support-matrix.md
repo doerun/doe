@@ -30,7 +30,7 @@ Headless compute, benchmarking, and evidence infrastructure via Node/Bun/CLI.
 
 - `@simulatte/webgpu` (Node runtime, Bun FFI, CLI)
 - `doe-zig-runtime` CLI binary
-- `libdoe_webgpu.{dylib,so,dll}` via FFI (compute-focused paths)
+- `libwebgpu_doe.{dylib,so,dll}` via FFI (compute-focused paths)
 - browser/runtime replacement packaging beyond the headless package name belongs to the `doe-runtime` tier, not a separate public package name today
 
 ### Supported API
@@ -110,7 +110,7 @@ Drop-in native WebGPU runtime for applications, engines, and embedded systems. R
 
 ### Deployment Surface
 
-- `libdoe_webgpu.so` / `libdoe_webgpu.dylib` as shared library
+- `libwebgpu_doe.so` / `libwebgpu_doe.dylib` as shared library
 - Static linking for embedded targets
 - All doe-core surfaces (Node/Bun/CLI)
 

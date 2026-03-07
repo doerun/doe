@@ -5,7 +5,7 @@
     "doe": {
       "package": "@simulatte/webgpu",
       "source": "nursery/webgpu/src/bun.js",
-      "notes": "Doe FFI provider backed by libdoe_webgpu via Bun FFI"
+      "notes": "Doe FFI provider backed by libwebgpu_doe via Bun FFI"
     },
     "bun-webgpu": {
       "package": "bun-webgpu",

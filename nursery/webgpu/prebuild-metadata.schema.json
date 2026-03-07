@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WebGPU Package Prebuild Metadata",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "package",
+    "packageVersion",
+    "platform",
+    "arch",
+    "nodeNapiVersion",
+    "doeVersion",
+    "doeBuild",
+    "files",
+    "builtAt"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "package": { "type": "string" },
+    "packageVersion": { "type": "string" },
+    "platform": { "type": "string" },
+    "arch": { "type": "string" },
+    "nodeNapiVersion": { "type": "integer" },
+    "doeVersion": { "type": "string" },
+    "doeBuild": {
+      "type": "object",
+      "required": [
+        "artifact",
+        "leanVerifiedBuild",
+        "proofArtifactSha256"
+      ],
+      "properties": {
+        "artifact": { "type": "string", "const": "libwebgpu_doe" },
+        "leanVerifiedBuild": { "type": "boolean" },
+        "proofArtifactSha256": {
+          "anyOf": [
+            { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["sha256"],
+        "properties": {
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "builtAt": { "type": "string" }
+  },
+  "additionalProperties": false
+}

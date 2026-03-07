@@ -41,7 +41,7 @@ This directory is isolated from core runtime development by policy:
 Fawn already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
 
 1. Drop-in artifact:
-   - `zig/zig-out/lib/libdoe_webgpu.{so,dylib}`
+   - `zig/zig-out/lib/libwebgpu_doe.{so,dylib}`
 2. Symbol contract and gate support:
    - `config/dropin_abi.symbols.txt`
    - `bench/dropin_symbol_gate.py`

@@ -2,7 +2,7 @@
 
 Fawn is a Chromium-based browser that replaces Dawn with Doe as its WebGPU implementation.
 
-Doe (`doe-webgpu`, `libdoe_webgpu.so`) is a WebGPU backend written in Zig. It targets explicit allocator control, native Vulkan/Metal/D3D12 backends, and startup-time profile/quirk selection that keeps hot-path policy work out of per-command execution.
+Doe (`doe-webgpu`, `libwebgpu_doe.so`) is a WebGPU backend written in Zig. It targets explicit allocator control, native Vulkan/Metal/D3D12 backends, and startup-time profile/quirk selection that keeps hot-path policy work out of per-command execution.
 
 ![Fawn logo](nursery/fawn-browser/assets/logo/compiled/linux/fawn-icon-main-256.png)
 
@@ -78,7 +78,7 @@ Current caveat:
 - Linux Node Doe-native path is wired end-to-end (Linux guard removed).
   No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
   are present.
-- Self-contained install ships prebuilt `doe_napi.node` + `libdoe_webgpu` +
+- Self-contained install ships prebuilt `doe_napi.node` + `libwebgpu_doe` +
   Dawn sidecar per platform. Falls back to node-gyp from source.
 
 Bun has API parity with Node via direct FFI (57/57 contract tests passing).

@@ -24,6 +24,10 @@ assert(typeof info.loaded === "boolean", "providerInfo.loaded is boolean");
 assert(typeof info.doeLibraryPath === "string", "providerInfo.doeLibraryPath is string");
 assert(typeof info.doeNative === "boolean", "providerInfo.doeNative is boolean");
 assert(typeof info.libraryFlavor === "string", "providerInfo.libraryFlavor is string");
+assert(typeof info.buildMetadataSource === "string", "providerInfo.buildMetadataSource is string");
+assert(typeof info.buildMetadataPath === "string", "providerInfo.buildMetadataPath is string");
+assert(info.leanVerifiedBuild === null || typeof info.leanVerifiedBuild === "boolean", "providerInfo.leanVerifiedBuild is boolean|null");
+assert(info.proofArtifactSha256 === null || typeof info.proofArtifactSha256 === "string", "providerInfo.proofArtifactSha256 is string|null");
 console.log("providerInfo:", JSON.stringify(info, null, 2));
 
 // Contract: globals has required enum objects

@@ -46,10 +46,10 @@ def default_doe_lib() -> Path:
         candidates.append(Path(env_doe_lib))
     candidates.extend(
         [
-            REPO_ROOT / f"zig/zig-out/lib/libdoe_webgpu.{preferred_ext}",
-            REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.so",
-            REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.dylib",
-            REPO_ROOT / "zig/zig-out/lib/libdoe_webgpu.dll",
+            REPO_ROOT / f"zig/zig-out/lib/libwebgpu_doe.{preferred_ext}",
+            REPO_ROOT / "zig/zig-out/lib/libwebgpu_doe.so",
+            REPO_ROOT / "zig/zig-out/lib/libwebgpu_doe.dylib",
+            REPO_ROOT / "zig/zig-out/lib/libwebgpu_doe.dll",
         ]
     )
     for candidate in candidates:

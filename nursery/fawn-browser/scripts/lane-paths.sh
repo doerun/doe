@@ -23,10 +23,10 @@ fawn_default_doe_lib_candidates() {
   local extension
   extension="$(fawn_doe_lib_extension)"
   printf "%s\n" \
-    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libdoe_webgpu.${extension}" \
-    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libdoe_webgpu.so" \
-    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libdoe_webgpu.dylib" \
-    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libdoe_webgpu.dll"
+    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libwebgpu_doe.${extension}" \
+    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libwebgpu_doe.so" \
+    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libwebgpu_doe.dylib" \
+    "${FAWN_REPO_ROOT}/zig/zig-out/lib/libwebgpu_doe.dll"
 }
 
 fawn_default_chrome_candidates() {

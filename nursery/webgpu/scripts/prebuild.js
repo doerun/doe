@@ -7,7 +7,7 @@
 // Produces:
 //   prebuilds/<platform>-<arch>/
 //     doe_napi.node          N-API addon
-//     libdoe_webgpu.<ext>    Doe drop-in WebGPU library
+//     libwebgpu_doe.<ext>    Doe drop-in WebGPU library
 //     libwebgpu_dawn.<ext>   Dawn sidecar (required by Doe for proc resolution)
 //     metadata.json          Integrity manifest
 //
@@ -21,6 +21,7 @@ import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
+import { readDoeBuildMetadataFile } from '../src/build_metadata.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, '..');
@@ -40,6 +41,9 @@ const ext = platform === 'darwin' ? 'dylib' : platform === 'win32' ? 'dll' : 'so
 const zigOutLib = args['zig-out']
   ? resolve(args['zig-out'], 'lib')
   : resolve(WORKSPACE_ROOT, 'zig', 'zig-out', 'lib');
+const zigOutShare = args['zig-out']
+  ? resolve(args['zig-out'], 'share')
+  : resolve(WORKSPACE_ROOT, 'zig', 'zig-out', 'share');
 
 const prebuildDir = resolve(PACKAGE_ROOT, 'prebuilds', `${platform}-${arch}`);
 
@@ -72,7 +76,7 @@ if (!existsSync(addonSrc)) {
 }
 
 // 2. Locate Doe library.
-const doeLib = resolve(zigOutLib, `libdoe_webgpu.${ext}`);
+const doeLib = resolve(zigOutLib, `libwebgpu_doe.${ext}`);
 if (!existsSync(doeLib)) {
   console.error(`Doe library not found at ${doeLib}.`);
   console.error('Run: cd zig && zig build dropin');
@@ -104,6 +108,14 @@ if (!sidecarSrc) {
   process.exit(1);
 }
 
+const zigBuildMetadataPath = resolve(zigOutShare, 'doe-build-metadata.json');
+const doeBuild = readDoeBuildMetadataFile(zigBuildMetadataPath);
+if (!doeBuild) {
+  console.error(`Doe build metadata not found or invalid at ${zigBuildMetadataPath}.`);
+  console.error('Run: cd zig && zig build dropin [ -Dlean-verified=true ]');
+  process.exit(1);
+}
+
 // 4. Assemble prebuild directory.
 mkdirSync(prebuildDir, { recursive: true });
 console.log(`\nAssembling prebuilds/${platform}-${arch}/`);
@@ -112,7 +124,7 @@ const files = {};
 const addonEntry = copyArtifact(addonSrc, 'doe_napi.node');
 if (addonEntry) files[addonEntry.name] = { sha256: addonEntry.sha256 };
 
-const doeEntry = copyArtifact(doeLib, `libdoe_webgpu.${ext}`);
+const doeEntry = copyArtifact(doeLib, `libwebgpu_doe.${ext}`);
 if (doeEntry) files[doeEntry.name] = { sha256: doeEntry.sha256 };
 
 const sidecarEntry = copyArtifact(sidecarSrc, sidecarName);
@@ -129,12 +141,18 @@ try {
 } catch { /* ignore */ }
 
 const metadata = {
+  schemaVersion: 1,
   package: pkg.name,
   packageVersion: pkg.version,
   platform,
   arch,
   nodeNapiVersion: 8,
   doeVersion,
+  doeBuild: {
+    artifact: 'libwebgpu_doe',
+    leanVerifiedBuild: doeBuild.leanVerifiedBuild,
+    proofArtifactSha256: doeBuild.proofArtifactSha256,
+  },
   files,
   builtAt: new Date().toISOString(),
 };

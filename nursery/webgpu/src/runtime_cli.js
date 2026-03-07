@@ -110,14 +110,14 @@ export function resolveDoeLibraryPath(explicitPath) {
     return first_existing_path([
         explicitPath,
         process.env.FAWN_DOE_LIB,
-        resolve(process.cwd(), `zig/zig-out/lib/libdoe_webgpu.${preferredExt}`),
-        resolve(WORKSPACE_ROOT, `zig/zig-out/lib/libdoe_webgpu.${preferredExt}`),
-        resolve(process.cwd(), "zig/zig-out/lib/libdoe_webgpu.dylib"),
-        resolve(process.cwd(), "zig/zig-out/lib/libdoe_webgpu.so"),
-        resolve(process.cwd(), "zig/zig-out/lib/libdoe_webgpu.dll"),
-        resolve(WORKSPACE_ROOT, "zig/zig-out/lib/libdoe_webgpu.dylib"),
-        resolve(WORKSPACE_ROOT, "zig/zig-out/lib/libdoe_webgpu.so"),
-        resolve(WORKSPACE_ROOT, "zig/zig-out/lib/libdoe_webgpu.dll"),
+        resolve(process.cwd(), `zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
+        resolve(WORKSPACE_ROOT, `zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
+        resolve(process.cwd(), "zig/zig-out/lib/libwebgpu_doe.dylib"),
+        resolve(process.cwd(), "zig/zig-out/lib/libwebgpu_doe.so"),
+        resolve(process.cwd(), "zig/zig-out/lib/libwebgpu_doe.dll"),
+        resolve(WORKSPACE_ROOT, "zig/zig-out/lib/libwebgpu_doe.dylib"),
+        resolve(WORKSPACE_ROOT, "zig/zig-out/lib/libwebgpu_doe.so"),
+        resolve(WORKSPACE_ROOT, "zig/zig-out/lib/libwebgpu_doe.dll"),
     ]);
 }
 

@@ -20,7 +20,7 @@ Options:
   --upload-buffer-usage MODE copy-dst|copy-dst-copy-src
   --upload-submit-every N    Upload submission cadence
   --doe-bin PATH             doe-zig-runtime path override
-  --doe-lib PATH             libdoe_webgpu path override
+  --doe-lib PATH             libwebgpu_doe path override
   --extra-arg ARG            Pass through additional arg to runtime (repeatable)
   --json                     Emit full JSON result
   --help                     Show this help

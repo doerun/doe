@@ -26,7 +26,9 @@
     "README.md",
     "API_CONTRACT.md",
     "COMPAT_SCOPE.md",
-    "headless-webgpu-comparison.md"
+    "headless-webgpu-comparison.md",
+    "doe-build-metadata.schema.json",
+    "prebuild-metadata.schema.json"
   ],
   "scripts": {
     "install": "node scripts/install.js",

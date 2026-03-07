@@ -2,6 +2,36 @@
 
 ## 2026-03-07
 
+### Shared library artifact hard rename
+
+- The canonical Doe drop-in shared library artifact is now `libwebgpu_doe` rather
+  than `libdoe_webgpu`.
+- Active build outputs, package prebuilds, browser lane scripts, benchmark gate
+  defaults, and package loaders now probe only `libwebgpu_doe.{so,dylib,dll}`.
+- This is a hard migration for active codepaths: the previous filename is not an
+  accepted fallback in loaders or default scripts.
+
+### Package/Zig build proof provenance metadata
+
+- `zig/build.zig` now emits deterministic drop-in build provenance to
+  `zig/zig-out/share/doe-build-metadata.json`, including:
+  - `leanVerifiedBuild`
+  - `proofArtifactSha256`
+- `zig/src/wgpu_dropin_lib.zig` now links a tiny build-info export so the shared
+  library embeds the `lean_verified` build bit instead of leaving it purely in
+  publish metadata.
+- `nursery/webgpu/scripts/prebuild.js` now requires that Zig build metadata sidecar
+  and copies the same proof provenance into published `prebuilds/*/metadata.json`.
+- `nursery/webgpu/src/index.js` and `nursery/webgpu/src/bun-ffi.js` now expose that
+  provenance via `providerInfo()`:
+  - `buildMetadataSource`
+  - `buildMetadataPath`
+  - `leanVerifiedBuild`
+  - `proofArtifactSha256`
+- Added package contract schemas:
+  - `nursery/webgpu/doe-build-metadata.schema.json`
+  - `nursery/webgpu/prebuild-metadata.schema.json`
+
 ### Metal upload apples-to-apples restoration
 
 - `zig/src/backend/metal/metal_native_runtime.zig` now routes comparable

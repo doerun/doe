@@ -164,9 +164,9 @@ def stripped_size_bytes(path: Path) -> int | None:
 
 def resolve_default_doe_lib() -> Path | None:
     candidates = [
-        Path("zig/zig-out/lib/libdoe_webgpu.dylib"),
-        Path("zig/zig-out/lib/libdoe_webgpu.so"),
-        Path("zig/zig-out/lib/libdoe_webgpu.dll"),
+        Path("zig/zig-out/lib/libwebgpu_doe.dylib"),
+        Path("zig/zig-out/lib/libwebgpu_doe.so"),
+        Path("zig/zig-out/lib/libwebgpu_doe.dll"),
     ]
     for candidate in candidates:
         if candidate.exists():

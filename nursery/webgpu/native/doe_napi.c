@@ -1,5 +1,5 @@
 /*
- * doe_napi.c — N-API binding for libdoe_webgpu (Doe WebGPU runtime).
+ * doe_napi.c — N-API binding for libwebgpu_doe (Doe WebGPU runtime).
  *
  * Loads the Doe shared library at runtime via dlopen and exposes the core
  * WebGPU compute surface to JavaScript through Node.js N-API.
@@ -558,7 +558,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     if (g_lib) { LIB_CLOSE(g_lib); g_lib = NULL; }
     g_lib = LIB_OPEN(path);
     free(path);
-    if (!g_lib) NAPI_THROW(env, "Failed to load libdoe_webgpu");
+    if (!g_lib) NAPI_THROW(env, "Failed to load libwebgpu_doe");
 
     LOAD_SYM(wgpuCreateInstance);
     LOAD_SYM(wgpuInstanceRelease);
@@ -635,7 +635,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
         !pfn_wgpuBufferMapAsync2) {
         LIB_CLOSE(g_lib);
         g_lib = NULL;
-        NAPI_THROW(env, "Failed to resolve required symbols from libdoe_webgpu");
+        NAPI_THROW(env, "Failed to resolve required symbols from libwebgpu_doe");
     }
 
     napi_value result;

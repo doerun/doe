@@ -32,10 +32,10 @@ EOF
 fawn_default_doe_lib() {
   local ext="dylib"
   printf "%s\n" \
-    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libdoe_webgpu.${ext}" \
-    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libdoe_webgpu.so" \
-    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libdoe_webgpu.dylib" \
-    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libdoe_webgpu.dll"
+    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libwebgpu_doe.${ext}" \
+    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libwebgpu_doe.so" \
+    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libwebgpu_doe.dylib" \
+    "${FAWN_PROJECT_ROOT}/zig/zig-out/lib/libwebgpu_doe.dll"
 }
 
 fawn_default_doe_icon_path() {
@@ -164,7 +164,7 @@ if [[ -z "${DOE_LIB}" ]]; then
 fi
 
 if [[ -z "${DOE_LIB}" || ! -f "${DOE_LIB}" ]]; then
-  echo "missing libdoe_webgpu path; set --doe-lib or FAWN_DOE_LIB" >&2
+  echo "missing libwebgpu_doe path; set --doe-lib or FAWN_DOE_LIB" >&2
   exit 1
 fi
 
@@ -209,7 +209,7 @@ if [[ ! -x "\${REAL_BINARY}" ]]; then
 fi
 
 if [[ -z "\${DOE_LIB}" || ! -f "\${DOE_LIB}" ]]; then
-  echo "missing libdoe_webgpu runtime: \${DOE_LIB}" >&2
+  echo "missing libwebgpu_doe runtime: \${DOE_LIB}" >&2
   exit 1
 fi
 

@@ -6,7 +6,7 @@ headless runtime integration.
 Doe is a WebGPU backend written in Zig that replaces Dawn (Chromium's C++
 WebGPU implementation). The native runtime targets Vulkan/Metal/D3D12 with
 explicit allocator control. In this package, Node uses an N-API addon and Bun
-uses Bun FFI to load `libdoe_webgpu`. Optional `-Dlean-verified=true` builds
+uses Bun FFI to load `libwebgpu_doe`. Optional `-Dlean-verified=true` builds
 in the broader Fawn runtime can remove specific proved branches in the quirk
 dispatch path; package consumers should not assume that path by default.
 
@@ -17,7 +17,7 @@ the CLI helpers used by benchmark and CI workflows.
 Surface maturity:
 
 - Node is the primary supported package surface (N-API bridge).
-- Bun has API parity with Node via direct FFI to `libdoe_webgpu` (57/57
+- Bun has API parity with Node via direct FFI to `libwebgpu_doe` (57/57
   contract tests passing). Cube maturity remains prototype until Bun cells
   are populated by comparable benchmark artifacts.
 - Package-surface comparisons should be read through the benchmark cube outputs
@@ -45,7 +45,7 @@ listed below.
 
 ```bash
 # From the Fawn workspace root:
-cd zig && zig build dropin   # build libdoe_webgpu + Dawn sidecar
+cd zig && zig build dropin   # build libwebgpu_doe + Dawn sidecar
 
 cd nursery/webgpu
 npm run build:addon          # compile doe_napi.node from source
@@ -64,6 +64,9 @@ npm run prebuild             # assembles prebuilds/<platform>-<arch>/
 Supported prebuild targets: macOS arm64 (Metal), Linux x64 (Vulkan),
 Windows x64 (D3D12). Host GPU drivers are the only external prerequisite.
 Install uses prebuilds when available, falls back to node-gyp from source.
+Prebuild `metadata.json` now records `doeBuild.leanVerifiedBuild` and
+`proofArtifactSha256`, and `providerInfo()` surfaces the same values when
+metadata is present.
 
 ## What Lives Here
 
@@ -95,7 +98,7 @@ Install uses prebuilds when available, falls back to node-gyp from source.
   claimable end-to-end rows. `buffer_map_write_unmap` remains slower
   (~19µs polling overhead).
   Cube maturity remains prototype until cell coverage stabilizes.
-- Self-contained install ships prebuilt `doe_napi.node` + `libdoe_webgpu` +
+- Self-contained install ships prebuilt `doe_napi.node` + `libwebgpu_doe` +
   Dawn sidecar per platform. Clean-machine smoke test: `npm run smoke`.
 - API details live in `API_CONTRACT.md`.
 - Compatibility scope is documented in `COMPAT_SCOPE.md`.

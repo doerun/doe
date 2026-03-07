@@ -16,7 +16,7 @@ Input:
 
 Behavior:
 
-- loads the Doe-native N-API addon and `libdoe_webgpu`
+- loads the Doe-native N-API addon and `libwebgpu_doe`
 - returns a GPU object backed by the in-tree Doe provider
 
 Output:
@@ -62,6 +62,28 @@ Input:
 Output:
 
 - `Promise<GPUDevice>`
+
+### `providerInfo()`
+
+Output object:
+
+- `module: string`
+- `loaded: boolean`
+- `loadError: string`
+- `defaultCreateArgs: string[]`
+- `doeNative: boolean`
+- `libraryFlavor: string`
+- `doeLibraryPath: string`
+- `buildMetadataSource: string`
+- `buildMetadataPath: string`
+- `leanVerifiedBuild: boolean | null`
+- `proofArtifactSha256: string | null`
+
+Behavior:
+
+- reports package-surface library provenance when prebuild metadata or Zig build
+  metadata is available
+- does not guess: if metadata is unavailable, `leanVerifiedBuild` is `null`
 
 ### `createDoeRuntime(options?)`
 

@@ -11,6 +11,7 @@ const dropin_symbol_ownership = @import("dropin/dropin_symbol_ownership.zig");
 const dropin_router = @import("dropin/dropin_router.zig");
 const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
 const dropin_abi_procs = @import("dropin/dropin_abi_procs.zig");
+const dropin_build_info = @import("dropin/dropin_build_info.zig");
 
 const DROPIN_BEHAVIOR_CONFIG_JSON = @embedFile("config/dropin-abi-behavior.json");
 const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = @embedFile("config/dropin-symbol-ownership.json");
@@ -25,6 +26,7 @@ comptime {
     _ = dropin_symbol_ownership;
     _ = dropin_router;
     _ = dropin_diagnostics;
+    _ = dropin_build_info;
     // Native Metal backend — exports doeNative* C ABI symbols on macOS.
     if (@import("builtin").os.tag == .macos) {
         _ = @import("doe_wgpu_native.zig");

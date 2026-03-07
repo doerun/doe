@@ -4,7 +4,7 @@ This document outlines qualitative differences and target use-cases for headless
 
 | Feature / Trait | **Fawn Doe** (`@simulatte/webgpu`) | **Node WebGPU** (`webgpu`) | **Bun WebGPU** (`bun-webgpu`) |
 | :--- | :--- | :--- | :--- |
-| **Underlying Engine** | `libdoe_webgpu` (Zig + Lean pipeline) | Google Dawn (C++) | Google Dawn (C++) |
+| **Underlying Engine** | `libwebgpu_doe` (Zig + Lean pipeline) | Google Dawn (C++) | Google Dawn (C++) |
 | **Primary Focus** | Deterministic Compute, ML/AI, Verifiability | Browser Parity, Graphics | Browser Parity, Graphics |
 | **Binary Footprint** | Smaller targeted runtime expected | Varies by build/distribution | Varies by build/distribution |
 | **JS Binding Layer** | Node-API (N-API) / Bun FFI | Node-API (N-API) | Bun FFI (Fast Foreign Function) |

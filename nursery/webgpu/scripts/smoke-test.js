@@ -47,6 +47,10 @@ check('providerInfo.loaded', info.loaded === true, `got ${info.loaded}`);
 check('providerInfo.loadError empty', info.loadError === '', `got "${info.loadError}"`);
 check('providerInfo.libraryFlavor', info.libraryFlavor === 'doe-dropin', `got "${info.libraryFlavor}"`);
 check('providerInfo.doeNative', info.doeNative === true, `got ${info.doeNative}`);
+check('providerInfo.buildMetadataSource string', typeof info.buildMetadataSource === 'string', `got ${typeof info.buildMetadataSource}`);
+check('providerInfo.buildMetadataPath string', typeof info.buildMetadataPath === 'string', `got ${typeof info.buildMetadataPath}`);
+check('providerInfo.leanVerifiedBuild boolean|null', info.leanVerifiedBuild === null || typeof info.leanVerifiedBuild === 'boolean', `got ${typeof info.leanVerifiedBuild}`);
+check('providerInfo.proofArtifactSha256 string|null', info.proofArtifactSha256 === null || typeof info.proofArtifactSha256 === 'string', `got ${typeof info.proofArtifactSha256}`);
 
 // 3. globals present.
 check('globals.GPUBufferUsage', mod.globals.GPUBufferUsage != null);

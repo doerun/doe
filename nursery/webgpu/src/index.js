@@ -3,12 +3,17 @@ import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDoeRuntime, runDawnVsDoeCompare } from './runtime_cli.js';
+import { loadDoeBuildMetadata } from './build_metadata.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
 const addon = loadAddon();
 const DOE_LIB_PATH = resolveDoeLibraryPath();
+const DOE_BUILD_METADATA = loadDoeBuildMetadata({
+  packageRoot: resolve(__dirname, '..'),
+  libraryPath: DOE_LIB_PATH ?? '',
+});
 let libraryLoaded = false;
 
 function loadAddon() {
@@ -35,9 +40,9 @@ function resolveDoeLibraryPath() {
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
     process.env.FAWN_DOE_LIB,
-    resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libdoe_webgpu.${ext}`),
-    resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libdoe_webgpu.${ext}`),
-    resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libdoe_webgpu.${ext}`),
+    resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
+    resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
+    resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
   ];
 
   for (const candidate of candidates) {
@@ -48,7 +53,7 @@ function resolveDoeLibraryPath() {
 
 function libraryFlavor(libraryPath) {
   if (!libraryPath) return 'missing';
-  if (libraryPath.endsWith('libdoe_webgpu.so') || libraryPath.endsWith('libdoe_webgpu.dylib') || libraryPath.endsWith('libdoe_webgpu.dll')) {
+  if (libraryPath.endsWith('libwebgpu_doe.so') || libraryPath.endsWith('libwebgpu_doe.dylib') || libraryPath.endsWith('libwebgpu_doe.dll')) {
     return 'doe-dropin';
   }
   if (libraryPath.endsWith('libwebgpu.so') || libraryPath.endsWith('libwebgpu.dylib') || libraryPath.endsWith('libwebgpu_dawn.so') || libraryPath.endsWith('libwgpu_native.so') || libraryPath.endsWith('libwgpu_native.so.0')) {
@@ -66,7 +71,7 @@ function ensureLibrary() {
   }
   if (!DOE_LIB_PATH) {
     throw new Error(
-      '@simulatte/webgpu: libdoe_webgpu not found. Build it with `cd fawn/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
+      '@simulatte/webgpu: libwebgpu_doe not found. Build it with `cd fawn/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
     );
   }
   addon.loadLibrary(DOE_LIB_PATH);
@@ -549,11 +554,15 @@ export function providerInfo() {
   return {
     module: '@simulatte/webgpu',
     loaded: !!addon && !!DOE_LIB_PATH,
-    loadError: !addon ? 'native addon not found' : !DOE_LIB_PATH ? 'libdoe_webgpu not found' : '',
+    loadError: !addon ? 'native addon not found' : !DOE_LIB_PATH ? 'libwebgpu_doe not found' : '',
     defaultCreateArgs: [],
     doeNative: flavor === 'doe-dropin',
     libraryFlavor: flavor,
     doeLibraryPath: DOE_LIB_PATH ?? '',
+    buildMetadataSource: DOE_BUILD_METADATA.source,
+    buildMetadataPath: DOE_BUILD_METADATA.path,
+    leanVerifiedBuild: DOE_BUILD_METADATA.leanVerifiedBuild,
+    proofArtifactSha256: DOE_BUILD_METADATA.proofArtifactSha256,
   };
 }
 

@@ -13,7 +13,7 @@ Strict Dawn-vs-Doe operation comparability now uses direct per-side timing norma
 - comparable workloads in `bench/workloads*.json` use `leftTimingDivisor=1.0` and `rightTimingDivisor=1.0`.
 - strict compare fails fast if comparable Dawn-vs-Doe workloads attempt side-specific divisor scaling.
 AMD Vulkan strict comparable/release presets now point at the native-supported workload contract, not the broader aspirational extended matrix.
-- Backend naming cutover is complete for runtime-visible surfaces: Doe is now the only backend identity (`doe-zig-runtime`, `libdoe_webgpu.so`, Chromium `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path`).
+- Backend naming cutover is complete for runtime-visible surfaces: Doe is now the only backend identity (`doe-zig-runtime`, `libwebgpu_doe.so`, Chromium `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path`).
 - Doe identity cleanup for runtime-visible diagnostics is complete:
   - drop-in helper exports are now `doeWgpuDropinLastErrorCode` / `doeWgpuDropinClearLastError`
   - runtime timestamp debug env flag is now `DOE_WGPU_TIMESTAMP_DEBUG`
@@ -112,7 +112,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`).
   - prebuild infrastructure for self-contained installs:
     - `scripts/install.js`: uses prebuilt binaries when present, falls back to node-gyp
-    - `scripts/prebuild.js`: assembles `prebuilds/<platform>-<arch>/` with `doe_napi.node` + `libdoe_webgpu` + Dawn sidecar + integrity manifest
+    - `scripts/prebuild.js`: assembles `prebuilds/<platform>-<arch>/` with `doe_napi.node` + `libwebgpu_doe` + Dawn sidecar + integrity manifest
     - `scripts/smoke-test.js`: clean-machine verification (13 checks: import, providerInfo, globals, create, adapter, device, buffer round-trip)
     - supported prebuild targets: macOS arm64 (Metal), Linux x64 (Vulkan), Windows x64 (D3D12)
     - N-API version pinned to 8 in `binding.gyp` for ABI stability across Node versions
@@ -139,7 +139,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - Fawn fork maintenance policy is now documented for buyer/security review:
   `docs/fawn-fork-maintenance-policy.md`.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
-- drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libdoe_webgpu.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
+- drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libwebgpu_doe.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off|require`; `auto` degrades to non-timestamp operation timing on invalid/unavailable timestamp capture, while `require` fails fast for strict timestamp lanes.
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.local.metal.extended.json` (no hard-coded 19-workload subset filter).
@@ -616,9 +616,9 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 - release CI (`.github/workflows/release-gates.yml`) continues to invoke the same release config entrypoint, but now evaluates all comparable AMD Vulkan contracts from the extended matrix under release claimability policy.
 
 69. Drop-in artifact lane now defaults to Doe-produced shared-library outputs:
-- `bench/run_release_pipeline.py`, `bench/run_blocking_gates.py`, and `bench/dropin_gate.py` now default `--dropin-artifact` to `zig/zig-out/lib/libdoe_webgpu.so` and fail fast when a configured artifact is missing.
-- release CI now builds `zig build dropin` and passes `zig/zig-out/lib/libdoe_webgpu.so` to drop-in gates.
-- drop-in compatibility CI now publishes and gates `libdoe_webgpu.so` plus required sidecars (`libwebgpu_dawn.so`, `libwebgpu.so`, `libwgpu_native.so`) from `zig/zig-out/lib/`.
+- `bench/run_release_pipeline.py`, `bench/run_blocking_gates.py`, and `bench/dropin_gate.py` now default `--dropin-artifact` to `zig/zig-out/lib/libwebgpu_doe.so` and fail fast when a configured artifact is missing.
+- release CI now builds `zig build dropin` and passes `zig/zig-out/lib/libwebgpu_doe.so` to drop-in gates.
+- drop-in compatibility CI now publishes and gates `libwebgpu_doe.so` plus required sidecars (`libwebgpu_dawn.so`, `libwebgpu.so`, `libwgpu_native.so`) from `zig/zig-out/lib/`.
 
 70. Queue wait-mode fallback behavior is now explicit-taxonomy only:
 - native `--queue-wait-mode wait-any` no longer silently mutates to `process-events` on unsupported/timeout paths.
@@ -1383,7 +1383,7 @@ Ownership:
     - upload cadence tail flush (`zig/tests/metal/metal_mod_integration_test.zig`)
     - single-manifest kernel dispatch emission (`zig/tests/metal/metal_mod_integration_test.zig`)
     - upload byte-budget + usage mode accounting (`zig/tests/metal/metal_upload_path_test.zig`)
-- Bun in-process Doe provider now auto-activates when `libdoe_webgpu` is discoverable:
+- Bun in-process Doe provider now auto-activates when `libwebgpu_doe` is discoverable:
   - file: `nursery/webgpu/src/bun-ffi.js`
   - modes:
     - `FAWN_WEBGPU_BUN_PROVIDER=doe` forces Doe provider (error if lib missing)

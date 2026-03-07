@@ -8,19 +8,49 @@ fn fileExists(path: []const u8) bool {
     return true;
 }
 
+fn sha256HexAlloc(allocator: std.mem.Allocator, input: []const u8) []u8 {
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+    const hex = allocator.alloc(u8, digest.len * 2) catch
+        @panic("failed to allocate sha256 hex");
+    const alphabet = "0123456789abcdef";
+    for (digest, 0..) |byte, idx| {
+        hex[idx * 2] = alphabet[byte >> 4];
+        hex[idx * 2 + 1] = alphabet[byte & 0x0f];
+    }
+    return hex;
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "lean_verified", lean_verified);
+
+    var proof_artifact_sha256: ?[]const u8 = null;
+    if (lean_verified) {
+        const proof_artifact = std.fs.cwd().openFile("../lean/artifacts/proven-conditions.json", .{}) catch
+            @panic("lean-verified=true but lean/artifacts/proven-conditions.json not found. Run lean/extract.sh first.");
+        defer proof_artifact.close();
+        const proof_json = proof_artifact.readToEndAlloc(b.allocator, 64 * 1024) catch
+            @panic("failed to read lean proof artifact");
+        build_options.addOption([]const u8, "lean_proof_json", proof_json);
+        proof_artifact_sha256 = sha256HexAlloc(b.allocator, proof_json);
+    }
+    const build_options_module = build_options.createModule();
 
     const dropin_lib = b.addLibrary(.{
-        .name = "doe_webgpu",
+        .name = "webgpu_doe",
         .linkage = .dynamic,
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/wgpu_dropin_lib.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
         }),
     });
     dropin_lib.linkLibC();
@@ -50,6 +80,30 @@ pub fn build(b: *std.Build) void {
 
     const dropin_step = b.step("dropin", "Build the drop-in WebGPU shared library");
     dropin_step.dependOn(&install_dropin.step);
+    const dropin_build_metadata_files = b.addWriteFiles();
+    const proof_artifact_sha256_json = if (proof_artifact_sha256) |value|
+        std.fmt.allocPrint(b.allocator, "\"{s}\"", .{value}) catch @panic("failed to format proof artifact sha256")
+    else
+        "null";
+    const dropin_build_metadata_json = std.fmt.allocPrint(
+        b.allocator,
+        "{{\n  \"schemaVersion\": 1,\n  \"artifact\": \"libwebgpu_doe\",\n  \"leanVerifiedBuild\": {s},\n  \"proofArtifactSha256\": {s}\n}}\n",
+        .{
+            if (lean_verified) "true" else "false",
+            proof_artifact_sha256_json,
+        },
+    ) catch @panic("failed to format drop-in build metadata");
+    const dropin_build_metadata = dropin_build_metadata_files.add(
+        "doe-build-metadata.json",
+        dropin_build_metadata_json,
+    );
+    const install_dropin_build_metadata = b.addInstallFileWithDir(
+        dropin_build_metadata,
+        .prefix,
+        "share/doe-build-metadata.json",
+    );
+    dropin_step.dependOn(&install_dropin_build_metadata.step);
+    b.getInstallStep().dependOn(&install_dropin_build_metadata.step);
     const dawn_sidecar = "../bench/vendor/dawn/out/Release/libwebgpu_dawn.so";
     const webgpu_sidecar = "../bench/vendor/dawn/out/Release/libwebgpu.so";
     const wgpu_native_sidecar = "../bench/vendor/dawn/out/Release/libwgpu_native.so";
@@ -91,17 +145,6 @@ pub fn build(b: *std.Build) void {
         }
     }
 
-    const build_options = b.addOptions();
-    build_options.addOption(bool, "lean_verified", lean_verified);
-    if (lean_verified) {
-        const proof_artifact = std.fs.cwd().openFile("../lean/artifacts/proven-conditions.json", .{}) catch
-            @panic("lean-verified=true but lean/artifacts/proven-conditions.json not found. Run lean/extract.sh first.");
-        defer proof_artifact.close();
-        const proof_json = proof_artifact.readToEndAlloc(b.allocator, 64 * 1024) catch
-            @panic("failed to read lean proof artifact");
-        build_options.addOption([]const u8, "lean_proof_json", proof_json);
-    }
-
     const exe = b.addExecutable(.{
         .name = "doe-zig-runtime",
         .root_module = b.createModule(.{
@@ -109,7 +152,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "build_options", .module = build_options.createModule() },
+                .{ .name = "build_options", .module = build_options_module },
             },
         }),
     });

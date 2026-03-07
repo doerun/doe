@@ -40,9 +40,9 @@ function defaultDoeLibPath() {
   const envDoeLib = process.env.FAWN_DOE_LIB;
   const candidates = [
     envDoeLib,
-    resolve(ROOT, `zig/zig-out/lib/libdoe_webgpu.${preferredExt}`),
-    resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.so"),
-    resolve(ROOT, "zig/zig-out/lib/libdoe_webgpu.dylib"),
+    resolve(ROOT, `zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
+    resolve(ROOT, "zig/zig-out/lib/libwebgpu_doe.so"),
+    resolve(ROOT, "zig/zig-out/lib/libwebgpu_doe.dylib"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -102,7 +102,7 @@ function usage() {
 Options:
   --mode dawn|doe|both      Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
-  --doe-lib PATH            libdoe_webgpu.{so,dylib} path (for doe mode)
+  --doe-lib PATH            libwebgpu_doe.{so,dylib} path (for doe mode)
   --out PATH                JSON report output path (default: nursery/fawn-browser/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out
   --headless true|false     Launch headless (default: true)

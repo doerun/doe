@@ -408,7 +408,7 @@ python3 fawn/bench/run_release_pipeline.py \
 
 # drop-in compatibility + benchmark suite against a built shared-library artifact:
 python3 fawn/bench/dropin_gate.py \
-  --artifact fawn/zig/zig-out/lib/libdoe_webgpu.so \
+  --artifact fawn/zig/zig-out/lib/libwebgpu_doe.so \
   --report fawn/bench/out/dropin_report.json
 
 # optional standalone drop-in benchmark visualization (micro vs end-to-end sections):
@@ -422,7 +422,7 @@ python3 fawn/bench/run_release_pipeline.py \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so \
+  --dropin-artifact fawn/zig/zig-out/lib/libwebgpu_doe.so \
   --with-claim-gate
 
 # optional repeated release windows for trend evidence:
@@ -432,7 +432,7 @@ python3 fawn/bench/run_release_claim_windows.py \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so \
+  --dropin-artifact fawn/zig/zig-out/lib/libwebgpu_doe.so \
   --with-substantiation-gate \
   --substantiation-policy fawn/config/substantiation-policy.json
 # disable per-window claim rehearsal artifacts only when intentionally running diagnostics:
