@@ -249,7 +249,7 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
-      "benchmarkClass": "directional",
+      "benchmarkClass": "comparable",
       "rightTimingDivisor": 1.0
     },
     {
@@ -273,7 +273,7 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
-      "benchmarkClass": "directional",
+      "benchmarkClass": "comparable",
       "rightTimingDivisor": 1.0
     },
     {
@@ -371,7 +371,7 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
-      "benchmarkClass": "directional",
+      "benchmarkClass": "comparable",
       "rightTimingDivisor": 1.0
     },
     {
@@ -604,7 +604,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
       "applesToApplesVetted": true,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "rightTimingDivisor": 1.0
     },
     {
@@ -711,7 +711,7 @@
       "leftCommandRepeat": 500,
       "rightCommandRepeat": 500,
       "applesToApplesVetted": false,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "rightTimingDivisor": 1.0
     },
     {
@@ -934,7 +934,7 @@
       "leftCommandRepeat": 500,
       "rightCommandRepeat": 500,
       "applesToApplesVetted": false,
-      "benchmarkClass": "comparable",
+      "benchmarkClass": "directional",
       "rightTimingDivisor": 1.0
     },
     {
