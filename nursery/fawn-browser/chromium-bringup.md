@@ -1,16 +1,27 @@
-# Chromium Bring-Up and Early Integration (Draft)
+# Chromium bring-up and early integration (draft)
 
 ## Goal
 
-Start Chromium bring-up for this lane quickly while keeping:
+Start Chromium bring-up for the browser integration layer quickly while keeping:
 
 1. large build artifacts out of git,
 2. Dawn fallback intact,
 3. integration scope limited to WebGPU runtime seam.
 
-## Local Layout (Recommended)
+## Layout options
 
-Use directories under `fawn/nursery/fawn-browser`:
+Two layouts are supported:
+
+1. Repo-local integration layer:
+   - `fawn/nursery/fawn-browser/`
+   - docs, scripts, contracts, and diagnostic artifacts
+2. Chromium checkout/build lane:
+   - `fawn/nursery/chromium_webgpu_lane/` for in-tree use, or an external path
+     selected by `FAWN_CHROMIUM_LANE_DIR`
+   - Chromium source, `depot_tools`, `out/`, and large build artifacts
+
+For a small self-contained setup, you can keep everything under
+`fawn/nursery/fawn-browser`:
 
 1. `depot_tools/`
 2. `src/` (Chromium checkout)
@@ -25,7 +36,7 @@ All above are gitignored at repository root.
 2. `git`, Python 3, and standard Linux build toolchain.
 3. Network access to Chromium/depot_tools sources.
 
-## Lane-Local Helper Scripts
+## Lane-local helper scripts
 
 Use lane-local scripts so bring-up does not depend on system package installs:
 
@@ -35,9 +46,9 @@ Use lane-local scripts so bring-up does not depend on system package installs:
 2. `scripts/env.sh`
    - prepends `depot_tools` and cached host-tool binaries to `PATH`.
 
-This keeps all setup isolated inside `nursery/fawn-browser/`.
+This keeps a self-contained setup isolated inside `nursery/fawn-browser/`.
 
-## Bring-Up Steps (Machine Commands)
+## Bring-up steps (machine commands)
 
 Example flow from `fawn/` root:
 
@@ -55,7 +66,7 @@ autoninja -C out/fawn_debug chrome
 
 If `fetch`/`gclient` are unavailable, confirm `depot_tools` is on `PATH`.
 
-## macOS External Volume Workflow (APFS)
+## macOS external volume workflow (APFS)
 
 When local disk is constrained, keep Chromium checkout/build state on an APFS
 external volume and sync only release artifacts back to local disk.
@@ -93,7 +104,7 @@ Default local release artifact path:
 - local app bundle is synchronized as canonical `Fawn.app`
 - if upstream still emits `Chromium.app`, sync maps it into local `Fawn.app` during artifact copy
 
-## Integration Starting Point
+## Integration starting point
 
 Start with Track A seam-only work:
 
@@ -107,7 +118,7 @@ Start with Track A seam-only work:
 
 Do not begin with compositor/layout/media refactors.
 
-## Fawn Artifact Usage (Track A)
+## Fawn artifact usage (Track A)
 
 Use existing drop-in artifact lane as initial test substrate:
 
@@ -116,7 +127,7 @@ Use existing drop-in artifact lane as initial test substrate:
 
 Initial criterion is deterministic compatibility and observability, not performance.
 
-## Integration Milestones (Early)
+## Integration milestones (early)
 
 1. `I0`:
    - build Chromium locally with no functional changes.
@@ -129,7 +140,7 @@ Initial criterion is deterministic compatibility and observability, not performa
 5. `I4`:
    - run strict comparability benchmark lanes for claimable paths.
 
-## Current Snapshot (2026-02-24)
+## Current snapshot (2026-02-24)
 
 1. `I0` and selector/fallback plumbing milestones are complete locally.
 2. Decoder/proc-dispatch seam has a concrete partial Doe execution path:
@@ -141,7 +152,7 @@ Initial criterion is deterministic compatibility and observability, not performa
 4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
    - `bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
 
-## Common Wrapper Scripts
+## Common wrapper scripts
 
 Use wrappers under `nursery/fawn-browser/scripts` to avoid hardcoded paths:
 
@@ -154,7 +165,7 @@ Use wrappers under `nursery/fawn-browser/scripts` to avoid hardcoded paths:
 4. `scripts/run-bench.sh`
    - runs layered superset orchestrator with resolved `--chrome` and `--doe-lib`.
 
-## Browser Smoke Harness
+## Browser smoke harness
 
 A small Playwright harness now exists for real-browser WebGPU smoke + mini bench comparison:
 
@@ -190,7 +201,7 @@ Guardrail:
 - writing under `bench/out` is blocked by default for this harness to avoid accidental claim-lane mixing.
 - if you intentionally need `bench/out`, pass `--allow-bench-out` explicitly and keep the artifact labeled diagnostic.
 
-## Artifact Discipline
+## Artifact discipline
 
 For each integration run, capture:
 
@@ -202,7 +213,7 @@ For each integration run, capture:
 Store this harness output under lane-local ignored directories by default.
 Only publish to canonical `fawn/bench/out/` flows after converting results into strict comparability/claim contracts.
 
-## Layered Browser Superset Harness
+## Layered browser superset harness
 
 The nursery lane now also includes a contract-driven layered harness (`L1` + `L2`) that is generated from the core workload source-of-truth:
 
@@ -269,7 +280,7 @@ Rollback triggers:
 4. No promotion from lane without schema/migration/process/status updates.
 5. Forced `--use-webgpu-runtime=doe` must hard-fail if runtime cannot initialize; no silent Dawn substitution.
 
-## Troubleshooting Notes (Observed)
+## Troubleshooting notes (observed)
 
 1. If `gclient sync` repeatedly fails on
    `src/content/test/data/gpu/meet_effects:meet-gpu-tests/873777508.tar.gz`
@@ -291,7 +302,7 @@ source ./scripts/env.sh
 
 Then rerun `autoninja`.
 
-## Current Environment Note
+## Current environment note
 
 If Chromium tools are not currently installed on the machine path, start with:
 
@@ -300,7 +311,7 @@ If Chromium tools are not currently installed on the machine path, start with:
 3. sourcing lane-local env path setup,
 4. validating `fetch`, `gclient`, `gn`, `autoninja`.
 
-## Next Continuation Targets
+## Next continuation targets
 
 1. Validate forced-Doe adapter acquisition on non-denylisted GPU host/session.
 2. Add decoder-branch tests for Doe init/load/proc-surface/instance failure and teardown paths.

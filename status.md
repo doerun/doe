@@ -73,6 +73,11 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - `zig/src/backend/metal/mod.zig` now charges upload staging work to `setup_ns`, matching the Dawn delegate upload timing phase split.
   - local Metal upload workload contracts (`bench/workloads.local.metal.extended.json`, `bench/workloads.local.metal.smoke.json`) no longer mark upload rows as `pathAsymmetry`.
   - strict comparability now has a blocking `left_right_timing_phase_match` obligation, so future phase-scope drift fails comparability instead of surviving until claimability.
+- Compare report timing interpretation hardening (2026-03-07):
+  - `bench/compare_dawn_vs_doe.py` now emits additive `timingInterpretation` fields so selected claim metrics and end-to-end process-wall views are reported separately.
+  - `timingInterpretation.selectedTiming` marks narrow-scope rows such as render encode-only results as `scopeClass=narrow-hot-path`.
+  - `timingInterpretation.headlineProcessWall` reports timed-command process-wall deltas, giving an honest top-line ranking view without changing existing `deltaPercent` claim semantics.
+  - `bench/build_claim_scope_report.py` now propagates selected-scope vs headline-process-wall context into citation-safe artifacts.
 - final macOS Metal Dawn-vs-Doe evidence execution is now codified as an operator runbook:
   `docs/metal-macos-proof-bundle-runbook.md`
 - Chromium lane release/build defaults now force non-CfT branding args at `gn gen` time (`is_chrome_for_testing=false`, `is_chrome_for_testing_branded=false`, `is_chrome_branded=false`) so stale `args.gn` does not reintroduce Chrome-for-Testing UI branding.
@@ -732,7 +737,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 
 87. Bench harness orchestration sharding is complete:
 - Extracted subprocess mapping, data struct processing, standard error reading, and resource extraction into `bench/compare_dawn_vs_doe_modules/runner.py`.
-- `bench/compare_dawn_vs_doe.py` conforms to the 1200-line limitation policy.
+- historical note: `bench/compare_dawn_vs_doe.py` later regressed above the 1200-line limitation policy; active split follow-up is tracked in Snapshot item 17.
 
 88. Broader baseline coverage automation is implemented:
 - Added `bench/wgpu_benchmark_adapter.py` for automated wgpu runtime baseline comparability mapping.
@@ -773,6 +778,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 14. **AMD Vulkan bounded copy-dst fast path (2026-03-06):** `zig/src/backend/vulkan/native_runtime.zig` now keeps the reusable mapped fast upload path bounded to `copy_dst` uploads up to `1 MiB` instead of letting large comparable contracts pin arbitrarily large host-visible buffers. Focused validation artifact `bench/out/scratch/upload-fast-path.validation.json` shows strong small/medium upload improvement on this host (`upload_write_buffer_1kb` p50 `+4993.69%`, `upload_write_buffer_64kb` `+2746.63%`, `upload_write_buffer_1mb` `+491.39%`), while `upload_write_buffer_4gb` remains correctly on the slower fallback path (`-97.48%`). Next AMD Vulkan performance step is reducing large-upload fallback overhead (likely command-buffer reuse / submit-path work), not widening the fast path cap.
 15. **AMD Vulkan upload fallback command-buffer reuse (2026-03-06):** `zig/src/backend/vulkan/native_runtime.zig` now records pending fallback upload copies into the shared primary Vulkan command buffer and submits once per flush instead of allocating/submitting one command buffer per upload. Focused post-change release-lane rerun `bench/out/scratch/vulkan.upload_1mb.postfix.json` (`upload_write_buffer_1mb`, 5 iterations, 1 warmup) reported strong positive deltas on this host (`p50 +393.29%`, `p95 +400.03%`, `p99 +400.03%`) while still below the 15-sample release claim floor. At that point, `upload_write_buffer_4gb` remained negative and was the next Vulkan upload follow-up; that large-payload gap is now superseded by item 16.
 16. **AMD Vulkan upload matrix closure superseded by structural-equivalence audit (2026-03-07):** `zig/src/backend/vulkan/native_runtime.zig` still uses host-visible mapped upload paths that can bypass the staged GPU copy Dawn performs. Current gate policy now treats that as a blocking `pathAsymmetry` failure for strict Dawn-vs-Doe claim lanes, and throughput-plausibility checks reject the historical 4 GiB result as physically impossible. The March 7 strict release report is therefore no longer authoritative as `comparable`/`claimable`; keep it only as diagnostic evidence for upload-path behavior.
+17. `bench/compare_dawn_vs_doe.py` is at 2,069 lines (over the 1,200-line Python tooling limit). Next split target: move report assembly and timing-interpretation synthesis into a dedicated compare-report module. Owner: benchmark harness.
 
 ## macOS Metal baseline (2026-03-05)
 

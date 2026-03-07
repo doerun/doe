@@ -30,6 +30,7 @@ import output_paths
 from compare_dawn_vs_doe_modules import claimability as claimability_mod
 from compare_dawn_vs_doe_modules import comparability as comparability_mod
 from compare_dawn_vs_doe_modules import reporting as reporting_mod
+from compare_dawn_vs_doe_modules import timing_interpretation as timing_interpretation_mod
 from compare_dawn_vs_doe_modules import timing_selection as timing_selection_mod
 from compare_dawn_vs_doe_modules import runner as runner_mod
 
@@ -1480,6 +1481,10 @@ format_distribution = reporting_mod.format_distribution
 summarize_timing_metric_stats = reporting_mod.summarize_timing_metric_stats
 summarize_resource_stats = reporting_mod.summarize_resource_stats
 
+command_sample_field_values_ms = timing_interpretation_mod.command_sample_field_values_ms
+delta_percent_from_stats = timing_interpretation_mod.delta_percent_from_stats
+build_timing_interpretation = timing_interpretation_mod.build_timing_interpretation
+
 parse_trace_rows = timing_selection_mod.parse_trace_rows
 parse_execution_duration_ns_rows = timing_selection_mod.parse_execution_duration_ns_rows
 maybe_adjust_timing_for_ignored_first_ops = timing_selection_mod.maybe_adjust_timing_for_ignored_first_ops
@@ -1637,6 +1642,18 @@ def main() -> int:
             "negative": "left slower",
             "zero": "parity",
         },
+        "timingInterpretationPolicy": {
+            "selectedMetricField": "deltaPercent",
+            "selectedMetricUse": "methodology-selected apples-to-apples claim metric",
+            "headlineMetricField": "timingInterpretation.headlineProcessWall.deltaPercent",
+            "headlineMetricUse": "timed-command process-wall end-to-end ranking metric",
+            "headlineMetricScope": "timed-command-process-wall",
+            "narrowSelectedScopeClass": "narrow-hot-path",
+            "guidance": (
+                "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, "
+                "deltaPercent is a phase-specific diagnostic, not an end-to-end latency claim."
+            ),
+        },
         "comparabilityPolicy": {
             "mode": args.comparability,
             "requiredTimingClass": args.require_timing_class,
@@ -1692,6 +1709,8 @@ def main() -> int:
 
     overall_left = []
     overall_right = []
+    overall_headline_left = []
+    overall_headline_right = []
     comparability_failures: list[dict[str, Any]] = []
     claimability_failures: list[dict[str, Any]] = []
     previous_claim_row_hash = "0" * 64
@@ -1762,6 +1781,7 @@ def main() -> int:
             "p99Percent": percent_delta(safe_float(left_stats["p99Ms"]) or 0.0, safe_float(right_stats["p99Ms"]) or 0.0),
             "meanPercent": percent_delta(safe_float(left_stats["meanMs"]) or 0.0, safe_float(right_stats["meanMs"]) or 0.0),
         }
+        timing_interpretation = build_timing_interpretation(left=left, right=right)
         comparability = compare_assessment(
             workload_id=workload.id,
             workload_comparable=workload.comparable,
@@ -1809,8 +1829,14 @@ def main() -> int:
         if comparability.get("comparable"):
             if left_stats["count"] >= 7:
                 overall_left.extend([safe_float(v) for v in left_timings if safe_float(v) is not None])
+                overall_headline_left.extend(
+                    command_sample_field_values_ms(left.get("commandSamples", []), "elapsedMs")
+                )
             if right_stats["count"] >= 7:
                 overall_right.extend([safe_float(v) for v in right_timings if safe_float(v) is not None])
+                overall_headline_right.extend(
+                    command_sample_field_values_ms(right.get("commandSamples", []), "elapsedMs")
+                )
 
         left_trace_meta_hashes = collect_trace_meta_hashes(left.get("commandSamples", []))
         right_trace_meta_hashes = collect_trace_meta_hashes(right.get("commandSamples", []))
@@ -1881,6 +1907,7 @@ def main() -> int:
                 "left": left,
                 "right": right,
                 "deltaPercent": delta,
+                "timingInterpretation": timing_interpretation,
                 "comparability": comparability,
                 "claimability": claimability,
                 "traceMetaHashes": {
@@ -1922,6 +1949,19 @@ def main() -> int:
                     safe_float(overall_right_stats["p99Ms"]) or 0.0,
                 ),
             },
+        }
+    if overall_headline_left and overall_headline_right:
+        overall_headline_left_stats = format_stats(overall_headline_left)
+        overall_headline_right_stats = format_stats(overall_headline_right)
+        report["overallHeadlineProcessWall"] = {
+            "scope": "timed-command-process-wall",
+            "metric": "elapsedMs",
+            "left": overall_headline_left_stats,
+            "right": overall_headline_right_stats,
+            "deltaPercent": delta_percent_from_stats(
+                overall_headline_left_stats,
+                overall_headline_right_stats,
+            ),
         }
 
     obligation_failure_counts: dict[str, int] = {}

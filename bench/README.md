@@ -118,7 +118,7 @@ That document defines:
     claim gate result, tail-health table, timing-invariant audit, contract-hash manifest, and a rehearsal manifest linking all outputs.
 - `build_claim_scope_report.py`
   - emits citation-safe claim scope artifacts from a compare report:
-    per-workload status (`comparisonStatus`, `claimStatus`, comparability/claimability flags), timing-source/timing-class context, backend/profile metadata, and trace-meta/report paths.
+    per-workload status (`comparisonStatus`, `claimStatus`, comparability/claimability flags), selected-timing scope vs headline process-wall context, backend/profile metadata, and trace-meta/report paths.
   - fails fast when top-level report status is not explicitly claimable/comparable as required by CLI arguments.
 - `cycle_gate.py`
   - validates active cycle contract hash locks (`workloadContract`, benchmark policy, compare config, substantiation policy), methodology invariants, and comparable/directional workload partition.
@@ -359,6 +359,10 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   sources (`doe-execution-*`); fallback timing is treated as non-comparable.
   tiny dispatch-window timings (`<minDispatchWindowNsWithoutEncode` and `<minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs`) are rejected as bookkeeping noise whenever `executionTotalNs` is available, and `executionTotalNs` is used instead (`dispatchWindowSelectionRejected` in timing metadata).
   when ignore-first is enabled and applied, source is reported as `doe-execution-row-total-ns+ignore-first-ops`.
+- compare reports now also emit `timingInterpretation` per workload:
+  - `selectedTiming` describes what `deltaPercent` actually measures (`operation-total`, `operation-encode`, `process-wall`, etc.).
+  - `headlineProcessWall` reports the timed-command process-wall view for honest end-to-end ranking.
+  - when `selectedTiming.scopeClass=narrow-hot-path`, treat `deltaPercent` as a phase-specific diagnostic and use `headlineProcessWall.deltaPercent` for top-line comparisons.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
   in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=1` because Dawn already reports per-dispatch via `iterationsPerStep=100`).
 - non-comparable mappings can be explicitly flagged in workload contracts and excluded by default.
@@ -836,6 +840,8 @@ Interpretation examples:
 - workload stats include `p10Ms`, `p50Ms`, `p95Ms`, `p99Ms`
 - workload deltas include `p10Percent`, `p50Percent`, `p95Percent`, `p99Percent`
 - overall delta summary includes `p10Approx`, `p50Approx`, `p95Approx`, `p99Approx`
+- workload timing interpretation includes selected-scope metadata and a headline process-wall view (`timingInterpretation.selectedTiming`, `timingInterpretation.headlineProcessWall`)
+- reports may also include `overallHeadlineProcessWall` for end-to-end process-wall aggregation across comparable workloads
 - HTML visualization emphasizes `p10/p50/p95/p99`
 - claimability metadata fields are included:
   `claimabilityPolicy`, workload `claimability`, `claimabilitySummary`, `claimStatus`

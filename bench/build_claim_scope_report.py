@@ -163,6 +163,15 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         claimability = workload.get("claimability")
         if not isinstance(claimability, dict):
             claimability = {}
+        timing_interpretation = workload.get("timingInterpretation")
+        if not isinstance(timing_interpretation, dict):
+            timing_interpretation = {}
+        selected_timing = timing_interpretation.get("selectedTiming")
+        if not isinstance(selected_timing, dict):
+            selected_timing = {}
+        headline_process_wall = timing_interpretation.get("headlineProcessWall")
+        if not isinstance(headline_process_wall, dict):
+            headline_process_wall = {}
         delta = workload.get("deltaPercent")
         if not isinstance(delta, dict):
             delta = {}
@@ -183,6 +192,12 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         delta_p50 = parse_float(delta.get("p50Percent"))
         delta_p95 = parse_float(delta.get("p95Percent"))
         delta_p99 = parse_float(delta.get("p99Percent"))
+        headline_delta = headline_process_wall.get("deltaPercent")
+        if not isinstance(headline_delta, dict):
+            headline_delta = {}
+        headline_delta_p50 = parse_float(headline_delta.get("p50Percent"))
+        headline_delta_p95 = parse_float(headline_delta.get("p95Percent"))
+        headline_delta_p99 = parse_float(headline_delta.get("p99Percent"))
 
         citation = (
             f"{workload_id}: comparisonStatus={top_comparison_status}, claimStatus={top_claim_status}, "
@@ -190,6 +205,8 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
             f"workloadComparableNow={comparability.get('comparable')}, "
             f"workloadClaimableNow={claimability.get('claimable')}, "
             f"delta(p50/p95/p99)={delta_p50}/{delta_p95}/{delta_p99}, "
+            f"headlineProcessWallDelta(p50/p95/p99)={headline_delta_p50}/{headline_delta_p95}/{headline_delta_p99}, "
+            f"selectedScope={selected_timing.get('scope')}/{selected_timing.get('scopeClass')}, "
             f"timingSources(left/right)={left_timing_sources}/{right_timing_sources}, "
             f"backend(left/right)={left_backend}/{right_backend}, report={report_path_value}"
         )
@@ -213,6 +230,10 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                     "rightSources": right_timing_sources,
                     "leftClasses": left_timing_classes,
                     "rightClasses": right_timing_classes,
+                    "selectedScope": selected_timing.get("scope"),
+                    "selectedScopeClass": selected_timing.get("scopeClass"),
+                    "selectedIsNarrowHotPath": selected_timing.get("isNarrowHotPath"),
+                    "selectedScopeNote": selected_timing.get("note"),
                 },
                 "performance": {
                     "deltaPercent": {
@@ -220,8 +241,15 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                         "p95Percent": delta_p95,
                         "p99Percent": delta_p99,
                     },
+                    "headlineProcessWallDeltaPercent": {
+                        "p50Percent": headline_delta_p50,
+                        "p95Percent": headline_delta_p95,
+                        "p99Percent": headline_delta_p99,
+                    },
                     "leftStatsMs": left_stats,
                     "rightStatsMs": right_stats,
+                    "headlineProcessWallLeftStatsMs": headline_process_wall.get("leftStatsMs", {}),
+                    "headlineProcessWallRightStatsMs": headline_process_wall.get("rightStatsMs", {}),
                 },
                 "runtime": {
                     "leftBackendId": left_backend,
@@ -251,8 +279,8 @@ def markdown(payload: dict[str, Any]) -> str:
     lines.append(f"- Claimability mode: `{payload.get('claimabilityMode', '')}`")
     lines.append(f"- Workloads: `{payload.get('workloadCount', 0)}`")
     lines.append("")
-    lines.append("| Workload | Domain | p50% | p95% | p99% | Timing (L/R) | Backend (L/R) |")
-    lines.append("|---|---:|---:|---:|---:|---|---|")
+    lines.append("| Workload | Domain | Selected p50% | Headline wall p50% | Scope | Timing (L/R) | Backend (L/R) |")
+    lines.append("|---|---|---:|---:|---|---|---|")
     for row in payload.get("rows", []):
         if not isinstance(row, dict):
             continue
@@ -262,6 +290,9 @@ def markdown(payload: dict[str, Any]) -> str:
         delta = performance.get("deltaPercent", {})
         if not isinstance(delta, dict):
             delta = {}
+        headline_delta = performance.get("headlineProcessWallDeltaPercent", {})
+        if not isinstance(headline_delta, dict):
+            headline_delta = {}
         timing = row.get("timing", {})
         if not isinstance(timing, dict):
             timing = {}
@@ -272,10 +303,11 @@ def markdown(payload: dict[str, Any]) -> str:
         right_sources = ",".join(parse_string_list(timing.get("rightSources")))
         left_backend = runtime.get("leftBackendId", "")
         right_backend = runtime.get("rightBackendId", "")
+        selected_scope = timing.get("selectedScopeClass") or timing.get("selectedScope") or ""
         lines.append(
             "| "
             f"{row.get('workloadId', '')} | {row.get('domain', '')} | "
-            f"{delta.get('p50Percent', '')} | {delta.get('p95Percent', '')} | {delta.get('p99Percent', '')} | "
+            f"{delta.get('p50Percent', '')} | {headline_delta.get('p50Percent', '')} | {selected_scope} | "
             f"{left_sources} / {right_sources} | {left_backend} / {right_backend} |"
         )
     lines.append("")
@@ -364,4 +396,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

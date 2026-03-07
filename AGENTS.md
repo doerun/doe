@@ -1,4 +1,4 @@
-# Fawn Code Agent
+# Fawn code agent
 
 ## Scope
 
@@ -6,7 +6,7 @@ This file is the source of truth for Fawn work only.
 Do not apply `dream/AGENTS.md` or `doppler/AGENTS.md` as process for this project.
 It is acceptable to reuse selected technical principles from those files, as listed here, when directly useful.
 
-## Prime Directive
+## Prime directive
 
 Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation.
 
@@ -19,7 +19,7 @@ This workspace (`fawn/`) drives Doe development: quirk ingestion, verification, 
 - config-driven control, not hidden switches
 - speed-first progress with explicit hard/advisory gates
 
-## Mandatory Reading
+## Mandatory reading
 
 Before changing Fawn behavior, read:
 
@@ -41,7 +41,7 @@ For Dawn-vs-Doe performance work, also read:
 
 - `fawn/performance-strategy.md`
 
-## Core Principles (adopted)
+## Core principles (adopted)
 
 1. Config as code
 - controls and thresholds live in `fawn/config/*.json`
@@ -137,7 +137,7 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - specialization work belongs to `zig/`;
 - shared orchestration in `process.md` and config files.
 
-## Zig-First, Lean-Eliminate Policy
+## Zig-first, Lean-eliminate policy
 
 - for latency-critical runtime behavior and incumbent replacement paths, implement deterministic behavior in Zig first.
 - then attempt proof-driven elimination: if Lean can discharge a runtime condition, remove that branch from runtime Zig paths and hoist it into verified artifacts/config.
@@ -151,6 +151,10 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - prefer pure transforms for deterministic stages
 - minimize inline commentary; use field names and namespaced constants for intent
 - if adding selection logic, prefer rule-map data over branching ladders
+
+## Documentation style
+
+- Markdown document titles and section headings use sentence case
 
 ## File size
 

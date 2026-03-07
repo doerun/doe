@@ -311,6 +311,18 @@ def analyze_workload(
     ci_p50 = bootstrap_quantile_delta_ci(left_samples, right_samples, 0.5, bootstrap_iterations, rng)
     ci_p95 = bootstrap_quantile_delta_ci(left_samples, right_samples, 0.95, bootstrap_iterations, rng)
     ci_p99 = bootstrap_quantile_delta_ci(left_samples, right_samples, 0.99, bootstrap_iterations, rng)
+    timing_interpretation = workload.get("timingInterpretation", {})
+    if not isinstance(timing_interpretation, dict):
+        timing_interpretation = {}
+    selected_timing = timing_interpretation.get("selectedTiming", {})
+    if not isinstance(selected_timing, dict):
+        selected_timing = {}
+    headline_process_wall = timing_interpretation.get("headlineProcessWall", {})
+    if not isinstance(headline_process_wall, dict):
+        headline_process_wall = {}
+    headline_delta = headline_process_wall.get("deltaPercent", {})
+    if not isinstance(headline_delta, dict):
+        headline_delta = {}
 
     return {
         "id": workload.get("id"),
@@ -332,6 +344,12 @@ def analyze_workload(
             "p95": ci_p95,
             "p99": ci_p99,
         },
+        "selectedTiming": {
+            "scope": selected_timing.get("scope"),
+            "scopeClass": selected_timing.get("scopeClass"),
+            "note": selected_timing.get("note"),
+        },
+        "headlineProcessWallDeltaPercent": headline_delta,
         "leftSamplesMs": left_samples,
         "rightSamplesMs": right_samples,
     }
@@ -552,6 +570,13 @@ def generate_html(
         left_stats = analysis.get("leftStatsMs", {})
         right_stats = analysis.get("rightStatsMs", {})
         delta = analysis.get("deltaPercent", {})
+        headline_delta = analysis.get("headlineProcessWallDeltaPercent", {})
+        if not isinstance(headline_delta, dict):
+            headline_delta = {}
+        selected_timing = analysis.get("selectedTiming", {})
+        if not isinstance(selected_timing, dict):
+            selected_timing = {}
+        selected_scope = selected_timing.get("scopeClass") or selected_timing.get("scope") or "-"
         comparable_text = "yes" if analysis.get("comparable") else "no"
 
         row_html = (
@@ -559,6 +584,7 @@ def generate_html(
             f"<td>{escape(str(analysis.get('id', '')))}</td>"
             f"<td>{escape(str(analysis.get('domain', '')))}</td>"
             f"<td>{escape(comparable_text)}</td>"
+            f"<td>{escape(str(selected_scope))}</td>"
             f"<td>{fmt_ms(left_stats.get('p10Ms'))}</td>"
             f"<td>{fmt_ms(left_stats.get('p50Ms'))}</td>"
             f"<td>{fmt_ms(left_stats.get('p95Ms'))}</td>"
@@ -567,6 +593,7 @@ def generate_html(
             f"<td>{fmt_ms(right_stats.get('p50Ms'))}</td>"
             f"<td>{fmt_ms(right_stats.get('p95Ms'))}</td>"
             f"<td>{fmt_ms(right_stats.get('p99Ms'))}</td>"
+            f"<td style='color:{pick_delta_color(headline_delta.get('p50Percent'))};font-weight:600'>{fmt_pct(headline_delta.get('p50Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p10Percent'))};font-weight:600'>{fmt_pct(delta.get('p10Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p50Percent'))};font-weight:600'>{fmt_pct(delta.get('p50Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p95Percent'))};font-weight:600'>{fmt_pct(delta.get('p95Percent'))}</td>"
@@ -591,6 +618,7 @@ def generate_html(
             "          <th>workload</th>\n"
             "          <th>domain</th>\n"
             "          <th>comparable</th>\n"
+            "          <th>scope</th>\n"
             "          <th>left p10 ms</th>\n"
             "          <th>left p50 ms</th>\n"
             "          <th>left p95 ms</th>\n"
@@ -599,6 +627,7 @@ def generate_html(
             "          <th>right p50 ms</th>\n"
             "          <th>right p95 ms</th>\n"
             "          <th>right p99 ms</th>\n"
+            "          <th>headline wall p50</th>\n"
             "          <th>delta p10</th>\n"
             "          <th>delta p50</th>\n"
             "          <th>delta p95</th>\n"
@@ -786,7 +815,7 @@ def generate_html(
     </section>
     <section class="panel">
       <h2>Workload Table (Strict Baseline)</h2>
-      <div class="meta">Fast-end metric shown is p10. Excludes non-comparable architectural speedups.</div>
+      <div class="meta">Fast-end metric shown is p10. Headline wall p50 is the honest timed-command process-wall view; selected deltas may be narrower in encode-only lanes.</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -794,6 +823,7 @@ def generate_html(
               <th>workload</th>
               <th>domain</th>
               <th>comparable</th>
+              <th>scope</th>
               <th>left p10 ms</th>
               <th>left p50 ms</th>
               <th>left p95 ms</th>
@@ -802,6 +832,7 @@ def generate_html(
               <th>right p50 ms</th>
               <th>right p95 ms</th>
               <th>right p99 ms</th>
+              <th>headline wall p50</th>
               <th>delta p10</th>
               <th>delta p50</th>
               <th>delta p95</th>

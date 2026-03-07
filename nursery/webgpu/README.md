@@ -1,27 +1,35 @@
 # @simulatte/webgpu
 
-Canonical Doe WebGPU package for browserless benchmarking, CI workflows, and
+Canonical WebGPU package for browserless benchmarking, CI workflows, and
 headless runtime integration.
 
-Doe is a WebGPU backend written in Zig that replaces Dawn (Chromium's C++
-WebGPU implementation). The native runtime targets Vulkan/Metal/D3D12 with
-explicit allocator control. In this package, Node uses an N-API addon and Bun
-uses Bun FFI to load `libwebgpu_doe`. Optional `-Dlean-verified=true` builds
-in the broader Fawn runtime can remove specific proved branches in the quirk
-dispatch path; package consumers should not assume that path by default.
+It is built on Doe, Fawn's Zig WebGPU runtime. Doe is being developed as a
+drop-in WebGPU runtime and Dawn-replacement path for Fawn/Chromium. The native
+runtime targets Vulkan/Metal/D3D12 with explicit allocator control. In this
+package, Node uses an N-API addon and Bun uses Bun FFI to load
+`libwebgpu_doe`. Current package builds still ship a Dawn sidecar where proc
+resolution requires it. Optional `-Dlean-verified=true` builds in the broader
+Fawn runtime can remove specific proved branches in the quirk dispatch path;
+package consumers should not assume that path by default.
 
 This directory is the package root for `@simulatte/webgpu`. It contains the
 Node provider source, the addon build contract, the Bun FFI entrypoint, and
 the CLI helpers used by benchmark and CI workflows.
 
-Surface maturity:
+## Surface maturity
 
 - Node is the primary supported package surface (N-API bridge).
 - Bun has API parity with Node via direct FFI to `libwebgpu_doe` (57/57
-  contract tests passing). Cube maturity remains prototype until Bun cells
-  are populated by comparable benchmark artifacts.
+  contract tests passing). Bun benchmark cube maturity remains prototype
+  until Bun cells are populated by comparable benchmark artifacts.
 - Package-surface comparisons should be read through the benchmark cube outputs
   under `bench/out/cube/`, not as a replacement for strict backend reports.
+
+The **benchmark cube** is a cross-product matrix of surface (backend_native,
+node_package, bun_package) × provider pair (e.g. doe_vs_dawn) × workload set
+(e.g. compute_e2e, render, upload). Each intersection is a **cell** with its
+own comparability and claimability status. Cube outputs live in
+`bench/out/cube/` and include a dashboard, matrix summary, and per-row data.
 
 ## Quickstart
 
@@ -41,7 +49,7 @@ console.log(device.limits.maxBufferSize);
 Turnkey package install is the target shape. Current host/runtime caveats are
 listed below.
 
-## From Source
+## From source
 
 ```bash
 # From the Fawn workspace root:
@@ -55,7 +63,7 @@ npm run smoke                # verify native loading + GPU round-trip
 Use this when working from the Fawn checkout or when rebuilding the addon
 against the local Doe runtime.
 
-### Packaging prebuilds (CI / release)
+## Packaging prebuilds (CI / release)
 
 ```bash
 npm run prebuild             # assembles prebuilds/<platform>-<arch>/
@@ -68,7 +76,7 @@ Prebuild `metadata.json` now records `doeBuild.leanVerifiedBuild` and
 `proofArtifactSha256`, and `providerInfo()` surfaces the same values when
 metadata is present.
 
-## What Lives Here
+## What lives here
 
 - `src/index.js`: default Node provider entrypoint
 - `src/node-runtime.js`: compatibility alias for the Node entrypoint
@@ -80,7 +88,7 @@ metadata is present.
 - `bin/fawn-webgpu-bench.js`: command-stream bench wrapper
 - `bin/fawn-webgpu-compare.js`: Dawn-vs-Doe compare wrapper
 
-## Current Caveats
+## Current caveats
 
 - This package is for headless benchmarking and CI workflows, not full browser
   parity.

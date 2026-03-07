@@ -1,13 +1,22 @@
-# Chromium WebGPU Lane (Nursery)
+# Chromium browser integration layer (nursery)
 
 ## Purpose
 
-`fawn/nursery/fawn-browser` is an isolated, experimental planning lane for using Fawn as:
+`fawn/nursery/fawn-browser` is the repo-local browser integration layer for
+Chromium work. It contains the docs, contracts, helper scripts, and diagnostic
+harnesses that drive a Chromium checkout/build lane.
+
+It is not the Chromium checkout/build workspace itself. In this repo, that
+workspace is `fawn/nursery/chromium_webgpu_lane/` when kept in-tree, or the
+path selected by `FAWN_CHROMIUM_LANE_DIR` for external-volume setups.
+
+This integration layer is used for:
 
 1. A Dawn replacement path for `navigator.gpu` in Chromium.
 2. An optional execution substrate for selected Chromium-internal GPU modules.
 
-This lane is intentionally process-heavy and contract-first. It exists to prevent architectural drift and comparability debt before implementation.
+This layer is intentionally process-heavy and contract-first. It exists to
+prevent architectural drift and comparability debt before implementation.
 
 ## Scope
 
@@ -23,20 +32,20 @@ Out of scope:
 2. Redefining Fawn stage order or existing gate precedence.
 3. Claims of browser-wide replacement semantics.
 
-## Isolation Contract
+## Isolation contract
 
 This directory is isolated from core runtime development by policy:
 
 1. No production runtime behavior is enabled from files under `nursery/`.
-2. No hidden feature toggles are introduced in core runtime through this lane.
-3. Any future implementation promoted from this lane must:
+2. No hidden feature toggles are introduced in core runtime through this layer.
+3. Any future implementation promoted from this layer must:
    - move to core module directories (`zig/`, `bench/`, `config/`, etc.),
    - land with schema and migration updates,
    - pass blocking gates defined in `fawn/process.md`.
-4. Nothing in this lane bypasses stage discipline:
+4. Nothing in this layer bypasses stage discipline:
    - Mine -> Normalize -> Verify -> Bind -> Gate -> Benchmark -> Release.
 
-## Context Summary
+## Context summary
 
 Fawn already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
 
@@ -51,9 +60,18 @@ Fawn already has an ABI-focused drop-in lane and compatibility gates that make C
 3. Existing trace/replay and claimability policy:
    - `trace/replay.py`, `bench/trace_gate.py`, `bench/claim_gate.py`
 
-This lane extends those capabilities to Chromium integration planning without coupling directly to core runtime code yet.
+This layer extends those capabilities to Chromium integration planning without
+coupling directly to core runtime code yet.
 
-## Program Shape
+Terminology used in this directory:
+
+1. "browser integration layer"
+   - `nursery/fawn-browser/`
+2. "Chromium checkout/build lane"
+   - `nursery/chromium_webgpu_lane/` or an externally mounted lane selected by
+     `FAWN_CHROMIUM_LANE_DIR`
+
+## Program shape
 
 Use a two-track model to control risk:
 
@@ -64,13 +82,13 @@ Use a two-track model to control risk:
 
 Track B is additive and cannot block Track A readiness.
 
-## Track A: Dawn Replacement Lane
+## Track A: Dawn replacement lane
 
 ### Objective
 
 Swap the runtime implementation seam while keeping browser behavior and process topology stable.
 
-### Design Constraints
+### Design constraints
 
 1. Keep Chromium process model unchanged:
    - renderer behavior unchanged,
@@ -80,11 +98,11 @@ Swap the runtime implementation seam while keeping browser behavior and process 
 3. Use explicit runtime selection flagging and kill switches.
 4. Preserve deterministic artifacts for all quality decisions.
 
-### Integration Principle
+### Integration principle
 
 Only replace the WebGPU runtime seam. Do not fuse this work with unrelated compositor/layout/media refactors.
 
-### Promotion Gates
+### Promotion gates
 
 Before moving beyond experiment flags:
 
@@ -94,11 +112,11 @@ Before moving beyond experiment flags:
 4. Crash/hang rate parity with fallback lane is established.
 5. Performance claimability gates pass for any "faster" statement.
 
-## Track B: Optional Chromium-Internal Modules
+## Track B: optional Chromium-internal modules
 
 Track B modules are explicitly optional and must preserve CPU ownership for engine semantics.
 
-### Candidate Modules
+### Candidate modules
 
 1. `fawn_2d_sdf_renderer`
    - GPU paint/raster path for vector/text primitives via SDF/MSDF.
@@ -114,14 +132,14 @@ Track B modules are explicitly optional and must preserve CPU ownership for engi
 5. `fawn_resource_scheduler`
    - Shared resource pooling and submission cadence controls.
 
-### Non-Goals for Track B
+### Non-goals for Track B
 
 1. Replacing Blink layout/style/DOM semantics.
 2. Replacing V8 execution.
 3. Replacing OS compositor/scanout responsibilities.
 4. Replacing hardware codec control paths.
 
-## What WebGPU/Fawn Can and Cannot Replace
+## What WebGPU/Fawn can and cannot replace
 
 Can replace or absorb:
 
@@ -136,9 +154,9 @@ Cannot replace by itself:
 3. OS-level presentation and protected path ownership.
 4. Hardware decoder control APIs.
 
-## Contract-First Policy for This Lane
+## Contract-first policy for this layer
 
-Every proposed feature in this lane must define:
+Every proposed feature in this layer must define:
 
 1. Input contract:
    - schema-backed request shape.
@@ -153,18 +171,18 @@ Every proposed feature in this lane must define:
 
 No implicit behavior switching is allowed.
 
-## Config and Schema Expectations
+## Config and schema expectations
 
-Future implementation promoted from this lane must use config-as-code:
+Future implementation promoted from this layer must use config-as-code:
 
 1. Config files in `fawn/config/*.json`.
 2. Schema files in `fawn/config/*schema*.json`.
 3. Migration notes in `fawn/config/migration-notes.md` for runtime-visible changes.
 4. Status tracking updates in `fawn/status.md` for temporary placeholders or staged methods.
 
-## Gate Policy Alignment
+## Gate policy alignment
 
-This lane inherits Fawn v0 gate priorities:
+This layer inherits Fawn v0 gate priorities:
 
 1. Blocking:
    - schema,
@@ -177,7 +195,7 @@ This lane inherits Fawn v0 gate priorities:
    - drop-in compatibility for artifact lanes,
    - release claimability when promotion requires claim statements.
 
-## Reliability and Claimability Expectations
+## Reliability and claimability expectations
 
 No performance claim can be promoted without:
 
@@ -189,7 +207,7 @@ No performance claim can be promoted without:
 
 Directional runs must be labeled non-claimable.
 
-## Observability Contract
+## Observability contract
 
 All promoted experiments must emit:
 
@@ -200,7 +218,7 @@ All promoted experiments must emit:
 
 Traceability fields must include module identity and hash chain continuity.
 
-## Risk Controls
+## Risk controls
 
 Primary risks:
 
@@ -216,9 +234,9 @@ Mitigations:
 3. symbol and behavior drop-in gates in CI,
 4. upstream quirk mining and deterministic normalization.
 
-## Directory Structure
+## Directory structure
 
-Current lane structure:
+Current browser integration layer structure:
 
 1. `README.md`
    - scope, policy, and contracts overview.
@@ -255,7 +273,7 @@ cd /Users/xyz/deco/fawn/nursery/fawn-browser
 
 Any script/code added here must be non-production and must not alter core runtime behavior by default.
 
-## Decision Rules for Promotion Out of Nursery
+## Decision rules for promotion out of nursery
 
 A design exits nursery only when all are true:
 
@@ -267,7 +285,7 @@ A design exits nursery only when all are true:
 
 If one is missing, keep the item in nursery.
 
-## Ownership Model
+## Ownership model
 
 Recommended ownership split:
 
@@ -282,14 +300,14 @@ Recommended ownership split:
 
 Cross-owner signoff is required before any promotion from nursery to core paths.
 
-## How to Use This Folder
+## How to use this folder
 
 1. Read this file and `plan.md` before proposing Chromium integration changes.
 2. Add or update module proposals as contract documents first.
 3. Tie every proposal to gates and measurable exit criteria.
 4. Promote to core directories only after passing promotion rules.
 
-## Current Status
+## Current status
 
 This lane contains planning/contracts docs, lane-local bring-up scripts, and a lane-local Chromium workspace (`src/`) with in-flight Track A seam integration edits.
 

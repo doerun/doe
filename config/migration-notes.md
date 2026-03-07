@@ -66,6 +66,25 @@
   phase that the other side spends materially in, closing the setup/encode/submit
   scope gap that previously escaped comparability while only failing claimability.
 
+### Compare report timing interpretation fields
+
+- `bench/compare_dawn_vs_doe.py` still writes report `schemaVersion: 4`, but now
+  adds additive timing-interpretation fields without changing existing
+  `deltaPercent` semantics:
+  - top-level `timingInterpretationPolicy`
+  - per-workload `timingInterpretation.selectedTiming`
+  - per-workload `timingInterpretation.headlineProcessWall`
+  - optional top-level `overallHeadlineProcessWall`
+- `deltaPercent` remains the methodology-selected claim/comparability metric.
+- `timingInterpretation.selectedTiming` now states whether that metric is
+  `operation-total`, `process-wall`, or a narrow hot path such as
+  `operation-encode`.
+- `timingInterpretation.headlineProcessWall` reports timed-command process-wall
+  deltas so encode-only render/report rows cannot be mistaken for end-to-end
+  latency wins.
+- `bench/build_claim_scope_report.py` now carries this selected-scope vs
+  headline-process-wall context into citation-safe artifacts.
+
 ## 2026-03-06
 
 ### Benchmark cube reporting contracts

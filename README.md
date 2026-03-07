@@ -180,6 +180,8 @@ fawn/
   trace/               replay and trace tooling
   examples/            worked examples, command seeds
   nursery/webgpu/      canonical @simulatte/webgpu package root
+  nursery/fawn-browser/ browser integration layer for Chromium work
+  nursery/chromium_webgpu_lane/ Chromium checkout/build lane workspace
 ```
 
 ## Package
