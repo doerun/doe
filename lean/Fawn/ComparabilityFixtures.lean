@@ -17,6 +17,8 @@ def strictHappyPathFacts : ComparabilityFacts :=
     leftRightTimingSelectionPolicyMatch := true
     queueSyncModeMatchApplies := true
     leftRightQueueSyncModeMatch := true
+    timingPhaseMatchApplies := true
+    leftRightTimingPhaseMatch := true
     executionShapeMatchApplies := true
     leftRightExecutionShapeMatch := true
     hardwarePathMatchApplies := true
@@ -75,6 +77,8 @@ def strictMissingLeftSamplesFacts : ComparabilityFacts :=
     leftRightTimingSelectionPolicyMatch := false
     queueSyncModeMatchApplies := false
     leftRightQueueSyncModeMatch := false
+    timingPhaseMatchApplies := false
+    leftRightTimingPhaseMatch := false
     executionShapeMatchApplies := false
     leftRightExecutionShapeMatch := false
     hardwarePathMatchApplies := false
@@ -133,14 +137,16 @@ def allowLeftNoExecutionDensityFailureFacts : ComparabilityFacts :=
     rightRequiredTimingClass := true
     timingClassMatchApplies := true
     leftRightTimingClassMatch := true
-    traceMetaSourceMatchApplies := false
-    leftRightTraceMetaSourceMatch := false
-    timingSelectionPolicyMatchApplies := false
-    leftRightTimingSelectionPolicyMatch := false
-    queueSyncModeMatchApplies := false
-    leftRightQueueSyncModeMatch := false
-    executionShapeMatchApplies := false
-    leftRightExecutionShapeMatch := false
+    traceMetaSourceMatchApplies := true
+    leftRightTraceMetaSourceMatch := true
+    timingSelectionPolicyMatchApplies := true
+    leftRightTimingSelectionPolicyMatch := true
+    queueSyncModeMatchApplies := true
+    leftRightQueueSyncModeMatch := true
+    timingPhaseMatchApplies := false
+    leftRightTimingPhaseMatch := false
+    executionShapeMatchApplies := true
+    leftRightExecutionShapeMatch := true
     hardwarePathMatchApplies := false
     leftRightHardwarePathMatch := true
     operationTimingClassRequired := true
@@ -181,6 +187,67 @@ theorem allowLeftNoExecutionDensityFailureComparable :
     comparableFromFacts allowLeftNoExecutionDensityFailureFacts = false := by
   native_decide
 
+def strictTimingPhaseFailureFacts : ComparabilityFacts :=
+  { workloadMarkedComparable := true
+    leftSamplesPresent := true
+    rightSamplesPresent := true
+    leftSingleTimingClass := true
+    rightSingleTimingClass := true
+    requiredTimingClassApplies := true
+    leftRequiredTimingClass := true
+    rightRequiredTimingClass := true
+    timingClassMatchApplies := true
+    leftRightTimingClassMatch := true
+    traceMetaSourceMatchApplies := true
+    leftRightTraceMetaSourceMatch := true
+    timingSelectionPolicyMatchApplies := true
+    leftRightTimingSelectionPolicyMatch := true
+    queueSyncModeMatchApplies := true
+    leftRightQueueSyncModeMatch := true
+    timingPhaseMatchApplies := true
+    leftRightTimingPhaseMatch := false
+    executionShapeMatchApplies := true
+    leftRightExecutionShapeMatch := true
+    hardwarePathMatchApplies := false
+    leftRightHardwarePathMatch := true
+    operationTimingClassRequired := true
+    leftNativeOperationTimingForWebgpuFfi := true
+    uploadDomain := true
+    leftUploadIgnoreFirstScopeConsistent := true
+    rightUploadIgnoreFirstScopeConsistent := true
+    leftRightUploadBufferUsageMatch := true
+    leftRightUploadSubmitCadenceMatch := true
+    allowLeftNoExecution := false
+    leftExecutionEvidencePresent := true
+    leftSuccessfulExecutionPresent := true
+    leftSuccessOrUnsupportedOrSkipped := false
+    leftExecutionErrorsAbsent := true
+    rightExecutionErrorsAbsent := true
+    resourceProbeEnabled := false
+    leftResourceProbeAvailable := false
+    rightResourceProbeAvailable := false
+    strictComparability := true
+    resourceSampleTargetPositive := false
+    leftResourceSampleTargetMatch := false
+    rightResourceSampleTargetMatch := false
+    leftResourceSamplingNotTruncated := false
+    rightResourceSamplingNotTruncated := false
+    leftResourceSampleDensitySufficient := false
+    rightResourceSampleDensitySufficient := false
+  }
+
+def strictTimingPhaseFailureExpectedBlocking : List ComparabilityObligationId :=
+  [ .leftRightTimingPhaseMatch ]
+
+theorem strictTimingPhaseFailureExpectedBlocking_exact :
+    (failedBlockingObligations (obligationsFromFacts strictTimingPhaseFailureFacts)).map
+      (fun item => item.id) = strictTimingPhaseFailureExpectedBlocking := by
+  native_decide
+
+theorem strictTimingPhaseFailureComparable :
+    comparableFromFacts strictTimingPhaseFailureFacts = false := by
+  native_decide
+
 def strictHardwarePathFailureFacts : ComparabilityFacts :=
   { workloadMarkedComparable := true
     leftSamplesPresent := true
@@ -198,6 +265,8 @@ def strictHardwarePathFailureFacts : ComparabilityFacts :=
     leftRightTimingSelectionPolicyMatch := true
     queueSyncModeMatchApplies := true
     leftRightQueueSyncModeMatch := true
+    timingPhaseMatchApplies := true
+    leftRightTimingPhaseMatch := true
     executionShapeMatchApplies := true
     leftRightExecutionShapeMatch := true
     hardwarePathMatchApplies := true
