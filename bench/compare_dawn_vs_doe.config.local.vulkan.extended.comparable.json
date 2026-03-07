@@ -1,5 +1,5 @@
 {
-  "workloads": "bench/workloads.local.vulkan.extended.json",
+  "workloads": "bench/workloads.local.vulkan.extended.strict.json",
   "left": {
     "name": "doe",
     "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane vulkan_local_comparable --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"

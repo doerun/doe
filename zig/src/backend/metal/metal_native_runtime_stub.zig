@@ -3,12 +3,14 @@ const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 
 pub const DispatchMetrics = struct {
+    setup_ns: u64,
     encode_ns: u64,
     submit_wait_ns: u64,
     dispatch_count: u32,
 };
 
 pub const RenderMetrics = struct {
+    setup_ns: u64,
     encode_ns: u64,
     submit_wait_ns: u64,
     draw_count: u32,

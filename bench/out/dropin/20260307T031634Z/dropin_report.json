@@ -1,0 +1,388 @@
+{
+  "artifact": "zig/zig-out/lib/libdoe_webgpu.so",
+  "benchmarkHtml": "bench/out/dropin/20260307T031634Z/dropin_benchmark_report.html",
+  "failedStepLabels": [],
+  "generatedAtUtc": "2026-03-07T03:16:48.489846Z",
+  "outputTimestamp": "20260307T031634Z",
+  "pass": true,
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "command": [
+        "/usr/bin/python3",
+        "/home/x/deco/fawn/bench/dropin_symbol_gate.py",
+        "--artifact",
+        "zig/zig-out/lib/libdoe_webgpu.so",
+        "--symbols",
+        "config/dropin_abi.symbols.txt",
+        "--ownership",
+        "config/dropin-symbol-ownership.json",
+        "--report",
+        "bench/out/dropin/20260307T031634Z/dropin_symbol_report.json",
+        "--timestamp",
+        "20260307T031634Z"
+      ],
+      "label": "symbol_gate",
+      "pass": true,
+      "report": {
+        "artifact": "zig/zig-out/lib/libdoe_webgpu.so",
+        "exportedSymbolCount": 229,
+        "extraSymbolCount": 30,
+        "generatedAtUtc": "2026-03-07T03:16:45.344062Z",
+        "missingSymbolCount": 0,
+        "missingSymbols": [],
+        "outputTimestamp": "20260307T031634Z",
+        "ownershipPath": "config/dropin-symbol-ownership.json",
+        "pass": true,
+        "requiredSymbolCount": 199,
+        "schemaVersion": 1,
+        "symbolsPath": "config/dropin_abi.symbols.txt",
+        "toolAttempts": [
+          "nm -D --defined-only zig/zig-out/lib/libdoe_webgpu.so"
+        ],
+        "toolCommandUsed": "nm -D --defined-only zig/zig-out/lib/libdoe_webgpu.so"
+      },
+      "reportPath": "bench/out/dropin/20260307T031634Z/dropin_symbol_report.json",
+      "returnCode": 0,
+      "runtimeSeconds": 0.037074,
+      "stderr": "",
+      "stdout": "PASS: drop-in symbol gate (199 required)\nreport: bench/out/dropin/20260307T031634Z/dropin_symbol_report.json\n"
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "/home/x/deco/fawn/bench/dropin_behavior_suite.py",
+        "--artifact",
+        "zig/zig-out/lib/libdoe_webgpu.so",
+        "--report",
+        "bench/out/dropin/20260307T031634Z/dropin_behavior_report.json",
+        "--timestamp",
+        "20260307T031634Z"
+      ],
+      "label": "behavior_suite",
+      "pass": true,
+      "report": {
+        "artifact": "zig/zig-out/lib/libdoe_webgpu.so",
+        "compileCommand": [
+          "cc",
+          "-std=c11",
+          "-O2",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-I",
+          "/home/x/deco/fawn/bench/vendor/dawn/third_party/webgpu-headers/src",
+          "/home/x/deco/fawn/bench/dropin_behavior_suite.c",
+          "-L",
+          "/home/x/deco/fawn/zig/zig-out/lib",
+          "-Wl,-rpath,/home/x/deco/fawn/zig/zig-out/lib",
+          "-l:libdoe_webgpu.so",
+          "-o",
+          "/tmp/fawn-dropin-behavior-biqfk9x1/dropin_behavior_suite"
+        ],
+        "compileReturnCode": 0,
+        "compileStderr": "",
+        "compileStdout": "",
+        "generatedAtUtc": "2026-03-07T03:16:45.382163Z",
+        "headerDir": "bench/vendor/dawn/third_party/webgpu-headers/src",
+        "outputTimestamp": "20260307T031634Z",
+        "pass": true,
+        "runCommand": [
+          "/tmp/fawn-dropin-behavior-biqfk9x1/dropin_behavior_suite"
+        ],
+        "runReturnCode": 0,
+        "runStderr": "Warning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\n",
+        "runStdout": "{\"schemaVersion\":1,\"pass\":true,\"instanceCreate\":true,\"adapterRequest\":true,\"deviceRequest\":true,\"queueOps\":true,\"errorCapture\":true,\"lifecycle\":true,\"adapterStatus\":1,\"deviceStatus\":1,\"queueWorkDoneStatus\":1,\"popErrorScopeStatus\":1,\"popErrorType\":2,\"failure\":\"none\"}\n",
+        "schemaVersion": 1,
+        "source": "bench/dropin_behavior_suite.c",
+        "suiteResult": {
+          "adapterRequest": true,
+          "adapterStatus": 1,
+          "deviceRequest": true,
+          "deviceStatus": 1,
+          "errorCapture": true,
+          "failure": "none",
+          "instanceCreate": true,
+          "lifecycle": true,
+          "pass": true,
+          "popErrorScopeStatus": 1,
+          "popErrorType": 2,
+          "queueOps": true,
+          "queueWorkDoneStatus": 1,
+          "schemaVersion": 1
+        }
+      },
+      "reportPath": "bench/out/dropin/20260307T031634Z/dropin_behavior_report.json",
+      "returnCode": 0,
+      "runtimeSeconds": 0.252934,
+      "stderr": "",
+      "stdout": "PASS: drop-in behavior suite\nreport: bench/out/dropin/20260307T031634Z/dropin_behavior_report.json\n"
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "/home/x/deco/fawn/bench/dropin_benchmark_suite.py",
+        "--artifact",
+        "zig/zig-out/lib/libdoe_webgpu.so",
+        "--micro-iterations",
+        "30",
+        "--e2e-iterations",
+        "10",
+        "--report",
+        "bench/out/dropin/20260307T031634Z/dropin_benchmark_report.json",
+        "--timestamp",
+        "20260307T031634Z"
+      ],
+      "label": "benchmark_suite",
+      "pass": true,
+      "report": {
+        "artifact": "zig/zig-out/lib/libdoe_webgpu.so",
+        "compileCommand": [
+          "cc",
+          "-std=c11",
+          "-O2",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-I",
+          "/home/x/deco/fawn/bench/vendor/dawn/third_party/webgpu-headers/src",
+          "/home/x/deco/fawn/bench/dropin_benchmark_harness.c",
+          "/home/x/deco/fawn/bench/dropin_benchmark_ops.c",
+          "-L",
+          "/home/x/deco/fawn/zig/zig-out/lib",
+          "-Wl,-rpath,/home/x/deco/fawn/zig/zig-out/lib",
+          "-l:libdoe_webgpu.so",
+          "-o",
+          "/tmp/fawn-dropin-bench-xg3gxn3x/dropin_benchmark_suite"
+        ],
+        "compileReturnCode": 0,
+        "compileStderr": "",
+        "compileStdout": "",
+        "e2eIterations": 10,
+        "generatedAtUtc": "2026-03-07T03:16:45.638210Z",
+        "headerDir": "bench/vendor/dawn/third_party/webgpu-headers/src",
+        "microIterations": 30,
+        "opsSource": "bench/dropin_benchmark_ops.c",
+        "outputTimestamp": "20260307T031634Z",
+        "pass": true,
+        "runCommand": [
+          "/tmp/fawn-dropin-bench-xg3gxn3x/dropin_benchmark_suite",
+          "--micro-iterations",
+          "30",
+          "--e2e-iterations",
+          "10"
+        ],
+        "runReturnCode": 0,
+        "runStderr": "Warning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: Couldn't load Vulkan: libvk_swiftshader.so: cannot open shared object file: No such file or directory\n    at operator() (../../src/dawn/native/vulkan/BackendVk.cpp:363)\n\nWarning: ../src/amd/vulkan/radv_physical_device.c:1988: Could not open device /dev/dri/renderD128: Permission denied (VK_ERROR_INCOMPATIBLE_DRIVER)\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 1000000 to 16 to fit dynamic offset allocation limit.\n",
+        "runStdout": "{\"schemaVersion\":1,\"pass\":true,\"failure\":\"none\",\"microIterationsRequested\":30,\"e2eIterationsRequested\":10,\"benchmarks\":[{\"id\":\"instance_create_destroy\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":7654,\"maxNs\":996820,\"meanNs\":42746.27,\"p50Ns\":9268,\"p95Ns\":15309}},{\"id\":\"command_encoder_finish_empty\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":381,\"maxNs\":1513093,\"meanNs\":51170.47,\"p50Ns\":521,\"p95Ns\":952}},{\"id\":\"queue_submit_empty\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1133487,\"maxNs\":2378895,\"meanNs\":2186847.33,\"p50Ns\":2277355,\"p95Ns\":2318252}},{\"id\":\"queue_write_buffer_1kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1095416,\"maxNs\":2434480,\"meanNs\":1164355.97,\"p50Ns\":1120623,\"p95Ns\":1140431}},{\"id\":\"queue_write_buffer_4kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1091268,\"maxNs\":1189373,\"meanNs\":1123656.80,\"p50Ns\":1115844,\"p95Ns\":1171709}},{\"id\":\"queue_write_buffer_64kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1097720,\"maxNs\":1169085,\"meanNs\":1142088.87,\"p50Ns\":1143687,\"p95Ns\":1166219}},{\"id\":\"buffer_create_destroy_4kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":1173,\"maxNs\":1043437,\"meanNs\":38485.53,\"p50Ns\":1813,\"p95Ns\":17543}},{\"id\":\"buffer_create_destroy_64kb\",\"class\":\"micro\",\"unit\":\"ns\",\"samples\":30,\"stats\":{\"minNs\":662,\"maxNs\":3186,\"meanNs\":1075.37,\"p50Ns\":871,\"p95Ns\":1643}},{\"id\":\"full_lifecycle_device_only\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":24599135,\"maxNs\":102822886,\"meanNs\":49069792.30,\"p50Ns\":52179060,\"p95Ns\":57038864}},{\"id\":\"full_lifecycle_queue_submit\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":26082272,\"maxNs\":57440200,\"meanNs\":41092203.50,\"p50Ns\":37877593,\"p95Ns\":55710229}},{\"id\":\"full_lifecycle_write_4kb\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":26664759,\"maxNs\":112404633,\"meanNs\":47613889.60,\"p50Ns\":33111345,\"p95Ns\":58278231}},{\"id\":\"full_lifecycle_write_64kb\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":25290338,\"maxNs\":117123491,\"meanNs\":58356744.90,\"p50Ns\":49617189,\"p95Ns\":101816147}},{\"id\":\"full_lifecycle_queue_ops\",\"class\":\"end_to_end\",\"unit\":\"ns\",\"samples\":10,\"stats\":{\"minNs\":27768380,\"maxNs\":60230171,\"meanNs\":46657842.70,\"p50Ns\":48539326,\"p95Ns\":56464752}}]}\n",
+        "schemaVersion": 1,
+        "source": "bench/dropin_benchmark_harness.c",
+        "sources": [
+          "bench/dropin_benchmark_harness.c",
+          "bench/dropin_benchmark_ops.c"
+        ],
+        "suiteResult": {
+          "benchmarks": [
+            {
+              "class": "micro",
+              "id": "instance_create_destroy",
+              "samples": 30,
+              "stats": {
+                "maxNs": 996820,
+                "meanNs": 42746.27,
+                "minNs": 7654,
+                "p50Ns": 9268,
+                "p95Ns": 15309
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "micro",
+              "id": "command_encoder_finish_empty",
+              "samples": 30,
+              "stats": {
+                "maxNs": 1513093,
+                "meanNs": 51170.47,
+                "minNs": 381,
+                "p50Ns": 521,
+                "p95Ns": 952
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "micro",
+              "id": "queue_submit_empty",
+              "samples": 30,
+              "stats": {
+                "maxNs": 2378895,
+                "meanNs": 2186847.33,
+                "minNs": 1133487,
+                "p50Ns": 2277355,
+                "p95Ns": 2318252
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "micro",
+              "id": "queue_write_buffer_1kb",
+              "samples": 30,
+              "stats": {
+                "maxNs": 2434480,
+                "meanNs": 1164355.97,
+                "minNs": 1095416,
+                "p50Ns": 1120623,
+                "p95Ns": 1140431
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "micro",
+              "id": "queue_write_buffer_4kb",
+              "samples": 30,
+              "stats": {
+                "maxNs": 1189373,
+                "meanNs": 1123656.8,
+                "minNs": 1091268,
+                "p50Ns": 1115844,
+                "p95Ns": 1171709
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "micro",
+              "id": "queue_write_buffer_64kb",
+              "samples": 30,
+              "stats": {
+                "maxNs": 1169085,
+                "meanNs": 1142088.87,
+                "minNs": 1097720,
+                "p50Ns": 1143687,
+                "p95Ns": 1166219
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "micro",
+              "id": "buffer_create_destroy_4kb",
+              "samples": 30,
+              "stats": {
+                "maxNs": 1043437,
+                "meanNs": 38485.53,
+                "minNs": 1173,
+                "p50Ns": 1813,
+                "p95Ns": 17543
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "micro",
+              "id": "buffer_create_destroy_64kb",
+              "samples": 30,
+              "stats": {
+                "maxNs": 3186,
+                "meanNs": 1075.37,
+                "minNs": 662,
+                "p50Ns": 871,
+                "p95Ns": 1643
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "end_to_end",
+              "id": "full_lifecycle_device_only",
+              "samples": 10,
+              "stats": {
+                "maxNs": 102822886,
+                "meanNs": 49069792.3,
+                "minNs": 24599135,
+                "p50Ns": 52179060,
+                "p95Ns": 57038864
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "end_to_end",
+              "id": "full_lifecycle_queue_submit",
+              "samples": 10,
+              "stats": {
+                "maxNs": 57440200,
+                "meanNs": 41092203.5,
+                "minNs": 26082272,
+                "p50Ns": 37877593,
+                "p95Ns": 55710229
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "end_to_end",
+              "id": "full_lifecycle_write_4kb",
+              "samples": 10,
+              "stats": {
+                "maxNs": 112404633,
+                "meanNs": 47613889.6,
+                "minNs": 26664759,
+                "p50Ns": 33111345,
+                "p95Ns": 58278231
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "end_to_end",
+              "id": "full_lifecycle_write_64kb",
+              "samples": 10,
+              "stats": {
+                "maxNs": 117123491,
+                "meanNs": 58356744.9,
+                "minNs": 25290338,
+                "p50Ns": 49617189,
+                "p95Ns": 101816147
+              },
+              "unit": "ns"
+            },
+            {
+              "class": "end_to_end",
+              "id": "full_lifecycle_queue_ops",
+              "samples": 10,
+              "stats": {
+                "maxNs": 60230171,
+                "meanNs": 46657842.7,
+                "minNs": 27768380,
+                "p50Ns": 48539326,
+                "p95Ns": 56464752
+              },
+              "unit": "ns"
+            }
+          ],
+          "e2eIterationsRequested": 10,
+          "failure": "none",
+          "microIterationsRequested": 30,
+          "pass": true,
+          "schemaVersion": 1
+        }
+      },
+      "reportPath": "bench/out/dropin/20260307T031634Z/dropin_benchmark_report.json",
+      "returnCode": 0,
+      "runtimeSeconds": 2.849783,
+      "stderr": "",
+      "stdout": "PASS: drop-in benchmark suite\nreport: bench/out/dropin/20260307T031634Z/dropin_benchmark_report.json\n"
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "/home/x/deco/fawn/bench/visualize_dropin_benchmark.py",
+        "--report",
+        "bench/out/dropin/20260307T031634Z/dropin_benchmark_report.json",
+        "--out",
+        "bench/out/dropin/20260307T031634Z/dropin_benchmark_report.html"
+      ],
+      "label": "benchmark_visualization",
+      "pass": true,
+      "returnCode": 0,
+      "runtimeSeconds": 0.024144,
+      "stderr": "",
+      "stdout": "{\n  \"report\": \"bench/out/dropin/20260307T031634Z/dropin_benchmark_report.json\",\n  \"out\": \"bench/out/dropin/20260307T031634Z/dropin_benchmark_report.html\",\n  \"benchmarkCount\": 13,\n  \"sections\": [\n    \"micro\",\n    \"end_to_end\"\n  ]\n}\n"
+    }
+  ],
+  "symbols": "config/dropin_abi.symbols.txt",
+  "totalRuntimeSeconds": 3.163935
+}

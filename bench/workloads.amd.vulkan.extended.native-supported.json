@@ -28,9 +28,7 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable",
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "benchmarkClass": "comparable"
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -59,9 +57,7 @@
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable",
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "benchmarkClass": "comparable"
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -90,9 +86,7 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable",
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "benchmarkClass": "comparable"
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -121,9 +115,7 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable",
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "benchmarkClass": "comparable"
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -152,9 +144,7 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable",
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "benchmarkClass": "comparable"
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -183,9 +173,7 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1,
-      "rightUploadSubmitEvery": 1,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -214,9 +202,7 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1,
-      "rightUploadSubmitEvery": 1,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -235,8 +221,8 @@
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
       "extraArgs": [],
-      "comparable": true,
-      "benchmarkClass": "comparable",
+      "comparable": false,
+      "benchmarkClass": "directional",
       "default": false,
       "leftTimingDivisor": 1,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",

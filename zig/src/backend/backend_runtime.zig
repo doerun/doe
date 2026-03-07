@@ -47,11 +47,11 @@ pub const BackendRuntime = struct {
         const selected = backend_selection.select_backend(profile, policy);
         var backend = try backend_registry.init_backend(
             allocator,
+            policy,
             selected.backend_id,
             profile,
             kernel_root,
             selected.reason,
-            policy.policy_hash,
         );
         backend.telemetry.fallback_used = selected.fallback_used;
         return .{

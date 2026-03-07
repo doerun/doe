@@ -19,12 +19,18 @@ pub const BackendLane = enum {
     metal_doe_app,
 };
 
+pub const UploadPathPolicy = enum {
+    allow_mapped_shortcuts,
+    staged_copy_only,
+};
+
 pub const SelectionPolicy = struct {
     lane: BackendLane,
     default_backend: backend_ids.BackendId,
     allow_fallback: bool,
     strict_no_fallback: bool,
     policy_hash: []const u8,
+    upload_path_policy: UploadPathPolicy,
 };
 
 pub const LoadedSelectionPolicy = struct {
@@ -34,7 +40,8 @@ pub const LoadedSelectionPolicy = struct {
 
 pub const DEFAULT_RUNTIME_POLICY_PATH = "config/backend-runtime-policy.json";
 const MAX_RUNTIME_POLICY_BYTES: usize = 64 * 1024;
-const EXPECTED_SCHEMA_VERSION: i64 = 1;
+const EXPECTED_SCHEMA_VERSION: i64 = 2;
+const DEFAULT_POLICY_HASH = "backend-runtime-policy-v2";
 
 pub const PolicyLoadError = error{
     InvalidRuntimePolicy,
@@ -151,6 +158,18 @@ pub fn load_policy_for_lane(
         return PolicyLoadError.InvalidRuntimePolicy;
     }
 
+    const upload_path_policy = blk: {
+        const upload_path_policy_value = lane_obj.get("uploadPathPolicy") orelse break :blk UploadPathPolicy.allow_mapped_shortcuts;
+        const upload_path_policy_name = switch (upload_path_policy_value) {
+            .string => |value| value,
+            else => return PolicyLoadError.InvalidRuntimePolicy,
+        };
+        break :blk parse_upload_path_policy(upload_path_policy_name) orelse return PolicyLoadError.InvalidRuntimePolicy;
+    };
+    if (strict_vulkan_upload_policy_required(lane) and upload_path_policy != .staged_copy_only) {
+        return PolicyLoadError.InvalidRuntimePolicy;
+    }
+
     return .{
         .policy = .{
             .lane = lane,
@@ -158,6 +177,7 @@ pub fn load_policy_for_lane(
             .allow_fallback = allow_fallback,
             .strict_no_fallback = strict_no_fallback,
             .policy_hash = owned_policy_hash,
+            .upload_path_policy = upload_path_policy,
         },
         .owned_policy_hash = owned_policy_hash,
     };
@@ -170,63 +190,93 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .default_backend = .dawn_delegate,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
-        .vulkan_doe_app, .vulkan_doe_comparable, .vulkan_doe_release => .{
+        .vulkan_doe_app => .{
             .lane = lane,
             .default_backend = .doe_vulkan,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
+        },
+        .vulkan_doe_comparable, .vulkan_doe_release => .{
+            .lane = lane,
+            .default_backend = .doe_vulkan,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .staged_copy_only,
         },
         .d3d12_doe_app, .d3d12_doe_comparable, .d3d12_doe_release => .{
             .lane = lane,
             .default_backend = .doe_d3d12,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
         .metal_doe_directional => .{
             .lane = lane,
             .default_backend = .doe_metal,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
         .metal_dawn_release => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
         .metal_doe_comparable, .metal_doe_release, .metal_doe_app => .{
             .lane = lane,
             .default_backend = .doe_metal,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
         .vulkan_dawn_directional => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
         .d3d12_doe_directional => .{
             .lane = lane,
             .default_backend = .doe_d3d12,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
         .d3d12_dawn_release => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
             .allow_fallback = false,
             .strict_no_fallback = true,
-            .policy_hash = "backend-runtime-policy-v1",
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
         },
+    };
+}
+
+fn parse_upload_path_policy(raw: []const u8) ?UploadPathPolicy {
+    if (std.mem.eql(u8, raw, "allow_mapped_shortcuts")) return .allow_mapped_shortcuts;
+    if (std.mem.eql(u8, raw, "staged_copy_only")) return .staged_copy_only;
+    return null;
+}
+
+fn strict_vulkan_upload_policy_required(lane: BackendLane) bool {
+    return switch (lane) {
+        .vulkan_doe_comparable, .vulkan_doe_release => true,
+        else => false,
     };
 }

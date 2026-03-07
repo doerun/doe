@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "defaultLane", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
     "defaultLane": { "type": "string", "minLength": 1 },
     "selectionPolicyHashSeed": { "type": "string" },
     "cutoverPolicyPath": { "type": "string", "minLength": 1 },
@@ -19,6 +19,10 @@
           "defaultBackend": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] },
           "allowFallback": { "type": "boolean", "const": false },
           "strictNoFallback": { "type": "boolean", "const": true },
+          "uploadPathPolicy": {
+            "type": "string",
+            "enum": ["allow_mapped_shortcuts", "staged_copy_only"]
+          },
           "notes": { "type": "string" }
         }
       }

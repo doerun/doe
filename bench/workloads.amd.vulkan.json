@@ -27,9 +27,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
       "rightIgnoreFirstOps": 1,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -57,9 +55,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightIgnoreFirstOps": 0,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -87,9 +83,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
       "rightIgnoreFirstOps": 1,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -117,9 +111,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "rightIgnoreFirstOps": 1,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -147,9 +139,7 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
       "rightIgnoreFirstOps": 1,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -178,9 +168,7 @@
       "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "@autodiscover",
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "dawnFilter": "@autodiscover"
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -209,9 +197,7 @@
       "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "@autodiscover",
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "dawnFilter": "@autodiscover"
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -234,8 +220,8 @@
       "leftUploadSubmitEvery": 1,
       "rightUploadSubmitEvery": 1,
       "extraArgs": [],
-      "comparable": true,
-      "benchmarkClass": "comparable",
+      "comparable": false,
+      "benchmarkClass": "directional",
       "default": false,
       "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1.0,

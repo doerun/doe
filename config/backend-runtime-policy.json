@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "defaultLane": "vulkan_dawn_release",
-  "selectionPolicyHashSeed": "backend-runtime-policy-v1",
+  "selectionPolicyHashSeed": "backend-runtime-policy-v2",
   "cutoverPolicyPath": "config/backend-cutover-policy.json",
   "lanes": {
     "vulkan_dawn_release": {
@@ -80,13 +80,15 @@
       "defaultBackend": "doe_vulkan",
       "allowFallback": false,
       "strictNoFallback": true,
-      "notes": "Strict comparable Vulkan lane"
+      "uploadPathPolicy": "staged_copy_only",
+      "notes": "Strict comparable Vulkan lane with staged-copy-only uploads"
     },
     "vulkan_doe_release": {
       "defaultBackend": "doe_vulkan",
       "allowFallback": false,
       "strictNoFallback": true,
-      "notes": "Strict local Vulkan release lane"
+      "uploadPathPolicy": "staged_copy_only",
+      "notes": "Strict local Vulkan release lane with staged-copy-only uploads"
     },
     "metal_doe_app": {
       "defaultBackend": "doe_metal",

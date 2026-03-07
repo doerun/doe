@@ -17,7 +17,7 @@ pub fn default_telemetry() BackendTelemetry {
         .backend_id = .dawn_delegate,
         .backend_selection_reason = "legacy_native_default",
         .fallback_used = false,
-        .selection_policy_hash = "backend-runtime-policy-v1",
+        .selection_policy_hash = "backend-runtime-policy-v2",
         .shader_artifact_manifest_path = null,
         .shader_artifact_manifest_hash = null,
         .adapter_ordinal = null,

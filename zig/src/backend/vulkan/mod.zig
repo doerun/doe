@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const backend_iface = @import("../backend_iface.zig");
+const backend_policy = @import("../backend_policy.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const command_info = @import("../common/command_info.zig");
@@ -31,6 +32,7 @@ pub const ZigVulkanBackend = struct {
     kernel_root_owned: ?[]u8 = null,
     runtime: ?native_runtime.NativeVulkanRuntime = null,
 
+    upload_path_policy: backend_policy.UploadPathPolicy = .allow_mapped_shortcuts,
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = 1,
     queue_wait_mode: webgpu.QueueWaitMode = .process_events,
@@ -60,6 +62,24 @@ pub const ZigVulkanBackend = struct {
     pending_artifact_status_len: usize = 0,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*ZigVulkanBackend {
+        return init_with_upload_path_policy(allocator, profile, kernel_root, .allow_mapped_shortcuts);
+    }
+
+    pub fn init_with_selection_policy(
+        allocator: std.mem.Allocator,
+        profile: model.DeviceProfile,
+        kernel_root: ?[]const u8,
+        selection_policy: backend_policy.SelectionPolicy,
+    ) !*ZigVulkanBackend {
+        return init_with_upload_path_policy(allocator, profile, kernel_root, selection_policy.upload_path_policy);
+    }
+
+    fn init_with_upload_path_policy(
+        allocator: std.mem.Allocator,
+        profile: model.DeviceProfile,
+        kernel_root: ?[]const u8,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !*ZigVulkanBackend {
         if (profile.api != .vulkan) return error.UnsupportedFeature;
 
         var caps = capabilities.CapabilitySet{};
@@ -86,6 +106,7 @@ pub const ZigVulkanBackend = struct {
             .allocator = allocator,
             .kernel_root_owned = owned_kernel_root,
             .runtime = null,
+            .upload_path_policy = upload_path_policy,
             .upload_buffer_usage_mode = .copy_dst_copy_src,
             .upload_submit_every = 1,
             .queue_wait_mode = .process_events,
@@ -320,10 +341,13 @@ fn annotate_result(self: *ZigVulkanBackend, command: model.Command, result: webg
 fn execute_upload(self: *ZigVulkanBackend, setup_ns: u64, upload: model.UploadCommand) !webgpu.NativeExecutionResult {
     const runtime = try ensure_runtime_bootstrapped(self);
 
-    const encode_start = common_timing.now_ns();
-    try runtime.upload_bytes(@as(u64, @intCast(upload.bytes)), self.upload_buffer_usage_mode);
-    const encode_end = common_timing.now_ns();
-    const encode_ns = common_timing.ns_delta(encode_end, encode_start);
+    const upload_setup_start = common_timing.now_ns();
+    try runtime.upload_bytes(
+        @as(u64, @intCast(upload.bytes)),
+        self.upload_buffer_usage_mode,
+        self.upload_path_policy,
+    );
+    const upload_setup_ns = common_timing.ns_delta(common_timing.now_ns(), upload_setup_start);
 
     var submit_wait_ns: u64 = 0;
     self.pending_upload_commands +|= 1;
@@ -335,8 +359,8 @@ fn execute_upload(self: *ZigVulkanBackend, setup_ns: u64, upload: model.UploadCo
     return .{
         .status = .ok,
         .status_message = "",
-        .setup_ns = setup_ns,
-        .encode_ns = encode_ns,
+        .setup_ns = setup_ns +| upload_setup_ns,
+        .encode_ns = 0,
         .submit_wait_ns = submit_wait_ns,
         .dispatch_count = 0,
         .gpu_timestamp_ns = 0,
@@ -477,11 +501,21 @@ fn execute_async_diagnostics(
         .pipeline_async => return result_without_gpu_timestamps(setup_ns, try runtime.pipeline_async_probe(self.allocator, "shader_compile_pipeline_stress.spv", iterations), 0, iterations),
         .resource_table_immediates => switch (diagnostics.feature_policy) {
             .strict => return .{ .status = .unsupported, .status_message = "async_resource_table_immediates", .setup_ns = setup_ns, .dispatch_count = iterations },
-            .emulate_when_unavailable => return result_without_gpu_timestamps(setup_ns, try runtime.resource_table_immediates_emulation_probe(iterations), 0, iterations),
+            .emulate_when_unavailable => return result_without_gpu_timestamps(
+                setup_ns,
+                try runtime.resource_table_immediates_emulation_probe(iterations, self.upload_path_policy),
+                0,
+                iterations,
+            ),
         },
         .pixel_local_storage => switch (diagnostics.feature_policy) {
             .strict => return .{ .status = .unsupported, .status_message = "async_pixel_local_storage", .setup_ns = setup_ns, .dispatch_count = iterations },
-            .emulate_when_unavailable => return result_without_gpu_timestamps(setup_ns, try runtime.pixel_local_storage_emulation_probe(iterations), 0, iterations),
+            .emulate_when_unavailable => return result_without_gpu_timestamps(
+                setup_ns,
+                try runtime.pixel_local_storage_emulation_probe(iterations, self.upload_path_policy),
+                0,
+                iterations,
+            ),
         },
         .full => {
             const capability_ns = blk: {
@@ -497,8 +531,8 @@ fn execute_async_diagnostics(
             switch (diagnostics.feature_policy) {
                 .strict => return .{ .status = .unsupported, .status_message = "async_diagnostics_full", .setup_ns = setup_ns, .dispatch_count = iterations },
                 .emulate_when_unavailable => {
-                    encode_ns +|= try runtime.resource_table_immediates_emulation_probe(iterations);
-                    encode_ns +|= try runtime.pixel_local_storage_emulation_probe(iterations);
+                    encode_ns +|= try runtime.resource_table_immediates_emulation_probe(iterations, self.upload_path_policy);
+                    encode_ns +|= try runtime.pixel_local_storage_emulation_probe(iterations, self.upload_path_policy);
                 },
             }
             return result_without_gpu_timestamps(setup_ns, encode_ns, 0, iterations);
@@ -561,7 +595,10 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         setup_ns = common_timing.ns_delta(setup_end, setup_start);
     }
 
+    const flush_start = common_timing.now_ns();
     const pending_submit_wait_ns = try flush_pending_uploads_if_required(self, command);
+    const flush_setup_ns =
+        common_timing.ns_delta(common_timing.now_ns(), flush_start) -| pending_submit_wait_ns;
 
     var result = switch (command) {
         .upload => |upload| try execute_upload(self, setup_ns, upload),
@@ -579,6 +616,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         => try execute_surface_command(self, setup_ns, command),
         else => return error.Unsupported,
     };
+    result.setup_ns +|= flush_setup_ns;
     result.submit_wait_ns +|= pending_submit_wait_ns;
 
     return annotate_result(self, command, result);
@@ -604,6 +642,7 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .allocator = std.testing.allocator,
         .kernel_root_owned = null,
         .runtime = null,
+        .upload_path_policy = .allow_mapped_shortcuts,
         .upload_buffer_usage_mode = .copy_dst_copy_src,
         .upload_submit_every = 1,
         .queue_wait_mode = .process_events,
@@ -686,7 +725,7 @@ fn flush_queue(ctx: *anyopaque) anyerror!u64 {
 fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     const self = cast(ctx);
     const runtime = try ensure_runtime_bootstrapped(self);
-    try runtime.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode);
+    try runtime.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode, self.upload_path_policy);
 }
 
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {

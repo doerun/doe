@@ -1,4 +1,5 @@
 const std = @import("std");
+const backend_policy = @import("../backend_policy.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 
 pub const DispatchMetrics = struct {
@@ -36,10 +37,16 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 
-    pub fn upload_bytes(self: *NativeVulkanRuntime, bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
+    pub fn upload_bytes(
+        self: *NativeVulkanRuntime,
+        bytes: u64,
+        mode: webgpu.UploadBufferUsageMode,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !void {
         _ = self;
         _ = bytes;
         _ = mode;
+        _ = upload_path_policy;
         return error.UnsupportedFeature;
     }
 
@@ -97,15 +104,25 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 
-    pub fn resource_table_immediates_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+    pub fn resource_table_immediates_emulation_probe(
+        self: *NativeVulkanRuntime,
+        iterations: u32,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !u64 {
         _ = self;
         _ = iterations;
+        _ = upload_path_policy;
         return error.UnsupportedFeature;
     }
 
-    pub fn pixel_local_storage_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+    pub fn pixel_local_storage_emulation_probe(
+        self: *NativeVulkanRuntime,
+        iterations: u32,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !u64 {
         _ = self;
         _ = iterations;
+        _ = upload_path_policy;
         return error.UnsupportedFeature;
     }
 
@@ -156,10 +173,16 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 
-    pub fn prewarm_upload_path(self: *NativeVulkanRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
+    pub fn prewarm_upload_path(
+        self: *NativeVulkanRuntime,
+        max_upload_bytes: u64,
+        mode: webgpu.UploadBufferUsageMode,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !void {
         _ = self;
         _ = max_upload_bytes;
         _ = mode;
+        _ = upload_path_policy;
         return error.UnsupportedFeature;
     }
 };

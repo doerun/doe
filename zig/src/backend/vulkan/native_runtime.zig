@@ -1,5 +1,6 @@
 const std = @import("std");
 const model = @import("../../model.zig");
+const backend_policy = @import("../backend_policy.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
@@ -500,10 +501,15 @@ pub const NativeVulkanRuntime = struct {
         try self.build_pipeline_for_words(words, hash +% 1);
     }
 
-    pub fn upload_bytes(self: *NativeVulkanRuntime, bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
+    pub fn upload_bytes(
+        self: *NativeVulkanRuntime,
+        bytes: u64,
+        mode: webgpu.UploadBufferUsageMode,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !void {
         if (bytes == 0) return error.InvalidArgument;
 
-        switch (classify_upload_path(mode, bytes)) {
+        switch (classify_upload_path(upload_path_policy, mode, bytes)) {
             .fast_mapped => {
                 try self.ensure_fast_upload_buffer(bytes);
                 if (self.fast_upload_mapped) |raw| {
@@ -669,13 +675,18 @@ pub const NativeVulkanRuntime = struct {
         return common_timing.ns_delta(end_ns, start_ns);
     }
 
-    pub fn prewarm_upload_path(self: *NativeVulkanRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
+    pub fn prewarm_upload_path(
+        self: *NativeVulkanRuntime,
+        max_upload_bytes: u64,
+        mode: webgpu.UploadBufferUsageMode,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !void {
         if (max_upload_bytes == 0) return;
         const prewarm_bytes = if (MAX_UPLOAD_BYTES == 0)
             max_upload_bytes
         else
             @min(max_upload_bytes, MAX_UPLOAD_BYTES);
-        try self.upload_bytes(prewarm_bytes, mode);
+        try self.upload_bytes(prewarm_bytes, mode, upload_path_policy);
         _ = try self.flush_queue();
     }
 
@@ -702,25 +713,33 @@ pub const NativeVulkanRuntime = struct {
         return common_timing.ns_delta(common_timing.now_ns(), start_ns);
     }
 
-    pub fn resource_table_immediates_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+    pub fn resource_table_immediates_emulation_probe(
+        self: *NativeVulkanRuntime,
+        iterations: u32,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !u64 {
         const count = if (iterations > 0) iterations else 1;
         const start_ns = common_timing.now_ns();
         var index: u32 = 0;
         while (index < count) : (index += 1) {
             try self.create_destroy_lifecycle_buffer(256);
-            try self.upload_bytes(64, .copy_dst);
+            try self.upload_bytes(64, .copy_dst, upload_path_policy);
             _ = try self.flush_queue();
         }
         return common_timing.ns_delta(common_timing.now_ns(), start_ns);
     }
 
-    pub fn pixel_local_storage_emulation_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
+    pub fn pixel_local_storage_emulation_probe(
+        self: *NativeVulkanRuntime,
+        iterations: u32,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !u64 {
         const count = if (iterations > 0) iterations else 1;
         const start_ns = common_timing.now_ns();
         var index: u32 = 0;
         while (index < count) : (index += 1) {
             try self.create_destroy_lifecycle_buffer(512);
-            try self.upload_bytes(128, .copy_dst);
+            try self.upload_bytes(128, .copy_dst, upload_path_policy);
             _ = try self.barrier(.process_events);
         }
         _ = try self.flush_queue();
@@ -1353,15 +1372,28 @@ fn file_exists(path: []const u8) bool {
     return true;
 }
 
-pub fn upload_uses_fast_path(mode: webgpu.UploadBufferUsageMode, bytes: u64) bool {
-    return classify_upload_path(mode, bytes) == .fast_mapped;
+pub fn upload_uses_fast_path(
+    upload_path_policy: backend_policy.UploadPathPolicy,
+    mode: webgpu.UploadBufferUsageMode,
+    bytes: u64,
+) bool {
+    return classify_upload_path(upload_path_policy, mode, bytes) == .fast_mapped;
 }
 
-pub fn upload_uses_direct_path(mode: webgpu.UploadBufferUsageMode, bytes: u64) bool {
-    return classify_upload_path(mode, bytes) == .direct_mapped;
+pub fn upload_uses_direct_path(
+    upload_path_policy: backend_policy.UploadPathPolicy,
+    mode: webgpu.UploadBufferUsageMode,
+    bytes: u64,
+) bool {
+    return classify_upload_path(upload_path_policy, mode, bytes) == .direct_mapped;
 }
 
-fn classify_upload_path(mode: webgpu.UploadBufferUsageMode, bytes: u64) UploadPathKind {
+fn classify_upload_path(
+    upload_path_policy: backend_policy.UploadPathPolicy,
+    mode: webgpu.UploadBufferUsageMode,
+    bytes: u64,
+) UploadPathKind {
+    if (upload_path_policy == .staged_copy_only) return .staged_copy;
     if (mode == .copy_dst and bytes <= FAST_UPLOAD_BUFFER_MAX_BYTES) return .fast_mapped;
     if (mode == .copy_dst and bytes <= DIRECT_UPLOAD_BUFFER_MAX_BYTES) return .direct_mapped;
     return .staged_copy;

@@ -281,6 +281,33 @@
   - `config/dropin-abi-behavior.json`
   - `config/dropin-symbol-ownership.schema.json`
 
+## 2026-03-07
+
+### Strict Vulkan staged-upload lane policy
+
+- `config/backend-runtime-policy.schema.json` + `config/backend-runtime-policy.json`
+  now bump the backend runtime policy contract to `schemaVersion=2` and add
+  optional lane field `uploadPathPolicy`:
+  - `allow_mapped_shortcuts`
+  - `staged_copy_only`
+- Strict Doe Vulkan benchmark/claim lanes now declare staged uploads explicitly
+  in config:
+  - `vulkan_doe_comparable` -> `uploadPathPolicy: "staged_copy_only"`
+  - `vulkan_doe_release` -> `uploadPathPolicy: "staged_copy_only"`
+- `selectionPolicyHashSeed` is now `backend-runtime-policy-v2` so trace/report
+  artifacts distinguish pre-fix and post-fix strict-lane evidence.
+- `zig/src/backend/backend_policy.zig`, `zig/src/backend/backend_runtime.zig`,
+  and `zig/src/backend/backend_registry.zig` now load and thread the lane upload
+  path policy into backend initialization, failing fast if strict Vulkan lanes do
+  not declare `staged_copy_only`.
+- `zig/src/backend/vulkan/mod.zig` and
+  `zig/src/backend/vulkan/native_runtime.zig` now honor the lane upload path
+  policy at runtime: strict `vulkan_doe_comparable` / `vulkan_doe_release`
+  uploads always execute staged GPU copy work, while app/directional Vulkan lanes
+  keep the bounded mapped shortcuts for non-claim diagnostics.
+- `bench/schema_gate.py` now validates that strict Vulkan lanes keep
+  `uploadPathPolicy='staged_copy_only'`.
+
 ## 2026-03-06
 
 ### Timing-scope sanity contract for claimable backend rows
