@@ -113,9 +113,10 @@ With `--quirk-mode active`, promoted records change backend execution (staging b
 With `--quirk-mode trace` (default), records match and trace but do not modify commands.
 
 Drop-in shared library artifact:
-- `zig build dropin` installs `zig/zig-out/lib/libwebgpu_doe.so`
+- `zig build` installs `zig/zig-out/lib/libwebgpu_doe.so` alongside `zig/zig-out/bin/doe-zig-runtime`
+- `zig build dropin` installs the same drop-in shared library bundle without requiring the default runtime step
 - when Dawn sidecars are present at `bench/vendor/dawn/out/Release/libwebgpu_dawn.so`,
-  `zig build dropin` co-installs:
+  both `zig build` and `zig build dropin` co-install:
   - `zig/zig-out/lib/libwebgpu_dawn.so`
   - `zig/zig-out/lib/libwebgpu.so`
   - `zig/zig-out/lib/libwgpu_native.so`

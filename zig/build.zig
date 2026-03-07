@@ -103,7 +103,6 @@ pub fn build(b: *std.Build) void {
         "share/doe-build-metadata.json",
     );
     dropin_step.dependOn(&install_dropin_build_metadata.step);
-    b.getInstallStep().dependOn(&install_dropin_build_metadata.step);
     const dawn_sidecar = "../bench/vendor/dawn/out/Release/libwebgpu_dawn.so";
     const webgpu_sidecar = "../bench/vendor/dawn/out/Release/libwebgpu.so";
     const wgpu_native_sidecar = "../bench/vendor/dawn/out/Release/libwgpu_native.so";
@@ -113,37 +112,25 @@ pub fn build(b: *std.Build) void {
             .lib,
             "libwebgpu_dawn.so",
         );
+        dropin_step.dependOn(&install_webgpu_dawn.step);
+    }
+    if (fileExists(webgpu_sidecar)) {
         const install_webgpu = b.addInstallFileWithDir(
-            b.path(dawn_sidecar),
+            b.path(webgpu_sidecar),
             .lib,
             "libwebgpu.so",
         );
+        dropin_step.dependOn(&install_webgpu.step);
+    }
+    if (fileExists(wgpu_native_sidecar)) {
         const install_wgpu_native = b.addInstallFileWithDir(
-            b.path(dawn_sidecar),
+            b.path(wgpu_native_sidecar),
             .lib,
             "libwgpu_native.so",
         );
-        dropin_step.dependOn(&install_webgpu_dawn.step);
-        dropin_step.dependOn(&install_webgpu.step);
         dropin_step.dependOn(&install_wgpu_native.step);
-    } else {
-        if (fileExists(webgpu_sidecar)) {
-            const install_webgpu = b.addInstallFileWithDir(
-                b.path(webgpu_sidecar),
-                .lib,
-                "libwebgpu.so",
-            );
-            dropin_step.dependOn(&install_webgpu.step);
-        }
-        if (fileExists(wgpu_native_sidecar)) {
-            const install_wgpu_native = b.addInstallFileWithDir(
-                b.path(wgpu_native_sidecar),
-                .lib,
-                "libwgpu_native.so",
-            );
-            dropin_step.dependOn(&install_wgpu_native.step);
-        }
     }
+    b.getInstallStep().dependOn(dropin_step);
 
     const exe = b.addExecutable(.{
         .name = "doe-zig-runtime",
