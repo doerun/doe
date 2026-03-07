@@ -39,6 +39,24 @@ pub fn build(b: *std.Build) void {
         build_options.addOption([]const u8, "lean_proof_json", proof_json);
         proof_artifact_sha256 = sha256HexAlloc(b.allocator, proof_json);
     }
+
+    {
+        const f = std.fs.cwd().openFile("../config/dropin-abi-behavior.json", .{}) catch
+            @panic("config/dropin-abi-behavior.json not found");
+        defer f.close();
+        const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
+            @panic("failed to read dropin-abi-behavior.json");
+        build_options.addOption([]const u8, "dropin_behavior_config_json", json);
+    }
+    {
+        const f = std.fs.cwd().openFile("../config/dropin-symbol-ownership.json", .{}) catch
+            @panic("config/dropin-symbol-ownership.json not found");
+        defer f.close();
+        const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
+            @panic("failed to read dropin-symbol-ownership.json");
+        build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", json);
+    }
+
     const build_options_module = build_options.createModule();
 
     const dropin_lib = b.addLibrary(.{

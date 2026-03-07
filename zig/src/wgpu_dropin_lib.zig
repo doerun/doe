@@ -13,8 +13,9 @@ const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
 const dropin_abi_procs = @import("dropin/dropin_abi_procs.zig");
 const dropin_build_info = @import("dropin/dropin_build_info.zig");
 
-const DROPIN_BEHAVIOR_CONFIG_JSON = @embedFile("config/dropin-abi-behavior.json");
-const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = @embedFile("config/dropin-symbol-ownership.json");
+const build_options = @import("build_options");
+const DROPIN_BEHAVIOR_CONFIG_JSON = build_options.dropin_behavior_config_json;
+const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = build_options.dropin_symbol_ownership_config_json;
 const DROPIN_BEHAVIOR_DEFAULT_MODE: dropin_behavior_policy.BehaviorMode = .dawn_ownership;
 const DROPIN_BEHAVIOR_DEFAULT_STRICT_NO_FALLBACK = true;
 

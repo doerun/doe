@@ -8,7 +8,7 @@ test "symbol ownership parser accepts doe_metal" {
 }
 
 test "symbol ownership config parser owns symbol names" {
-    const owned = try ownership.parse_symbol_ownership_config(std.testing.allocator, @embedFile("../../config/dropin-symbol-ownership.json"));
+    const owned = try ownership.parse_symbol_ownership_config(std.testing.allocator, @embedFile("../../../config/dropin-symbol-ownership.json"));
     defer {
         for (owned) |entry| {
             std.testing.allocator.free(entry.symbol);
