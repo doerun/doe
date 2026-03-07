@@ -12,6 +12,7 @@
     "left_right_trace_meta_source_match",
     "left_right_timing_selection_policy_match",
     "left_right_queue_sync_mode_match",
+    "left_right_timing_phase_match",
     "left_right_execution_shape_match",
     "left_right_hardware_path_match",
     "left_native_operation_timing_for_webgpu_ffi",

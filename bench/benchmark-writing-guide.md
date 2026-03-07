@@ -131,7 +131,11 @@ Comparable workloads (`comparable=true`) in strict mode must satisfy both:
 - `left_right_trace_meta_source_match`
 - `left_right_timing_selection_policy_match`
 - `left_right_queue_sync_mode_match`
-- `left_right_execution_shape_match` (compute-like domains only)
+- `left_right_timing_phase_match`
+- `left_right_execution_shape_match`
+- `left_right_hardware_path_match`
+- `left_right_upload_buffer_usage_match`
+- `left_right_upload_submit_cadence_match`
 - `left_upload_ignore_first_scope_consistent`
 - `right_upload_ignore_first_scope_consistent`
 

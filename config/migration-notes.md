@@ -1,5 +1,41 @@
 # Config Migration Notes
 
+## 2026-03-07
+
+### Metal upload apples-to-apples restoration
+
+- `zig/src/backend/metal/metal_native_runtime.zig` now routes comparable
+  WriteBuffer-style uploads through staged shared-to-private blit copies on
+  Metal for both small and large payloads.
+- Removed the Metal tiny-upload shared-memory fast path that could bypass the
+  staged GPU copy Dawn performs, and upload staging buffers are now rewritten on
+  every iteration instead of only on first allocation.
+- `zig/src/backend/metal/mod.zig` now records Metal upload staging work in
+  `setup_ns` instead of `encode_ns`, aligning timing-phase accounting with the
+  Dawn delegate upload lane.
+- `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json` now
+  forwards `queue_sync_mode`, `upload_buffer_usage`, and `upload_submit_every`
+  symmetrically to both left and right runtime commands.
+- Local Metal upload workload contracts no longer carry `pathAsymmetry` after
+  the staged-copy restoration:
+  - `bench/workloads.local.metal.extended.json`
+  - `bench/workloads.local.metal.smoke.json`
+
+### Blocking timing-phase symmetry obligation
+
+- Added a new blocking strict-comparability obligation:
+  - `left_right_timing_phase_match`
+- Updated the canonical obligation sources and parity fixtures:
+  - `config/comparability-obligations.json`
+  - `config/comparability-obligation-fixtures.schema.json`
+  - `bench/comparability_obligation_fixtures.json`
+  - `bench/compare_dawn_vs_doe_modules/comparability.py`
+  - `lean/Fawn/Comparability.lean`
+  - `lean/Fawn/ComparabilityFixtures.lean`
+- Strict comparable reports now fail when one side reports a median-zero timing
+  phase that the other side spends materially in, closing the setup/encode/submit
+  scope gap that previously escaped comparability while only failing claimability.
+
 ## 2026-03-06
 
 ### Benchmark cube reporting contracts

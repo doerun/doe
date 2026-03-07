@@ -21,15 +21,13 @@
       "leftUploadSubmitEvery": 1,
       "extraArgs": "--queue-sync-mode deferred --gpu-timestamp-mode off",
       "dawnFilter": "@autodiscover",
-      "comparabilityNotes": "Local Metal smoke upload contract",
+      "comparabilityNotes": "Local Metal smoke upload contract with staged copy-dst uploads and matched submit cadence.",
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightUploadBufferUsage": "copy-dst",
       "rightCommandRepeat": 16,
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "compute_workgroup_atomic_1024",

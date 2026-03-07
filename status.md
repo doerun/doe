@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-03-06
+Date: 2026-03-07
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -68,6 +68,11 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - Metal upload hot-path now reuses staging capacity and upload buffer allocation across commands in `zig/src/backend/metal/mod.zig` (`ensure_upload_capacity`, `ensure_upload_buffer`), removing per-command reserve+buffer-create churn for steady-state upload workloads.
   - Metal command routing now emits shader artifact manifests only for shader-bearing command families (`dispatch`, `kernel_dispatch`, `render_draw`, `async_diagnostics`), reducing non-shader command overhead without changing manifest coverage on shader paths.
   - Metal flush behavior now avoids unnecessary runtime bootstrap on no-op flushes and preserves upload cadence correctness when a non-upload command follows queued uploads.
+- Metal upload apples-to-apples restoration (2026-03-07):
+  - `zig/src/backend/metal/metal_native_runtime.zig` now forces staged blit uploads for comparable `copy-dst` workloads, including small payloads; staging source buffers are rewritten every iteration so Doe performs the same host-write work Dawn measures.
+  - `zig/src/backend/metal/mod.zig` now charges upload staging work to `setup_ns`, matching the Dawn delegate upload timing phase split.
+  - local Metal upload workload contracts (`bench/workloads.local.metal.extended.json`, `bench/workloads.local.metal.smoke.json`) no longer mark upload rows as `pathAsymmetry`.
+  - strict comparability now has a blocking `left_right_timing_phase_match` obligation, so future phase-scope drift fails comparability instead of surviving until claimability.
 - final macOS Metal Dawn-vs-Doe evidence execution is now codified as an operator runbook:
   `docs/metal-macos-proof-bundle-runbook.md`
 - Chromium lane release/build defaults now force non-CfT branding args at `gn gen` time (`is_chrome_for_testing=false`, `is_chrome_for_testing_branded=false`, `is_chrome_branded=false`) so stale `args.gn` does not reintroduce Chrome-for-Testing UI branding.
@@ -758,7 +763,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 5. Extend baseline automation to broader incumbent lanes (including explicit wgpu baselines) and multi-host trend publication.
 6. Native Zig/WebGPU/FFI execution backend hardening in Zig remains a runtime milestone (coverage/reliability/perf).
 7. ~~Repeated strict release claim-mode rechecks for 64KB cadence retune~~ SUPERSEDED (2026-03-07): `bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json` was marked green at the time, but current structural-equivalence and `pathAsymmetry` enforcement invalidate it as claim evidence. Treat that artifact as diagnostic only until Doe performs equivalent GPU upload work or the upload contracts are downgraded.
-12. **Metal small-upload timing audit superseded earlier closure (2026-03-06):** the 2026-03-05 interpretation that 1KB/64KB Metal uploads were cleanly claimable is no longer the current authority. The latest broad March 6 Metal report shows operation-to-wall coverage asymmetry severe enough to treat the lane as diagnostic until timing scope is audited.
+12. **Metal small-upload timing audit superseded earlier closure (2026-03-06):** the 2026-03-05 interpretation that 1KB/64KB Metal uploads were cleanly claimable is no longer the current authority. The latest broad March 6 Metal report shows operation-to-wall coverage asymmetry severe enough to treat the lane as diagnostic until timing scope is audited. 2026-03-07 follow-up: the identified local Metal upload/runtime/config cause has been fixed (staged copy path restored and timing-phase symmetry made blocking), but the broad rerun has not yet been republished.
 8. Keep remaining directional diagnostics macro-scoped and non-claim (`render_draw_indexed_200k`, `capability_introspection_500`, `lifecycle_refcount_200`).
 9. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
 10. ~~Zig source file sharding~~ DONE: all five previously listed files are now under 777 lines (verified 2026-03-05: `wgpu_commands.zig`=160, `webgpu_ffi.zig`=672, `wgpu_types.zig`=753, `wgpu_dropin_lib.zig`=477, `command_json.zig`=570 — prior counts were pre-sharding snapshot).

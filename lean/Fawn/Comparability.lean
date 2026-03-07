@@ -12,6 +12,7 @@ inductive ComparabilityObligationId where
   | leftRightTraceMetaSourceMatch
   | leftRightTimingSelectionPolicyMatch
   | leftRightQueueSyncModeMatch
+  | leftRightTimingPhaseMatch
   | leftRightExecutionShapeMatch
   | leftRightHardwarePathMatch
   | leftNativeOperationTimingForWebgpuFfi
@@ -68,6 +69,8 @@ structure ComparabilityFacts where
   leftRightTimingSelectionPolicyMatch : Bool
   queueSyncModeMatchApplies : Bool
   leftRightQueueSyncModeMatch : Bool
+  timingPhaseMatchApplies : Bool
+  leftRightTimingPhaseMatch : Bool
   executionShapeMatchApplies : Bool
   leftRightExecutionShapeMatch : Bool
   hardwarePathMatchApplies : Bool
@@ -143,6 +146,10 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.queueSyncModeMatchApplies
       passes := facts.leftRightQueueSyncModeMatch }
+  , { id := .leftRightTimingPhaseMatch
+      blocking := true
+      applicable := facts.timingPhaseMatchApplies
+      passes := facts.leftRightTimingPhaseMatch }
   , { id := .leftRightExecutionShapeMatch
       blocking := true
       applicable := facts.executionShapeMatchApplies

@@ -6,7 +6,7 @@
       "name": "buffer-upload 1KB",
       "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB.",
       "domain": "upload",
-      "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
+      "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
       "commandsPath": "examples/upload_1kb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -27,16 +27,14 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
       "rightCommandRepeat": 500,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_64kb",
       "name": "buffer-upload 64KB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 64KB.",
       "domain": "upload",
-      "comparabilityNotes": "Matched single queue write upload shape on both sides; uses deferred queue sync on Metal to avoid per-command wait inflation while preserving per-upload normalization.",
+      "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
       "commandsPath": "examples/upload_64kb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -57,16 +55,14 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightCommandRepeat": 500,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_1mb",
       "name": "buffer-upload 1MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 1MB.",
       "domain": "upload",
-      "comparabilityNotes": "Matched single queue write upload shape on both sides; uses deferred queue sync on Metal to avoid per-command wait inflation while preserving per-upload normalization.",
+      "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
       "commandsPath": "examples/upload_1mb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -87,16 +83,14 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
       "rightCommandRepeat": 100,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_4mb",
       "name": "buffer-upload 4MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 4MB.",
       "domain": "upload",
-      "comparabilityNotes": "Matched single queue write upload shape on both sides; uses deferred queue sync on Metal to avoid per-command wait inflation while preserving per-upload normalization.",
+      "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
       "commandsPath": "examples/upload_4mb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -117,16 +111,14 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "rightCommandRepeat": 50,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_16mb",
       "name": "buffer-upload 16MB",
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 16MB.",
       "domain": "upload",
-      "comparabilityNotes": "Matched single queue write upload shape on both sides; uses deferred queue sync on Metal to avoid per-command wait inflation while preserving per-upload normalization.",
+      "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
       "commandsPath": "examples/upload_16mb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -147,16 +139,14 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
       "rightCommandRepeat": 50,
-      "rightTimingDivisor": 1.0,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightTimingDivisor": 1.0
     },
     {
       "id": "upload_write_buffer_256mb",
       "name": "buffer-upload 256MB",
       "description": "Single upload command for large-payload directional profiling (256MB).",
       "domain": "upload",
-      "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same 256MB WriteBuffer workload with strict normalization.",
+      "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same staged copy-dst 256MB WriteBuffer workload with strict normalization.",
       "commandsPath": "examples/upload_256mb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -178,16 +168,14 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "upload_write_buffer_1gb",
       "name": "buffer-upload 1GB",
       "description": "Single upload command for large-payload directional profiling (1GB).",
       "domain": "upload",
-      "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same 1GB WriteBuffer workload with strict normalization.",
+      "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same staged copy-dst 1GB WriteBuffer workload with strict normalization.",
       "commandsPath": "examples/upload_1gb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -209,16 +197,14 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "upload_write_buffer_4gb",
       "name": "buffer-upload 4GB",
       "description": "Single upload command for large-payload directional profiling (4GB).",
       "domain": "upload",
-      "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same 4GB WriteBuffer workload with strict normalization.",
+      "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same staged copy-dst 4GB WriteBuffer workload with strict normalization.",
       "commandsPath": "examples/upload_4gb_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -240,9 +226,7 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1,
-      "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "rightUploadSubmitEvery": 1
     },
     {
       "id": "compute_workgroup_atomic_1024",

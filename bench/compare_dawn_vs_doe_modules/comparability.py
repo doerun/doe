@@ -35,6 +35,12 @@ OBLIGATION_SCHEMA_VERSION = 1
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _COMPARABILITY_OBLIGATIONS_PATH = _REPO_ROOT / "config/comparability-obligations.json"
 RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
+_PHASE_ASYMMETRY_THRESHOLD = 0.10
+_TIMING_PHASE_FIELDS: tuple[tuple[str, str], ...] = (
+    ("setup", "executionSetupTotalNs"),
+    ("encode", "executionEncodeTotalNs"),
+    ("submitWait", "executionSubmitWaitTotalNs"),
+)
 
 
 def _normalized_domain(workload_domain: str) -> str:
@@ -332,6 +338,11 @@ def evaluate_comparability_from_facts(
             fact_bool("queue_sync_mode_match_applies"),
             fact_bool("left_right_queue_sync_mode_match"),
         ),
+        "left_right_timing_phase_match": (
+            True,
+            fact_bool("timing_phase_match_applies"),
+            fact_bool("left_right_timing_phase_match"),
+        ),
         "left_right_execution_shape_match": (
             True,
             fact_bool("execution_shape_match_applies"),
@@ -525,6 +536,75 @@ def parse_int(value: Any) -> int | None:
             except ValueError:
                 return None
     return None
+
+
+def _median_phase_fractions(
+    command_samples: list[dict[str, Any]],
+) -> dict[str, list[float]]:
+    fractions: dict[str, list[float]] = {phase_key: [] for phase_key, _ in _TIMING_PHASE_FIELDS}
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        trace_meta = sample.get("traceMeta", {})
+        if not isinstance(trace_meta, dict):
+            continue
+        total = safe_int(trace_meta.get("executionTotalNs"), default=0)
+        if total <= 0:
+            continue
+        for phase_key, field_name in _TIMING_PHASE_FIELDS:
+            phase_total = safe_int(trace_meta.get(field_name), default=0)
+            fractions[phase_key].append(phase_total / total)
+    return fractions
+
+
+def assess_timing_phase_equivalence(
+    *,
+    left_command_samples: list[dict[str, Any]],
+    right_command_samples: list[dict[str, Any]],
+) -> tuple[bool, bool, dict[str, Any], str]:
+    left_fractions = _median_phase_fractions(left_command_samples)
+    right_fractions = _median_phase_fractions(right_command_samples)
+    left_medians: dict[str, float | None] = {}
+    right_medians: dict[str, float | None] = {}
+    phase_sample_counts: dict[str, dict[str, int]] = {}
+    mismatches: list[str] = []
+
+    for phase_key, field_name in _TIMING_PHASE_FIELDS:
+        left_values = left_fractions.get(phase_key, [])
+        right_values = right_fractions.get(phase_key, [])
+        left_median = float(statistics.median(left_values)) if left_values else None
+        right_median = float(statistics.median(right_values)) if right_values else None
+        left_medians[phase_key] = left_median
+        right_medians[phase_key] = right_median
+        phase_sample_counts[phase_key] = {
+            "left": len(left_values),
+            "right": len(right_values),
+        }
+        if left_median is None or right_median is None:
+            continue
+        if left_median == 0.0 and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
+            mismatches.append(
+                f"left reports zero {field_name} median while right spends {right_median:.1%} "
+                "of execution in that phase"
+            )
+        elif right_median == 0.0 and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
+            mismatches.append(
+                f"right reports zero {field_name} median while left spends {left_median:.1%} "
+                "of execution in that phase"
+            )
+
+    applies = any(
+        counts["left"] > 0 and counts["right"] > 0 for counts in phase_sample_counts.values()
+    )
+    details: dict[str, Any] = {
+        "phaseAsymmetryThreshold": _PHASE_ASYMMETRY_THRESHOLD,
+        "leftMedianPhaseFractions": left_medians,
+        "rightMedianPhaseFractions": right_medians,
+        "phaseSampleCounts": phase_sample_counts,
+        "phaseMismatchCount": len(mismatches),
+        "phaseMismatches": mismatches,
+    }
+    return applies, len(mismatches) == 0, details, "; ".join(mismatches)
 
 
 def is_dawn_writebuffer_upload_workload(workload: Any) -> bool:
@@ -1048,6 +1128,29 @@ def compare_assessment(
             "leftQueueSyncModes": left_queue_sync_modes,
             "rightQueueSyncModes": right_queue_sync_modes,
         },
+    )
+    (
+        timing_phase_match_applies,
+        timing_phase_match,
+        timing_phase_details,
+        timing_phase_failure_reason,
+    ) = assess_timing_phase_equivalence(
+        left_command_samples=left_samples,
+        right_command_samples=right_samples,
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_timing_phase_match",
+        blocking=True,
+        applicable=timing_phase_match_applies,
+        passes=timing_phase_match,
+        failure_reason=(
+            "left/right timing phase mismatch: " + timing_phase_failure_reason
+            if timing_phase_failure_reason
+            else ""
+        ),
+        details=timing_phase_details,
     )
     def compare_execution_shapes(
         left_shapes: list[dict[str, int]],
