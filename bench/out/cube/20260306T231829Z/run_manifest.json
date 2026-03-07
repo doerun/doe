@@ -1,0 +1,14 @@
+{
+  "config": "config/benchmark-cube-policy.json",
+  "createdAtUtc": "2026-03-06T23:18:29.320315Z",
+  "dashboardHtmlPath": "bench/out/cube/20260306T231829Z/cube.dashboard.html",
+  "matrixMarkdownPath": "bench/out/cube/20260306T231829Z/cube.matrix.md",
+  "outputTimestamp": "20260306T231829Z",
+  "rowsPath": "bench/out/cube/20260306T231829Z/cube.rows.json",
+  "runFolder": "bench/out/cube/20260306T231829Z",
+  "runType": "benchmark-cube",
+  "schemaVersion": 1,
+  "status": "ok",
+  "summaryPath": "bench/out/cube/20260306T231829Z/cube.summary.json",
+  "updatedAtUtc": "2026-03-06T23:18:29.320315Z"
+}

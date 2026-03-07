@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from compare_dawn_vs_doe_modules import timing_sanity
 from compare_dawn_vs_doe_modules.timing_selection import canonical_timing_source
 
 
@@ -208,6 +209,18 @@ def assess_claimability(
                     command_samples=right_samples,
                 )
             )
+
+    left_samples = left.get("commandSamples", [])
+    right_samples = right.get("commandSamples", [])
+    if isinstance(left_samples, list) and isinstance(right_samples, list):
+        reasons.extend(
+            timing_sanity.assess_operation_scope_claim_sanity(
+                left_command_samples=left_samples,
+                right_command_samples=right_samples,
+                min_operation_wall_coverage_ratio=benchmark_policy.min_operation_wall_coverage_ratio,
+                max_operation_wall_coverage_asymmetry_ratio=benchmark_policy.max_operation_wall_coverage_asymmetry_ratio,
+            )
+        )
 
     return {
         "mode": mode,

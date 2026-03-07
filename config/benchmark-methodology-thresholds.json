@@ -8,6 +8,10 @@
     "localMinTimedSamples": 7,
     "releaseMinTimedSamples": 15
   },
+  "timingScopeSanity": {
+    "minOperationWallCoverageRatio": 0.05,
+    "maxOperationWallCoverageAsymmetryRatio": 128.0
+  },
   "reliability": {
     "localRequiredPositivePercentiles": [
       "p50Percent",

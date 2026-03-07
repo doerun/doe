@@ -62,7 +62,10 @@ Use two labels only:
 4. timing-scope consistency:
 - do not treat mixed-source derived timings as claimable (example: `doe-execution-dispatch-window-ns+ignore-first-ops` where base and adjustment measure different scopes)
 - for upload claims, use a single operation-scope timing method consistently and document it in workload/report artifacts
-5. no execution errors and no filter/adapter validity failures.
+5. operation-vs-wall sanity:
+- selected operation timing must not cover an implausibly tiny share of process wall on one side while the peer side shows materially higher operation-to-wall coverage
+- treat large left/right operation-to-wall coverage asymmetry as diagnostic until the timing scope is audited
+6. no execution errors and no filter/adapter validity failures.
 
 If any condition fails, classify the run as `diagnostic`.
 

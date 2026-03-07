@@ -3,7 +3,7 @@
   "title": "Fawn Benchmark Methodology Thresholds",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "timingSelection", "claimabilityDefaults", "reliability"],
+  "required": ["schemaVersion", "timingSelection", "claimabilityDefaults", "timingScopeSanity", "reliability"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "timingSelection": {
@@ -25,6 +25,18 @@
       "properties": {
         "localMinTimedSamples": { "type": "integer", "minimum": 0 },
         "releaseMinTimedSamples": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "timingScopeSanity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minOperationWallCoverageRatio",
+        "maxOperationWallCoverageAsymmetryRatio"
+      ],
+      "properties": {
+        "minOperationWallCoverageRatio": { "type": "number", "minimum": 0.0 },
+        "maxOperationWallCoverageAsymmetryRatio": { "type": "number", "minimum": 1.0 }
       }
     },
     "reliability": {

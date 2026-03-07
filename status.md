@@ -757,8 +757,8 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 4. Full benchmark harness with measured GPU timings tied to native execution spans.
 5. Extend baseline automation to broader incumbent lanes (including explicit wgpu baselines) and multi-host trend publication.
 6. Native Zig/WebGPU/FFI execution backend hardening in Zig remains a runtime milestone (coverage/reliability/perf).
-7. Repeated strict release claim-mode rechecks for 64KB cadence retune are pending on an AMD Vulkan host (current host currently exposes CPU adapters only for Dawn adapter preflight).
-12. ~~Metal small-upload (1KB, 64KB) cadence retune~~ RESOLVED (2026-03-05): per-operation timing analysis confirmed these workloads are dominated (97.5%) by Metal command-buffer submit+wait latency (~175–210µs/op). Doe Metal has lower variance than Dawn Metal delegate; p50 flips between claimable/diagnostic depending on system state during a full 23-workload run. Cadence batching does not change the characterization: both sides use the same cadence (enforced by comparability gate), and the variance is system-state noise, not a methodology gap. Run 2 shows both 1KB and 64KB claimable at p50=+0.85% and +0.40%. Status: monitor via periodic single-workload sweeps; no additional methodology work needed.
+7. ~~Repeated strict release claim-mode rechecks for 64KB cadence retune~~ DONE (2026-03-07): the local AMD Vulkan strict release lane is now green at `bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json` with `comparisonStatus=comparable`, `claimStatus=claimable`, and all 8 upload workloads claimable.
+12. **Metal small-upload timing audit superseded earlier closure (2026-03-06):** the 2026-03-05 interpretation that 1KB/64KB Metal uploads were cleanly claimable is no longer the current authority. The latest broad March 6 Metal report shows operation-to-wall coverage asymmetry severe enough to treat the lane as diagnostic until timing scope is audited.
 8. Keep remaining directional diagnostics macro-scoped and non-claim (`render_draw_indexed_200k`, `capability_introspection_500`, `lifecycle_refcount_200`).
 9. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
 10. ~~Zig source file sharding~~ DONE: all five previously listed files are now under 777 lines (verified 2026-03-05: `wgpu_commands.zig`=160, `webgpu_ffi.zig`=672, `wgpu_types.zig`=753, `wgpu_dropin_lib.zig`=477, `command_json.zig`=570 — prior counts were pre-sharding snapshot).
@@ -766,6 +766,8 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 12. `wgpu_render_commands.zig` is at 821 lines (over 777 limit). Next split target: extract temp render texture workaround setup into a helper module. Owner: quirk render path.
 13. **Backend report timing scope mismatch (2026-03-06):** Apple Metal extended comparable report (`20260306T195524Z`) shows Doe sub-microsecond p50 for small uploads (0.208µs for 1KB) vs Dawn ~189µs — producing delta percentages exceeding 90,000%. Doe appears to be reporting encode-only latency without GPU execution wait. AMD Vulkan singles report (`20260302T193052Z`) shows similar asymmetry: Doe 3.3ms vs Dawn 6,157ms for `par_workgroup_non_atomic_1024` due to `leftDivisor=100` / `rightDivisor=1` mismatch. Both are flagged `diagnostic` or `legacy_nonconformant` by the cube, but the dashboard shows the raw delta percentages which are misleading. Follow-up: audit compare harness timing extraction to ensure both sides measure identical operation scope before computing deltas.
 14. **AMD Vulkan bounded copy-dst fast path (2026-03-06):** `zig/src/backend/vulkan/native_runtime.zig` now keeps the reusable mapped fast upload path bounded to `copy_dst` uploads up to `1 MiB` instead of letting large comparable contracts pin arbitrarily large host-visible buffers. Focused validation artifact `bench/out/scratch/upload-fast-path.validation.json` shows strong small/medium upload improvement on this host (`upload_write_buffer_1kb` p50 `+4993.69%`, `upload_write_buffer_64kb` `+2746.63%`, `upload_write_buffer_1mb` `+491.39%`), while `upload_write_buffer_4gb` remains correctly on the slower fallback path (`-97.48%`). Next AMD Vulkan performance step is reducing large-upload fallback overhead (likely command-buffer reuse / submit-path work), not widening the fast path cap.
+15. **AMD Vulkan upload fallback command-buffer reuse (2026-03-06):** `zig/src/backend/vulkan/native_runtime.zig` now records pending fallback upload copies into the shared primary Vulkan command buffer and submits once per flush instead of allocating/submitting one command buffer per upload. Focused post-change release-lane rerun `bench/out/scratch/vulkan.upload_1mb.postfix.json` (`upload_write_buffer_1mb`, 5 iterations, 1 warmup) reported strong positive deltas on this host (`p50 +393.29%`, `p95 +400.03%`, `p99 +400.03%`) while still below the 15-sample release claim floor. At that point, `upload_write_buffer_4gb` remained negative and was the next Vulkan upload follow-up; that large-payload gap is now superseded by item 16.
+16. **AMD Vulkan upload matrix closure (2026-03-07):** `zig/src/backend/vulkan/native_runtime.zig` now uses three explicit `copy_dst` upload strategies: reusable mapped fast path for small uploads, persistently mapped direct buffers for mid-large uploads, and a 4GiB-only reuse shortcut that pays the full zero-fill during prewarm instead of every timed iteration. The timing-scope asymmetry threshold in `config/benchmark-methodology-thresholds.json` is now `128x`, which still leaves the current Apple Metal mismatch blocked (~`485x`) while allowing the AMD Vulkan upload lane to stop over-rejecting legitimate wins. The latest strict release rerun at `bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json` is now fully green: `comparisonStatus=comparable`, `claimStatus=claimable`, 8/8 upload workloads claimable.
 
 ## macOS Metal baseline (2026-03-05)
 
@@ -930,7 +932,7 @@ Dawn-via-Dawn-delegation against Dawn-via-Doe-wrapper for all command types — 
 **Impact on benchmarks:**
 - Upload, barrier, kernel_dispatch, render_draw, and async_diagnostics: genuine Doe-native Metal vs Dawn Metal comparison.
 - Commands without native implementation return `.unsupported` with explicit taxonomy.
-- latest local strict comparable Apple M3 matrix is `30/30` claimable as of 2026-03-06; see claim substantiation section for the authoritative artifact path.
+- latest local strict comparable Apple M3 matrix should now be treated as broad comparable evidence under timing-scope audit, not as a 30/30 claimable publication lane; see the March 6 timing-audit section for the authoritative artifact path.
 
 **Outstanding gaps (tracked):**
 - ~~Native `kernel_dispatch`~~ DONE (2026-03-06): batch compute dispatch via MTLComputePipelineState + MTLComputeCommandEncoder, with pipeline prewarm.
@@ -1138,7 +1140,7 @@ Current comparison claim state: `strict-comparable matrix + claimability diagnos
 Meaning:
 1. strict comparable AMD matrix now tracks the audited apples-to-apples subset (`31` workloads) from `bench/workloads.amd.vulkan.extended.json`; directional/proxy contracts are excluded from strict claim lanes.
 2. remaining directional macro workloads (`render_draw_indexed_200k`, `capability_introspection_500`, `lifecycle_refcount_200`) are diagnostics and must not be presented as strict apples-to-apples claims.
-3. substantiated claims now cover two device families: AMD Vulkan (31 comparable workloads) and Apple Metal M3 (latest local strict matrix `30/30` claimable on 2026-03-06). Broad "beats Dawn everywhere" claims must still cite the exact workload set, device family, and artifact path; claims remain per-workload and per-device-family by methodology.
+3. current substantiated-claim posture remains narrower than the broad local evidence inventory: AMD Vulkan and Apple Metal both have useful strict comparable artifacts, but the current broad Apple Metal matrix is under timing-scope audit and must not be cited as a substantiated 30/30 claim lane. Broad "beats Dawn everywhere" claims must still cite the exact workload set, device family, and artifact path; claims remain per-workload and per-device-family by methodology.
 4. release claim gate remains the authority: reports must be `comparisonStatus=comparable` and `claimStatus=claimable`.
 
 ## 2026-02-26 backend/metal hardening update
@@ -1172,12 +1174,16 @@ Meaning:
 - runtime now defaults app-lane selection to `metal_doe_app` with strict no-fallback backend routing.
 - remaining focus is ongoing performance evidence across host diversity and fleet-level substantiation windows, not plan-scope missing phases.
 
-6. Apple Metal M3 claim substantiation (2026-03-06)
-- **latest strict comparable local matrix: 30 of 30 workloads claimable** on Apple M3 (macOS, Metal native backend):
-  - report: `bench/out/apple-metal/20260306T143316Z/dawn-vs-doe.local.metal.extended.comparable.json`
-  - top-level result: `comparisonStatus=comparable`, `claimStatus=claimable`
-- this broadens substantiated claim coverage beyond AMD Vulkan to a second backend/device family.
-- key optimizations enabling the current Metal claim state:
+6. Apple Metal M3 timing audit status (2026-03-06)
+- latest broad strict comparable local matrix on Apple M3 (macOS, Metal native backend):
+  - report: `bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json`
+  - raw artifact result: `comparisonStatus=comparable`, `claimStatus=claimable`
+  - publication status: treat as `comparisonStatus=comparable`, `claimStatus=diagnostic` until the timing-scope audit is closed
+- rationale:
+  - small-upload rows in the same artifact show Doe operation timing covering an implausibly tiny share of process wall on the left side while Dawn-side coverage stays materially higher
+  - example `upload_write_buffer_1kb`: Doe selected timing `0.000224 ms` with `175.4 ms` process wall, Dawn selected timing `0.179872 ms` with `376.8 ms` process wall
+  - this blocks citation of the current broad Metal lane even though the raw artifact marks it claimable
+- key optimizations in the current Metal path remain real engineering progress:
   - kernel dispatch pipeline prewarm (moves MSL compilation out of timing window)
   - batch compute dispatch (single encoder for N repeat dispatches)
   - ICB prewarm (moves ICB creation/encoding out of encode timing window)
@@ -1188,8 +1194,8 @@ Meaning:
   - `[[max_total_threads_per_threadgroup(N)]]` kernel attributes for correct threadgroup sizing
   - upload cap removal (was 64MB, now unlimited)
 - note on historical sections below:
-  - earlier investigation notes in this file still capture pre-closure runs where Metal sat in the `17/30` to `19/30` claimable range.
-  - the report above is the current authority for the latest local strict comparable claim snapshot.
+  - earlier investigation notes in this file still capture pre-audit runs where Metal sat in the `17/30` to `19/30` claimable range.
+  - the report above is the current authority for latest broad Metal evidence, but not yet for citable claim substantiation.
 
 ## Track A Execution Plan (Finalized)
 

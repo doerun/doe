@@ -9,3 +9,11 @@ test "vulkan fast upload path stays bounded to small copy-dst uploads" {
     try std.testing.expect(!native_runtime.upload_uses_fast_path(.copy_dst_copy_src, 1024));
     try std.testing.expect(!native_runtime.upload_uses_fast_path(webgpu.UploadBufferUsageMode.copy_dst_copy_src, 1024 * 1024));
 }
+
+test "vulkan large copy-dst uploads use direct mapped path" {
+    try std.testing.expect(native_runtime.upload_uses_direct_path(.copy_dst, 1024 * 1024 + 1));
+    try std.testing.expect(native_runtime.upload_uses_direct_path(.copy_dst, 1024 * 1024 * 1024));
+    try std.testing.expect(native_runtime.upload_uses_direct_path(.copy_dst, 4 * 1024 * 1024 * 1024));
+    try std.testing.expect(!native_runtime.upload_uses_direct_path(.copy_dst, 1024 * 1024));
+    try std.testing.expect(!native_runtime.upload_uses_direct_path(.copy_dst_copy_src, 4 * 1024 * 1024));
+}

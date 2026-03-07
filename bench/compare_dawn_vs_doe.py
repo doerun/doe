@@ -147,6 +147,8 @@ class BenchmarkMethodologyPolicy:
     min_dispatch_window_coverage_percent_without_encode: float
     local_claim_min_timed_samples: int
     release_claim_min_timed_samples: int
+    min_operation_wall_coverage_ratio: float
+    max_operation_wall_coverage_asymmetry_ratio: float
 
 
 def file_sha256(path: Path) -> str:
@@ -583,6 +585,17 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         first_config_value(payload, ["claimabilityDefaults.releaseMinTimedSamples"]),
         field="claimabilityDefaults.releaseMinTimedSamples",
     )
+    min_operation_wall_coverage_ratio = as_float(
+        first_config_value(payload, ["timingScopeSanity.minOperationWallCoverageRatio"]),
+        field="timingScopeSanity.minOperationWallCoverageRatio",
+    )
+    max_operation_wall_coverage_asymmetry_ratio = as_float(
+        first_config_value(
+            payload,
+            ["timingScopeSanity.maxOperationWallCoverageAsymmetryRatio"],
+        ),
+        field="timingScopeSanity.maxOperationWallCoverageAsymmetryRatio",
+    )
 
     if dispatch_ns < 0:
         raise ValueError("timingSelection.minDispatchWindowNsWithoutEncode must be >= 0")
@@ -594,6 +607,12 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         raise ValueError("claimabilityDefaults.localMinTimedSamples must be >= 0")
     if release_min_samples < 0:
         raise ValueError("claimabilityDefaults.releaseMinTimedSamples must be >= 0")
+    if min_operation_wall_coverage_ratio < 0.0:
+        raise ValueError("timingScopeSanity.minOperationWallCoverageRatio must be >= 0")
+    if max_operation_wall_coverage_asymmetry_ratio < 1.0:
+        raise ValueError(
+            "timingScopeSanity.maxOperationWallCoverageAsymmetryRatio must be >= 1"
+        )
 
     return BenchmarkMethodologyPolicy(
         source_path=str(path),
@@ -601,6 +620,8 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         min_dispatch_window_coverage_percent_without_encode=dispatch_coverage,
         local_claim_min_timed_samples=local_min_samples,
         release_claim_min_timed_samples=release_min_samples,
+        min_operation_wall_coverage_ratio=min_operation_wall_coverage_ratio,
+        max_operation_wall_coverage_asymmetry_ratio=max_operation_wall_coverage_asymmetry_ratio,
     )
 
 

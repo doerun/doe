@@ -196,6 +196,21 @@
   - `config/dropin-abi-behavior.json`
   - `config/dropin-symbol-ownership.schema.json`
 
+## 2026-03-06
+
+### Timing-scope sanity contract for claimable backend rows
+
+- `config/benchmark-methodology-thresholds.schema.json` + `config/benchmark-methodology-thresholds.json`
+  now include `timingScopeSanity`:
+  - `minOperationWallCoverageRatio`
+  - `maxOperationWallCoverageAsymmetryRatio`
+- `bench/compare_dawn_vs_doe.py` now treats rows as non-claimable when selected
+  operation timing covers implausibly little of process wall on one side and the
+  left/right coverage ratios diverge beyond the configured asymmetry bound.
+- `bench/build_benchmark_cube.py` applies the same policy to historical backend
+  compare reports so the cube does not continue surfacing scope-suspect rows as
+  claimable after methodology bugs are discovered.
+
 ## 2026-02-26
 
 ### Metal execution lane control and trace telemetry

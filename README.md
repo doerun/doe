@@ -20,66 +20,55 @@ cube artifacts:
 ### AMD Vulkan (RADV, GFX11)
 
 Latest local strict comparable matrix artifact:
-`bench/out/amd-vulkan/extended-comparable/20260302T182311Z/dawn-vs-doe.amd.vulkan.extended.comparable.json`
+`bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json`
 
-- top-level result: `comparisonStatus=comparable`, `claimStatus=diagnostic`
-- comparable workloads: 14
-- claimable workloads in that full local matrix: 12
-- claimable in the full matrix:
-  - uploads: `1 MB`, `4 MB`, `16 MB`
-  - compute: `workgroup atomic (1024)`, `workgroup non-atomic (1024)`
-  - matrix-vector multiply: `3` variants
-  - shader compilation: `Pipeline stress (ShaderRobustnessPerf)`
-  - contract lanes: `resource_table_immediates_macro_500`, `surface_presentation_contract`, `concurrent_execution_single_contract`
-- current full-matrix non-claimables: `1 KB` and `64 KB` upload
+- top-level result: `comparisonStatus=comparable`, `claimStatus=claimable`
+- current strict release lane workload count: 8
+- current claimables in the release lane:
+  - uploads: `1 KB`, `64 KB`, `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`, `4 GB`
+- current non-claimables in the release lane: none
+- current release read: claimable local AMD Vulkan evidence lane for this strict upload matrix
 
-Focused AMD Vulkan reruns in the same local artifact set show claimable single-workload results for
-`1 KB` and `64 KB` upload as well:
-
-- `bench/out/amd-vulkan/singles/20260302T192559Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_1kb.json`
-- `bench/out/amd-vulkan/singles/20260302T192649Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_64kb.json`
-
-So AMD Vulkan is the strongest local Dawn-vs-Doe evidence lane in this checkout, but the latest full
-comparable matrix is not yet fully claimable end-to-end.
+This lane is now fully claimable end-to-end on the local AMD Vulkan host for the strict
+8-workload upload release matrix.
 
 ### Apple Metal (M3)
 
 Latest local strict comparable matrix artifact:
-`bench/out/apple-metal/20260306T143316Z/dawn-vs-doe.local.metal.extended.comparable.json`
+`bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json`
 
-- top-level result: `comparisonStatus=comparable`, `claimStatus=claimable`
-- comparable workloads: 30
-- claimable workloads: `30 / 30`
-- Doe faster than Dawn on every workload
+- raw artifact result: `comparisonStatus=comparable`, `claimStatus=claimable`
+- publication status: treat this lane as `comparisonStatus=comparable`, `claimStatus=diagnostic`
+- comparable workloads in the artifact: 30
+- citable claimable workload count: `0 / 30` until the timing-scope audit is closed
 
-**Data quality caveat (under investigation):** Small-upload workloads in the
+**Data quality caveat (blocking publication):** Small-upload workloads in the
 Metal extended comparable report show Doe p50 timings in the sub-microsecond
 range (e.g. 0.208µs for 1KB upload) while Dawn reports ~189µs for the same
 workload. This produces delta percentages exceeding 90,000% which are not
 credible speedups. Doe appears to be measuring encode-only latency (no GPU
 execution wait) while Dawn includes the full operation. These cells show as
-`claimable` because the source report marks them that way, but the timing
-scope mismatch must be resolved before they are citable.
+`claimable` in the raw source report, but the timing-scope mismatch must be
+resolved before any of these rows are citable.
 
 Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
 
 ### Node package comparison (`@simulatte/webgpu` vs npm `webgpu`)
 
-Latest local Node provider report:
-`bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T204920113Z.json`
+Latest full local Node provider report:
+`bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json`
 
 - scope: Node.js provider-surface comparison, not strict backend claim substantiation
 - host: `darwin arm64`, Node `v22.20.0`
-- comparable workloads: `8`
-- claimable wins for `@simulatte/webgpu`: `5 / 8`
-- strongest local wins in this lane are upload-heavy workloads:
-  - `buffer_upload_1kb`: `+78.8%` (4.71x)
-  - `buffer_upload_16mb`: `+78.7%` (4.69x)
-  - `buffer_upload_64kb`: `+55.6%` (2.25x)
-  - `buffer_map_write_unmap`: `+43.9%` (1.78x)
-  - `buffer_upload_1mb`: `+9.5%` (1.10x)
-- compute end-to-end workloads in this Node lane are still slower than npm `webgpu`
-  (Doe synchronous `waitUntilCompleted` adds ~100us per command buffer)
+- total compared workloads: `11`
+- claimable wins for `@simulatte/webgpu`: `7 / 11`
+- current claimable rows in this lane:
+  - uploads: `buffer_upload_1kb`, `buffer_upload_64kb`, `buffer_upload_1mb`, `buffer_upload_16mb`
+  - overhead: `buffer_map_write_unmap`
+  - compute e2e: `compute_e2e_4096`, `compute_e2e_65536`
+- current non-claimable rows:
+  - comparable but not claimable: `compute_e2e_256`
+  - directional/non-comparable: `submit_empty`, `pipeline_create`, `compute_dispatch_simple`
 
 This Node comparison uses package-level workload timing (`performance.now()`) and
 should be read as package/runtime positioning evidence, not as a replacement for
@@ -161,11 +150,11 @@ Build without the flag produces identical code to before.
 
 ## Current status
 
-Working, with claimable benchmark evidence on two device families and one
-separate Node package-comparison lane:
-- AMD Vulkan: latest local strict comparable matrix is `comparable` with `12 / 14` workloads claimable; focused reruns also show claimable `1 KB` and `64 KB` upload slices.
-- Apple Metal M3: `30 / 30` workloads claimable. Doe faster than Dawn on every workload.
-- Node package surface: `5 / 8` claimable comparable wins, concentrated in upload-heavy workloads.
+Working, with one strict backend lane that is now claimable, one backend lane
+under timing-scope audit, and one separate Node package-comparison lane:
+- AMD Vulkan: the latest strict comparable/release evidence is `comparisonStatus=comparable`, `claimStatus=claimable` for the local 8-workload upload matrix. This is now a citable local backend claim lane, but it is still a narrow workload set, not a broad WebGPU replacement claim.
+- Apple Metal M3: feature coverage is strongest here, but the latest broad comparable artifact is under timing-scope audit and should be treated as diagnostic for publication.
+- Node package surface: `7 / 11` claimable wins on the latest macOS Node package lane. This is package/runtime evidence, not backend claim substantiation.
 
 Still in progress:
 - render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; remaining work is about broader coverage and stronger margins outside the current local strict comparable claim snapshot

@@ -17,6 +17,7 @@ import jsonschema
 import benchmark_cube_dashboard_html
 import output_paths
 import report_conformance
+from compare_dawn_vs_doe_modules import timing_sanity
 
 
 STATUS_ORDER = {
@@ -335,6 +336,26 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     }
 
 
+def load_timing_scope_sanity_policy(root: Path) -> dict[str, float]:
+    path = root / "config" / "benchmark-methodology-thresholds.json"
+    payload = load_json_object(path)
+    timing_scope = payload.get("timingScopeSanity")
+    if not isinstance(timing_scope, dict):
+        raise ValueError(f"missing timingScopeSanity in {path}")
+    min_ratio = safe_float(timing_scope.get("minOperationWallCoverageRatio"))
+    asymmetry_ratio = safe_float(timing_scope.get("maxOperationWallCoverageAsymmetryRatio"))
+    if min_ratio is None or min_ratio < 0.0:
+        raise ValueError(f"invalid timingScopeSanity.minOperationWallCoverageRatio in {path}")
+    if asymmetry_ratio is None or asymmetry_ratio < 1.0:
+        raise ValueError(
+            f"invalid timingScopeSanity.maxOperationWallCoverageAsymmetryRatio in {path}"
+        )
+    return {
+        "minOperationWallCoverageRatio": min_ratio,
+        "maxOperationWallCoverageAsymmetryRatio": asymmetry_ratio,
+    }
+
+
 def workload_set_for_row(
     policy: dict[str, Any],
     *,
@@ -451,6 +472,7 @@ def normalize_backend_report(
     maturity: str,
     source_conformance: str,
     source_conformance_reason: str,
+    timing_scope_sanity_policy: dict[str, float],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     host = detect_backend_host(payload, source_path)
     run_id = run_id_from_timestamp(generated_at)
@@ -473,6 +495,29 @@ def normalize_backend_report(
         claimable = isinstance(claimability, dict) and claimability.get("claimable") is True
         left_payload = workload.get("left") if isinstance(workload.get("left"), dict) else {}
         right_payload = workload.get("right") if isinstance(workload.get("right"), dict) else {}
+        left_samples = (
+            left_payload.get("commandSamples")
+            if isinstance(left_payload.get("commandSamples"), list)
+            else []
+        )
+        right_samples = (
+            right_payload.get("commandSamples")
+            if isinstance(right_payload.get("commandSamples"), list)
+            else []
+        )
+        if claimable:
+            scope_sanity_reasons = timing_sanity.assess_operation_scope_claim_sanity(
+                left_command_samples=left_samples,
+                right_command_samples=right_samples,
+                min_operation_wall_coverage_ratio=timing_scope_sanity_policy[
+                    "minOperationWallCoverageRatio"
+                ],
+                max_operation_wall_coverage_asymmetry_ratio=timing_scope_sanity_policy[
+                    "maxOperationWallCoverageAsymmetryRatio"
+                ],
+            )
+            if scope_sanity_reasons:
+                claimable = False
         left_stats = left_payload.get("stats") if isinstance(left_payload.get("stats"), dict) else {}
         right_stats = right_payload.get("stats") if isinstance(right_payload.get("stats"), dict) else {}
         delta_percent = workload.get("deltaPercent") if isinstance(workload.get("deltaPercent"), dict) else {}
@@ -509,6 +554,11 @@ def normalize_backend_report(
             }
         )
 
+    comparable_rows = [row for row in rows if row["comparisonStatus"] == "comparable"]
+    claimable_rows = [row for row in rows if row["claimStatus"] == "claimable"]
+    comparison_status = "comparable" if rows and len(comparable_rows) == len(rows) else "diagnostic"
+    claim_status = "claimable" if comparable_rows and len(claimable_rows) == len(comparable_rows) else "diagnostic"
+
     return rows, {
         "surface": "backend_native",
         "providerPair": "doe_vs_dawn",
@@ -518,8 +568,8 @@ def normalize_backend_report(
         "sourceReportPath": str(source_path),
         "sourceConformance": source_conformance,
         "sourceConformanceReason": source_conformance_reason,
-        "comparisonStatus": str(payload.get("comparisonStatus") or "diagnostic"),
-        "claimStatus": str(payload.get("claimStatus") or "diagnostic"),
+        "comparisonStatus": comparison_status,
+        "claimStatus": claim_status,
         "rowCount": len(rows),
         "deltaP50MedianPercent": median_non_null(
             [row["metrics"]["deltaP50Percent"] for row in rows]
@@ -871,6 +921,7 @@ def main() -> None:
     policy_path = (repo_root / args.policy).resolve()
     obligation_path = (repo_root / args.comparability_obligations).resolve()
     policy = load_policy(repo_root, policy_path)
+    timing_scope_sanity_policy = load_timing_scope_sanity_policy(repo_root)
     obligation_schema_version, obligation_ids = report_conformance.load_obligation_contract(
         obligation_path
     )
@@ -939,6 +990,7 @@ def main() -> None:
             maturity=surface_policy["maturity"],
             source_conformance="canonical" if is_canonical else "legacy_nonconformant",
             source_conformance_reason="" if is_canonical else canonical_reason,
+            timing_scope_sanity_policy=timing_scope_sanity_policy,
         )
         rows.extend(normalized_rows)
         reports.append(report_info)
