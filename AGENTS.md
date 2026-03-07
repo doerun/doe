@@ -88,6 +88,9 @@ For Dawn-vs-Doe performance work, also read:
 - strict comparability is required for claimable results; directional runs must be explicitly labeled non-comparable.
 - benchmark methodology knobs that affect comparability must be explicit in config/workload contracts, never hidden in code.
 - fail fast on comparability mismatch instead of reporting timings.
+- structural work equivalence is required: both sides must execute the same operations with equivalent GPU work. A comparison where one side skips commands, reports zero dispatches while the other dispatches, or takes a hardware-specific shortcut that bypasses operations the other side performs is not apples-to-apples regardless of methodology metadata.
+- timing-phase symmetry is required: if one side reports zero in a timing phase (setup, encode, or submit_wait) while the other side reports material cost in that phase, the timing scopes are measuring different things. This is a comparability failure, not a speed win.
+- hardware-path asymmetry (e.g. UMA shared-memory memset vs staging-buffer GPU copy) must carry explicit transferability caveats and cannot be presented as a general speed claim. Mark such workloads with `"pathAsymmetry": true` and document the non-transferable condition.
 
 7. Incumbent development discipline
 - performance development against Dawn must preserve matched workload semantics: backend/adapter constraints, operation shape, repeat accounting, and timing unit normalization.
@@ -96,6 +99,18 @@ For Dawn-vs-Doe performance work, also read:
 8. Contract update discipline
 - runtime-visible field changes require schema updates and migration notes in the same change.
 - process/gate docs and status tracking must be updated in the same change when behavior or contracts change.
+
+9. Structural work equivalence discipline
+- a comparable benchmark must verify that both sides execute the same commands and perform equivalent GPU work, not just that methodology metadata matches.
+- if one side returns `unsupported`, reports 0 dispatches, or skips execution for commands the other side executes, the comparison is invalid.
+- if one side reports an entire timing phase as identically zero across all workloads (e.g. setup_ns=0 on every row) while the other side reports material values, treat this as a systemic instrumentation gap and audit before claiming.
+- execution-shape parity checks (dispatch count, row count, success count) must apply to ALL domains, not only compute-like workloads.
+- when the agent or harness produces a "claimable" result, it must verify structural equivalence before accepting. A positive delta from mismatched work is not evidence of anything.
+
+10. Timing-scope completeness discipline
+- for comparable workloads, both sides must report non-trivial timing in the same phases. If LEFT measures only encode while RIGHT measures setup+encode+submit_wait, the comparison is measuring different scopes.
+- render workloads that never commit/wait on the GPU (submit_wait=0) while the comparison side does a full submit+wait are not comparable.
+- upload workloads where one side uses a hardware-specific path (UMA memset, shared memory) that skips operations the other side performs (staging buffer allocation, blit copy, GPU transfer) are not structurally equivalent. The delta measures architectural path choice, not implementation quality.
 
 ## Stage discipline (must preserve order)
 
@@ -192,6 +207,12 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
   minimum timed-sample floor and positive tails (`p50` + `p95`; include `p99` for release claims).
 - Upload claim runs must use timing-source semantics that stay consistent with the measured operation scope.
   If timing-source and ignore-first adjustments mix scopes, classify the run as diagnostic.
+- Before accepting any claimable result, verify structural work equivalence:
+  both sides must report matching dispatch counts, non-zero execution in the same timing phases,
+  and equivalent GPU operations. A positive delta from mismatched work is not a speed claim.
+- Zero-phase anomaly: if one side reports zero for an entire timing phase (setup, encode, or submit_wait)
+  across all workloads while the other side reports material values, flag as instrumentation gap
+  and classify all affected workloads as diagnostic until audited.
 
 ## Completion checklist
 
@@ -202,4 +223,5 @@ For each change set, verify:
 - gate expectations were updated or confirmed in `fawn/process.md`
 - trace/replay outputs are consistent with the changed behavior
 - if Dawn-vs-Doe benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
+- if any workload is marked claimable, verify structural work equivalence: both sides executed the same commands, dispatch counts match, timing phases have symmetric non-zero coverage, and no hardware-path asymmetry is unannoted
 - `fawn/status.md` records remaining placeholders, temporary methodology choices, and follow-up work

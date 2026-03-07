@@ -223,6 +223,10 @@ fn native_capability_set() capabilities.CapabilitySet {
         .indirect_draw,
         .indexed_indirect_draw,
         .async_pipeline_diagnostics,
+        .async_capability_introspection,
+        .async_resource_table_immediates,
+        .async_lifecycle_refcount,
+        .async_pixel_local_storage,
     });
     return set;
 }
@@ -371,93 +375,88 @@ fn ok_result(setup_ns: u64, encode_ns: u64, submit_wait_ns: u64, dispatch_count:
     };
 }
 
-fn execute_upload(self: *ZigMetalBackend, setup_ns: u64, upload: model.UploadCommand) !webgpu.NativeExecutionResult {
+fn execute_upload(self: *ZigMetalBackend, upload: model.UploadCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
 
-    const encode_start = common_timing.now_ns();
+    const setup_start = common_timing.now_ns();
     try rt.upload_bytes(@as(u64, @intCast(upload.bytes)), self.upload_buffer_usage_mode);
-    const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
+    const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
     self.pending_upload_commands +|= 1;
 
-    // Flush at upload_submit_every cadence to match Dawn's per-upload
-    // submit+wait semantics.  Without this, upload-only workloads would
-    // defer all GPU work and report near-zero submit_wait_ns.
     var submit_wait_ns: u64 = 0;
     if (self.pending_upload_commands >= self.upload_submit_every) {
         submit_wait_ns = try rt.flush_queue();
         self.pending_upload_commands = 0;
     }
 
-    return ok_result(setup_ns, encode_ns, submit_wait_ns, 0);
-}
-
-fn execute_barrier(self: *ZigMetalBackend, setup_ns: u64) !webgpu.NativeExecutionResult {
-    const rt = get_runtime(self);
-    const submit_wait_ns = try rt.barrier(self.queue_wait_mode);
     return ok_result(setup_ns, 0, submit_wait_ns, 0);
 }
 
-fn execute_kernel_dispatch(self: *ZigMetalBackend, setup_ns: u64, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
+fn execute_barrier(self: *ZigMetalBackend) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const submit_wait_ns = try rt.barrier(self.queue_wait_mode);
+    return ok_result(0, 0, submit_wait_ns, 0);
+}
+
+fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const metrics = try rt.run_kernel_dispatch(
         kd.kernel, kd.x, kd.y, kd.z,
         kd.repeat, kd.warmup_dispatch_count,
         kd.bindings,
     );
-    return ok_result(setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
+    return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
 }
 
-fn execute_sampler_create(self: *ZigMetalBackend, setup_ns: u64, cmd: model.SamplerCreateCommand) !webgpu.NativeExecutionResult {
+fn execute_sampler_create(self: *ZigMetalBackend, cmd: model.SamplerCreateCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const encode_start = common_timing.now_ns();
     try rt.sampler_create(cmd);
-    return ok_result(setup_ns, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
 }
 
-fn execute_sampler_destroy(self: *ZigMetalBackend, setup_ns: u64, cmd: model.SamplerDestroyCommand) !webgpu.NativeExecutionResult {
+fn execute_sampler_destroy(self: *ZigMetalBackend, cmd: model.SamplerDestroyCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const encode_start = common_timing.now_ns();
     try rt.sampler_destroy(cmd);
-    return ok_result(setup_ns, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
 }
 
-fn execute_texture_write(self: *ZigMetalBackend, setup_ns: u64, cmd: model.TextureWriteCommand) !webgpu.NativeExecutionResult {
+fn execute_texture_write(self: *ZigMetalBackend, cmd: model.TextureWriteCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const encode_start = common_timing.now_ns();
     try rt.texture_write(cmd);
-    return ok_result(setup_ns, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
 }
 
-fn execute_texture_query(self: *ZigMetalBackend, setup_ns: u64, cmd: model.TextureQueryCommand) !webgpu.NativeExecutionResult {
+fn execute_texture_query(self: *ZigMetalBackend, cmd: model.TextureQueryCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const encode_start = common_timing.now_ns();
     try rt.texture_query(cmd);
-    return ok_result(setup_ns, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
 }
 
-fn execute_texture_destroy(self: *ZigMetalBackend, setup_ns: u64, cmd: model.TextureDestroyCommand) !webgpu.NativeExecutionResult {
+fn execute_texture_destroy(self: *ZigMetalBackend, cmd: model.TextureDestroyCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const encode_start = common_timing.now_ns();
     try rt.texture_destroy(cmd);
-    return ok_result(setup_ns, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
 }
 
-fn execute_render_draw(self: *ZigMetalBackend, setup_ns: u64, cmd: model.RenderDrawCommand) !webgpu.NativeExecutionResult {
+fn execute_render_draw(self: *ZigMetalBackend, cmd: model.RenderDrawCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const metrics = try rt.render_draw(cmd);
-    return ok_result(setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.draw_count);
+    return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.draw_count);
 }
 
-fn execute_async_diagnostics(self: *ZigMetalBackend, setup_ns: u64, cmd: model.AsyncDiagnosticsCommand) !webgpu.NativeExecutionResult {
-    // Measures native render pipeline creation/cache time for the given format.
-    // Equivalent to what Dawn's async pipeline creation diagnostic tests measure.
+fn execute_async_diagnostics(self: *ZigMetalBackend, cmd: model.AsyncDiagnosticsCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const fmt = cmd.target_format;
     const encode_start = common_timing.now_ns();
     try rt.ensure_render_pipeline(fmt);
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-    return ok_result(setup_ns, encode_ns, 0, 1);
+    return ok_result(0, encode_ns, 0, 1);
 }
 
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
@@ -498,24 +497,29 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
         };
     }
 
+    // Time pre-command flush as setup — this captures upload-flush cost
+    // in the correct phase bucket for all command types.
+    const flush_start = common_timing.now_ns();
     const pending_submit_wait_ns = try flush_pending_uploads_if_required(self, command);
+    const flush_setup_ns = common_timing.ns_delta(common_timing.now_ns(), flush_start) -| pending_submit_wait_ns;
 
     var result = switch (command) {
-        .upload => |upload| try execute_upload(self, 0, upload),
-        .barrier => try execute_barrier(self, 0),
-        .kernel_dispatch => |kd| try execute_kernel_dispatch(self, 0, kd),
-        .sampler_create => |cmd| try execute_sampler_create(self, 0, cmd),
-        .sampler_destroy => |cmd| try execute_sampler_destroy(self, 0, cmd),
-        .texture_write => |cmd| try execute_texture_write(self, 0, cmd),
-        .texture_query => |cmd| try execute_texture_query(self, 0, cmd),
-        .texture_destroy => |cmd| try execute_texture_destroy(self, 0, cmd),
-        .render_draw => |cmd| try execute_render_draw(self, 0, cmd),
-        .draw_indirect => |cmd| try execute_render_draw(self, 0, cmd),
-        .draw_indexed_indirect => |cmd| try execute_render_draw(self, 0, cmd),
-        .render_pass => |cmd| try execute_render_draw(self, 0, cmd),
-        .async_diagnostics => |cmd| try execute_async_diagnostics(self, 0, cmd),
+        .upload => |upload| try execute_upload(self, upload),
+        .barrier => try execute_barrier(self),
+        .kernel_dispatch => |kd| try execute_kernel_dispatch(self, kd),
+        .sampler_create => |cmd| try execute_sampler_create(self, cmd),
+        .sampler_destroy => |cmd| try execute_sampler_destroy(self, cmd),
+        .texture_write => |cmd| try execute_texture_write(self, cmd),
+        .texture_query => |cmd| try execute_texture_query(self, cmd),
+        .texture_destroy => |cmd| try execute_texture_destroy(self, cmd),
+        .render_draw => |cmd| try execute_render_draw(self, cmd),
+        .draw_indirect => |cmd| try execute_render_draw(self, cmd),
+        .draw_indexed_indirect => |cmd| try execute_render_draw(self, cmd),
+        .render_pass => |cmd| try execute_render_draw(self, cmd),
+        .async_diagnostics => |cmd| try execute_async_diagnostics(self, cmd),
         else => return error.Unsupported,
     };
+    result.setup_ns +|= flush_setup_ns;
     result.submit_wait_ns +|= pending_submit_wait_ns;
 
     if (should_emit_shader_artifact(command)) {

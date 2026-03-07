@@ -138,6 +138,8 @@ class Workload:
     comparability_candidate: bool
     comparability_candidate_tier: str
     comparability_candidate_notes: str
+    path_asymmetry: bool
+    path_asymmetry_note: str
 
 
 @dataclass(frozen=True)
@@ -964,6 +966,8 @@ def load_workloads(
             comparability_candidate=comparability_candidate,
             comparability_candidate_tier=comparability_candidate_tier,
             comparability_candidate_notes=comparability_candidate_notes,
+            path_asymmetry=bool(item.get("pathAsymmetry", False)),
+            path_asymmetry_note=str(item.get("pathAsymmetryNote", "")),
         )
         if workload.left_timing_divisor <= 0.0:
             raise ValueError(
@@ -1762,6 +1766,8 @@ def main() -> int:
             workload_id=workload.id,
             workload_comparable=workload.comparable,
             workload_domain=workload.domain,
+            workload_path_asymmetry=workload.path_asymmetry,
+            workload_path_asymmetry_note=workload.path_asymmetry_note,
             left=left,
             right=right,
             required_timing_class=args.require_timing_class,
@@ -1819,6 +1825,8 @@ def main() -> int:
             "benchmarkPolicySha256": report["benchmarkPolicy"]["sha256"],
             "leftTraceMetaSha256": [entry["sha256"] for entry in left_trace_meta_hashes],
             "rightTraceMetaSha256": [entry["sha256"] for entry in right_trace_meta_hashes],
+            "workloadPathAsymmetry": workload.path_asymmetry,
+            "workloadPathAsymmetryNote": workload.path_asymmetry_note,
             "deltaPercent": delta,
             "comparability": {
                 "comparable": comparability.get("comparable"),
@@ -1861,6 +1869,8 @@ def main() -> int:
                     "note": workload.timing_normalization_note,
                 },
                 "workloadComparable": workload.comparable,
+                "pathAsymmetry": workload.path_asymmetry,
+                "pathAsymmetryNote": workload.path_asymmetry_note,
                 "comparabilityCandidate": {
                     "enabled": workload.comparability_candidate,
                     "tier": workload.comparability_candidate_tier,

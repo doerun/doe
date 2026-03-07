@@ -137,18 +137,48 @@ Comparable workloads (`comparable=true`) in strict mode must satisfy both:
 
 Obligation IDs are contract-controlled by `config/comparability-obligations.json`.
 
-## 5) Execution-shape parity (critical lesson)
+## 5) Execution-shape parity (critical — applies to ALL domains)
 
 Normalization symmetry alone is not enough. A workload can still be invalid if runtime execution shape diverges.
 
-Strict compute-like comparability now requires matching sampled execution tuples:
+Strict comparability for ALL domains (compute, render, upload, resource, pipeline, texture) requires matching sampled execution tuples:
 - `executionDispatchCount`
 - `executionRowCount`
 - `executionSuccessCount`
 
 If these differ left/right, strict comparable classification must fail.
 
-Use this to prevent false claims from rows where one side executes more internal dispatches than the other.
+This is not optional for non-compute domains. A render workload where LEFT dispatches 500 draws and RIGHT dispatches 0 is not comparable regardless of what `comparable: true` says in the workload contract.
+
+## 5.1) Structural work equivalence (blocking for comparable)
+
+Beyond dispatch count matching, both sides must perform structurally equivalent GPU operations:
+
+1. **Execution completeness**: both sides must execute all commands in the workload. If one side returns `unsupported` or skips execution, the comparison is invalid.
+
+2. **Timing-phase symmetry**: both sides must report non-trivial timing in the same phases (setup_ns, encode_ns, submit_wait_ns). Violations:
+   - LEFT setup_ns=0 across all rows AND RIGHT setup_ns>0 → instrumentation gap, not genuine zero cost.
+   - LEFT submit_wait_ns=0 across all rows AND RIGHT submit_wait_ns>0 → LEFT is not measuring GPU submission. The "speed win" is a scope mismatch.
+   - RIGHT encode_ns=0 across all rows AND LEFT encode_ns>0 → different timing phases dominate on each side.
+
+3. **Hardware-path equivalence**: if one side takes a hardware-specific shortcut (e.g. Apple Silicon UMA shared-memory memset that skips staging+copy) that bypasses operations the other side performs, the delta measures architectural path choice, not implementation quality. Such workloads must:
+   - set `"pathAsymmetry": true` in the workload contract
+   - include a transferability caveat in `comparabilityNotes`
+   - fail strict Dawn-vs-Doe comparability/claimability gates until structural equivalence is restored
+   - not be presented as general "faster" claims
+
+4. **Zero-phase anomaly detection**: if one side reports an entire timing phase as identically zero across ALL workloads in a run, treat this as a systemic instrumentation gap. Audit the timing instrumentation before accepting any claimable results from that run.
+
+## 5.2) Structural equivalence audit checklist
+
+Before accepting claimable results from any run:
+
+1. For each workload, verify LEFT and RIGHT dispatch counts match.
+2. For each workload, verify both sides report non-zero values in the same timing phases.
+3. Flag any workload where one side's total is dominated by a phase the other side reports as zero.
+4. Flag any workload where the speed delta comes primarily from setup or submit_wait that only one side measures.
+5. For upload workloads on UMA hardware, verify both sides use the same transfer path (staging+copy vs shared-memory memset). If paths differ, mark `pathAsymmetry: true` and treat the workload as non-comparable for strict claim lanes.
+6. Reject any "X/Y claimable" summary that has not passed per-workload structural equivalence checks.
 
 ## 6) Timing selection and normalization policy
 
@@ -282,6 +312,12 @@ python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan
 - Accepting side-specific timing-policy exceptions not codified in config.
 - Reporting speed deltas without `deltaPercentConvention` context.
 - Reporting subset counts without stating the workload source file/config.
+- Claiming speed when one side reports 0 dispatches while the other dispatches (broken comparison, not a speed win).
+- Claiming speed from zero-phase asymmetry (LEFT submit_wait=0 while RIGHT submit_wait=40ms means LEFT didn't measure GPU submission, not that it was faster).
+- Treating universally-zero setup_ns on one side as genuine zero cost when the other side reports material setup. This is an instrumentation gap.
+- Presenting hardware-path shortcuts (UMA memset vs staging+copy) as general speed claims without transferability caveats.
+- Accepting aggregate "N/N claimable" without per-workload timing-phase audit. The metadata can pass while the actual work performed is structurally different.
+- Applying execution-shape parity only to compute domains. Render, upload, resource, and pipeline workloads need the same checks.
 
 ## 13) Templates
 

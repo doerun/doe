@@ -66,6 +66,15 @@ Use two labels only:
 - selected operation timing must not cover an implausibly tiny share of process wall on one side while the peer side shows materially higher operation-to-wall coverage
 - treat large left/right operation-to-wall coverage asymmetry as diagnostic until the timing scope is audited
 6. no execution errors and no filter/adapter validity failures.
+7. structural work equivalence:
+- both sides must execute the same commands with non-zero work output. If one side reports 0 dispatches while the other reports >0, the comparison is invalid regardless of other metadata.
+- both sides must report non-trivial timing in the same phases (setup, encode, submit_wait). If one side reports zero across an entire phase while the other reports material cost, the timing scopes do not match and the result is diagnostic.
+- if LEFT setup_ns=0 for all rows AND RIGHT setup_ns>0 for a material fraction: flag as timing-instrumentation asymmetry.
+- if LEFT submit_wait_ns=0 for all rows AND RIGHT submit_wait_ns>0: flag as scope mismatch (LEFT is not measuring GPU submission cost).
+8. hardware-path equivalence:
+- both sides must perform structurally equivalent GPU operations. If one side takes a hardware-specific shortcut (e.g. UMA shared-memory memset) that bypasses operations the other side performs (e.g. staging buffer allocation + GPU blit copy), the delta measures architectural path choice on specific hardware, not implementation quality.
+- such workloads must carry `pathAsymmetry: true` and a transferability caveat. In strict Dawn-vs-Doe claim lanes they are blocking comparability failures until structural equivalence is restored.
+- the gap from path asymmetry would vanish or invert on hardware where the shortcut does not apply (e.g. discrete GPUs with separate VRAM).
 
 If any condition fails, classify the run as `diagnostic`.
 
@@ -143,6 +152,12 @@ Target advantage is not "Zig magic"; it is lower hot-path complexity plus faster
 - mixing timing classes (`process-wall` vs `operation`) for per-op claims
 - hiding methodology knobs in code instead of workload/config
 - reporting deltas when execution/adapter/filter validity failed
+- claiming speed when one side reports 0 dispatches and the other dispatches >0
+- claiming speed from zero-phase asymmetry (e.g. LEFT submit_wait=0, RIGHT submit_wait=40ms — the "win" is that LEFT didn't measure GPU submission, not that it was faster)
+- claiming speed from hardware-path shortcuts (e.g. UMA memset vs staging+copy) without transferability caveats
+- treating zero setup_ns across all workloads as genuine when the comparison side reports material setup cost — this indicates an instrumentation gap
+- marking a workload `comparable: true` when the two sides perform structurally different GPU operations, even if methodology metadata matches
+- accepting a "30/30 claimable" summary without auditing per-workload timing-phase breakdown for each side
 
 ## Required Artifacts for Performance Claims
 

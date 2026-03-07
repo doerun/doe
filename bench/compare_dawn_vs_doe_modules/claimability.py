@@ -106,6 +106,128 @@ def assess_upload_timing_scope_consistency(
     return reasons
 
 
+def _median_phase_fractions(
+    command_samples: list[dict[str, Any]],
+) -> dict[str, list[float]]:
+    """Return per-sample phase fractions (setup, encode, submitWait) relative to executionTotal."""
+    fractions: dict[str, list[float]] = {"setup": [], "encode": [], "submitWait": []}
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        tm = sample.get("traceMeta", {})
+        if not isinstance(tm, dict):
+            continue
+        total = safe_int(tm.get("executionTotalNs"), default=0)
+        if total <= 0:
+            continue
+        setup = safe_int(tm.get("executionSetupTotalNs"), default=0)
+        encode = safe_int(tm.get("executionEncodeTotalNs"), default=0)
+        submit_wait = safe_int(tm.get("executionSubmitWaitTotalNs"), default=0)
+        fractions["setup"].append(setup / total)
+        fractions["encode"].append(encode / total)
+        fractions["submitWait"].append(submit_wait / total)
+    return fractions
+
+
+# Minimum fraction of executionTotal a phase must represent on one side
+# for a zero on the other side to be considered structurally asymmetric.
+_PHASE_ASYMMETRY_THRESHOLD = 0.10
+
+
+def assess_phase_equivalence(
+    *,
+    left_command_samples: list[dict[str, Any]],
+    right_command_samples: list[dict[str, Any]],
+) -> list[str]:
+    """Reject claims where one side reports zero for a phase the other side spends >10% in."""
+    reasons: list[str] = []
+    left_fracs = _median_phase_fractions(left_command_samples)
+    right_fracs = _median_phase_fractions(right_command_samples)
+
+    phase_labels = {"setup": "executionSetupTotalNs", "encode": "executionEncodeTotalNs", "submitWait": "executionSubmitWaitTotalNs"}
+    for phase_key, field_name in phase_labels.items():
+        left_vals = left_fracs.get(phase_key, [])
+        right_vals = right_fracs.get(phase_key, [])
+        if not left_vals or not right_vals:
+            continue
+        left_vals_sorted = sorted(left_vals)
+        right_vals_sorted = sorted(right_vals)
+        left_median = left_vals_sorted[len(left_vals_sorted) // 2]
+        right_median = right_vals_sorted[len(right_vals_sorted) // 2]
+
+        left_zero = left_median == 0.0
+        right_zero = right_median == 0.0
+        if left_zero and not right_zero and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
+            reasons.append(
+                f"phase asymmetry: left reports zero {field_name} but right spends "
+                f"{right_median:.1%} of execution in that phase; "
+                f"treat as non-claimable until phase equivalence is confirmed"
+            )
+        elif right_zero and not left_zero and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
+            reasons.append(
+                f"phase asymmetry: right reports zero {field_name} but left spends "
+                f"{left_median:.1%} of execution in that phase; "
+                f"treat as non-claimable until phase equivalence is confirmed"
+            )
+    return reasons
+
+
+_UPLOAD_SIZE_SUFFIXES = {
+    "1kb": 1024,
+    "4kb": 4096,
+    "16kb": 16384,
+    "64kb": 65536,
+    "256kb": 262144,
+    "1mb": 1048576,
+    "4mb": 4194304,
+    "16mb": 16777216,
+    "64mb": 67108864,
+    "256mb": 268435456,
+    "1gb": 1073741824,
+    "4gb": 4294967296,
+    "16gb": 17179869184,
+}
+
+# 500 GB/s — above PCIe 5.0 x16 (64 GB/s) and Apple M-series memory
+# bandwidth (~400 GB/s peak). Anything above this is not real.
+_MAX_PLAUSIBLE_THROUGHPUT_BYTES_PER_SEC = 500_000_000_000
+
+
+def _parse_upload_bytes_from_id(workload_id: str) -> int | None:
+    for suffix, size in _UPLOAD_SIZE_SUFFIXES.items():
+        if workload_id.endswith(suffix):
+            return size
+    return None
+
+
+def assess_throughput_plausibility(
+    *,
+    workload_id: str,
+    workload_domain: str,
+    left_p50_ms: float | None,
+    right_p50_ms: float | None,
+) -> list[str]:
+    """Reject claims where implied throughput exceeds hardware limits."""
+    if workload_domain != "upload":
+        return []
+    upload_bytes = _parse_upload_bytes_from_id(workload_id)
+    if upload_bytes is None or upload_bytes == 0:
+        return []
+    reasons: list[str] = []
+    for side_name, p50_ms in [("left", left_p50_ms), ("right", right_p50_ms)]:
+        if p50_ms is None or p50_ms <= 0.0:
+            continue
+        throughput = upload_bytes / (p50_ms / 1000.0)
+        if throughput > _MAX_PLAUSIBLE_THROUGHPUT_BYTES_PER_SEC:
+            reasons.append(
+                f"{side_name} implies {throughput / 1e9:.0f} GB/s throughput for "
+                f"{upload_bytes / (1024**2):.0f} MB upload at p50={p50_ms:.4f}ms; "
+                f"exceeds plausibility ceiling of "
+                f"{_MAX_PLAUSIBLE_THROUGHPUT_BYTES_PER_SEC / 1e9:.0f} GB/s"
+            )
+    return reasons
+
+
 def assess_claimability(
     *,
     mode: str,
@@ -137,6 +259,13 @@ def assess_claimability(
 
     if not comparability.get("comparable", False):
         reasons.append("workload is non-comparable; reliability claimability requires comparability")
+
+    if getattr(workload, "path_asymmetry", False):
+        note = getattr(workload, "path_asymmetry_note", "")
+        reason = "workload has pathAsymmetry: left/right use structurally different execution paths"
+        if note:
+            reason += f" ({note})"
+        reasons.append(reason)
 
     left_count = safe_int(left.get("stats", {}).get("count"), default=0)
     right_count = safe_int(right.get("stats", {}).get("count"), default=0)
@@ -182,6 +311,15 @@ def assess_claimability(
     if right_p50_ms is not None and right_p50_ms < 0.0001:
         reasons.append(f"right p50 timing ({right_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
 
+    reasons.extend(
+        assess_throughput_plausibility(
+            workload_id=workload.id,
+            workload_domain=workload.domain,
+            left_p50_ms=left_p50_ms,
+            right_p50_ms=right_p50_ms,
+        )
+    )
+
     for percentile_key in required_percentiles:
         value = safe_float(delta.get(percentile_key))
         if value is None:
@@ -219,6 +357,12 @@ def assess_claimability(
                 right_command_samples=right_samples,
                 min_operation_wall_coverage_ratio=benchmark_policy.min_operation_wall_coverage_ratio,
                 max_operation_wall_coverage_asymmetry_ratio=benchmark_policy.max_operation_wall_coverage_asymmetry_ratio,
+            )
+        )
+        reasons.extend(
+            assess_phase_equivalence(
+                left_command_samples=left_samples,
+                right_command_samples=right_samples,
             )
         )
 

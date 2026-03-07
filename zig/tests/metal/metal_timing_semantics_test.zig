@@ -29,7 +29,7 @@ fn skip_if_runtime_unavailable(err: anyerror) bool {
     };
 }
 
-test "metal upload timing includes non-zero encode ns" {
+test "metal upload timing charges staged host work to setup ns" {
     if (builtin.os.tag != .macos) return;
 
     const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
@@ -39,14 +39,15 @@ test "metal upload timing includes non-zero encode ns" {
     var iface = try backend.as_iface(std.testing.allocator, "test_metal_timing", "test_policy_hash");
     defer iface.deinit();
 
+    iface.set_upload_behavior(.copy_dst, 1);
     const result = try iface.execute_command(model.Command{ .upload = .{
         .bytes = 1024 * 1024,
         .align_bytes = 4,
     } });
     try std.testing.expect(result.status == .ok);
-    // encode_ns records blit encode time; submit_wait_ns records flush time.
-    // At least one must be nonzero for a native Metal upload.
-    try std.testing.expect(result.encode_ns > 0 or result.submit_wait_ns > 0);
+    try std.testing.expect(result.setup_ns > 0);
+    try std.testing.expectEqual(@as(u64, 0), result.encode_ns);
+    try std.testing.expect(result.submit_wait_ns > 0);
 }
 
 test "metal upload flush cadence reports nonzero submit_wait_ns" {
@@ -60,7 +61,7 @@ test "metal upload flush cadence reports nonzero submit_wait_ns" {
     defer iface.deinit();
 
     // With submit_every = 1, every upload should flush inline.
-    iface.set_upload_behavior(.copy_dst_copy_src, 1);
+    iface.set_upload_behavior(.copy_dst, 1);
     const upload_result = try iface.execute_command(model.Command{ .upload = .{
         .bytes = 256 * 1024,
         .align_bytes = 4,

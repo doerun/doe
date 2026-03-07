@@ -56,6 +56,7 @@
 - ad-hoc/manual artifact names are routed under `fawn/bench/out/scratch/<timestamp>/...` to keep canonical run folders and dashboard inputs clean.
 - canonical CI/script entrypoint for blocking gate sequence:
   `python3 fawn/bench/run_blocking_gates.py --report fawn/bench/out/dawn-vs-doe.json --trace-semantic-parity-mode auto --with-comparability-parity-gate --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
+  when `--with-claim-gate` is enabled, `run_blocking_gates.py` also auto-enables `structural_equivalence_gate.py` so path asymmetry and timing-phase mismatch block the claim lane before publication.
   runs without `--with-claim-gate` validate blocking quality gates but are not release-claim readiness evidence; use `--require-claim-gate` to enforce this contract in local automation.
 - canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
   `python3 fawn/bench/run_release_pipeline.py --config fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact fawn/zig/zig-out/lib/libdoe_webgpu.so --with-claim-gate`
@@ -109,7 +110,13 @@ v0 is speed-first. Blocking vs advisory:
 3. Trace gate: blocking
 4. Drop-in compatibility gate: blocking for artifact-lane acceptance (`dropin_gate.py`)
 5. Verification gate: blocking (proof artifact must pass comptime validation when `-Dlean-verified=true`; per-quirk obligation is blocking when `verificationMode=lean_required`)
-6. Performance gate: advisory (ratchet report)
+6. Structural work equivalence gate: blocking for claimable results
+   - both sides must execute the same commands with matching dispatch counts (all domains, not only compute)
+   - both sides must report non-trivial timing in the same phases (setup, encode, submit_wait)
+   - hardware-path asymmetries must be annotated with `pathAsymmetry: true` and transferability caveats
+   - universally-zero timing phases on one side while the other reports material values is a blocking failure
+   - see `bench/benchmark-writing-guide.md` section 5.1 for full checklist
+7. Performance gate: advisory (ratchet report)
 
 This keeps process weight aligned with v0 maturity.
 

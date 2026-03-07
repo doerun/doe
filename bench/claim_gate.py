@@ -189,6 +189,36 @@ def workload_runtime_hint(workload: dict[str, Any]) -> str:
     return ", ".join(parts)
 
 
+def workload_is_dawn_vs_doe(workload: dict[str, Any]) -> bool:
+    def collect_execution_backends(side_payload: Any) -> set[str]:
+        if not isinstance(side_payload, dict):
+            return set()
+        samples = side_payload.get("commandSamples")
+        if not isinstance(samples, list):
+            return set()
+        return {
+            str(trace_meta.get("executionBackend"))
+            for sample in samples
+            if isinstance(sample, dict)
+            for trace_meta in [sample.get("traceMeta", {})]
+            if isinstance(trace_meta, dict) and trace_meta.get("executionBackend")
+        }
+
+    left_backends = collect_execution_backends(workload.get("left"))
+    right_backends = collect_execution_backends(workload.get("right"))
+    left_dawn = "dawn_delegate" in left_backends or "dawn-perf-tests" in left_backends
+    right_dawn = "dawn_delegate" in right_backends or "dawn-perf-tests" in right_backends
+    left_doe = any(
+        backend in left_backends
+        for backend in ("doe_metal", "doe_vulkan", "doe_d3d12", "webgpu-ffi", "native")
+    )
+    right_doe = any(
+        backend in right_backends
+        for backend in ("doe_metal", "doe_vulkan", "doe_d3d12", "webgpu-ffi", "native")
+    )
+    return (left_dawn and right_doe) or (left_doe and right_dawn)
+
+
 def load_report(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -197,16 +227,9 @@ def load_report(path: Path) -> dict[str, Any]:
 
 
 def load_expected_comparable_workload_ids(path: Path) -> set[str]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"invalid workload contract: expected object in {path}")
-    raw_workloads = payload.get("workloads")
-    if not isinstance(raw_workloads, list):
-        raise ValueError(f"invalid workload contract: missing workloads[] in {path}")
+    raw_workloads = load_workload_contract_rows(path).values()
     workload_ids: set[str] = set()
     for row in raw_workloads:
-        if not isinstance(row, dict):
-            continue
         workload_id = row.get("id")
         if not isinstance(workload_id, str) or not workload_id:
             continue
@@ -234,6 +257,10 @@ def load_expected_comparable_workload_ids(path: Path) -> set[str]:
     if not workload_ids:
         raise ValueError(f"invalid workload contract: no comparable workload IDs in {path}")
     return workload_ids
+
+
+def load_workload_contract_rows(path: Path) -> dict[str, dict[str, Any]]:
+    return report_conformance.load_contract_workloads_by_id(path)
 
 
 def main() -> int:
@@ -308,9 +335,11 @@ def main() -> int:
         return 1
     expected_workload_hash = ""
     expected_workload_ids: set[str] = set()
+    expected_workload_rows: dict[str, dict[str, Any]] = {}
     if expected_workload_contract_path is not None:
         try:
             expected_workload_hash = report_conformance.file_sha256(expected_workload_contract_path)
+            expected_workload_rows = load_workload_contract_rows(expected_workload_contract_path)
             expected_workload_ids = load_expected_comparable_workload_ids(
                 expected_workload_contract_path
             )
@@ -329,8 +358,25 @@ def main() -> int:
     benchmark_policy = report.get("benchmarkPolicy")
     config_contract = report.get("configContract")
     run_parameters = report.get("runParameters")
+    report_workload_rows: dict[str, dict[str, Any]] = {}
     policy_required_positive_percentiles: list[str] = []
     policy_min_timed_samples: int | None = None
+
+    if isinstance(workload_contract, dict):
+        report_contract_path = workload_contract.get("path")
+        if isinstance(report_contract_path, str) and report_contract_path.strip():
+            try:
+                resolved_report_contract_path = report_conformance.resolve_contract_path(
+                    report_path=report_path,
+                    repo_root=repo_root,
+                    raw_contract_path=report_contract_path,
+                )
+                if resolved_report_contract_path.exists():
+                    report_workload_rows = load_workload_contract_rows(
+                        resolved_report_contract_path
+                    )
+            except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+                failures.append(str(exc))
 
     if comparison_status != args.require_comparison_status:
         failures.append(
@@ -446,6 +492,62 @@ def main() -> int:
                 failures.append(f"workloads[{index}] is not an object")
                 continue
             workload_id = workload.get("id", f"workload[{index}]")
+            report_row_path_asymmetry = workload.get("pathAsymmetry")
+            if report_row_path_asymmetry is not None and not isinstance(
+                report_row_path_asymmetry, bool
+            ):
+                failures.append(f"{workload_id}: pathAsymmetry must be bool when present")
+            report_row_path_asymmetry_note = workload.get("pathAsymmetryNote")
+            if report_row_path_asymmetry_note is not None and not isinstance(
+                report_row_path_asymmetry_note, str
+            ):
+                failures.append(f"{workload_id}: pathAsymmetryNote must be string when present")
+            report_contract_row = report_workload_rows.get(str(workload_id), {})
+            expected_contract_row = expected_workload_rows.get(str(workload_id), {})
+            report_contract_path_asymmetry = bool(report_contract_row.get("pathAsymmetry", False))
+            expected_contract_path_asymmetry = bool(
+                expected_contract_row.get("pathAsymmetry", False)
+            )
+            path_asymmetry_applies = workload_is_dawn_vs_doe(workload)
+            if (
+                isinstance(report_row_path_asymmetry, bool)
+                and report_contract_row
+                and report_row_path_asymmetry != report_contract_path_asymmetry
+            ):
+                failures.append(
+                    f"{workload_id}: report pathAsymmetry does not match workload contract "
+                    f"({report_row_path_asymmetry} vs {report_contract_path_asymmetry})"
+                )
+            if (
+                isinstance(report_row_path_asymmetry_note, str)
+                and report_contract_row
+                and report_row_path_asymmetry_note
+                != str(report_contract_row.get("pathAsymmetryNote", ""))
+            ):
+                failures.append(
+                    f"{workload_id}: report pathAsymmetryNote does not match workload contract"
+                )
+            if (
+                path_asymmetry_applies
+                and (
+                args.require_comparison_status == "comparable"
+                or args.require_claim_status == "claimable"
+                )
+            ):
+                if report_row_path_asymmetry is True:
+                    failures.append(
+                        f"{workload_id}: comparable/claimable reports cannot include pathAsymmetry=true"
+                    )
+                if report_contract_path_asymmetry:
+                    failures.append(
+                        f"{workload_id}: workload contract marks pathAsymmetry=true; "
+                        "comparable/claimable reports are invalid until structural equivalence is restored"
+                    )
+                elif expected_contract_path_asymmetry:
+                    failures.append(
+                        f"{workload_id}: expected workload contract marks pathAsymmetry=true; "
+                        "comparable/claimable reports are invalid until structural equivalence is restored"
+                    )
             workload_contract_comparable = workload.get("workloadComparable")
             if workload_contract_comparable not in (True, False):
                 failures.append(

@@ -19,11 +19,15 @@ def strictHappyPathFacts : ComparabilityFacts :=
     leftRightQueueSyncModeMatch := true
     executionShapeMatchApplies := true
     leftRightExecutionShapeMatch := true
+    hardwarePathMatchApplies := true
+    leftRightHardwarePathMatch := true
     operationTimingClassRequired := true
     leftNativeOperationTimingForWebgpuFfi := true
     uploadDomain := true
     leftUploadIgnoreFirstScopeConsistent := true
     rightUploadIgnoreFirstScopeConsistent := true
+    leftRightUploadBufferUsageMatch := true
+    leftRightUploadSubmitCadenceMatch := true
     allowLeftNoExecution := false
     leftExecutionEvidencePresent := true
     leftSuccessfulExecutionPresent := true
@@ -73,11 +77,15 @@ def strictMissingLeftSamplesFacts : ComparabilityFacts :=
     leftRightQueueSyncModeMatch := false
     executionShapeMatchApplies := false
     leftRightExecutionShapeMatch := false
+    hardwarePathMatchApplies := false
+    leftRightHardwarePathMatch := true
     operationTimingClassRequired := true
     leftNativeOperationTimingForWebgpuFfi := true
     uploadDomain := false
     leftUploadIgnoreFirstScopeConsistent := true
     rightUploadIgnoreFirstScopeConsistent := true
+    leftRightUploadBufferUsageMatch := true
+    leftRightUploadSubmitCadenceMatch := true
     allowLeftNoExecution := false
     leftExecutionEvidencePresent := false
     leftSuccessfulExecutionPresent := false
@@ -133,11 +141,15 @@ def allowLeftNoExecutionDensityFailureFacts : ComparabilityFacts :=
     leftRightQueueSyncModeMatch := false
     executionShapeMatchApplies := false
     leftRightExecutionShapeMatch := false
+    hardwarePathMatchApplies := false
+    leftRightHardwarePathMatch := true
     operationTimingClassRequired := true
     leftNativeOperationTimingForWebgpuFfi := true
     uploadDomain := false
     leftUploadIgnoreFirstScopeConsistent := true
     rightUploadIgnoreFirstScopeConsistent := true
+    leftRightUploadBufferUsageMatch := true
+    leftRightUploadSubmitCadenceMatch := true
     allowLeftNoExecution := true
     leftExecutionEvidencePresent := false
     leftSuccessfulExecutionPresent := false
@@ -167,4 +179,63 @@ theorem allowLeftNoExecutionDensityFailureExpectedBlocking_exact :
 
 theorem allowLeftNoExecutionDensityFailureComparable :
     comparableFromFacts allowLeftNoExecutionDensityFailureFacts = false := by
+  native_decide
+
+def strictHardwarePathFailureFacts : ComparabilityFacts :=
+  { workloadMarkedComparable := true
+    leftSamplesPresent := true
+    rightSamplesPresent := true
+    leftSingleTimingClass := true
+    rightSingleTimingClass := true
+    requiredTimingClassApplies := true
+    leftRequiredTimingClass := true
+    rightRequiredTimingClass := true
+    timingClassMatchApplies := true
+    leftRightTimingClassMatch := true
+    traceMetaSourceMatchApplies := true
+    leftRightTraceMetaSourceMatch := true
+    timingSelectionPolicyMatchApplies := true
+    leftRightTimingSelectionPolicyMatch := true
+    queueSyncModeMatchApplies := true
+    leftRightQueueSyncModeMatch := true
+    executionShapeMatchApplies := true
+    leftRightExecutionShapeMatch := true
+    hardwarePathMatchApplies := true
+    leftRightHardwarePathMatch := false
+    operationTimingClassRequired := true
+    leftNativeOperationTimingForWebgpuFfi := true
+    uploadDomain := true
+    leftUploadIgnoreFirstScopeConsistent := true
+    rightUploadIgnoreFirstScopeConsistent := true
+    leftRightUploadBufferUsageMatch := true
+    leftRightUploadSubmitCadenceMatch := true
+    allowLeftNoExecution := false
+    leftExecutionEvidencePresent := true
+    leftSuccessfulExecutionPresent := true
+    leftSuccessOrUnsupportedOrSkipped := false
+    leftExecutionErrorsAbsent := true
+    rightExecutionErrorsAbsent := true
+    resourceProbeEnabled := false
+    leftResourceProbeAvailable := false
+    rightResourceProbeAvailable := false
+    strictComparability := true
+    resourceSampleTargetPositive := false
+    leftResourceSampleTargetMatch := false
+    rightResourceSampleTargetMatch := false
+    leftResourceSamplingNotTruncated := false
+    rightResourceSamplingNotTruncated := false
+    leftResourceSampleDensitySufficient := false
+    rightResourceSampleDensitySufficient := false
+  }
+
+def strictHardwarePathFailureExpectedBlocking : List ComparabilityObligationId :=
+  [ .leftRightHardwarePathMatch ]
+
+theorem strictHardwarePathFailureExpectedBlocking_exact :
+    (failedBlockingObligations (obligationsFromFacts strictHardwarePathFailureFacts)).map
+      (fun item => item.id) = strictHardwarePathFailureExpectedBlocking := by
+  native_decide
+
+theorem strictHardwarePathFailureComparable :
+    comparableFromFacts strictHardwarePathFailureFacts = false := by
   native_decide

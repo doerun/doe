@@ -27,7 +27,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1KB",
       "rightCommandRepeat": 500,
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -55,7 +57,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightCommandRepeat": 500,
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -83,7 +87,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
       "rightCommandRepeat": 100,
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -111,7 +117,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_4MB",
       "rightCommandRepeat": 50,
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -139,7 +147,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_16MB",
       "rightCommandRepeat": 50,
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -168,7 +178,9 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -197,7 +209,9 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -226,7 +240,9 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "compute_workgroup_atomic_1024",
@@ -589,7 +605,7 @@
       "name": "async pipeline diagnostics contract",
       "description": "Async diagnostics benchmark covering async render pipeline creation, error scopes, and shader compilation info.",
       "domain": "pipeline-async",
-      "comparabilityNotes": "Promoted to strict comparable on local Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
+      "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
       "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
@@ -598,7 +614,7 @@
       "driver": "24.0.0",
       "leftCommandRepeat": 50,
       "rightCommandRepeat": 50,
-      "comparable": true,
+      "comparable": false,
       "default": false,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -695,14 +711,14 @@
       "name": "p1 resource-table/immediates macro (500)",
       "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
       "domain": "p1-resource-table-macro",
-      "comparabilityNotes": "Promoted to strict comparable on local Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
+      "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
       "commandsPath": "examples/p1_resource_table_immediates_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": true,
+      "comparable": false,
       "allowLeftNoExecution": false,
       "default": false,
       "leftTimingDivisor": 1.0,
@@ -918,14 +934,14 @@
       "name": "p0 render pixel-local-storage barrier macro (500)",
       "description": "Apples-to-apples macro PLS workload with 500 in-command iterations to stress non-coherent barrier sequencing overhead.",
       "domain": "p0-render-macro",
-      "comparabilityNotes": "Promoted to strict comparable on local Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
+      "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
       "commandsPath": "examples/p0_render_pixel_local_storage_barrier_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": true,
+      "comparable": false,
       "allowLeftNoExecution": false,
       "default": false,
       "leftTimingDivisor": 1.0,

@@ -13,9 +13,12 @@ inductive ComparabilityObligationId where
   | leftRightTimingSelectionPolicyMatch
   | leftRightQueueSyncModeMatch
   | leftRightExecutionShapeMatch
+  | leftRightHardwarePathMatch
   | leftNativeOperationTimingForWebgpuFfi
   | leftUploadIgnoreFirstScopeConsistent
   | rightUploadIgnoreFirstScopeConsistent
+  | leftRightUploadBufferUsageMatch
+  | leftRightUploadSubmitCadenceMatch
   | leftExecutionEvidencePresent
   | leftSuccessfulExecutionPresent
   | leftSuccessOrUnsupportedOrSkipped
@@ -67,11 +70,15 @@ structure ComparabilityFacts where
   leftRightQueueSyncModeMatch : Bool
   executionShapeMatchApplies : Bool
   leftRightExecutionShapeMatch : Bool
+  hardwarePathMatchApplies : Bool
+  leftRightHardwarePathMatch : Bool
   operationTimingClassRequired : Bool
   leftNativeOperationTimingForWebgpuFfi : Bool
   uploadDomain : Bool
   leftUploadIgnoreFirstScopeConsistent : Bool
   rightUploadIgnoreFirstScopeConsistent : Bool
+  leftRightUploadBufferUsageMatch : Bool
+  leftRightUploadSubmitCadenceMatch : Bool
   allowLeftNoExecution : Bool
   leftExecutionEvidencePresent : Bool
   leftSuccessfulExecutionPresent : Bool
@@ -140,6 +147,10 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.executionShapeMatchApplies
       passes := facts.leftRightExecutionShapeMatch }
+  , { id := .leftRightHardwarePathMatch
+      blocking := true
+      applicable := facts.hardwarePathMatchApplies
+      passes := facts.leftRightHardwarePathMatch }
   , { id := .leftNativeOperationTimingForWebgpuFfi
       blocking := true
       applicable := facts.operationTimingClassRequired
@@ -152,6 +163,14 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.uploadDomain
       passes := facts.rightUploadIgnoreFirstScopeConsistent }
+  , { id := .leftRightUploadBufferUsageMatch
+      blocking := true
+      applicable := facts.uploadDomain
+      passes := facts.leftRightUploadBufferUsageMatch }
+  , { id := .leftRightUploadSubmitCadenceMatch
+      blocking := true
+      applicable := facts.uploadDomain
+      passes := facts.leftRightUploadSubmitCadenceMatch }
   , { id := .leftExecutionEvidencePresent
       blocking := true
       applicable := !facts.allowLeftNoExecution

@@ -115,6 +115,11 @@ def parse_args() -> argparse.Namespace:
         help="Run comparable_runtime_invariants_gate.py after trace gate.",
     )
     parser.add_argument(
+        "--with-structural-equivalence-gate",
+        action="store_true",
+        help="Run structural_equivalence_gate.py after trace gate.",
+    )
+    parser.add_argument(
         "--with-dropin-proc-resolution-gate",
         action="store_true",
         help="Run dropin_proc_resolution_tests.py in the drop-in phase.",
@@ -301,6 +306,7 @@ def main() -> int:
     comparable_runtime_invariants_gate = (
         bench_dir / "comparable_runtime_invariants_gate.py"
     )
+    structural_equivalence_gate = bench_dir / "structural_equivalence_gate.py"
     dropin_gate = bench_dir / "dropin_gate.py"
     dropin_proc_resolution_tests = bench_dir / "dropin_proc_resolution_tests.py"
     claim_gate = bench_dir / "claim_gate.py"
@@ -315,6 +321,12 @@ def main() -> int:
             "INFO: comparability parity gate not requested; verification-lane Lean/Python "
             "fixture parity is not checked in this run."
         )
+    if args.with_claim_gate and not args.with_structural_equivalence_gate:
+        print(
+            "INFO: enabling structural equivalence gate because --with-claim-gate "
+            "was requested."
+        )
+        args.with_structural_equivalence_gate = True
 
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])
@@ -352,6 +364,18 @@ def main() -> int:
                     str(comparable_runtime_invariants_gate),
                     "--report",
                     str(report_path),
+                ],
+            )
+
+        if args.with_structural_equivalence_gate:
+            run_gate(
+                "structural-equivalence",
+                [
+                    sys.executable,
+                    str(structural_equivalence_gate),
+                    "--report",
+                    str(report_path),
+                    "--require-all-pass",
                 ],
             )
 

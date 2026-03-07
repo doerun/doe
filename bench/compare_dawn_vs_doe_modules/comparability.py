@@ -337,6 +337,11 @@ def evaluate_comparability_from_facts(
             fact_bool("execution_shape_match_applies"),
             fact_bool("left_right_execution_shape_match"),
         ),
+        "left_right_hardware_path_match": (
+            True,
+            fact_bool("hardware_path_match_applies"),
+            fact_bool("left_right_hardware_path_match"),
+        ),
         "left_native_operation_timing_for_webgpu_ffi": (
             True,
             fact_bool("operation_timing_class_required"),
@@ -718,6 +723,8 @@ def compare_assessment(
     workload_id: str,
     workload_comparable: bool,
     workload_domain: str,
+    workload_path_asymmetry: bool,
+    workload_path_asymmetry_note: str,
     left: dict[str, Any],
     right: dict[str, Any],
     required_timing_class: str,
@@ -831,12 +838,10 @@ def compare_assessment(
     left_execution_shapes = collect_execution_shapes(left_samples)
     right_execution_shapes = collect_execution_shapes(right_samples)
     normalized_domain = workload_domain.strip().lower()
-    dispatch_shape_domain = (
-        normalized_domain == "compute"
-        or normalized_domain.startswith("compute-")
-        or normalized_domain.endswith("-compute")
-        or normalized_domain in {"pipeline", "p0-compute"}
-    )
+    # Dispatch shape matching applies to all domains. If one side dispatches
+    # N times and the other dispatches 0, the workloads are structurally
+    # different regardless of domain.
+    dispatch_shape_domain = True
 
     def collect_execution_backends(samples: list[dict[str, Any]]) -> set[str]:
         return {
@@ -1100,6 +1105,28 @@ def compare_assessment(
             "leftExecutionShapes": left_execution_shapes,
             "rightExecutionShapes": right_execution_shapes,
             "comparisonReason": execution_shape_mismatch_reason,
+        },
+    )
+    hardware_path_match_applies = comparability_mode == "strict" and is_dawn_vs_doe
+    hardware_path_failure_reason = (
+        "workload contract marks pathAsymmetry=true: left/right use hardware-specific "
+        "execution paths that are not structurally equivalent"
+    )
+    if workload_path_asymmetry_note:
+        hardware_path_failure_reason += f" ({workload_path_asymmetry_note})"
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_hardware_path_match",
+        blocking=True,
+        applicable=hardware_path_match_applies,
+        passes=not workload_path_asymmetry,
+        failure_reason=hardware_path_failure_reason,
+        details={
+            "comparabilityMode": comparability_mode,
+            "isDawnVsDoe": is_dawn_vs_doe,
+            "workloadPathAsymmetry": bool(workload_path_asymmetry),
+            "workloadPathAsymmetryNote": workload_path_asymmetry_note,
         },
     )
 
@@ -1533,6 +1560,8 @@ def compare_assessment(
         "rightQueueSyncModes": right_queue_sync_modes,
         "leftExecutionShapes": left_execution_shapes,
         "rightExecutionShapes": right_execution_shapes,
+        "workloadPathAsymmetry": bool(workload_path_asymmetry),
+        "workloadPathAsymmetryNote": workload_path_asymmetry_note,
         "leftTimingClass": left_class,
         "rightTimingClass": right_class,
         "resourceProbe": resource_probe,

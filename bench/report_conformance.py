@@ -105,20 +105,24 @@ def resolve_contract_path(
 
 
 def load_contract_workload_ids(path: Path) -> set[str]:
+    return set(load_contract_workloads_by_id(path))
+
+
+def load_contract_workloads_by_id(path: Path) -> dict[str, dict[str, Any]]:
     payload = load_json_object(path)
     raw_workloads = payload.get("workloads")
     if not isinstance(raw_workloads, list):
         raise ValueError(f"invalid workload contract: missing workloads[] in {path}")
-    ids: set[str] = set()
+    rows_by_id: dict[str, dict[str, Any]] = {}
     for row in raw_workloads:
         if not isinstance(row, dict):
             continue
         workload_id = row.get("id")
         if isinstance(workload_id, str) and workload_id:
-            ids.add(workload_id)
-    if not ids:
+            rows_by_id[workload_id] = row
+    if not rows_by_id:
         raise ValueError(f"invalid workload contract: no workload IDs in {path}")
-    return ids
+    return rows_by_id
 
 
 def validate_report_conformance(
@@ -187,9 +191,10 @@ def validate_report_conformance(
         )
 
     try:
-        contract_workload_ids = load_contract_workload_ids(resolved_contract_path)
+        contract_workload_rows = load_contract_workloads_by_id(resolved_contract_path)
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
         return False, str(exc)
+    contract_workload_ids = set(contract_workload_rows)
 
     seen_workload_ids: set[str] = set()
     for workload_index, workload in enumerate(workloads):
@@ -203,6 +208,32 @@ def validate_report_conformance(
         seen_workload_ids.add(workload_id)
         if workload_id not in contract_workload_ids:
             return False, f"workload id not present in workload contract: {workload_id}"
+        contract_row = contract_workload_rows[workload_id]
+        workload_path_asymmetry = workload.get("pathAsymmetry")
+        if workload_path_asymmetry is not None and not isinstance(workload_path_asymmetry, bool):
+            return False, f"{workload_id}: pathAsymmetry must be bool when present"
+        workload_path_asymmetry_note = workload.get("pathAsymmetryNote")
+        if workload_path_asymmetry_note is not None and not isinstance(
+            workload_path_asymmetry_note, str
+        ):
+            return False, f"{workload_id}: pathAsymmetryNote must be string when present"
+        contract_path_asymmetry = bool(contract_row.get("pathAsymmetry", False))
+        if (
+            isinstance(workload_path_asymmetry, bool)
+            and workload_path_asymmetry != contract_path_asymmetry
+        ):
+            return False, (
+                f"{workload_id}: pathAsymmetry does not match workload contract "
+                f"({workload_path_asymmetry} vs {contract_path_asymmetry})"
+            )
+        contract_path_asymmetry_note = str(contract_row.get("pathAsymmetryNote", ""))
+        if (
+            isinstance(workload_path_asymmetry_note, str)
+            and workload_path_asymmetry_note != contract_path_asymmetry_note
+        ):
+            return False, (
+                f"{workload_id}: pathAsymmetryNote does not match workload contract"
+            )
 
         comparability = workload.get("comparability")
         if not isinstance(comparability, dict):
@@ -467,6 +498,14 @@ def validate_claim_row_hash_links(
 
         if context.get("deltaPercent") != workload.get("deltaPercent"):
             return False, f"{workload_id}: claimRowHash.context.deltaPercent mismatch"
+        if "workloadPathAsymmetry" in context and context.get("workloadPathAsymmetry") != workload.get(
+            "pathAsymmetry"
+        ):
+            return False, f"{workload_id}: claimRowHash.context.workloadPathAsymmetry mismatch"
+        if "workloadPathAsymmetryNote" in context and context.get(
+            "workloadPathAsymmetryNote"
+        ) != workload.get("pathAsymmetryNote"):
+            return False, f"{workload_id}: claimRowHash.context.workloadPathAsymmetryNote mismatch"
 
         comparability = workload.get("comparability")
         context_comparability = context.get("comparability")

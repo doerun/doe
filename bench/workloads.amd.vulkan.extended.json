@@ -28,7 +28,9 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -57,7 +59,9 @@
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -86,7 +90,9 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -115,7 +121,9 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -144,7 +152,9 @@
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
       "rightUploadSubmitEvery": 1,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -173,7 +183,9 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -202,7 +214,9 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -231,7 +245,9 @@
       "rightCommandRepeat": 1,
       "rightIgnoreFirstOps": 0,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "compute_workgroup_atomic_1024",
@@ -682,7 +698,7 @@
       "name": "p1 resource-table/immediates macro (500)",
       "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
       "domain": "p1-resource-table-macro",
-      "comparabilityNotes": "Apples-to-apples macro contract. Dawn filter mapping is explicitly aligned for strict claim lanes.",
+      "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
       "commandsPath": "examples/p1_resource_table_immediates_commands.json",
       "asyncDiagnosticsMode": "resource_table_immediates",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
@@ -690,7 +706,7 @@
       "api": "vulkan",
       "family": "gfx11",
       "driver": "24.0.0",
-      "comparable": true,
+      "comparable": false,
       "allowLeftNoExecution": false,
       "default": false,
       "leftTimingDivisor": 1.0,

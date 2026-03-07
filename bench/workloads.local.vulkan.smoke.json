@@ -30,7 +30,9 @@
       "rightCommandRepeat": 16,
       "rightIgnoreFirstOps": 1,
       "rightTimingDivisor": 1.0,
-      "rightUploadSubmitEvery": 1
+      "rightUploadSubmitEvery": 1,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
     },
     {
       "id": "compute_workgroup_atomic_1024",
