@@ -56,6 +56,14 @@ pub fn build(b: *std.Build) void {
             @panic("failed to read dropin-symbol-ownership.json");
         build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", json);
     }
+    {
+        const f = std.fs.cwd().openFile("../config/quirk-toggle-registry.json", .{}) catch
+            @panic("config/quirk-toggle-registry.json not found");
+        defer f.close();
+        const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
+            @panic("failed to read quirk-toggle-registry.json");
+        build_options.addOption([]const u8, "quirk_toggle_registry_json", json);
+    }
 
     const build_options_module = build_options.createModule();
 
@@ -295,6 +303,9 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("test_suite.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
         }),
     });
     test_exec.linkLibC();
@@ -329,6 +340,9 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("test_suite_d3d12.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
         }),
     });
     d3d12_test_exec.linkLibC();

@@ -82,10 +82,30 @@ fn activeBehaviorConfig() ParsedDropinBehaviorConfig {
         }
     }
 
+    if (strict_no_fallback) {
+        validateModeStrings(root_obj);
+    }
+
     return .{
         .mode = resolveModeFromLane(root_obj.get("laneModes"), default_mode),
         .strict_no_fallback = strict_no_fallback,
     };
+}
+
+fn validateModeStrings(root_obj: std.json.ObjectMap) void {
+    if (root_obj.get("defaultMode")) |raw| {
+        if (raw == .string and dropin_behavior_policy.parse_behavior_mode(raw.string) == null) {
+            @panic("dropin-abi-behavior.json: unrecognized defaultMode value — update BehaviorMode in dropin_behavior_policy.zig");
+        }
+    }
+    const lane_modes = root_obj.get("laneModes") orelse return;
+    if (lane_modes != .object) return;
+    var iter = lane_modes.object.iterator();
+    while (iter.next()) |kv| {
+        if (kv.value_ptr.* == .string and dropin_behavior_policy.parse_behavior_mode(kv.value_ptr.string) == null) {
+            @panic("dropin-abi-behavior.json: unrecognized laneModes value — update BehaviorMode in dropin_behavior_policy.zig");
+        }
+    }
 }
 
 fn activeSymbolOwnershipConfig() []const dropin_symbol_ownership.SymbolOwnership {

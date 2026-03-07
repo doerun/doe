@@ -1,4 +1,5 @@
 const std = @import("std");
+const build_options = @import("build_options");
 
 pub const ToggleEffect = enum {
     behavioral,
@@ -12,89 +13,84 @@ pub const ToggleEntry = struct {
     description: []const u8,
 };
 
-const KNOWN_TOGGLES = [_]ToggleEntry{
-    // Behavioral: these toggles produce real command transforms in active mode
-    .{
-        .toggle_name = "use_temporary_buffer_in_texture_to_texture_copy",
-        .effect = .behavioral,
-        .description = "Vulkan spec gap: staging buffer for compressed tex-to-tex with non-block-aligned extents (crbug.com/dawn/42)",
-    },
-    .{
-        .toggle_name = "use_temp_buffer_in_small_format_texture_to_texture_copy_from_greater_to_less_mip_level",
-        .effect = .behavioral,
-        .description = "Intel Gen9/Gen11 D3D12 CopyTextureRegion bug for small-format mip copies (crbug.com/1161355)",
-    },
-    .{
-        .toggle_name = "d3d12_use_temp_buffer_in_depth_stencil_texture_and_buffer_copy_with_non_zero_buffer_offset",
-        .effect = .behavioral,
-        .description = "D3D12 depth-stencil copy restriction without programmable MSAA (crbug.com/dawn/727)",
-    },
-    .{
-        .toggle_name = "d3d12_use_temp_buffer_in_texture_to_texture_copy_between_different_dimensions",
-        .effect = .behavioral,
-        .description = "D3D12 cross-dimension texture copy not natively supported (crbug.com/dawn/1216)",
-    },
-    .{
-        .toggle_name = "MetalRenderR8RG8UnormSmallMipToTempTexture",
-        .effect = .behavioral,
-        .description = "Intel Metal: render to temp texture for R8/RG8 unorm small mips (level >= 2) (crbug.com/dawn/1071)",
-    },
-    // Informational: these toggles are trace-only (identity transform)
-    .{
-        .toggle_name = "VulkanCooperativeMatrixStrideIsMatrixElements",
-        .effect = .informational,
-        .description = "treat cooperative matrix stride as matrix elements instead of pointee elements (Mali workaround)",
-    },
-    .{
-        .toggle_name = "disable_resource_suballocation",
-        .effect = .informational,
-        .description = "disable sub-allocation for buffers and textures",
-    },
-    .{
-        .toggle_name = "use_d3d12_render_pass",
-        .effect = .informational,
-        .description = "use D3D12 render pass API when available",
-    },
-    .{
-        .toggle_name = "use_dxc",
-        .effect = .informational,
-        .description = "use DXC compiler instead of FXC for HLSL",
-    },
-    .{
-        .toggle_name = "disable_robustness",
-        .effect = .informational,
-        .description = "disable robustness transforms in shaders",
-    },
-    .{
-        .toggle_name = "use_vulkan_zero_initialize_workgroup_memory_extension",
-        .effect = .informational,
-        .description = "use VK_KHR_zero_initialize_workgroup_memory when available",
-    },
-    .{
-        .toggle_name = "MetalReplaceWorkgroupBoolWithU32",
-        .effect = .informational,
-        .description = "replace workgroup bool with u32 in MSL for Mac AMD/Intel",
+const ToggleRegistryJson = struct {
+    schemaVersion: u32,
+    toggles: []const struct {
+        toggle_name: []const u8,
+        effect: []const u8,
+        description: []const u8,
     },
 };
 
+fn parseEffect(raw: []const u8) ToggleEffect {
+    if (std.ascii.eqlIgnoreCase(raw, "behavioral")) return .behavioral;
+    if (std.ascii.eqlIgnoreCase(raw, "informational")) return .informational;
+    return .unhandled;
+}
+
+var g_lock: std.Thread.Mutex = .{};
+var g_ready = std.atomic.Value(u8).init(0);
+var g_registry: []const ToggleEntry = &.{};
+
+fn ensureInit() void {
+    if (g_ready.load(.acquire) != 0) return;
+
+    g_lock.lock();
+    defer g_lock.unlock();
+
+    if (g_ready.load(.acquire) != 0) return;
+
+    const parsed = std.json.parseFromSlice(
+        ToggleRegistryJson,
+        std.heap.page_allocator,
+        build_options.quirk_toggle_registry_json,
+        .{ .ignore_unknown_fields = false },
+    ) catch {
+        g_ready.store(1, .release);
+        return;
+    };
+    defer parsed.deinit();
+
+    if (parsed.value.schemaVersion != 1) {
+        g_ready.store(1, .release);
+        return;
+    }
+
+    const entries = std.heap.page_allocator.alloc(ToggleEntry, parsed.value.toggles.len) catch {
+        g_ready.store(1, .release);
+        return;
+    };
+
+    for (parsed.value.toggles, 0..) |t, i| {
+        entries[i] = .{
+            .toggle_name = std.heap.page_allocator.dupe(u8, t.toggle_name) catch t.toggle_name,
+            .effect = parseEffect(t.effect),
+            .description = std.heap.page_allocator.dupe(u8, t.description) catch t.description,
+        };
+    }
+
+    g_registry = entries;
+    g_ready.store(1, .release);
+}
+
 pub fn lookup(toggle_name: []const u8) ?ToggleEntry {
-    for (&KNOWN_TOGGLES) |*entry| {
+    ensureInit();
+    for (g_registry) |entry| {
         if (std.ascii.eqlIgnoreCase(toggle_name, entry.toggle_name)) {
-            return entry.*;
+            return entry;
         }
     }
     return null;
 }
 
 pub fn effect(toggle_name: []const u8) ToggleEffect {
-    if (lookup(toggle_name)) |entry| {
-        return entry.effect;
-    }
+    if (lookup(toggle_name)) |entry| return entry.effect;
     return .unhandled;
 }
 
 pub fn knownCount() usize {
-    return KNOWN_TOGGLES.len;
+    ensureInit();
+    return g_registry.len;
 }
 
 test "lookup finds known toggles case-insensitively" {

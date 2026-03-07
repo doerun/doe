@@ -35,6 +35,12 @@ lean/artifacts/
 # Editor/temp artifacts
 *.swp
 *.tmp
+nohup.out
+*.log
+
+# Compiled Zig artifacts (not part of source)
+zig/*.a
+zig/.tmp_*.zig
 
 # Chromium lane local artifacts (large and machine-specific)
 nursery/chromium_webgpu_lane/

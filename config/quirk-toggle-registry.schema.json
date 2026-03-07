@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn quirk toggle registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "toggles"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "toggles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["toggle_name", "effect", "description"],
+        "properties": {
+          "toggle_name": { "type": "string", "minLength": 1 },
+          "effect": { "type": "string", "enum": ["behavioral", "informational"] },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}
