@@ -59,7 +59,6 @@ const ENCODE_COPY_COST_NS: u64 = 7_000;
 const ENCODE_RENDER_COST_NS: u64 = 10_000;
 const PIPELINE_CACHE_LOOKUP_COST_NS: u64 = 4_000;
 const INGEST_WGSL_COST_NS: u64 = 16_000;
-const WGSL_TO_SPIRV_COST_NS: u64 = 21_000;
 const SPIRV_OPT_COST_NS: u64 = 18_500;
 const MANIFEST_EMIT_COST_NS: u64 = 5_200;
 const STAGING_RESERVATION_BASE_COST_NS: u64 = 3_100;
@@ -248,9 +247,9 @@ pub fn ingest_wgsl() vulkan_errors.VulkanError!void {
 }
 
 pub fn run_wgsl_to_spirv() vulkan_errors.VulkanError!void {
-    ensure_device();
-    state.wgsl_to_spirv_runs +|= 1;
-    charge(WGSL_TO_SPIRV_COST_NS);
+    // Native WGSL→SPIR-V requires the shared IR layer, which is not yet built.
+    // This is an explicit unsupported op, not a simulation.
+    return error.UnsupportedFeature;
 }
 
 pub fn run_spirv_opt() vulkan_errors.VulkanError!void {

@@ -27,6 +27,7 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - `zig/src/backend/backend_registry.zig` routes `doe_d3d12` directly to `zig/src/backend/d3d12/mod.zig`.
   - active D3D12 execution is instance-owned (`ZigD3D12Backend` + `WebGPUBackend`) with shared common-layer error/capability contracts.
   - D3D12 shader-artifact manifest failures are now handled in-place (typed status update) without throwing away command timing/dispatch metadata.
+  - live `.wgsl` shader compilation now fails explicitly as unsupported until a native DXIL backend exists; runtime support remains precompiled `.cso`/`.dxbc` artifacts plus explicit `.hlsl` source compilation.
 - Vulkan native backend routing is now active on `doe_vulkan`:
   - `zig/src/backend/backend_registry.zig` routes `doe_vulkan` to `zig/src/backend/vulkan/mod.zig` (no Dawn delegate fallback in this lane).
   - `kernel_dispatch` binds real kernel SPIR-V via native Vulkan runtime (`load_kernel_spirv` + pipeline bind), removing noop-kernel execution on that path.
@@ -249,7 +250,7 @@ Legend: ● implemented ◐ partial ○ missing
 
 | Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
 |---|---|---|---|---|
-| Shader translation (WGSL) | ● WGSL→MSL (AST-based) | ○ expects .metal | ○ SPIR-V load only | ○ CSO/DXBC load only |
+| Shader translation (WGSL) | ● WGSL→MSL (AST-based) | ○ expects .metal | ◐ WGSL→SPIR-V via `emit_spirv`/DXC; `.spv` load supported | ◐ explicit `.hlsl`→DXC bytecode; `.cso`/`.dxbc` load supported; live `.wgsl` unsupported pending native DXIL |
 | Compute pipeline create | ● | ● | ◐ Linux only | ● |
 | Compute dispatch | ● | ● | ◐ Linux only | ● |
 | dispatchWorkgroupsIndirect | ● | ○ | ○ | ○ |
@@ -283,21 +284,21 @@ Legend: ● implemented ◐ partial ○ missing
 
 - **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` for the earlier Node headless path and Doppler inference. 729 + 155 lines.
 - **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by Doppler. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
-- **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Facade layer + `vulkan_runtime_state.zig` cost simulation for telemetry.
-- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Expects pre-compiled CSO/DXBC bytecode.
+- **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Live WGSL kernels compile to SPIR-V through `doe_wgsl/emit_spirv.zig`; prebuilt `.spv` artifacts still load directly.
+- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Accepts pre-compiled CSO/DXBC and can compile WGSL/HLSL to bytecode through DXC.
 
 ### WGSL compiler (`src/doe_wgsl/`)
 
 AST-based WGSL compiler replacing the old regex-based line translator. Architecture: lexer → parser → AST → backend emitter.
 
 - **MSL emitter**: Production. Covers Doppler's full compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
-- **SPIR-V emitter**: Not started. Required for Vulkan backend.
-- **HLSL emitter**: Not started. Required for D3D12 backend.
+- **SPIR-V emitter**: Production path for parser-supported compute kernels, emitting binary SPIR-V through the `emit_spirv.zig` toolchain wrapper.
+- **HLSL emitter**: Production path for parser-supported compute kernels, feeding DXC bytecode generation for D3D12 and Vulkan.
 
 ### Key gaps for doe-runtime promotion
 
 1. Vulkan + D3D12 lack textures, samplers, render pipeline, and render pass entirely.
-2. No WGSL→SPIR-V or WGSL→HLSL shader translation exists. MSL emitter is complete.
+2. WGSL live translation is now compute-focused and parser-limited on Vulkan/D3D12; broader WGSL front-end coverage and non-compute lowering still remain open.
 3. Surface/swapchain is missing on all backends.
 
 ## Developer flow state (engineering, governance, and release pipeline)

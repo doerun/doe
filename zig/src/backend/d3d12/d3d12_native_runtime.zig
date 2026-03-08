@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const common_errors = @import("../common/errors.zig");
@@ -7,6 +8,10 @@ const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
 const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
+const GENERATED_SHADER_DIR: []const u8 = "bench/out/shader-artifacts/generated";
+const MAX_DXC_OUTPUT_BYTES: usize = 64 * 1024;
+const DXC_PROFILE: []const u8 = "cs_6_0";
+const DXC_ENTRYPOINT: []const u8 = "main";
 const HEAP_TYPE_DEFAULT: c_int = 1;
 const HEAP_TYPE_UPLOAD: c_int = 2;
 
@@ -176,6 +181,20 @@ pub const NativeD3D12Runtime = struct {
             return std.fs.cwd().readFileAlloc(alloc, dxbc_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
         }
 
+        const source_path = self.resolve_kernel_source_path(alloc, kernel_name) catch return error.ShaderCompileFailed;
+        defer alloc.free(source_path);
+
+        if (std.mem.endsWith(u8, source_path, ".wgsl")) {
+            return error.UnsupportedFeature;
+        }
+
+        const source = std.fs.cwd().readFileAlloc(alloc, source_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+        defer alloc.free(source);
+
+        if (std.mem.endsWith(u8, source_path, ".hlsl")) {
+            return try self.compile_hlsl_source(alloc, source);
+        }
+
         return error.ShaderCompileFailed;
     }
 
@@ -223,6 +242,36 @@ pub const NativeD3D12Runtime = struct {
         self.queue = d3d12_bridge_device_create_command_queue(self.device) orelse return error.InvalidState;
         self.fence = d3d12_bridge_device_create_fence(self.device) orelse return error.InvalidState;
         self.has_device = true;
+    }
+
+    fn resolve_kernel_source_path(self: *const NativeD3D12Runtime, alloc: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
+        const direct = try alloc.dupe(u8, kernel_name);
+        if (file_exists(direct)) return direct;
+        alloc.free(direct);
+
+        const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
+        const rooted = try std.fmt.allocPrint(alloc, "{s}/{s}", .{ root, kernel_name });
+        if (file_exists(rooted)) return rooted;
+        alloc.free(rooted);
+
+        if (!std.mem.endsWith(u8, kernel_name, ".wgsl")) {
+            const wgsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.wgsl", .{ root, kernel_name });
+            if (file_exists(wgsl_path)) return wgsl_path;
+            alloc.free(wgsl_path);
+        }
+
+        if (!std.mem.endsWith(u8, kernel_name, ".hlsl")) {
+            const hlsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.hlsl", .{ root, kernel_name });
+            if (file_exists(hlsl_path)) return hlsl_path;
+            alloc.free(hlsl_path);
+        }
+
+        return error.ShaderCompileFailed;
+    }
+
+    fn compile_hlsl_source(self: *const NativeD3D12Runtime, alloc: std.mem.Allocator, hlsl_source: []const u8) ![]u8 {
+        _ = self;
+        return try compile_hlsl_to_bytecode(alloc, hlsl_source);
     }
 
     fn build_compute_pipeline(self: *NativeD3D12Runtime, bytecode: []const u8, shader_hash: u64) !void {
@@ -293,6 +342,56 @@ fn strip_extension(name: []const u8) []const u8 {
 fn file_exists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
     return true;
+}
+
+fn compile_hlsl_to_bytecode(alloc: std.mem.Allocator, hlsl_source: []const u8) ![]u8 {
+    std.fs.cwd().makePath(GENERATED_SHADER_DIR) catch return error.ShaderCompileFailed;
+
+    const source_hash = std.hash.Wyhash.hash(0, hlsl_source);
+    const stem = try std.fmt.allocPrint(alloc, "{s}/d3d12_{x}", .{ GENERATED_SHADER_DIR, source_hash });
+    defer alloc.free(stem);
+    const hlsl_path = try std.fmt.allocPrint(alloc, "{s}.generated.hlsl", .{stem});
+    defer alloc.free(hlsl_path);
+    const cso_path = try std.fmt.allocPrint(alloc, "{s}.generated.cso", .{stem});
+    defer alloc.free(cso_path);
+
+    if (!file_exists(cso_path)) {
+        const file = std.fs.cwd().createFile(hlsl_path, .{ .truncate = true }) catch return error.ShaderCompileFailed;
+        defer file.close();
+        file.writeAll(hlsl_source) catch return error.ShaderCompileFailed;
+        try run_dxc(alloc, hlsl_path, cso_path, DXC_ENTRYPOINT);
+    }
+
+    return std.fs.cwd().readFileAlloc(alloc, cso_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+}
+
+fn run_dxc(alloc: std.mem.Allocator, input_path: []const u8, output_path: []const u8, entrypoint: []const u8) !void {
+    const exe = if (builtin.os.tag == .windows) "dxc.exe" else "dxc";
+    const argv = [_][]const u8{
+        exe,
+        "-T",
+        DXC_PROFILE,
+        "-E",
+        entrypoint,
+        "-Fo",
+        output_path,
+        input_path,
+    };
+    const result = std.process.Child.run(.{
+        .allocator = alloc,
+        .argv = &argv,
+        .max_output_bytes = MAX_DXC_OUTPUT_BYTES,
+    }) catch |err| return switch (err) {
+        error.FileNotFound => error.ShaderToolchainUnavailable,
+        else => error.ShaderCompileFailed,
+    };
+    defer alloc.free(result.stdout);
+    defer alloc.free(result.stderr);
+
+    switch (result.term) {
+        .Exited => |code| if (code != 0) return error.ShaderCompileFailed,
+        else => return error.ShaderCompileFailed,
+    }
 }
 
 const D3D12Pool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(PoolEntry));

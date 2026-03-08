@@ -39,11 +39,10 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
         wgsl_chain.code.length;
     const wgsl = wgsl_data[0..wgsl_len];
 
-    // Translate WGSL → MSL. Only Metal is supported; SPIR-V/HLSL emitters are not yet implemented.
+    // Translate WGSL → MSL for Metal shader module creation.
     var msl_buf: [wgsl_compiler.MAX_OUTPUT]u8 = undefined;
     const msl_len = wgsl_compiler.translateToMsl(alloc, wgsl, &msl_buf) catch |err| {
-        std.log.err("doe: createShaderModule failed: WGSL→MSL translation error ({s}). " ++
-            "Only Metal backend is supported. WGSL→SPIR-V (Vulkan) and WGSL→HLSL (D3D12) are not yet implemented.", .{@errorName(err)});
+        std.log.err("doe: createShaderModule failed: WGSL→MSL translation error ({s})", .{@errorName(err)});
         return null;
     };
 

@@ -470,22 +470,16 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn load_kernel_spirv(self: *const NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
         if (kernel_name.len == 0) return error.InvalidArgument;
-        const path = try self.resolve_kernel_spirv_path(allocator, kernel_name);
+        const path = self.resolve_kernel_spirv_path(allocator, kernel_name) catch |err| switch (err) {
+            // Native WGSL→SPIR-V translation requires the shared IR layer, not yet built.
+            error.UnsupportedFeature => return error.UnsupportedFeature,
+            else => return err,
+        };
         defer allocator.free(path);
 
         const bytes = std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
         defer allocator.free(bytes);
-        if (bytes.len == 0 or (bytes.len % 4) != 0) return error.ShaderCompileFailed;
-
-        const words = try allocator.alloc(u32, bytes.len / 4);
-        errdefer allocator.free(words);
-        for (words, 0..) |*word, i| {
-            const start = i * 4;
-            const chunk: *const [4]u8 = @ptrCast(bytes[start .. start + 4].ptr);
-            word.* = std.mem.readInt(u32, chunk, .little);
-        }
-        if (words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
-        return words;
+        return try words_from_spirv_bytes(allocator, bytes);
     }
 
     pub fn set_compute_shader_spirv(self: *NativeVulkanRuntime, words: []const u32) !void {
@@ -1370,6 +1364,20 @@ fn queue_selection_score(selection: QueueFamilySelection) u64 {
 fn file_exists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
     return true;
+}
+
+fn words_from_spirv_bytes(allocator: std.mem.Allocator, bytes: []const u8) ![]u32 {
+    if (bytes.len == 0 or (bytes.len % 4) != 0) return error.ShaderCompileFailed;
+
+    const words = try allocator.alloc(u32, bytes.len / 4);
+    errdefer allocator.free(words);
+    for (words, 0..) |*word, i| {
+        const start = i * 4;
+        const chunk: *const [4]u8 = @ptrCast(bytes[start .. start + 4].ptr);
+        word.* = std.mem.readInt(u32, chunk, .little);
+    }
+    if (words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
+    return words;
 }
 
 pub fn upload_uses_fast_path(
