@@ -10,8 +10,11 @@ pub const parser = @import("parser.zig");
 pub const sema = @import("sema.zig");
 pub const ir = @import("ir.zig");
 pub const ir_builder = @import("ir_builder.zig");
+pub const ir_validate = @import("ir_validate.zig");
 pub const emit_msl = @import("emit_msl.zig");
 pub const emit_hlsl = @import("emit_hlsl.zig");
+pub const emit_spirv = @import("emit_spirv.zig");
+pub const emit_dxil = @import("emit_dxil.zig");
 
 const std = @import("std");
 
@@ -26,6 +29,8 @@ pub const TranslateError = error{
 
 pub const MAX_OUTPUT: usize = emit_msl.MAX_OUTPUT;
 pub const MAX_HLSL_OUTPUT: usize = emit_hlsl.MAX_OUTPUT;
+pub const MAX_SPIRV_OUTPUT: usize = emit_spirv.MAX_OUTPUT;
+pub const MAX_DXIL_OUTPUT: usize = emit_dxil.MAX_OUTPUT;
 pub const MAX_BINDINGS: usize = 16;
 
 pub const BindingMeta = struct {
@@ -47,9 +52,12 @@ pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateErro
     };
     defer semantic.deinit();
 
-    return ir_builder.build(allocator, &semantic) catch |err| {
+    var module = ir_builder.build(allocator, &tree, &semantic) catch |err| {
         return mapIrBuildError(err);
     };
+    errdefer module.deinit();
+    ir_validate.validate(&module) catch return TranslateError.InvalidWgsl;
+    return module;
 }
 
 pub fn extractBindings(allocator: std.mem.Allocator, wgsl: []const u8, out: []BindingMeta) TranslateError!usize {
@@ -70,45 +78,51 @@ pub fn extractBindings(allocator: std.mem.Allocator, wgsl: []const u8, out: []Bi
 }
 
 pub fn translateToMsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
-    var tree = parser.parseSource(allocator, wgsl) catch |err| {
-        return switch (err) {
-            error.OutOfMemory => TranslateError.OutOfMemory,
-            error.UnexpectedToken => TranslateError.UnexpectedToken,
-        };
-    };
-    defer tree.deinit();
-
-    var semantic = sema.analyze(allocator, &tree) catch |err| return mapSemanticError(err);
-    defer semantic.deinit();
-    var module_ir = ir_builder.build(allocator, &semantic) catch |err| return mapIrBuildError(err);
+    var module_ir = try analyzeToIr(allocator, wgsl);
     defer module_ir.deinit();
 
-    return emit_msl.emit(&tree, out) catch |err| {
+    return emit_msl.emit(&module_ir, out) catch |err| {
         return switch (err) {
             error.OutputTooLarge => TranslateError.OutputTooLarge,
-            error.InvalidAst => TranslateError.InvalidWgsl,
+            error.InvalidIr => TranslateError.InvalidWgsl,
         };
     };
 }
 
 pub fn translateToHlsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
-    var tree = parser.parseSource(allocator, wgsl) catch |err| {
-        return switch (err) {
-            error.OutOfMemory => TranslateError.OutOfMemory,
-            error.UnexpectedToken => TranslateError.UnexpectedToken,
-        };
-    };
-    defer tree.deinit();
-
-    var semantic = sema.analyze(allocator, &tree) catch |err| return mapSemanticError(err);
-    defer semantic.deinit();
-    var module_ir = ir_builder.build(allocator, &semantic) catch |err| return mapIrBuildError(err);
+    var module_ir = try analyzeToIr(allocator, wgsl);
     defer module_ir.deinit();
 
-    return emit_hlsl.emit(&tree, out) catch |err| {
+    return emit_hlsl.emit(&module_ir, out) catch |err| {
         return switch (err) {
             error.OutputTooLarge => TranslateError.OutputTooLarge,
-            error.InvalidAst => TranslateError.InvalidWgsl,
+            error.InvalidIr => TranslateError.InvalidWgsl,
+        };
+    };
+}
+
+pub fn translateToSpirv(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
+    var module_ir = try analyzeToIr(allocator, wgsl);
+    defer module_ir.deinit();
+
+    return emit_spirv.emit(&module_ir, out) catch |err| {
+        return switch (err) {
+            error.OutputTooLarge => TranslateError.OutputTooLarge,
+            error.UnsupportedConstruct, error.InvalidIr => TranslateError.UnsupportedWgsl,
+            error.OutOfMemory => TranslateError.OutOfMemory,
+        };
+    };
+}
+
+pub fn translateToDxil(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
+    var module_ir = try analyzeToIr(allocator, wgsl);
+    defer module_ir.deinit();
+
+    return emit_dxil.emit(&module_ir, out) catch |err| {
+        return switch (err) {
+            error.OutputTooLarge => TranslateError.OutputTooLarge,
+            error.UnsupportedConstruct, error.InvalidIr => TranslateError.UnsupportedWgsl,
+            error.OutOfMemory => TranslateError.OutOfMemory,
         };
     };
 }
@@ -146,6 +160,9 @@ test {
     _ = sema;
     _ = ir;
     _ = ir_builder;
+    _ = ir_validate;
     _ = emit_msl;
     _ = emit_hlsl;
+    _ = emit_spirv;
+    _ = emit_dxil;
 }

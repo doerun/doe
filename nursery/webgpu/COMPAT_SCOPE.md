@@ -30,3 +30,9 @@ This note narrows optional parity work to concrete integration value.
 Decision rule:
 
 - Add parity features only after a concrete integration requirement is blocked by a missing capability and cannot be addressed by the existing bridge/CLI contract.
+
+Layering note:
+
+- this file describes the current package surface and its present non-goals
+- proposed future `core` vs `full` support contracts are defined separately in
+  `SUPPORT_CONTRACTS.md`

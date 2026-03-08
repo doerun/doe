@@ -1,4 +1,5 @@
 const std = @import("std");
+const model = @import("../../model.zig");
 const backend_policy = @import("../backend_policy.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 
@@ -31,9 +32,18 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 
-    pub fn set_compute_shader_spirv(self: *NativeVulkanRuntime, words: []const u32) !void {
+    pub fn set_compute_shader_spirv(
+        self: *NativeVulkanRuntime,
+        words: []const u32,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) !void {
         _ = self;
         _ = words;
+        _ = entry_point;
+        _ = bindings;
+        _ = initialize_buffers_on_create;
         return error.UnsupportedFeature;
     }
 
@@ -53,6 +63,24 @@ pub const NativeVulkanRuntime = struct {
     pub fn barrier(self: *NativeVulkanRuntime, queue_wait_mode: webgpu.QueueWaitMode) !u64 {
         _ = self;
         _ = queue_wait_mode;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn texture_write(self: *NativeVulkanRuntime, cmd: model.TextureWriteCommand) !void {
+        _ = self;
+        _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn texture_query(self: *NativeVulkanRuntime, cmd: model.TextureQueryCommand) !void {
+        _ = self;
+        _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn texture_destroy(self: *NativeVulkanRuntime, cmd: model.TextureDestroyCommand) !void {
+        _ = self;
+        _ = cmd;
         return error.UnsupportedFeature;
     }
 

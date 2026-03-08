@@ -27,6 +27,9 @@
     "README.md",
     "API_CONTRACT.md",
     "COMPAT_SCOPE.md",
+    "SUPPORT_CONTRACTS.md",
+    "LAYERING_PLAN.md",
+    "ZIG_SOURCE_INVENTORY.md",
     "headless-webgpu-comparison.md",
     "doe-build-metadata.schema.json",
     "prebuild-metadata.schema.json"

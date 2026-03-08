@@ -297,6 +297,10 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the sample runtime dispatcher");
     run_step.dependOn(&run_cmd.step);
 
+    const import_fence_check = b.addSystemCommand(&.{ "python3", "tools/check_core_import_fence.py" });
+    const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
+    import_fence_step.dependOn(&import_fence_check.step);
+
     const test_step = b.step("test", "Run Zig unit tests");
     const test_exec = b.addTest(.{
         .root_module = b.createModule(.{
@@ -332,6 +336,7 @@ pub fn build(b: *std.Build) void {
         }
     }
     const run_tests = b.addRunArtifact(test_exec);
+    test_step.dependOn(&import_fence_check.step);
     test_step.dependOn(&run_tests.step);
 
     const d3d12_test_step = b.step("test-d3d12", "Run D3D12-focused Zig tests (no Metal test suite)");
@@ -361,5 +366,6 @@ pub fn build(b: *std.Build) void {
         }
     }
     const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
+    d3d12_test_step.dependOn(&import_fence_check.step);
     d3d12_test_step.dependOn(&run_d3d12_tests.step);
 }

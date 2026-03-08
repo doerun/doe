@@ -1,29 +1,103 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "codes": [
     {
       "code": "wgsl_parse_failed",
-      "stage": "wgsl_ingest",
+      "stage": "wgsl_parse",
       "severity": "error",
-      "description": "WGSL source failed deterministic parse"
+      "description": "WGSL source failed deterministic parse",
+      "backendIds": ["doe_metal", "doe_vulkan", "doe_d3d12"]
+    },
+    {
+      "code": "wgsl_sema_failed",
+      "stage": "sema",
+      "severity": "error",
+      "description": "WGSL semantic analysis failed before IR lowering",
+      "backendIds": ["doe_metal", "doe_vulkan", "doe_d3d12"]
+    },
+    {
+      "code": "ir_build_failed",
+      "stage": "ir_build",
+      "severity": "error",
+      "description": "Shared shader IR construction failed",
+      "backendIds": ["doe_metal", "doe_vulkan", "doe_d3d12"]
+    },
+    {
+      "code": "ir_validate_failed",
+      "stage": "ir_validate",
+      "severity": "error",
+      "description": "Shared shader IR validation failed",
+      "backendIds": ["doe_metal", "doe_vulkan", "doe_d3d12"]
     },
     {
       "code": "wgsl_to_msl_failed",
       "stage": "wgsl_to_msl",
       "severity": "error",
-      "description": "WGSL to MSL transformation failed"
+      "description": "Legacy AST-direct WGSL to MSL transformation failed",
+      "backendIds": ["doe_metal"]
+    },
+    {
+      "code": "ir_to_msl_failed",
+      "stage": "ir_to_msl",
+      "severity": "error",
+      "description": "IR to MSL emission failed",
+      "backendIds": ["doe_metal"]
     },
     {
       "code": "msl_compile_failed",
       "stage": "msl_compile",
       "severity": "error",
-      "description": "MSL compilation to metallib failed"
+      "description": "MSL compilation failed before metallib packaging",
+      "backendIds": ["doe_metal"]
+    },
+    {
+      "code": "metallib_link_failed",
+      "stage": "metallib_link",
+      "severity": "error",
+      "description": "Metal library packaging failed",
+      "backendIds": ["doe_metal"]
+    },
+    {
+      "code": "ir_to_spirv_failed",
+      "stage": "ir_to_spirv",
+      "severity": "error",
+      "description": "IR to SPIR-V emission failed",
+      "backendIds": ["doe_vulkan"]
+    },
+    {
+      "code": "spirv_validate_failed",
+      "stage": "spirv_validate",
+      "severity": "error",
+      "description": "SPIR-V validation failed",
+      "backendIds": ["doe_vulkan"]
+    },
+    {
+      "code": "ir_to_dxil_failed",
+      "stage": "ir_to_dxil",
+      "severity": "error",
+      "description": "IR to DXIL emission failed",
+      "backendIds": ["doe_d3d12"]
+    },
+    {
+      "code": "native_dxil_backend_unavailable",
+      "stage": "ir_to_dxil",
+      "severity": "error",
+      "description": "Native DXIL backend is not available on this lane",
+      "backendIds": ["doe_d3d12"]
+    },
+    {
+      "code": "dxil_validate_failed",
+      "stage": "dxil_validate",
+      "severity": "error",
+      "description": "DXIL validation failed",
+      "backendIds": ["doe_d3d12"]
     },
     {
       "code": "shader_manifest_hash_mismatch",
       "stage": "manifest",
       "severity": "error",
-      "description": "Manifest hash chain mismatch"
+      "description": "Manifest hash chain mismatch",
+      "backendIds": ["doe_metal", "doe_vulkan", "doe_d3d12"]
     }
   ]
 }

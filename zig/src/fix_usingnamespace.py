@@ -16,7 +16,7 @@ surface_funcs = [
     "unconfigureSurface", "releaseSurface"
 ]
 
-sync_decl = "\n".join([f'    pub const {f} = @import("wgpu_ffi_sync.zig").{f};' for f in sync_funcs])
+sync_decl = "\n".join([f'    pub const {f} = @import("core/wgpu_ffi_sync.zig").{f};' for f in sync_funcs])
 surface_decl = "\n".join([f'    pub const {f} = @import("wgpu_ffi_surface.zig").{f};' for f in surface_funcs])
 
 content = content.replace('    pub usingnamespace @import("wgpu_ffi_sync.zig");', sync_decl)
@@ -24,4 +24,3 @@ content = content.replace('    pub usingnamespace @import("wgpu_ffi_surface.zig"
 
 with open("webgpu_ffi.zig", "w") as f:
     f.write(content)
-

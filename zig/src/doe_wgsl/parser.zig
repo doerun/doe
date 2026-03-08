@@ -568,13 +568,12 @@ pub const Parser = struct {
             }
         }
 
-        // Store else in extra.
-        _ = try self.tree.addExtra(else_node);
+        const extra_start = try self.tree.addExtraSlice(&.{ then_block, else_node });
 
         return self.tree.addNode(.{
             .tag = .if_stmt,
             .main_token = main_token,
-            .data = .{ .lhs = cond, .rhs = then_block },
+            .data = .{ .lhs = cond, .rhs = extra_start },
         });
     }
 
@@ -727,10 +726,13 @@ pub const Parser = struct {
 
     fn parseSwitchCase(self: *Parser) ParseError!u32 {
         const main_token = self.token_idx;
+        var selectors = std.ArrayListUnmanaged(u32){};
+        defer selectors.deinit(self.allocator);
         if (self.peekTag() == .kw_case) {
             self.advance(); // consume `case`
-            // Parse case selector(s): expr, expr, ...
-            while (self.peekTag() != .@":" and self.peekTag() != .@"{" and self.peekTag() != .eof) {
+            while (true) {
+                try selectors.append(self.allocator, try self.parseExpr());
+                if (self.peekTag() != .@",") break;
                 self.advance();
             }
         } else if (self.peekTag() == .kw_default) {
@@ -738,10 +740,12 @@ pub const Parser = struct {
         }
         if (self.peekTag() == .@":") self.advance();
         const body = try self.parseBlock();
+        const selectors_start = try self.tree.addExtraSlice(selectors.items);
+        const selectors_len: u32 = @intCast(selectors.items.len);
         return self.tree.addNode(.{
             .tag = .switch_case,
             .main_token = main_token,
-            .data = .{ .lhs = body },
+            .data = .{ .lhs = body, .rhs = selectors_start | (selectors_len << 16) },
         });
     }
 
@@ -1239,6 +1243,11 @@ pub const Parser = struct {
 
             // User-defined type.
             .ident => {
+                if (self.token_idx + 1 < self.tree.tokens.items.len and
+                    self.tree.tokens.items[self.token_idx + 1].tag == .@"<")
+                {
+                    return self.parseParameterizedType();
+                }
                 const tok = self.token_idx;
                 self.advance();
                 return self.tree.addNode(.{

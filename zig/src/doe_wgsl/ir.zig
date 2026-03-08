@@ -87,6 +87,10 @@ pub const ScalarType = enum {
     f16,
 };
 
+pub const TextureFormat = enum {
+    rgba8unorm,
+};
+
 pub const Type = union(enum) {
     scalar: ScalarType,
     vector: struct {
@@ -106,6 +110,10 @@ pub const Type = union(enum) {
     struct_: StructId,
     sampler: void,
     texture_2d: TypeId,
+    storage_texture_2d: struct {
+        format: TextureFormat,
+        access: AccessMode,
+    },
     ref: struct {
         elem: TypeId,
         addr_space: AddressSpace,
@@ -171,6 +179,10 @@ fn type_eql(lhs: Type, rhs: Type) bool {
         },
         .texture_2d => |lhs_sample| switch (rhs) {
             .texture_2d => |rhs_sample| lhs_sample == rhs_sample,
+            else => false,
+        },
+        .storage_texture_2d => |lhs_storage| switch (rhs) {
+            .storage_texture_2d => |rhs_storage| lhs_storage.format == rhs_storage.format and lhs_storage.access == rhs_storage.access,
             else => false,
         },
         .ref => |lhs_ref| switch (rhs) {

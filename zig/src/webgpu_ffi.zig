@@ -11,7 +11,7 @@ const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
 const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const commands = @import("wgpu_commands.zig");
-const compute_commands = @import("wgpu_commands_compute.zig");
+const compute_commands = @import("core/wgpu_commands_compute.zig");
 const env_flags = @import("env_flags.zig");
 
 pub const NativeExecutionStatus = types.NativeExecutionStatus;
@@ -468,20 +468,20 @@ pub const WebGPUBackend = struct {
         return null;
     }
 
-    pub const syncAfterSubmit = @import("wgpu_ffi_sync.zig").syncAfterSubmit;
-    pub const submitEmpty = @import("wgpu_ffi_sync.zig").submitEmpty;
-    pub const submitCommandBuffers = @import("wgpu_ffi_sync.zig").submitCommandBuffers;
-    pub const submitInternal = @import("wgpu_ffi_sync.zig").submitInternal;
-    pub const flushQueue = @import("wgpu_ffi_sync.zig").flushQueue;
-    pub const waitForQueue = @import("wgpu_ffi_sync.zig").waitForQueue;
-    pub const waitForQueueOnce = @import("wgpu_ffi_sync.zig").waitForQueueOnce;
-    pub const shouldRetryQueueWait = @import("wgpu_ffi_sync.zig").shouldRetryQueueWait;
-    pub const waitForQueueProcessEvents = @import("wgpu_ffi_sync.zig").waitForQueueProcessEvents;
-    pub const waitForQueueWaitAny = @import("wgpu_ffi_sync.zig").waitForQueueWaitAny;
-    pub const readTimestampBuffer = @import("wgpu_ffi_sync.zig").readTimestampBuffer;
-    pub const readTimestampBufferOnce = @import("wgpu_ffi_sync.zig").readTimestampBufferOnce;
-    pub const shouldRetryTimestampMap = @import("wgpu_ffi_sync.zig").shouldRetryTimestampMap;
-    pub const processEventsUntil = @import("wgpu_ffi_sync.zig").processEventsUntil;
+    pub const syncAfterSubmit = @import("core/wgpu_ffi_sync.zig").syncAfterSubmit;
+    pub const submitEmpty = @import("core/wgpu_ffi_sync.zig").submitEmpty;
+    pub const submitCommandBuffers = @import("core/wgpu_ffi_sync.zig").submitCommandBuffers;
+    pub const submitInternal = @import("core/wgpu_ffi_sync.zig").submitInternal;
+    pub const flushQueue = @import("core/wgpu_ffi_sync.zig").flushQueue;
+    pub const waitForQueue = @import("core/wgpu_ffi_sync.zig").waitForQueue;
+    pub const waitForQueueOnce = @import("core/wgpu_ffi_sync.zig").waitForQueueOnce;
+    pub const shouldRetryQueueWait = @import("core/wgpu_ffi_sync.zig").shouldRetryQueueWait;
+    pub const waitForQueueProcessEvents = @import("core/wgpu_ffi_sync.zig").waitForQueueProcessEvents;
+    pub const waitForQueueWaitAny = @import("core/wgpu_ffi_sync.zig").waitForQueueWaitAny;
+    pub const readTimestampBuffer = @import("core/wgpu_ffi_sync.zig").readTimestampBuffer;
+    pub const readTimestampBufferOnce = @import("core/wgpu_ffi_sync.zig").readTimestampBufferOnce;
+    pub const shouldRetryTimestampMap = @import("core/wgpu_ffi_sync.zig").shouldRetryTimestampMap;
+    pub const processEventsUntil = @import("core/wgpu_ffi_sync.zig").processEventsUntil;
     pub const createSurface = @import("wgpu_ffi_surface.zig").createSurface;
     pub const getSurfaceCapabilities = @import("wgpu_ffi_surface.zig").getSurfaceCapabilities;
     pub const freeSurfaceCapabilities = @import("wgpu_ffi_surface.zig").freeSurfaceCapabilities;

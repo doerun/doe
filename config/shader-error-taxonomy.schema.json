@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "codes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
     "codes": {
       "type": "array",
       "items": {
@@ -14,9 +14,35 @@
         "required": ["code", "stage", "severity"],
         "properties": {
           "code": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-          "stage": { "type": "string", "enum": ["wgsl_ingest", "wgsl_to_msl", "msl_compile", "manifest"] },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "wgsl_ingest",
+              "wgsl_parse",
+              "sema",
+              "ir_build",
+              "ir_validate",
+              "wgsl_to_msl",
+              "ir_to_msl",
+              "msl_compile",
+              "metallib_link",
+              "ir_to_spirv",
+              "spirv_validate",
+              "ir_to_dxil",
+              "dxil_validate",
+              "manifest"
+            ]
+          },
           "severity": { "type": "string", "enum": ["error", "warning"] },
-          "description": { "type": "string" }
+          "description": { "type": "string" },
+          "backendIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": ["doe_metal", "doe_vulkan", "doe_d3d12"]
+            }
+          }
         }
       }
     }

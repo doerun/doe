@@ -2,177 +2,18 @@ const std = @import("std");
 const ast_mod = @import("ast.zig");
 const token_mod = @import("token.zig");
 const ir = @import("ir.zig");
+const sema_types = @import("sema_types.zig");
+const sema_helpers = @import("sema_helpers.zig");
 
-const Ast = ast_mod.Ast;
-const Node = ast_mod.Node;
-const NodeTag = ast_mod.NodeTag;
-const NULL_NODE = ast_mod.NULL_NODE;
-const Tag = token_mod.Tag;
+const Ast = ast_mod.Ast; const Node = ast_mod.Node; const NodeTag = ast_mod.NodeTag;
+const NULL_NODE = ast_mod.NULL_NODE; const Tag = token_mod.Tag;
 
-pub const AnalyzeError = error{
-    OutOfMemory,
-    DuplicateSymbol,
-    InvalidAttribute,
-    InvalidType,
-    InvalidWgsl,
-    TypeMismatch,
-    UnknownIdentifier,
-    UnknownType,
-    UnsupportedConstruct,
-    UnsupportedBuiltin,
-};
-
-pub const SymbolRef = union(enum) {
-    none,
-    global: u32,
-    function: u32,
-    param: u32,
-    local: u32,
-};
-
-pub const NodeInfo = struct {
-    ty: ir.TypeId = ir.INVALID_TYPE,
-    symbol: SymbolRef = .none,
-    category: ir.ExprCategory = .value,
-};
-
-pub const AliasInfo = struct {
-    name: []const u8,
-    ty: ir.TypeId,
-
-    fn deinit(self: *AliasInfo, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-    }
-};
-
-pub const StructFieldInfo = struct {
-    name: []const u8,
-    ty: ir.TypeId,
-    io: ?ir.IoAttr = null,
-
-    fn deinit(self: *StructFieldInfo, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-    }
-};
-
-pub const StructInfo = struct {
-    name: []const u8,
-    struct_id: ir.StructId,
-    ty: ir.TypeId,
-    fields: std.ArrayListUnmanaged(StructFieldInfo) = .{},
-
-    fn deinit(self: *StructInfo, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-        for (self.fields.items) |*field| field.deinit(allocator);
-        self.fields.deinit(allocator);
-    }
-};
-
-pub const GlobalInfo = struct {
-    name: []const u8,
-    node_idx: u32,
-    ty: ir.TypeId,
-    class: ir.GlobalClass,
-    addr_space: ?ir.AddressSpace = null,
-    access: ?ir.AccessMode = null,
-    binding: ?ir.BindingPoint = null,
-    io: ?ir.IoAttr = null,
-
-    fn deinit(self: *GlobalInfo, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-    }
-};
-
-pub const ParamInfo = struct {
-    name: []const u8,
-    ty: ir.TypeId,
-    io: ?ir.IoAttr = null,
-
-    fn deinit(self: *ParamInfo, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-    }
-};
-
-pub const LocalInfo = struct {
-    name: []const u8,
-    ty: ir.TypeId,
-    mutable: bool,
-
-    fn deinit(self: *LocalInfo, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-    }
-};
-
-pub const FunctionInfo = struct {
-    name: []const u8,
-    node_idx: u32,
-    return_type: ir.TypeId,
-    stage: ?ir.ShaderStage = null,
-    workgroup_size: [3]u32 = .{ 1, 1, 1 },
-    params: std.ArrayListUnmanaged(ParamInfo) = .{},
-    locals: std.ArrayListUnmanaged(LocalInfo) = .{},
-
-    fn deinit(self: *FunctionInfo, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-        for (self.params.items) |*param| param.deinit(allocator);
-        self.params.deinit(allocator);
-        for (self.locals.items) |*local| local.deinit(allocator);
-        self.locals.deinit(allocator);
-    }
-};
-
-pub const SemanticModule = struct {
-    allocator: std.mem.Allocator,
-    tree: *const Ast,
-    types: ir.TypeStore,
-    node_info: std.ArrayListUnmanaged(NodeInfo) = .{},
-    globals: std.ArrayListUnmanaged(GlobalInfo) = .{},
-    functions: std.ArrayListUnmanaged(FunctionInfo) = .{},
-    structs: std.ArrayListUnmanaged(StructInfo) = .{},
-    aliases: std.ArrayListUnmanaged(AliasInfo) = .{},
-    global_map: std.StringHashMapUnmanaged(u32) = .{},
-    function_map: std.StringHashMapUnmanaged(u32) = .{},
-    struct_map: std.StringHashMapUnmanaged(u32) = .{},
-    alias_map: std.StringHashMapUnmanaged(u32) = .{},
-    void_type: ir.TypeId = ir.INVALID_TYPE,
-    bool_type: ir.TypeId = ir.INVALID_TYPE,
-    abstract_int_type: ir.TypeId = ir.INVALID_TYPE,
-    abstract_float_type: ir.TypeId = ir.INVALID_TYPE,
-    i32_type: ir.TypeId = ir.INVALID_TYPE,
-    u32_type: ir.TypeId = ir.INVALID_TYPE,
-    f32_type: ir.TypeId = ir.INVALID_TYPE,
-    f16_type: ir.TypeId = ir.INVALID_TYPE,
-    sampler_type: ir.TypeId = ir.INVALID_TYPE,
-
-    pub fn deinit(self: *SemanticModule) void {
-        self.node_info.deinit(self.allocator);
-        for (self.globals.items) |*global| global.deinit(self.allocator);
-        self.globals.deinit(self.allocator);
-        for (self.functions.items) |*function| function.deinit(self.allocator);
-        self.functions.deinit(self.allocator);
-        for (self.structs.items) |*struct_info| struct_info.deinit(self.allocator);
-        self.structs.deinit(self.allocator);
-        for (self.aliases.items) |*alias_info| alias_info.deinit(self.allocator);
-        self.aliases.deinit(self.allocator);
-        self.global_map.deinit(self.allocator);
-        self.function_map.deinit(self.allocator);
-        self.struct_map.deinit(self.allocator);
-        self.alias_map.deinit(self.allocator);
-        self.types.deinit();
-    }
-
-    pub fn nodeType(self: *const SemanticModule, node_idx: u32) ir.TypeId {
-        return self.node_info.items[node_idx].ty;
-    }
-
-    pub fn nodeSymbol(self: *const SemanticModule, node_idx: u32) SymbolRef {
-        return self.node_info.items[node_idx].symbol;
-    }
-
-    pub fn nodeCategory(self: *const SemanticModule, node_idx: u32) ir.ExprCategory {
-        return self.node_info.items[node_idx].category;
-    }
-};
+pub const AnalyzeError = sema_types.AnalyzeError; pub const SymbolRef = sema_types.SymbolRef;
+pub const NodeInfo = sema_types.NodeInfo; pub const AliasInfo = sema_types.AliasInfo;
+pub const StructFieldInfo = sema_types.StructFieldInfo; pub const StructInfo = sema_types.StructInfo;
+pub const GlobalInfo = sema_types.GlobalInfo; pub const ParamInfo = sema_types.ParamInfo;
+pub const LocalInfo = sema_types.LocalInfo; pub const FunctionInfo = sema_types.FunctionInfo;
+pub const SemanticModule = sema_types.SemanticModule;
 
 pub fn analyze(allocator: std.mem.Allocator, tree: *const Ast) !SemanticModule {
     var module = SemanticModule{
@@ -203,6 +44,8 @@ const BodyAnalyzer = struct {
     parent: *Analyzer,
     function_index: u32,
     scopes: std.ArrayListUnmanaged(Scope) = .{},
+    loop_depth: u32 = 0,
+    switch_depth: u32 = 0,
 
     fn deinit(self: *BodyAnalyzer) void {
         for (self.scopes.items) |*scope| scope.deinit(self.parent.module.allocator);
@@ -398,6 +241,9 @@ const Analyzer = struct {
                 if (extra[base + 1] != 0) global_info.addr_space = try parse_address_space(self.module.tree.tokenSlice(extra[base + 1]));
                 if (extra[base + 2] != 0) global_info.access = try parse_access(self.module.tree.tokenSlice(extra[base + 2]));
                 global_info.binding = try self.parse_binding(extra[base + 4], extra[base + 5]);
+                if (global_info.addr_space == null and is_handle_type(self.module.types.get(global_info.ty))) {
+                    global_info.addr_space = .handle;
+                }
             },
             .const_decl, .override_decl => {
                 global_info.ty = if (node.data.lhs != NULL_NODE) try self.resolve_type_node(node.data.lhs) else ir.INVALID_TYPE;
@@ -481,13 +327,19 @@ const Analyzer = struct {
                 }
             },
             .if_stmt => {
+                const extra = self.module.tree.extra_data.items;
+                const then_block = extra[node.data.rhs + 0];
+                const else_block = extra[node.data.rhs + 1];
                 _ = try self.analyze_expr(node.data.lhs, body);
-                try self.analyze_stmt(node.data.rhs, body);
+                try self.analyze_stmt(then_block, body);
+                if (else_block != NULL_NODE) try self.analyze_stmt(else_block, body);
             },
             .for_stmt => {
                 const extra = self.module.tree.extra_data.items;
                 const base = node.data.lhs;
                 try body.push_scope();
+                body.loop_depth += 1;
+                defer body.loop_depth -= 1;
                 if (extra[base + 0] != NULL_NODE) try self.analyze_stmt(extra[base + 0], body);
                 if (extra[base + 1] != NULL_NODE) _ = try self.analyze_expr(extra[base + 1], body);
                 if (extra[base + 2] != NULL_NODE) try self.analyze_stmt(extra[base + 2], body);
@@ -495,13 +347,52 @@ const Analyzer = struct {
                 body.pop_scope();
             },
             .while_stmt => {
+                body.loop_depth += 1;
+                defer body.loop_depth -= 1;
                 _ = try self.analyze_expr(node.data.lhs, body);
                 try self.analyze_stmt(node.data.rhs, body);
             },
-            .loop_stmt => try self.analyze_stmt(node.data.lhs, body),
-            .break_stmt => { if (node.data.lhs != NULL_NODE) return error.UnsupportedConstruct; },
-            .continue_stmt, .discard_stmt => {},
-            .continuing_stmt, .switch_stmt, .switch_case => return error.UnsupportedConstruct,
+            .loop_stmt => {
+                body.loop_depth += 1;
+                defer body.loop_depth -= 1;
+                try self.analyze_stmt(node.data.lhs, body);
+            },
+            .break_stmt => {
+                if (body.loop_depth == 0 and body.switch_depth == 0) return error.InvalidWgsl;
+                if (node.data.lhs != NULL_NODE) {
+                    if (body.loop_depth == 0) return error.InvalidWgsl;
+                    const cond_ty = try self.analyze_expr(node.data.lhs, body);
+                    if (!self.type_compatible(self.module.bool_type, cond_ty)) return error.TypeMismatch;
+                }
+            },
+            .continue_stmt => {
+                if (body.loop_depth == 0) return error.InvalidWgsl;
+            },
+            .continuing_stmt => {
+                if (body.loop_depth == 0) return error.InvalidWgsl;
+                try self.analyze_stmt(node.data.lhs, body);
+            },
+            .switch_stmt => {
+                const extra = self.module.tree.extra_data.items;
+                const case_start = node.data.rhs & 0xFFFF;
+                const case_count = node.data.rhs >> 16;
+                _ = try self.analyze_expr(node.data.lhs, body);
+                body.switch_depth += 1;
+                defer body.switch_depth -= 1;
+                var i: u32 = 0;
+                while (i < case_count) : (i += 1) {
+                    const case_node = self.module.tree.nodes.items[extra[case_start + i]];
+                    const selector_start = case_node.data.rhs & 0xFFFF;
+                    const selector_count = case_node.data.rhs >> 16;
+                    var j: u32 = 0;
+                    while (j < selector_count) : (j += 1) {
+                        _ = try self.analyze_expr(extra[selector_start + j], body);
+                    }
+                    try self.analyze_stmt(case_node.data.lhs, body);
+                }
+            },
+            .switch_case => try self.analyze_stmt(node.data.lhs, body),
+            .discard_stmt => {},
             .expr_stmt => _ = try self.analyze_expr(node.data.lhs, body),
             .assign_stmt => {
                 const lhs_ty = try self.analyze_expr(node.data.lhs, body);
@@ -568,7 +459,7 @@ const Analyzer = struct {
         out.symbol = symbol.?;
         return switch (symbol.?) {
             .global => |index| blk: {
-                out.category = .ref;
+                out.category = if (is_handle_type(self.module.types.get(self.module.globals.items[index].ty))) .value else .ref;
                 break :blk self.module.globals.items[index].ty;
             },
             .param => |index| blk: {
@@ -753,6 +644,19 @@ const Analyzer = struct {
             if (params_len != 1) return error.InvalidType;
             return try self.module.types.intern(.{ .texture_2d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
         }
+        if (std.mem.eql(u8, name, "texture_storage_2d")) {
+            if (params_len != 2) return error.InvalidType;
+            const format_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start]];
+            if (format_node.tag != .type_name) return error.InvalidType;
+            const access_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 1]];
+            if (access_node.tag != .type_name) return error.InvalidType;
+            const access = try parse_access(self.module.tree.tokenSlice(access_node.main_token));
+            if (access != .write) return error.InvalidType;
+            return try self.module.types.intern(.{ .storage_texture_2d = .{
+                .format = try parse_storage_texture_format(self.module.tree.tokenSlice(format_node.main_token)),
+                .access = access,
+            } });
+        }
         if (std.mem.eql(u8, name, "ptr")) {
             if (params_len < 2 or params_len > 3) return error.InvalidType;
             const addr_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start]];
@@ -854,6 +758,13 @@ const Analyzer = struct {
                 else => error.UnsupportedBuiltin,
             };
         }
+        if (std.mem.eql(u8, name, "textureStore")) {
+            if (arg_types.len == 0) return error.UnsupportedBuiltin;
+            return switch (self.module.types.get(arg_types[0])) {
+                .storage_texture_2d => self.module.void_type,
+                else => error.UnsupportedBuiltin,
+            };
+        }
         if (std.mem.eql(u8, name, "atomicLoad") or std.mem.eql(u8, name, "atomicStore") or std.mem.eql(u8, name, "atomicAdd") or std.mem.eql(u8, name, "atomicSub") or std.mem.eql(u8, name, "atomicMax") or std.mem.eql(u8, name, "atomicMin") or std.mem.eql(u8, name, "atomicAnd") or std.mem.eql(u8, name, "atomicOr") or std.mem.eql(u8, name, "atomicXor") or std.mem.eql(u8, name, "atomicExchange")) {
             if (arg_types.len == 0) return error.UnsupportedBuiltin;
             return switch (self.module.types.get(arg_types[0])) {
@@ -882,74 +793,14 @@ const Analyzer = struct {
     }
 };
 
-fn init_builtin_types(module: *SemanticModule) !void {
-    module.void_type = try module.types.intern(.{ .scalar = .void });
-    module.bool_type = try module.types.intern(.{ .scalar = .bool });
-    module.abstract_int_type = try module.types.intern(.{ .scalar = .abstract_int });
-    module.abstract_float_type = try module.types.intern(.{ .scalar = .abstract_float });
-    module.i32_type = try module.types.intern(.{ .scalar = .i32 });
-    module.u32_type = try module.types.intern(.{ .scalar = .u32 });
-    module.f32_type = try module.types.intern(.{ .scalar = .f32 });
-    module.f16_type = try module.types.intern(.{ .scalar = .f16 });
-    module.sampler_type = try module.types.intern(.{ .sampler = {} });
+fn is_handle_type(ty: ir.Type) bool {
+    return switch (ty) {
+        .sampler, .texture_2d, .storage_texture_2d => true,
+        else => false,
+    };
 }
 
-fn concrete_numeric_type(module: *SemanticModule, lhs: ir.TypeId, rhs: ir.TypeId) ir.TypeId {
-    if (lhs == rhs) return lhs;
-    if (lhs == module.abstract_int_type) return rhs;
-    if (rhs == module.abstract_int_type) return lhs;
-    if (lhs == module.abstract_float_type) return rhs;
-    if (rhs == module.abstract_float_type) return lhs;
-    return lhs;
-}
-
-fn decode_packed_span(raw: u32) struct { start: u32, len: u32 } {
-    return .{ .start = raw & 0xFFFF, .len = raw >> 16 };
-}
-
-fn parse_single_int_attr(tree: *const Ast, attr_idx: u32) !u32 {
-    const attr = tree.nodes.items[attr_idx];
-    const span = decode_packed_span(attr.data.rhs);
-    if (span.len == 0) return error.InvalidAttribute;
-    const arg = tree.nodes.items[tree.extra_data.items[span.start]];
-    if (arg.tag != .int_literal) return error.InvalidAttribute;
-    return try std.fmt.parseInt(u32, tree.tokenSlice(arg.main_token), 10);
-}
-
-fn parse_builtin_attr(tree: *const Ast, attr_idx: u32) !ir.Builtin {
-    const attr = tree.nodes.items[attr_idx];
-    const span = decode_packed_span(attr.data.rhs);
-    if (span.len == 0) return error.InvalidAttribute;
-    const arg = tree.nodes.items[tree.extra_data.items[span.start]];
-    if (arg.tag != .ident_expr) return error.InvalidAttribute;
-    const name = tree.tokenSlice(arg.main_token);
-    if (std.mem.eql(u8, name, "position")) return .position;
-    if (std.mem.eql(u8, name, "frag_depth")) return .frag_depth;
-    if (std.mem.eql(u8, name, "front_facing")) return .front_facing;
-    if (std.mem.eql(u8, name, "global_invocation_id")) return .global_invocation_id;
-    if (std.mem.eql(u8, name, "local_invocation_id")) return .local_invocation_id;
-    if (std.mem.eql(u8, name, "local_invocation_index")) return .local_invocation_index;
-    if (std.mem.eql(u8, name, "workgroup_id")) return .workgroup_id;
-    if (std.mem.eql(u8, name, "num_workgroups")) return .num_workgroups;
-    if (std.mem.eql(u8, name, "sample_index")) return .sample_index;
-    if (std.mem.eql(u8, name, "sample_mask")) return .sample_mask;
-    if (std.mem.eql(u8, name, "vertex_index")) return .vertex_index;
-    if (std.mem.eql(u8, name, "instance_index")) return .instance_index;
-    return error.InvalidAttribute;
-}
-
-fn parse_address_space(name: []const u8) !ir.AddressSpace {
-    if (std.mem.eql(u8, name, "function")) return .function;
-    if (std.mem.eql(u8, name, "private")) return .private;
-    if (std.mem.eql(u8, name, "workgroup")) return .workgroup;
-    if (std.mem.eql(u8, name, "uniform")) return .uniform;
-    if (std.mem.eql(u8, name, "storage")) return .storage;
-    return error.InvalidAttribute;
-}
-
-fn parse_access(name: []const u8) !ir.AccessMode {
-    if (std.mem.eql(u8, name, "read")) return .read;
-    if (std.mem.eql(u8, name, "write")) return .write;
-    if (std.mem.eql(u8, name, "read_write")) return .read_write;
-    return error.InvalidAttribute;
-}
+const init_builtin_types = sema_helpers.init_builtin_types; const concrete_numeric_type = sema_helpers.concrete_numeric_type;
+const decode_packed_span = sema_helpers.decode_packed_span; const parse_single_int_attr = sema_helpers.parse_single_int_attr;
+const parse_builtin_attr = sema_helpers.parse_builtin_attr; const parse_address_space = sema_helpers.parse_address_space;
+const parse_access = sema_helpers.parse_access; const parse_storage_texture_format = sema_helpers.parse_storage_texture_format;

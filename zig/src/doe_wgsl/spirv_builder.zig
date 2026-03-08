@@ -24,6 +24,19 @@ pub const MemoryModel = struct {
     pub const GLSL450: u32 = 1;
 };
 
+pub const Dim = struct {
+    pub const _2D: u32 = 1;
+};
+
+pub const ImageFormat = struct {
+    pub const Unknown: u32 = 0;
+    pub const Rgba8: u32 = 4;
+};
+
+pub const ImageOperandsMask = struct {
+    pub const Lod: u32 = 0x00000002;
+};
+
 pub const ExecutionModel = struct {
     pub const GLCompute: u32 = 5;
 };
@@ -32,15 +45,42 @@ pub const ExecutionMode = struct {
     pub const LocalSize: u32 = 17;
 };
 
+pub const Scope = struct {
+    pub const CrossDevice: u32 = 0;
+    pub const Device: u32 = 1;
+    pub const Workgroup: u32 = 2;
+    pub const Subgroup: u32 = 3;
+    pub const Invocation: u32 = 4;
+};
+
+pub const MemorySemantics = struct {
+    pub const None: u32 = 0x00000000;
+    pub const AcquireRelease: u32 = 0x00000008;
+    pub const SequentiallyConsistent: u32 = 0x00000010;
+    pub const UniformMemory: u32 = 0x00000040;
+    pub const WorkgroupMemory: u32 = 0x00000100;
+    pub const ImageMemory: u32 = 0x00000800;
+};
+
 pub const StorageClass = struct {
+    pub const UniformConstant: u32 = 0;
     pub const Input: u32 = 1;
+    pub const Uniform: u32 = 2;
     pub const Workgroup: u32 = 4;
     pub const Private: u32 = 6;
     pub const Function: u32 = 7;
+    pub const StorageBuffer: u32 = 12;
 };
 
 pub const Decoration = struct {
+    pub const Block: u32 = 2;
+    pub const ArrayStride: u32 = 6;
     pub const BuiltIn: u32 = 11;
+    pub const NonWritable: u32 = 24;
+    pub const NonReadable: u32 = 25;
+    pub const Binding: u32 = 33;
+    pub const DescriptorSet: u32 = 34;
+    pub const Offset: u32 = 35;
 };
 
 pub const Builtin = struct {
@@ -65,6 +105,8 @@ pub const LoopControl = struct {
 
 pub const Opcode = struct {
     pub const Name: u16 = 5;
+    pub const ExtInstImport: u16 = 11;
+    pub const ExtInst: u16 = 12;
     pub const EntryPoint: u16 = 15;
     pub const ExecutionMode: u16 = 16;
     pub const Capability: u16 = 17;
@@ -73,6 +115,8 @@ pub const Opcode = struct {
     pub const TypeInt: u16 = 21;
     pub const TypeFloat: u16 = 22;
     pub const TypeVector: u16 = 23;
+    pub const TypeMatrix: u16 = 24;
+    pub const TypeImage: u16 = 25;
     pub const TypeArray: u16 = 28;
     pub const TypeRuntimeArray: u16 = 29;
     pub const TypeStruct: u16 = 30;
@@ -91,8 +135,11 @@ pub const Opcode = struct {
     pub const Store: u16 = 62;
     pub const AccessChain: u16 = 65;
     pub const Decorate: u16 = 71;
+    pub const MemberDecorate: u16 = 72;
     pub const CompositeConstruct: u16 = 80;
     pub const CompositeExtract: u16 = 81;
+    pub const ImageFetch: u16 = 95;
+    pub const ImageWrite: u16 = 99;
     pub const SNegate: u16 = 126;
     pub const FNegate: u16 = 127;
     pub const IAdd: u16 = 128;
@@ -107,6 +154,7 @@ pub const Opcode = struct {
     pub const UMod: u16 = 137;
     pub const SRem: u16 = 138;
     pub const FRem: u16 = 140;
+    pub const Dot: u16 = 148;
     pub const LogicalEqual: u16 = 164;
     pub const LogicalNotEqual: u16 = 165;
     pub const LogicalOr: u16 = 166;
@@ -136,9 +184,24 @@ pub const Opcode = struct {
     pub const BitwiseXor: u16 = 198;
     pub const BitwiseAnd: u16 = 199;
     pub const Not: u16 = 200;
+    pub const ControlBarrier: u16 = 224;
+    pub const MemoryBarrier: u16 = 225;
+    pub const AtomicLoad: u16 = 227;
+    pub const AtomicStore: u16 = 228;
+    pub const AtomicExchange: u16 = 229;
+    pub const AtomicIAdd: u16 = 234;
+    pub const AtomicISub: u16 = 235;
+    pub const AtomicSMin: u16 = 236;
+    pub const AtomicUMin: u16 = 237;
+    pub const AtomicSMax: u16 = 238;
+    pub const AtomicUMax: u16 = 239;
+    pub const AtomicAnd: u16 = 240;
+    pub const AtomicOr: u16 = 241;
+    pub const AtomicXor: u16 = 242;
     pub const Label: u16 = 248;
     pub const Branch: u16 = 249;
     pub const BranchConditional: u16 = 250;
+    pub const Switch: u16 = 251;
     pub const Return: u16 = 253;
     pub const ReturnValue: u16 = 254;
     pub const FunctionCallResult: u16 = 57;
@@ -148,6 +211,17 @@ pub const Opcode = struct {
 };
 
 const VecKey = struct { elem: u32, len: u32 };
+const ArrayKey = struct { elem: u32, len_const: u32 };
+const RuntimeArrayKey = struct { elem: u32 };
+const ImageKey = struct {
+    sampled_type: u32,
+    dim: u32,
+    depth: u32,
+    arrayed: u32,
+    multisampled: u32,
+    sampled: u32,
+    image_format: u32,
+};
 const PtrKey = struct { storage_class: u32, pointee: u32 };
 const FnKey = struct { return_type: u32, params_start: u32, params_len: u32 };
 const StructKey = struct { members_start: u32, members_len: u32 };
@@ -158,10 +232,14 @@ pub const Builder = struct {
     next_id: u32 = 1,
     entry_point_fn: u32 = 0,
     entry_point_name: []const u8 = "main",
+    glsl450_import: u32 = 0,
 
     params_scratch: std.ArrayListUnmanaged(u32) = .{},
+    members_scratch: std.ArrayListUnmanaged(u32) = .{},
 
     capabilities: std.ArrayListUnmanaged(u32) = .{},
+    ext_inst_imports: std.ArrayListUnmanaged(u32) = .{},
+    memory_model: std.ArrayListUnmanaged(u32) = .{},
     entry_points: std.ArrayListUnmanaged(u32) = .{},
     execution_modes: std.ArrayListUnmanaged(u32) = .{},
     debug: std.ArrayListUnmanaged(u32) = .{},
@@ -170,6 +248,9 @@ pub const Builder = struct {
     functions: std.ArrayListUnmanaged(u32) = .{},
 
     vector_types: std.AutoHashMapUnmanaged(VecKey, u32) = .{},
+    array_types: std.AutoHashMapUnmanaged(ArrayKey, u32) = .{},
+    runtime_array_types: std.AutoHashMapUnmanaged(RuntimeArrayKey, u32) = .{},
+    image_types: std.AutoHashMapUnmanaged(ImageKey, u32) = .{},
     pointer_types: std.AutoHashMapUnmanaged(PtrKey, u32) = .{},
     function_types: std.AutoHashMapUnmanaged(FnKey, u32) = .{},
     struct_types: std.AutoHashMapUnmanaged(StructKey, u32) = .{},
@@ -190,7 +271,10 @@ pub const Builder = struct {
 
     pub fn deinit(self: *Builder) void {
         self.params_scratch.deinit(self.allocator);
+        self.members_scratch.deinit(self.allocator);
         self.capabilities.deinit(self.allocator);
+        self.ext_inst_imports.deinit(self.allocator);
+        self.memory_model.deinit(self.allocator);
         self.entry_points.deinit(self.allocator);
         self.execution_modes.deinit(self.allocator);
         self.debug.deinit(self.allocator);
@@ -198,6 +282,9 @@ pub const Builder = struct {
         self.types_globals.deinit(self.allocator);
         self.functions.deinit(self.allocator);
         self.vector_types.deinit(self.allocator);
+        self.array_types.deinit(self.allocator);
+        self.runtime_array_types.deinit(self.allocator);
+        self.image_types.deinit(self.allocator);
         self.pointer_types.deinit(self.allocator);
         self.function_types.deinit(self.allocator);
         self.struct_types.deinit(self.allocator);
@@ -225,7 +312,20 @@ pub const Builder = struct {
     }
 
     fn emit_memory_model(self: *Builder) EmitError!void {
-        try self.append_inst(&self.capabilities, Opcode.MemoryModel, &.{ AddressingModel.Logical, MemoryModel.GLSL450 });
+        try self.append_inst(&self.memory_model, Opcode.MemoryModel, &.{ AddressingModel.Logical, MemoryModel.GLSL450 });
+    }
+
+    pub fn glsl450_import_id(self: *Builder) EmitError!u32 {
+        if (self.glsl450_import != 0) return self.glsl450_import;
+        const import_id = self.reserve_id();
+        try self.ext_inst_imports.append(
+            self.allocator,
+            (@as(u32, @intCast(2 + string_word_len("GLSL.std.450"))) << 16) | Opcode.ExtInstImport,
+        );
+        try self.ext_inst_imports.append(self.allocator, import_id);
+        try append_string_words(&self.ext_inst_imports, self.allocator, "GLSL.std.450");
+        self.glsl450_import = import_id;
+        return import_id;
     }
 
     pub fn emit_name(self: *Builder, target_id: u32, name: []const u8) EmitError!void {
@@ -297,6 +397,67 @@ pub const Builder = struct {
         return id;
     }
 
+    pub fn type_array(self: *Builder, elem_type: u32, len_const_id: u32) EmitError!u32 {
+        const key = ArrayKey{ .elem = elem_type, .len_const = len_const_id };
+        if (self.array_types.get(key)) |id| return id;
+        const id = self.reserve_id();
+        try self.append_inst(&self.types_globals, Opcode.TypeArray, &.{ id, elem_type, len_const_id });
+        try self.array_types.put(self.allocator, key, id);
+        return id;
+    }
+
+    pub fn type_runtime_array(self: *Builder, elem_type: u32) EmitError!u32 {
+        const key = RuntimeArrayKey{ .elem = elem_type };
+        if (self.runtime_array_types.get(key)) |id| return id;
+        const id = self.reserve_id();
+        try self.append_inst(&self.types_globals, Opcode.TypeRuntimeArray, &.{ id, elem_type });
+        try self.runtime_array_types.put(self.allocator, key, id);
+        return id;
+    }
+
+    pub fn type_image(
+        self: *Builder,
+        sampled_type: u32,
+        dim: u32,
+        depth: u32,
+        arrayed: u32,
+        multisampled: u32,
+        sampled: u32,
+        image_format: u32,
+    ) EmitError!u32 {
+        const key = ImageKey{
+            .sampled_type = sampled_type,
+            .dim = dim,
+            .depth = depth,
+            .arrayed = arrayed,
+            .multisampled = multisampled,
+            .sampled = sampled,
+            .image_format = image_format,
+        };
+        if (self.image_types.get(key)) |id| return id;
+        const id = self.reserve_id();
+        try self.append_inst(
+            &self.types_globals,
+            Opcode.TypeImage,
+            &.{ id, sampled_type, dim, depth, arrayed, multisampled, sampled, image_format },
+        );
+        try self.image_types.put(self.allocator, key, id);
+        return id;
+    }
+
+    pub fn type_struct(self: *Builder, member_types: []const u32) EmitError!u32 {
+        const members_start: u32 = @intCast(self.members_scratch.items.len);
+        try self.members_scratch.appendSlice(self.allocator, member_types);
+        const key = StructKey{ .members_start = members_start, .members_len = @intCast(member_types.len) };
+        if (self.find_struct_type(member_types)) |id| return id;
+        const id = self.reserve_id();
+        try self.types_globals.append(self.allocator, (@as(u32, @intCast(2 + member_types.len)) << 16) | Opcode.TypeStruct);
+        try self.types_globals.append(self.allocator, id);
+        try self.types_globals.appendSlice(self.allocator, member_types);
+        try self.struct_types.put(self.allocator, key, id);
+        return id;
+    }
+
     pub fn type_pointer(self: *Builder, storage_class: u32, pointee_type: u32) EmitError!u32 {
         const key = PtrKey{ .storage_class = storage_class, .pointee = pointee_type };
         if (self.pointer_types.get(key)) |id| return id;
@@ -327,6 +488,17 @@ pub const Builder = struct {
             if (key.return_type != return_type or key.params_len != params.len) continue;
             const slice = self.params_scratch.items[key.params_start .. key.params_start + key.params_len];
             if (std.mem.eql(u32, slice, params)) return entry.value_ptr.*;
+        }
+        return null;
+    }
+
+    fn find_struct_type(self: *Builder, member_types: []const u32) ?u32 {
+        var it = self.struct_types.iterator();
+        while (it.next()) |entry| {
+            const key = entry.key_ptr.*;
+            if (key.members_len != member_types.len) continue;
+            const slice = self.members_scratch.items[key.members_start .. key.members_start + key.members_len];
+            if (std.mem.eql(u32, slice, member_types)) return entry.value_ptr.*;
         }
         return null;
     }
@@ -371,6 +543,12 @@ pub const Builder = struct {
         return id;
     }
 
+    pub fn variable_global_init(self: *Builder, ptr_type: u32, storage_class: u32, initializer: u32) EmitError!u32 {
+        const id = self.reserve_id();
+        try self.append_inst(&self.types_globals, Opcode.Variable, &.{ ptr_type, id, storage_class, initializer });
+        return id;
+    }
+
     pub fn variable_function(self: *Builder, ptr_type: u32) EmitError!u32 {
         const id = self.reserve_id();
         try self.append_function_inst(Opcode.Variable, &.{ ptr_type, id, StorageClass.Function });
@@ -379,6 +557,34 @@ pub const Builder = struct {
 
     pub fn emit_builtin_decoration(self: *Builder, target_id: u32, builtin: u32) EmitError!void {
         try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.BuiltIn, builtin });
+    }
+
+    pub fn emit_block_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Block });
+    }
+
+    pub fn emit_array_stride_decoration(self: *Builder, target_id: u32, stride: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.ArrayStride, stride });
+    }
+
+    pub fn emit_descriptor_set_decoration(self: *Builder, target_id: u32, descriptor_set: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.DescriptorSet, descriptor_set });
+    }
+
+    pub fn emit_binding_decoration(self: *Builder, target_id: u32, binding: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Binding, binding });
+    }
+
+    pub fn emit_non_writable_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.NonWritable });
+    }
+
+    pub fn emit_non_readable_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.NonReadable });
+    }
+
+    pub fn emit_member_offset_decoration(self: *Builder, target_id: u32, member_index: u32, offset: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.MemberDecorate, &.{ target_id, member_index, Decoration.Offset, offset });
     }
 
     pub fn begin_function(self: *Builder, result_type: u32, fn_id: u32, function_type: u32) EmitError!void {
@@ -402,7 +608,16 @@ pub const Builder = struct {
     }
 
     pub fn write_binary(self: *Builder, out: []u8) EmitError!usize {
-        const total_words = 5 + self.capabilities.items.len + self.entry_points.items.len + self.execution_modes.items.len + self.debug.items.len + self.annotations.items.len + self.types_globals.items.len + self.functions.items.len;
+        const total_words = 5 +
+            self.capabilities.items.len +
+            self.ext_inst_imports.items.len +
+            self.memory_model.items.len +
+            self.entry_points.items.len +
+            self.execution_modes.items.len +
+            self.debug.items.len +
+            self.annotations.items.len +
+            self.types_globals.items.len +
+            self.functions.items.len;
         const total_bytes = total_words * WORD_BYTES;
         if (total_bytes > out.len) return error.OutputTooLarge;
 
@@ -410,6 +625,8 @@ pub const Builder = struct {
         const header = [_]u32{ MAGIC, VERSION_1_3, GENERATOR_ID, self.next_id, SCHEMA };
         cursor += write_words(out[cursor..], &header);
         cursor += write_words(out[cursor..], self.capabilities.items);
+        cursor += write_words(out[cursor..], self.ext_inst_imports.items);
+        cursor += write_words(out[cursor..], self.memory_model.items);
         cursor += write_words(out[cursor..], self.entry_points.items);
         cursor += write_words(out[cursor..], self.execution_modes.items);
         cursor += write_words(out[cursor..], self.debug.items);

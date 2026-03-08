@@ -4,6 +4,10 @@ Contract version: `v1`
 
 Scope: browserless benchmarking and CI orchestration for Doe runtime workflows.
 
+This is the current single-surface package contract.
+For the proposed future layered `core` vs `full` support split, see
+`SUPPORT_CONTRACTS.md`.
+
 ## Node runtime API
 
 Module: `@simulatte/webgpu` (Node default export target)

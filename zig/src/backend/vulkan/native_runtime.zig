@@ -4,6 +4,7 @@ const backend_policy = @import("../backend_policy.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 
 // Vulkan upload path should follow device allocation limits, not an artificial
 // 64MB runtime cap. Let allocation/driver failure surface explicitly.
@@ -33,14 +34,21 @@ const VK_STRUCTURE_TYPE_SUBMIT_INFO: i32 = 4;
 const VK_STRUCTURE_TYPE_FENCE_CREATE_INFO: i32 = 8;
 const VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO: i32 = 11;
 const VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO: i32 = 12;
+const VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO: i32 = 14;
+const VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO: i32 = 15;
 const VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO: i32 = 16;
 const VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO: i32 = 17;
 const VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO: i32 = 18;
 const VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO: i32 = 28;
 const VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO: i32 = 30;
+const VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO: i32 = 32;
+const VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO: i32 = 33;
+const VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO: i32 = 34;
+const VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET: i32 = 35;
 const VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO: i32 = 39;
 const VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO: i32 = 40;
 const VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO: i32 = 42;
+const VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER: i32 = 45;
 
 const VK_QUEUE_GRAPHICS_BIT: u32 = 0x00000001;
 const VK_QUEUE_COMPUTE_BIT: u32 = 0x00000002;
@@ -49,19 +57,51 @@ const VK_COMMAND_BUFFER_LEVEL_PRIMARY: i32 = 0;
 const VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: u32 = 0x00000001;
 const VK_PIPELINE_BIND_POINT_COMPUTE: i32 = 1;
 const VK_SHADER_STAGE_COMPUTE_BIT: u32 = 0x00000020;
+const VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT: u32 = 0x00000001;
 const VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT: u32 = 0x00000800;
+const VK_PIPELINE_STAGE_TRANSFER_BIT: u32 = 0x00001000;
 const VK_QUERY_TYPE_TIMESTAMP: u32 = 2;
 const VK_QUERY_RESULT_64_BIT: u32 = 0x00000001;
 const VK_QUERY_RESULT_WAIT_BIT: u32 = 0x00000002;
 
 const VK_BUFFER_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
 const VK_BUFFER_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
+const VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT: u32 = 0x00000010;
 const VK_BUFFER_USAGE_STORAGE_BUFFER_BIT: u32 = 0x00000020;
+const VK_IMAGE_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
+const VK_IMAGE_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
+const VK_IMAGE_USAGE_SAMPLED_BIT: u32 = 0x00000004;
+const VK_IMAGE_USAGE_STORAGE_BIT: u32 = 0x00000008;
 
 const VK_SHARING_MODE_EXCLUSIVE: i32 = 0;
 const VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT: u32 = 0x00000001;
 const VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT: u32 = 0x00000002;
 const VK_MEMORY_PROPERTY_HOST_COHERENT_BIT: u32 = 0x00000004;
+const VK_ACCESS_SHADER_READ_BIT: u32 = 0x00000020;
+const VK_ACCESS_SHADER_WRITE_BIT: u32 = 0x00000040;
+const VK_ACCESS_TRANSFER_WRITE_BIT: u32 = 0x00001000;
+const VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: u32 = 2;
+const VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: u32 = 3;
+const VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: u32 = 6;
+const VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: u32 = 7;
+const VK_WHOLE_SIZE: u64 = std.math.maxInt(u64);
+const MAX_DESCRIPTOR_SETS: usize = 4;
+const MAX_DESCRIPTOR_SETS_U32: u32 = 4;
+const VK_IMAGE_TYPE_2D: u32 = 1;
+const VK_IMAGE_VIEW_TYPE_2D: u32 = 1;
+const VK_IMAGE_TILING_OPTIMAL: u32 = 0;
+const VK_IMAGE_LAYOUT_UNDEFINED: u32 = 0;
+const VK_IMAGE_LAYOUT_GENERAL: u32 = 1;
+const VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: u32 = 7;
+const VK_IMAGE_ASPECT_COLOR_BIT: u32 = 0x00000001;
+const VK_SAMPLE_COUNT_1_BIT: u32 = 0x00000001;
+const VK_COMPONENT_SWIZZLE_IDENTITY: u32 = 0;
+const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
+const DEFAULT_RUNTIME_TEXTURE_USAGE: model.WGPUFlags =
+    model.WGPUTextureUsage_TextureBinding |
+    model.WGPUTextureUsage_StorageBinding |
+    model.WGPUTextureUsage_CopyDst;
+const REQUIRED_TEXTURE_UPLOAD_USAGE: model.WGPUFlags = model.WGPUTextureUsage_CopyDst;
 
 const VkBool32 = u32;
 const VkFlags = u32;
@@ -82,6 +122,11 @@ const VkShaderModule = u64;
 const VkPipelineLayout = u64;
 const VkPipeline = u64;
 const VkQueryPool = u64;
+const VkDescriptorSetLayout = u64;
+const VkDescriptorPool = u64;
+const VkDescriptorSet = u64;
+const VkImage = u64;
+const VkImageView = u64;
 const VK_NULL_U64: u64 = 0;
 
 const VkAllocationCallbacks = opaque {};
@@ -161,6 +206,24 @@ const VkBufferCreateInfo = extern struct {
     pQueueFamilyIndices: ?[*]const u32,
 };
 
+const VkImageCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    imageType: u32,
+    format: u32,
+    extent: VkExtent3D,
+    mipLevels: u32,
+    arrayLayers: u32,
+    samples: u32,
+    tiling: u32,
+    usage: VkFlags,
+    sharingMode: i32,
+    queueFamilyIndexCount: u32,
+    pQueueFamilyIndices: ?[*]const u32,
+    initialLayout: u32,
+};
+
 const VkMemoryAllocateInfo = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
@@ -221,6 +284,69 @@ const VkPipelineShaderStageCreateInfo = extern struct {
     pSpecializationInfo: ?*const anyopaque,
 };
 
+const VkDescriptorSetLayoutBinding = extern struct {
+    binding: u32,
+    descriptorType: u32,
+    descriptorCount: u32,
+    stageFlags: VkFlags,
+    pImmutableSamplers: ?*const anyopaque,
+};
+
+const VkDescriptorSetLayoutCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    bindingCount: u32,
+    pBindings: ?[*]const VkDescriptorSetLayoutBinding,
+};
+
+const VkDescriptorPoolSize = extern struct {
+    type: u32,
+    descriptorCount: u32,
+};
+
+const VkDescriptorPoolCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    maxSets: u32,
+    poolSizeCount: u32,
+    pPoolSizes: ?[*]const VkDescriptorPoolSize,
+};
+
+const VkDescriptorSetAllocateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    descriptorPool: VkDescriptorPool,
+    descriptorSetCount: u32,
+    pSetLayouts: [*]const VkDescriptorSetLayout,
+};
+
+const VkDescriptorBufferInfo = extern struct {
+    buffer: VkBuffer,
+    offset: VkDeviceSize,
+    range: VkDeviceSize,
+};
+
+const VkDescriptorImageInfo = extern struct {
+    sampler: u64,
+    imageView: VkImageView,
+    imageLayout: u32,
+};
+
+const VkWriteDescriptorSet = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    dstSet: VkDescriptorSet,
+    dstBinding: u32,
+    dstArrayElement: u32,
+    descriptorCount: u32,
+    descriptorType: u32,
+    pImageInfo: ?*const anyopaque,
+    pBufferInfo: ?[*]const VkDescriptorBufferInfo,
+    pTexelBufferView: ?*const anyopaque,
+};
+
 const VkComputePipelineCreateInfo = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
@@ -250,6 +376,67 @@ const VkExtent3D = extern struct {
     width: u32,
     height: u32,
     depth: u32,
+};
+
+const VkComponentMapping = extern struct {
+    r: u32,
+    g: u32,
+    b: u32,
+    a: u32,
+};
+
+const VkImageSubresourceRange = extern struct {
+    aspectMask: VkFlags,
+    baseMipLevel: u32,
+    levelCount: u32,
+    baseArrayLayer: u32,
+    layerCount: u32,
+};
+
+const VkImageViewCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    image: VkImage,
+    viewType: u32,
+    format: u32,
+    components: VkComponentMapping,
+    subresourceRange: VkImageSubresourceRange,
+};
+
+const VkImageSubresourceLayers = extern struct {
+    aspectMask: VkFlags,
+    mipLevel: u32,
+    baseArrayLayer: u32,
+    layerCount: u32,
+};
+
+const VkOffset3D = extern struct {
+    x: i32,
+    y: i32,
+    z: i32,
+};
+
+const VkBufferImageCopy = extern struct {
+    bufferOffset: VkDeviceSize,
+    bufferRowLength: u32,
+    bufferImageHeight: u32,
+    imageSubresource: VkImageSubresourceLayers,
+    imageOffset: VkOffset3D,
+    imageExtent: VkExtent3D,
+};
+
+const VkImageMemoryBarrier = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    srcAccessMask: VkFlags,
+    dstAccessMask: VkFlags,
+    oldLayout: u32,
+    newLayout: u32,
+    srcQueueFamilyIndex: u32,
+    dstQueueFamilyIndex: u32,
+    image: VkImage,
+    subresourceRange: VkImageSubresourceRange,
 };
 
 const VkQueueFamilyProperties = extern struct {
@@ -298,9 +485,17 @@ extern fn vkEndCommandBuffer(commandBuffer: VkCommandBuffer) callconv(.c) VkResu
 extern fn vkCmdBindPipeline(commandBuffer: VkCommandBuffer, pipelineBindPoint: i32, pipeline: VkPipeline) callconv(.c) void;
 extern fn vkCmdDispatch(commandBuffer: VkCommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32) callconv(.c) void;
 extern fn vkCmdCopyBuffer(commandBuffer: VkCommandBuffer, srcBuffer: VkBuffer, dstBuffer: VkBuffer, regionCount: u32, pRegions: [*]const VkBufferCopy) callconv(.c) void;
+extern fn vkCmdCopyBufferToImage(commandBuffer: VkCommandBuffer, srcBuffer: VkBuffer, dstImage: VkImage, dstImageLayout: u32, regionCount: u32, pRegions: [*]const VkBufferImageCopy) callconv(.c) void;
+extern fn vkCmdPipelineBarrier(commandBuffer: VkCommandBuffer, srcStageMask: VkFlags, dstStageMask: VkFlags, dependencyFlags: VkFlags, memoryBarrierCount: u32, pMemoryBarriers: ?*const anyopaque, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: ?*const anyopaque, imageMemoryBarrierCount: u32, pImageMemoryBarriers: ?[*]const VkImageMemoryBarrier) callconv(.c) void;
 extern fn vkCreateBuffer(device: VkDevice, pCreateInfo: *const VkBufferCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pBuffer: *VkBuffer) callconv(.c) VkResult;
 extern fn vkDestroyBuffer(device: VkDevice, buffer: VkBuffer, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkGetBufferMemoryRequirements(device: VkDevice, buffer: VkBuffer, pMemoryRequirements: *VkMemoryRequirements) callconv(.c) void;
+extern fn vkCreateImage(device: VkDevice, pCreateInfo: *const VkImageCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pImage: *VkImage) callconv(.c) VkResult;
+extern fn vkDestroyImage(device: VkDevice, image: VkImage, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+extern fn vkGetImageMemoryRequirements(device: VkDevice, image: VkImage, pMemoryRequirements: *VkMemoryRequirements) callconv(.c) void;
+extern fn vkBindImageMemory(device: VkDevice, image: VkImage, memory: VkDeviceMemory, memoryOffset: VkDeviceSize) callconv(.c) VkResult;
+extern fn vkCreateImageView(device: VkDevice, pCreateInfo: *const VkImageViewCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pView: *VkImageView) callconv(.c) VkResult;
+extern fn vkDestroyImageView(device: VkDevice, imageView: VkImageView, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkAllocateMemory(device: VkDevice, pAllocateInfo: *const VkMemoryAllocateInfo, pAllocator: ?*const VkAllocationCallbacks, pMemory: *VkDeviceMemory) callconv(.c) VkResult;
 extern fn vkFreeMemory(device: VkDevice, memory: VkDeviceMemory, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkBindBufferMemory(device: VkDevice, buffer: VkBuffer, memory: VkDeviceMemory, memoryOffset: VkDeviceSize) callconv(.c) VkResult;
@@ -309,10 +504,17 @@ extern fn vkUnmapMemory(device: VkDevice, memory: VkDeviceMemory) callconv(.c) v
 extern fn vkGetPhysicalDeviceMemoryProperties(physicalDevice: VkPhysicalDevice, pMemoryProperties: *VkPhysicalDeviceMemoryProperties) callconv(.c) void;
 extern fn vkCreateShaderModule(device: VkDevice, pCreateInfo: *const VkShaderModuleCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pShaderModule: *VkShaderModule) callconv(.c) VkResult;
 extern fn vkDestroyShaderModule(device: VkDevice, shaderModule: VkShaderModule, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+extern fn vkCreateDescriptorSetLayout(device: VkDevice, pCreateInfo: *const VkDescriptorSetLayoutCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pSetLayout: *VkDescriptorSetLayout) callconv(.c) VkResult;
+extern fn vkDestroyDescriptorSetLayout(device: VkDevice, descriptorSetLayout: VkDescriptorSetLayout, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+extern fn vkCreateDescriptorPool(device: VkDevice, pCreateInfo: *const VkDescriptorPoolCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pDescriptorPool: *VkDescriptorPool) callconv(.c) VkResult;
+extern fn vkDestroyDescriptorPool(device: VkDevice, descriptorPool: VkDescriptorPool, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+extern fn vkAllocateDescriptorSets(device: VkDevice, pAllocateInfo: *const VkDescriptorSetAllocateInfo, pDescriptorSets: [*]VkDescriptorSet) callconv(.c) VkResult;
+extern fn vkUpdateDescriptorSets(device: VkDevice, descriptorWriteCount: u32, pDescriptorWrites: ?[*]const VkWriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: ?*const anyopaque) callconv(.c) void;
 extern fn vkCreatePipelineLayout(device: VkDevice, pCreateInfo: *const VkPipelineLayoutCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pPipelineLayout: *VkPipelineLayout) callconv(.c) VkResult;
 extern fn vkDestroyPipelineLayout(device: VkDevice, pipelineLayout: VkPipelineLayout, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkCreateComputePipelines(device: VkDevice, pipelineCache: VkPipelineCache, createInfoCount: u32, pCreateInfos: [*]const VkComputePipelineCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pPipelines: [*]VkPipeline) callconv(.c) VkResult;
 extern fn vkDestroyPipeline(device: VkDevice, pipeline: VkPipeline, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+extern fn vkCmdBindDescriptorSets(commandBuffer: VkCommandBuffer, pipelineBindPoint: i32, layout: VkPipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: ?[*]const VkDescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: ?[*]const u32) callconv(.c) void;
 extern fn vkCreateQueryPool(device: VkDevice, pCreateInfo: *const VkQueryPoolCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pQueryPool: *VkQueryPool) callconv(.c) VkResult;
 extern fn vkDestroyQueryPool(device: VkDevice, queryPool: VkQueryPool, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkCmdWriteTimestamp(commandBuffer: VkCommandBuffer, pipelineStage: VkFlags, queryPool: VkQueryPool, query: u32) callconv(.c) void;
@@ -338,6 +540,38 @@ const VkPoolEntry = struct {
     buffer: VkBuffer,
     memory: VkDeviceMemory,
     mapped: ?*anyopaque = null,
+};
+
+const ComputeBuffer = struct {
+    buffer: VkBuffer,
+    memory: VkDeviceMemory,
+    mapped: ?*anyopaque,
+    size: u64,
+};
+
+const TextureResource = struct {
+    image: VkImage,
+    memory: VkDeviceMemory,
+    view: VkImageView,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    format: model.WGPUTextureFormat,
+    usage: model.WGPUFlags,
+    layout: u32,
+};
+
+const DescriptorInfoKind = enum {
+    buffer,
+    image,
+};
+
+const PendingDescriptorWrite = struct {
+    set_index: u32,
+    binding: u32,
+    descriptor_type: u32,
+    kind: DescriptorInfoKind,
+    info_index: usize,
 };
 
 const UploadPathKind = enum {
@@ -394,7 +628,13 @@ pub const NativeVulkanRuntime = struct {
     shader_module: VkShaderModule = VK_NULL_U64,
     pipeline_layout: VkPipelineLayout = VK_NULL_U64,
     pipeline: VkPipeline = VK_NULL_U64,
-    current_shader_hash: u64 = 0,
+    descriptor_pool: VkDescriptorPool = VK_NULL_U64,
+    descriptor_set_layouts: [MAX_DESCRIPTOR_SETS]VkDescriptorSetLayout = [_]VkDescriptorSetLayout{VK_NULL_U64} ** MAX_DESCRIPTOR_SETS,
+    descriptor_sets: [MAX_DESCRIPTOR_SETS]VkDescriptorSet = [_]VkDescriptorSet{VK_NULL_U64} ** MAX_DESCRIPTOR_SETS,
+    descriptor_set_count: u32 = 0,
+    current_pipeline_hash: u64 = 0,
+    current_layout_hash: u64 = 0,
+    current_entry_point_owned: ?[:0]u8 = null,
     fast_upload_buffer: VkBuffer = VK_NULL_U64,
     fast_upload_memory: VkDeviceMemory = VK_NULL_U64,
     fast_upload_capacity: u64 = 0,
@@ -406,6 +646,8 @@ pub const NativeVulkanRuntime = struct {
     src_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
     dst_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
     direct_upload_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
+    compute_buffers: std.AutoHashMapUnmanaged(u64, ComputeBuffer) = .{},
+    textures: std.AutoHashMapUnmanaged(u64, TextureResource) = .{},
 
     has_instance: bool = false,
     has_device: bool = false,
@@ -415,6 +657,7 @@ pub const NativeVulkanRuntime = struct {
     has_shader_module: bool = false,
     has_pipeline_layout: bool = false,
     has_pipeline: bool = false,
+    has_descriptor_pool: bool = false,
     has_deferred_submissions: bool = false,
     upload_recording_active: bool = false,
 
@@ -435,6 +678,9 @@ pub const NativeVulkanRuntime = struct {
         vk_release_pool(&self.direct_upload_pool, self.allocator, self.device);
         self.release_fast_upload_buffer();
         self.destroy_pipeline_objects();
+        self.destroy_descriptor_state();
+        self.release_compute_buffers();
+        self.release_textures();
         if (self.has_fence) {
             vkDestroyFence(self.device, self.fence, null);
             self.has_fence = false;
@@ -471,8 +717,7 @@ pub const NativeVulkanRuntime = struct {
     pub fn load_kernel_spirv(self: *const NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
         if (kernel_name.len == 0) return error.InvalidArgument;
         const path = self.resolve_kernel_spirv_path(allocator, kernel_name) catch |err| switch (err) {
-            // Native WGSL→SPIR-V translation requires the shared IR layer, not yet built.
-            error.UnsupportedFeature => return error.UnsupportedFeature,
+            error.UnsupportedFeature => return try self.compile_kernel_wgsl_to_spirv(allocator, kernel_name),
             else => return err,
         };
         defer allocator.free(path);
@@ -482,17 +727,39 @@ pub const NativeVulkanRuntime = struct {
         return try words_from_spirv_bytes(allocator, bytes);
     }
 
-    pub fn set_compute_shader_spirv(self: *NativeVulkanRuntime, words: []const u32) !void {
+    fn compile_kernel_wgsl_to_spirv(self: *const NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
+        const source_path = try self.resolve_kernel_path(allocator, kernel_name);
+        defer allocator.free(source_path);
+        if (!std.mem.endsWith(u8, source_path, ".wgsl")) return error.UnsupportedFeature;
+
+        const wgsl = std.fs.cwd().readFileAlloc(allocator, source_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+        defer allocator.free(wgsl);
+
+        var spirv_buf = try allocator.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT);
+        defer allocator.free(spirv_buf);
+        const spirv_len = doe_wgsl.translateToSpirv(allocator, wgsl, spirv_buf) catch return error.ShaderCompileFailed;
+        return try words_from_spirv_bytes(allocator, spirv_buf[0..spirv_len]);
+    }
+
+    pub fn set_compute_shader_spirv(
+        self: *NativeVulkanRuntime,
+        words: []const u32,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) !void {
         if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
-        const hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(words));
-        if (self.has_pipeline and hash == self.current_shader_hash) return;
-        try self.build_pipeline_for_words(words, hash);
+        const pipeline_hash = compute_pipeline_hash(words, entry_point, bindings);
+        if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
+            try self.build_pipeline_for_words(words, pipeline_hash, entry_point, bindings);
+        }
+        try self.prepare_descriptor_sets(bindings, initialize_buffers_on_create);
     }
 
     pub fn rebuild_compute_shader_spirv(self: *NativeVulkanRuntime, words: []const u32) !void {
         if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
         const hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(words));
-        try self.build_pipeline_for_words(words, hash +% 1);
+        try self.build_pipeline_for_words(words, hash +% 1, null, null);
     }
 
     pub fn upload_bytes(
@@ -584,6 +851,7 @@ pub const NativeVulkanRuntime = struct {
         };
         try check_vk(vkBeginCommandBuffer(command_buffer, &begin_info));
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
+        self.bind_descriptor_sets(command_buffer);
         vkCmdDispatch(command_buffer, x, y, z);
         try check_vk(vkEndCommandBuffer(command_buffer));
 
@@ -752,6 +1020,117 @@ pub const NativeVulkanRuntime = struct {
         return self.present_capable_value;
     }
 
+    pub fn texture_write(self: *NativeVulkanRuntime, cmd: model.TextureWriteCommand) !void {
+        const resource = try self.ensure_texture_resource(cmd.texture);
+        if (cmd.data.len == 0) {
+            try self.ensure_texture_shader_layout(resource);
+            return;
+        }
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+            _ = try self.flush_queue();
+        }
+
+        const staging = try self.create_host_visible_buffer(@intCast(cmd.data.len), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        defer self.destroy_host_visible_buffer(staging);
+        if (staging.mapped) |raw| {
+            @memcpy(@as([*]u8, @ptrCast(raw))[0..cmd.data.len], cmd.data);
+        }
+
+        try check_vk(vkResetCommandPool(self.device, self.command_pool, 0));
+        var begin_info = VkCommandBufferBeginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = null,
+        };
+        try check_vk(vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+        try self.transition_texture_layout(
+            self.primary_command_buffer,
+            resource.*,
+            resource.layout,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            0,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+        );
+
+        var region = VkBufferImageCopy{
+            .bufferOffset = 0,
+            .bufferRowLength = if (cmd.texture.bytes_per_row > 0)
+                cmd.texture.bytes_per_row / bytes_per_pixel_for_texture_format(cmd.texture.format)
+            else
+                0,
+            .bufferImageHeight = cmd.texture.rows_per_image,
+            .imageSubresource = .{
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = cmd.texture.mip_level,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .imageOffset = .{ .x = 0, .y = 0, .z = 0 },
+            .imageExtent = .{
+                .width = @max(cmd.texture.width >> @intCast(cmd.texture.mip_level), 1),
+                .height = @max(cmd.texture.height >> @intCast(cmd.texture.mip_level), 1),
+                .depth = 1,
+            },
+        };
+        vkCmdCopyBufferToImage(
+            self.primary_command_buffer,
+            staging.buffer,
+            resource.image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            @ptrCast(&region),
+        );
+
+        try self.transition_texture_layout(
+            self.primary_command_buffer,
+            resource.*,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        );
+        try check_vk(vkEndCommandBuffer(self.primary_command_buffer));
+
+        var submit_info = VkSubmitInfo{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = null,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = null,
+            .pWaitDstStageMask = null,
+            .commandBufferCount = 1,
+            .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = null,
+        };
+        try check_vk(vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+        try check_vk(vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+        try check_vk(vkWaitForFences(self.device, 1, @ptrCast(&self.fence), VK_TRUE, WAIT_TIMEOUT_NS));
+        resource.layout = VK_IMAGE_LAYOUT_GENERAL;
+    }
+
+    pub fn texture_query(self: *NativeVulkanRuntime, cmd: model.TextureQueryCommand) !void {
+        const texture = self.textures.get(cmd.handle) orelse return error.InvalidState;
+        if (cmd.expected_width) |width| if (texture.width != width) return error.InvalidState;
+        if (cmd.expected_height) |height| if (texture.height != height) return error.InvalidState;
+        if (cmd.expected_depth_or_array_layers) |layers| if (layers != 1) return error.InvalidState;
+        if (cmd.expected_format) |format| if (texture.format != format) return error.InvalidState;
+        if (cmd.expected_dimension) |dimension| if (dimension != model.WGPUTextureDimension_2D) return error.InvalidState;
+        if (cmd.expected_view_dimension) |view_dimension| if (view_dimension != model.WGPUTextureViewDimension_2D) return error.InvalidState;
+        if (cmd.expected_sample_count) |sample_count| if (sample_count != 1) return error.InvalidState;
+        if (cmd.expected_usage) |usage| if ((texture.usage & usage) != usage) return error.InvalidState;
+    }
+
+    pub fn texture_destroy(self: *NativeVulkanRuntime, cmd: model.TextureDestroyCommand) !void {
+        if (self.textures.fetchRemove(cmd.handle)) |entry| {
+            self.release_texture_resource(entry.value);
+        }
+    }
+
     pub fn create_surface(self: *NativeVulkanRuntime, handle: u64) !void {
         if (handle == 0) return error.InvalidArgument;
         const result = try self.surfaces.getOrPut(self.allocator, handle);
@@ -810,7 +1189,6 @@ pub const NativeVulkanRuntime = struct {
         try self.create_device_and_queue();
         try self.create_command_pool_and_primary_buffer();
         try self.create_fence();
-        try self.ensure_pipeline_layout();
     }
 
     fn create_instance(self: *NativeVulkanRuntime) !void {
@@ -862,26 +1240,97 @@ pub const NativeVulkanRuntime = struct {
         self.has_fence = true;
     }
 
-    fn ensure_pipeline_layout(self: *NativeVulkanRuntime) !void {
-        if (self.has_pipeline_layout) return;
-        var layout_info = VkPipelineLayoutCreateInfo{ .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, .pNext = null, .flags = 0, .setLayoutCount = 0, .pSetLayouts = null, .pushConstantRangeCount = 0, .pPushConstantRanges = null };
+    fn ensure_pipeline_layout(self: *NativeVulkanRuntime, bindings: ?[]const model.KernelBinding) !void {
+        const layout_hash = compute_layout_hash(bindings);
+        if (self.has_pipeline_layout and layout_hash == self.current_layout_hash) return;
+
+        self.destroy_descriptor_state();
+        errdefer self.destroy_descriptor_state();
+
+        var set_count: u32 = 0;
+        if (bindings) |bs| {
+            for (bs) |binding| {
+                if (binding.group >= MAX_DESCRIPTOR_SETS_U32) return error.UnsupportedFeature;
+                set_count = @max(set_count, binding.group + 1);
+            }
+        }
+
+        const set_count_usize: usize = @intCast(set_count);
+        var per_set_bindings = try self.allocator.alloc(std.ArrayListUnmanaged(VkDescriptorSetLayoutBinding), set_count_usize);
+        defer {
+            for (per_set_bindings) |*list| list.deinit(self.allocator);
+            self.allocator.free(per_set_bindings);
+        }
+        for (per_set_bindings) |*list| list.* = .{};
+
+        if (bindings) |bs| {
+            for (bs) |binding| {
+                try per_set_bindings[@intCast(binding.group)].append(self.allocator, .{
+                    .binding = binding.binding,
+                    .descriptorType = try descriptor_type_for_binding(binding),
+                    .descriptorCount = 1,
+                    .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+                    .pImmutableSamplers = null,
+                });
+            }
+        }
+
+        self.descriptor_set_count = set_count;
+        var set_index: usize = 0;
+        while (set_index < set_count_usize) : (set_index += 1) {
+            const set_bindings = per_set_bindings[set_index].items;
+            var layout_info = VkDescriptorSetLayoutCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .bindingCount = @intCast(set_bindings.len),
+                .pBindings = if (set_bindings.len > 0) set_bindings.ptr else null,
+            };
+            try check_vk(vkCreateDescriptorSetLayout(self.device, &layout_info, null, &self.descriptor_set_layouts[set_index]));
+        }
+
+        var layout_info = VkPipelineLayoutCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .setLayoutCount = self.descriptor_set_count,
+            .pSetLayouts = if (self.descriptor_set_count > 0) @ptrCast(self.descriptor_set_layouts[0..@intCast(self.descriptor_set_count)].ptr) else null,
+            .pushConstantRangeCount = 0,
+            .pPushConstantRanges = null,
+        };
         try check_vk(vkCreatePipelineLayout(self.device, &layout_info, null, &self.pipeline_layout));
         self.has_pipeline_layout = true;
+        self.current_layout_hash = layout_hash;
     }
 
-    fn build_pipeline_for_words(self: *NativeVulkanRuntime, words: []const u32, shader_hash: u64) !void {
-        try self.ensure_pipeline_layout();
+    fn build_pipeline_for_words(
+        self: *NativeVulkanRuntime,
+        words: []const u32,
+        pipeline_hash: u64,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model.KernelBinding,
+    ) !void {
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+            _ = try self.flush_queue();
+        }
+        try self.ensure_pipeline_layout(bindings);
         self.destroy_pipeline_objects();
+        errdefer self.destroy_pipeline_objects();
+
+        const entry_name = entry_point orelse "main";
+        const owned_entry = try self.allocator.dupeZ(u8, entry_name);
+        errdefer self.allocator.free(owned_entry);
 
         var shader_info = VkShaderModuleCreateInfo{ .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, .pNext = null, .flags = 0, .codeSize = words.len * @sizeOf(u32), .pCode = words.ptr };
         try check_vk(vkCreateShaderModule(self.device, &shader_info, null, &self.shader_module));
         self.has_shader_module = true;
 
-        const stage_info = VkPipelineShaderStageCreateInfo{ .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .pNext = null, .flags = 0, .stage = VK_SHADER_STAGE_COMPUTE_BIT, .module = self.shader_module, .pName = MAIN_ENTRY, .pSpecializationInfo = null };
+        const stage_info = VkPipelineShaderStageCreateInfo{ .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .pNext = null, .flags = 0, .stage = VK_SHADER_STAGE_COMPUTE_BIT, .module = self.shader_module, .pName = owned_entry.ptr, .pSpecializationInfo = null };
         var pipeline_info = VkComputePipelineCreateInfo{ .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, .pNext = null, .flags = 0, .stage = stage_info, .layout = self.pipeline_layout, .basePipelineHandle = VK_NULL_U64, .basePipelineIndex = -1 };
         try check_vk(vkCreateComputePipelines(self.device, VK_NULL_U64, 1, @ptrCast(&pipeline_info), null, @ptrCast(&self.pipeline)));
         self.has_pipeline = true;
-        self.current_shader_hash = shader_hash;
+        self.current_entry_point_owned = owned_entry;
+        self.current_pipeline_hash = pipeline_hash;
     }
 
     fn ensure_fast_upload_buffer(self: *NativeVulkanRuntime, bytes: u64) !void {
@@ -946,6 +1395,563 @@ pub const NativeVulkanRuntime = struct {
             self.has_shader_module = false;
             self.shader_module = VK_NULL_U64;
         }
+        if (self.current_entry_point_owned) |entry_name| {
+            self.allocator.free(entry_name);
+            self.current_entry_point_owned = null;
+        }
+        self.current_pipeline_hash = 0;
+    }
+
+    fn destroy_descriptor_state(self: *NativeVulkanRuntime) void {
+        if (self.has_descriptor_pool) {
+            vkDestroyDescriptorPool(self.device, self.descriptor_pool, null);
+            self.has_descriptor_pool = false;
+            self.descriptor_pool = VK_NULL_U64;
+        }
+        var set_index: usize = 0;
+        while (set_index < MAX_DESCRIPTOR_SETS) : (set_index += 1) {
+            if (self.descriptor_set_layouts[set_index] != VK_NULL_U64) {
+                vkDestroyDescriptorSetLayout(self.device, self.descriptor_set_layouts[set_index], null);
+                self.descriptor_set_layouts[set_index] = VK_NULL_U64;
+            }
+            self.descriptor_sets[set_index] = VK_NULL_U64;
+        }
+        self.descriptor_set_count = 0;
+        if (self.has_pipeline_layout) {
+            vkDestroyPipelineLayout(self.device, self.pipeline_layout, null);
+            self.has_pipeline_layout = false;
+            self.pipeline_layout = VK_NULL_U64;
+        }
+        self.current_layout_hash = 0;
+    }
+
+    fn prepare_descriptor_sets(
+        self: *NativeVulkanRuntime,
+        bindings: ?[]const model.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) !void {
+        if (self.descriptor_set_count == 0) return;
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+            _ = try self.flush_queue();
+        }
+        try self.ensure_descriptor_pool(bindings);
+
+        const bs = bindings orelse return error.InvalidArgument;
+        var buffer_infos = std.ArrayListUnmanaged(VkDescriptorBufferInfo){};
+        defer buffer_infos.deinit(self.allocator);
+        var image_infos = std.ArrayListUnmanaged(VkDescriptorImageInfo){};
+        defer image_infos.deinit(self.allocator);
+        var pending_writes = std.ArrayListUnmanaged(PendingDescriptorWrite){};
+        defer pending_writes.deinit(self.allocator);
+        var writes = std.ArrayListUnmanaged(VkWriteDescriptorSet){};
+        defer writes.deinit(self.allocator);
+
+        for (bs) |binding| {
+            const descriptor_type = try descriptor_type_for_binding(binding);
+            switch (binding.resource_kind) {
+                .buffer => {
+                    const required_size = try self.required_compute_buffer_size(binding);
+                    const compute_buffer = try self.ensure_compute_buffer(
+                        binding.resource_handle,
+                        required_size,
+                        initialize_buffers_on_create,
+                    );
+                    try buffer_infos.append(self.allocator, .{
+                        .buffer = compute_buffer.buffer,
+                        .offset = binding.buffer_offset,
+                        .range = try descriptor_range(binding, compute_buffer.size),
+                    });
+                    try pending_writes.append(self.allocator, .{
+                        .set_index = binding.group,
+                        .binding = binding.binding,
+                        .descriptor_type = descriptor_type,
+                        .kind = .buffer,
+                        .info_index = buffer_infos.items.len - 1,
+                    });
+                },
+                .texture, .storage_texture => {
+                    const texture = self.textures.getPtr(binding.resource_handle) orelse return error.InvalidState;
+                    try validate_texture_binding(binding, texture.*);
+                    try self.ensure_texture_shader_layout(texture);
+                    try image_infos.append(self.allocator, .{
+                        .sampler = 0,
+                        .imageView = texture.view,
+                        .imageLayout = texture.layout,
+                    });
+                    try pending_writes.append(self.allocator, .{
+                        .set_index = binding.group,
+                        .binding = binding.binding,
+                        .descriptor_type = descriptor_type,
+                        .kind = .image,
+                        .info_index = image_infos.items.len - 1,
+                    });
+                },
+            }
+        }
+
+        for (pending_writes.items) |pending| {
+            try writes.append(self.allocator, .{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = null,
+                .dstSet = self.descriptor_sets[@intCast(pending.set_index)],
+                .dstBinding = pending.binding,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = pending.descriptor_type,
+                .pImageInfo = if (pending.kind == .image) @ptrCast(&image_infos.items[pending.info_index]) else null,
+                .pBufferInfo = if (pending.kind == .buffer) @ptrCast(&buffer_infos.items[pending.info_index]) else null,
+                .pTexelBufferView = null,
+            });
+        }
+
+        if (writes.items.len > 0) {
+            vkUpdateDescriptorSets(self.device, @intCast(writes.items.len), writes.items.ptr, 0, null);
+        }
+    }
+
+    fn ensure_descriptor_pool(self: *NativeVulkanRuntime, bindings: ?[]const model.KernelBinding) !void {
+        if (self.has_descriptor_pool) return;
+        if (self.descriptor_set_count == 0) return;
+
+        var uniform_count: u32 = 0;
+        var storage_count: u32 = 0;
+        var sampled_image_count: u32 = 0;
+        var storage_image_count: u32 = 0;
+        if (bindings) |bs| {
+            for (bs) |binding| {
+                switch (try descriptor_type_for_binding(binding)) {
+                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER => uniform_count += 1,
+                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER => storage_count += 1,
+                    VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE => sampled_image_count += 1,
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE => storage_image_count += 1,
+                    else => return error.UnsupportedFeature,
+                }
+            }
+        }
+
+        var pool_sizes: [4]VkDescriptorPoolSize = undefined;
+        var pool_size_count: usize = 0;
+        if (uniform_count > 0) {
+            pool_sizes[pool_size_count] = .{ .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = uniform_count };
+            pool_size_count += 1;
+        }
+        if (storage_count > 0) {
+            pool_sizes[pool_size_count] = .{ .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = storage_count };
+            pool_size_count += 1;
+        }
+        if (sampled_image_count > 0) {
+            pool_sizes[pool_size_count] = .{ .type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, .descriptorCount = sampled_image_count };
+            pool_size_count += 1;
+        }
+        if (storage_image_count > 0) {
+            pool_sizes[pool_size_count] = .{ .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .descriptorCount = storage_image_count };
+            pool_size_count += 1;
+        }
+
+        var pool_info = VkDescriptorPoolCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .maxSets = self.descriptor_set_count,
+            .poolSizeCount = @intCast(pool_size_count),
+            .pPoolSizes = if (pool_size_count > 0) pool_sizes[0..pool_size_count].ptr else null,
+        };
+        try check_vk(vkCreateDescriptorPool(self.device, &pool_info, null, &self.descriptor_pool));
+        errdefer {
+            vkDestroyDescriptorPool(self.device, self.descriptor_pool, null);
+            self.descriptor_pool = VK_NULL_U64;
+        }
+
+        var alloc_info = VkDescriptorSetAllocateInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext = null,
+            .descriptorPool = self.descriptor_pool,
+            .descriptorSetCount = self.descriptor_set_count,
+            .pSetLayouts = self.descriptor_set_layouts[0..@intCast(self.descriptor_set_count)].ptr,
+        };
+        try check_vk(vkAllocateDescriptorSets(self.device, &alloc_info, self.descriptor_sets[0..@intCast(self.descriptor_set_count)].ptr));
+        self.has_descriptor_pool = true;
+    }
+
+    fn ensure_compute_buffer(
+        self: *NativeVulkanRuntime,
+        handle: u64,
+        required_size: u64,
+        initialize_buffers_on_create: bool,
+    ) !ComputeBuffer {
+        if (handle == 0 or required_size == 0) return error.InvalidArgument;
+        if (self.compute_buffers.getPtr(handle)) |existing| {
+            if (existing.size >= required_size) return existing.*;
+            if (self.has_deferred_submissions) _ = try self.flush_queue();
+            self.release_compute_buffer(existing.*);
+            existing.* = try self.create_compute_buffer(required_size, initialize_buffers_on_create);
+            return existing.*;
+        }
+
+        const compute_buffer = try self.create_compute_buffer(required_size, initialize_buffers_on_create);
+        try self.compute_buffers.put(self.allocator, handle, compute_buffer);
+        return self.compute_buffers.get(handle).?;
+    }
+
+    fn required_compute_buffer_size(
+        self: *const NativeVulkanRuntime,
+        binding: model.KernelBinding,
+    ) !u64 {
+        if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
+        if (binding.buffer_size == model.WGPUWholeSize) {
+            if (self.compute_buffers.get(binding.resource_handle)) |existing| {
+                return existing.size;
+            }
+            return error.InvalidArgument;
+        }
+        return std.math.add(u64, binding.buffer_offset, binding.buffer_size) catch error.InvalidArgument;
+    }
+
+    fn create_compute_buffer(
+        self: *NativeVulkanRuntime,
+        bytes: u64,
+        initialize_buffers_on_create: bool,
+    ) !ComputeBuffer {
+        var buffer: VkBuffer = VK_NULL_U64;
+        var memory: VkDeviceMemory = VK_NULL_U64;
+        var mapped: ?*anyopaque = null;
+
+        var buffer_info = VkBufferCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = null,
+        };
+        try check_vk(vkCreateBuffer(self.device, &buffer_info, null, &buffer));
+        errdefer if (buffer != VK_NULL_U64) vkDestroyBuffer(self.device, buffer, null);
+
+        var requirements = std.mem.zeroes(VkMemoryRequirements);
+        vkGetBufferMemoryRequirements(self.device, buffer, &requirements);
+        const memory_index = try self.find_memory_type_index(
+            requirements.memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        );
+        var alloc_info = VkMemoryAllocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = null,
+            .allocationSize = requirements.size,
+            .memoryTypeIndex = memory_index,
+        };
+        try check_vk(vkAllocateMemory(self.device, &alloc_info, null, &memory));
+        errdefer if (memory != VK_NULL_U64) vkFreeMemory(self.device, memory, null);
+
+        try check_vk(vkBindBufferMemory(self.device, buffer, memory, 0));
+        try check_vk(vkMapMemory(self.device, memory, 0, bytes, 0, &mapped));
+        errdefer if (mapped != null) vkUnmapMemory(self.device, memory);
+
+        if (initialize_buffers_on_create and mapped != null) {
+            @memset(@as([*]u8, @ptrCast(mapped.?))[0..@intCast(bytes)], 0);
+        }
+
+        return .{
+            .buffer = buffer,
+            .memory = memory,
+            .mapped = mapped,
+            .size = bytes,
+        };
+    }
+
+    fn release_compute_buffer(self: *NativeVulkanRuntime, compute_buffer: ComputeBuffer) void {
+        if (compute_buffer.mapped != null) {
+            vkUnmapMemory(self.device, compute_buffer.memory);
+        }
+        vkDestroyBuffer(self.device, compute_buffer.buffer, null);
+        vkFreeMemory(self.device, compute_buffer.memory, null);
+    }
+
+    fn release_compute_buffers(self: *NativeVulkanRuntime) void {
+        var iterator = self.compute_buffers.valueIterator();
+        while (iterator.next()) |buffer| {
+            self.release_compute_buffer(buffer.*);
+        }
+        self.compute_buffers.deinit(self.allocator);
+    }
+
+    fn create_host_visible_buffer(self: *NativeVulkanRuntime, bytes: u64, usage: u32) !ComputeBuffer {
+        var buffer: VkBuffer = VK_NULL_U64;
+        var memory: VkDeviceMemory = VK_NULL_U64;
+        var mapped: ?*anyopaque = null;
+
+        var buffer_info = VkBufferCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .size = bytes,
+            .usage = usage,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = null,
+        };
+        try check_vk(vkCreateBuffer(self.device, &buffer_info, null, &buffer));
+        errdefer if (buffer != VK_NULL_U64) vkDestroyBuffer(self.device, buffer, null);
+
+        var requirements = std.mem.zeroes(VkMemoryRequirements);
+        vkGetBufferMemoryRequirements(self.device, buffer, &requirements);
+        const memory_index = try self.find_memory_type_index(
+            requirements.memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        );
+        var alloc_info = VkMemoryAllocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = null,
+            .allocationSize = requirements.size,
+            .memoryTypeIndex = memory_index,
+        };
+        try check_vk(vkAllocateMemory(self.device, &alloc_info, null, &memory));
+        errdefer if (memory != VK_NULL_U64) vkFreeMemory(self.device, memory, null);
+
+        try check_vk(vkBindBufferMemory(self.device, buffer, memory, 0));
+        try check_vk(vkMapMemory(self.device, memory, 0, bytes, 0, &mapped));
+        errdefer if (mapped != null) vkUnmapMemory(self.device, memory);
+
+        return .{
+            .buffer = buffer,
+            .memory = memory,
+            .mapped = mapped,
+            .size = bytes,
+        };
+    }
+
+    fn destroy_host_visible_buffer(self: *NativeVulkanRuntime, buffer: ComputeBuffer) void {
+        self.release_compute_buffer(buffer);
+    }
+
+    fn ensure_texture_resource(self: *NativeVulkanRuntime, texture: model.CopyTextureResource) !*TextureResource {
+        if (texture.handle == 0) return error.InvalidArgument;
+        if (texture.width == 0 or texture.height == 0) return error.InvalidArgument;
+        const mip_levels: u32 = if (texture.mip_level > 0) texture.mip_level + 1 else 1;
+        if (self.textures.getPtr(texture.handle)) |existing| {
+            if (existing.width == texture.width and
+                existing.height == texture.height and
+                existing.mip_levels == mip_levels and
+                existing.format == texture.format and
+                existing.usage == texture.usage)
+            {
+                return existing;
+            }
+            if (self.has_deferred_submissions) _ = try self.flush_queue();
+            self.release_texture_resource(existing.*);
+            existing.* = try self.create_texture_resource(texture, mip_levels);
+            return existing;
+        }
+
+        try self.textures.put(self.allocator, texture.handle, try self.create_texture_resource(texture, mip_levels));
+        return self.textures.getPtr(texture.handle).?;
+    }
+
+    fn ensure_texture_shader_layout(self: *NativeVulkanRuntime, texture: *TextureResource) !void {
+        if (texture.layout == VK_IMAGE_LAYOUT_GENERAL) return;
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+            _ = try self.flush_queue();
+        }
+
+        try check_vk(vkResetCommandPool(self.device, self.command_pool, 0));
+        var begin_info = VkCommandBufferBeginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = null,
+        };
+        try check_vk(vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+        const source = texture_transition_source(texture.layout);
+        try self.transition_texture_layout(
+            self.primary_command_buffer,
+            texture.*,
+            texture.layout,
+            VK_IMAGE_LAYOUT_GENERAL,
+            source.src_access_mask,
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            source.src_stage,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        );
+        try check_vk(vkEndCommandBuffer(self.primary_command_buffer));
+
+        var submit_info = VkSubmitInfo{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = null,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = null,
+            .pWaitDstStageMask = null,
+            .commandBufferCount = 1,
+            .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = null,
+        };
+        try check_vk(vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+        try check_vk(vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+        try check_vk(vkWaitForFences(self.device, 1, @ptrCast(&self.fence), VK_TRUE, WAIT_TIMEOUT_NS));
+        texture.layout = VK_IMAGE_LAYOUT_GENERAL;
+    }
+
+    fn create_texture_resource(
+        self: *NativeVulkanRuntime,
+        texture: model.CopyTextureResource,
+        mip_levels: u32,
+    ) !TextureResource {
+        var image: VkImage = VK_NULL_U64;
+        var memory: VkDeviceMemory = VK_NULL_U64;
+        var view: VkImageView = VK_NULL_U64;
+        const usage = effective_texture_usage(texture.usage);
+
+        var image_info = VkImageCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = try texture_format_to_vk(texture.format),
+            .extent = .{
+                .width = texture.width,
+                .height = texture.height,
+                .depth = 1,
+            },
+            .mipLevels = mip_levels,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = image_usage_for_texture(usage),
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = null,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+        try check_vk(vkCreateImage(self.device, &image_info, null, &image));
+        errdefer if (image != VK_NULL_U64) vkDestroyImage(self.device, image, null);
+
+        var requirements = std.mem.zeroes(VkMemoryRequirements);
+        vkGetImageMemoryRequirements(self.device, image, &requirements);
+        const memory_index = try self.find_memory_type_index(
+            requirements.memoryTypeBits,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        );
+        var alloc_info = VkMemoryAllocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = null,
+            .allocationSize = requirements.size,
+            .memoryTypeIndex = memory_index,
+        };
+        try check_vk(vkAllocateMemory(self.device, &alloc_info, null, &memory));
+        errdefer if (memory != VK_NULL_U64) vkFreeMemory(self.device, memory, null);
+
+        try check_vk(vkBindImageMemory(self.device, image, memory, 0));
+
+        var view_info = VkImageViewCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .image = image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = try texture_format_to_vk(texture.format),
+            .components = .{
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+            },
+            .subresourceRange = .{
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = mip_levels,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        };
+        try check_vk(vkCreateImageView(self.device, &view_info, null, &view));
+        errdefer if (view != VK_NULL_U64) vkDestroyImageView(self.device, view, null);
+
+        return .{
+            .image = image,
+            .memory = memory,
+            .view = view,
+            .width = texture.width,
+            .height = texture.height,
+            .mip_levels = mip_levels,
+            .format = texture.format,
+            .usage = usage,
+            .layout = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+    }
+
+    fn release_texture_resource(self: *NativeVulkanRuntime, texture: TextureResource) void {
+        if (texture.view != VK_NULL_U64) vkDestroyImageView(self.device, texture.view, null);
+        if (texture.image != VK_NULL_U64) vkDestroyImage(self.device, texture.image, null);
+        if (texture.memory != VK_NULL_U64) vkFreeMemory(self.device, texture.memory, null);
+    }
+
+    fn release_textures(self: *NativeVulkanRuntime) void {
+        var iterator = self.textures.valueIterator();
+        while (iterator.next()) |texture| {
+            self.release_texture_resource(texture.*);
+        }
+        self.textures.deinit(self.allocator);
+    }
+
+    fn transition_texture_layout(
+        self: *NativeVulkanRuntime,
+        command_buffer: VkCommandBuffer,
+        texture: TextureResource,
+        old_layout: u32,
+        new_layout: u32,
+        src_access_mask: u32,
+        dst_access_mask: u32,
+        src_stage: u32,
+        dst_stage: u32,
+    ) !void {
+        var barrier = VkImageMemoryBarrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = null,
+            .srcAccessMask = src_access_mask,
+            .dstAccessMask = dst_access_mask,
+            .oldLayout = old_layout,
+            .newLayout = new_layout,
+            .srcQueueFamilyIndex = std.math.maxInt(u32),
+            .dstQueueFamilyIndex = std.math.maxInt(u32),
+            .image = texture.image,
+            .subresourceRange = .{
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = texture.mip_levels,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        };
+        vkCmdPipelineBarrier(
+            command_buffer,
+            src_stage,
+            dst_stage,
+            0,
+            0,
+            null,
+            0,
+            null,
+            1,
+            @ptrCast(&barrier),
+        );
+    }
+
+    fn bind_descriptor_sets(self: *NativeVulkanRuntime, command_buffer: VkCommandBuffer) void {
+        if (!self.has_descriptor_pool or self.descriptor_set_count == 0) return;
+        vkCmdBindDescriptorSets(
+            command_buffer,
+            VK_PIPELINE_BIND_POINT_COMPUTE,
+            self.pipeline_layout,
+            0,
+            self.descriptor_set_count,
+            self.descriptor_sets[0..@intCast(self.descriptor_set_count)].ptr,
+            0,
+            null,
+        );
     }
 
     fn record_upload_copy(self: *NativeVulkanRuntime, bytes: u64, dst_usage: u32) !PendingUpload {
@@ -1279,6 +2285,7 @@ pub const NativeVulkanRuntime = struct {
         try check_vk(vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
         vkCmdWriteTimestamp(self.primary_command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, query_pool, 0);
         vkCmdBindPipeline(self.primary_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
+        self.bind_descriptor_sets(self.primary_command_buffer);
         vkCmdDispatch(self.primary_command_buffer, 1, 1, 1);
         vkCmdWriteTimestamp(self.primary_command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, query_pool, 1);
         try check_vk(vkEndCommandBuffer(self.primary_command_buffer));
@@ -1359,6 +2366,150 @@ fn queue_selection_score(selection: QueueFamilySelection) u64 {
     if (selection.supports_graphics) score +|= 10_000;
     if (selection.timestamp_valid_bits > 0) score +|= 1_000;
     return score;
+}
+
+fn descriptor_type_for_binding(binding: model.KernelBinding) !u32 {
+    return switch (binding.resource_kind) {
+        .buffer => switch (binding.buffer_type) {
+            model.WGPUBufferBindingType_Uniform => VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            model.WGPUBufferBindingType_Storage,
+            model.WGPUBufferBindingType_ReadOnlyStorage,
+            => VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            else => error.UnsupportedFeature,
+        },
+        .texture => VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+        .storage_texture => VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+    };
+}
+
+fn validate_texture_binding(binding: model.KernelBinding, texture: TextureResource) !void {
+    if (binding.texture_view_dimension != model.WGPUTextureViewDimension_Undefined and
+        binding.texture_view_dimension != model.WGPUTextureViewDimension_2D) return error.UnsupportedFeature;
+    if (binding.texture_multisampled) return error.UnsupportedFeature;
+    if (binding.texture_aspect != model.WGPUTextureAspect_Undefined and
+        binding.texture_aspect != model.WGPUTextureAspect_All) return error.UnsupportedFeature;
+    if (binding.texture_format != model.WGPUTextureFormat_Undefined and
+        binding.texture_format != texture.format) return error.InvalidState;
+
+    switch (binding.resource_kind) {
+        .buffer => return error.InvalidArgument,
+        .texture => {
+            if ((texture.usage & model.WGPUTextureUsage_TextureBinding) == 0) return error.InvalidState;
+            switch (binding.texture_sample_type) {
+                model.WGPUTextureSampleType_Undefined,
+                model.WGPUTextureSampleType_Float,
+                model.WGPUTextureSampleType_UnfilterableFloat,
+                => {},
+                else => return error.UnsupportedFeature,
+            }
+        },
+        .storage_texture => {
+            if ((texture.usage & model.WGPUTextureUsage_StorageBinding) == 0) return error.InvalidState;
+            switch (binding.storage_texture_access) {
+                model.WGPUStorageTextureAccess_Undefined,
+                model.WGPUStorageTextureAccess_WriteOnly,
+                => {},
+                else => return error.UnsupportedFeature,
+            }
+        },
+    }
+}
+
+fn descriptor_range(binding: model.KernelBinding, buffer_size: u64) !u64 {
+    if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
+    if (binding.buffer_size == model.WGPUWholeSize) {
+        if (binding.buffer_offset > buffer_size) return error.InvalidArgument;
+        return VK_WHOLE_SIZE;
+    }
+    if (binding.buffer_size == 0) return error.InvalidArgument;
+    const end = std.math.add(u64, binding.buffer_offset, binding.buffer_size) catch return error.InvalidArgument;
+    if (end > buffer_size) return error.InvalidArgument;
+    return binding.buffer_size;
+}
+
+fn effective_texture_usage(requested: model.WGPUFlags) model.WGPUFlags {
+    if (requested == 0) return DEFAULT_RUNTIME_TEXTURE_USAGE;
+    return requested | REQUIRED_TEXTURE_UPLOAD_USAGE;
+}
+
+const TextureTransitionSource = struct {
+    src_access_mask: u32,
+    src_stage: u32,
+};
+
+fn texture_transition_source(layout: u32) TextureTransitionSource {
+    return switch (layout) {
+        VK_IMAGE_LAYOUT_UNDEFINED => .{
+            .src_access_mask = 0,
+            .src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        },
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL => .{
+            .src_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        },
+        VK_IMAGE_LAYOUT_GENERAL => .{
+            .src_access_mask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            .src_stage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        },
+        else => .{
+            .src_access_mask = 0,
+            .src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        },
+    };
+}
+
+fn compute_layout_hash(bindings: ?[]const model.KernelBinding) u64 {
+    var hasher = std.hash.Wyhash.init(0);
+    if (bindings) |bs| {
+        for (bs) |binding| {
+            hasher.update(std.mem.asBytes(&binding.group));
+            hasher.update(std.mem.asBytes(&binding.binding));
+            hasher.update(std.mem.asBytes(&binding.resource_kind));
+            hasher.update(std.mem.asBytes(&binding.buffer_type));
+            hasher.update(std.mem.asBytes(&binding.texture_sample_type));
+            hasher.update(std.mem.asBytes(&binding.texture_view_dimension));
+            hasher.update(std.mem.asBytes(&binding.storage_texture_access));
+            hasher.update(std.mem.asBytes(&binding.texture_format));
+            hasher.update(std.mem.asBytes(&binding.texture_multisampled));
+        }
+    }
+    return hasher.final();
+}
+
+fn texture_format_to_vk(format: model.WGPUTextureFormat) !u32 {
+    return switch (format) {
+        model.WGPUTextureFormat_RGBA8Unorm => VK_FORMAT_R8G8B8A8_UNORM,
+        else => error.UnsupportedFeature,
+    };
+}
+
+fn image_usage_for_texture(usage: model.WGPUFlags) u32 {
+    var out: u32 = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if ((usage & model.WGPUTextureUsage_TextureBinding) != 0) out |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    if ((usage & model.WGPUTextureUsage_StorageBinding) != 0) out |= VK_IMAGE_USAGE_STORAGE_BIT;
+    if ((usage & model.WGPUTextureUsage_CopySrc) != 0) out |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if ((usage & model.WGPUTextureUsage_CopyDst) != 0) out |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    return out;
+}
+
+fn bytes_per_pixel_for_texture_format(format: model.WGPUTextureFormat) u32 {
+    return switch (format) {
+        model.WGPUTextureFormat_RGBA8Unorm => 4,
+        else => 4,
+    };
+}
+
+fn compute_pipeline_hash(
+    words: []const u32,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model.KernelBinding,
+) u64 {
+    var hasher = std.hash.Wyhash.init(0);
+    const layout_hash = compute_layout_hash(bindings);
+    hasher.update(std.mem.sliceAsBytes(words));
+    hasher.update(entry_point orelse "main");
+    hasher.update(std.mem.asBytes(&layout_hash));
+    return hasher.final();
 }
 
 fn file_exists(path: []const u8) bool {

@@ -3,6 +3,7 @@ const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const common_errors = @import("../common/errors.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 
 const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
@@ -169,6 +170,12 @@ pub const NativeD3D12Runtime = struct {
         if (kernel_name.len == 0) return error.InvalidArgument;
         const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
 
+        const dxil_path = try std.fmt.allocPrint(alloc, "{s}/{s}.dxil", .{ root, strip_extension(kernel_name) });
+        defer alloc.free(dxil_path);
+        if (file_exists(dxil_path)) {
+            return std.fs.cwd().readFileAlloc(alloc, dxil_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+        }
+
         const cso_path = try std.fmt.allocPrint(alloc, "{s}/{s}.cso", .{ root, strip_extension(kernel_name) });
         defer alloc.free(cso_path);
         if (file_exists(cso_path)) {
@@ -184,12 +191,19 @@ pub const NativeD3D12Runtime = struct {
         const source_path = self.resolve_kernel_source_path(alloc, kernel_name) catch return error.ShaderCompileFailed;
         defer alloc.free(source_path);
 
-        if (std.mem.endsWith(u8, source_path, ".wgsl")) {
-            return error.UnsupportedFeature;
-        }
-
         const source = std.fs.cwd().readFileAlloc(alloc, source_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
         defer alloc.free(source);
+
+        if (std.mem.endsWith(u8, source_path, ".dxil") or
+            std.mem.endsWith(u8, source_path, ".cso") or
+            std.mem.endsWith(u8, source_path, ".dxbc"))
+        {
+            return try alloc.dupe(u8, source);
+        }
+
+        if (std.mem.endsWith(u8, source_path, ".wgsl")) {
+            return try self.compile_wgsl_source(alloc, source);
+        }
 
         if (std.mem.endsWith(u8, source_path, ".hlsl")) {
             return try self.compile_hlsl_source(alloc, source);
@@ -274,6 +288,13 @@ pub const NativeD3D12Runtime = struct {
         return try compile_hlsl_to_bytecode(alloc, hlsl_source);
     }
 
+    fn compile_wgsl_source(self: *const NativeD3D12Runtime, alloc: std.mem.Allocator, wgsl_source: []const u8) ![]u8 {
+        var hlsl_buf = try alloc.alloc(u8, doe_wgsl.MAX_HLSL_OUTPUT);
+        defer alloc.free(hlsl_buf);
+        const hlsl_len = doe_wgsl.translateToHlsl(alloc, wgsl_source, hlsl_buf) catch return error.ShaderCompileFailed;
+        return try self.compile_hlsl_source(alloc, hlsl_buf[0..hlsl_len]);
+    }
+
     fn build_compute_pipeline(self: *NativeD3D12Runtime, bytecode: []const u8, shader_hash: u64) !void {
         if (!self.has_root_signature) {
             self.root_signature = d3d12_bridge_device_create_root_signature_empty(self.device) orelse return error.InvalidState;
@@ -332,7 +353,7 @@ pub const NativeD3D12Runtime = struct {
 };
 
 fn strip_extension(name: []const u8) []const u8 {
-    const suffixes = [_][]const u8{ ".wgsl", ".hlsl", ".cso", ".dxbc" };
+    const suffixes = [_][]const u8{ ".wgsl", ".hlsl", ".dxil", ".cso", ".dxbc" };
     for (suffixes) |sfx| {
         if (std.mem.endsWith(u8, name, sfx)) return name[0 .. name.len - sfx.len];
     }

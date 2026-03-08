@@ -248,8 +248,17 @@ const Emitter = struct {
                 try self.emit_stmt(function, if_stmt.then_block);
                 self.indent -= 4;
                 try self.write_indent();
-                try self.write("}\n");
-                if (if_stmt.else_block != null) return error.InvalidIr;
+                try self.write("}");
+                if (if_stmt.else_block) |else_block| {
+                    try self.write(" else {\n");
+                    self.indent += 4;
+                    try self.emit_stmt(function, else_block);
+                    self.indent -= 4;
+                    try self.write_indent();
+                    try self.write("}\n");
+                } else {
+                    try self.write("\n");
+                }
             },
             .loop_ => |loop_stmt| {
                 if (loop_stmt.init) |init_stmt| try self.emit_stmt(function, init_stmt);
@@ -273,7 +282,37 @@ const Emitter = struct {
                 try self.write_indent();
                 try self.write("}\n");
             },
-            .switch_ => return error.InvalidIr,
+            .switch_ => |switch_stmt| {
+                try self.write_indent();
+                try self.write("switch (");
+                try self.emit_expr(function, switch_stmt.expr);
+                try self.write(") {\n");
+                self.indent += 4;
+                var case_index: u32 = 0;
+                while (case_index < switch_stmt.cases.len) : (case_index += 1) {
+                    const case_node = function.switch_cases.items[switch_stmt.cases.start + case_index];
+                    if (case_node.is_default) {
+                        try self.write_indent();
+                        try self.write("default:\n");
+                    } else {
+                        var selector_index: usize = 0;
+                        while (selector_index < case_node.selectors.items.len) : (selector_index += 1) {
+                            try self.write_indent();
+                            try self.write("case ");
+                            try self.emit_expr(function, case_node.selectors.items[selector_index]);
+                            try self.write(":\n");
+                        }
+                    }
+                    self.indent += 4;
+                    try self.emit_stmt(function, case_node.body);
+                    try self.write_indent();
+                    try self.write("break;\n");
+                    self.indent -= 4;
+                }
+                self.indent -= 4;
+                try self.write_indent();
+                try self.write("}\n");
+            },
             .break_ => {
                 try self.write_indent();
                 try self.write("break;\n");

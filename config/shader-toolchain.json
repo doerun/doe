@@ -1,21 +1,75 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "platforms": {
     "macos": {
-      "wgslToMsl": {
-        "tool": "xcrun",
-        "version": "15.x",
-        "args": [
-          "metal",
-          "-std=metal3.1"
-        ]
-      },
-      "mslToMetallib": {
-        "tool": "xcrun",
-        "version": "15.x",
-        "args": [
-          "metallib"
-        ]
+      "backends": {
+        "doe_metal": {
+          "requiredStages": [
+            { "stage": "wgsl_parse", "implementation": "native_zig" },
+            { "stage": "sema", "implementation": "native_zig" },
+            { "stage": "ir_build", "implementation": "native_zig" },
+            { "stage": "ir_validate", "implementation": "native_zig" },
+            { "stage": "ir_to_msl", "implementation": "native_zig" },
+            {
+              "stage": "msl_compile",
+              "implementation": "external_tool",
+              "tool": "xcrun",
+              "version": "15.x",
+              "args": ["metal", "-std=metal3.1"]
+            },
+            {
+              "stage": "metallib_link",
+              "implementation": "external_tool",
+              "tool": "xcrun",
+              "version": "15.x",
+              "args": ["metallib"]
+            }
+          ]
+        }
+      }
+    },
+    "linux": {
+      "backends": {
+        "doe_vulkan": {
+          "requiredStages": [
+            { "stage": "wgsl_parse", "implementation": "native_zig" },
+            { "stage": "sema", "implementation": "native_zig" },
+            { "stage": "ir_build", "implementation": "native_zig" },
+            { "stage": "ir_validate", "implementation": "native_zig" },
+            { "stage": "ir_to_spirv", "implementation": "native_zig" }
+          ],
+          "optionalStages": [
+            {
+              "stage": "spirv_validate",
+              "implementation": "external_tool",
+              "tool": "spirv-val",
+              "version": "1.x",
+              "args": []
+            }
+          ]
+        }
+      }
+    },
+    "windows": {
+      "backends": {
+        "doe_d3d12": {
+          "requiredStages": [
+            { "stage": "wgsl_parse", "implementation": "native_zig" },
+            { "stage": "sema", "implementation": "native_zig" },
+            { "stage": "ir_build", "implementation": "native_zig" },
+            { "stage": "ir_validate", "implementation": "native_zig" },
+            { "stage": "ir_to_dxil", "implementation": "native_zig" }
+          ],
+          "optionalStages": [
+            {
+              "stage": "dxil_validate",
+              "implementation": "external_tool",
+              "tool": "dxv",
+              "version": "1.x",
+              "args": []
+            }
+          ]
+        }
       }
     }
   }

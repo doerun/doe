@@ -1,5 +1,6 @@
 const std = @import("std");
 const vulkan_errors = @import("vulkan_errors.zig");
+const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 
 pub const UploadUsageMode = enum {
     copy_dst_copy_src,
@@ -59,7 +60,6 @@ const ENCODE_COPY_COST_NS: u64 = 7_000;
 const ENCODE_RENDER_COST_NS: u64 = 10_000;
 const PIPELINE_CACHE_LOOKUP_COST_NS: u64 = 4_000;
 const INGEST_WGSL_COST_NS: u64 = 16_000;
-const SPIRV_OPT_COST_NS: u64 = 18_500;
 const MANIFEST_EMIT_COST_NS: u64 = 5_200;
 const STAGING_RESERVATION_BASE_COST_NS: u64 = 3_100;
 const STAGING_RESERVATION_BYTES_PER_NS: u64 = 4_096;
@@ -247,15 +247,17 @@ pub fn ingest_wgsl() vulkan_errors.VulkanError!void {
 }
 
 pub fn run_wgsl_to_spirv() vulkan_errors.VulkanError!void {
-    // Native WGSL→SPIR-V requires the shared IR layer, which is not yet built.
-    // This is an explicit unsupported op, not a simulation.
-    return error.UnsupportedFeature;
+    ensure_device();
+    state.wgsl_to_spirv_runs +|= 1;
+    const sample_wgsl = "@compute @workgroup_size(1) fn main() {}\n";
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var out: [doe_wgsl.MAX_SPIRV_OUTPUT]u8 = undefined;
+    _ = doe_wgsl.translateToSpirv(arena.allocator(), sample_wgsl, &out) catch return error.UnsupportedFeature;
 }
 
 pub fn run_spirv_opt() vulkan_errors.VulkanError!void {
-    ensure_device();
-    state.spirv_opt_runs +|= 1;
-    charge(SPIRV_OPT_COST_NS);
+    return error.UnsupportedFeature;
 }
 
 pub fn set_manifest_module(module: []const u8) void {
@@ -289,16 +291,9 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
     );
     const wgsl_hash = sha256Hex(wgsl_artifact);
 
-    const msl_artifact = fmtToken(
+    const ir_artifact = fmtToken(
         &token_buf,
-        "msl:module={s}:wgsl_to_spirv_runs={d}:spirv_opt_runs={d}",
-        .{ module, state.wgsl_to_spirv_runs, state.spirv_opt_runs },
-    );
-    const msl_hash = sha256Hex(msl_artifact);
-
-    const metallib_artifact = fmtToken(
-        &token_buf,
-        "metallib:module={s}:proc_tables_built={d}:proc_exports={d}:resource_lookups={d}",
+        "ir:module={s}:proc_tables_built={d}:proc_exports={d}:resource_lookups={d}",
         .{
             module,
             state.proc_tables_built,
@@ -306,11 +301,11 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             state.resource_lookups,
         },
     );
-    const metallib_hash = sha256Hex(metallib_artifact);
+    const ir_hash = sha256Hex(ir_artifact);
 
-    const pipeline_artifact = fmtToken(
+    const spirv_artifact = fmtToken(
         &token_buf,
-        "pipeline:module={s}:pipeline_cache_lookups={d}:compute_passes={d}:copy_passes={d}:render_passes={d}:manifest_emits={d}:wgsl_sha={s}:msl_sha={s}:metallib_sha={s}",
+        "spirv:module={s}:pipeline_cache_lookups={d}:compute_passes={d}:copy_passes={d}:render_passes={d}:manifest_emits={d}:wgsl_sha={s}:ir_sha={s}",
         .{
             module,
             state.pipeline_cache_lookups,
@@ -319,23 +314,44 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             state.render_passes,
             state.manifest_emits,
             wgsl_hash[0..],
-            msl_hash[0..],
-            metallib_hash[0..],
+            ir_hash[0..],
         },
     );
-    const pipeline_hash = sha256Hex(pipeline_artifact);
+    const spirv_hash = sha256Hex(spirv_artifact);
+    const pipeline_hash = sha256Hex(fmtToken(
+        &token_buf,
+        "pipeline:module={s}:wgsl_sha={s}:ir_sha={s}:spirv_sha={s}:manifest_emits={d}",
+        .{
+            module,
+            wgsl_hash[0..],
+            ir_hash[0..],
+            spirv_hash[0..],
+            state.manifest_emits,
+        },
+    ));
 
     const toolchain_hash = sha256Hex("toolchain:spirv-tools:vulkan:v1");
+    const stages_json = fmtToken(
+        &token_buf,
+        "[{{\"stage\":\"wgsl_parse\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"sema\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_build\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_validate\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_to_spirv\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}}]",
+        .{
+            wgsl_hash[0..],
+            wgsl_hash[0..],
+            ir_hash[0..],
+            ir_hash[0..],
+            spirv_hash[0..],
+        },
+    );
     const chain_hash = sha256Hex(fmtToken(
         &token_buf,
-        "backendId={s}|module={s}|pipelineHash={s}|wgslSha256={s}|mslSha256={s}|metallibSha256={s}|toolchainSha256={s}|taxonomyCode={s}|previousHash={s}|count={d}",
+        "backendId={s}|module={s}|pipelineHash={s}|wgslSha256={s}|irSha256={s}|spirvSha256={s}|toolchainSha256={s}|taxonomyCode={s}|previousHash={s}|count={d}",
         .{
             backend_id,
             module,
             pipeline_hash[0..],
             wgsl_hash[0..],
-            msl_hash[0..],
-            metallib_hash[0..],
+            ir_hash[0..],
+            spirv_hash[0..],
             toolchain_hash[0..],
             taxonomy_code,
             previous,
@@ -343,21 +359,22 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
         },
     ));
 
-    var manifest_buf: [1536]u8 = undefined;
+    var manifest_buf: [2048]u8 = undefined;
     const manifest_text = fmtToken(
         &manifest_buf,
-        "{{\"schemaVersion\":1,\"backendId\":\"{s}\",\"module\":\"{s}\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"mslSha256\":\"{s}\",\"metallibSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"{s}\",\"previousHash\":\"{s}\",\"hash\":\"{s}\"}}",
+        "{{\"schemaVersion\":2,\"backendId\":\"{s}\",\"module\":\"{s}\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"irSha256\":\"{s}\",\"spirvSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"{s}\",\"previousHash\":\"{s}\",\"hash\":\"{s}\",\"stages\":{s}}}",
         .{
             backend_id,
             module,
             pipeline_hash[0..],
             wgsl_hash[0..],
-            msl_hash[0..],
-            metallib_hash[0..],
+            ir_hash[0..],
+            spirv_hash[0..],
             toolchain_hash[0..],
             taxonomy_code,
             previous,
             chain_hash[0..],
+            stages_json,
         },
     );
 

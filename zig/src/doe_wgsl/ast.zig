@@ -85,7 +85,7 @@ pub const NodeTag = enum(u8) {
     return_stmt,
 
     /// `if (cond) { ... } else { ... }`
-    /// data.lhs = condition, data.rhs = then block. Else chain via extra.
+    /// data.lhs = condition, data.rhs = extra start for [then_block, else_node].
     if_stmt,
 
     /// `else if` or `else` clause linked from if_stmt extra.
@@ -113,6 +113,7 @@ pub const NodeTag = enum(u8) {
     switch_stmt,
 
     /// `case expr: { ... }` or `default: { ... }`
+    /// data.lhs = body block, data.rhs = packed selector span (start | len << 16).
     switch_case,
 
     /// `discard;`

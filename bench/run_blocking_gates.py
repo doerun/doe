@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -83,6 +84,16 @@ def parse_args() -> argparse.Namespace:
         "--shader-artifact-require-manifest",
         action="store_true",
         help="Pass --require-manifest to shader_artifact_gate.py.",
+    )
+    parser.add_argument(
+        "--shader-artifact-spirv-val",
+        default="",
+        help="Optional spirv-val executable passed to shader_artifact_gate.py.",
+    )
+    parser.add_argument(
+        "--shader-artifact-require-spirv-validation",
+        action="store_true",
+        help="Fail shader artifact gate when SPIR-V artifacts are present but not validated.",
     )
     parser.add_argument(
         "--with-metal-sync-conformance-gate",
@@ -403,6 +414,17 @@ def main() -> int:
             if not shader_schema_path.exists():
                 print(f"FAIL: missing --shader-artifact-schema: {shader_schema_path}")
                 return 1
+            if args.shader_artifact_require_spirv_validation:
+                spirv_val = args.shader_artifact_spirv_val.strip()
+                if not spirv_val:
+                    print(
+                        "FAIL: --shader-artifact-require-spirv-validation "
+                        "requires --shader-artifact-spirv-val"
+                    )
+                    return 1
+                if shutil.which(spirv_val) is None:
+                    print(f"FAIL: missing --shader-artifact-spirv-val executable: {spirv_val}")
+                    return 1
             shader_artifact_command = [
                 sys.executable,
                 str(shader_artifact_gate),
@@ -413,6 +435,12 @@ def main() -> int:
             ]
             if args.shader_artifact_require_manifest:
                 shader_artifact_command.append("--require-manifest")
+            if args.shader_artifact_spirv_val.strip():
+                shader_artifact_command.extend(
+                    ["--spirv-val", args.shader_artifact_spirv_val.strip()]
+                )
+            if args.shader_artifact_require_spirv_validation:
+                shader_artifact_command.append("--require-spirv-validation")
             run_gate("shader-artifact", shader_artifact_command)
 
         if args.with_metal_sync_conformance_gate:

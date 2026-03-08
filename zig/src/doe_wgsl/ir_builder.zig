@@ -128,11 +128,7 @@ const FunctionBuilder = struct {
             .block => try self.lower_block(node),
             .var_stmt, .let_stmt, .const_stmt => try self.lower_local_decl(node),
             .return_stmt => try self.function.append_stmt(self.allocator, .{ .return_ = if (node.data.lhs != NULL_NODE) try self.lower_value_expr(node.data.lhs) else null }),
-            .if_stmt => try self.function.append_stmt(self.allocator, .{ .if_ = .{
-                .cond = try self.lower_value_expr(node.data.lhs),
-                .then_block = try self.lower_stmt(node.data.rhs),
-                .else_block = null,
-            } }),
+            .if_stmt => try self.lower_if_stmt(node),
             .for_stmt => try self.lower_for_stmt(node),
             .while_stmt => try self.function.append_stmt(self.allocator, .{ .loop_ = .{
                 .kind = .while_loop,
@@ -141,15 +137,10 @@ const FunctionBuilder = struct {
                 .continuing = null,
                 .body = try self.lower_stmt(node.data.rhs),
             } }),
-            .loop_stmt => try self.function.append_stmt(self.allocator, .{ .loop_ = .{
-                .kind = .loop,
-                .init = null,
-                .cond = null,
-                .continuing = null,
-                .body = try self.lower_stmt(node.data.lhs),
-            } }),
-            .break_stmt => try self.function.append_stmt(self.allocator, .break_),
+            .loop_stmt => try self.lower_loop_stmt(node),
+            .break_stmt => try self.lower_break_stmt(node),
             .continue_stmt => try self.function.append_stmt(self.allocator, .continue_),
+            .continuing_stmt => try self.lower_stmt(node.data.lhs),
             .discard_stmt => try self.function.append_stmt(self.allocator, .discard_),
             .expr_stmt => try self.function.append_stmt(self.allocator, .{ .expr = try self.lower_value_expr(node.data.lhs) }),
             .assign_stmt => try self.function.append_stmt(self.allocator, .{ .assign = .{
@@ -157,9 +148,21 @@ const FunctionBuilder = struct {
                 .lhs = try self.lower_ref_expr(node.data.lhs),
                 .rhs = try self.lower_value_expr(node.data.rhs),
             } }),
-            .continuing_stmt, .switch_stmt, .switch_case, .else_clause => error.UnsupportedConstruct,
+            .switch_stmt => try self.lower_switch_stmt(node),
+            .switch_case, .else_clause => error.UnsupportedConstruct,
             else => error.UnsupportedConstruct,
         };
+    }
+
+    fn lower_if_stmt(self: *FunctionBuilder, node: Node) !ir.StmtId {
+        const extra = self.tree.extra_data.items;
+        const then_block = extra[node.data.rhs + 0];
+        const else_block = extra[node.data.rhs + 1];
+        return try self.function.append_stmt(self.allocator, .{ .if_ = .{
+            .cond = try self.lower_value_expr(node.data.lhs),
+            .then_block = try self.lower_stmt(then_block),
+            .else_block = if (else_block != NULL_NODE) try self.lower_stmt(else_block) else null,
+        } });
     }
 
     fn lower_block(self: *FunctionBuilder, node: Node) !ir.StmtId {
@@ -196,6 +199,89 @@ const FunctionBuilder = struct {
         } });
     }
 
+    fn lower_loop_stmt(self: *FunctionBuilder, node: Node) !ir.StmtId {
+        const parts = try self.lower_loop_body_parts(node.data.lhs);
+        return try self.function.append_stmt(self.allocator, .{ .loop_ = .{
+            .kind = .loop,
+            .init = null,
+            .cond = null,
+            .continuing = parts.continuing,
+            .body = parts.body,
+        } });
+    }
+
+    fn lower_loop_body_parts(self: *FunctionBuilder, block_idx: u32) !struct { body: ir.StmtId, continuing: ?ir.StmtId } {
+        const block = self.tree.nodes.items[block_idx];
+        if (block.tag != .block or block.data.rhs == 0) {
+            return .{ .body = try self.lower_stmt(block_idx), .continuing = null };
+        }
+
+        const last_stmt_idx = self.tree.extra_data.items[block.data.lhs + block.data.rhs - 1];
+        const last_stmt = self.tree.nodes.items[last_stmt_idx];
+        if (last_stmt.tag != .continuing_stmt) {
+            return .{ .body = try self.lower_stmt(block_idx), .continuing = null };
+        }
+
+        var children = std.ArrayListUnmanaged(ir.StmtId){};
+        defer children.deinit(self.allocator);
+        var i: u32 = 0;
+        while (i + 1 < block.data.rhs) : (i += 1) {
+            try children.append(self.allocator, try self.lower_stmt(self.tree.extra_data.items[block.data.lhs + i]));
+        }
+
+        const range = try self.function.append_stmt_children(self.allocator, children.items);
+        return .{
+            .body = try self.function.append_stmt(self.allocator, .{ .block = range }),
+            .continuing = try self.lower_stmt(last_stmt.data.lhs),
+        };
+    }
+
+    fn lower_break_stmt(self: *FunctionBuilder, node: Node) !ir.StmtId {
+        if (node.data.lhs == NULL_NODE) return try self.function.append_stmt(self.allocator, .break_);
+
+        const break_stmt = try self.function.append_stmt(self.allocator, .break_);
+        const range = try self.function.append_stmt_children(self.allocator, &.{break_stmt});
+        const then_block = try self.function.append_stmt(self.allocator, .{ .block = range });
+        return try self.function.append_stmt(self.allocator, .{ .if_ = .{
+            .cond = try self.lower_value_expr(node.data.lhs),
+            .then_block = then_block,
+            .else_block = null,
+        } });
+    }
+
+    fn lower_switch_stmt(self: *FunctionBuilder, node: Node) !ir.StmtId {
+        const extra = self.tree.extra_data.items;
+        const case_start = node.data.rhs & 0xFFFF;
+        const case_count = node.data.rhs >> 16;
+        const cases_range = ir.Range{
+            .start = @intCast(self.function.switch_cases.items.len),
+            .len = case_count,
+        };
+
+        var i: u32 = 0;
+        while (i < case_count) : (i += 1) {
+            const case_node = self.tree.nodes.items[extra[case_start + i]];
+            const selector_start = case_node.data.rhs & 0xFFFF;
+            const selector_count = case_node.data.rhs >> 16;
+            var case_ir = ir.SwitchCase{
+                .body = try self.lower_stmt(case_node.data.lhs),
+                .is_default = self.tree.tokens.items[case_node.main_token].tag == .kw_default,
+            };
+            errdefer case_ir.deinit(self.allocator);
+
+            var j: u32 = 0;
+            while (j < selector_count) : (j += 1) {
+                try case_ir.selectors.append(self.allocator, try self.lower_value_expr(extra[selector_start + j]));
+            }
+            try self.function.switch_cases.append(self.allocator, case_ir);
+        }
+
+        return try self.function.append_stmt(self.allocator, .{ .switch_ = .{
+            .expr = try self.lower_value_expr(node.data.lhs),
+            .cases = cases_range,
+        } });
+    }
+
     fn lower_expr(self: *FunctionBuilder, node_idx: u32) BuildError!ir.ExprId {
         const node = self.tree.nodes.items[node_idx];
         const ty = self.semantic.nodeType(node_idx);
@@ -218,7 +304,7 @@ const FunctionBuilder = struct {
             .member_expr => ir.Expr{ .member = .{
                 .base = if (category == .ref) try self.lower_ref_expr(node.data.lhs) else try self.lower_value_expr(node.data.lhs),
                 .field_name = try ir.dup_string(self.allocator, self.tree.tokenSlice(node.data.rhs)),
-                .field_index = 0,
+                .field_index = try self.resolve_member_index(node.data.lhs, node.data.rhs),
             } },
             .index_expr => ir.Expr{ .index = .{
                 .base = if (category == .ref) try self.lower_ref_expr(node.data.lhs) else try self.lower_value_expr(node.data.lhs),
@@ -264,6 +350,24 @@ const FunctionBuilder = struct {
             return .{ .construct = .{ .ty = self.semantic.try_resolve_named_type(name).?, .args = range } };
         }
         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
+    }
+
+    fn resolve_member_index(self: *FunctionBuilder, base_node_idx: u32, field_token: u32) !u32 {
+        const field_name = self.tree.tokenSlice(field_token);
+        var ty = self.semantic.nodeType(base_node_idx);
+        while (true) {
+            switch (self.semantic.types.get(ty)) {
+                .ref => |ref_ty| ty = ref_ty.elem,
+                .struct_ => |struct_id| {
+                    const struct_info = self.semantic.structs.items[struct_id];
+                    for (struct_info.fields.items, 0..) |field, index| {
+                        if (std.mem.eql(u8, field.name, field_name)) return @intCast(index);
+                    }
+                    return error.InvalidIr;
+                },
+                else => return error.InvalidIr,
+            }
+        }
     }
 
     fn lower_value_expr(self: *FunctionBuilder, node_idx: u32) !ir.ExprId {

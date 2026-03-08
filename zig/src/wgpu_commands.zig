@@ -9,8 +9,8 @@ const extended_commands = @import("wgpu_extended_commands.zig");
 const async_diagnostics_command = @import("wgpu_async_diagnostics_command.zig");
 const ffi = @import("webgpu_ffi.zig");
 const sandbox = @import("wgpu_sandbox_guard.zig");
-const copy_commands = @import("wgpu_commands_copy.zig");
-const compute_commands = @import("wgpu_commands_compute.zig");
+const copy_commands = @import("core/wgpu_commands_copy.zig");
+const compute_commands = @import("core/wgpu_commands_compute.zig");
 const Backend = ffi.WebGPUBackend;
 
 pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecutionResult {

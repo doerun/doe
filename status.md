@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-03-07
+Date: 2026-03-08
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -27,15 +27,23 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - `zig/src/backend/backend_registry.zig` routes `doe_d3d12` directly to `zig/src/backend/d3d12/mod.zig`.
   - active D3D12 execution is instance-owned (`ZigD3D12Backend` + `WebGPUBackend`) with shared common-layer error/capability contracts.
   - D3D12 shader-artifact manifest failures are now handled in-place (typed status update) without throwing away command timing/dispatch metadata.
-  - live `.wgsl` shader compilation now fails explicitly as unsupported until a native DXIL backend exists; runtime support remains precompiled `.cso`/`.dxbc` artifacts plus explicit `.hlsl` source compilation.
+  - live `.wgsl` shader compilation now lowers through the shared WGSL→IR→HLSL path and then compiles with DXC; native DXIL remains pending while precompiled `.cso`/`.dxbc` artifacts and explicit `.hlsl` source compilation remain supported.
 - Vulkan native backend routing is now active on `doe_vulkan`:
   - `zig/src/backend/backend_registry.zig` routes `doe_vulkan` to `zig/src/backend/vulkan/mod.zig` (no Dawn delegate fallback in this lane).
   - `kernel_dispatch` binds real kernel SPIR-V via native Vulkan runtime (`load_kernel_spirv` + pipeline bind), removing noop-kernel execution on that path.
   - upload cadence now queues copy command buffers and flushes by explicit submit policy (`upload_submit_every`) instead of immediate per-upload submit.
+  - native WGSL→IR→SPIR-V coverage now matches the current compute kernel corpus: storage-buffer runtime arrays, workgroup/storage atomics, `workgroupBarrier`, `dot`, `sin`, `fract`, and narrow texture/image support are all lowered natively in Zig.
+  - native compute texture-backed dispatch now includes `texture_write` / `texture_query` / `texture_destroy`, Vulkan image+view allocation for `rgba8unorm` 2D textures, descriptor-image binding for `.texture` and `.storage_texture`, empty-write texture creation promoted to shader-usable `GENERAL` layout, and native WGSL→IR→SPIR-V lowering for `textureLoad` / `textureStore` kernels such as `bench/kernels/texture_sample_to_storage_64.wgsl`.
 - Runtime backend selection is strict no-fallback across all lanes:
   - `zig/src/backend/backend_runtime.zig` initializes the selected backend directly and does not auto-route to `dawn_delegate`.
   - `config/backend-runtime-policy.json` enforces `allowFallback=false` and `strictNoFallback=true` for every lane.
   - backend init failures now fail fast with explicit backend errors and `fallbackUsed=false`.
+- Shader contract/gate layer now supports a backend-neutral transition contract:
+  - `config/shader-artifact.schema.json` accepts legacy `schemaVersion=1` manifests and new `schemaVersion=2` manifests with shared `irSha256`, backend-specific final artifact hashes (`mslSha256`/`metallibSha256`, `spirvSha256`, `dxilSha256`), and stage-by-stage route attestations.
+  - `config/shader-toolchain.json` and its schema now model backend routes as explicit stage contracts (`native_zig` vs `external_tool`) instead of hard-coded Metal-only translation steps.
+  - `bench/shader_artifact_gate.py` can now validate taxonomy membership, toolchain-hash linkage, and strict native-backend route conformance when enabled from `run_blocking_gates.py`.
+  - `bench/preflight_metal_host.py` now derives required external tools from the shader toolchain contract instead of hard-coding Metal compiler checks.
+  - runtime shader manifest emitters still need to adopt `schemaVersion=2` end-to-end before strict native-route enforcement can be enabled universally.
 
 Benchmark contract coverage snapshot (2026-02-25 update):
 - `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `31` strict apples-to-apples comparable + `9` directional contracts.
@@ -137,6 +145,9 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - latest cube effect on Linux x64 package surfaces:
       - Bun `compute_e2e`: `claimable` (3 comparable claimable e2e rows)
       - Node `compute_e2e`: `comparable` (3 comparable rows; still not fully claimable because Node compute e2e remains slower in the latest package lane)
+  - initial `core` runtime migration for future headless package layering has started:
+    - canonical source location for `wgpu_commands_compute.zig`, `wgpu_commands_copy.zig`, and `wgpu_ffi_sync.zig` is now `zig/src/core/`
+    - root-path compatibility shims remain while mixed hotspot files (`model.zig`, `webgpu_ffi.zig`, `wgpu_types.zig`, `wgpu_loader.zig`, `wgpu_commands.zig`, backend roots) are extracted incrementally
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
   - `bench/measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
@@ -250,7 +261,7 @@ Legend: ● implemented ◐ partial ○ missing
 
 | Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
 |---|---|---|---|---|
-| Shader translation (WGSL) | ● WGSL→MSL (AST-based) | ○ expects .metal | ◐ WGSL→SPIR-V via `emit_spirv`/DXC; `.spv` load supported | ◐ explicit `.hlsl`→DXC bytecode; `.cso`/`.dxbc` load supported; live `.wgsl` unsupported pending native DXIL |
+| Shader translation (WGSL) | ● WGSL→IR→MSL (native Zig, compute-focused) | ○ expects .metal | ◐ WGSL→IR→SPIR-V (native Zig, compute-focused subset); `.spv` load supported | ◐ WGSL→IR→HLSL→DXC bytecode; `.cso`/`.dxbc` load supported; native DXIL pending |
 | Compute pipeline create | ● | ● | ◐ Linux only | ● |
 | Compute dispatch | ● | ● | ◐ Linux only | ● |
 | dispatchWorkgroupsIndirect | ● | ○ | ○ | ○ |
@@ -284,20 +295,20 @@ Legend: ● implemented ◐ partial ○ missing
 
 - **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` for the earlier Node headless path and Doppler inference. 729 + 155 lines.
 - **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by Doppler. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
-- **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Live WGSL kernels compile to SPIR-V through `doe_wgsl/emit_spirv.zig`; prebuilt `.spv` artifacts still load directly.
-- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Accepts pre-compiled CSO/DXBC and can compile WGSL/HLSL to bytecode through DXC.
+- **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Live WGSL kernels now compile through the shared WGSL→IR→SPIR-V path in `doe_wgsl/emit_spirv.zig`; prebuilt `.spv` artifacts still load directly. The native compute path now includes Vulkan descriptor-set layout/pool/bind wiring for buffer bindings, entry-point-aware pipeline creation, and live bound-buffer dispatch.
+- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Accepts pre-compiled DXIL/CSO/DXBC bytecode blobs. Live WGSL still lowers through `WGSL -> IR -> HLSL -> DXC`; native `translateToDxil` API surface exists but native DXIL emission is not implemented yet.
 
 ### WGSL compiler (`src/doe_wgsl/`)
 
 AST-based WGSL compiler replacing the old regex-based line translator. Architecture: lexer → parser → AST → backend emitter.
 
 - **MSL emitter**: Production. Covers Doppler's full compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
-- **SPIR-V emitter**: Production path for parser-supported compute kernels, emitting binary SPIR-V through the `emit_spirv.zig` toolchain wrapper.
-- **HLSL emitter**: Production path for parser-supported compute kernels, feeding DXC bytecode generation for D3D12 and Vulkan.
+- **SPIR-V emitter**: Native Zig IR→SPIR-V binary emitter for parser-supported compute kernels. Current compute scope now includes bound uniform/storage buffers, structured control flow, workgroup/storage barriers, and atomic builtins. Remaining gaps are primarily texture/storage-texture resource types, texture builtins, and broader non-compute WGSL coverage.
+- **HLSL emitter**: Production path for parser-supported compute kernels, feeding DXC bytecode generation for D3D12 only.
 
 ### Key gaps for doe-runtime promotion
 
-1. Vulkan + D3D12 lack textures, samplers, render pipeline, and render pass entirely.
+1. Vulkan + D3D12 still lack end-to-end texture/sampler lifecycle, render pipeline, and render pass support. Vulkan compute buffer bindings are now wired, but texture-backed kernel dispatch remains open.
 2. WGSL live translation is now compute-focused and parser-limited on Vulkan/D3D12; broader WGSL front-end coverage and non-compute lowering still remain open.
 3. Surface/swapchain is missing on all backends.
 

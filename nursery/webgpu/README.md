@@ -27,6 +27,17 @@ This directory is the package root for `@simulatte/webgpu`. It contains the
 Node provider source, the addon build contract, the Bun FFI entrypoint, and
 the CLI helpers used by benchmark and CI workflows.
 
+Future layering note:
+
+- the current package is still a single surface
+- draft `core` vs `full` support boundaries are defined in
+  `SUPPORT_CONTRACTS.md`
+- draft boundary-enforcement and refactor sequencing live in
+  `LAYERING_PLAN.md`
+- current `zig/src` extraction inventory lives in
+  `ZIG_SOURCE_INVENTORY.md`
+- those boundaries are future-facing and do not change current package behavior
+
 ## Surface maturity
 
 - Node is the primary supported package surface (N-API bridge).
@@ -136,3 +147,9 @@ metadata is present.
   Dawn sidecar per platform. Clean-machine smoke test: `npm run smoke`.
 - API details live in `API_CONTRACT.md`.
 - Compatibility scope is documented in `COMPAT_SCOPE.md`.
+- Proposed future `core` vs `full` surface contracts live in
+  `SUPPORT_CONTRACTS.md`.
+- Proposed future boundary-enforcement and extraction plan lives in
+  `LAYERING_PLAN.md`.
+- Proposed current `zig/src` extraction inventory lives in
+  `ZIG_SOURCE_INVENTORY.md`.

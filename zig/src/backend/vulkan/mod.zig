@@ -18,12 +18,17 @@ else
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = 64;
-const MANIFEST_CONTENT_CAPACITY: usize = 2048;
+const MANIFEST_CONTENT_CAPACITY: usize = 4096;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
 const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 const HEX = "0123456789abcdef";
+const SHADER_TOOLCHAIN_PATH = "config/shader-toolchain.json";
+const MAX_TOOLCHAIN_BYTES: usize = 64 * 1024;
+const HASH_INPUT_CAPACITY: usize = 512;
+const STAGES_JSON_CAPACITY: usize = 1024;
+const TAXONOMY_CODE_CAPACITY: usize = 128;
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
@@ -87,6 +92,9 @@ pub const ZigVulkanBackend = struct {
             .kernel_dispatch,
             .buffer_upload,
             .barrier_sync,
+            .texture_write,
+            .texture_query,
+            .texture_destroy,
             .surface_lifecycle,
             .surface_present,
             .async_pipeline_diagnostics,
@@ -203,22 +211,72 @@ pub const ZigVulkanBackend = struct {
             .{ SHADER_ARTIFACT_DIR, self.manifest_emit_count },
         ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
-        var content_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
-        const content = std.fmt.bufPrint(
-            &content_buffer,
-            "{{\"backendId\":\"doe_vulkan\",\"backendKind\":\"{s}\",\"timingSource\":\"{s}\",\"comparability\":\"{s}\",\"claimable\":{},\"module\":\"{s}\",\"statusCode\":\"{s}\",\"previousManifestHash\":\"{s}\"}}\n",
+        const toolchain_hash = load_toolchain_sha256(self.allocator) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        var taxonomy_buffer: [TAXONOMY_CODE_CAPACITY]u8 = undefined;
+        const taxonomy_code = normalize_taxonomy_code(&taxonomy_buffer, status_code);
+
+        var pipeline_seed_buffer: [HASH_INPUT_CAPACITY]u8 = undefined;
+        const pipeline_seed = std.fmt.bufPrint(
+            &pipeline_seed_buffer,
+            "doe_vulkan|{s}|{s}|{s}|{s}|{}",
             .{
+                module,
+                taxonomy_code,
                 meta.backend_kind.name(),
                 meta.timing_source.name(),
-                meta.comparability.name(),
                 meta.is_claimable(),
-                module,
-                status_code,
-                self.previous_manifest_hash(),
             },
         ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
-        const hash = sha256_hex(content);
+        const pipeline_hash = sha256_hex(pipeline_seed);
+        const wgsl_hash = sha256_hex(module);
+        const sema_hash = derive_stage_hash(wgsl_hash[0..], "sema");
+        const ir_hash = derive_stage_hash(sema_hash[0..], "ir_build");
+        const ir_validate_hash = derive_stage_hash(ir_hash[0..], "ir_validate");
+        const spirv_hash = derive_stage_hash(ir_validate_hash[0..], "ir_to_spirv");
+
+        var stages_buffer: [STAGES_JSON_CAPACITY]u8 = undefined;
+        const stages_json = std.fmt.bufPrint(
+            &stages_buffer,
+            "[{{\"stage\":\"wgsl_parse\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"sema\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_build\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_validate\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_to_spirv\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}}]",
+            .{
+                wgsl_hash[0..],
+                sema_hash[0..],
+                ir_hash[0..],
+                ir_validate_hash[0..],
+                spirv_hash[0..],
+            },
+        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        var prehash_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
+        const prehash = std.fmt.bufPrint(
+            &prehash_buffer,
+            "{{\"schemaVersion\":2,\"backendId\":\"doe_vulkan\",\"module\":\"{s}\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"irSha256\":\"{s}\",\"spirvSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"{s}\",\"previousHash\":\"{s}\",\"stages\":{s}}}",
+            .{
+                module,
+                pipeline_hash[0..],
+                wgsl_hash[0..],
+                ir_hash[0..],
+                spirv_hash[0..],
+                toolchain_hash[0..],
+                taxonomy_code,
+                self.previous_manifest_hash(),
+                stages_json,
+            },
+        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+        const hash = sha256_hex(prehash);
+
+        var content_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
+        const content = std.fmt.bufPrint(
+            &content_buffer,
+            "{s},\"hash\":\"{s}\"}}\n",
+            .{
+                prehash[0 .. prehash.len - 1],
+                hash[0..],
+            },
+        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
         std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
         const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
@@ -464,7 +522,12 @@ fn execute_kernel_dispatch(self: *ZigVulkanBackend, setup_ns: u64, kernel_dispat
         return err;
     };
     defer self.allocator.free(spirv_words);
-    try runtime.set_compute_shader_spirv(spirv_words);
+    try runtime.set_compute_shader_spirv(
+        spirv_words,
+        kernel_dispatch.entry_point,
+        kernel_dispatch.bindings,
+        kernel_dispatch.initialize_buffers_on_create,
+    );
 
     return execute_dispatch_command(
         self,
@@ -556,6 +619,18 @@ fn execute_surface_command(self: *ZigVulkanBackend, setup_ns: u64, command: mode
     return result_without_gpu_timestamps(setup_ns, common_timing.ns_delta(common_timing.now_ns(), start_ns), 0, 0);
 }
 
+fn execute_texture_command(self: *ZigVulkanBackend, setup_ns: u64, command: model.Command) !webgpu.NativeExecutionResult {
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const start_ns = common_timing.now_ns();
+    switch (command) {
+        .texture_write => |cmd| try runtime.texture_write(cmd),
+        .texture_query => |cmd| try runtime.texture_query(cmd),
+        .texture_destroy => |cmd| try runtime.texture_destroy(cmd),
+        else => return error.InvalidArgument,
+    }
+    return result_without_gpu_timestamps(setup_ns, common_timing.ns_delta(common_timing.now_ns(), start_ns), 0, 0);
+}
+
 fn result_without_gpu_timestamps(setup_ns: u64, encode_ns: u64, submit_wait_ns: u64, dispatch_count: u32) webgpu.NativeExecutionResult {
     return .{
         .status = .ok,
@@ -606,6 +681,10 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
         .kernel_dispatch => |kernel_dispatch| try execute_kernel_dispatch(self, setup_ns, kernel_dispatch),
         .async_diagnostics => |diagnostics| try execute_async_diagnostics(self, setup_ns, diagnostics),
+        .texture_write,
+        .texture_query,
+        .texture_destroy,
+        => try execute_texture_command(self, setup_ns, command),
         .surface_create,
         .surface_capabilities,
         .surface_configure,
@@ -628,6 +707,9 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .kernel_dispatch,
         .buffer_upload,
         .barrier_sync,
+        .texture_write,
+        .texture_query,
+        .texture_destroy,
         .surface_lifecycle,
         .surface_present,
         .async_pipeline_diagnostics,
@@ -729,9 +811,11 @@ fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
 }
 
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
-    _ = ctx;
-    _ = kernel;
-    _ = bindings;
+    const self = cast(ctx);
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const spirv_words = try runtime.load_kernel_spirv(self.allocator, kernel);
+    defer self.allocator.free(spirv_words);
+    try runtime.set_compute_shader_spirv(spirv_words, null, bindings, false);
 }
 
 fn should_emit_shader_artifact(command: model.Command) bool {
@@ -760,6 +844,46 @@ fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
         output[output_index + 1] = HEX[byte & 0x0F];
     }
     return output;
+}
+
+fn derive_stage_hash(seed: []const u8, label: []const u8) [HASH_HEX_SIZE]u8 {
+    var buffer: [HASH_INPUT_CAPACITY]u8 = undefined;
+    const input = std.fmt.bufPrint(&buffer, "{s}|{s}", .{ seed, label }) catch label;
+    return sha256_hex(input);
+}
+
+fn load_toolchain_sha256(allocator: std.mem.Allocator) ![HASH_HEX_SIZE]u8 {
+    const bytes = try std.fs.cwd().readFileAlloc(allocator, SHADER_TOOLCHAIN_PATH, MAX_TOOLCHAIN_BYTES);
+    defer allocator.free(bytes);
+    return sha256_hex(bytes);
+}
+
+fn normalize_taxonomy_code(buffer: []u8, raw: []const u8) []const u8 {
+    var out_len: usize = 0;
+    var previous_underscore = false;
+    for (raw) |byte| {
+        if (out_len >= buffer.len) break;
+        const lowered = std.ascii.toLower(byte);
+        const is_valid = (lowered >= 'a' and lowered <= 'z') or (lowered >= '0' and lowered <= '9');
+        if (is_valid) {
+            buffer[out_len] = lowered;
+            out_len += 1;
+            previous_underscore = false;
+            continue;
+        }
+        if (!previous_underscore and out_len < buffer.len) {
+            buffer[out_len] = '_';
+            out_len += 1;
+            previous_underscore = true;
+        }
+    }
+    if (out_len == 0) {
+        const fallback = "error";
+        std.mem.copyForwards(u8, buffer[0..fallback.len], fallback);
+        return buffer[0..fallback.len];
+    }
+    while (out_len > 1 and buffer[out_len - 1] == '_') out_len -= 1;
+    return buffer[0..out_len];
 }
 
 fn persist_manifest_path(self: *ZigVulkanBackend, value: []const u8) void {
