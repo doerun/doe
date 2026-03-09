@@ -25,9 +25,9 @@ DEFAULT_WORKFLOWS = (
 BENCH_OUT_ROOT = REPO_ROOT / "bench/out"
 BENCH_OUT_SCRATCH_ROOT = REPO_ROOT / "bench/out/scratch"
 ARTIFACTS_ROOT = REPO_ROOT / "nursery/fawn-browser/artifacts"
-DEFAULT_REPORT_FILE = "dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json"
-DEFAULT_SUMMARY_FILE = "dawn-vs-doe.tracka.browser-layered.superset.summary.json"
-DEFAULT_CHECK_FILE = "dawn-vs-doe.tracka.browser-layered.superset.check.json"
+DEFAULT_REPORT_FILE = "dawn-vs-doe.browser-layered.superset.diagnostic.json"
+DEFAULT_SUMMARY_FILE = "dawn-vs-doe.browser-layered.superset.summary.json"
+DEFAULT_CHECK_FILE = "dawn-vs-doe.browser-layered.superset.check.json"
 
 
 def host_doe_lib_extension() -> str:

@@ -100,7 +100,7 @@
     - `compute_workgroup_atomic_1024`
     - `texture_sampler_write_query_destroy`
 39. Captured strict subset report with comparable + claimable classification:
-    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
+    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
 
 ## Current State
 
@@ -127,7 +127,7 @@ out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-
    - rejection reason is `profile_denylisted`,
    - prior destructor crash is no longer observed.
 3. Strict comparison subset report:
-   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
+   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
    - `comparisonStatus = comparable`
    - `claimStatus = claimable`
 

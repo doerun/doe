@@ -78,7 +78,7 @@ const DEFAULT_WORKFLOWS = resolve(
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const BENCH_OUT_SCRATCH_ROOT = resolve(ROOT, "bench/out/scratch");
 const ARTIFACTS_ROOT = resolve(ROOT, "nursery/fawn-browser/artifacts");
-const DEFAULT_OUT_FILE = "dawn-vs-doe.tracka.browser-layered.diagnostic.json";
+const DEFAULT_OUT_FILE = "dawn-vs-doe.browser-layered.diagnostic.json";
 const HASH_ALGORITHM = "sha256";
 
 const DEFAULT_ITERATIONS = {
@@ -432,8 +432,8 @@ function loadProjectionManifest(path) {
 
 function loadWorkflowManifest(path) {
   const payload = loadJsonObject(path);
-  if (payload.schemaVersion !== 2) {
-    throw new Error(`invalid workflow manifest schemaVersion, expected 2: ${path}`);
+  if (payload.schemaVersion !== 3) {
+    throw new Error(`invalid workflow manifest schemaVersion, expected 3: ${path}`);
   }
   if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
     throw new Error(`invalid workflow manifest: ${path}`);

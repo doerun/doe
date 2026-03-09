@@ -111,7 +111,7 @@ Default local release artifact path:
 
 ## Integration starting point
 
-Start with Track A seam-only work:
+Start with Track A (browser) seam-only work:
 
 1. Keep Chromium behavior identical with default Dawn path.
 2. Add explicit runtime selector policy:
@@ -123,7 +123,7 @@ Start with Track A seam-only work:
 
 Do not begin with compositor/layout/media refactors.
 
-## Fawn artifact usage (Track A)
+## Fawn artifact usage (Track A (browser))
 
 Use existing drop-in artifact lane as initial test substrate:
 
@@ -155,7 +155,7 @@ Initial criterion is deterministic compatibility and observability, not performa
    - thread-proc scoping active in execution/polling path.
 3. Forced-Doe in this host's headless profile currently rejects with `profile_denylisted`; treat as environment gating signal.
 4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
-   - `bench/out/20260224T140709Z/dawn-vs-doe.tracka.smoke3.json`
+   - `bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
 
 ## Common wrapper scripts
 
@@ -193,13 +193,13 @@ npm install --prefix nursery/fawn-browser playwright-core
 # compare Dawn vs Doe in one diagnostic report (positive delta => Doe faster, diagnostic only)
 ./nursery/fawn-browser/scripts/run-smoke.sh \
   --mode both \
-  --out nursery/fawn-browser/artifacts/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json \
+  --out nursery/fawn-browser/artifacts/dawn-vs-doe.browser.playwright-smoke.diagnostic.json \
   --chrome-arg=--ozone-platform=x11
 ```
 
 By default the harness writes to timestamped lane-local artifacts:
 
-- `nursery/fawn-browser/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json`
+- `nursery/fawn-browser/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
 
 Guardrail:
 
@@ -268,7 +268,7 @@ Promotion candidates:
 
 1. must keep projection hashes synchronized with active workloads/rules,
 2. must include explicit `status` + `statusCode` for required `L1/L2` rows,
-3. must carry approvals from `track_b_contracts_owner` and `coordinator`.
+3. must carry approvals from `module_contracts_owner` and `coordinator`.
 
 Rollback triggers:
 

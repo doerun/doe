@@ -1,18 +1,18 @@
-# Bring-up status (2026-03-08)
+# Bring-up status (updated 2026-03-09)
 
 ## Summary
 
-Track A browser evidence is now fresh on this host:
+Track A (browser) evidence is now fresh on this host:
 
 1. Doe and Dawn both pass the Playwright smoke harness.
 2. The strict layered browser superset run now has zero required failures.
 3. The browser-layered checker passes against the current 80-row projection manifest.
 
-Track B remains contract-only:
+Track B (modules) now has promoted core governance:
 
-1. no `fawn_2d_sdf_renderer` implementation exists,
-2. no additional Track B module implementation exists,
-3. no Track B artifact lane exists beyond draft contracts.
+1. all five Track B (modules) have core Zig implementations,
+2. canonical config schemas and policies now exist for all five modules,
+3. blocking schema/correctness/trace coverage now exists through `bench/module_gate.py`.
 
 ## What changed today
 
@@ -29,7 +29,7 @@ Track B remains contract-only:
 
 Artifact:
 
-- `nursery/fawn-browser/artifacts/20260308T212412Z/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json`
+- `nursery/fawn-browser/artifacts/20260308T212412Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
 
 Result:
 
@@ -41,9 +41,9 @@ Result:
 
 Artifacts:
 
-1. `nursery/fawn-browser/artifacts/20260308T212237Z/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json`
-2. `nursery/fawn-browser/artifacts/20260308T212237Z/dawn-vs-doe.tracka.browser-layered.superset.summary.json`
-3. `nursery/fawn-browser/artifacts/20260308T212237Z/dawn-vs-doe.tracka.browser-layered.superset.check.json`
+1. `nursery/fawn-browser/artifacts/20260308T212237Z/dawn-vs-doe.browser-layered.superset.diagnostic.json`
+2. `nursery/fawn-browser/artifacts/20260308T212237Z/dawn-vs-doe.browser-layered.superset.summary.json`
+3. `nursery/fawn-browser/artifacts/20260308T212237Z/dawn-vs-doe.browser-layered.superset.check.json`
 
 Result:
 
@@ -58,22 +58,22 @@ Result:
 
 ## Current blockers
 
-### Track A
+### Track A (browser)
 
 1. Chromium seam edits still live in the lane checkout and are not promoted into core governed directories.
 2. Browser evidence is fresh, but it is still nursery-local and diagnostic.
 3. CTS/browser-suite artifacts are still not wired as required milestone evidence.
 4. No browser claim lane is defined; release-claim gating is not satisfied.
 
-### Track B
+### Track B (modules)
 
-1. All Track B modules remain contracts only.
-2. No schema-backed implementation artifacts exist for M4 or M5.
-3. No promotion-ready ownership or rollout exists for M6.
+1. Browser-owned Track B (modules) call-site rollout has not started inside Chromium.
+2. Track B (modules) performance coverage is still advisory-only and not claimable.
+3. Browser-lane evidence remains local; Track B (modules) promotion does not imply browser-surface readiness.
 
 ## Conclusion
 
 1. M1 is locally validated on this host.
 2. M2 has fresh local browser evidence with zero required failures.
 3. M3 has fresh local diagnostic evidence only.
-4. M4-M6 are not executable work items yet because the underlying Track B code does not exist.
+4. M4-M6 now have executable core evidence and promoted governance, but browser-facing rollout remains separate work.

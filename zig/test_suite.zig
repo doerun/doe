@@ -20,6 +20,7 @@ const common_errors_test = @import("tests/backend/common_errors_test.zig");
 const common_timing_test = @import("tests/backend/common_timing_test.zig");
 const d3d12_mod_integration_test = @import("tests/d3d12/d3d12_mod_integration_test.zig");
 const d3d12_timing_semantics_test = @import("tests/d3d12/d3d12_timing_semantics_test.zig");
+const module_promotions_test = @import("tests/modules/module_promotions_test.zig");
 const quirk_mod_test = @import("src/quirk/mod.zig");
 const quirk_runtime_test = @import("src/quirk/runtime.zig");
 const quirk_actions_test = @import("src/quirk/quirk_actions.zig");
@@ -48,6 +49,7 @@ comptime {
     _ = common_timing_test;
     _ = d3d12_mod_integration_test;
     _ = d3d12_timing_semantics_test;
+    _ = module_promotions_test;
     _ = quirk_mod_test;
     _ = quirk_runtime_test;
     _ = quirk_actions_test;

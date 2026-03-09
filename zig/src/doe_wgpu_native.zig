@@ -450,7 +450,7 @@ pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
 /// Wait for any pending GPU work on the queue, then release the command buffer.
 /// Also executes deferred CPU copies that depend on the completed GPU work.
 /// Uses MTLSharedEvent for GPU→CPU sync (direct memory poll, no GCD intermediary).
-fn flushPendingWork(q: *DoeQueue) void {
+pub fn flush_pending_work(q: *DoeQueue) void {
     if (q.pending_cmd) |cmd| {
         if (q.mtl_event) |ev| {
             metal_bridge_shared_event_wait(ev, q.event_counter);
@@ -466,6 +466,32 @@ fn executeDeferredCopies(q: *DoeQueue) void {
         @memcpy(dc.dst[0..dc.size], dc.src[0..dc.size]);
     }
     q.deferred_copy_count = 0;
+}
+
+pub fn try_schedule_deferred_copy(
+    q: *DoeQueue,
+    src_raw: ?*anyopaque,
+    src_off: u64,
+    dst_raw: ?*anyopaque,
+    dst_off: u64,
+    size: u64,
+) bool {
+    if (size == 0 or q.deferred_copy_count >= MAX_DEFERRED_COPIES) return false;
+    const src = cast(DoeBuffer, src_raw) orelse return false;
+    const dst = cast(DoeBuffer, dst_raw) orelse return false;
+    const copy_size: usize = @intCast(size);
+    const src_offset: usize = @intCast(src_off);
+    const dst_offset: usize = @intCast(dst_off);
+    if (src_offset + copy_size > src.size or dst_offset + copy_size > dst.size) return false;
+    const src_ptr = metal_bridge_buffer_contents(src.mtl) orelse return false;
+    const dst_ptr = metal_bridge_buffer_contents(dst.mtl) orelse return false;
+    q.deferred_copies[q.deferred_copy_count] = .{
+        .src = src_ptr + src_offset,
+        .dst = dst_ptr + dst_offset,
+        .size = copy_size,
+    };
+    q.deferred_copy_count += 1;
+    return true;
 }
 
 pub export fn doeNativeBufferMapAsync(
@@ -617,7 +643,7 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
     const queue = q.dev.mtl_queue;
 
     // Flush any prior pending GPU work before encoding new commands.
-    flushPendingWork(q);
+    flush_pending_work(q);
 
     // Batch all recorded commands into a single MTLCommandBuffer.
     const mtl_cmd = metal_bridge_create_command_buffer(queue) orelse return;
@@ -635,17 +661,9 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                     has_gpu_work = true;
                 },
                 .copy_buf => |c| {
-                    // Apple Silicon unified memory: defer as CPU memcpy (avoids blit encoder overhead).
-                    const src_ptr = metal_bridge_buffer_contents(c.src);
-                    const dst_ptr = metal_bridge_buffer_contents(c.dst);
-                    if (src_ptr != null and dst_ptr != null and q.deferred_copy_count < MAX_DEFERRED_COPIES) {
-                        q.deferred_copies[q.deferred_copy_count] = .{
-                            .src = src_ptr.? + @as(usize, @intCast(c.src_off)),
-                            .dst = dst_ptr.? + @as(usize, @intCast(c.dst_off)),
-                            .size = @intCast(c.size),
-                        };
-                        q.deferred_copy_count += 1;
-                    } else {
+                    // Apple Silicon unified memory: defer as CPU memcpy after GPU completion
+                    // whenever both buffers expose shared contents.
+                    if (!try_schedule_deferred_copy(q, c.src, c.src_off, c.dst, c.dst_off, c.size)) {
                         metal_bridge_cmd_buf_encode_blit_copy(
                             mtl_cmd, c.src, @intCast(c.src_off), c.dst, @intCast(c.dst_off), @intCast(c.size),
                         );
@@ -687,7 +705,7 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
 /// Flush pending GPU work. Called before CPU reads (mapAsync) and at queue release.
 pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
-    flushPendingWork(q);
+    flush_pending_work(q);
 }
 
 const compute_fast = @import("doe_compute_fast.zig");
@@ -705,7 +723,7 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
 
 pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeQueue, raw)) |q| {
-        flushPendingWork(q);
+        flush_pending_work(q);
         if (q.mtl_event) |ev| metal_bridge_release(ev);
         alloc.destroy(q);
     }

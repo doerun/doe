@@ -1,7 +1,9 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "promotionGateRequiredApprovals": [
-    "track_b_contracts_owner",
+    "browser_runtime_integration_owner",
+    "browser_quality_owner",
+    "browser_benchmark_methodology_owner",
     "coordinator"
   ],
   "rows": [

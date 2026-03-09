@@ -19,9 +19,6 @@ extern fn metal_bridge_compute_dispatch_copy_signal_commit(
     event: ?*anyopaque,
     event_value: u64,
 ) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_shared_event_wait(event: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-
 const MAX_BIND = native.MAX_BIND;
 
 fn cast(comptime T: type, raw: ?*anyopaque) ?*T {
@@ -31,19 +28,10 @@ fn cast(comptime T: type, raw: ?*anyopaque) ?*T {
     return typed;
 }
 
-fn flushPendingWork(q: *native.DoeQueue) void {
-    if (q.pending_cmd) |cmd| {
-        if (q.mtl_event) |ev| {
-            metal_bridge_shared_event_wait(ev, q.event_counter);
-        }
-        metal_bridge_release(cmd);
-        q.pending_cmd = null;
-    }
-}
-
-/// Single-call compute dispatch + GPU blit copy + event signal + commit.
-/// Everything happens in one ObjC bridge call for minimal overhead.
-/// Wait deferred to flushPendingWork (mapAsync).
+/// Single-call compute dispatch + optional same-submit copy + event signal + commit.
+/// When the follow-on copy is a CPU-visible shared-buffer readback, we schedule it as
+/// a deferred CPU memcpy after GPU completion to preserve macOS correctness while
+/// keeping the direct dispatch path.
 pub export fn doeNativeComputeDispatchFlush(
     q_raw: ?*anyopaque,
     pipe_raw: ?*anyopaque,
@@ -60,7 +48,7 @@ pub export fn doeNativeComputeDispatchFlush(
 ) callconv(.c) void {
     const q = cast(native.DoeQueue, q_raw) orelse return;
     const pipe = cast(native.DoeComputePipeline, pipe_raw) orelse return;
-    flushPendingWork(q);
+    native.flush_pending_work(q);
 
     // Flatten bind groups into linear Metal buffer array.
     var bufs: [MAX_BIND * 4]?*anyopaque = [_]?*anyopaque{null} ** (MAX_BIND * 4);
@@ -76,12 +64,22 @@ pub export fn doeNativeComputeDispatchFlush(
         }
     }
 
-    // Resolve copy buffer Metal handles.
+    // Resolve copy path. Prefer the same deferred CPU-copy path used by the
+    // generic queue submission on Apple Silicon shared-memory buffers.
     var mtl_copy_src: ?*anyopaque = null;
     var mtl_copy_dst: ?*anyopaque = null;
-    if (copy_size > 0) {
-        if (cast(native.DoeBuffer, copy_src)) |sb| mtl_copy_src = sb.mtl;
-        if (cast(native.DoeBuffer, copy_dst)) |db| mtl_copy_dst = db.mtl;
+    var copy_src_off_local = copy_src_off;
+    var copy_dst_off_local = copy_dst_off;
+    var copy_size_local = copy_size;
+    if (copy_size_local > 0) {
+        if (native.try_schedule_deferred_copy(q, copy_src, copy_src_off_local, copy_dst, copy_dst_off_local, copy_size_local)) {
+            copy_src_off_local = 0;
+            copy_dst_off_local = 0;
+            copy_size_local = 0;
+        } else {
+            if (cast(native.DoeBuffer, copy_src)) |sb| mtl_copy_src = sb.mtl;
+            if (cast(native.DoeBuffer, copy_dst)) |db| mtl_copy_dst = db.mtl;
+        }
     }
 
     q.event_counter += 1;
@@ -92,11 +90,14 @@ pub export fn doeNativeComputeDispatchFlush(
         buf_total,
         dx, dy, dz,
         pipe.wg_x, pipe.wg_y, pipe.wg_z,
-        mtl_copy_src, copy_src_off,
-        mtl_copy_dst, copy_dst_off,
-        copy_size,
+        mtl_copy_src, copy_src_off_local,
+        mtl_copy_dst, copy_dst_off_local,
+        copy_size_local,
         q.mtl_event,
         q.event_counter,
     ) orelse return;
     q.pending_cmd = mtl_cmd;
+    if (copy_size > 0) {
+        native.flush_pending_work(q);
+    }
 }

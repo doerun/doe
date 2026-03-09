@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_compute_services",
+  "artifactKind": "policy",
+  "version": 1,
+  "promotedFromNursery": true,
+  "promotedAt": "2026-03-08",
+  "policy": {
+    "services": {
+      "sdf_atlas_upload": ["atlas_blit_v1"],
+      "path_mask_reduce": ["mask_reduce_v1"]
+    },
+    "maxDispatchesPerRequest": 8192,
+    "maxInputBytes": 16777216
+  }
+}

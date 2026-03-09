@@ -130,7 +130,7 @@ Execution cadence:
 
 Promotion gate approvals (required):
 
-1. `track_b_contracts_owner`
+1. `module_contracts_owner`
 2. `coordinator`
 
 ## Artifact Discipline

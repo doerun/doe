@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_path_engine",
+  "artifactKind": "policy",
+  "version": 1,
+  "promotedFromNursery": true,
+  "promotedAt": "2026-03-09",
+  "policy": {
+    "allowedJoinModes": ["miter", "round", "bevel"],
+    "allowDashPatterns": false,
+    "maxSegments": 256,
+    "maxTargetPixels": 1048576
+  }
+}

@@ -297,6 +297,45 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the sample runtime dispatcher");
     run_step.dependOn(&run_cmd.step);
 
+    const module_runner = b.addExecutable(.{
+        .name = "module-core-runner",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/module_runner.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    module_runner.linkLibC();
+    if (target.result.os.tag == .windows) {
+        module_runner.linkSystemLibrary("d3d12");
+        module_runner.linkSystemLibrary("dxgi");
+        module_runner.linkSystemLibrary("dxguid");
+        module_runner.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
+    } else {
+        module_runner.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            module_runner.linkSystemLibrary("vulkan");
+        }
+        if (target.result.os.tag == .macos) {
+            module_runner.linkFramework("Metal");
+            module_runner.linkFramework("Foundation");
+            module_runner.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+        }
+    }
+    const install_module_runner = b.addInstallArtifact(module_runner, .{});
+    const module_runner_step = b.step("module-core-runner", "Build the module core runner");
+    module_runner_step.dependOn(&install_module_runner.step);
+    b.getInstallStep().dependOn(module_runner_step);
+
     const import_fence_check = b.addSystemCommand(&.{ "python3", "tools/check_core_import_fence.py" });
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_resource_scheduler",
+  "artifactKind": "request",
+  "resourceRequest": [
+    { "type": "buffer", "bytes": 4096, "usage": "vertex" }
+  ],
+  "workloadContext": {
+    "moduleId": "fawn_2d_sdf_renderer",
+    "operationClass": "frame"
+  },
+  "schedulerPolicy": {
+    "poolLimitBytes": 8388608,
+    "cadenceMode": "per_draw",
+    "evictionPolicyMode": "oldest_first"
+  },
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "deviceFamily": "apple-gpu",
+    "driver": "host"
+  }
+}

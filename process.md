@@ -120,6 +120,12 @@ v0 is speed-first. Blocking vs advisory:
 
 This keeps process weight aligned with v0 maturity.
 
+Promoted Track B (modules) follow the same blocking schema, correctness, and trace requirements as other core runtime modules. `python3 fawn/bench/run_blocking_gates.py --with-modules` enables those promoted-module gates in the canonical blocking runner. Track B (modules) performance gates remain advisory and are not required for M6 governance promotion, but no Track B module may carry claimability assertions until explicit advisory performance coverage is added.
+
+Promoted Track A (browser) diagnostics are governed through the lane-wrapper browser gate in `bench/browser_gate.py`. `python3 fawn/bench/run_blocking_gates.py --with-browser-gate` runs the macOS/host browser preflight plus fresh Playwright smoke and strict layered-superset validation with required browser promotion approvals. That default browser gate remains diagnostic-only by contract.
+
+Track A (browser) claimability is now a separate repeated-window lane in `bench/browser_claim_gate.py`, controlled by `config/browser-claim-policy.json`. `python3 fawn/bench/run_blocking_gates.py --with-browser-claim-gate` runs the claim gate instead of the single-window browser gate, aggregates repeated strict browser windows, and requires positive local-claim percentiles before reporting `claimStatus=claimable`. Browser claimability remains local-only until a release-grade browser claim policy is explicitly added.
+
 ### Verification obligation precedence
 
 1. `verificationMode` is the primary selector for Lean obligation.

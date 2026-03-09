@@ -1,6 +1,6 @@
 # Browser Benchmark Superset (Nursery)
 
-This module implements a layered browser benchmark superset for Chromium Track A.
+This module implements a layered browser benchmark superset for Chromium Track A (browser).
 
 ## Layers
 
@@ -31,7 +31,7 @@ This module implements a layered browser benchmark superset for Chromium Track A
 5. `workflows/browser-workflow-manifest.schema.json`
    - schema for `L2` workflow manifest.
 6. `workflows/browser-promotion-approvals.json`
-   - explicit promotion approvals (`track_b_contracts_owner`, `coordinator`).
+   - explicit promotion approvals (`module_contracts_owner`, `coordinator`).
 7. `workflows/browser-promotion-approvals.schema.json`
    - schema for promotion approval artifact.
 8. `workflows/browser-milestones.json`
@@ -72,9 +72,9 @@ To run dawn/doe against different browser executables in one benchmark run:
 
 Default outputs are lane-local diagnostic artifacts under:
 
-- `nursery/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json`
-- `nursery/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.tracka.browser-layered.superset.check.json`
-- `nursery/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.tracka.browser-layered.superset.summary.json`
+- `nursery/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.diagnostic.json`
+- `nursery/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.check.json`
+- `nursery/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.summary.json`
 
 If you intentionally need `bench/out`, pass `--allow-bench-out` explicitly.
 Diagnostic outputs under `bench/out` are restricted to `bench/out/scratch`.
@@ -91,4 +91,4 @@ Promotion candidates must pass:
 
 1. hash-synchronized projection contract checks,
 2. explicit status/statusCode evidence for required `L1/L2` rows,
-3. promotion approvals from `track_b_contracts_owner` and `coordinator`.
+3. promotion approvals from `module_contracts_owner` and `coordinator`.

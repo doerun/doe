@@ -1,5 +1,122 @@
 # Config Migration Notes
 
+## 2026-03-09
+
+### Track A (browser) claim lane and maintenance wiring
+
+- Added a config-backed local browser claim policy:
+  - `config/browser-claim-policy.schema.json`
+  - `config/browser-claim-policy.json`
+- Added a repeated-window browser claim gate:
+  - `bench/browser_claim_gate.py`
+- The canonical blocking runner can now execute the browser claim gate:
+  - `python3 bench/run_blocking_gates.py --with-browser-claim-gate`
+- Added scheduled macOS browser refresh wiring and browser-artifact retention cleanup:
+  - `.github/workflows/macos-browser-refresh.yml`
+  - `nursery/fawn-browser/scripts/cleanup-browser-artifacts.py`
+- Behavioral difference versus the prior promoted-browser state:
+  browser diagnostics are no longer limited to a single smoke + layered
+  snapshot. The repo now supports repeated-window local claim evidence and
+  scheduled host-refresh execution with explicit retention cleanup. The
+  default Track A (browser) gate remains diagnostic; claimability is emitted only
+  by the dedicated browser claim lane.
+
+### Track A (browser) governance promotion
+
+- Track A (browser) diagnostics now have a governed core gate:
+  - `bench/browser_gate.py`
+- The canonical blocking runner can now execute that browser gate:
+  - `python3 bench/run_blocking_gates.py --with-browser-gate`
+- Added explicit promoted ownership for Track A (browser) scope:
+  - `config/browser-ownership.schema.json`
+  - `config/browser-ownership.json`
+- Browser workflow and approval contracts were promoted from Track B (modules)-only
+  approval assumptions to explicit Track A (browser) cross-owner signoff:
+  - `nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json`
+  - `nursery/fawn-browser/bench/workflows/browser-workflow-manifest.schema.json`
+  - `nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json`
+  - `nursery/fawn-browser/bench/workflows/browser-promotion-approvals.schema.json`
+- Behavioral difference versus the prior nursery-only state:
+  browser smoke and strict layered superset validation are now executable from
+  the canonical blocking gate runner with required ownership/approval checks,
+  rather than being tracked only as ad hoc nursery-local evidence.
+
+### Track B (modules) 2D SDF renderer promotion
+
+- `fawn_2d_sdf_renderer` moved from the nursery Python prototype in
+  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `zig/src/full/modules/rendering/sdf_renderer.zig`.
+- The canonical schema/policy contract is now:
+  - `config/sdf-renderer.schema.json`
+  - `config/sdf-renderer.policy.json`
+- The nursery schema remains present only as a deprecated incubation reference:
+  - `nursery/fawn-browser/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json`
+- Behavioral difference versus the nursery prototype:
+  the promoted path now executes through the shared render runtime and emits
+  deterministic trace-linked render artifacts instead of prototype-only policy
+  simulation.
+
+### Track B (modules) path engine promotion
+
+- `fawn_path_engine` moved from the nursery Python prototype in
+  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `zig/src/full/modules/rendering/path_engine.zig`.
+- The canonical schema/policy contract is now:
+  - `config/path-engine.schema.json`
+  - `config/path-engine.policy.json`
+- The nursery schema remains present only as a deprecated incubation reference:
+  - `nursery/fawn-browser/module-incubation/schemas/fawn-path-engine.schema.json`
+- Behavioral difference versus the nursery prototype:
+  the promoted path now executes through the shared render runtime and emits
+  deterministic geometry/raster telemetry instead of prototype-only counters.
+
+### Track B (modules) effects pipeline promotion
+
+- `fawn_effects_pipeline` moved from the nursery Python prototype in
+  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `zig/src/full/modules/rendering/effects_pipeline.zig`.
+- The canonical schema/policy contract is now:
+  - `config/effects-pipeline.schema.json`
+  - `config/effects-pipeline.policy.json`
+- The nursery schema remains present only as a deprecated incubation reference:
+  - `nursery/fawn-browser/module-incubation/schemas/fawn-effects-pipeline.schema.json`
+- Behavioral difference versus the nursery prototype:
+  the promoted path now executes through the shared render runtime and emits
+  deterministic effect-pass timing and fallback telemetry under the canonical
+  config contract.
+
+## 2026-03-08
+
+### Track B (modules) compute services promotion
+
+- `fawn_compute_services` moved from the nursery Python prototype in
+  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `zig/src/full/modules/services/compute_services.zig`.
+- The canonical schema/policy contract is now:
+  - `config/compute-services.schema.json`
+  - `config/compute-services.policy.json`
+- The nursery schema remains present only as a deprecated incubation reference:
+  - `nursery/fawn-browser/module-incubation/schemas/fawn-compute-services.schema.json`
+- Behavioral difference versus the nursery prototype:
+  real GPU `kernel_dispatch` execution now runs through the core WebGPU compute
+  path, while returned timing fields are deterministic contract values rather
+  than host-wall timings because M6 promotion is governance/correctness-only.
+
+### Track B (modules) resource scheduler promotion
+
+- `fawn_resource_scheduler` moved from the nursery Python prototype in
+  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `zig/src/full/modules/services/resource_scheduler.zig`.
+- The canonical schema/policy contract is now:
+  - `config/resource-scheduler.schema.json`
+  - `config/resource-scheduler.policy.json`
+- The nursery schema remains present only as a deprecated incubation reference:
+  - `nursery/fawn-browser/module-incubation/schemas/fawn-resource-scheduler.schema.json`
+- Behavioral difference versus the nursery prototype:
+  real buffer/texture allocation now happens through `WebGPUBackend` resource
+  helpers, and pool statistics are emitted from the promoted scheduler contract
+  rather than the nursery alternating reuse/allocate simulation.
+
 ## 2026-03-07
 
 ### Shared library artifact hard rename
@@ -452,7 +569,7 @@
 - Canonical artifacts are:
   - runtime binary: `doe-zig-runtime`
   - drop-in shared library: `libdoe_webgpu.so`
-- Chromium Track-A runtime controls now use Doe names only:
+- Chromium Track A (browser) runtime controls now use Doe names only:
   - selector value: `--use-webgpu-runtime=doe`
   - kill switch: `--disable-webgpu-doe`
   - runtime library path: `--doe-webgpu-library-path=<path>`

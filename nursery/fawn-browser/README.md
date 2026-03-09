@@ -81,14 +81,14 @@ Terminology used in this directory:
 
 Use a two-track model to control risk:
 
-1. Track A:
+1. Track A (browser):
    - Dawn replacement path for `navigator.gpu` via Fawn.
-2. Track B:
+2. Track B (modules):
    - Optional Chromium-internal modules using WebGPU through Fawn.
 
-Track B is additive and cannot block Track A readiness.
+Track B (modules) is additive and cannot block Track A (browser) readiness.
 
-## Track A: Dawn replacement lane
+## Track A (browser): Dawn replacement lane
 
 ### Objective
 
@@ -118,9 +118,9 @@ Before moving beyond experiment flags:
 4. Crash/hang rate parity with fallback lane is established.
 5. Performance claimability gates pass for any "faster" statement.
 
-## Track B: optional Chromium-internal modules
+## Track B (modules): optional Chromium-internal modules
 
-Track B modules are explicitly optional and must preserve CPU ownership for engine semantics.
+Track B (modules) are explicitly optional and must preserve CPU ownership for engine semantics.
 
 ### Candidate modules
 
@@ -138,7 +138,7 @@ Track B modules are explicitly optional and must preserve CPU ownership for engi
 5. `fawn_resource_scheduler`
    - Shared resource pooling and submission cadence controls.
 
-### Non-goals for Track B
+### Non-goals for Track B (modules)
 
 1. Replacing Blink layout/style/DOM semantics.
 2. Replacing V8 execution.
@@ -316,6 +316,6 @@ Cross-owner signoff is required before any promotion from nursery to core paths.
 
 ## Current status
 
-This lane contains planning/contracts docs, lane-local bring-up scripts, and a lane-local Chromium workspace (`src/`) with in-flight Track A seam integration edits.
+This lane contains planning/contracts docs, lane-local bring-up scripts, and a lane-local Chromium workspace (`src/`) with in-flight Track A (browser) seam integration edits.
 
 No core `fawn/zig` production runtime behavior is introduced by this directory by default.

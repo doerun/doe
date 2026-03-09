@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-03-09T01:27:15Z",
+  "reportPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.json",
+  "requiredPositivePercentiles": [
+    "p50Percent",
+    "p95Percent"
+  ],
+  "rows": [
+    {
+      "workloadId": "compute_concurrent_execution_single",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -99.9999990968993,
+        "p95Percent": -67.46988091106806,
+        "p99Percent": -67.46988091106806
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_fallback",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -87.87878774195444,
+        "p95Percent": -113.04347882424052,
+        "p99Percent": -113.04347882424052
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_grid",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -101.53846190525933,
+        "p95Percent": -142.4657528654096,
+        "p99Percent": -142.4657528654096
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_indirect_large_args",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -78.20512898888421,
+        "p95Percent": -67.415730517676,
+        "p99Percent": -67.415730517676
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_indirect_live_args",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -73.41772189145667,
+        "p95Percent": -57.29166750097649,
+        "p99Percent": -57.29166750097649
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_indirect_single",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -81.57894837971872,
+        "p95Percent": -63.73626304527886,
+        "p99Percent": -63.73626304527886
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_workgroups_2d_sweep",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -85.52631697620052,
+        "p95Percent": -47.61904761904762,
+        "p99Percent": -47.61904761904762
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_workgroups_3d_sweep",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -92.00000047683716,
+        "p95Percent": -65.9793802586812,
+        "p99Percent": -65.9793802586812
+      }
+    },
+    {
+      "workloadId": "compute_dispatch_workgroups_indirect_pipeline_switch",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -87.01298776696717,
+        "p95Percent": -66.66666706804477,
+        "p99Percent": -66.66666706804477
+      }
+    },
+    {
+      "workloadId": "compute_kernel_dispatch_1000",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -86.24999970197679,
+        "p95Percent": -24.21874969804776,
+        "p99Percent": -24.21874969804776
+      }
+    },
+    {
+      "workloadId": "compute_matvec_32768x2048_f32",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -101.78571363949045,
+        "p95Percent": -97.01492468268178,
+        "p99Percent": -97.01492468268178
+      }
+    },
+    {
+      "workloadId": "compute_matvec_32768x2048_f32_swizzle1",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -77.41935517983927,
+        "p95Percent": -94.73684317847702,
+        "p99Percent": -94.73684317847702
+      }
+    },
+    {
+      "workloadId": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 85.71428571428572,
+      "deltaPercent": {
+        "p50Percent": -83.05084839938395,
+        "p95Percent": -50.99999964237212,
+        "p99Percent": -50.99999964237212
+      }
+    },
+    {
+      "workloadId": "compute_workgroup_atomic_1024",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -78.12499863211998,
+        "p95Percent": -61.11111111111111,
+        "p99Percent": -61.11111111111111
+      }
+    },
+    {
+      "workloadId": "compute_workgroup_non_atomic_1024",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -84.48275803598297,
+        "p95Percent": -106.45161349244965,
+        "p99Percent": -106.45161349244965
+      }
+    },
+    {
+      "workloadId": "compute_zero_initialize_workgroup_memory_256",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -94.28571462631223,
+        "p95Percent": -83.33333320597298,
+        "p99Percent": -83.33333320597298
+      }
+    },
+    {
+      "workloadId": "texture_sampler_write_query_destroy",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 100.0,
+      "deltaPercent": {
+        "p50Percent": -47.3684203921923,
+        "p95Percent": -39.13043354319265,
+        "p99Percent": -39.13043354319265
+      }
+    },
+    {
+      "workloadId": "texture_sampler_write_query_destroy_mip8",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 85.71428571428572,
+      "deltaPercent": {
+        "p50Percent": -27.777774282443694,
+        "p95Percent": -33.333336171649805,
+        "p99Percent": -33.333336171649805
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_16mb",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 71.42857142857143,
+      "deltaPercent": {
+        "p50Percent": -14.814815100982525,
+        "p95Percent": 12.820512800918934,
+        "p99Percent": 12.820512800918934
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_1gb",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 71.42857142857143,
+      "deltaPercent": {
+        "p50Percent": -10.714285030048721,
+        "p95Percent": 5.633801669976089,
+        "p99Percent": 5.633801669976089
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_1kb",
+      "comparisonStatus": "comparable",
+      "claimable": true,
+      "flakePercent": 0.0,
+      "deltaPercent": {
+        "p50Percent": 9.7826096815513,
+        "p95Percent": 21.73913043478262,
+        "p99Percent": 21.73913043478262
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_1mb",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 85.71428571428572,
+      "deltaPercent": {
+        "p50Percent": -7.407408102386127,
+        "p95Percent": 18.181817900332256,
+        "p99Percent": 18.181817900332256
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_256mb",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 57.14285714285714,
+      "deltaPercent": {
+        "p50Percent": -1.7241383562756945,
+        "p95Percent": -21.739131373734164,
+        "p99Percent": -21.739131373734164
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_4gb",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 57.14285714285714,
+      "deltaPercent": {
+        "p50Percent": -11.32075514136451,
+        "p95Percent": 18.918919310768302,
+        "p99Percent": 18.918919310768302
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_4mb",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 85.71428571428572,
+      "deltaPercent": {
+        "p50Percent": -7.407406916834201,
+        "p95Percent": 0.0,
+        "p99Percent": 0.0
+      }
+    },
+    {
+      "workloadId": "upload_write_buffer_64kb",
+      "comparisonStatus": "comparable",
+      "claimable": false,
+      "flakePercent": 57.14285714285714,
+      "deltaPercent": {
+        "p50Percent": -10.606060387127126,
+        "p95Percent": 36.88524593768084,
+        "p99Percent": 36.88524593768084
+      }
+    }
+  ]
+}

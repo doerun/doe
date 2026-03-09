@@ -1,1 +1,1 @@
-{"backendId":"doe_metal","backendKind":"native_metal","timingSource":"cpu_wall_clock","comparability":"directional","claimable":false,"module":"render_draw","statusCode":"ok","previousManifestHash":"ba9e8dd8266160bfb58efdb27d13631d673d1e58e0123ffca873d8d4d31ba740"}
+{"backendId":"doe_metal","backendKind":"native_metal","timingSource":"cpu_wall_clock","comparability":"directional","claimable":false,"module":"kernel_dispatch","statusCode":"ok","previousManifestHash":"ba9e8dd8266160bfb58efdb27d13631d673d1e58e0123ffca873d8d4d31ba740"}

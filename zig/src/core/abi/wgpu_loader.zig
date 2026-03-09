@@ -17,17 +17,21 @@ extern fn dladdr(addr: *const anyopaque, info: *DlInfo) c_int;
 pub const native_library_names = blk: {
     switch (builtin.os.tag) {
         .windows => break :blk &[_][]const u8{
+            "webgpu_doe.dll",
             "webgpu.dll",
+            "webgpu_dawn.dll",
             "webgpu-native.dll",
             "wgpu_native.dll",
         },
         .macos => break :blk &[_][]const u8{
+            "libwebgpu_doe.dylib",
             "libwebgpu_dawn.dylib",
             "libwebgpu.dylib",
             "webgpu.dylib",
             "libwgpu_native.dylib",
         },
         else => break :blk &[_][]const u8{
+            "libwebgpu_doe.so",
             "libwebgpu_dawn.so",
             "libwebgpu.so",
             "libwgpu_native.so",
@@ -117,6 +121,30 @@ fn openLibraryRelativeToModule() ?std.DynLib {
     return null;
 }
 
+fn openLibraryFromWorkingTree() ?std.DynLib {
+    const cwd = std.fs.cwd();
+    var candidate_path_buf: [std.fs.max_path_bytes]u8 = undefined;
+    const candidate_dirs = [_][]const u8{
+        "zig-out/lib",
+        "zig/zig-out/lib",
+    };
+
+    for (candidate_dirs) |dir| {
+        for (native_library_names) |candidate| {
+            const full_path = std.fmt.bufPrint(
+                &candidate_path_buf,
+                "{s}" ++ std.fs.path.sep_str ++ "{s}",
+                .{ dir, candidate },
+            ) catch continue;
+            cwd.access(full_path, .{}) catch continue;
+            const lib = std.DynLib.open(full_path) catch continue;
+            return lib;
+        }
+    }
+
+    return null;
+}
+
 pub fn openLibrary() !std.DynLib {
     var last_err: ?anyerror = null;
 
@@ -129,6 +157,10 @@ pub fn openLibrary() !std.DynLib {
     }
 
     if (openLibraryRelativeToModule()) |lib| {
+        return lib;
+    }
+
+    if (openLibraryFromWorkingTree()) |lib| {
         return lib;
     }
 

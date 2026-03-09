@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-ownership.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "areas"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "areas": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "browser_runtime_integration": { "$ref": "#/$defs/ownership" },
+        "browser_compatibility": { "$ref": "#/$defs/ownership" },
+        "browser_performance_methodology": { "$ref": "#/$defs/ownership" }
+      },
+      "required": [
+        "browser_runtime_integration",
+        "browser_compatibility",
+        "browser_performance_methodology"
+      ]
+    }
+  },
+  "$defs": {
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtimeIntegrationOwner",
+        "qualityOwner",
+        "benchmarkMethodologyOwner",
+        "promotedAt",
+        "nurseryExitApproved"
+      ],
+      "properties": {
+        "runtimeIntegrationOwner": { "type": "string", "minLength": 1 },
+        "qualityOwner": { "type": "string", "minLength": 1 },
+        "benchmarkMethodologyOwner": { "type": "string", "minLength": 1 },
+        "promotedAt": { "type": "string", "format": "date" },
+        "nurseryExitApproved": { "type": "boolean" }
+      }
+    }
+  }
+}

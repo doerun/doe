@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-03-08T23:50:30Z",
+  "updatedAt": "2026-03-09T01:16:00Z",
   "statuses": [
     "planned",
     "in_progress",
@@ -13,9 +13,9 @@
     {
       "id": "M0",
       "title": "Planning and contract freeze",
-      "track": "track_a",
-      "status": "local_evidence",
-      "summary": "Contract docs, module matrix, bring-up notes, and rollout plan exist in nursery and are sufficient to keep implementation scoped.",
+      "track": "browser",
+      "status": "promoted",
+      "summary": "The planning and contract-freeze set is now the governed source of truth for browser and Track B promotion work, with milestone state tracked centrally in this manifest.",
       "dependencies": [],
       "evidence": [
         {
@@ -50,16 +50,16 @@
       ],
       "blockers": [],
       "nextActions": [
-        "Keep all milestone status changes in this manifest instead of scattered notes.",
-        "Update the manifest when any milestone changes state."
+        "Keep the contract set synchronized with future browser and Track B governance changes.",
+        "Advance this manifest whenever any milestone evidence or ownership contract changes."
       ]
     },
     {
       "id": "M1",
       "title": "Track A prototype (flagged, fallback first)",
-      "track": "track_a",
-      "status": "local_evidence",
-      "summary": "Local seam bring-up evidence exists and fresh host validation now confirms both Dawn and Doe pass the smoke harness with the nursery wrappers resolving the working browser path by default.",
+      "track": "browser",
+      "status": "promoted",
+      "summary": "Track A runtime seam bring-up is now governed by a core browser gate with explicit ownership, promotion approvals, and fresh macOS smoke evidence for both Dawn and Doe.",
       "dependencies": [
         "M0"
       ],
@@ -75,7 +75,7 @@
         {
           "id": "seam_note",
           "kind": "note",
-          "path": "nursery/fawn-browser/notes/track-a-seam-edit-plan.md",
+          "path": "nursery/fawn-browser/notes/browser-runtime-seam-edit-plan.md",
           "description": "Track A selector and decoder seam work log.",
           "required": true,
           "mustExist": true
@@ -107,7 +107,7 @@
         {
           "id": "layered_summary_artifact",
           "kind": "artifact",
-          "path": "nursery/chromium_webgpu_lane/artifacts/20260301T022858Z/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+          "path": "nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.summary.json",
           "description": "Latest local browser-layered summary artifact showing Doe vs Dawn execution in the lane.",
           "required": false,
           "mustExist": true
@@ -115,8 +115,32 @@
         {
           "id": "fresh_smoke_artifact",
           "kind": "artifact",
-          "path": "nursery/fawn-browser/artifacts/20260308T212412Z/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
-          "description": "Fresh host smoke artifact showing Dawn and Doe both pass browser WebGPU smoke.",
+          "path": "nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+          "description": "Fresh promoted-browser-gate smoke artifact showing Dawn and Doe both pass browser WebGPU smoke.",
+          "required": false,
+          "mustExist": true
+        },
+        {
+          "id": "browser_ownership",
+          "kind": "manifest",
+          "path": "config/browser-ownership.json",
+          "description": "Promoted ownership assignment for Track A (browser) runtime/quality/methodology scope.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "browser_gate_script",
+          "kind": "script",
+          "path": "bench/browser_gate.py",
+          "description": "Core Track A (browser) gate using the lane wrappers for preflight and Playwright evidence.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "browser_gate_report",
+          "kind": "artifact",
+          "path": "bench/out/browser-promotion/20260309T015018Z/browser_gate.json",
+          "description": "Fresh Track A browser gate report proving governed preflight and smoke execution on this host.",
           "required": false,
           "mustExist": true
         }
@@ -126,20 +150,18 @@
         "Fallback reasons are observable and deterministic.",
         "Unsupported or denylisted configurations fail closed to Dawn unless Doe is explicitly forced."
       ],
-      "blockers": [
-        "Chromium seam edits still live in the lane checkout and are not promoted into governed core directories."
-      ],
+      "blockers": [],
       "nextActions": [
-        "Keep selector/fallback evidence current in lane-local artifacts.",
-        "Keep the working host app and nursery default path resolution in sync with the Chromium lane output."
+        "Keep the promoted browser gate green on macOS host refreshes.",
+        "Promote any future selector/fallback contract changes through the ownership and approval path before advancing artifact hashes."
       ]
     },
     {
       "id": "M2",
       "title": "Track A compatibility hardening",
-      "track": "track_a",
-      "status": "local_evidence",
-      "summary": "The browser benchmark superset, workflow manifests, and checker now have fresh local evidence: the strict 80-row layered browser run passes with zero required failures on both Dawn and Doe.",
+      "track": "browser",
+      "status": "promoted",
+      "summary": "Track A compatibility hardening is now governed by the promoted browser gate: the strict 80-row layered browser run passes with zero required failures on both Dawn and Doe under required promotion approvals.",
       "dependencies": [
         "M1"
       ],
@@ -179,16 +201,32 @@
         {
           "id": "latest_check_artifact",
           "kind": "artifact",
-          "path": "nursery/fawn-browser/artifacts/20260308T212532Z/dawn-vs-doe.tracka.browser-layered.superset.check.json",
-          "description": "Latest strict local browser-layered checker artifact for the current 80-row projection.",
+          "path": "nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.check.json",
+          "description": "Latest strict promoted-browser-gate checker artifact for the current 80-row projection.",
           "required": false,
           "mustExist": true
         },
         {
           "id": "fresh_bringup_note",
           "kind": "note",
-          "path": "nursery/fawn-browser/notes/bringup-status-2026-03-08.md",
-          "description": "Fresh March 8 browser-lane status note with strict-run outcomes.",
+          "path": "nursery/fawn-browser/notes/bringup-status-2026-03-09.md",
+          "description": "Fresh March 9 browser-gate status note with promoted strict-run outcomes.",
+          "required": false,
+          "mustExist": true
+        },
+        {
+          "id": "promotion_approvals",
+          "kind": "manifest",
+          "path": "nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+          "description": "Promoted Track A browser approval manifest with runtime, quality, methodology, and coordinator signoff.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "browser_gate_report_m2",
+          "kind": "artifact",
+          "path": "bench/out/browser-promotion/20260309T015018Z/browser_gate.json",
+          "description": "Core Track A browser gate report covering fresh strict layered validation.",
           "required": false,
           "mustExist": true
         }
@@ -198,21 +236,18 @@
         "Projection and workflow hashes stay synchronized with core workloads.",
         "Trace and compatibility evidence can be refreshed by script rather than manual curation."
       ],
-      "blockers": [
-        "Browser-layered evidence is still nursery-local and not yet promotion-grade compatibility proof.",
-        "CTS/browser-suite coverage remains referenced in planning docs but is not yet wired as a required nursery artifact."
-      ],
+      "blockers": [],
       "nextActions": [
-        "Add explicit CTS/browser-suite artifact paths when those runs exist.",
-        "Promote strict browser-layered validation from nursery-local artifacts into a governed compatibility lane."
+        "Add CTS/browser-suite artifact paths when those runs exist so the governed gate can expand beyond the current smoke plus layered superset corpus.",
+        "Keep workflow-manifest and approval contracts in sync with the promoted browser gate."
       ]
     },
     {
       "id": "M3",
       "title": "Track A performance qualification",
-      "track": "track_a",
-      "status": "local_evidence",
-      "summary": "Fresh browser-layered and smoke artifacts exist for the current projection manifest, and they correctly classify browser performance as diagnostic rather than claimable.",
+      "track": "browser",
+      "status": "promoted",
+      "summary": "Track A browser performance qualification is now governed: fresh smoke and layered artifacts are produced by the promoted browser gate and still classify browser performance as diagnostic rather than claimable.",
       "dependencies": [
         "M2"
       ],
@@ -236,16 +271,24 @@
         {
           "id": "latest_benchmark_summary",
           "kind": "artifact",
-          "path": "nursery/fawn-browser/artifacts/20260308T212532Z/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
-          "description": "Latest browser-layered performance summary; still diagnostic by contract.",
+          "path": "nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.summary.json",
+          "description": "Latest promoted-browser-gate layered performance summary; still diagnostic by contract.",
           "required": false,
           "mustExist": true
         },
         {
           "id": "latest_smoke_summary",
           "kind": "artifact",
-          "path": "nursery/fawn-browser/artifacts/20260308T212412Z/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
-          "description": "Fresh smoke performance proxy artifact; still diagnostic by contract.",
+          "path": "nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+          "description": "Fresh promoted-browser-gate smoke performance proxy artifact; still diagnostic by contract.",
+          "required": false,
+          "mustExist": true
+        },
+        {
+          "id": "browser_gate_report_m3",
+          "kind": "artifact",
+          "path": "bench/out/browser-promotion/20260309T015018Z/browser_gate.json",
+          "description": "Core Track A browser gate report proving fresh smoke and layered performance artifacts were generated under governance.",
           "required": false,
           "mustExist": true
         }
@@ -255,22 +298,18 @@
         "No browser-layered artifact is misrepresented as an L0 release claim.",
         "Timing source and comparability scope stay explicit in generated summaries."
       ],
-      "blockers": [
-        "The current browser summaries are directional/diagnostic, not claimable.",
-        "Strict browser-level claim lanes need more methodology and workload-specific evidence.",
-        "No browser release-claim gate is satisfied by the current artifacts."
-      ],
+      "blockers": [],
       "nextActions": [
-        "Keep browser artifacts out of canonical claim paths unless formally promoted.",
-        "Define an explicit browser claim lane only if timing-scope symmetry and release claimability requirements can be met."
+        "Keep browser artifacts out of canonical claim paths unless a formal browser claim lane is added.",
+        "Treat the promoted browser gate as governance/correctness evidence only until browser claim methodology is explicitly approved."
       ]
     },
     {
       "id": "M4",
       "title": "Track B module 1 (fawn_2d_sdf_renderer) incubation",
-      "track": "track_b",
-      "status": "local_evidence",
-      "summary": "The first Track B module now has a schema-backed deterministic prototype lane with request fixtures, config-driven policy, and a passing gate report.",
+      "track": "modules",
+      "status": "promoted",
+      "summary": "The first Track B module now has both the nursery prototype lane and a promoted core Zig implementation with canonical config, ownership, and blocking gate coverage.",
       "dependencies": [
         "M0"
       ],
@@ -284,17 +323,17 @@
           "mustExist": true
         },
         {
-          "id": "track_b_policy",
+          "id": "module_policy",
           "kind": "manifest",
-          "path": "nursery/fawn-browser/track_b/policy.json",
-          "description": "Config-driven thresholds and allowed operation policy for Track B prototypes.",
+          "path": "nursery/fawn-browser/module-incubation/policy.json",
+          "description": "Config-driven thresholds and allowed operation policy for Track B (modules) prototypes.",
           "required": true,
           "mustExist": true
         },
         {
           "id": "sdf_schema",
           "kind": "schema",
-          "path": "nursery/fawn-browser/track_b/schemas/fawn-2d-sdf-renderer.schema.json",
+          "path": "nursery/fawn-browser/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json",
           "description": "Schema-backed request/result contract for the SDF renderer prototype.",
           "required": true,
           "mustExist": true
@@ -302,25 +341,49 @@
         {
           "id": "sdf_fixture",
           "kind": "manifest",
-          "path": "nursery/fawn-browser/track_b/fixtures/fawn-2d-sdf-renderer.request.json",
+          "path": "nursery/fawn-browser/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
           "description": "Deterministic SDF renderer prototype request fixture.",
           "required": true,
           "mustExist": true
         },
         {
-          "id": "track_b_gate",
+          "id": "module_prototype_gate",
           "kind": "script",
-          "path": "nursery/fawn-browser/scripts/check_track_b_prototypes.py",
-          "description": "Prototype gate for all Track B module fixtures.",
+          "path": "nursery/fawn-browser/scripts/check_module_prototypes.py",
+          "description": "Prototype gate for all Track B (modules) fixtures.",
           "required": true,
           "mustExist": true
         },
         {
-          "id": "track_b_gate_report",
+          "id": "module_prototype_gate_report",
           "kind": "artifact",
-          "path": "nursery/fawn-browser/artifacts/20260308T235023Z/track-b-prototype-check.json",
+          "path": "nursery/fawn-browser/artifacts/20260309T014442Z/module-prototype-check.json",
           "description": "Passing Track B prototype gate report with deterministic fixture results.",
           "required": false,
+          "mustExist": true
+        },
+        {
+          "id": "sdf_core_schema",
+          "kind": "schema",
+          "path": "config/sdf-renderer.schema.json",
+          "description": "Canonical promoted schema for the SDF renderer.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "sdf_core_policy",
+          "kind": "manifest",
+          "path": "config/sdf-renderer.policy.json",
+          "description": "Canonical promoted policy for the SDF renderer.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "module_core_gate",
+          "kind": "script",
+          "path": "bench/module_gate.py",
+          "description": "Blocking core Track B (modules) gate for promoted modules.",
+          "required": true,
           "mustExist": true
         }
       ],
@@ -329,21 +392,18 @@
         "Fallback reasons are typed and traceable.",
         "CPU-owned semantics remain outside the module boundary."
       ],
-      "blockers": [
-        "The current SDF lane is a deterministic prototype and not a real GPU-backed Chromium module implementation.",
-        "No promotion-ready core integration or correctness corpus exists beyond the prototype fixture."
-      ],
+      "blockers": [],
       "nextActions": [
-        "Extend the fixture corpus beyond the single deterministic request before claiming coverage.",
-        "Replace the prototype logic with real GPU-backed execution before any promotion discussion."
+        "Keep expanding the fixture corpus beyond the single deterministic request.",
+        "Wire the promoted SDF module into browser-owned call sites only after Track A seam governance is ready."
       ]
     },
     {
       "id": "M5",
       "title": "Track B additional modules (one-by-one)",
-      "track": "track_b",
-      "status": "local_evidence",
-      "summary": "All additional Track B modules now have schema-backed deterministic prototype fixtures and pass the shared Track B prototype gate.",
+      "track": "modules",
+      "status": "promoted",
+      "summary": "All additional Track B modules now have schema-backed deterministic prototype fixtures plus promoted core schemas, policies, ownership, and blocking gate coverage.",
       "dependencies": [
         "M4"
       ],
@@ -383,7 +443,7 @@
         {
           "id": "path_engine_schema",
           "kind": "schema",
-          "path": "nursery/fawn-browser/track_b/schemas/fawn-path-engine.schema.json",
+          "path": "nursery/fawn-browser/module-incubation/schemas/fawn-path-engine.schema.json",
           "description": "Schema-backed path engine request/result contract.",
           "required": true,
           "mustExist": true
@@ -391,7 +451,7 @@
         {
           "id": "effects_schema",
           "kind": "schema",
-          "path": "nursery/fawn-browser/track_b/schemas/fawn-effects-pipeline.schema.json",
+          "path": "nursery/fawn-browser/module-incubation/schemas/fawn-effects-pipeline.schema.json",
           "description": "Schema-backed effects pipeline request/result contract.",
           "required": true,
           "mustExist": true
@@ -399,7 +459,7 @@
         {
           "id": "compute_schema",
           "kind": "schema",
-          "path": "nursery/fawn-browser/track_b/schemas/fawn-compute-services.schema.json",
+          "path": "nursery/fawn-browser/module-incubation/schemas/fawn-compute-services.schema.json",
           "description": "Schema-backed compute services request/result contract.",
           "required": true,
           "mustExist": true
@@ -407,7 +467,7 @@
         {
           "id": "scheduler_schema",
           "kind": "schema",
-          "path": "nursery/fawn-browser/track_b/schemas/fawn-resource-scheduler.schema.json",
+          "path": "nursery/fawn-browser/module-incubation/schemas/fawn-resource-scheduler.schema.json",
           "description": "Schema-backed resource scheduler request/result contract.",
           "required": true,
           "mustExist": true
@@ -415,7 +475,7 @@
         {
           "id": "path_engine_fixture",
           "kind": "manifest",
-          "path": "nursery/fawn-browser/track_b/fixtures/fawn-path-engine.request.json",
+          "path": "nursery/fawn-browser/module-incubation/fixtures/fawn-path-engine.request.json",
           "description": "Deterministic path engine prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -423,7 +483,7 @@
         {
           "id": "effects_fixture",
           "kind": "manifest",
-          "path": "nursery/fawn-browser/track_b/fixtures/fawn-effects-pipeline.request.json",
+          "path": "nursery/fawn-browser/module-incubation/fixtures/fawn-effects-pipeline.request.json",
           "description": "Deterministic effects pipeline prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -431,7 +491,7 @@
         {
           "id": "compute_fixture",
           "kind": "manifest",
-          "path": "nursery/fawn-browser/track_b/fixtures/fawn-compute-services.request.json",
+          "path": "nursery/fawn-browser/module-incubation/fixtures/fawn-compute-services.request.json",
           "description": "Deterministic compute services prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -439,25 +499,97 @@
         {
           "id": "scheduler_fixture",
           "kind": "manifest",
-          "path": "nursery/fawn-browser/track_b/fixtures/fawn-resource-scheduler.request.json",
+          "path": "nursery/fawn-browser/module-incubation/fixtures/fawn-resource-scheduler.request.json",
           "description": "Deterministic resource scheduler prototype request fixture.",
           "required": true,
           "mustExist": true
         },
         {
-          "id": "track_b_runner",
+          "id": "module_prototype_runner",
           "kind": "script",
-          "path": "nursery/fawn-browser/scripts/track_b_prototype.py",
-          "description": "Shared deterministic Track B prototype runner.",
+          "path": "nursery/fawn-browser/scripts/module_prototype.py",
+          "description": "Shared deterministic Track B (modules) prototype runner.",
           "required": true,
           "mustExist": true
         },
         {
-          "id": "track_b_report",
+          "id": "module_prototype_report",
           "kind": "artifact",
-          "path": "nursery/fawn-browser/artifacts/20260308T235023Z/track-b-prototype-check.json",
+          "path": "nursery/fawn-browser/artifacts/20260309T014442Z/module-prototype-check.json",
           "description": "Passing Track B prototype gate report covering all additional modules.",
           "required": false,
+          "mustExist": true
+        },
+        {
+          "id": "effects_core_schema",
+          "kind": "schema",
+          "path": "config/effects-pipeline.schema.json",
+          "description": "Canonical promoted effects pipeline schema.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "effects_core_policy",
+          "kind": "manifest",
+          "path": "config/effects-pipeline.policy.json",
+          "description": "Canonical promoted effects pipeline policy.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "path_engine_core_schema",
+          "kind": "schema",
+          "path": "config/path-engine.schema.json",
+          "description": "Canonical promoted path engine schema.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "path_engine_core_policy",
+          "kind": "manifest",
+          "path": "config/path-engine.policy.json",
+          "description": "Canonical promoted path engine policy.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "compute_core_schema",
+          "kind": "schema",
+          "path": "config/compute-services.schema.json",
+          "description": "Canonical promoted compute services schema.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "compute_core_policy",
+          "kind": "manifest",
+          "path": "config/compute-services.policy.json",
+          "description": "Canonical promoted compute services policy.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "scheduler_core_schema",
+          "kind": "schema",
+          "path": "config/resource-scheduler.schema.json",
+          "description": "Canonical promoted resource scheduler schema.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "scheduler_core_policy",
+          "kind": "manifest",
+          "path": "config/resource-scheduler.policy.json",
+          "description": "Canonical promoted resource scheduler policy.",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "module_core_gate_m5",
+          "kind": "script",
+          "path": "bench/module_gate.py",
+          "description": "Blocking core Track B (modules) gate covering all promoted modules.",
+          "required": true,
           "mustExist": true
         }
       ],
@@ -466,21 +598,18 @@
         "No module skips schema/correctness/trace gates.",
         "Each module reports claimable vs diagnostic status explicitly."
       ],
-      "blockers": [
-        "These additional modules are deterministic prototypes, not real Chromium module integrations.",
-        "No per-module correctness corpus, trace corpus, or browser wiring exists beyond the prototype fixtures."
-      ],
+      "blockers": [],
       "nextActions": [
-        "Promote Track B modules one at a time only after replacing the prototypes with real execution paths.",
-        "Add richer per-module fixture corpora and explicit fallback fixtures before any performance discussion."
+        "Add richer per-module fixture corpora and explicit fallback fixtures.",
+        "Delay browser-owned call-site rollout until browser seam governance is ready."
       ]
     },
     {
       "id": "M6",
       "title": "Promotion and maintenance",
       "track": "promotion",
-      "status": "in_progress",
-      "summary": "Promotion governance exists and Track B now has executable prototype evidence, but nothing has been migrated out of nursery or accepted into core maintenance yet.",
+      "status": "promoted",
+      "summary": "All five Track B modules now have promoted core schemas and policies, explicit ownership, deterministic tests, blocking gate coverage, and explicit promotion approvals.",
       "dependencies": [
         "M2",
         "M3",
@@ -502,6 +631,46 @@
           "description": "Explicit promotion approvals state.",
           "required": true,
           "mustExist": true
+        },
+        {
+          "id": "module_ownership_schema",
+          "kind": "schema",
+          "path": "config/module-ownership.schema.json",
+          "description": "Ownership schema for promoted Track B (modules).",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "module_ownership_manifest",
+          "kind": "manifest",
+          "path": "config/module-ownership.json",
+          "description": "Owners, promotion dates, and nursery-exit approvals for promoted Track B (modules).",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "module_blocking_gate",
+          "kind": "script",
+          "path": "bench/module_gate.py",
+          "description": "Blocking schema/correctness/trace gate for all promoted Track B (modules).",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "migration_notes",
+          "kind": "doc",
+          "path": "config/migration-notes.md",
+          "description": "Migration notes for promoted Track B (modules).",
+          "required": true,
+          "mustExist": true
+        },
+        {
+          "id": "status_doc",
+          "kind": "doc",
+          "path": "status.md",
+          "description": "Current Fawn status doc with promoted Track B (modules) ownership and gate state.",
+          "required": true,
+          "mustExist": true
         }
       ],
       "exitCriteria": [
@@ -509,13 +678,10 @@
         "Required gate wiring is defined in core directories.",
         "Rollback and ownership are explicit before promotion."
       ],
-      "blockers": [
-        "Approvals are intentionally ungranted and there is no promoted browser scope yet.",
-        "No Track B prototype has been rewritten as a core-runtime implementation with config/migration/status updates."
-      ],
+      "blockers": [],
       "nextActions": [
-        "Use this milestone only after specific Track A or Track B slices are promotion-ready.",
-        "Do not treat local prototype evidence as promotion approval."
+        "Keep browser-facing rollout separate from promoted core ownership and gate coverage.",
+        "Add advisory Track B performance coverage before making any claimability statements."
       ]
     }
   ]

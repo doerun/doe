@@ -1,0 +1,12 @@
+{
+  "claimGateRan": false,
+  "createdAtUtc": "2026-03-09T01:44:50.478610Z",
+  "fullRun": true,
+  "moduleCount": 5,
+  "outputTimestamp": "20260309T030000Z",
+  "runFolder": "/Users/xyz/deco/fawn/bench/out/modules-promotion/20260309T030000Z",
+  "runType": "module-gate",
+  "schemaVersion": 1,
+  "status": "pass",
+  "updatedAtUtc": "2026-03-09T01:44:50.478610Z"
+}

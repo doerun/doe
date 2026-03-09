@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_2d_sdf_renderer",
+  "artifactKind": "request",
+  "textRuns": [
+    {
+      "fontKey": "ui-default",
+      "fontPx": 18,
+      "glyphIds": [71, 72],
+      "positions": [{ "x": 8, "y": 18 }, { "x": 18, "y": 18 }],
+      "color": [255, 255, 255, 255],
+      "transform": [1, 0, 0, 1, 0, 0]
+    }
+  ],
+  "pathOps": [
+    { "op": "moveTo", "points": [{ "x": 0, "y": 0 }] },
+    { "op": "lineTo", "points": [{ "x": 64, "y": 0 }] },
+    { "op": "closePath", "points": [] }
+  ],
+  "paintState": {
+    "blendMode": "src_over",
+    "clipState": { "mode": "rect", "bounds": [0, 0, 128, 64] },
+    "transform": [1, 0, 0, 1, 0, 0]
+  },
+  "target": { "width": 128, "height": 64, "format": "rgba8unorm", "sampleCount": 8 }
+}

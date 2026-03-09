@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_effects_pipeline",
+  "artifactKind": "request",
+  "effectGraph": [
+    { "nodeId": "warp_0", "op": "displacement_map", "params": { "strength": 2 } }
+  ],
+  "inputs": [
+    { "surfaceId": "surface_a", "bytes": 524288 }
+  ],
+  "executionPolicy": {
+    "precisionClass": "balanced",
+    "colorSpace": "srgb"
+  },
+  "target": {
+    "width": 256,
+    "height": 256,
+    "format": "rgba8unorm"
+  }
+}

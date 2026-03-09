@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
+const webgpu = @import("../../src/webgpu_ffi.zig");
 const metal_mod = @import("../../src/backend/metal/mod.zig");
 
 fn test_profile() model.DeviceProfile {
@@ -68,6 +69,55 @@ test "metal upload flush cadence reports nonzero submit_wait_ns" {
     } });
     try std.testing.expect(upload_result.status == .ok);
     try std.testing.expect(upload_result.submit_wait_ns > 0);
+}
+
+test "metal deferred upload keeps per-command submit_wait_ns at zero until final flush" {
+    if (builtin.os.tag != .macos) return;
+
+    const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
+        if (skip_if_runtime_unavailable(err)) return;
+        return err;
+    };
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_deferred_upload_timing", "test_policy_hash");
+    defer iface.deinit();
+
+    iface.set_upload_behavior(.copy_dst, 1);
+    iface.set_queue_sync_mode(.deferred);
+
+    const upload_result = try iface.execute_command(model.Command{ .upload = .{
+        .bytes = 256 * 1024,
+        .align_bytes = 4,
+    } });
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, upload_result.status);
+    try std.testing.expectEqual(@as(u64, 0), upload_result.submit_wait_ns);
+
+    const flush_ns = try iface.flush_queue();
+    try std.testing.expect(flush_ns > 0);
+}
+
+test "metal barrier flushes deferred upload work" {
+    if (builtin.os.tag != .macos) return;
+
+    const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
+        if (skip_if_runtime_unavailable(err)) return;
+        return err;
+    };
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_barrier_flush", "test_policy_hash");
+    defer iface.deinit();
+
+    iface.set_upload_behavior(.copy_dst, 1);
+    iface.set_queue_sync_mode(.deferred);
+
+    const upload_result = try iface.execute_command(model.Command{ .upload = .{
+        .bytes = 64 * 1024,
+        .align_bytes = 4,
+    } });
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, upload_result.status);
+    try std.testing.expectEqual(@as(u64, 0), upload_result.submit_wait_ns);
+
+    const barrier_result = try iface.execute_command(model.Command{ .barrier = .{ .dependency_count = 1 } });
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, barrier_result.status);
+    try std.testing.expect(barrier_result.submit_wait_ns > 0);
 }
 
 test "metal kernel_dispatch returns error when kernel file not found" {

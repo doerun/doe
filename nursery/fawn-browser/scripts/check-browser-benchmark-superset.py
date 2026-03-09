@@ -34,7 +34,13 @@ VALID_RUNTIME_STATUS_CODES = {
     },
     "l0_only": {"l0_only"},
 }
-PROMOTION_APPROVER_ROLES = {"track_b_contracts_owner", "coordinator"}
+PROMOTION_APPROVER_ROLES = {
+    "browser_runtime_integration_owner",
+    "browser_quality_owner",
+    "browser_benchmark_methodology_owner",
+    "module_contracts_owner",
+    "coordinator",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -284,8 +290,8 @@ def parse_projection_manifest(manifest_payload: dict[str, Any]) -> dict[str, Any
 
 def parse_workflow_manifest(workflows_payload: dict[str, Any]) -> dict[str, Any]:
     schema_version = workflows_payload.get("schemaVersion")
-    if schema_version != 2:
-        raise ValueError(f"invalid workflow schemaVersion: expected 2, got {schema_version}")
+    if schema_version != 3:
+        raise ValueError(f"invalid workflow schemaVersion: expected 3, got {schema_version}")
 
     required_approvals_raw = workflows_payload.get("promotionGateRequiredApprovals")
     if not isinstance(required_approvals_raw, list) or not required_approvals_raw:
@@ -386,7 +392,7 @@ def parse_workflow_manifest(workflows_payload: dict[str, Any]) -> dict[str, Any]
 
 def parse_promotion_approvals(approvals_payload: dict[str, Any]) -> dict[str, Any]:
     schema_version = approvals_payload.get("schemaVersion")
-    if schema_version != 1:
+    if schema_version != 2:
         raise ValueError(f"invalid promotion approvals schemaVersion: {schema_version}")
 
     required_roles_raw = approvals_payload.get("requiredApprovals")

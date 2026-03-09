@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-03-09T01:25:59Z",
+  "reportPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.json",
+  "gateResultPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.claim-gate-result.json",
+  "tailHealthPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.tail-health.json",
+  "artifactsRoot": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim",
+  "windowReports": [
+    "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/windows/window-01.track_a_browser_gate.json",
+    "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/windows/window-02.track_a_browser_gate.json",
+    "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/windows/window-03.track_a_browser_gate.json",
+    "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/windows/window-04.track_a_browser_gate.json",
+    "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/windows/window-05.track_a_browser_gate.json",
+    "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/windows/window-06.track_a_browser_gate.json",
+    "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/windows/window-07.track_a_browser_gate.json"
+  ]
+}

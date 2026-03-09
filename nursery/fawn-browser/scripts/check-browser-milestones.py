@@ -18,7 +18,7 @@ VALID_STATUSES = {
     "promoted",
     "blocked",
 }
-VALID_TRACKS = {"track_a", "track_b", "promotion"}
+VALID_TRACKS = {"browser", "modules", "promotion"}
 VALID_KINDS = {"doc", "contract", "script", "schema", "manifest", "artifact", "report", "note"}
 
 

@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/path-engine.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "moduleId", "artifactKind"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "moduleId": { "type": "string", "const": "fawn_path_engine" },
+    "artifactKind": { "type": "string", "enum": ["request", "result", "policy"] },
+    "version": { "type": "integer", "const": 1 },
+    "promotedFromNursery": { "type": "boolean", "const": true },
+    "promotedAt": { "type": "string", "format": "date" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "artifactKind": { "const": "request" } } },
+      "then": { "$ref": "#/$defs/request" }
+    },
+    {
+      "if": { "properties": { "artifactKind": { "const": "result" } } },
+      "then": { "$ref": "#/$defs/result" }
+    },
+    {
+      "if": { "properties": { "artifactKind": { "const": "policy" } } },
+      "then": { "$ref": "#/$defs/policy" }
+    }
+  ],
+  "$defs": {
+    "request": {
+      "required": ["pathStream", "strokeState", "fillState", "clipState", "target"],
+      "properties": {
+        "pathStream": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["segment"],
+            "properties": {
+              "segment": { "type": "string", "enum": ["moveTo", "lineTo", "quadTo", "curveTo", "closePath"] },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": { "type": "number" }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "strokeState": {
+          "type": "object",
+          "required": ["width", "joinMode", "capMode", "miterLimit", "dashPattern"],
+          "properties": {
+            "width": { "type": "number", "minimum": 0 },
+            "joinMode": { "type": "string", "minLength": 1 },
+            "capMode": { "type": "string", "minLength": 1 },
+            "miterLimit": { "type": "number", "minimum": 0 },
+            "dashPattern": { "type": "array", "items": { "type": "number", "minimum": 0 } }
+          },
+          "additionalProperties": false
+        },
+        "fillState": {
+          "type": "object",
+          "required": ["fillRule", "opacity"],
+          "properties": {
+            "fillRule": { "type": "string", "minLength": 1 },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "clipState": {
+          "type": "object",
+          "required": ["mode"],
+          "properties": { "mode": { "type": "string", "minLength": 1 } },
+          "additionalProperties": false
+        },
+        "target": {
+          "type": "object",
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "result": {
+      "required": ["geometryStats", "rasterStats", "fallbackStats", "traceLink"],
+      "properties": {
+        "geometryStats": {
+          "type": "object",
+          "required": ["segmentCount", "tessellatedPrimitiveCount"],
+          "properties": {
+            "segmentCount": { "type": "integer", "minimum": 0 },
+            "tessellatedPrimitiveCount": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "rasterStats": {
+          "type": "object",
+          "required": ["passCount", "drawCallCount"],
+          "properties": {
+            "passCount": { "type": "integer", "minimum": 0 },
+            "drawCallCount": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "fallbackStats": {
+          "type": "object",
+          "required": ["fallbackCount", "fallbackReasonHistogram"],
+          "properties": {
+            "fallbackCount": { "type": "integer", "minimum": 0 },
+            "fallbackReasonHistogram": {
+              "type": "object",
+              "required": [
+                "join_mode_unsupported",
+                "dash_pattern_unsupported",
+                "geometry_pathological",
+                "resource_budget_exceeded",
+                "runtime_unavailable",
+                "runtime_execute_failed"
+              ],
+              "properties": {
+                "join_mode_unsupported": { "type": "integer", "minimum": 0 },
+                "dash_pattern_unsupported": { "type": "integer", "minimum": 0 },
+                "geometry_pathological": { "type": "integer", "minimum": 0 },
+                "resource_budget_exceeded": { "type": "integer", "minimum": 0 },
+                "runtime_unavailable": { "type": "integer", "minimum": 0 },
+                "runtime_execute_failed": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "traceLink": {
+          "type": "object",
+          "required": ["moduleIdentity", "requestHash", "policyHash", "resultHash"],
+          "properties": {
+            "moduleIdentity": { "type": "string", "minLength": 1 },
+            "requestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "policyHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "resultHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "policy": {
+      "required": ["version", "promotedFromNursery", "promotedAt", "policy"],
+      "properties": {
+        "policy": {
+          "type": "object",
+          "required": ["allowedJoinModes", "allowDashPatterns", "maxSegments", "maxTargetPixels"],
+          "properties": {
+            "allowedJoinModes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "allowDashPatterns": { "type": "boolean" },
+            "maxSegments": { "type": "integer", "minimum": 1 },
+            "maxTargetPixels": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  }
+}

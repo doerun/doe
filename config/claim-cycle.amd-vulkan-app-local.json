@@ -41,7 +41,7 @@
   },
   "milestones": [
     {
-      "id": "track_b_local_claim_stability",
+      "id": "module_local_claim_stability",
       "track": "B",
       "owner": "bench-lead",
       "dueDate": "2026-03-21",

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "areas": {
+    "browser_runtime_integration": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-09",
+      "nurseryExitApproved": true
+    },
+    "browser_compatibility": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-09",
+      "nurseryExitApproved": true
+    },
+    "browser_performance_methodology": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-09",
+      "nurseryExitApproved": true
+    }
+  }
+}

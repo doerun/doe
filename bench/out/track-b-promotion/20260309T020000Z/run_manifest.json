@@ -1,0 +1,12 @@
+{
+  "claimGateRan": false,
+  "createdAtUtc": "2026-03-09T01:23:46.142876Z",
+  "fullRun": true,
+  "moduleCount": 5,
+  "outputTimestamp": "20260309T020000Z",
+  "runFolder": "/Users/xyz/deco/fawn/bench/out/track-b-promotion/20260309T020000Z",
+  "runType": "track-b-gate",
+  "schemaVersion": 1,
+  "status": "pass",
+  "updatedAtUtc": "2026-03-09T01:23:46.142876Z"
+}

@@ -72,6 +72,38 @@
     {
       "schema": "config/dropin-symbol-ownership.schema.json",
       "data": "config/dropin-symbol-ownership.json"
+    },
+    {
+      "schema": "config/browser-ownership.schema.json",
+      "data": "config/browser-ownership.json"
+    },
+    {
+      "schema": "config/browser-claim-policy.schema.json",
+      "data": "config/browser-claim-policy.json"
+    },
+    {
+      "schema": "config/compute-services.schema.json",
+      "data": "config/compute-services.policy.json"
+    },
+    {
+      "schema": "config/effects-pipeline.schema.json",
+      "data": "config/effects-pipeline.policy.json"
+    },
+    {
+      "schema": "config/path-engine.schema.json",
+      "data": "config/path-engine.policy.json"
+    },
+    {
+      "schema": "config/sdf-renderer.schema.json",
+      "data": "config/sdf-renderer.policy.json"
+    },
+    {
+      "schema": "config/resource-scheduler.schema.json",
+      "data": "config/resource-scheduler.policy.json"
+    },
+    {
+      "schema": "config/module-ownership.schema.json",
+      "data": "config/module-ownership.json"
     }
   ],
   "globTargets": [

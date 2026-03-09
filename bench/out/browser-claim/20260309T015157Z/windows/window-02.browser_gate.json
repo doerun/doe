@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "generatedAt": "2026-03-09T01:53:29Z",
+  "ownershipOk": true,
+  "smokeOk": true,
+  "layeredOk": true,
+  "artifacts": {
+    "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+    "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+    "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser-layered.superset.summary.json",
+    "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser-layered.superset.check.json",
+    "promotionApprovals": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+    "ownership": "/Users/xyz/deco/fawn/config/browser-ownership.json"
+  },
+  "hashes": {
+    "smokeReport": "46a08e80a1656b9abce1a0eac1cc5ecfb226f7a8d5a7088f5f7c5d0398dc61ed",
+    "layeredReport": "5e61d1c289c11b7f048e163b23321d1f7f15c512c40c83e4194ee3c353c24e56",
+    "summaryReport": "ef9c5dbf8e4278eaab9b1acdd10d7b84f0ac1c96952726b6caa0f45fb07b8ec8",
+    "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+  },
+  "failures": []
+}

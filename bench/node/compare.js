@@ -20,6 +20,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { workloads } from './workloads.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RUNNER = resolve(__dirname, 'runner.js');
@@ -33,15 +34,15 @@ const { values: args } = parseArgs({
   },
 });
 
-function runProvider(provider, extraArgs) {
+function runProviderWorkload(provider, workloadId, extraArgs) {
   return new Promise((resolve, reject) => {
     const cmdArgs = [
       RUNNER,
       '--provider', provider,
       '--iterations', args.iterations,
       '--warmup', args.warmup,
+      '--workload', workloadId,
     ];
-    if (args.workload) cmdArgs.push('--workload', args.workload);
     cmdArgs.push('--validate');
     cmdArgs.push(...extraArgs);
 
@@ -52,6 +53,11 @@ function runProvider(provider, extraArgs) {
       resolve(lines);
     });
   });
+}
+
+function selectedWorkloads() {
+  if (!args.workload) return workloads;
+  return workloads.filter((w) => w.id === args.workload || w.domain === args.workload);
 }
 
 function percentile(sorted, p) {
@@ -143,24 +149,35 @@ function fmt(ms) {
 
 async function main() {
   console.error('=== Node.js WebGPU Benchmark: Doe vs Dawn ===\n');
-
-  console.error('Running Doe...');
-  let doeResults;
-  try {
-    doeResults = await runProvider('doe', []);
-  } catch (err) {
-    console.error(`Doe provider failed: ${err.message}`);
+  const selected = selectedWorkloads();
+  if (selected.length === 0) {
+    console.error(`No workloads matched filter: ${args.workload}`);
     process.exit(1);
   }
 
+  console.error('Running Doe...');
+  const doeResults = [];
+  for (const workload of selected) {
+    try {
+      const lines = await runProviderWorkload('doe', workload.id, []);
+      doeResults.push(...lines);
+    } catch (err) {
+      console.error(`Doe provider failed on ${workload.id}: ${err.message}`);
+      process.exit(1);
+    }
+  }
+
   console.error('\nRunning Dawn...');
-  let dawnResults;
-  try {
-    dawnResults = await runProvider('dawn', []);
-  } catch (err) {
-    console.error(`Dawn provider failed: ${err.message}`);
-    console.error('Is the webgpu npm package installed? Run: npm install webgpu');
-    process.exit(1);
+  const dawnResults = [];
+  for (const workload of selected) {
+    try {
+      const lines = await runProviderWorkload('dawn', workload.id, []);
+      dawnResults.push(...lines);
+    } catch (err) {
+      console.error(`Dawn provider failed on ${workload.id}: ${err.message}`);
+      console.error('Is the webgpu npm package installed? Run: npm install webgpu');
+      process.exit(1);
+    }
   }
 
   const comparisons = buildComparison(doeResults, dawnResults);

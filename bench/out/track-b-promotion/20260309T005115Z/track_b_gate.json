@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "moduleCount": 5,
+  "modules": [
+    {
+      "moduleId": "fawn_2d_sdf_renderer",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "resultHash": "bccaa0e27f6beea5d089b0a5e960ce4b865527e74bc8f4fe6eff8a6c8869b9f1"
+    },
+    {
+      "moduleId": "fawn_compute_services",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "resultHash": "ad99c4689ed02b91c2fa2de6317659385a50cf6291e6ab3a6c289b5a35b57795"
+    },
+    {
+      "moduleId": "fawn_effects_pipeline",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "resultHash": "3e3c47dca0cbfd34be6241edd31cd0995f169cb8e5f5e423fdd70130e2fc9273"
+    },
+    {
+      "moduleId": "fawn_path_engine",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "resultHash": "23368b751e8887ad071b3af19c2793a995fd0dfa3833fe2a294e146f453298a8"
+    },
+    {
+      "moduleId": "fawn_resource_scheduler",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "resultHash": "4cf9b7d2099bd3bcb3a9ca1d7d17ea35fd622d705b5b2d5d496f40384169c7b2"
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "modules": {
+    "fawn_2d_sdf_renderer": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-09",
+      "nurseryExitApproved": true
+    },
+    "fawn_compute_services": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-08",
+      "nurseryExitApproved": true
+    },
+    "fawn_effects_pipeline": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-09",
+      "nurseryExitApproved": true
+    },
+    "fawn_path_engine": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-09",
+      "nurseryExitApproved": true
+    },
+    "fawn_resource_scheduler": {
+      "runtimeIntegrationOwner": "fawn-core",
+      "qualityOwner": "fawn-core",
+      "benchmarkMethodologyOwner": "fawn-core",
+      "promotedAt": "2026-03-08",
+      "nurseryExitApproved": true
+    }
+  }
+}

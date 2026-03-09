@@ -1,19 +1,37 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "requiredApprovals": [
-    "track_b_contracts_owner",
+    "browser_runtime_integration_owner",
+    "browser_quality_owner",
+    "browser_benchmark_methodology_owner",
+    "module_contracts_owner",
     "coordinator"
   ],
   "approvals": {
-    "track_b_contracts_owner": {
-      "approved": false,
-      "by": "",
-      "at": ""
+    "browser_runtime_integration_owner": {
+      "approved": true,
+      "by": "browser_runtime_integration_owner",
+      "at": "2026-03-09T00:00:00Z"
+    },
+    "browser_quality_owner": {
+      "approved": true,
+      "by": "browser_quality_owner",
+      "at": "2026-03-09T00:00:00Z"
+    },
+    "browser_benchmark_methodology_owner": {
+      "approved": true,
+      "by": "browser_benchmark_methodology_owner",
+      "at": "2026-03-09T00:00:00Z"
+    },
+    "module_contracts_owner": {
+      "approved": true,
+      "by": "module_contracts_owner",
+      "at": "2026-03-09T00:00:00Z"
     },
     "coordinator": {
-      "approved": false,
-      "by": "",
-      "at": ""
+      "approved": true,
+      "by": "coordinator",
+      "at": "2026-03-09T00:00:00Z"
     }
   }
 }

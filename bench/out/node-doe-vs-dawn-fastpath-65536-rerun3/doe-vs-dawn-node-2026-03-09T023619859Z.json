@@ -1,0 +1,28 @@
+{
+  "type": "comparison_report",
+  "timestamp": "2026-03-09T02:36:19.857Z",
+  "iterations": 20,
+  "warmup": 2,
+  "platform": "darwin",
+  "arch": "arm64",
+  "nodeVersion": "v22.20.0",
+  "claimable": 1,
+  "total": 1,
+  "comparisons": [
+    {
+      "workload": "compute_e2e_65536",
+      "domain": "compute",
+      "comparable": true,
+      "status": "compared",
+      "doeMedianMs": 0.2700839999999971,
+      "dawnMedianMs": 0.507832999999998,
+      "speedup": 1.88,
+      "pctFaster": 46.8,
+      "claimable": true,
+      "doeP95Ms": 0.38229100000000926,
+      "dawnP95Ms": 0.6643329999999992,
+      "doeP99Ms": 0.4016669999999749,
+      "dawnP99Ms": 1.9909170000000032
+    }
+  ]
+}

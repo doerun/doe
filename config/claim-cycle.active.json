@@ -79,7 +79,7 @@
   },
   "milestones": [
     {
-      "id": "track_a_runtime_closure",
+      "id": "browser_runtime_closure",
       "track": "A",
       "owner": "runtime-lead",
       "dueDate": "2026-03-10",
@@ -99,7 +99,7 @@
       ]
     },
     {
-      "id": "track_b_claim_stability",
+      "id": "module_claim_stability",
       "track": "B",
       "owner": "bench-lead",
       "dueDate": "2026-03-14",

@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
+const webgpu = @import("../../src/webgpu_ffi.zig");
 const capabilities = @import("../../src/backend/common/capabilities.zig");
 const metal_mod = @import("../../src/backend/metal/mod.zig");
 
@@ -126,4 +127,17 @@ test "metal backend upload cadence and flush queue preserve execution result" {
     });
     try std.testing.expect(second.status == .ok);
     try std.testing.expectEqual(@as(u64, 0), second.submit_wait_ns);
+}
+
+test "webgpu backend captures effective limits during metal init" {
+    if (builtin.os.tag != .macos) return;
+
+    var backend = webgpu.WebGPUBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
+        if (skip_if_runtime_unavailable(err)) return;
+        return err;
+    };
+    defer backend.deinit();
+
+    const limits = backend.effectiveLimits() orelse return error.TestExpectedEqual;
+    try std.testing.expect(limits.maxBufferSize > 0);
 }

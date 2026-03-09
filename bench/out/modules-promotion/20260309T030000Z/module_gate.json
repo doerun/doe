@@ -1,0 +1,132 @@
+{
+  "ok": true,
+  "moduleCount": 5,
+  "modules": [
+    {
+      "moduleId": "fawn_2d_sdf_renderer",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "caseCount": 2,
+      "cases": [
+        {
+          "caseId": "happy_path",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "bccaa0e27f6beea5d089b0a5e960ce4b865527e74bc8f4fe6eff8a6c8869b9f1"
+        },
+        {
+          "caseId": "unsupported_sample_count",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-2d-sdf-renderer.edge.unsupported-sample-count.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "4d0a262e059e169d36cd491744288084b5ad379d3a1fdd2c3590eefbfdea5f24"
+        }
+      ]
+    },
+    {
+      "moduleId": "fawn_compute_services",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "caseCount": 2,
+      "cases": [
+        {
+          "caseId": "happy_path",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-compute-services.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "ad99c4689ed02b91c2fa2de6317659385a50cf6291e6ab3a6c289b5a35b57795"
+        },
+        {
+          "caseId": "input_contract_invalid",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-compute-services.edge.input-contract-invalid.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "f69e51a4fd981db02ea13add213a49c4e77d19c63c78c51f3684eadf83f9302b"
+        }
+      ]
+    },
+    {
+      "moduleId": "fawn_effects_pipeline",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "caseCount": 2,
+      "cases": [
+        {
+          "caseId": "happy_path",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-effects-pipeline.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "3e3c47dca0cbfd34be6241edd31cd0995f169cb8e5f5e423fdd70130e2fc9273"
+        },
+        {
+          "caseId": "unsupported_op",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-effects-pipeline.edge.unsupported-op.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "8db20bc2fc5388a7fb523f133bad447a5e17dce3b49517cf3897c5845447387b"
+        }
+      ]
+    },
+    {
+      "moduleId": "fawn_path_engine",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "caseCount": 2,
+      "cases": [
+        {
+          "caseId": "happy_path",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-path-engine.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "23368b751e8887ad071b3af19c2793a995fd0dfa3833fe2a294e146f453298a8"
+        },
+        {
+          "caseId": "dash_pattern_unsupported",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-path-engine.edge.dash-pattern.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "c2779e42bb97430c7381c26faf9b1444f833069f03090df60a2428b1b6e83fb7"
+        }
+      ]
+    },
+    {
+      "moduleId": "fawn_resource_scheduler",
+      "schemaOk": true,
+      "correctnessOk": true,
+      "traceOk": true,
+      "caseCount": 2,
+      "cases": [
+        {
+          "caseId": "happy_path",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-resource-scheduler.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "4cf9b7d2099bd3bcb3a9ca1d7d17ea35fd622d705b5b2d5d496f40384169c7b2"
+        },
+        {
+          "caseId": "invalid_cadence",
+          "fixture": "nursery/fawn-browser/module-incubation/fixtures/fawn-resource-scheduler.edge.invalid-cadence.request.json",
+          "schemaOk": true,
+          "correctnessOk": true,
+          "traceOk": true,
+          "resultHash": "6fbdabacc1a368771beb11a644f66e7d99286fec284460e386307ab79d500ec4"
+        }
+      ]
+    }
+  ],
+  "failures": []
+}

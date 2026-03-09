@@ -45,6 +45,69 @@
       "inputs": ["runtime_events"],
       "outputs": ["trace_bin", "trace_meta", "replay_report"],
       "contracts": ["trace_schema"]
+    },
+    {
+      "moduleId": "browser_integration",
+      "modulePath": "fawn/nursery/fawn-browser",
+      "status": "active",
+      "owner": "runtime-core",
+      "inputs": ["browser-workflow-manifest", "browser-promotion-approvals", "browser-ownership"],
+      "outputs": ["browser-smoke-report", "browser-layered-report", "browser-gate-report"],
+      "contracts": ["browser-workflow-manifest.schema.json", "browser-promotion-approvals.schema.json", "browser-ownership.schema.json"]
+    },
+    {
+      "moduleId": "browser_claimability",
+      "modulePath": "fawn/bench",
+      "status": "active",
+      "owner": "performance",
+      "inputs": ["browser-gate-report", "browser-claim-policy"],
+      "outputs": ["browser-claim-report", "browser-tail-health", "browser-claim-gate-result"],
+      "contracts": ["browser-claim-policy.schema.json"]
+    },
+    {
+      "moduleId": "compute_services_module",
+      "modulePath": "fawn/zig/src/full/modules/services",
+      "status": "active",
+      "owner": "runtime-core",
+      "inputs": ["compute-services request", "compute-services policy"],
+      "outputs": ["compute-services result"],
+      "contracts": ["compute-services.schema.json"]
+    },
+    {
+      "moduleId": "effects_pipeline_module",
+      "modulePath": "fawn/zig/src/full/modules/rendering",
+      "status": "active",
+      "owner": "runtime-core",
+      "inputs": ["effects-pipeline request", "effects-pipeline policy"],
+      "outputs": ["effects-pipeline result"],
+      "contracts": ["effects-pipeline.schema.json"]
+    },
+    {
+      "moduleId": "path_engine_module",
+      "modulePath": "fawn/zig/src/full/modules/rendering",
+      "status": "active",
+      "owner": "runtime-core",
+      "inputs": ["path-engine request", "path-engine policy"],
+      "outputs": ["path-engine result"],
+      "contracts": ["path-engine.schema.json"]
+    },
+    {
+      "moduleId": "sdf_renderer_module",
+      "modulePath": "fawn/zig/src/full/modules/rendering",
+      "status": "active",
+      "owner": "runtime-core",
+      "inputs": ["sdf-renderer request", "sdf-renderer policy"],
+      "outputs": ["sdf-renderer result"],
+      "contracts": ["sdf-renderer.schema.json"]
+    },
+    {
+      "moduleId": "resource_scheduler_module",
+      "modulePath": "fawn/zig/src/full/modules/services",
+      "status": "active",
+      "owner": "runtime-core",
+      "inputs": ["resource-scheduler request", "resource-scheduler policy"],
+      "outputs": ["resource-scheduler result"],
+      "contracts": ["resource-scheduler.schema.json"]
     }
   ]
 }

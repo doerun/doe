@@ -1,0 +1,1984 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "track-a-browser-claim-report",
+  "generatedAt": "2026-03-09T01:27:15Z",
+  "benchmarkClass": "comparable",
+  "comparisonStatus": "comparable",
+  "claimStatus": "diagnostic",
+  "timingClass": "scenario",
+  "timingSource": "browser-performance-now",
+  "claimabilityPolicy": {
+    "mode": "local",
+    "minTimedSamples": 7,
+    "requiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent"
+    ],
+    "maxFlakePercent": 5.0
+  },
+  "policyPath": "/Users/xyz/deco/fawn/config/track-a-browser-claim-policy.json",
+  "promotionApprovalsPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+  "ownershipPath": "/Users/xyz/deco/fawn/config/track-a-browser-ownership.json",
+  "windowCount": 7,
+  "windows": [
+    {
+      "window": 1,
+      "gateReport": "",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-01/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-01/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-01/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-01/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "f8889026917b10e706792ded7e670f2f371a6060ce82e2d50936a29fdf02ae45",
+        "layeredReport": "d778406f22b98e446843e901196216f433ab72c341b205fcb217490478805dfa",
+        "summaryReport": "f70546ae8fceaf6dc731f3c27a86860ddaa2af616fac3466ff1daec881362ac2",
+        "checkReport": "155556f49c4ff75e91a520f9b950257ace624acccf21ae61a8b8442f30245348"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 59131,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 2,
+      "gateReport": "",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-02/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-02/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-02/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-02/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "d12341ca79a943e0af402116a8fbabe4ddc9e4c6bbceaf6a365235f575eff4ea",
+        "layeredReport": "5d38425488e0eb556477c50df521226d355c1e2bf8b32c21de979b33ef6b0138",
+        "summaryReport": "1b204221089f56f53fb69cece01b2dbfd77a008c0c6ea2bed70a4dac7e5571a1",
+        "checkReport": "155556f49c4ff75e91a520f9b950257ace624acccf21ae61a8b8442f30245348"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 59193,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 3,
+      "gateReport": "",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-03/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-03/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-03/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-03/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "e1822173aeee148804a6d68aaac1d30f08d12a2bf64d4e6fe9691a802d3f7a91",
+        "layeredReport": "a1afed9100e553961aa17b61f11f5ab56ce4c5753681dafb57bf000c2af96982",
+        "summaryReport": "510fd8fc21805890c86f79bbc088ff5edde64e1fb408c497e07db46c62da7df9",
+        "checkReport": "155556f49c4ff75e91a520f9b950257ace624acccf21ae61a8b8442f30245348"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 59254,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 4,
+      "gateReport": "",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-04/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-04/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-04/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-04/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "02c463b3a96424fbb968b45d5a1edee151a69e3204323d200a05283e40c9410b",
+        "layeredReport": "45533dc1b480fda3cf3487b0b23a014e1549f462c2e9549951bab0dae20b671b",
+        "summaryReport": "b6f78744d966d736e6a8faf3ba7a51ac66c415a7aa7320751b5c61f71c21932e",
+        "checkReport": "155556f49c4ff75e91a520f9b950257ace624acccf21ae61a8b8442f30245348"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 59315,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 5,
+      "gateReport": "",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-05/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-05/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-05/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-05/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "b8936f5298835d1894bee2386af3279eea72066ad1610cd28694f3e1c1efce2f",
+        "layeredReport": "d9fd00d04b76dd0fadff53ce6f90b4025b92f32d0fd45c8f9c7805f2a8b2300d",
+        "summaryReport": "ed84717f1c4ade83e600a112f0c0e8a4d0db21e12529890e525e1a1826790a52",
+        "checkReport": "155556f49c4ff75e91a520f9b950257ace624acccf21ae61a8b8442f30245348"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 59405,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 6,
+      "gateReport": "",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "9fba238d071da6dc4cd2eb8a7e03d1ee596e4e91d4d678c0ecd9ebc2f7cfff75",
+        "layeredReport": "21bb26596fc64244a82eb0da4e77bb4fa80f675a5059a47bb343d61e4602f211",
+        "summaryReport": "a9da0a2957031612a1baa9c5a091d9c950ee6cbb1cba84e8b3b4d4af0bc875f9",
+        "checkReport": "155556f49c4ff75e91a520f9b950257ace624acccf21ae61a8b8442f30245348"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 59483,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 7,
+      "gateReport": "",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-07/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-07/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-07/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-07/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "d1eaf0639d669e602b3743351b755ad1209bb29cdd79eb015d81722006db5928",
+        "layeredReport": "95bdb5f5b4ffba0fd62c913cbb9c9ff49daa18b11fad18bbfec9322d8719ca30",
+        "summaryReport": "36737934ce862d2420a6470383246a4e24760dfbb750864a93a56bfda6eb6ee3",
+        "checkReport": "155556f49c4ff75e91a520f9b950257ace624acccf21ae61a8b8442f30245348"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 59592,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    }
+  ],
+  "claimabilitySummary": {
+    "workloadCount": 26,
+    "comparableCount": 26,
+    "claimableCount": 1
+  },
+  "workloads": [
+    {
+      "id": "compute_concurrent_execution_single",
+      "name": "concurrent execution single-dispatch contract",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -99.9999990968993,
+        "p95Percent": -67.46988091106806,
+        "p99Percent": -67.46988091106806
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03050000011920929,
+          "maxMs": 0.04149999976158142,
+          "p50Ms": 0.03300000011920929,
+          "p95Ms": 0.04149999976158142,
+          "p99Ms": 0.04149999976158142
+        },
+        "samplesMs": [
+          0.04149999976158142,
+          0.04,
+          0.03199999988079071,
+          0.03050000011920929,
+          0.03949999988079071,
+          0.03150000005960465,
+          0.03300000011920929
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06,
+          "maxMs": 0.06950000017881393,
+          "p50Ms": 0.06599999994039535,
+          "p95Ms": 0.06950000017881393,
+          "p99Ms": 0.06950000017881393
+        },
+        "samplesMs": [
+          0.06,
+          0.06599999994039535,
+          0.06849999994039535,
+          0.06950000017881393,
+          0.06649999976158143,
+          0.065,
+          0.0625
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_fallback",
+      "name": "dispatch fallback contract",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -87.87878774195444,
+        "p95Percent": -113.04347882424052,
+        "p99Percent": -113.04347882424052
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03150000005960465,
+          "maxMs": 0.03449999988079071,
+          "p50Ms": 0.03300000011920929,
+          "p95Ms": 0.03449999988079071,
+          "p99Ms": 0.03449999988079071
+        },
+        "samplesMs": [
+          0.03400000005960464,
+          0.0325,
+          0.03449999988079071,
+          0.03300000011920929,
+          0.03350000023841858,
+          0.03150000005960465,
+          0.0325
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05850000023841858,
+          "maxMs": 0.07349999994039536,
+          "p50Ms": 0.062000000178813935,
+          "p95Ms": 0.07349999994039536,
+          "p99Ms": 0.07349999994039536
+        },
+        "samplesMs": [
+          0.0644999998807907,
+          0.07349999994039536,
+          0.06400000005960464,
+          0.06150000005960465,
+          0.05850000023841858,
+          0.062000000178813935,
+          0.06150000005960465
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_grid",
+      "name": "dispatch grid contract",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -101.53846190525933,
+        "p95Percent": -142.4657528654096,
+        "p99Percent": -142.4657528654096
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.030999999940395356,
+          "maxMs": 0.036500000059604645,
+          "p50Ms": 0.0325,
+          "p95Ms": 0.036500000059604645,
+          "p99Ms": 0.036500000059604645
+        },
+        "samplesMs": [
+          0.035,
+          0.035,
+          0.0325,
+          0.030999999940395356,
+          0.036500000059604645,
+          0.03199999988079071,
+          0.03199999988079071
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.0575,
+          "maxMs": 0.08849999994039535,
+          "p50Ms": 0.06550000011920928,
+          "p95Ms": 0.08849999994039535,
+          "p99Ms": 0.08849999994039535
+        },
+        "samplesMs": [
+          0.0630000001192093,
+          0.08849999994039535,
+          0.07350000023841857,
+          0.06550000011920928,
+          0.0575,
+          0.06450000017881394,
+          0.06700000017881394
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_large_args",
+      "name": "dispatch indirect large args",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -78.20512898888421,
+        "p95Percent": -67.415730517676,
+        "p99Percent": -67.415730517676
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.035,
+          "maxMs": 0.04449999988079071,
+          "p50Ms": 0.03899999976158142,
+          "p95Ms": 0.04449999988079071,
+          "p99Ms": 0.04449999988079071
+        },
+        "samplesMs": [
+          0.039500000178813936,
+          0.04449999988079071,
+          0.035,
+          0.03599999994039536,
+          0.03899999976158142,
+          0.03549999982118607,
+          0.040999999940395354
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06199999988079071,
+          "maxMs": 0.07449999988079072,
+          "p50Ms": 0.06949999988079071,
+          "p95Ms": 0.07449999988079072,
+          "p99Ms": 0.07449999988079072
+        },
+        "samplesMs": [
+          0.0644999998807907,
+          0.06699999988079071,
+          0.07349999994039536,
+          0.06949999988079071,
+          0.06199999988079071,
+          0.07099999994039535,
+          0.07449999988079072
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_live_args",
+      "name": "dispatch indirect live args",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -73.41772189145667,
+        "p95Percent": -57.29166750097649,
+        "p99Percent": -57.29166750097649
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03599999994039536,
+          "maxMs": 0.047999999821186065,
+          "p50Ms": 0.03949999988079071,
+          "p95Ms": 0.047999999821186065,
+          "p99Ms": 0.047999999821186065
+        },
+        "samplesMs": [
+          0.03849999994039535,
+          0.04050000011920929,
+          0.03849999994039535,
+          0.03949999988079071,
+          0.0425,
+          0.03599999994039536,
+          0.047999999821186065
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06,
+          "maxMs": 0.07550000011920929,
+          "p50Ms": 0.06849999994039535,
+          "p95Ms": 0.07550000011920929,
+          "p99Ms": 0.07550000011920929
+        },
+        "samplesMs": [
+          0.06099999994039536,
+          0.07349999994039536,
+          0.07550000011920929,
+          0.07449999988079072,
+          0.06,
+          0.06849999994039535,
+          0.06849999994039535
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_single",
+      "name": "dispatch indirect 1",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -81.57894837971872,
+        "p95Percent": -63.73626304527886,
+        "p99Percent": -63.73626304527886
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.035,
+          "maxMs": 0.04550000011920929,
+          "p50Ms": 0.03799999982118606,
+          "p95Ms": 0.04550000011920929,
+          "p99Ms": 0.04550000011920929
+        },
+        "samplesMs": [
+          0.036500000059604645,
+          0.04550000011920929,
+          0.035,
+          0.0375,
+          0.040499999821186065,
+          0.03799999982118606,
+          0.04
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06099999994039536,
+          "maxMs": 0.07449999988079072,
+          "p50Ms": 0.06900000005960465,
+          "p95Ms": 0.07449999988079072,
+          "p99Ms": 0.07449999988079072
+        },
+        "samplesMs": [
+          0.06650000005960464,
+          0.07449999988079072,
+          0.06950000017881393,
+          0.06900000005960465,
+          0.06099999994039536,
+          0.0630000001192093,
+          0.07049999982118607
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_2d_sweep",
+      "name": "dispatch workgroups 2D sweep",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -85.52631697620052,
+        "p95Percent": -47.61904761904762,
+        "p99Percent": -47.61904761904762
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03549999982118607,
+          "maxMs": 0.0525,
+          "p50Ms": 0.03799999982118606,
+          "p95Ms": 0.0525,
+          "p99Ms": 0.0525
+        },
+        "samplesMs": [
+          0.03799999982118606,
+          0.0525,
+          0.03849999994039535,
+          0.03550000011920929,
+          0.047000000178813936,
+          0.03549999982118607,
+          0.03549999982118607
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.060500000119209286,
+          "maxMs": 0.0775,
+          "p50Ms": 0.07050000011920929,
+          "p95Ms": 0.0775,
+          "p99Ms": 0.0775
+        },
+        "samplesMs": [
+          0.07050000011920929,
+          0.07350000023841857,
+          0.07150000005960465,
+          0.06700000017881394,
+          0.060500000119209286,
+          0.06349999994039536,
+          0.0775
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_3d_sweep",
+      "name": "dispatch workgroups 3D sweep",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -92.00000047683716,
+        "p95Percent": -65.9793802586812,
+        "p99Percent": -65.9793802586812
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03400000005960464,
+          "maxMs": 0.04850000023841858,
+          "p50Ms": 0.0375,
+          "p95Ms": 0.04850000023841858,
+          "p99Ms": 0.04850000023841858
+        },
+        "samplesMs": [
+          0.039500000178813936,
+          0.04850000023841858,
+          0.03400000005960464,
+          0.03600000023841858,
+          0.044500000178813934,
+          0.0375,
+          0.03599999994039536
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06650000005960464,
+          "maxMs": 0.08049999982118607,
+          "p50Ms": 0.07200000017881393,
+          "p95Ms": 0.08049999982118607,
+          "p99Ms": 0.08049999982118607
+        },
+        "samplesMs": [
+          0.08049999982118607,
+          0.06949999988079071,
+          0.07700000017881393,
+          0.07200000017881393,
+          0.06650000005960464,
+          0.06849999994039535,
+          0.0725
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_indirect_pipeline_switch",
+      "name": "dispatch indirect pipeline switch",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -87.01298776696717,
+        "p95Percent": -66.66666706804477,
+        "p99Percent": -66.66666706804477
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03450000017881393,
+          "maxMs": 0.04949999988079071,
+          "p50Ms": 0.03849999994039535,
+          "p95Ms": 0.04949999988079071,
+          "p99Ms": 0.04949999988079071
+        },
+        "samplesMs": [
+          0.03900000005960465,
+          0.04949999988079071,
+          0.03450000017881393,
+          0.03450000017881393,
+          0.039500000178813936,
+          0.035,
+          0.03849999994039535
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06150000005960465,
+          "maxMs": 0.0825,
+          "p50Ms": 0.07200000017881393,
+          "p95Ms": 0.0825,
+          "p99Ms": 0.0825
+        },
+        "samplesMs": [
+          0.06199999988079071,
+          0.0825,
+          0.07200000017881393,
+          0.07300000011920929,
+          0.06150000005960465,
+          0.06599999994039535,
+          0.07650000005960464
+        ]
+      }
+    },
+    {
+      "id": "compute_kernel_dispatch_1000",
+      "name": "kernel dispatch macro 1000",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -86.24999970197679,
+        "p95Percent": -24.21874969804776,
+        "p99Percent": -24.21874969804776
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03549999982118607,
+          "maxMs": 0.06400000005960464,
+          "p50Ms": 0.04,
+          "p95Ms": 0.06400000005960464,
+          "p99Ms": 0.06400000005960464
+        },
+        "samplesMs": [
+          0.04150000005960464,
+          0.06400000005960464,
+          0.04,
+          0.03599999994039536,
+          0.04150000005960464,
+          0.03549999982118607,
+          0.037000000178813934
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.065,
+          "maxMs": 0.0794999998807907,
+          "p50Ms": 0.07449999988079072,
+          "p95Ms": 0.0794999998807907,
+          "p99Ms": 0.0794999998807907
+        },
+        "samplesMs": [
+          0.07650000005960464,
+          0.0794999998807907,
+          0.07599999994039536,
+          0.06650000005960464,
+          0.06550000011920928,
+          0.065,
+          0.07449999988079072
+        ]
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32",
+      "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle0)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -101.78571363949045,
+        "p95Percent": -97.01492468268178,
+        "p99Percent": -97.01492468268178
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.0275,
+          "maxMs": 0.03350000023841858,
+          "p50Ms": 0.02800000011920929,
+          "p95Ms": 0.03350000023841858,
+          "p99Ms": 0.03350000023841858
+        },
+        "samplesMs": [
+          0.02800000011920929,
+          0.029000000059604646,
+          0.028500000238418578,
+          0.0275,
+          0.03350000023841858,
+          0.0275,
+          0.02800000011920929
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05149999976158142,
+          "maxMs": 0.06600000023841858,
+          "p50Ms": 0.05650000005960464,
+          "p95Ms": 0.06600000023841858,
+          "p99Ms": 0.06600000023841858
+        },
+        "samplesMs": [
+          0.06400000005960464,
+          0.05650000005960464,
+          0.06600000023841858,
+          0.056999999880790714,
+          0.05149999976158142,
+          0.05650000005960464,
+          0.055999999940395354
+        ]
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32_swizzle1",
+      "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle1)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -77.41935517983927,
+        "p95Percent": -94.73684317847702,
+        "p99Percent": -94.73684317847702
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.025999999940395355,
+          "maxMs": 0.03799999982118606,
+          "p50Ms": 0.030999999940395356,
+          "p95Ms": 0.03799999982118606,
+          "p99Ms": 0.03799999982118606
+        },
+        "samplesMs": [
+          0.03799999982118606,
+          0.03100000023841858,
+          0.025999999940395355,
+          0.029000000059604646,
+          0.03199999988079071,
+          0.029000000059604646,
+          0.030999999940395356
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.047999999821186065,
+          "maxMs": 0.07400000005960465,
+          "p50Ms": 0.055,
+          "p95Ms": 0.07400000005960465,
+          "p99Ms": 0.07400000005960465
+        },
+        "samplesMs": [
+          0.047999999821186065,
+          0.07400000005960465,
+          0.07350000023841857,
+          0.0630000001192093,
+          0.05300000011920929,
+          0.055,
+          0.0525
+        ]
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+      "name": "matrix-vector multiply 32768x2048 f32 (workgroupshared swizzle1)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=85.71 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 85.71428571428572
+      },
+      "deltaPercent": {
+        "p50Percent": -83.05084839938395,
+        "p95Percent": -50.99999964237212,
+        "p99Percent": -50.99999964237212
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.027000000178813936,
+          "maxMs": 0.05,
+          "p50Ms": 0.02949999988079071,
+          "p95Ms": 0.05,
+          "p99Ms": 0.05
+        },
+        "samplesMs": [
+          0.05,
+          0.04299999982118607,
+          0.029000000059604646,
+          0.027000000178813936,
+          0.030999999940395356,
+          0.02949999988079071,
+          0.028499999940395357
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.04900000005960464,
+          "maxMs": 0.07549999982118606,
+          "p50Ms": 0.05400000005960465,
+          "p95Ms": 0.07549999982118606,
+          "p99Ms": 0.07549999982118606
+        },
+        "samplesMs": [
+          0.04900000005960464,
+          0.07549999982118606,
+          0.07,
+          0.06,
+          0.050999999940395356,
+          0.05400000005960465,
+          0.05349999994039536
+        ]
+      }
+    },
+    {
+      "id": "compute_workgroup_atomic_1024",
+      "name": "workgroup-atomic 1024",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -78.12499863211998,
+        "p95Percent": -61.11111111111111,
+        "p99Percent": -61.11111111111111
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03,
+          "maxMs": 0.045,
+          "p50Ms": 0.03200000017881394,
+          "p95Ms": 0.045,
+          "p99Ms": 0.045
+        },
+        "samplesMs": [
+          0.045,
+          0.03200000017881394,
+          0.032999999821186066,
+          0.03,
+          0.03199999988079071,
+          0.03300000011920929,
+          0.03150000005960465
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.050999999940395356,
+          "maxMs": 0.0725,
+          "p50Ms": 0.056999999880790714,
+          "p95Ms": 0.0725,
+          "p99Ms": 0.0725
+        },
+        "samplesMs": [
+          0.050999999940395356,
+          0.0725,
+          0.056999999880790714,
+          0.05199999988079071,
+          0.05550000011920929,
+          0.0575,
+          0.06199999988079071
+        ]
+      }
+    },
+    {
+      "id": "compute_workgroup_non_atomic_1024",
+      "name": "workgroup-non-atomic 1024",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -84.48275803598297,
+        "p95Percent": -106.45161349244965,
+        "p99Percent": -106.45161349244965
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.027999999821186065,
+          "maxMs": 0.030999999940395356,
+          "p50Ms": 0.029000000059604646,
+          "p95Ms": 0.030999999940395356,
+          "p99Ms": 0.030999999940395356
+        },
+        "samplesMs": [
+          0.029000000059604646,
+          0.030999999940395356,
+          0.029000000059604646,
+          0.027999999821186065,
+          0.030499999821186067,
+          0.028500000238418578,
+          0.03
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.04900000005960464,
+          "maxMs": 0.06400000005960464,
+          "p50Ms": 0.05349999994039536,
+          "p95Ms": 0.06400000005960464,
+          "p99Ms": 0.06400000005960464
+        },
+        "samplesMs": [
+          0.050999999940395356,
+          0.05550000011920929,
+          0.06150000005960465,
+          0.0525,
+          0.04900000005960464,
+          0.05349999994039536,
+          0.06400000005960464
+        ]
+      }
+    },
+    {
+      "id": "compute_zero_initialize_workgroup_memory_256",
+      "name": "zero-initialize workgroup memory (256)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -94.28571462631223,
+        "p95Percent": -83.33333320597298,
+        "p99Percent": -83.33333320597298
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03199999988079071,
+          "maxMs": 0.03900000005960465,
+          "p50Ms": 0.035,
+          "p95Ms": 0.03900000005960465,
+          "p99Ms": 0.03900000005960465
+        },
+        "samplesMs": [
+          0.03599999994039536,
+          0.03550000011920929,
+          0.035,
+          0.0325,
+          0.03900000005960465,
+          0.03200000017881394,
+          0.03199999988079071
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06099999994039536,
+          "maxMs": 0.07150000005960465,
+          "p50Ms": 0.06800000011920929,
+          "p95Ms": 0.07150000005960465,
+          "p99Ms": 0.07150000005960465
+        },
+        "samplesMs": [
+          0.0630000001192093,
+          0.06800000011920929,
+          0.07150000005960465,
+          0.07099999994039535,
+          0.07049999982118607,
+          0.06099999994039536,
+          0.06299999982118606
+        ]
+      }
+    },
+    {
+      "id": "texture_sampler_write_query_destroy",
+      "name": "texture sampler/write/query/destroy contract",
+      "domain": "texture-contract",
+      "scenarioTemplate": "texture_write_query_destroy",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -47.3684203921923,
+        "p95Percent": -39.13043354319265,
+        "p99Percent": -39.13043354319265
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 1.699999988079071,
+          "maxMs": 2.300000011920929,
+          "p50Ms": 1.899999976158142,
+          "p95Ms": 2.300000011920929,
+          "p99Ms": 2.300000011920929
+        },
+        "samplesMs": [
+          1.800000011920929,
+          1.899999976158142,
+          2.199999988079071,
+          1.699999988079071,
+          1.899999976158142,
+          2.199999988079071,
+          2.300000011920929
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 2.100000023841858,
+          "maxMs": 3.199999988079071,
+          "p50Ms": 2.799999952316284,
+          "p95Ms": 3.199999988079071,
+          "p99Ms": 3.199999988079071
+        },
+        "samplesMs": [
+          2.100000023841858,
+          2.600000023841858,
+          2.799999952316284,
+          2.800000011920929,
+          2.600000023841858,
+          2.800000011920929,
+          3.199999988079071
+        ]
+      }
+    },
+    {
+      "id": "texture_sampler_write_query_destroy_mip8",
+      "name": "texture sampler/write/query/destroy contract (mip8)",
+      "domain": "texture-contract",
+      "scenarioTemplate": "texture_write_query_destroy",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=85.71 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 85.71428571428572
+      },
+      "deltaPercent": {
+        "p50Percent": -27.777774282443694,
+        "p95Percent": -33.333336171649805,
+        "p99Percent": -33.333336171649805
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 1.5,
+          "maxMs": 2.099999964237213,
+          "p50Ms": 1.800000011920929,
+          "p95Ms": 2.099999964237213,
+          "p99Ms": 2.099999964237213
+        },
+        "samplesMs": [
+          1.5,
+          1.699999988079071,
+          1.600000023841858,
+          2.0,
+          1.800000011920929,
+          2.0,
+          2.099999964237213
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 1.899999976158142,
+          "maxMs": 2.800000011920929,
+          "p50Ms": 2.299999952316284,
+          "p95Ms": 2.800000011920929,
+          "p99Ms": 2.800000011920929
+        },
+        "samplesMs": [
+          2.299999952316284,
+          2.5,
+          2.199999988079071,
+          1.899999976158142,
+          2.600000023841858,
+          2.099999964237213,
+          2.800000011920929
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_16mb",
+      "name": "buffer-upload 16MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=71.43 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 71.42857142857143
+      },
+      "deltaPercent": {
+        "p50Percent": -14.814815100982525,
+        "p95Percent": 12.820512800918934,
+        "p99Percent": 12.820512800918934
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.015,
+          "maxMs": 0.02600000003973643,
+          "p50Ms": 0.01799999992052714,
+          "p95Ms": 0.02600000003973643,
+          "p99Ms": 0.02600000003973643
+        },
+        "samplesMs": [
+          0.015999999841054283,
+          0.02600000003973643,
+          0.01600000003973643,
+          0.015,
+          0.022000000079472858,
+          0.01799999992052714,
+          0.02
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.018333333333333333,
+          "maxMs": 0.022666666706403094,
+          "p50Ms": 0.020666666626930237,
+          "p95Ms": 0.022666666706403094,
+          "p99Ms": 0.022666666706403094
+        },
+        "samplesMs": [
+          0.019666666587193807,
+          0.019666666785875957,
+          0.018333333333333333,
+          0.022666666706403094,
+          0.02199999988079071,
+          0.021333333253860474,
+          0.020666666626930237
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_1gb",
+      "name": "buffer-upload 1GB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=71.43 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 71.42857142857143
+      },
+      "deltaPercent": {
+        "p50Percent": -10.714285030048721,
+        "p95Percent": 5.633801669976089,
+        "p99Percent": 5.633801669976089
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.015333333412806193,
+          "maxMs": 0.023666666547457377,
+          "p50Ms": 0.018666666746139527,
+          "p95Ms": 0.023666666547457377,
+          "p99Ms": 0.023666666547457377
+        },
+        "samplesMs": [
+          0.022333333293596904,
+          0.015333333412806193,
+          0.01600000003973643,
+          0.016333333253860473,
+          0.019666666587193807,
+          0.018666666746139527,
+          0.023666666547457377
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.016666666666666666,
+          "maxMs": 0.02233333349227905,
+          "p50Ms": 0.020666666626930237,
+          "p95Ms": 0.02233333349227905,
+          "p99Ms": 0.02233333349227905
+        },
+        "samplesMs": [
+          0.020666666626930237,
+          0.02233333349227905,
+          0.01799999992052714,
+          0.016666666666666666,
+          0.020666666626930237,
+          0.020666666825612384,
+          0.022000000079472858
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_1kb",
+      "name": "buffer-upload 1KB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": true,
+        "reasons": [],
+        "windowCount": 7,
+        "flakePercent": 0.0
+      },
+      "deltaPercent": {
+        "p50Percent": 9.7826096815513,
+        "p95Percent": 21.73913043478262,
+        "p99Percent": 21.73913043478262
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.028333333333333332,
+          "maxMs": 0.03833333333333334,
+          "p50Ms": 0.030666666825612386,
+          "p95Ms": 0.03833333333333334,
+          "p99Ms": 0.03833333333333334
+        },
+        "samplesMs": [
+          0.028333333333333332,
+          0.030666666825612386,
+          0.030333333412806193,
+          0.028333333333333332,
+          0.03833333333333334,
+          0.030666666825612386,
+          0.035333333412806193
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.023666666746139528,
+          "maxMs": 0.03,
+          "p50Ms": 0.027666666507720948,
+          "p95Ms": 0.03,
+          "p99Ms": 0.03
+        },
+        "samplesMs": [
+          0.027666666507720948,
+          0.02599999984105428,
+          0.025,
+          0.023666666746139528,
+          0.029333333373069762,
+          0.028666666746139526,
+          0.03
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_1mb",
+      "name": "buffer-upload 1MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=85.71 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 85.71428571428572
+      },
+      "deltaPercent": {
+        "p50Percent": -7.407408102386127,
+        "p95Percent": 18.181817900332256,
+        "p99Percent": 18.181817900332256
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.014666666785875956,
+          "maxMs": 0.025666666626930238,
+          "p50Ms": 0.01799999992052714,
+          "p95Ms": 0.025666666626930238,
+          "p99Ms": 0.025666666626930238
+        },
+        "samplesMs": [
+          0.015999999841054283,
+          0.019333333373069764,
+          0.014666666785875956,
+          0.016333333452542623,
+          0.020333333412806194,
+          0.01799999992052714,
+          0.025666666626930238
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017666666507720946,
+          "maxMs": 0.02100000003973643,
+          "p50Ms": 0.019333333373069764,
+          "p95Ms": 0.02100000003973643,
+          "p99Ms": 0.02100000003973643
+        },
+        "samplesMs": [
+          0.02,
+          0.019333333373069764,
+          0.017666666507720946,
+          0.019333333373069764,
+          0.020666666626930237,
+          0.019333333174387617,
+          0.02100000003973643
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_256mb",
+      "name": "buffer-upload 256MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=57.14 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 57.14285714285714
+      },
+      "deltaPercent": {
+        "p50Percent": -1.7241383562756945,
+        "p95Percent": -21.739131373734164,
+        "p99Percent": -21.739131373734164
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.015333333412806193,
+          "maxMs": 0.02299999992052714,
+          "p50Ms": 0.019333333174387617,
+          "p95Ms": 0.02299999992052714,
+          "p99Ms": 0.02299999992052714
+        },
+        "samplesMs": [
+          0.01600000003973643,
+          0.02100000003973643,
+          0.02299999992052714,
+          0.015333333412806193,
+          0.022666666706403094,
+          0.017666666706403097,
+          0.019333333174387617
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017666666706403097,
+          "maxMs": 0.02800000011920929,
+          "p50Ms": 0.019666666587193807,
+          "p95Ms": 0.02800000011920929,
+          "p99Ms": 0.02800000011920929
+        },
+        "samplesMs": [
+          0.019666666587193807,
+          0.018333333333333333,
+          0.017666666706403097,
+          0.02800000011920929,
+          0.019666666587193807,
+          0.020666666626930237,
+          0.019333333373069764
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_4gb",
+      "name": "buffer-upload 4GB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=57.14 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 57.14285714285714
+      },
+      "deltaPercent": {
+        "p50Percent": -11.32075514136451,
+        "p95Percent": 18.918919310768302,
+        "p99Percent": 18.918919310768302
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.014666666785875956,
+          "maxMs": 0.02466666678587596,
+          "p50Ms": 0.017666666706403097,
+          "p95Ms": 0.02466666678587596,
+          "p99Ms": 0.02466666678587596
+        },
+        "samplesMs": [
+          0.014666666785875956,
+          0.015333333412806193,
+          0.015666666825612387,
+          0.017666666706403097,
+          0.02099999984105428,
+          0.018333333333333333,
+          0.02466666678587596
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017333333293596903,
+          "maxMs": 0.02,
+          "p50Ms": 0.019666666785875957,
+          "p95Ms": 0.02,
+          "p99Ms": 0.02
+        },
+        "samplesMs": [
+          0.019666666785875957,
+          0.02,
+          0.018333333333333333,
+          0.017333333293596903,
+          0.02,
+          0.019666666785875957,
+          0.02
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_4mb",
+      "name": "buffer-upload 4MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=85.71 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 85.71428571428572
+      },
+      "deltaPercent": {
+        "p50Percent": -7.407406916834201,
+        "p95Percent": 0.0,
+        "p99Percent": 0.0
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.015,
+          "maxMs": 0.020666666626930237,
+          "p50Ms": 0.01800000011920929,
+          "p95Ms": 0.020666666626930237,
+          "p99Ms": 0.020666666626930237
+        },
+        "samplesMs": [
+          0.016333333452542623,
+          0.017333333293596903,
+          0.015,
+          0.018666666746139527,
+          0.020666666626930237,
+          0.01800000011920929,
+          0.019666666587193807
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.01699999988079071,
+          "maxMs": 0.020666666626930237,
+          "p50Ms": 0.019333333373069764,
+          "p95Ms": 0.020666666626930237,
+          "p99Ms": 0.020666666626930237
+        },
+        "samplesMs": [
+          0.01899999996026357,
+          0.018666666746139527,
+          0.01699999988079071,
+          0.019333333373069764,
+          0.019666666587193807,
+          0.019333333373069764,
+          0.020666666626930237
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_64kb",
+      "name": "buffer-upload 64KB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=57.14 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 57.14285714285714
+      },
+      "deltaPercent": {
+        "p50Percent": -10.606060387127126,
+        "p95Percent": 36.88524593768084,
+        "p99Percent": 36.88524593768084
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017666666507720946,
+          "maxMs": 0.040666666626930234,
+          "p50Ms": 0.022000000079472858,
+          "p95Ms": 0.040666666626930234,
+          "p99Ms": 0.040666666626930234
+        },
+        "samplesMs": [
+          0.017666666507720946,
+          0.040666666626930234,
+          0.021666666666666667,
+          0.01900000015894572,
+          0.027333333293596905,
+          0.022000000079472858,
+          0.025666666626930238
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.02233333349227905,
+          "maxMs": 0.025666666626930238,
+          "p50Ms": 0.024333333373069765,
+          "p95Ms": 0.025666666626930238,
+          "p99Ms": 0.025666666626930238
+        },
+        "samplesMs": [
+          0.025666666626930238,
+          0.02299999992052714,
+          0.02233333349227905,
+          0.02333333333333333,
+          0.025,
+          0.024666666587193804,
+          0.024333333373069765
+        ]
+      }
+    }
+  ],
+  "failures": []
+}

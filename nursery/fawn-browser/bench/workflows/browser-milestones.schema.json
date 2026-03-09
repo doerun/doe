@@ -121,8 +121,8 @@
         "track": {
           "type": "string",
           "enum": [
-            "track_a",
-            "track_b",
+            "browser",
+            "modules",
             "promotion"
           ]
         },

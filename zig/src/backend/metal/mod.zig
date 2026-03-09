@@ -385,7 +385,7 @@ fn execute_upload(self: *ZigMetalBackend, upload: model.UploadCommand) !webgpu.N
     self.pending_upload_commands +|= 1;
 
     var submit_wait_ns: u64 = 0;
-    if (self.pending_upload_commands >= self.upload_submit_every) {
+    if (self.queue_sync_mode == .per_command and self.pending_upload_commands >= self.upload_submit_every) {
         submit_wait_ns = try rt.flush_queue();
         self.pending_upload_commands = 0;
     }

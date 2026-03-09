@@ -68,7 +68,7 @@ function defaultDoeLibPath() {
 const DEFAULT_CHROME = defaultChromePath();
 const DEFAULT_DOE_LIB = defaultDoeLibPath();
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
-const DEFAULT_OUT_FILE = "dawn-vs-doe.tracka.playwright-smoke.diagnostic.json";
+const DEFAULT_OUT_FILE = "dawn-vs-doe.browser.playwright-smoke.diagnostic.json";
 const DEFAULT_UPLOAD_ITERS = 500;
 const DEFAULT_DISPATCH_ITERS = 200;
 const DEFAULT_SUITE_TIMEOUT_MS = 120000;

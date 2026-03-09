@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_resource_scheduler",
+  "artifactKind": "policy",
+  "version": 1,
+  "promotedFromNursery": true,
+  "promotedAt": "2026-03-08",
+  "policy": {
+    "allowedCadenceModes": ["per_batch", "deferred"],
+    "allowedModules": [
+      "fawn_2d_sdf_renderer",
+      "fawn_path_engine",
+      "fawn_effects_pipeline",
+      "fawn_compute_services"
+    ],
+    "maxPoolBytes": 67108864,
+    "maxResourcesPerRequest": 16
+  }
+}

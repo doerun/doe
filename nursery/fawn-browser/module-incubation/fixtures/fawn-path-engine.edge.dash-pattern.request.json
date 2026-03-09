@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_path_engine",
+  "artifactKind": "request",
+  "pathStream": [
+    { "segment": "moveTo", "points": [[0, 0]] },
+    { "segment": "lineTo", "points": [[48, 0]] },
+    { "segment": "lineTo", "points": [[48, 48]] },
+    { "segment": "closePath", "points": [] }
+  ],
+  "strokeState": {
+    "width": 2,
+    "joinMode": "round",
+    "capMode": "round",
+    "miterLimit": 4,
+    "dashPattern": [2, 2]
+  },
+  "fillState": {
+    "fillRule": "nonzero",
+    "opacity": 1
+  },
+  "clipState": {
+    "mode": "none"
+  },
+  "target": {
+    "width": 128,
+    "height": 128
+  }
+}

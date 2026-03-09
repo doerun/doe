@@ -1,0 +1,1986 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "browser-claim-report",
+  "generatedAt": "2026-03-09T01:56:59Z",
+  "benchmarkClass": "comparable",
+  "comparisonStatus": "comparable",
+  "claimStatus": "diagnostic",
+  "timingClass": "scenario",
+  "timingSource": "browser-performance-now",
+  "claimabilityPolicy": {
+    "mode": "local",
+    "minTimedSamples": 7,
+    "requiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent"
+    ],
+    "maxFlakePercent": 5.0
+  },
+  "policyPath": "/Users/xyz/deco/fawn/config/browser-claim-policy.json",
+  "promotionApprovalsPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+  "ownershipPath": "/Users/xyz/deco/fawn/config/browser-ownership.json",
+  "windowCount": 7,
+  "windows": [
+    {
+      "window": 1,
+      "gateReport": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/windows/window-01.browser_gate.json",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-01/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-01/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-01/dawn-vs-doe.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-01/dawn-vs-doe.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "e843b95e4b15154e7f67f425241fbf4e7763cc3a1db89e047b15aa9c313ff433",
+        "layeredReport": "169bacf944ef41660537e7691ca2fd74df4cbe92be158376e4357eec83690308",
+        "summaryReport": "47141c939d7f72445903d62d315f28af6e8cc0cc98f57aa55b659377fff8a6e8",
+        "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 60022,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 2,
+      "gateReport": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/windows/window-02.browser_gate.json",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-02/dawn-vs-doe.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "46a08e80a1656b9abce1a0eac1cc5ecfb226f7a8d5a7088f5f7c5d0398dc61ed",
+        "layeredReport": "5e61d1c289c11b7f048e163b23321d1f7f15c512c40c83e4194ee3c353c24e56",
+        "summaryReport": "ef9c5dbf8e4278eaab9b1acdd10d7b84f0ac1c96952726b6caa0f45fb07b8ec8",
+        "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 60092,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 3,
+      "gateReport": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/windows/window-03.browser_gate.json",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-03/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-03/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-03/dawn-vs-doe.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-03/dawn-vs-doe.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "397eac06220f7ca5f00f089ffdeb244c704d433179740ddaa6acf7d9de6aeb65",
+        "layeredReport": "c08095c1a872122a9278d27bd0d96cf8581f6da63eaace9646439fab461a6435",
+        "summaryReport": "aab93d71ec572de1257f2960fdaaaaa4969c6548419991fab92889696db7b5e0",
+        "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 60156,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 4,
+      "gateReport": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/windows/window-04.browser_gate.json",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-04/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-04/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-04/dawn-vs-doe.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-04/dawn-vs-doe.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "dcc067cf7f5820c1de21ac0c7c69fd34b79a28644f0c421f03712446461687b2",
+        "layeredReport": "d3c97fba783e5ce047d44355740d51bd4aebfab5c11c8d7db2288c618c4d5d01",
+        "summaryReport": "edf2c969286c927731d1382afafc0ce59db84581cc1237ebefc81316ed5e1c28",
+        "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 60248,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 5,
+      "gateReport": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/windows/window-05.browser_gate.json",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-05/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-05/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-05/dawn-vs-doe.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-05/dawn-vs-doe.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "cdb91038866c1fe6ded00aca492b54e8622e1c9852d39acea34e63b91cb9901f",
+        "layeredReport": "e08fed8310f3f13d839687870f593f3a32c1382ba00c5f71c7714a070be0d4f6",
+        "summaryReport": "410fd8475eda59b8a011393d8cd0012a1c31b07248ad70c5a82ed6a226832f00",
+        "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 60320,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 6,
+      "gateReport": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/windows/window-06.browser_gate.json",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "0fb5a14c69050296e28c1d6f89750f11f40785f0997899ca1d3121998a749e70",
+        "layeredReport": "65672ff0a0a3835367c2a400ef7933a1ab26a2efdbe75565bfbde5ee16dc77eb",
+        "summaryReport": "aa32e4bbe22764b31a7bc399c1284b223b6a4406b341cfbdf72432253bb09f3c",
+        "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 60466,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    },
+    {
+      "window": 7,
+      "gateReport": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/windows/window-07.browser_gate.json",
+      "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-07/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+      "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-07/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-07/dawn-vs-doe.browser-layered.superset.summary.json",
+      "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-07/dawn-vs-doe.browser-layered.superset.check.json",
+      "hashes": {
+        "smokeReport": "5893cdf713bc5be971537b93fcf1c440e49bd84f83f0fe653a08c39cfd647c92",
+        "layeredReport": "3c5332e20cd77cc1599c28414165eb52d128709183c5abc5c4239f690fe99790",
+        "summaryReport": "9b0d42ec1469c0f1db67446f004c17e242d0fd7fb6a740f10fa84e10d9dd9b38",
+        "checkReport": "397f12e103550bb2382fe29a26663f0c122da529626529be64ced70b21d240b0"
+      },
+      "browserEnvironmentEvidence": {
+        "pageTargetKind": "server",
+        "pageTargetPort": 60644,
+        "pageTargetWarning": null,
+        "dataUrlFallbackEnabled": false
+      }
+    }
+  ],
+  "claimabilitySummary": {
+    "workloadCount": 26,
+    "comparableCount": 26,
+    "claimableCount": 1
+  },
+  "workloads": [
+    {
+      "id": "compute_concurrent_execution_single",
+      "name": "concurrent execution single-dispatch contract",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -85.07462608227357,
+        "p95Percent": -82.89473595464,
+        "p99Percent": -82.89473595464
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03150000005960465,
+          "maxMs": 0.03800000011920929,
+          "p50Ms": 0.03350000023841858,
+          "p95Ms": 0.03800000011920929,
+          "p99Ms": 0.03800000011920929
+        },
+        "samplesMs": [
+          0.03550000011920929,
+          0.03150000005960465,
+          0.03800000011920929,
+          0.0325,
+          0.03350000023841858,
+          0.03200000017881394,
+          0.035
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05800000011920929,
+          "maxMs": 0.06949999988079071,
+          "p50Ms": 0.062000000178813935,
+          "p95Ms": 0.06949999988079071,
+          "p99Ms": 0.06949999988079071
+        },
+        "samplesMs": [
+          0.06949999988079071,
+          0.06,
+          0.05800000011920929,
+          0.06599999994039535,
+          0.06849999994039535,
+          0.060500000119209286,
+          0.062000000178813935
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_fallback",
+      "name": "dispatch fallback contract",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -89.55223896530538,
+        "p95Percent": -89.61039021357375,
+        "p99Percent": -89.61039021357375
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03100000023841858,
+          "maxMs": 0.03849999994039535,
+          "p50Ms": 0.033499999940395354,
+          "p95Ms": 0.03849999994039535,
+          "p99Ms": 0.03849999994039535
+        },
+        "samplesMs": [
+          0.03799999982118606,
+          0.0325,
+          0.035,
+          0.03100000023841858,
+          0.033499999940395354,
+          0.03200000017881394,
+          0.03849999994039535
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05899999976158142,
+          "maxMs": 0.07300000011920929,
+          "p50Ms": 0.06349999994039536,
+          "p95Ms": 0.07300000011920929,
+          "p99Ms": 0.07300000011920929
+        },
+        "samplesMs": [
+          0.07300000011920929,
+          0.06349999994039536,
+          0.06199999988079071,
+          0.05899999976158142,
+          0.06650000005960464,
+          0.06,
+          0.06849999994039535
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_grid",
+      "name": "dispatch grid contract",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -107.57575754839091,
+        "p95Percent": -86.25000044703482,
+        "p99Percent": -86.25000044703482
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03,
+          "maxMs": 0.04,
+          "p50Ms": 0.03300000011920929,
+          "p95Ms": 0.04,
+          "p99Ms": 0.04
+        },
+        "samplesMs": [
+          0.0325,
+          0.03,
+          0.03350000023841858,
+          0.03300000011920929,
+          0.04,
+          0.03050000011920929,
+          0.033499999940395354
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05799999982118607,
+          "maxMs": 0.07450000017881393,
+          "p50Ms": 0.06850000023841858,
+          "p95Ms": 0.07450000017881393,
+          "p99Ms": 0.07450000017881393
+        },
+        "samplesMs": [
+          0.06699999988079071,
+          0.07099999994039535,
+          0.05799999982118607,
+          0.06,
+          0.07199999988079071,
+          0.07450000017881393,
+          0.06850000023841858
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_large_args",
+      "name": "dispatch indirect large args",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -90.1408460281643,
+        "p95Percent": -92.1348315735475,
+        "p99Percent": -92.1348315735475
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03449999988079071,
+          "maxMs": 0.04449999988079071,
+          "p50Ms": 0.03549999982118607,
+          "p95Ms": 0.04449999988079071,
+          "p99Ms": 0.04449999988079071
+        },
+        "samplesMs": [
+          0.03449999988079071,
+          0.035,
+          0.03949999988079071,
+          0.04449999988079071,
+          0.03549999982118607,
+          0.03450000017881393,
+          0.0375
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06150000005960465,
+          "maxMs": 0.08549999982118607,
+          "p50Ms": 0.0675,
+          "p95Ms": 0.08549999982118607,
+          "p99Ms": 0.08549999982118607
+        },
+        "samplesMs": [
+          0.0675,
+          0.0675,
+          0.06150000005960465,
+          0.07100000023841858,
+          0.07099999994039535,
+          0.06649999976158143,
+          0.08549999982118607
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_live_args",
+      "name": "dispatch indirect live args",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -74.66666698455809,
+        "p95Percent": -56.04395718120204,
+        "p99Percent": -56.04395718120204
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03400000005960464,
+          "maxMs": 0.04549999982118606,
+          "p50Ms": 0.0375,
+          "p95Ms": 0.04549999982118606,
+          "p99Ms": 0.04549999982118606
+        },
+        "samplesMs": [
+          0.04549999982118606,
+          0.03449999988079071,
+          0.04050000011920929,
+          0.0425,
+          0.03450000017881393,
+          0.03400000005960464,
+          0.0375
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06150000005960465,
+          "maxMs": 0.07100000023841858,
+          "p50Ms": 0.06550000011920928,
+          "p95Ms": 0.07100000023841858,
+          "p99Ms": 0.07100000023841858
+        },
+        "samplesMs": [
+          0.07100000023841858,
+          0.07,
+          0.06150000005960465,
+          0.06550000011920928,
+          0.07,
+          0.06450000017881394,
+          0.0630000001192093
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_single",
+      "name": "dispatch indirect 1",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -92.95774566301913,
+        "p95Percent": -69.411765126621,
+        "p99Percent": -69.411765126621
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03400000005960464,
+          "maxMs": 0.0425,
+          "p50Ms": 0.03550000011920929,
+          "p95Ms": 0.0425,
+          "p99Ms": 0.0425
+        },
+        "samplesMs": [
+          0.0425,
+          0.03549999982118607,
+          0.038500000238418576,
+          0.03550000011920929,
+          0.037000000178813934,
+          0.03400000005960464,
+          0.03550000011920929
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06399999976158142,
+          "maxMs": 0.07200000017881393,
+          "p50Ms": 0.06849999994039535,
+          "p95Ms": 0.07200000017881393,
+          "p99Ms": 0.07200000017881393
+        },
+        "samplesMs": [
+          0.07200000017881393,
+          0.06599999994039535,
+          0.06400000005960464,
+          0.06399999976158142,
+          0.06849999994039535,
+          0.07149999976158142,
+          0.07050000011920929
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_2d_sweep",
+      "name": "dispatch workgroups 2D sweep",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -93.05555637190001,
+        "p95Percent": -107.69230880916002,
+        "p99Percent": -107.69230880916002
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03399999976158142,
+          "maxMs": 0.03899999976158142,
+          "p50Ms": 0.03599999994039536,
+          "p95Ms": 0.03899999976158142,
+          "p99Ms": 0.03899999976158142
+        },
+        "samplesMs": [
+          0.03899999976158142,
+          0.03549999982118607,
+          0.03799999982118606,
+          0.035,
+          0.03899999976158142,
+          0.03599999994039536,
+          0.03399999976158142
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06450000017881394,
+          "maxMs": 0.08099999994039536,
+          "p50Ms": 0.06950000017881393,
+          "p95Ms": 0.08099999994039536,
+          "p99Ms": 0.08099999994039536
+        },
+        "samplesMs": [
+          0.07300000011920929,
+          0.0675,
+          0.06450000017881394,
+          0.06950000017881393,
+          0.07199999988079071,
+          0.0675,
+          0.08099999994039536
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_3d_sweep",
+      "name": "dispatch workgroups 3D sweep",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -92.95774566301913,
+        "p95Percent": -58.88888902134367,
+        "p99Percent": -58.88888902134367
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03400000005960464,
+          "maxMs": 0.045,
+          "p50Ms": 0.03550000011920929,
+          "p95Ms": 0.045,
+          "p99Ms": 0.045
+        },
+        "samplesMs": [
+          0.045,
+          0.03400000005960464,
+          0.043499999940395356,
+          0.03550000011920929,
+          0.03550000011920929,
+          0.03549999982118607,
+          0.03449999988079071
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.0630000001192093,
+          "maxMs": 0.07150000005960465,
+          "p50Ms": 0.06849999994039535,
+          "p95Ms": 0.07150000005960465,
+          "p99Ms": 0.07150000005960465
+        },
+        "samplesMs": [
+          0.06899999976158142,
+          0.06699999988079071,
+          0.0630000001192093,
+          0.0644999998807907,
+          0.07150000005960465,
+          0.07049999982118607,
+          0.06849999994039535
+        ]
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_indirect_pipeline_switch",
+      "name": "dispatch indirect pipeline switch",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -72.83950566409693,
+        "p95Percent": -69.81132037277195,
+        "p99Percent": -69.81132037277195
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03550000011920929,
+          "maxMs": 0.05300000011920929,
+          "p50Ms": 0.04050000011920929,
+          "p95Ms": 0.05300000011920929,
+          "p99Ms": 0.05300000011920929
+        },
+        "samplesMs": [
+          0.044000000059604645,
+          0.03550000011920929,
+          0.05300000011920929,
+          0.04199999988079071,
+          0.036500000059604645,
+          0.03599999994039536,
+          0.04050000011920929
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06299999982118606,
+          "maxMs": 0.09,
+          "p50Ms": 0.07,
+          "p95Ms": 0.09,
+          "p99Ms": 0.09
+        },
+        "samplesMs": [
+          0.07,
+          0.09,
+          0.06299999982118606,
+          0.06400000005960464,
+          0.07849999994039536,
+          0.07400000005960465,
+          0.0675
+        ]
+      }
+    },
+    {
+      "id": "compute_kernel_dispatch_1000",
+      "name": "kernel dispatch macro 1000",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -79.48717921286489,
+        "p95Percent": -60.57692390354076,
+        "p99Percent": -60.57692390354076
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03549999982118607,
+          "maxMs": 0.05199999988079071,
+          "p50Ms": 0.03900000005960465,
+          "p95Ms": 0.05199999988079071,
+          "p99Ms": 0.05199999988079071
+        },
+        "samplesMs": [
+          0.044000000059604645,
+          0.0375,
+          0.05199999988079071,
+          0.04449999988079071,
+          0.03900000005960465,
+          0.03550000011920929,
+          0.03549999982118607
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.06600000023841858,
+          "maxMs": 0.08350000023841858,
+          "p50Ms": 0.07,
+          "p95Ms": 0.08350000023841858,
+          "p99Ms": 0.08350000023841858
+        },
+        "samplesMs": [
+          0.06949999988079071,
+          0.08,
+          0.07,
+          0.075,
+          0.08350000023841858,
+          0.06700000017881394,
+          0.06600000023841858
+        ]
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32",
+      "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle0)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -103.38983133037144,
+        "p95Percent": -52.49999985098839,
+        "p99Percent": -52.49999985098839
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.027999999821186065,
+          "maxMs": 0.04,
+          "p50Ms": 0.02949999988079071,
+          "p95Ms": 0.04,
+          "p99Ms": 0.04
+        },
+        "samplesMs": [
+          0.03400000005960464,
+          0.02899999976158142,
+          0.02949999988079071,
+          0.03949999988079071,
+          0.029000000059604646,
+          0.027999999821186065,
+          0.04
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.055,
+          "maxMs": 0.06099999994039536,
+          "p50Ms": 0.06,
+          "p95Ms": 0.06099999994039536,
+          "p99Ms": 0.06099999994039536
+        },
+        "samplesMs": [
+          0.06,
+          0.055,
+          0.055,
+          0.06,
+          0.06099999994039536,
+          0.06,
+          0.060500000119209286
+        ]
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32_swizzle1",
+      "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle1)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -103.50877277371919,
+        "p95Percent": -65.38461559035133,
+        "p99Percent": -65.38461559035133
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.027000000178813936,
+          "maxMs": 0.03900000005960465,
+          "p50Ms": 0.028499999940395357,
+          "p95Ms": 0.03900000005960465,
+          "p99Ms": 0.03900000005960465
+        },
+        "samplesMs": [
+          0.03900000005960465,
+          0.02800000011920929,
+          0.03200000017881394,
+          0.028499999940395357,
+          0.0275,
+          0.027000000178813936,
+          0.037000000178813934
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05199999988079071,
+          "maxMs": 0.06450000017881394,
+          "p50Ms": 0.05800000011920929,
+          "p95Ms": 0.06450000017881394,
+          "p99Ms": 0.06450000017881394
+        },
+        "samplesMs": [
+          0.05800000011920929,
+          0.0525,
+          0.05199999988079071,
+          0.06049999982118606,
+          0.06450000017881394,
+          0.05950000017881393,
+          0.05700000017881393
+        ]
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+      "name": "matrix-vector multiply 32768x2048 f32 (workgroupshared swizzle1)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -98.24561361314038,
+        "p95Percent": -63.888887141221836,
+        "p99Percent": -63.888887141221836
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.0275,
+          "maxMs": 0.03600000023841858,
+          "p50Ms": 0.028499999940395357,
+          "p95Ms": 0.03600000023841858,
+          "p99Ms": 0.03600000023841858
+        },
+        "samplesMs": [
+          0.02899999976158142,
+          0.02800000011920929,
+          0.03,
+          0.0275,
+          0.03600000023841858,
+          0.027999999821186065,
+          0.028499999940395357
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05049999982118607,
+          "maxMs": 0.05899999976158142,
+          "p50Ms": 0.05649999976158142,
+          "p95Ms": 0.05899999976158142,
+          "p99Ms": 0.05899999976158142
+        },
+        "samplesMs": [
+          0.05850000023841858,
+          0.05049999982118607,
+          0.05399999976158142,
+          0.055499999821186065,
+          0.05899999976158142,
+          0.05649999976158142,
+          0.05799999982118607
+        ]
+      }
+    },
+    {
+      "id": "compute_workgroup_atomic_1024",
+      "name": "workgroup-atomic 1024",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -80.59701560254776,
+        "p95Percent": -85.13513557052332,
+        "p99Percent": -85.13513557052332
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.03050000011920929,
+          "maxMs": 0.03699999988079071,
+          "p50Ms": 0.033499999940395354,
+          "p95Ms": 0.03699999988079071,
+          "p99Ms": 0.03699999988079071
+        },
+        "samplesMs": [
+          0.03150000005960465,
+          0.03050000011920929,
+          0.03699999988079071,
+          0.033499999940395354,
+          0.03400000005960464,
+          0.03400000005960464,
+          0.03150000005960465
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05550000011920929,
+          "maxMs": 0.06849999994039535,
+          "p50Ms": 0.060500000119209286,
+          "p95Ms": 0.06849999994039535,
+          "p99Ms": 0.06849999994039535
+        },
+        "samplesMs": [
+          0.06550000011920928,
+          0.05550000011920929,
+          0.060500000119209286,
+          0.06849999994039535,
+          0.06150000005960465,
+          0.05950000017881393,
+          0.0575
+        ]
+      }
+    },
+    {
+      "id": "compute_workgroup_non_atomic_1024",
+      "name": "workgroup-non-atomic 1024",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -90.16393309669833,
+        "p95Percent": -67.12328805152148,
+        "p99Percent": -67.12328805152148
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.028499999940395357,
+          "maxMs": 0.036500000059604645,
+          "p50Ms": 0.03050000011920929,
+          "p95Ms": 0.036500000059604645,
+          "p99Ms": 0.036500000059604645
+        },
+        "samplesMs": [
+          0.03050000011920929,
+          0.028499999940395357,
+          0.029000000059604646,
+          0.029000000059604646,
+          0.036500000059604645,
+          0.031499999761581424,
+          0.0325
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.05199999988079071,
+          "maxMs": 0.06100000023841858,
+          "p50Ms": 0.05799999982118607,
+          "p95Ms": 0.06100000023841858,
+          "p99Ms": 0.06100000023841858
+        },
+        "samplesMs": [
+          0.06099999994039536,
+          0.05199999988079071,
+          0.05400000005960465,
+          0.06100000023841858,
+          0.05799999982118607,
+          0.055999999940395354,
+          0.06099999994039536
+        ]
+      }
+    },
+    {
+      "id": "compute_zero_initialize_workgroup_memory_256",
+      "name": "zero-initialize workgroup memory (256)",
+      "domain": "compute",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -92.64705795988081,
+        "p95Percent": -14.285714142605894,
+        "p99Percent": -14.285714142605894
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.030499999821186067,
+          "maxMs": 0.05950000017881393,
+          "p50Ms": 0.03400000005960464,
+          "p95Ms": 0.05950000017881393,
+          "p99Ms": 0.05950000017881393
+        },
+        "samplesMs": [
+          0.0325,
+          0.030499999821186067,
+          0.05950000017881393,
+          0.03400000005960464,
+          0.03449999988079071,
+          0.03449999988079071,
+          0.03199999988079071
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.059000000059604644,
+          "maxMs": 0.06800000011920929,
+          "p50Ms": 0.06549999982118607,
+          "p95Ms": 0.06800000011920929,
+          "p99Ms": 0.06800000011920929
+        },
+        "samplesMs": [
+          0.0675,
+          0.059000000059604644,
+          0.0625,
+          0.05950000017881393,
+          0.06800000011920929,
+          0.06699999988079071,
+          0.06549999982118607
+        ]
+      }
+    },
+    {
+      "id": "texture_sampler_write_query_destroy",
+      "name": "texture sampler/write/query/destroy contract",
+      "domain": "texture-contract",
+      "scenarioTemplate": "texture_write_query_destroy",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -42.105259855698414,
+        "p95Percent": -31.999998092651367,
+        "p99Percent": -31.999998092651367
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 1.800000011920929,
+          "maxMs": 2.5,
+          "p50Ms": 1.9000000357627869,
+          "p95Ms": 2.5,
+          "p99Ms": 2.5
+        },
+        "samplesMs": [
+          2.5,
+          1.9000000357627869,
+          1.9000000357627869,
+          2.5,
+          2.0,
+          1.9000000357627869,
+          1.800000011920929
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 2.199999988079071,
+          "maxMs": 3.299999952316284,
+          "p50Ms": 2.699999988079071,
+          "p95Ms": 3.299999952316284,
+          "p99Ms": 3.299999952316284
+        },
+        "samplesMs": [
+          2.900000035762787,
+          2.699999988079071,
+          2.199999988079071,
+          2.5,
+          3.299999952316284,
+          2.300000011920929,
+          2.800000011920929
+        ]
+      }
+    },
+    {
+      "id": "texture_sampler_write_query_destroy_mip8",
+      "name": "texture sampler/write/query/destroy contract (mip8)",
+      "domain": "texture-contract",
+      "scenarioTemplate": "texture_write_query_destroy",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=71.43 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 71.42857142857143
+      },
+      "deltaPercent": {
+        "p50Percent": -21.052626790762698,
+        "p95Percent": 7.407406998596398,
+        "p99Percent": 7.407406998596398
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 1.600000023841858,
+          "maxMs": 2.699999988079071,
+          "p50Ms": 1.9000000357627869,
+          "p95Ms": 2.699999988079071,
+          "p99Ms": 2.699999988079071
+        },
+        "samplesMs": [
+          2.0,
+          1.600000023841858,
+          1.699999988079071,
+          1.9000000357627869,
+          2.699999988079071,
+          1.7999999523162842,
+          2.199999988079071
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 1.800000011920929,
+          "maxMs": 2.5,
+          "p50Ms": 2.299999952316284,
+          "p95Ms": 2.5,
+          "p99Ms": 2.5
+        },
+        "samplesMs": [
+          2.400000035762787,
+          2.5,
+          2.299999952316284,
+          2.299999952316284,
+          2.300000011920929,
+          1.800000011920929,
+          2.100000023841858
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_16mb",
+      "name": "buffer-upload 16MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=71.43 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 71.42857142857143
+      },
+      "deltaPercent": {
+        "p50Percent": -8.928570326189604,
+        "p95Percent": 14.473684478829776,
+        "p99Percent": 14.473684478829776
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.016333333253860473,
+          "maxMs": 0.025333333412806195,
+          "p50Ms": 0.018666666746139527,
+          "p95Ms": 0.025333333412806195,
+          "p99Ms": 0.025333333412806195
+        },
+        "samplesMs": [
+          0.025333333412806195,
+          0.019333333174387617,
+          0.016333333253860473,
+          0.01899999996026357,
+          0.01866666654745738,
+          0.01699999988079071,
+          0.018666666746139527
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017666666706403097,
+          "maxMs": 0.021666666666666667,
+          "p50Ms": 0.020333333214124043,
+          "p95Ms": 0.021666666666666667,
+          "p99Ms": 0.021666666666666667
+        },
+        "samplesMs": [
+          0.02133333345254262,
+          0.02,
+          0.020666666825612384,
+          0.017666666706403097,
+          0.02,
+          0.021666666666666667,
+          0.020333333214124043
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_1gb",
+      "name": "buffer-upload 1GB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -16.666665010982094,
+        "p95Percent": -57.14285668669914,
+        "p99Percent": -57.14285668669914
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.016333333452542623,
+          "maxMs": 0.018666666746139527,
+          "p50Ms": 0.01800000011920929,
+          "p95Ms": 0.018666666746139527,
+          "p99Ms": 0.018666666746139527
+        },
+        "samplesMs": [
+          0.017333333293596903,
+          0.01800000011920929,
+          0.016333333452542623,
+          0.017666666706403097,
+          0.018666666746139527,
+          0.018666666746139527,
+          0.01866666654745738
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.018666666746139527,
+          "maxMs": 0.029333333373069762,
+          "p50Ms": 0.02099999984105428,
+          "p95Ms": 0.029333333373069762,
+          "p99Ms": 0.029333333373069762
+        },
+        "samplesMs": [
+          0.029333333373069762,
+          0.020666666825612384,
+          0.02,
+          0.018666666746139527,
+          0.022666666706403094,
+          0.02100000003973643,
+          0.02099999984105428
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_1kb",
+      "name": "buffer-upload 1KB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": true,
+        "reasons": [],
+        "windowCount": 7,
+        "flakePercent": 0.0
+      },
+      "deltaPercent": {
+        "p50Percent": 9.78260844917739,
+        "p95Percent": 13.793103625459707,
+        "p99Percent": 13.793103625459707
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.029666666587193805,
+          "maxMs": 0.03866666674613953,
+          "p50Ms": 0.030666666626930236,
+          "p95Ms": 0.03866666674613953,
+          "p99Ms": 0.03866666674613953
+        },
+        "samplesMs": [
+          0.03866666674613953,
+          0.03,
+          0.030333333214124042,
+          0.029666666587193805,
+          0.03166666666666667,
+          0.030666666626930236,
+          0.03333333333333333
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.02700000007947286,
+          "maxMs": 0.03333333333333333,
+          "p50Ms": 0.027666666706403095,
+          "p95Ms": 0.03333333333333333,
+          "p99Ms": 0.03333333333333333
+        },
+        "samplesMs": [
+          0.03333333333333333,
+          0.027333333293596905,
+          0.027666666706403095,
+          0.029333333373069762,
+          0.02700000007947286,
+          0.02799999992052714,
+          0.027333333293596905
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_1mb",
+      "name": "buffer-upload 1MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=85.71 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 85.71428571428572
+      },
+      "deltaPercent": {
+        "p50Percent": -7.2727268392389455,
+        "p95Percent": -43.333333730697625,
+        "p99Percent": -43.333333730697625
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.016666666666666666,
+          "maxMs": 0.02,
+          "p50Ms": 0.018333333333333333,
+          "p95Ms": 0.02,
+          "p99Ms": 0.02
+        },
+        "samplesMs": [
+          0.01799999992052714,
+          0.018666666746139527,
+          0.016666666666666666,
+          0.019666666785875957,
+          0.018333333333333333,
+          0.017333333492279054,
+          0.02
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.01799999992052714,
+          "maxMs": 0.028666666746139526,
+          "p50Ms": 0.019666666587193807,
+          "p95Ms": 0.028666666746139526,
+          "p99Ms": 0.028666666746139526
+        },
+        "samplesMs": [
+          0.028666666746139526,
+          0.019666666587193807,
+          0.019666666587193807,
+          0.01799999992052714,
+          0.01899999996026357,
+          0.021333333253860474,
+          0.02100000003973643
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_256mb",
+      "name": "buffer-upload 256MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=71.43 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 71.42857142857143
+      },
+      "deltaPercent": {
+        "p50Percent": -7.2727268392389455,
+        "p95Percent": -7.575758519908297,
+        "p99Percent": -7.575758519908297
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.014666666587193808,
+          "maxMs": 0.02199999988079071,
+          "p50Ms": 0.018333333333333333,
+          "p95Ms": 0.02199999988079071,
+          "p99Ms": 0.02199999988079071
+        },
+        "samplesMs": [
+          0.019333333373069764,
+          0.018333333333333333,
+          0.016666666666666666,
+          0.018666666746139527,
+          0.02199999988079071,
+          0.014666666587193808,
+          0.017666666706403097
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017666666706403097,
+          "maxMs": 0.023666666746139528,
+          "p50Ms": 0.019666666587193807,
+          "p95Ms": 0.023666666746139528,
+          "p99Ms": 0.023666666746139528
+        },
+        "samplesMs": [
+          0.021666666666666667,
+          0.019666666587193807,
+          0.023666666746139528,
+          0.017666666706403097,
+          0.019333333373069764,
+          0.019666666587193807,
+          0.020333333412806194
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_4gb",
+      "name": "buffer-upload 4GB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=100.00 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 100.0
+      },
+      "deltaPercent": {
+        "p50Percent": -15.09433981361403,
+        "p95Percent": -48.21428529614087,
+        "p99Percent": -48.21428529614087
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.015333333214124044,
+          "maxMs": 0.018666666746139527,
+          "p50Ms": 0.017666666706403097,
+          "p95Ms": 0.018666666746139527,
+          "p99Ms": 0.018666666746139527
+        },
+        "samplesMs": [
+          0.01700000007947286,
+          0.018666666746139527,
+          0.015333333214124044,
+          0.017666666706403097,
+          0.017666666706403097,
+          0.016333333253860473,
+          0.018333333333333333
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017666666706403097,
+          "maxMs": 0.027666666706403095,
+          "p50Ms": 0.020333333412806194,
+          "p95Ms": 0.027666666706403095,
+          "p99Ms": 0.027666666706403095
+        },
+        "samplesMs": [
+          0.020666666626930237,
+          0.020333333412806194,
+          0.027666666706403095,
+          0.017666666706403097,
+          0.019333333373069764,
+          0.019666666587193807,
+          0.020666666626930237
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_4mb",
+      "name": "buffer-upload 4MB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=42.86 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 42.85714285714286
+      },
+      "deltaPercent": {
+        "p50Percent": -7.407408102386127,
+        "p95Percent": 3.1250007275957468,
+        "p99Percent": 3.1250007275957468
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.015666666825612387,
+          "maxMs": 0.02133333345254262,
+          "p50Ms": 0.01799999992052714,
+          "p95Ms": 0.02133333345254262,
+          "p99Ms": 0.02133333345254262
+        },
+        "samplesMs": [
+          0.01700000007947286,
+          0.019333333373069764,
+          0.015666666825612387,
+          0.020333333214124043,
+          0.01799999992052714,
+          0.015666666825612387,
+          0.02133333345254262
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.017333333293596903,
+          "maxMs": 0.020666666626930237,
+          "p50Ms": 0.019333333373069764,
+          "p95Ms": 0.020666666626930237,
+          "p99Ms": 0.020666666626930237
+        },
+        "samplesMs": [
+          0.02,
+          0.01866666654745738,
+          0.020333333412806194,
+          0.017666666706403097,
+          0.017333333293596903,
+          0.020666666626930237,
+          0.019333333373069764
+        ]
+      }
+    },
+    {
+      "id": "upload_write_buffer_64kb",
+      "name": "buffer-upload 64KB",
+      "domain": "upload",
+      "scenarioTemplate": "write_buffer_upload",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": false,
+        "reasons": [
+          "flakePercent=85.71 exceeds policy maxFlakePercent=5.00",
+          "p50Percent must be > 0",
+          "p95Percent must be > 0"
+        ],
+        "windowCount": 7,
+        "flakePercent": 85.71428571428572
+      },
+      "deltaPercent": {
+        "p50Percent": -18.461538278139557,
+        "p95Percent": -2.469135648029422,
+        "p99Percent": -2.469135648029422
+      },
+      "left": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.018666666746139527,
+          "maxMs": 0.02700000007947286,
+          "p50Ms": 0.021666666666666667,
+          "p95Ms": 0.02700000007947286,
+          "p99Ms": 0.02700000007947286
+        },
+        "samplesMs": [
+          0.02700000007947286,
+          0.022000000079472858,
+          0.02099999984105428,
+          0.021666666666666667,
+          0.021333333253860474,
+          0.018666666746139527,
+          0.021666666666666667
+        ]
+      },
+      "right": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "sampleCount": 7,
+          "minMs": 0.02199999988079071,
+          "maxMs": 0.027666666706403095,
+          "p50Ms": 0.025666666626930238,
+          "p95Ms": 0.027666666706403095,
+          "p99Ms": 0.027666666706403095
+        },
+        "samplesMs": [
+          0.027333333293596905,
+          0.02199999988079071,
+          0.024666666587193804,
+          0.02333333333333333,
+          0.026333333253860475,
+          0.027666666706403095,
+          0.025666666626930238
+        ]
+      }
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_2d_sdf_renderer",
+  "artifactKind": "policy",
+  "version": 1,
+  "promotedFromNursery": true,
+  "promotedAt": "2026-03-09",
+  "policy": {
+    "allowedBlendModes": ["src_over", "multiply"],
+    "allowedClipModes": ["none", "rect", "rounded_rect"],
+    "allowedSampleCounts": [1, 4],
+    "atlasGlyphCapacity": 128,
+    "maxPathOps": 64,
+    "maxTargetPixels": 1048576
+  }
+}

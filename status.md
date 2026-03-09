@@ -2,11 +2,23 @@
 
 ## Snapshot
 
-Date: 2026-03-08
+Date: 2026-03-09
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
 Current `zig/src` size is 15,091 LOC (`wc -l zig/src/*.zig`, 2026-03-02) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
+Track A (browser) diagnostics are now governed by a promoted macOS browser gate
+(`bench/browser_gate.py`) that runs lane preflight, fresh Playwright
+smoke, and fresh strict layered browser validation through the canonical
+blocking runner.
+Track A (browser) claimability now has a repeated-window local claim lane
+(`bench/browser_claim_gate.py`) with config-backed policy in
+`config/browser-claim-policy.json`; single-window browser gates remain
+diagnostic, while the claim lane is the only path allowed to emit browser
+`claimStatus=claimable`.
+macOS browser maintenance now has scheduled workflow and retention wiring:
+- `.github/workflows/macos-browser-refresh.yml`
+- `nursery/fawn-browser/scripts/cleanup-browser-artifacts.py`
 Runtime command semantics are now first-class for indirect/render-pass benchmark lanes:
 - `dispatch_indirect`, `draw_indirect`, `draw_indexed_indirect`, and `render_pass` are explicit command kinds in model/parser/runtime/backend routing (no alias-only semantics).
 Strict Dawn-vs-Doe operation comparability now uses direct per-side timing normalization only:
@@ -140,6 +152,13 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu/COMPAT_SCOPE.md`.
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
   - Linux Doe-native in-process path now works end-to-end; `DOE_WEBGPU_LIB` env var no longer required when prebuilds or workspace artifacts are present.
+  - local workspace package loading now prefers `nursery/webgpu/build/{Release,Debug}/doe_napi.node` before packaged prebuilds, so benchmark/debug runs use freshly rebuilt addon code instead of stale prebuilt binaries.
+  - the Node package compare lane now isolates each workload in its own provider subprocess (`bench/node/compare.js`) instead of reusing one long-lived process for the whole suite; this removed cross-workload contamination that was inflating Doe compute-e2e timings on macOS package runs.
+  - the Node N-API bridge now keeps `dispatch + copyBufferToBuffer` batches on the standard WebGPU submit path instead of the direct native fast path, restoring correct `compute_e2e_*` readback behavior on macOS while the combined fast path hazard is under audit.
+  - macOS package follow-up (2026-03-09): `dispatch + copyBufferToBuffer` end-to-end batches now stay on the standard recorded submit path but flush immediately inside `submitBatched`, so timed readback workloads remain correctness-clean without pushing queue-drain cost into `mapAsync`.
+    - latest 20-sample Node package lane artifact: `bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json`
+    - comparable/claimable summary: `8` comparable, `6` claimable
+    - compute e2e rows: `compute_e2e_4096` `+46.0%` claimable, `compute_e2e_65536` `+38.0%` claimable, `compute_e2e_256` still diagnostic on tails (`p95` slower)
   - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (57/57 contract tests passing). All Node workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package. Latest validated run (`20260306T215526Z`) shows 7/11 claimable; compute e2e rows are comparable + claimable after readback validation was added to the timed path. `buffer_map_write_unmap` remains slower (~19µs `bufferMapSync` polling overhead). Cube maturity remains prototype pending stable multi-run cell coverage.
   - benchmark cube policy now carries explicit package-surface workload-ID overrides (`config/benchmark-cube-policy.json`) so directional `compute_dispatch_simple` rows land in a `dispatch_only` cell instead of contaminating the Node/Bun `compute_e2e` cells.
     - latest cube effect on Linux x64 package surfaces:
@@ -157,7 +176,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - Fawn fork maintenance policy is now documented for buyer/security review:
   `docs/fawn-fork-maintenance-policy.md`.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`.
-- drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libwebgpu_doe.so` path; Chromium Track-A proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
+- drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libwebgpu_doe.so` path; Chromium Track A (browser) proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off|require`; `auto` degrades to non-timestamp operation timing on invalid/unavailable timestamp capture, while `require` fails fast for strict timestamp lanes.
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.local.metal.extended.json` (no hard-coded 19-workload subset filter).
@@ -223,6 +242,58 @@ Acceptance required before production claims:
 - confirm dispatch/kernel lowering path is deterministic for native kernel payloads
 - backend selection and submission failures are deterministic and actionable
 - deterministic execution timing captured from real backend execution spans
+
+## Track B (modules)
+
+- `fawn_2d_sdf_renderer` (Track B 2D SDF Renderer)
+  - promotion date: 2026-03-09
+  - gate status: schema ✓, correctness ✓, trace ✓
+  - owner: `fawn-core`
+  - core schema: `config/sdf-renderer.schema.json`
+  - Zig implementation: `zig/src/full/modules/rendering/sdf_renderer.zig`
+  - deterministic SDF render planning/result artifacts with typed fallback telemetry.
+- Promoted Track B (modules) gate coverage now includes explicit edge-case fixtures in
+  addition to the original happy-path requests:
+  - `fawn_compute_services`: input-contract overflow
+  - `fawn_resource_scheduler`: invalid cadence mode
+  - `fawn_effects_pipeline`: unsupported effect op
+  - `fawn_path_engine`: disallowed dash pattern
+  - `fawn_2d_sdf_renderer`: unsupported sample count
+  - `bench/module_gate.py` now validates request/policy hash integrity and
+    builds `module-core-runner` once per gate invocation instead of once per
+    case.
+
+- `fawn_compute_services` (Track B Compute Services)
+  - promotion date: 2026-03-08
+  - gate status: schema ✓, correctness ✓, trace ✓
+  - owner: `fawn-core`
+  - core schema: `config/compute-services.schema.json`
+  - Zig implementation: `zig/src/full/modules/services/compute_services.zig`
+  - deterministic compute-service planning/result artifacts over schema-backed dispatch contracts.
+
+- `fawn_effects_pipeline` (Track B Effects Pipeline)
+  - promotion date: 2026-03-09
+  - gate status: schema ✓, correctness ✓, trace ✓
+  - owner: `fawn-core`
+  - core schema: `config/effects-pipeline.schema.json`
+  - Zig implementation: `zig/src/full/modules/rendering/effects_pipeline.zig`
+  - deterministic effects planning/result artifacts with explicit effect/fallback telemetry.
+
+- `fawn_path_engine` (Track B Path Engine)
+  - promotion date: 2026-03-09
+  - gate status: schema ✓, correctness ✓, trace ✓
+  - owner: `fawn-core`
+  - core schema: `config/path-engine.schema.json`
+  - Zig implementation: `zig/src/full/modules/rendering/path_engine.zig`
+  - deterministic path tessellation/raster execution with core fallback taxonomy.
+
+- `fawn_resource_scheduler` (Track B Resource Scheduler)
+  - promotion date: 2026-03-08
+  - gate status: schema ✓, correctness ✓, trace ✓
+  - owner: `fawn-core`
+  - core schema: `config/resource-scheduler.schema.json`
+  - Zig implementation: `zig/src/full/modules/services/resource_scheduler.zig`
+  - deterministic resource scheduling over pool/cadence contracts with trace-linked allocation decisions.
 
 Planned implementation slices:
 1. `zig/src/webgpu_ffi.zig` loader contract and typed handle wrappers.
@@ -341,7 +412,8 @@ D3D12:
 
 Browser integration (`nursery/fawn-browser`):
 - the browser lane has a concrete plan, contracts, smoke/bench harnesses, and bring-up scripts
-- promotion milestones in `nursery/fawn-browser/plan.md` remain incomplete; the lane should still be treated as an active bring-up track, not a finished product surface
+- Track A (browser) M1-M3 governance is now wired through `bench/browser_gate.py` with explicit ownership and cross-owner promotion approvals
+- Track B (modules) M4-M6 promotion governance is now wired for all five modules, but browser-lane rollout remains an active bring-up track rather than a finished product surface
 
 Performance substantiation:
 - the broad Metal lane remains under timing-scope audit and is not citable as broad claim evidence
@@ -1488,6 +1560,38 @@ Ownership:
   - timing sources: left `doe-execution-row-total-ns`, right `dawn-perf-wall-time`
   - observed p50: left `0.018508ms`, right `0.011122638ms` (`delta p50=-39.90%`, Doe slower on this host/workload)
   - this run is now classified `claimStatus=diagnostic` for performance claim purposes.
+- Local Metal pinned comparable rerun (2026-03-09):
+  - config `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json` now runs Doe on explicit `metal_doe_comparable` and Dawn on explicit `metal_dawn_release`, both with GPU timestamps disabled in the compare template for symmetry.
+  - Metal upload flush now uses the cheaper completion-handler wait path in `zig/src/backend/metal/metal_native_runtime.zig` for strict short-command submit/wait loops.
+  - focused 64KB rerun artifact: `bench/out/scratch/20260309T023631Z/metal.upload_64kb.fixedprobe.json`
+    - `comparisonStatus=comparable`, `claimStatus=diagnostic`
+    - `upload_write_buffer_64kb`: `p50 +26.76%`, `p95 -46.01%`
+  - full 27-workload local claim lane artifact: `bench/out/apple-metal/extended-comparable/20260309T023806Z/metal.local.claim.fixed.json`
+    - `comparisonStatus=comparable`, `claimStatus=diagnostic`
+    - `15/27` workloads claimable on this host
+    - small-upload tails remain open (`upload_write_buffer_1kb`, `upload_write_buffer_64kb`), while `upload_write_buffer_{1mb,4mb,16mb}` are claimable again
+- Local Metal tail-stabilization pass (2026-03-09, later):
+  - `zig/src/backend/metal/mod.zig` now makes `queue_sync_mode=deferred` execution-effective for uploads; deferred upload commands no longer pay inline submit/wait cost on the Metal native path.
+  - `zig/src/backend/metal/metal_native_runtime.zig` now:
+    - honors `copy-dst-copy-src` vs `copy-dst` upload mode instead of always forcing the staged blit path,
+    - flushes deferred upload work on explicit `barrier` commands,
+    - uses `waitCompleted` for render-containing streaming command buffers while keeping the lighter fast-wait path for upload-only streaming batches.
+  - regression coverage was added in `zig/tests/metal/metal_timing_semantics_test.zig` for deferred upload timing and barrier flush semantics.
+  - focused upload/resource artifacts:
+    - `bench/out/scratch/20260309T032324Z/metal.upload_resource.after_empty_wait_fix.json`
+      - `upload_write_buffer_1kb`: claimable (`p50 +63.43%`, `p95 +51.36%`)
+      - `upload_write_buffer_64kb`: claimable (`p50 +68.07%`, `p95 +77.75%`)
+      - `resource_lifecycle`: still non-claimable (`p50 -91.94%`, `p95 -90.72%`)
+    - `bench/out/scratch/20260309T032605Z/metal.upload_texture.after_render_wait_fix.json`
+      - `texture_sampler_write_query_destroy`: still non-claimable (`p50 -39.64%`, `p95 -25.63%`)
+      - `texture_sampler_write_query_destroy_mip8`: still non-claimable (`p50 -44.35%`, `p95 -35.61%`)
+  - attempted full repeated local Metal window rerun is currently blocked by Dawn preflight on `compute_workgroup_atomic_1024`:
+    - artifact root: `bench/out/scratch/20260309T032931Z/runtime-comparisons.local.metal.extended.comparable/compute_workgroup_atomic_1024/`
+    - Dawn preflight error: `kernel_dispatch requires negotiated WebGPU limits for binding validation`
+  - current macOS Metal boundary:
+    - upload tail stabilization materially improved and focused claim windows are green for `upload_write_buffer_{1kb,64kb}`
+    - `resource_lifecycle` and texture lifecycle rows remain real native-Metal performance blockers
+    - broader repeated-window substantiation should resume only after the Dawn compute preflight blocker is cleared and the two remaining native-Metal lifecycle gaps are either fixed or explicitly demoted from claim scope
 
 ## Synthetic timing claim guard (2026-03-02)
 

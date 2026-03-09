@@ -733,7 +733,7 @@ def main() -> int:
     if args.artifact_class == "claim" and artifact_path is not None:
         rel = normalize_rel(repo_root, artifact_path).lower()
         rollback_flags["browserPromotionWithoutSchemaObligation"] = (
-            "browser" in rel or "tracka" in rel or "fawn-browser" in rel
+            "browser" in rel or "fawn-browser" in rel
         )
 
     enabled_rollback_flags: dict[str, bool] = {}

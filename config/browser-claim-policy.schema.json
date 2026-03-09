@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-claim-policy.schema.json",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "mode",
+    "minWindows",
+    "requiredPositivePercentiles",
+    "requireModes",
+    "requireClaimScopes",
+    "expectedStrictCandidateRows",
+    "promotionApprovalsRequired",
+    "requireStrictRun",
+    "requireHeadless",
+    "allowDataUrlFallback",
+    "maxFlakePercent",
+    "promotedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "mode": { "type": "string", "enum": ["local", "release"] },
+    "minWindows": { "type": "integer", "minimum": 1 },
+    "requiredPositivePercentiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["p50Percent", "p95Percent", "p99Percent"]
+      }
+    },
+    "requireModes": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["dawn", "doe"]
+      }
+    },
+    "requireClaimScopes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["l1_strict_candidate"]
+      }
+    },
+    "expectedStrictCandidateRows": { "type": "integer", "minimum": 1 },
+    "promotionApprovalsRequired": { "type": "boolean" },
+    "requireStrictRun": { "type": "boolean" },
+    "requireHeadless": { "type": "boolean" },
+    "allowDataUrlFallback": { "type": "boolean" },
+    "maxFlakePercent": { "type": "number", "minimum": 0 },
+    "promotedAt": { "type": "string", "format": "date" }
+  },
+  "additionalProperties": false
+}

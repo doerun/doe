@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/module-ownership.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "modules"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "modules": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fawn_2d_sdf_renderer": { "$ref": "#/$defs/moduleOwnership" },
+        "fawn_compute_services": { "$ref": "#/$defs/moduleOwnership" },
+        "fawn_effects_pipeline": { "$ref": "#/$defs/moduleOwnership" },
+        "fawn_path_engine": { "$ref": "#/$defs/moduleOwnership" },
+        "fawn_resource_scheduler": { "$ref": "#/$defs/moduleOwnership" }
+      }
+    }
+  },
+  "$defs": {
+    "moduleOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtimeIntegrationOwner",
+        "qualityOwner",
+        "benchmarkMethodologyOwner",
+        "promotedAt",
+        "nurseryExitApproved"
+      ],
+      "properties": {
+        "runtimeIntegrationOwner": { "type": "string", "minLength": 1 },
+        "qualityOwner": { "type": "string", "minLength": 1 },
+        "benchmarkMethodologyOwner": { "type": "string", "minLength": 1 },
+        "promotedAt": { "type": "string", "format": "date" },
+        "nurseryExitApproved": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -73,7 +73,6 @@ pub fn probeAdapterCapabilities(
     var result = defaults;
     var has_adapter_properties_memory_heaps = false;
     var has_subgroup_matrix_configs = false;
-    var has_drm_format_capabilities = false;
 
     if (cap.adapter_get_features) |get_features| {
         var features = p1_capability_procs_mod.initSupportedFeatures();
@@ -106,26 +105,12 @@ pub fn probeAdapterCapabilities(
             features,
             p1_capability_procs_mod.WGPUFeatureName_ChromiumExperimentalSubgroupMatrix,
         );
-        has_drm_format_capabilities = p1_capability_procs_mod.hasFeature(
-            features,
-            p1_capability_procs_mod.WGPUFeatureName_DawnDrmFormatCapabilities,
-        );
         if (cap.supported_features_free_members) |free_members| free_members(features);
     }
-    if (cap.adapter_get_format_capabilities) |get_format_capabilities| {
-        var drm_caps = p1_capability_procs_mod.initDawnDrmFormatCapabilities();
-        var format_caps = p1_capability_procs_mod.initDawnFormatCapabilities(
-            if (has_drm_format_capabilities) @ptrCast(&drm_caps.chain) else null,
-        );
-        if (get_format_capabilities(active_adapter, types.WGPUTextureFormat_R8Unorm, &format_caps) != types.WGPUStatus_Success) {
-            return error.AdapterFormatCapabilitiesQueryFailed;
-        }
-        if (has_drm_format_capabilities) {
-            if (cap.dawn_drm_format_capabilities_free_members) |free_members| {
-                free_members(drm_caps);
-            }
-        }
-    }
+    // Keep the proc surface discoverable but avoid calling the format-capability
+    // probe from shared runtime bootstrap until the macOS/Dawn call contract is
+    // audited end-to-end. This path is optional and should not be able to crash
+    // module/runtime initialization.
     if (cap.adapter_get_info) |get_info| {
         var heaps = p1_capability_procs_mod.initAdapterPropertiesMemoryHeaps();
         var subgroup_configs = p1_capability_procs_mod.initAdapterPropertiesSubgroupMatrixConfigs();

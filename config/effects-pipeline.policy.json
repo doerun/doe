@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_effects_pipeline",
+  "artifactKind": "policy",
+  "version": 1,
+  "promotedFromNursery": true,
+  "promotedAt": "2026-03-09",
+  "policy": {
+    "allowedOps": ["blur", "color_matrix", "blend", "mask", "composite"],
+    "allowedColorSpaces": ["srgb"],
+    "maxNodeCount": 12,
+    "maxIntermediateBytes": 33554432
+  }
+}

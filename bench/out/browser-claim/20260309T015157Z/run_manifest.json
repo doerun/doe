@@ -1,0 +1,16 @@
+{
+  "browserGateRan": true,
+  "claimGateRan": true,
+  "createdAtUtc": "2026-03-09T01:52:51.513945Z",
+  "fullRun": true,
+  "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-07/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+  "outputTimestamp": "20260309T015157Z",
+  "reportPath": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/browser_claim_report.json",
+  "runFolder": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z",
+  "runType": "browser-claim-gate",
+  "schemaVersion": 1,
+  "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-07/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+  "status": "fail",
+  "updatedAtUtc": "2026-03-09T01:56:59.551559Z",
+  "windowCount": 7
+}
