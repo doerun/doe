@@ -38,9 +38,9 @@ WebGPU native execution lane:
 
 - `fawn/zig/src/webgpu_ffi.zig`
   - backend lifecycle (instance/adapter/device/queue), capability probing, queue wait/sync behavior
-- `fawn/zig/src/wgpu_types.zig`
+- `fawn/zig/src/core/abi/wgpu_types.zig`
   - C API type/function/proc-table contracts
-- `fawn/zig/src/wgpu_loader.zig`
+- `fawn/zig/src/core/abi/wgpu_loader.zig`
   - dynamic proc loading and callback helpers
 - `fawn/zig/src/wgpu_resources.zig`
   - buffer/texture/shader/pipeline resource management

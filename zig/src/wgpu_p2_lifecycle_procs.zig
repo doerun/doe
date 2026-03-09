@@ -1,5 +1,5 @@
 const std = @import("std");
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 
 pub const WGPUExternalTexture = ?*anyopaque;
 pub const WGPUResourceTable = ?*anyopaque;

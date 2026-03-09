@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const model = @import("model.zig");
+const model = @import("../../model.zig");
 const types = @import("wgpu_types.zig");
 
 pub const BUFFER_MAP_ASYNC_KEY: u64 = 0xFFFF_FFFF_FFFF_FFE0;

@@ -365,7 +365,7 @@ pub const SwitchCase = struct {
     body: StmtId,
     is_default: bool,
 
-    fn deinit(self: *SwitchCase, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *SwitchCase, allocator: std.mem.Allocator) void {
         self.selectors.deinit(allocator);
     }
 };
@@ -457,7 +457,7 @@ pub const Function = struct {
         try self.stmt_children.appendSlice(allocator, children);
         return .{ .start = start, .len = @intCast(children.len) };
     }
-}
+};
 
 pub const EntryPoint = struct {
     function: FunctionId,

@@ -27,18 +27,19 @@ Use this together with:
 
 ## Current state
 
-The repo is not physically split into `core` and `full` today.
+The repo is now partially physically split into `core` and `full`, but the public façade boundary is still being reduced.
 
 Current reality:
 
-1. `zig/src/` is still mostly a shared runtime tree
-2. an initial `zig/src/core/` namespace exists for extracted compute/copy/sync shards, with compatibility shims left at the old root paths
-3. render and surface-related code still largely lives in the shared runtime layer
-4. the JS package already exposes some render-facing APIs
-5. capability tracking is still represented by one shared coverage ledger
+1. `zig/src/core/` and `zig/src/full/` are now real source subtrees with canonical implementations for the first runtime split slices.
+2. The old root ABI shims (`zig/src/wgpu_types.zig`, `zig/src/wgpu_loader.zig`) have now been retired; the remaining root compatibility façades are narrower command/resource surfaces kept only while callers finish retargeting.
+3. Canonical command partition and command dispatch now live in `zig/src/core/{command_partition.zig,command_dispatch.zig}` and `zig/src/full/{command_partition.zig,command_dispatch.zig}`.
+4. Canonical texture command handling now lives in `zig/src/core/resource/wgpu_texture_commands.zig`; canonical sampler and surface command handling now lives in `zig/src/full/render/wgpu_sampler_commands.zig` and `zig/src/full/surface/wgpu_surface_commands.zig`.
+5. `zig/src/wgpu_commands.zig`, `zig/src/wgpu_resources.zig`, and `zig/src/wgpu_extended_commands.zig` are now compatibility façades over the canonical subtrees, while `zig/src/webgpu_ffi.zig` remains the public façade and owner of `WebGPUBackend`.
+6. Dedicated Zig test lanes now exist as `zig build test-core` and `zig build test-full`, but split coverage remains thin and capability tracking is still represented by one shared coverage ledger.
+7. The JS package still exposes a single surface today.
 
-That means this plan is a prerequisite for refactoring, not a description of an
-already-landed layout.
+That means this plan is now materially physicalized in the tree, and the remaining semantic split is concentrated in the public façade files and backend roots.
 
 ## Boundary definition
 
@@ -82,7 +83,7 @@ This is the primary long-term enforcement rule.
 
 ### CI enforcement
 
-Add a dedicated import-fence check that fails if:
+The dedicated import-fence check should fail if:
 
 1. a Zig file under `core` references `full/`
 2. a Lean file under `Core` references `Full`
@@ -241,13 +242,16 @@ the contract is updated or the design is corrected.
 
 ## Immediate next artifacts
 
-Before touching runtime code, add:
+The earliest structural groundwork now exists: the inventory and import-fence check are in place, the first canonical `core/` and `full/` subtrees exist, and the legacy root command/resource files are compatibility façades.
 
-1. import-fence enforcement script/check
-2. split coverage contracts for `core` and `full`
-3. source inventory:
-   - `ZIG_SOURCE_INVENTORY.md`
+The next technical artifacts should focus on the remaining semantic boundary:
 
-The inventory and initial import-fence check now exist. The next technical step
-after this document is extracting the mixed top-level command/type/runtime
-boundary.
+1. split coverage contracts for `core` and `full`
+2. classify tests and Lean proofs against the new `core`/`full` boundary
+3. shrink the remaining public façade files:
+   - `model.zig`
+   - `webgpu_ffi.zig`
+   - backend root modules
+4. retire root compatibility façades once callers stop importing them
+
+The extraction work should now spend its effort on the remaining public boundary, not on re-moving files that already have canonical homes.

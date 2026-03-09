@@ -1,4 +1,4 @@
-const inner = @import("core/wgpu_commands_compute.zig");
+const inner = @import("core/compute/wgpu_commands_compute.zig");
 
 pub const executeBarrier = inner.executeBarrier;
 pub const executeDispatch = inner.executeDispatch;

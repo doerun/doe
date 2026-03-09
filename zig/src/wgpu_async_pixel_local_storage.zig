@@ -1,11 +1,12 @@
 const std = @import("std");
 const model = @import("model.zig");
-const types = @import("wgpu_types.zig");
-const loader = @import("wgpu_loader.zig");
-const resources = @import("wgpu_resources.zig");
+const types = @import("core/abi/wgpu_types.zig");
+const loader = @import("core/abi/wgpu_loader.zig");
+const resources = @import("core/resource/wgpu_resources.zig");
+const pls_layout = @import("full/render/wgpu_pipeline_layout_pls.zig");
 const async_procs_mod = @import("wgpu_async_procs.zig");
-const render_api_mod = @import("wgpu_render_api.zig");
-const render_types_mod = @import("wgpu_render_types.zig");
+const render_api_mod = @import("full/render/wgpu_render_api.zig");
+const render_types_mod = @import("full/render/wgpu_render_types.zig");
 const ffi = @import("webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
@@ -64,12 +65,12 @@ const DIAGNOSTIC_PIXEL_LOCAL_EMULATED_SHADER_SOURCE =
 ;
 
 pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+    const procs = self.core.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const pixel_local_storage_barrier = render_api.render_pass_encoder_pixel_local_storage_barrier orelse {
         return error.PixelLocalStorageBarrierUnavailable;
     };
-    try requirePixelLocalStorageFeature(procs, self.device.?);
+    try requirePixelLocalStorageFeature(procs, self.core.device.?);
 
     const normalized_target_format = normalizeDiagnosticFormat(target_format);
     const target_texture = try getOrCreateDiagnosticRenderTexture(self, normalized_target_format);
@@ -114,7 +115,7 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
     );
     defer render_api.render_pipeline_release(render_pipeline);
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -182,8 +183,8 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
 }
 
 pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: types.WGPUTextureFormat) !void {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    const render_api = render_api_mod.loadRenderApi(procs, self.dyn_lib) orelse return error.RenderApiUnavailable;
+    const procs = self.core.procs orelse return error.ProceduralNotReady;
+    const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
 
     const normalized_target_format = normalizeDiagnosticFormat(target_format);
     const target_texture = try getOrCreateDiagnosticRenderTexture(self, normalized_target_format);
@@ -193,7 +194,7 @@ pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: ty
     const render_pipeline = try createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(self, normalized_target_format);
     defer render_api.render_pipeline_release(render_pipeline);
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -245,8 +246,8 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
     target_format: types.WGPUTextureFormat,
     storage_attachments: []const render_types_mod.PipelineLayoutStorageAttachment,
 ) !types.WGPURenderPipeline {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse return error.AsyncProcUnavailable;
+    const procs = self.core.procs orelse return error.ProceduralNotReady;
+    const async_procs = async_procs_mod.loadAsyncProcs(self.core.dyn_lib) orelse return error.AsyncProcUnavailable;
 
     const shader_module = resources.createShaderModule(self, DIAGNOSTIC_PIXEL_LOCAL_SHADER_SOURCE) catch |err| {
         return switch (err) {
@@ -258,7 +259,7 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
 
     const compilation_state = async_procs_mod.requestShaderCompilationInfoAndWait(
         async_procs,
-        self.instance.?,
+        self.core.instance.?,
         procs,
         shader_module,
     ) catch return error.DiagnosticCompilationInfoFailed;
@@ -266,7 +267,7 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
         return error.DiagnosticCompilationInfoFailed;
     }
 
-    const pipeline_layout = resources.createPipelineLayoutWithPixelLocalStorage(
+    const pipeline_layout = pls_layout.createPipelineLayoutWithPixelLocalStorage(
         self,
         &[_]types.WGPUBindGroupLayout{},
         DIAG_PLS_TOTAL_SIZE_BYTES,
@@ -321,9 +322,9 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
     };
     return async_procs_mod.createRenderPipelineAsyncAndWait(
         async_procs,
-        self.instance.?,
+        self.core.instance.?,
         procs,
-        self.device.?,
+        self.core.device.?,
         @ptrCast(&pipeline_desc),
     ) catch error.DiagnosticPipelineCreationFailed;
 }
@@ -332,8 +333,8 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
     self: *Backend,
     target_format: types.WGPUTextureFormat,
 ) !types.WGPURenderPipeline {
-    const procs = self.procs orelse return error.ProceduralNotReady;
-    const async_procs = async_procs_mod.loadAsyncProcs(self.dyn_lib) orelse return error.AsyncProcUnavailable;
+    const procs = self.core.procs orelse return error.ProceduralNotReady;
+    const async_procs = async_procs_mod.loadAsyncProcs(self.core.dyn_lib) orelse return error.AsyncProcUnavailable;
 
     const shader_module = resources.createShaderModule(self, DIAGNOSTIC_PIXEL_LOCAL_EMULATED_SHADER_SOURCE) catch |err| {
         return switch (err) {
@@ -345,7 +346,7 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
 
     const compilation_state = async_procs_mod.requestShaderCompilationInfoAndWait(
         async_procs,
-        self.instance.?,
+        self.core.instance.?,
         procs,
         shader_module,
     ) catch return error.DiagnosticCompilationInfoFailed;
@@ -400,9 +401,9 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
     };
     return async_procs_mod.createRenderPipelineAsyncAndWait(
         async_procs,
-        self.instance.?,
+        self.core.instance.?,
         procs,
-        self.device.?,
+        self.core.device.?,
         @ptrCast(&pipeline_desc),
     ) catch error.DiagnosticPipelineCreationFailed;
 }

@@ -2,7 +2,7 @@
 // C ABI exports for the Doe native Metal backend. Sharded from doe_wgpu_native.zig.
 
 const std = @import("std");
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
 
 const alloc = native.alloc;

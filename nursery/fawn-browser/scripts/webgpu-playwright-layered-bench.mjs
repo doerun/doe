@@ -13,18 +13,30 @@ function defaultChromePath() {
   const releaseLocalOut =
     process.env.FAWN_CHROMIUM_RELEASE_LOCAL_OUT ??
     resolve(ROOT, "nursery/fawn-browser/out/fawn_release_local");
+  const chromiumLaneOut = resolve(ROOT, "nursery/chromium_webgpu_lane/out/fawn_release_local");
+  const hostFawnApp = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium");
   const envChrome = process.env.FAWN_CHROME_BIN;
   const candidates = [
     envChrome,
     resolve(releaseLocalOut, "chrome"),
     resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
     resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "chrome"),
+    resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium"),
+    hostFawnApp,
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/chrome"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/chrome"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -864,13 +876,14 @@ async function runScenario(page, template, iterations) {
       async function runTextureSampleRaster(device) {
         const width = 4;
         const height = 4;
+        const outputWidth = 64;
+        const outputHeight = 64;
         const texture = device.createTexture({
           size: { width, height, depthOrArrayLayers: 1 },
           format: "rgba8unorm",
           usage:
             GPUTextureUsage.TEXTURE_BINDING |
-            GPUTextureUsage.COPY_DST |
-            GPUTextureUsage.RENDER_ATTACHMENT,
+            GPUTextureUsage.COPY_DST,
         });
         const data = new Uint8Array(width * height * 4);
         for (let i = 0; i < data.length; i += 4) {
@@ -884,13 +897,12 @@ async function runScenario(page, template, iterations) {
           { width, height, depthOrArrayLayers: 1 },
         );
 
-        const canvas = new OffscreenCanvas(64, 64);
-        const context = canvas.getContext("webgpu");
-        if (!context) {
-          throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
-        }
-        const format = navigator.gpu.getPreferredCanvasFormat();
-        context.configure({ device, format, alphaMode: "opaque" });
+        const format = "rgba8unorm";
+        const renderTarget = device.createTexture({
+          size: { width: outputWidth, height: outputHeight, depthOrArrayLayers: 1 },
+          format,
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        });
 
         const shader = device.createShaderModule({
           code: `
@@ -942,12 +954,11 @@ async function runScenario(page, template, iterations) {
           ],
         });
 
-        const outTexture = context.getCurrentTexture();
         const encoder = device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
           colorAttachments: [
             {
-              view: outTexture.createView(),
+              view: renderTarget.createView(),
               clearValue: { r: 0, g: 0, b: 0, a: 1 },
               loadOp: "clear",
               storeOp: "store",
@@ -965,7 +976,7 @@ async function runScenario(page, template, iterations) {
           usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
         encoder.copyTextureToBuffer(
-          { texture: outTexture },
+          { texture: renderTarget },
           { buffer: readback, bytesPerRow, rowsPerImage: 64 },
           { width: 64, height: 64, depthOrArrayLayers: 1 },
         );

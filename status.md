@@ -147,7 +147,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
       - Node `compute_e2e`: `comparable` (3 comparable rows; still not fully claimable because Node compute e2e remains slower in the latest package lane)
   - initial `core` runtime migration for future headless package layering has started:
     - canonical source location for `wgpu_commands_compute.zig`, `wgpu_commands_copy.zig`, and `wgpu_ffi_sync.zig` is now `zig/src/core/`
-    - root-path compatibility shims remain while mixed hotspot files (`model.zig`, `webgpu_ffi.zig`, `wgpu_types.zig`, `wgpu_loader.zig`, `wgpu_commands.zig`, backend roots) are extracted incrementally
+    - ABI ownership now lives under `zig/src/core/abi/`; legacy root `wgpu_types.zig` and `wgpu_loader.zig` compatibility shims have been removed
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
   - `bench/measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
@@ -312,6 +312,46 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 2. WGSL live translation is now compute-focused and parser-limited on Vulkan/D3D12; broader WGSL front-end coverage and non-compute lowering still remain open.
 3. Surface/swapchain is missing on all backends.
 
+### Cross-workstream remaining work (corrected 2026-03-08)
+
+Runtime layering:
+- the `core` / `full` split is now physical in `zig/src`, but the public runtime surface is not fully separated yet
+- `zig/src/model.zig` still owns one combined public `Command` union even though `CoreCommand` / `FullCommand` projections now exist
+- `zig/src/webgpu_ffi.zig` now composes `core` plus `full` backend state honestly, but backend root modules still serve mixed compute/render state from one runtime-owned backend per API
+- the remaining root compatibility façades are `zig/src/wgpu_commands.zig`, `zig/src/wgpu_resources.zig`, and `zig/src/wgpu_extended_commands.zig`; the old root ABI shims `zig/src/wgpu_types.zig` and `zig/src/wgpu_loader.zig` have been retired
+- split coverage ledgers and split gate runners do not exist yet; capability tracking still uses one shared coverage ledger
+- separate core/full package or runtime artifacts are not built yet
+
+Shader compiler:
+- native WGSL lowering remains compute-first; vertex/fragment pipeline coverage is still not implemented across the non-Metal emitters
+- Vulkan sampled/storage texture support remains partial and broader texture builtin coverage is still open
+- `spirv-val` is modeled in `config/shader-toolchain.json`, but end-to-end SPIR-V validation is not yet a routine blocking build/test flow
+- shader tests now execute in the default/full test lanes, but the compiler test corpus is still thin relative to the frontend surface area
+- `zig/src/doe_wgsl/parser.zig` and `zig/src/doe_wgsl/emit_spirv.zig` still exceed the 777-line Zig source limit
+- native DXIL emission remains deferred; D3D12 still relies on WGSL -> IR -> HLSL -> DXC for live source translation
+
+Tests and proofs:
+- `zig/tests/core/` and `zig/tests/full/` now contain real command-partition tests and dedicated `zig build test-core` / `zig build test-full` lanes, but split coverage is still very thin
+- `lean/Fawn/Core/` and `lean/Fawn/Full/` are still placeholder READMEs only; proof movement into split theorem packs has not happened yet
+- Lean CI and proof artifact validation are blocking at the repo level, but the proof split itself is still undone
+
+D3D12:
+- D3D12 is no longer a pure stub; it is a real compute-first backend on Windows
+- descriptor heaps/resource binding breadth, full texture lifecycle, render pipeline, and render pass support remain open
+
+Browser integration (`nursery/fawn-browser`):
+- the browser lane has a concrete plan, contracts, smoke/bench harnesses, and bring-up scripts
+- promotion milestones in `nursery/fawn-browser/plan.md` remain incomplete; the lane should still be treated as an active bring-up track, not a finished product surface
+
+Performance substantiation:
+- the broad Metal lane remains under timing-scope audit and is not citable as broad claim evidence
+- broader host diversity and fleet-level substantiation remain open
+
+Config and CI:
+- bootstrap threshold placeholders in `config/gates.json` still exist
+- file-size policy exists, but automated enforcement of the 777-line limit is still missing
+- split coverage schemas such as `webgpu-core-coverage.json` / `webgpu-full-coverage.json` do not exist yet
+
 ## Developer flow state (engineering, governance, and release pipeline)
 
 ### Implemented
@@ -402,7 +442,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 - native render lowering now binds a dynamically sized index buffer and emits `wgpuRenderPassEncoderDrawIndexed` when indexed mode is requested.
 - indexed validation is fail-fast: invalid/missing index data or out-of-bounds (`firstIndex + indexCount`) are rejected as unsupported command payloads.
 42. Render core API wiring is now first-class in the shared WebGPU proc table:
-- `wgpuDeviceCreateRenderPipeline`, `wgpuCommandEncoderBeginRenderPass`, and `wgpuRenderPassEncoder*` draw/bind/end/release entry points are now declared in `zig/src/wgpu_types.zig` and loaded through `zig/src/wgpu_loader.zig`.
+- `wgpuDeviceCreateRenderPipeline`, `wgpuCommandEncoderBeginRenderPass`, and `wgpuRenderPassEncoder*` draw/bind/end/release entry points are now declared in `zig/src/core/abi/wgpu_types.zig` and loaded through `zig/src/core/abi/wgpu_loader.zig`.
 - `render_draw` now consumes these canonical backend proc fields directly (`zig/src/wgpu_render_commands.zig`) instead of ad-hoc per-call symbol lookup.
 - unsupported render symbols remain explicit fail-fast runtime errors (`unsupported` status), preserving deterministic no-fallback behavior.
 43. Native render pass state coverage now includes explicit state/binding APIs in command execution:
@@ -503,7 +543,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
   `bench/out/dawn-vs-doe-feature-benchmark-coverage.md`.
 
 60. API-surface and matrix coverage metrics are now machine-generated and full for capability scope:
-- `zig/src/wgpu_loader.zig` now preloads the remaining Dawn header symbol set used by coverage scans (label/debug-marker/map-introspection/lost-future/external-texture release paths) via `OPTIONAL_API_SURFACE_SYMBOLS`.
+- `zig/src/core/abi/wgpu_loader.zig` now preloads the remaining Dawn header symbol set used by coverage scans (label/debug-marker/map-introspection/lost-future/external-texture release paths) via `OPTIONAL_API_SURFACE_SYMBOLS`.
 - `bench/generate_feature_benchmark_table.py` now emits a top-level metrics table with:
   - capability inventory tracking completion
   - Dawn header API-surface reference coverage (estimate)
@@ -570,7 +610,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
   `bench/workloads.amd.vulkan.extended.json`.
 - native device feature request now includes
   `WGPUFeatureName_ChromiumExperimentalSamplingResourceTable` when advertised by the adapter
-  (`zig/src/webgpu_ffi.zig`, `zig/src/wgpu_types.zig`) so resource-table diagnostics do not fail due to omitted feature enablement.
+  (`zig/src/webgpu_ffi.zig`, `zig/src/core/abi/wgpu_types.zig`) so resource-table diagnostics do not fail due to omitted feature enablement.
 - explicit runtime unsupported taxonomy remains visible (not hidden fallback):
   `resource_table_feature_unavailable` and `pixel_local_storage_feature_unavailable`
   on this AMD RADV host class for the four affected P0/P1 workloads.
@@ -784,7 +824,7 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 12. **Metal small-upload timing audit superseded earlier closure (2026-03-06):** the 2026-03-05 interpretation that 1KB/64KB Metal uploads were cleanly claimable is no longer the current authority. The latest broad March 6 Metal report shows operation-to-wall coverage asymmetry severe enough to treat the lane as diagnostic until timing scope is audited. 2026-03-07 follow-up: the identified local Metal upload/runtime/config cause has been fixed (staged copy path restored and timing-phase symmetry made blocking), but the broad rerun has not yet been republished.
 8. Keep remaining directional diagnostics macro-scoped and non-claim (`render_draw_indexed_200k`, `capability_introspection_500`, `lifecycle_refcount_200`).
 9. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
-10. ~~Zig source file sharding~~ DONE: all five previously listed files are now under 777 lines (verified 2026-03-05: `wgpu_commands.zig`=160, `webgpu_ffi.zig`=672, `wgpu_types.zig`=753, `wgpu_dropin_lib.zig`=477, `command_json.zig`=570 — prior counts were pre-sharding snapshot).
+10. ~~Zig source file sharding~~ DONE: all five previously listed files are now under 777 lines (verified 2026-03-05: `wgpu_commands.zig`=160, `webgpu_ffi.zig`=672, `core/abi/wgpu_types.zig`=753, `wgpu_dropin_lib.zig`=477, `command_json.zig`=570 — prior counts were pre-sharding snapshot).
 11. ~~Quirk module isolation + behavioral wiring~~ DONE (2026-03-05): quirk system refactored into `zig/src/quirk/` module with `mod.zig` entry point, `QuirkMode` enum (`off`/`trace`/`active`), `--quirk-mode` CLI flag, `dispatchWithMode()` gating, `toggle_registry.zig` behavioral classification, `use_temporary_buffer` backend consumption in `wgpu_commands_copy.zig` (both buffer-to-texture and texture-to-texture staging paths), `use_temporary_render_texture` backend consumption in `wgpu_render_commands.zig` (Metal Intel R8/RG8 unorm mip >= 2 workaround), and `quirkMode` trace-meta emission. Action application logic extracted to `quirk_actions.zig`. 5 promoted behavioral workarounds: 4 `use_temporary_buffer` (Vulkan/D3D12 copy) + 1 `use_temporary_render_texture` (Metal render pass). Non-toggle upstream mining now complete in `agent/mine_upstream_quirks.py`.
 12. `wgpu_render_commands.zig` is at 821 lines (over 777 limit). Next split target: extract temp render texture workaround setup into a helper module. Owner: quirk render path.
 13. **Backend report timing scope mismatch (2026-03-06):** Apple Metal extended comparable report (`20260306T195524Z`) shows Doe sub-microsecond p50 for small uploads (0.208µs for 1KB) vs Dawn ~189µs — producing delta percentages exceeding 90,000%. Doe appears to be reporting encode-only latency without GPU execution wait. AMD Vulkan singles report (`20260302T193052Z`) shows similar asymmetry: Doe 3.3ms vs Dawn 6,157ms for `par_workgroup_non_atomic_1024` due to `leftDivisor=100` / `rightDivisor=1` mismatch. Both are flagged `diagnostic` or `legacy_nonconformant` by the cube, but the dashboard shows the raw delta percentages which are misleading. Follow-up: audit compare harness timing extraction to ensure both sides measure identical operation scope before computing deltas.

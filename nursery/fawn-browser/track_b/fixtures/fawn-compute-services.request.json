@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_compute_services",
+  "artifactKind": "request",
+  "serviceId": "sdf_atlas_upload",
+  "kernelId": "atlas_blit_v1",
+  "inputs": [
+    { "kind": "buffer", "bytes": 4096 },
+    { "kind": "texture", "bytes": 16384 }
+  ],
+  "dispatch": {
+    "x": 16,
+    "y": 8,
+    "z": 1
+  },
+  "policy": {
+    "safetyClass": "guarded",
+    "verificationMode": "guard_only"
+  }
+}

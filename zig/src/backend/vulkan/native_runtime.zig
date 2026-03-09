@@ -1908,7 +1908,8 @@ pub const NativeVulkanRuntime = struct {
         src_stage: u32,
         dst_stage: u32,
     ) !void {
-        var barrier = VkImageMemoryBarrier{
+        _ = self;
+        var image_barrier = VkImageMemoryBarrier{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             .pNext = null,
             .srcAccessMask = src_access_mask,
@@ -1936,7 +1937,7 @@ pub const NativeVulkanRuntime = struct {
             0,
             null,
             1,
-            @ptrCast(&barrier),
+            @ptrCast(&image_barrier),
         );
     }
 

@@ -2,11 +2,17 @@
 
 Contract version: `v1`
 
-Scope: browserless benchmarking and CI orchestration for Doe runtime workflows.
+Scope: current single-surface headless WebGPU package contract for Node.js and
+Bun, plus Doe runtime helpers used by benchmarking, CI, and artifact-backed
+comparison workflows.
 
 This is the current single-surface package contract.
 For the proposed future layered `core` vs `full` support split, see
 `SUPPORT_CONTRACTS.md`.
+
+This contract covers package-surface GPU access, provider metadata, and helper
+entrypoints. It does not promise DOM/canvas ownership or browser-process
+parity.
 
 ## Node runtime API
 

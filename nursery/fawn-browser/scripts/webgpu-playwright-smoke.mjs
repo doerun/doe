@@ -13,18 +13,30 @@ function defaultChromePath() {
   const releaseLocalOut =
     process.env.FAWN_CHROMIUM_RELEASE_LOCAL_OUT ??
     resolve(ROOT, "nursery/fawn-browser/out/fawn_release_local");
+  const chromiumLaneOut = resolve(ROOT, "nursery/chromium_webgpu_lane/out/fawn_release_local");
+  const hostFawnApp = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium");
   const envChrome = process.env.FAWN_CHROME_BIN;
   const candidates = [
     envChrome,
     resolve(releaseLocalOut, "chrome"),
     resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
     resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "chrome"),
+    resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium"),
+    hostFawnApp,
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/chrome"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/chrome"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "nursery/fawn-browser/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "nursery/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fawn.local/schemas/nursery/fawn_effects_pipeline.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "moduleId", "artifactKind"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "moduleId": { "type": "string", "const": "fawn_effects_pipeline" },
+    "artifactKind": { "type": "string", "enum": ["request", "result"] }
+  },
+  "allOf": [
+    { "if": { "properties": { "artifactKind": { "const": "request" } } }, "then": { "$ref": "#/$defs/request" } },
+    { "if": { "properties": { "artifactKind": { "const": "result" } } }, "then": { "$ref": "#/$defs/result" } }
+  ],
+  "$defs": {
+    "request": {
+      "required": ["effectGraph", "inputs", "executionPolicy", "target"],
+      "properties": {
+        "effectGraph": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["nodeId", "op"],
+            "properties": {
+              "nodeId": { "type": "string", "minLength": 1 },
+              "op": { "type": "string", "minLength": 1 },
+              "params": { "type": "object" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "inputs": { "type": "array", "items": { "type": "object", "required": ["surfaceId", "bytes"], "properties": { "surfaceId": { "type": "string", "minLength": 1 }, "bytes": { "type": "integer", "minimum": 0 } }, "additionalProperties": false } },
+        "executionPolicy": { "type": "object", "required": ["precisionClass", "colorSpace"], "properties": { "precisionClass": { "type": "string", "minLength": 1 }, "colorSpace": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+        "target": { "type": "object", "required": ["width", "height", "format"], "properties": { "width": { "type": "integer", "minimum": 1 }, "height": { "type": "integer", "minimum": 1 }, "format": { "type": "string", "minLength": 1 } }, "additionalProperties": false }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "required": ["outputArtifact", "executionStats", "timingStats", "fallbackStats", "traceLink"],
+      "properties": {
+        "outputArtifact": { "type": "object", "required": ["artifactId"], "properties": { "artifactId": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+        "executionStats": { "type": "object", "required": ["nodeCount", "passCount", "temporaryBytes"], "properties": { "nodeCount": { "type": "integer", "minimum": 0 }, "passCount": { "type": "integer", "minimum": 0 }, "temporaryBytes": { "type": "integer", "minimum": 0 } }, "additionalProperties": false },
+        "timingStats": { "type": "object", "required": ["setupNs", "encodeNs", "submitWaitNs"], "properties": { "setupNs": { "type": "integer", "minimum": 0 }, "encodeNs": { "type": "integer", "minimum": 0 }, "submitWaitNs": { "type": "integer", "minimum": 0 } }, "additionalProperties": false },
+        "fallbackStats": { "type": "object", "required": ["fallbackCount", "fallbackReasonHistogram"], "properties": { "fallbackCount": { "type": "integer", "minimum": 0 }, "fallbackReasonHistogram": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } } }, "additionalProperties": false },
+        "traceLink": { "type": "object", "required": ["moduleIdentity", "requestHash", "policyHash", "resultHash"], "properties": { "moduleIdentity": { "type": "string", "minLength": 1 }, "requestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "policyHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "resultHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }, "additionalProperties": false }
+      },
+      "additionalProperties": false
+    }
+  }
+}

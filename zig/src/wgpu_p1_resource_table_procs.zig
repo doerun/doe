@@ -1,6 +1,6 @@
 const std = @import("std");
-const types = @import("wgpu_types.zig");
-const loader = @import("wgpu_loader.zig");
+const types = @import("core/abi/wgpu_types.zig");
+const loader = @import("core/abi/wgpu_loader.zig");
 
 pub const WGPUResourceTable = ?*anyopaque;
 pub const WGPURenderBundleEncoder = ?*anyopaque;

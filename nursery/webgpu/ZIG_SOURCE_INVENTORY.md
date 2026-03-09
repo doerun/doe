@@ -32,9 +32,13 @@ matches the target layer.
 
 Current repo note:
 
-- `zig/src/core/` now exists for an initial low-risk extraction slice
-- root-path compatibility shims remain for the migrated files so the rest of the
-  tree can move incrementally
+- `zig/src/core/` and `zig/src/full/` now contain canonical implementations for the first extraction slices, not just staging directories
+- root-path shims for migrated files are now real `pub usingnamespace` compatibility modules
+- canonical command partition and dispatch now live under `zig/src/core/{command_partition.zig,command_dispatch.zig}` and `zig/src/full/{command_partition.zig,command_dispatch.zig}`
+- canonical texture commands now live under `zig/src/core/resource/wgpu_texture_commands.zig`
+- canonical sampler and surface commands now live under `zig/src/full/render/wgpu_sampler_commands.zig` and `zig/src/full/surface/wgpu_surface_commands.zig`
+- `zig/src/wgpu_commands.zig`, `zig/src/wgpu_resources.zig`, and `zig/src/wgpu_extended_commands.zig` now remain at the root only as compatibility façades while callers continue to retarget
+- `zig/src/webgpu_ffi.zig` still owns `WebGPUBackend` and remains the public runtime façade
 
 Examples:
 
@@ -47,22 +51,20 @@ Examples:
 
 ## Immediate extraction hotspots
 
-These are the files that currently carry the strongest `core` / `full` bleed:
+These are the files that now carry the strongest remaining `core` / `full` bleed:
 
 1. `zig/src/model.zig`
 2. `zig/src/webgpu_ffi.zig`
-3. `zig/src/wgpu_types.zig`
-4. `zig/src/wgpu_loader.zig`
-5. `zig/src/wgpu_commands.zig`
-6. `zig/src/wgpu_resources.zig`
-7. `zig/src/backend/metal/mod.zig`
-8. `zig/src/backend/metal/metal_native_runtime.zig`
-9. `zig/src/backend/vulkan/mod.zig`
-10. `zig/src/backend/vulkan/native_runtime.zig`
-11. `zig/src/backend/vulkan/vulkan_runtime_state.zig`
-12. `zig/src/backend/d3d12/mod.zig`
+3. `zig/src/main.zig`
+4. `zig/src/execution.zig`
+5. `zig/src/backend/metal/mod.zig`
+6. `zig/src/backend/metal/metal_native_runtime.zig`
+7. `zig/src/backend/vulkan/mod.zig`
+8. `zig/src/backend/vulkan/native_runtime.zig`
+9. `zig/src/backend/vulkan/vulkan_runtime_state.zig`
+10. `zig/src/backend/d3d12/mod.zig`
 
-If the refactor starts anywhere else, the boundary will erode immediately.
+The root command and resource files are no longer primary hotspots; they are compatibility façades over canonical `core` and `full` modules. The remaining extraction pressure is now on the public type/backend boundary and the backend roots.
 
 ## keep_in_core
 
@@ -146,22 +148,49 @@ Why:
 
 Paths:
 
-- `zig/src/core/wgpu_commands_compute.zig`
-- `zig/src/core/wgpu_commands_copy.zig`
+- `zig/src/core/abi/wgpu_types.zig`
+- `zig/src/core/abi/wgpu_loader.zig`
+- `zig/src/core/compute/wgpu_commands_compute.zig`
+- `zig/src/core/resource/wgpu_commands_copy.zig`
+- `zig/src/core/resource/wgpu_resources.zig`
+- `zig/src/core/resource/wgpu_texture_commands.zig`
+- `zig/src/core/queue/wgpu_ffi_sync.zig`
+- `zig/src/core/command_partition.zig`
+- `zig/src/core/command_dispatch.zig`
 - `zig/src/wgpu_p1_capability_procs.zig`
 - `zig/src/wgpu_sandbox_guard.zig`
-- `zig/src/core/wgpu_ffi_sync.zig`
 
 Why:
 
-- these files are already centered on compute, copy, capability probing, and
-  map/wait/sync behavior
-- they are good early candidates for a `core` subtree
-- temporary root-path shim files remain at:
-  - `zig/src/wgpu_commands_compute.zig`
-  - `zig/src/wgpu_commands_copy.zig`
-  - `zig/src/wgpu_ffi_sync.zig`
-  - these should be removed after the remaining imports are retargeted
+- these files are now the canonical compute, copy, texture, and queue slices for the extraction
+- the command split is explicit instead of being hidden in one mixed top-level dispatcher
+- ABI ownership now lives in `zig/src/core/abi/`; the legacy root `zig/src/wgpu_types.zig` and `zig/src/wgpu_loader.zig` compatibility façades have been retired. Root `zig/src/wgpu_commands.zig`, `zig/src/wgpu_resources.zig`, and `zig/src/wgpu_extended_commands.zig` remain temporary compatibility façades while callers finish retargeting.
+
+### Full render / surface / lifecycle namespaces now physicalized
+
+Paths:
+
+- `zig/src/full/render/wgpu_render_assets.zig`
+- `zig/src/full/render/wgpu_render_api.zig`
+- `zig/src/full/render/wgpu_render_commands.zig`
+- `zig/src/full/render/wgpu_render_draw_loops.zig`
+- `zig/src/full/render/wgpu_render_indexing.zig`
+- `zig/src/full/render/wgpu_render_p0.zig`
+- `zig/src/full/render/wgpu_render_resources.zig`
+- `zig/src/full/render/wgpu_render_types.zig`
+- `zig/src/full/render/wgpu_sampler_commands.zig`
+- `zig/src/full/render/wgpu_pipeline_layout_pls.zig`
+- `zig/src/full/surface/wgpu_ffi_surface.zig`
+- `zig/src/full/surface/wgpu_surface_procs.zig`
+- `zig/src/full/surface/wgpu_surface_commands.zig`
+- `zig/src/full/lifecycle/wgpu_async_diagnostics_command.zig`
+- `zig/src/full/command_partition.zig`
+- `zig/src/full/command_dispatch.zig`
+
+Why:
+
+- these files are now the canonical render, surface, and fuller lifecycle slices built on top of the shared runtime
+- the top-level root files that still mention render or surface behavior are compatibility façades or the remaining public backend façade, not the canonical implementation homes
 
 ### D3D12 compute runtime candidates
 
@@ -287,12 +316,7 @@ Paths:
 - `zig/src/main.zig`
 - `zig/src/execution.zig`
 - `zig/src/webgpu_ffi.zig`
-- `zig/src/wgpu_loader.zig`
-- `zig/src/wgpu_types.zig`
 - `zig/src/wgpu_types_procs.zig`
-- `zig/src/wgpu_commands.zig`
-- `zig/src/wgpu_resources.zig`
-- `zig/src/wgpu_extended_commands.zig`
 - `zig/src/wgpu_texture_procs.zig`
 - `zig/src/wgpu_capability_runtime.zig`
 - `zig/src/wgpu_p0_procs.zig`
@@ -301,11 +325,9 @@ Paths:
 
 Why:
 
-- these files currently encode one combined command universe and one combined
-  proc/type/state ledger
-- they mix compute, texture, render, surface, lifecycle, and benchmark
-  claimability concerns in one layer
-- they need sharding before any clean `core` / `full` move is possible
+- the root command and resource files no longer contain the canonical behavior; they now serve as compatibility façades over the canonical `core` and `full` modules
+- the remaining mixed state is now concentrated in the combined command model, the public `WebGPUBackend` façade, and the proc/capability ledger around it
+- `webgpu_ffi.zig` still owns `WebGPUBackend`, so this is the load-bearing public boundary that still needs deeper extraction
 
 ### Legacy monolithic native ABI path
 
@@ -421,25 +443,23 @@ Why:
 
 ## Recommended first extraction sequence
 
-1. split the command/type boundary:
+1. shrink the remaining public façade boundary:
    - `model.zig`
-   - `wgpu_types.zig`
-   - `wgpu_loader.zig`
    - `webgpu_ffi.zig`
-2. split backend roots from backend shards:
+   - `main.zig`
+   - `execution.zig`
+2. retire root compatibility façades after callers stop importing them:
+   - `wgpu_commands.zig`
+   - `wgpu_resources.zig`
+   - `wgpu_extended_commands.zig`
+3. split backend roots from backend shards:
    - `backend/metal/mod.zig`
    - `backend/metal/metal_native_runtime.zig`
    - `backend/vulkan/mod.zig`
    - `backend/vulkan/native_runtime.zig`
    - `backend/vulkan/vulkan_runtime_state.zig`
    - `backend/d3d12/mod.zig`
-3. move obvious full-only files:
-   - `wgpu_render_*`
-   - `wgpu_surface_procs.zig`
-   - `wgpu_ffi_surface.zig`
-   - render/surface backend subtrees
-4. continue growing the physical `zig/src/core/` directory and create
-   `zig/src/full/` once the first full-only extraction slice is ready
+4. split tests, Lean proofs, and coverage ledgers to mirror the runtime boundary
 
 ## Sanity rule for future edits
 

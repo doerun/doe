@@ -8,6 +8,11 @@ Start Chromium bring-up for the browser integration layer quickly while keeping:
 2. Dawn fallback intact,
 3. integration scope limited to WebGPU runtime seam.
 
+Current milestone state is tracked in:
+
+1. `nursery/fawn-browser/bench/workflows/browser-milestones.json`
+2. validate with `python3 nursery/fawn-browser/scripts/check-browser-milestones.py`
+
 ## Layout options
 
 Two layouts are supported:

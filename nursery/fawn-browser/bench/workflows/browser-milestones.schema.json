@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fawn.local/schemas/nursery/browser_milestones.schema.json",
+  "title": "BrowserMilestones",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "updatedAt",
+    "statuses",
+    "milestones"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "statuses": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "in_progress",
+          "local_evidence",
+          "ready_for_promotion",
+          "promoted",
+          "blocked"
+        ]
+      }
+    },
+    "milestones": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/milestone"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "pathRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidenceKind": {
+      "type": "string",
+      "enum": [
+        "doc",
+        "contract",
+        "script",
+        "schema",
+        "manifest",
+        "artifact",
+        "report",
+        "note"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "path",
+        "description",
+        "required",
+        "mustExist"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "$ref": "#/$defs/evidenceKind"
+        },
+        "path": {
+          "$ref": "#/$defs/pathRef"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "mustExist": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "milestone": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "track",
+        "status",
+        "summary",
+        "dependencies",
+        "evidence",
+        "exitCriteria",
+        "blockers",
+        "nextActions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^M[0-6]$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "track": {
+          "type": "string",
+          "enum": [
+            "track_a",
+            "track_b",
+            "promotion"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "in_progress",
+            "local_evidence",
+            "ready_for_promotion",
+            "promoted",
+            "blocked"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^M[0-6]$"
+          },
+          "uniqueItems": true
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "exitCriteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "nextActions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

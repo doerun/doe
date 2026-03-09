@@ -1,6 +1,6 @@
 const std = @import("std");
-const loader = @import("wgpu_loader.zig");
-const types = @import("wgpu_types.zig");
+const loader = @import("core/abi/wgpu_loader.zig");
+const types = @import("core/abi/wgpu_types.zig");
 
 pub const CREATE_COMPUTE_PIPELINE_ASYNC_STATUS_SUCCESS: u32 = 1;
 pub const QUERY_TYPE_OCCLUSION: types.WGPUQueryType = 0x00000001;

@@ -29,23 +29,23 @@ const Emitter = struct {
 
     fn init(module: *const ir.Module) EmitError!Emitter {
         const alloc = module.allocator;
-        var type_ids = try alloc.alloc(u32, module.types.items.items.len);
+        const type_ids = try alloc.alloc(u32, module.types.items.items.len);
         errdefer alloc.free(type_ids);
         @memset(type_ids, 0);
 
-        var global_ids = try alloc.alloc(u32, module.globals.items.len);
+        const global_ids = try alloc.alloc(u32, module.globals.items.len);
         errdefer alloc.free(global_ids);
         @memset(global_ids, 0);
 
-        var global_buffer_wrapped = try alloc.alloc(bool, module.globals.items.len);
+        const global_buffer_wrapped = try alloc.alloc(bool, module.globals.items.len);
         errdefer alloc.free(global_buffer_wrapped);
         @memset(global_buffer_wrapped, false);
 
-        var function_ids = try alloc.alloc(u32, module.functions.items.len);
+        const function_ids = try alloc.alloc(u32, module.functions.items.len);
         errdefer alloc.free(function_ids);
         @memset(function_ids, 0);
 
-        var entry_wrapper_ids = try alloc.alloc(u32, module.functions.items.len);
+        const entry_wrapper_ids = try alloc.alloc(u32, module.functions.items.len);
         errdefer alloc.free(entry_wrapper_ids);
         @memset(entry_wrapper_ids, 0);
 
@@ -184,7 +184,7 @@ const Emitter = struct {
         try self.builder.emit_name(fn_id, function.name);
         try self.builder.begin_function(return_type, fn_id, fn_type);
 
-        var param_value_ids = try self.alloc.alloc(u32, function.params.items.len);
+        const param_value_ids = try self.alloc.alloc(u32, function.params.items.len);
         defer self.alloc.free(param_value_ids);
         for (param_value_ids, function.params.items) |*slot, param| {
             slot.* = try self.builder.function_parameter(try self.lower_type(param.ty));
@@ -283,13 +283,10 @@ const Emitter = struct {
                 else => return error.UnsupportedConstruct,
             },
             .vector => |vec| try self.builder.type_vector(try self.lower_type(vec.elem), vec.len),
-            .array => |arr| {
-                if (arr.len) |len| {
-                    try self.builder.type_array(try self.lower_type(arr.elem), try self.builder.const_u32(len));
-                } else {
-                    try self.builder.type_runtime_array(try self.lower_type(arr.elem));
-                }
-            },
+            .array => |arr| if (arr.len) |len|
+                try self.builder.type_array(try self.lower_type(arr.elem), try self.builder.const_u32(len))
+            else
+                try self.builder.type_runtime_array(try self.lower_type(arr.elem)),
             .texture_2d => |sample_ty| blk: {
                 switch (self.module.types.get(sample_ty)) {
                     .scalar => |scalar| {
@@ -392,31 +389,31 @@ const Emitter = struct {
     }
 
     const Layout = struct {
-        align: u32,
+        alignment: u32,
         size: u32,
     };
 
     fn decorate_memory_type(self: *Emitter, ty: ir.TypeId, addr_space: ir.AddressSpace) EmitError!Layout {
         return switch (self.module.types.get(ty)) {
             .scalar => |scalar| switch (scalar) {
-                .bool, .i32, .u32, .f32, .abstract_int, .abstract_float => .{ .align = 4, .size = 4 },
-                .f16 => .{ .align = 2, .size = 2 },
+                .bool, .i32, .u32, .f32, .abstract_int, .abstract_float => .{ .alignment = 4, .size = 4 },
+                .f16 => .{ .alignment = 2, .size = 2 },
                 else => return error.UnsupportedConstruct,
             },
             .vector => |vec| blk: {
                 const elem_layout = try self.decorate_memory_type(vec.elem, addr_space);
                 const layout = switch (vec.len) {
-                    2 => Layout{ .align = elem_layout.align * 2, .size = elem_layout.size * 2 },
-                    3 => Layout{ .align = elem_layout.align * 4, .size = elem_layout.size * 3 },
-                    4 => Layout{ .align = elem_layout.align * 4, .size = elem_layout.size * 4 },
+                    2 => Layout{ .alignment = elem_layout.alignment * 2, .size = elem_layout.size * 2 },
+                    3 => Layout{ .alignment = elem_layout.alignment * 4, .size = elem_layout.size * 3 },
+                    4 => Layout{ .alignment = elem_layout.alignment * 4, .size = elem_layout.size * 4 },
                     else => return error.UnsupportedConstruct,
                 };
                 break :blk layout;
             },
             .array => |arr| blk: {
                 const elem_layout = try self.decorate_memory_type(arr.elem, addr_space);
-                const align = adjusted_memory_align(addr_space, self.module.types.get(arr.elem), elem_layout.align);
-                const stride = round_up(align, elem_layout.size);
+                const alignment = adjusted_memory_align(addr_space, self.module.types.get(arr.elem), elem_layout.alignment);
+                const stride = round_up(alignment, elem_layout.size);
                 const array_type = try self.lower_type(ty);
                 const gop = try self.decorated_array_types.getOrPut(self.alloc, array_type);
                 if (!gop.found_existing) {
@@ -425,13 +422,13 @@ const Emitter = struct {
                 if (arr.len == null) {
                     if (addr_space != .storage) return error.UnsupportedConstruct;
                     break :blk .{
-                        .align = align,
+                        .alignment = alignment,
                         .size = stride,
                     };
                 }
                 const len = arr.len.?;
                 break :blk .{
-                    .align = align,
+                    .alignment = alignment,
                     .size = stride * len,
                 };
             },
@@ -443,17 +440,17 @@ const Emitter = struct {
                 var max_align: u32 = 1;
                 for (struct_def.fields.items, 0..) |field, field_index| {
                     const field_layout = try self.decorate_memory_type(field.ty, addr_space);
-                    const field_align = adjusted_memory_align(addr_space, self.module.types.get(field.ty), field_layout.align);
-                    offset = round_up(field_align, offset);
+                    const field_alignment = adjusted_memory_align(addr_space, self.module.types.get(field.ty), field_layout.alignment);
+                    offset = round_up(field_alignment, offset);
                     if (!gop.found_existing) {
                         try self.builder.emit_member_offset_decoration(struct_type, @intCast(field_index), offset);
                     }
-                    max_align = @max(max_align, field_align);
+                    max_align = @max(max_align, field_alignment);
                     offset += field_layout.size;
                 }
                 max_align = adjusted_memory_align(addr_space, .{ .struct_ = struct_id }, max_align);
                 break :blk .{
-                    .align = max_align,
+                    .alignment = max_align,
                     .size = round_up(max_align, offset),
                 };
             },
@@ -502,10 +499,10 @@ const FunctionState = struct {
 
     fn init(emitter: *Emitter, function_index: ir.FunctionId) EmitError!FunctionState {
         const function = &emitter.module.functions.items[function_index];
-        var param_ptr_ids = try emitter.alloc.alloc(u32, function.params.items.len);
+        const param_ptr_ids = try emitter.alloc.alloc(u32, function.params.items.len);
         errdefer emitter.alloc.free(param_ptr_ids);
         @memset(param_ptr_ids, 0);
-        var local_ptr_ids = try emitter.alloc.alloc(u32, function.locals.items.len);
+        const local_ptr_ids = try emitter.alloc.alloc(u32, function.locals.items.len);
         errdefer emitter.alloc.free(local_ptr_ids);
         @memset(local_ptr_ids, 0);
         return .{
@@ -1207,7 +1204,6 @@ const FunctionState = struct {
     const ScalarKind = enum { bool, signed, unsigned, float };
 
     fn scalar_kind(self: *FunctionState, ty: ir.TypeId) ScalarKind {
-        _ = self;
         return switch (self.emitter.module.types.get(ty)) {
             .scalar => |scalar| switch (scalar) {
                 .bool => .bool,

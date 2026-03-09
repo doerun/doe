@@ -1,4 +1,4 @@
-const inner = @import("core/wgpu_ffi_sync.zig");
+const inner = @import("core/queue/wgpu_ffi_sync.zig");
 
 pub const syncAfterSubmit = inner.syncAfterSubmit;
 pub const submitEmpty = inner.submitEmpty;

@@ -1,31 +1,122 @@
 # @simulatte/webgpu
 
-Canonical WebGPU package for browserless benchmarking, CI workflows, and
-headless runtime integration.
+Headless WebGPU for Node.js and Bun, powered by Doe, Fawn's Zig WebGPU
+runtime.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/clocksmith/fawn/main/nursery/webgpu/assets/fawn-icon-main-256.png" alt="Fawn logo" width="196" />
 </p>
 
-It is built on Doe, Fawn's Zig WebGPU runtime and Dawn-replacement path for
-Fawn/Chromium. Doe uses Zig for explicit low-overhead systems paths, explicit
-allocator control, and keeping hot runtime paths minimal across
-Vulkan/Metal/D3D12 backends. Optional `-Dlean-verified=true` builds use Lean 4
-where proved invariants can be hoisted out of runtime branches instead of being
-re-checked on every command; package consumers should not assume that path by
-default.
+Use this package for headless compute, CI, benchmarking, and offscreen GPU
+execution. It is built for explicit runtime behavior, deterministic
+traceability, and artifact-backed performance work. It is not a DOM/canvas
+package and it should not be read as a promise of full browser-surface parity.
+
+## Quick examples
+
+### Inspect the provider
+
+```js
+import { providerInfo } from "@simulatte/webgpu";
+
+console.log(providerInfo());
+```
+
+### Request a device
+
+```js
+import { requestDevice } from "@simulatte/webgpu";
+
+const device = await requestDevice();
+console.log(device.limits.maxBufferSize);
+```
+
+### Upload, dispatch, and read back
+
+```js
+import { globals, requestDevice } from "@simulatte/webgpu";
+
+const { GPUBufferUsage, GPUMapMode, GPUShaderStage } = globals;
+const device = await requestDevice();
+
+const storage = device.createBuffer({
+  size: 4,
+  usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+});
+const readback = device.createBuffer({
+  size: 4,
+  usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+});
+
+device.queue.writeBuffer(storage, 0, new Uint32Array([0]));
+
+const shader = device.createShaderModule({
+  code: `
+    @group(0) @binding(0) var<storage, read_write> data: array<u32>;
+
+    @compute @workgroup_size(1)
+    fn main() {
+      data[0] = 7u;
+    }
+  `,
+});
+
+const bindGroupLayout = device.createBindGroupLayout({
+  entries: [
+    {
+      binding: 0,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: { type: "storage" },
+    },
+  ],
+});
+
+const pipeline = device.createComputePipeline({
+  layout: device.createPipelineLayout({
+    bindGroupLayouts: [bindGroupLayout],
+  }),
+  compute: { module: shader, entryPoint: "main" },
+});
+
+const bindGroup = device.createBindGroup({
+  layout: bindGroupLayout,
+  entries: [{ binding: 0, resource: { buffer: storage, size: 4 } }],
+});
+
+const computeEncoder = device.createCommandEncoder();
+const computePass = computeEncoder.beginComputePass();
+computePass.setPipeline(pipeline);
+computePass.setBindGroup(0, bindGroup);
+computePass.dispatchWorkgroups(1);
+computePass.end();
+device.queue.submit([computeEncoder.finish()]);
+
+const copyEncoder = device.createCommandEncoder();
+copyEncoder.copyBufferToBuffer(storage, 0, readback, 0, 4);
+device.queue.submit([copyEncoder.finish()]);
+
+await readback.mapAsync(GPUMapMode.READ);
+console.log(new Uint32Array(readback.getMappedRange())[0]); // 7
+readback.unmap();
+```
+
+## What this package is
+
+`@simulatte/webgpu` is the canonical package surface for Doe. Node uses an
+N-API addon and Bun uses direct FFI to load `libwebgpu_doe`. Current package
+builds still ship a Dawn sidecar where proc resolution requires it.
+
+Doe is a Zig-first WebGPU runtime with explicit allocator control, startup-time
+profile and quirk binding, a native WGSL pipeline (`lexer -> parser ->
+semantic analysis -> IR -> backend emitters`), and explicit
+Vulkan/Metal/D3D12 execution paths in one system. Optional
+`-Dlean-verified=true` builds use Lean 4 where proved invariants can be
+hoisted out of runtime branches instead of being re-checked on every command;
+package consumers should not assume that path by default.
 
 Doe also keeps adapter and driver quirks explicit. Profile selection happens at
 startup, quirk data is schema-backed, and the runtime binds the selected
 profile instead of relying on hidden per-command fallback logic.
-
-In this package, Node uses an N-API addon and Bun uses Bun FFI to load
-`libwebgpu_doe`. Current package builds still ship a Dawn sidecar where proc
-resolution requires it.
-
-This directory is the package root for `@simulatte/webgpu`. It contains the
-Node provider source, the addon build contract, the Bun FFI entrypoint, and
-the CLI helpers used by benchmark and CI workflows.
 
 Future layering note:
 
@@ -38,7 +129,7 @@ Future layering note:
   `ZIG_SOURCE_INVENTORY.md`
 - those boundaries are future-facing and do not change current package behavior
 
-## Surface maturity
+## Current scope
 
 - Node is the primary supported package surface (N-API bridge).
 - Bun has API parity with Node via direct FFI to `libwebgpu_doe` (57/57

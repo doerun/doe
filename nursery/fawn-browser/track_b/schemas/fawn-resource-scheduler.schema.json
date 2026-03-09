@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fawn.local/schemas/nursery/fawn_resource_scheduler.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "moduleId", "artifactKind"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "moduleId": { "type": "string", "const": "fawn_resource_scheduler" },
+    "artifactKind": { "type": "string", "enum": ["request", "result"] }
+  },
+  "allOf": [
+    { "if": { "properties": { "artifactKind": { "const": "request" } } }, "then": { "$ref": "#/$defs/request" } },
+    { "if": { "properties": { "artifactKind": { "const": "result" } } }, "then": { "$ref": "#/$defs/result" } }
+  ],
+  "$defs": {
+    "request": {
+      "required": ["resourceRequest", "workloadContext", "schedulerPolicy", "profile"],
+      "properties": {
+        "resourceRequest": { "type": "array", "items": { "type": "object", "required": ["type", "bytes", "usage"], "properties": { "type": { "type": "string", "enum": ["buffer", "texture"] }, "bytes": { "type": "integer", "minimum": 1 }, "usage": { "type": "string", "minLength": 1 } }, "additionalProperties": false } },
+        "workloadContext": { "type": "object", "required": ["moduleId", "operationClass"], "properties": { "moduleId": { "type": "string", "minLength": 1 }, "operationClass": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+        "schedulerPolicy": { "type": "object", "required": ["poolLimitBytes", "cadenceMode", "evictionPolicyMode"], "properties": { "poolLimitBytes": { "type": "integer", "minimum": 1 }, "cadenceMode": { "type": "string", "minLength": 1 }, "evictionPolicyMode": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+        "profile": { "type": "object", "required": ["vendor", "api", "deviceFamily", "driver"], "properties": { "vendor": { "type": "string", "minLength": 1 }, "api": { "type": "string", "minLength": 1 }, "deviceFamily": { "type": "string", "minLength": 1 }, "driver": { "type": "string", "minLength": 1 } }, "additionalProperties": false }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "required": ["allocationResult", "poolStats", "submitStats", "fallbackStats", "traceLink"],
+      "properties": {
+        "allocationResult": { "type": "array", "items": { "type": "object", "required": ["resourceId", "disposition", "bytesGranted"], "properties": { "resourceId": { "type": "string", "minLength": 1 }, "disposition": { "type": "string", "enum": ["allocated", "reused", "fallback"] }, "bytesGranted": { "type": "integer", "minimum": 0 } }, "additionalProperties": false } },
+        "poolStats": { "type": "object", "required": ["hitCount", "missCount", "evictionCount", "highWaterBytes"], "properties": { "hitCount": { "type": "integer", "minimum": 0 }, "missCount": { "type": "integer", "minimum": 0 }, "evictionCount": { "type": "integer", "minimum": 0 }, "highWaterBytes": { "type": "integer", "minimum": 0 } }, "additionalProperties": false },
+        "submitStats": { "type": "object", "required": ["submitCount", "cadenceModeUsed"], "properties": { "submitCount": { "type": "integer", "minimum": 0 }, "cadenceModeUsed": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+        "fallbackStats": { "type": "object", "required": ["fallbackCount", "fallbackReasonHistogram"], "properties": { "fallbackCount": { "type": "integer", "minimum": 0 }, "fallbackReasonHistogram": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } } }, "additionalProperties": false },
+        "traceLink": { "type": "object", "required": ["moduleIdentity", "requestHash", "policyHash", "resultHash"], "properties": { "moduleIdentity": { "type": "string", "minLength": 1 }, "requestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "policyHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "resultHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }, "additionalProperties": false }
+      },
+      "additionalProperties": false
+    }
+  }
+}

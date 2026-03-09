@@ -26,7 +26,7 @@ pub fn build(allocator: std.mem.Allocator, tree: *const Ast, semantic: *const se
     return module;
 }
 
-fn copy_structs(allocator: std.mem.Allocator, module: *ir.Module, semantic: *const sema.SemanticModule) !void {
+fn copy_structs(allocator: std.mem.Allocator, module: *ir.Module, semantic: *const sema.SemanticModule) BuildError!void {
     for (semantic.structs.items) |struct_info| {
         var struct_def = ir.StructDef{ .name = try ir.dup_string(allocator, struct_info.name) };
         errdefer struct_def.deinit(allocator);
@@ -41,7 +41,7 @@ fn copy_structs(allocator: std.mem.Allocator, module: *ir.Module, semantic: *con
     }
 }
 
-fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Module, semantic: *const sema.SemanticModule) !void {
+fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Module, semantic: *const sema.SemanticModule) BuildError!void {
     for (semantic.globals.items) |global_info| {
         const node = tree.nodes.items[global_info.node_idx];
         var initializer: ?ir.ConstantValue = null;
@@ -68,7 +68,7 @@ fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Modu
     }
 }
 
-fn copy_functions(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Module, semantic: *const sema.SemanticModule) !void {
+fn copy_functions(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Module, semantic: *const sema.SemanticModule) BuildError!void {
     for (semantic.functions.items, 0..) |function_info, function_index| {
         var function = ir.Function{
             .name = try ir.dup_string(allocator, function_info.name),
@@ -300,7 +300,7 @@ const FunctionBuilder = struct {
                 .lhs = try self.lower_value_expr(node.data.lhs),
                 .rhs = try self.lower_value_expr(node.data.rhs),
             } },
-            .call_expr => try self.lower_call(node),
+            .call_expr => try self.lower_call(node_idx, node),
             .member_expr => ir.Expr{ .member = .{
                 .base = if (category == .ref) try self.lower_ref_expr(node.data.lhs) else try self.lower_value_expr(node.data.lhs),
                 .field_name = try ir.dup_string(self.allocator, self.tree.tokenSlice(node.data.rhs)),
@@ -328,13 +328,13 @@ const FunctionBuilder = struct {
         };
     }
 
-    fn lower_call(self: *FunctionBuilder, node: Node) !ir.Expr {
+    fn lower_call(self: *FunctionBuilder, node_idx: u32, node: Node) !ir.Expr {
         const name = self.tree.tokenSlice(node.main_token);
         var args = std.ArrayListUnmanaged(ir.ExprId){};
         defer args.deinit(self.allocator);
 
         const kind: ir.CallKind = if (self.semantic.function_map.get(name) != null) .user else .builtin;
-        const is_constructor = self.semantic.try_resolve_named_type(name) != null;
+        const is_constructor = self.semantic.tryResolveNamedType(name) != null;
 
         var i: u32 = 0;
         while (i < node.data.rhs) : (i += 1) {
@@ -347,7 +347,7 @@ const FunctionBuilder = struct {
         }
         const range = try self.function.append_expr_args(self.allocator, args.items);
         if (is_constructor) {
-            return .{ .construct = .{ .ty = self.semantic.try_resolve_named_type(name).?, .args = range } };
+            return .{ .construct = .{ .ty = self.semantic.nodeType(node_idx), .args = range } };
         }
         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
     }
@@ -435,12 +435,12 @@ fn map_assign_op(tag: Tag) ir.AssignOp {
     };
 }
 
-fn scalar_constant_from_node(tree: *const Ast, node_idx: u32) !?ir.ConstantValue {
+fn scalar_constant_from_node(tree: *const Ast, node_idx: u32) BuildError!?ir.ConstantValue {
     const node = tree.nodes.items[node_idx];
     return switch (node.tag) {
         .bool_literal => ir.ConstantValue{ .bool = std.mem.eql(u8, tree.tokenSlice(node.main_token), "true") },
-        .int_literal => ir.ConstantValue{ .int = try std.fmt.parseInt(u64, tree.tokenSlice(node.main_token), 10) },
-        .float_literal => ir.ConstantValue{ .float = try std.fmt.parseFloat(f64, tree.tokenSlice(node.main_token)) },
+        .int_literal => ir.ConstantValue{ .int = std.fmt.parseInt(u64, tree.tokenSlice(node.main_token), 10) catch return error.InvalidIr },
+        .float_literal => ir.ConstantValue{ .float = std.fmt.parseFloat(f64, tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
         .unary_expr => switch (tree.tokens.items[node.main_token].tag) {
             .@"-" => blk: {
                 const inner = try scalar_constant_from_node(tree, node.data.lhs) orelse return error.UnsupportedConstruct;

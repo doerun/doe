@@ -1,7 +1,7 @@
 // doe_device_caps.zig — Device capability queries: feature reporting and limits.
 // Sharded from doe_wgpu_native.zig to stay under 777-line limit.
 
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 
 // ============================================================
 // Feature queries — report shader-f16 as supported (Metal natively supports half).

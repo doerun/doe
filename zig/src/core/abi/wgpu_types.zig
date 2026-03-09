@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model = @import("../../model.zig");
 
 pub const NativeExecutionStatus = enum {
     ok,
@@ -648,7 +648,7 @@ pub fn initLimits() WGPULimits {
     return limits;
 }
 
-const procs = @import("wgpu_types_procs.zig");
+const procs = @import("../../wgpu_types_procs.zig");
 
 pub const FnWgpuCreateInstance = procs.FnWgpuCreateInstance;
 pub const FnWgpuInstanceRequestAdapter = procs.FnWgpuInstanceRequestAdapter;

@@ -41,8 +41,8 @@ Trace and replay:
 
 WebGPU backend:
 - `src/webgpu_ffi.zig` — WebGPUBackend struct, lifecycle (init/deinit), adapter/device request, queue sync, timestamp readback.
-- `src/wgpu_types.zig` — all WebGPU C API types, constants, function pointer types, Procs table, record types.
-- `src/wgpu_loader.zig` — dynamic library loading, C callbacks, helper functions.
+- `src/core/abi/wgpu_types.zig` — all WebGPU C API types, constants, function pointer types, Procs table, record types.
+- `src/core/abi/wgpu_loader.zig` — dynamic library loading, C callbacks, helper functions.
 - `src/wgpu_commands.zig` — command execution orchestration for upload/copy/barrier/dispatch/kernel dispatch plus render command delegation.
 - `src/wgpu_render_commands.zig` — native `render_draw` lowering via render pass, async pipeline diagnostics, and render-bundle execution.
 - `src/wgpu_render_draw_loops.zig` — specialized render-pass/render-bundle draw-loop encoders for explicit pipeline/bind-group mode combinations.
@@ -199,8 +199,8 @@ At 10,000 dispatched commands (autoregressive decode or diffusion step loops), t
 
 Native Zig+WebGPU/FFI execution is implemented across backend modules in `zig/src`:
 - `webgpu_ffi.zig` — backend struct, adapter/device/queue lifecycle, timestamp readback.
-- `wgpu_types.zig` — C API type definitions and function pointer table.
-- `wgpu_loader.zig` — dynamic library loading, C callbacks, helpers.
+- `core/abi/wgpu_types.zig` — C API type definitions and function pointer table.
+- `core/abi/wgpu_loader.zig` — dynamic library loading, C callbacks, helpers.
 - `wgpu_commands.zig` — command execution with compute pipeline lowering and GPU timestamp queries.
 - `wgpu_resources.zig` — buffer/texture/bind-group/pipeline resource management.
 
@@ -213,7 +213,7 @@ Execution capabilities:
 - kernel-dispatch GPU timestamp querying is configurable via `--gpu-timestamp-mode auto|off|require` (default: `auto`).
   `auto` falls back to non-timestamp timing when timestamp capture is unavailable/invalid, `off` disables timestamp attempts, and `require` fails execution when timestamp capture is unavailable/invalid.
 - `kernel_dispatch` runs through full compute pipeline lowering with bind groups and optional GPU timestamp queries.
-- render core APIs (`DeviceCreateRenderPipeline`, `CommandEncoderBeginRenderPass`, and `RenderPassEncoder*` state/draw/end/release calls) are wired through the shared `wgpu_types.zig` proc table and loaded in `wgpu_loader.zig`.
+- render core APIs (`DeviceCreateRenderPipeline`, `CommandEncoderBeginRenderPass`, and `RenderPassEncoder*` state/draw/end/release calls) are wired through the shared `core/abi/wgpu_types.zig` proc table and loaded in `core/abi/wgpu_loader.zig`.
 - render-pass state coverage includes bind-group, viewport, scissor, blend-constant, stencil-reference, and render-pipeline bind-group-layout query calls.
 - `render_draw` now uses async pipeline creation (`DeviceCreateRenderPipelineAsync`) with explicit shader compilation-info and error-scope checks before cache insert.
 - `render_draw` now uses a textured bind-group contract (uniform + texture + sampler) with deterministic `QueueWriteTexture` upload and runtime sampler creation.

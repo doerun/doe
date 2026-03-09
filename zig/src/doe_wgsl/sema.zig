@@ -61,7 +61,7 @@ const BodyAnalyzer = struct {
     }
 
     fn pop_scope(self: *BodyAnalyzer) void {
-        var scope = self.scopes.pop();
+        var scope = self.scopes.pop().?;
         scope.deinit(self.parent.module.allocator);
     }
 
@@ -197,9 +197,9 @@ const Analyzer = struct {
     }
 
     fn resolve_struct(self: *Analyzer, node: Node) !void {
-        const packed = node.data.rhs;
-        const member_start = packed & 0xFFFF;
-        const member_count = packed >> 16;
+        const member_range = node.data.rhs;
+        const member_start = member_range & 0xFFFF;
+        const member_count = member_range >> 16;
         const struct_id = self.module.struct_map.get(self.module.tree.tokenSlice(node.data.lhs)) orelse return error.InvalidWgsl;
         var struct_info = &self.module.structs.items[struct_id];
 
@@ -427,7 +427,7 @@ const Analyzer = struct {
         try body.bind_name(body.function().locals.items[local_index].name, .{ .local = local_index });
     }
 
-    fn analyze_expr(self: *Analyzer, node_idx: u32, body: ?*BodyAnalyzer) !ir.TypeId {
+    fn analyze_expr(self: *Analyzer, node_idx: u32, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
         const existing = self.module.node_info.items[node_idx];
         if (existing.ty != ir.INVALID_TYPE) return existing.ty;
 
@@ -475,7 +475,7 @@ const Analyzer = struct {
         };
     }
 
-    fn analyze_unary(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) !ir.TypeId {
+    fn analyze_unary(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
         const operand_ty = try self.analyze_expr(node.data.lhs, body);
         return switch (self.module.tree.tokens.items[node.main_token].tag) {
             .@"-", .@"~" => operand_ty,
@@ -484,7 +484,7 @@ const Analyzer = struct {
         };
     }
 
-    fn analyze_binary(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) !ir.TypeId {
+    fn analyze_binary(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
         const lhs_ty = try self.analyze_expr(node.data.lhs, body);
         const rhs_ty = try self.analyze_expr(node.data.rhs, body);
         const op = self.module.tree.tokens.items[node.main_token].tag;
@@ -494,7 +494,7 @@ const Analyzer = struct {
         };
     }
 
-    fn analyze_call(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) !ir.TypeId {
+    fn analyze_call(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
         const name = self.module.tree.tokenSlice(node.main_token);
         const args_start = node.data.lhs;
         const args_len = node.data.rhs;
@@ -520,7 +520,7 @@ const Analyzer = struct {
         return try self.infer_builtin_call(name, arg_types_buf[0..args_len]);
     }
 
-    fn analyze_member(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) !ir.TypeId {
+    fn analyze_member(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) AnalyzeError!ir.TypeId {
         const base_ty = try self.analyze_expr(node.data.lhs, body);
         const field_name = self.module.tree.tokenSlice(node.data.rhs);
         switch (self.module.types.get(base_ty)) {
@@ -544,7 +544,7 @@ const Analyzer = struct {
         }
     }
 
-    fn analyze_index(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) !ir.TypeId {
+    fn analyze_index(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) AnalyzeError!ir.TypeId {
         const base_ty = try self.analyze_expr(node.data.lhs, body);
         _ = try self.analyze_expr(node.data.rhs, body);
         out.category = self.module.node_info.items[node.data.lhs].category;
@@ -556,7 +556,7 @@ const Analyzer = struct {
         };
     }
 
-    fn resolve_type_node(self: *Analyzer, node_idx: u32) !ir.TypeId {
+    fn resolve_type_node(self: *Analyzer, node_idx: u32) AnalyzeError!ir.TypeId {
         const node = self.module.tree.nodes.items[node_idx];
         return switch (node.tag) {
             .type_name => try self.resolve_type_name(self.module.tree.tokenSlice(node.main_token)),
@@ -567,7 +567,7 @@ const Analyzer = struct {
         };
     }
 
-    fn resolve_type_name(self: *Analyzer, name: []const u8) !ir.TypeId {
+    fn resolve_type_name(self: *Analyzer, name: []const u8) AnalyzeError!ir.TypeId {
         if (std.mem.eql(u8, name, "void")) return self.module.void_type;
         if (std.mem.eql(u8, name, "bool")) return self.module.bool_type;
         if (std.mem.eql(u8, name, "i32")) return self.module.i32_type;
@@ -609,7 +609,7 @@ const Analyzer = struct {
         };
     }
 
-    fn resolve_type_parameterized(self: *Analyzer, node: Node) !ir.TypeId {
+    fn resolve_type_parameterized(self: *Analyzer, node: Node) AnalyzeError!ir.TypeId {
         const name = self.module.tree.tokenSlice(node.main_token);
         const params_start = node.data.lhs;
         const params_len = node.data.rhs;
@@ -632,7 +632,7 @@ const Analyzer = struct {
             if (params_len == 2) {
                 const len_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 1]];
                 if (len_node.tag != .int_literal) return error.InvalidType;
-                len = try std.fmt.parseInt(u32, self.module.tree.tokenSlice(len_node.main_token), 10);
+                len = std.fmt.parseInt(u32, self.module.tree.tokenSlice(len_node.main_token), 10) catch return error.InvalidType;
             }
             return try self.module.types.intern(.{ .array = .{ .elem = elem, .len = len } });
         }

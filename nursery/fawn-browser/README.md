@@ -45,6 +45,12 @@ This directory is isolated from core runtime development by policy:
 4. Nothing in this layer bypasses stage discipline:
    - Mine -> Normalize -> Verify -> Bind -> Gate -> Benchmark -> Release.
 
+Milestone status source of truth:
+
+1. `bench/workflows/browser-milestones.json`
+2. checked by `scripts/check-browser-milestones.py`
+3. plan/notes describe intent and evidence, but milestone state changes should be recorded in the manifest
+
 ## Context summary
 
 Fawn already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
@@ -252,7 +258,8 @@ Current browser integration layer structure:
 6. `scripts/`
    - lane-local helpers (`scripts/bootstrap-host-tools.sh`, `scripts/env.sh`,
      `scripts/preflight.sh`, `scripts/bringup-linux.sh`,
-     `scripts/run-smoke.sh`, `scripts/run-bench.sh`).
+     `scripts/run-smoke.sh`, `scripts/run-bench.sh`,
+     `scripts/check-browser-milestones.py`).
 7. `assets/`
    - brand assets, logo source, and compiled macOS/Linux logo artifacts.
 

@@ -34,6 +34,10 @@ This module implements a layered browser benchmark superset for Chromium Track A
    - explicit promotion approvals (`track_b_contracts_owner`, `coordinator`).
 7. `workflows/browser-promotion-approvals.schema.json`
    - schema for promotion approval artifact.
+8. `workflows/browser-milestones.json`
+   - source-of-truth milestone state for M0-M6.
+9. `workflows/browser-milestones.schema.json`
+   - schema for milestone tracking.
 
 ## Scripts
 
@@ -45,6 +49,8 @@ This module implements a layered browser benchmark superset for Chromium Track A
    - validates projection completeness/hash sync, optional report coverage, and optional promotion approvals.
 4. `scripts/run-browser-benchmark-superset.py`
    - one-command orchestration (generate -> run -> check -> summary + checker artifact).
+5. `scripts/check-browser-milestones.py`
+   - validates milestone state and required local evidence for M0-M6.
 
 ## Quick Start
 

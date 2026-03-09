@@ -374,7 +374,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_call(self: *Emitter, function: ir.Function, call: ir.Expr.call) EmitError!void {
+    fn emit_call(self: *Emitter, function: ir.Function, call: @FieldType(ir.Expr, "call")) EmitError!void {
         if (call.kind == .builtin) {
             if (std.mem.eql(u8, call.name, "workgroupBarrier")) {
                 try self.write("threadgroup_barrier(mem_flags::mem_threadgroup)");
@@ -470,6 +470,7 @@ const Emitter = struct {
                 try self.emit_type(sample_ty);
                 try self.write(">");
             },
+            .storage_texture_2d => return error.InvalidIr,
             .ref => |ref_ty| try self.emit_type(ref_ty.elem),
         }
     }

@@ -1,7 +1,7 @@
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 const p1cap = @import("wgpu_p1_capability_procs.zig");
 const p2life = @import("wgpu_p2_lifecycle_procs.zig");
-const surface = @import("wgpu_surface_procs.zig");
+const surface = @import("full/surface/wgpu_surface_procs.zig");
 
 extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn;

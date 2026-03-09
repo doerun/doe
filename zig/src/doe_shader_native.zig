@@ -2,7 +2,7 @@
 // Sharded from doe_wgpu_native.zig: WGSL→MSL translation, MTLLibrary/MTLComputePipelineState creation.
 
 const std = @import("std");
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const native = @import("doe_wgpu_native.zig");
 

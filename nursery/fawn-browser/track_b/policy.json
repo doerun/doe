@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "modules": {
+    "fawn_2d_sdf_renderer": {
+      "allowedBlendModes": ["src_over", "multiply"],
+      "allowedClipModes": ["none", "rect", "rounded_rect"],
+      "allowedSampleCounts": [1, 4],
+      "atlasGlyphCapacity": 128,
+      "maxPathOps": 64,
+      "maxTargetPixels": 1048576
+    },
+    "fawn_path_engine": {
+      "allowedJoinModes": ["miter", "round", "bevel"],
+      "allowDashPatterns": false,
+      "maxSegments": 256,
+      "maxTargetPixels": 1048576
+    },
+    "fawn_effects_pipeline": {
+      "allowedOps": ["blur", "color_matrix", "blend", "mask", "composite"],
+      "allowedColorSpaces": ["srgb"],
+      "maxNodeCount": 12,
+      "maxIntermediateBytes": 33554432
+    },
+    "fawn_compute_services": {
+      "services": {
+        "sdf_atlas_upload": ["atlas_blit_v1"],
+        "path_mask_reduce": ["mask_reduce_v1"]
+      },
+      "maxDispatchesPerRequest": 8192,
+      "maxInputBytes": 16777216
+    },
+    "fawn_resource_scheduler": {
+      "allowedCadenceModes": ["per_batch", "deferred"],
+      "allowedModules": [
+        "fawn_2d_sdf_renderer",
+        "fawn_path_engine",
+        "fawn_effects_pipeline",
+        "fawn_compute_services"
+      ],
+      "maxPoolBytes": 67108864,
+      "maxResourcesPerRequest": 16
+    }
+  }
+}

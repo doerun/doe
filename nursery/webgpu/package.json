@@ -1,7 +1,7 @@
 {
   "name": "@simulatte/webgpu",
   "version": "0.2.1",
-  "description": "Doe WebGPU bridge for browserless AI/ML benchmarking and CI",
+  "description": "Headless WebGPU runtime for Node.js and Bun, powered by Doe",
   "type": "module",
   "main": "./src/node-runtime.js",
   "exports": {

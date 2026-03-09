@@ -5,7 +5,7 @@
 // - No reference counting — release destroys immediately.
 
 const std = @import("std");
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 
 // GPA for handle allocations — page_allocator wastes 16KB per 24-byte struct.

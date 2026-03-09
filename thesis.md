@@ -2,13 +2,20 @@
 
 ## Abstract
 
-Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation.
+Fawn is the development platform for Doe, a Zig-first WebGPU runtime.
 
-Doe is a Zig WebGPU runtime for WebGPU-class execution with:
+Doe is built around a core technical move:
 
-- Zig for explicit low-overhead systems paths
-- Lean 4 for high-value invariant formalization
-- deterministic boundary decisions (`accept(receipt)` or `reject(trace)`)
+- separate hoistable validation from truly dynamic runtime behavior
+- keep hot paths explicit in Zig
+- use Lean 4 where proofs can remove runtime branches instead of adding ceremony
+
+Around that core, Fawn develops, verifies, benchmarks, packages, and
+integrates Doe across headless execution, Node/Bun package surfaces, and
+Chromium bring-up.
+
+Doe itself targets explicit Vulkan/Metal/D3D12 execution paths, config-as-code
+policy, deterministic traceability, and artifact-backed benchmark evidence.
 
 The intent is defense-in-depth and performance improvement, not sandbox replacement.
 

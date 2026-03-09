@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fawn.local/schemas/nursery/fawn_2d_sdf_renderer.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "moduleId", "artifactKind"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "moduleId": { "type": "string", "const": "fawn_2d_sdf_renderer" },
+    "artifactKind": { "type": "string", "enum": ["request", "result"] }
+  },
+  "allOf": [
+    { "if": { "properties": { "artifactKind": { "const": "request" } } }, "then": { "$ref": "#/$defs/request" } },
+    { "if": { "properties": { "artifactKind": { "const": "result" } } }, "then": { "$ref": "#/$defs/result" } }
+  ],
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" } },
+      "additionalProperties": false
+    },
+    "request": {
+      "required": ["textRuns", "pathOps", "paintState", "target"],
+      "properties": {
+        "textRuns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fontKey", "glyphIds", "positions", "color", "transform"],
+            "properties": {
+              "fontKey": { "type": "string", "minLength": 1 },
+              "fontPx": { "type": "number", "minimum": 1 },
+              "glyphIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+              "positions": { "type": "array", "items": { "$ref": "#/$defs/point" } },
+              "color": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+              "transform": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "number" } }
+            },
+            "additionalProperties": false
+          }
+        },
+        "pathOps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["op", "points"],
+            "properties": {
+              "op": { "type": "string", "enum": ["moveTo", "lineTo", "curveTo", "closePath"] },
+              "points": { "type": "array", "items": { "$ref": "#/$defs/point" } }
+            },
+            "additionalProperties": false
+          }
+        },
+        "paintState": {
+          "type": "object",
+          "required": ["blendMode", "clipState", "transform"],
+          "properties": {
+            "blendMode": { "type": "string", "minLength": 1 },
+            "clipState": {
+              "type": "object",
+              "required": ["mode"],
+              "properties": {
+                "mode": { "type": "string", "minLength": 1 },
+                "bounds": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } }
+              },
+              "additionalProperties": false
+            },
+            "transform": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "number" } }
+          },
+          "additionalProperties": false
+        },
+        "target": {
+          "type": "object",
+          "required": ["width", "height", "format", "sampleCount"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 },
+            "format": { "type": "string", "minLength": 1 },
+            "sampleCount": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "required": ["renderArtifact", "renderStats", "timingStats", "qualityStats", "traceLink"],
+      "properties": {
+        "renderArtifact": { "type": "object", "required": ["artifactId"], "properties": { "artifactId": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+        "renderStats": { "type": "object", "required": ["drawCallCount", "atlasHitCount", "atlasMissCount", "passCount"], "properties": { "drawCallCount": { "type": "integer", "minimum": 0 }, "atlasHitCount": { "type": "integer", "minimum": 0 }, "atlasMissCount": { "type": "integer", "minimum": 0 }, "passCount": { "type": "integer", "minimum": 0 } }, "additionalProperties": false },
+        "timingStats": { "type": "object", "required": ["setupNs", "encodeNs", "submitWaitNs"], "properties": { "setupNs": { "type": "integer", "minimum": 0 }, "encodeNs": { "type": "integer", "minimum": 0 }, "submitWaitNs": { "type": "integer", "minimum": 0 } }, "additionalProperties": false },
+        "qualityStats": { "type": "object", "required": ["fallbackCount", "fallbackReasonHistogram"], "properties": { "fallbackCount": { "type": "integer", "minimum": 0 }, "fallbackReasonHistogram": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } } }, "additionalProperties": false },
+        "traceLink": { "type": "object", "required": ["moduleIdentity", "requestHash", "policyHash", "resultHash"], "properties": { "moduleIdentity": { "type": "string", "minLength": 1 }, "requestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "policyHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "resultHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }, "additionalProperties": false }
+      },
+      "additionalProperties": false
+    }
+  }
+}

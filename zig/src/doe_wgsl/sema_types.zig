@@ -1,6 +1,7 @@
 const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
+const token_mod = @import("token.zig");
 
 const Ast = ast_mod.Ast;
 
@@ -166,5 +167,35 @@ pub const SemanticModule = struct {
 
     pub fn nodeCategory(self: *const SemanticModule, node_idx: u32) ir.ExprCategory {
         return self.node_info.items[node_idx].category;
+    }
+
+    pub fn tryResolveNamedType(self: *const SemanticModule, name: []const u8) ?ir.TypeId {
+        const types = @constCast(&self.types);
+        if (self.struct_map.get(name)) |struct_id| return self.structs.items[struct_id].ty;
+        if (self.alias_map.get(name)) |alias_index| {
+            const ty = self.aliases.items[alias_index].ty;
+            if (ty != ir.INVALID_TYPE) return ty;
+        }
+        return switch (token_mod.lookupIdent(name)) {
+            .kw_vec2f => types.intern(.{ .vector = .{ .elem = self.f32_type, .len = 2 } }) catch null,
+            .kw_vec3f => types.intern(.{ .vector = .{ .elem = self.f32_type, .len = 3 } }) catch null,
+            .kw_vec4f => types.intern(.{ .vector = .{ .elem = self.f32_type, .len = 4 } }) catch null,
+            .kw_vec2u => types.intern(.{ .vector = .{ .elem = self.u32_type, .len = 2 } }) catch null,
+            .kw_vec3u => types.intern(.{ .vector = .{ .elem = self.u32_type, .len = 3 } }) catch null,
+            .kw_vec4u => types.intern(.{ .vector = .{ .elem = self.u32_type, .len = 4 } }) catch null,
+            .kw_vec2i => types.intern(.{ .vector = .{ .elem = self.i32_type, .len = 2 } }) catch null,
+            .kw_vec3i => types.intern(.{ .vector = .{ .elem = self.i32_type, .len = 3 } }) catch null,
+            .kw_vec4i => types.intern(.{ .vector = .{ .elem = self.i32_type, .len = 4 } }) catch null,
+            .kw_vec2h => types.intern(.{ .vector = .{ .elem = self.f16_type, .len = 2 } }) catch null,
+            .kw_vec3h => types.intern(.{ .vector = .{ .elem = self.f16_type, .len = 3 } }) catch null,
+            .kw_vec4h => types.intern(.{ .vector = .{ .elem = self.f16_type, .len = 4 } }) catch null,
+            .kw_mat2x2f => types.intern(.{ .matrix = .{ .elem = self.f32_type, .columns = 2, .rows = 2 } }) catch null,
+            .kw_mat3x3f => types.intern(.{ .matrix = .{ .elem = self.f32_type, .columns = 3, .rows = 3 } }) catch null,
+            .kw_mat4x4f => types.intern(.{ .matrix = .{ .elem = self.f32_type, .columns = 4, .rows = 4 } }) catch null,
+            .kw_mat2x2h => types.intern(.{ .matrix = .{ .elem = self.f16_type, .columns = 2, .rows = 2 } }) catch null,
+            .kw_mat3x3h => types.intern(.{ .matrix = .{ .elem = self.f16_type, .columns = 3, .rows = 3 } }) catch null,
+            .kw_mat4x4h => types.intern(.{ .matrix = .{ .elem = self.f16_type, .columns = 4, .rows = 4 } }) catch null,
+            else => null,
+        };
     }
 };

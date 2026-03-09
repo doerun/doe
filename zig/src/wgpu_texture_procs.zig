@@ -1,5 +1,5 @@
 const std = @import("std");
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 
 const FnDeviceCreateSampler = *const fn (types.WGPUDevice, ?*const anyopaque) callconv(.c) types.WGPUSampler;
 const FnSamplerRelease = *const fn (types.WGPUSampler) callconv(.c) void;

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "fawn_effects_pipeline",
+  "artifactKind": "request",
+  "effectGraph": [
+    { "nodeId": "blur_0", "op": "blur", "params": { "radius": 4 } },
+    { "nodeId": "blend_1", "op": "blend", "params": { "mode": "src_over" } }
+  ],
+  "inputs": [
+    { "surfaceId": "surface_a", "bytes": 1048576 },
+    { "surfaceId": "surface_b", "bytes": 1048576 }
+  ],
+  "executionPolicy": {
+    "precisionClass": "balanced",
+    "colorSpace": "srgb"
+  },
+  "target": {
+    "width": 512,
+    "height": 512,
+    "format": "rgba8unorm"
+  }
+}

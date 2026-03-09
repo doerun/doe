@@ -1,4 +1,7 @@
 const std = @import("std");
+pub const CoreCommandKind = @import("core/command_partition.zig").CommandKind;
+pub const FullCommandKind = @import("full/command_partition.zig").CommandKind;
+
 
 pub const SchemaVersion = u8;
 pub const CURRENT_SCHEMA_VERSION: SchemaVersion = 2;
@@ -444,6 +447,36 @@ pub const Command = union(CommandKind) {
     map_async: MapAsyncCommand,
 };
 
+pub const CoreCommand = union(CoreCommandKind) {
+    upload: UploadCommand,
+    copy_buffer_to_texture: CopyCommand,
+    barrier: BarrierCommand,
+    dispatch: DispatchCommand,
+    dispatch_indirect: DispatchIndirectCommand,
+    kernel_dispatch: KernelDispatchCommand,
+    texture_write: TextureWriteCommand,
+    texture_query: TextureQueryCommand,
+    texture_destroy: TextureDestroyCommand,
+    map_async: MapAsyncCommand,
+};
+
+pub const FullCommand = union(FullCommandKind) {
+    render_draw: RenderDrawCommand,
+    draw_indirect: DrawIndirectCommand,
+    draw_indexed_indirect: DrawIndexedIndirectCommand,
+    render_pass: RenderPassCommand,
+    sampler_create: SamplerCreateCommand,
+    sampler_destroy: SamplerDestroyCommand,
+    surface_create: SurfaceCreateCommand,
+    surface_capabilities: SurfaceCapabilitiesCommand,
+    surface_configure: SurfaceConfigureCommand,
+    surface_acquire: SurfaceAcquireCommand,
+    surface_present: SurfacePresentCommand,
+    surface_unconfigure: SurfaceUnconfigureCommand,
+    surface_release: SurfaceReleaseCommand,
+    async_diagnostics: AsyncDiagnosticsCommand,
+};
+
 pub const UseTemporaryBufferAction = struct {
     alignment_bytes: u32,
 };
@@ -612,6 +645,58 @@ pub fn requiresProof(mode: VerificationMode) bool {
 
 pub fn needsStrongestProof(level: ProofLevel) bool {
     return level == .proven;
+}
+
+pub fn core_command_kind(kind: CommandKind) ?CoreCommandKind {
+    return @import("core/command_partition.zig").fromCombined(kind);
+}
+
+pub fn full_command_kind(kind: CommandKind) ?FullCommandKind {
+    return @import("full/command_partition.zig").fromCombined(kind);
+}
+
+pub fn is_core_command_kind(kind: CommandKind) bool {
+    return core_command_kind(kind) != null;
+}
+
+pub fn is_full_command_kind(kind: CommandKind) bool {
+    return full_command_kind(kind) != null;
+}
+
+pub fn as_core_command(cmd: Command) ?CoreCommand {
+    return switch (cmd) {
+        .upload => |payload| .{ .upload = payload },
+        .copy_buffer_to_texture => |payload| .{ .copy_buffer_to_texture = payload },
+        .barrier => |payload| .{ .barrier = payload },
+        .dispatch => |payload| .{ .dispatch = payload },
+        .dispatch_indirect => |payload| .{ .dispatch_indirect = payload },
+        .kernel_dispatch => |payload| .{ .kernel_dispatch = payload },
+        .texture_write => |payload| .{ .texture_write = payload },
+        .texture_query => |payload| .{ .texture_query = payload },
+        .texture_destroy => |payload| .{ .texture_destroy = payload },
+        .map_async => |payload| .{ .map_async = payload },
+        else => null,
+    };
+}
+
+pub fn as_full_command(cmd: Command) ?FullCommand {
+    return switch (cmd) {
+        .render_draw => |payload| .{ .render_draw = payload },
+        .draw_indirect => |payload| .{ .draw_indirect = payload },
+        .draw_indexed_indirect => |payload| .{ .draw_indexed_indirect = payload },
+        .render_pass => |payload| .{ .render_pass = payload },
+        .sampler_create => |payload| .{ .sampler_create = payload },
+        .sampler_destroy => |payload| .{ .sampler_destroy = payload },
+        .surface_create => |payload| .{ .surface_create = payload },
+        .surface_capabilities => |payload| .{ .surface_capabilities = payload },
+        .surface_configure => |payload| .{ .surface_configure = payload },
+        .surface_acquire => |payload| .{ .surface_acquire = payload },
+        .surface_present => |payload| .{ .surface_present = payload },
+        .surface_unconfigure => |payload| .{ .surface_unconfigure = payload },
+        .surface_release => |payload| .{ .surface_release = payload },
+        .async_diagnostics => |payload| .{ .async_diagnostics = payload },
+        else => null,
+    };
 }
 
 pub fn command_kind(cmd: Command) CommandKind {

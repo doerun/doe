@@ -1,18 +1,52 @@
 # Fawn
 
-Fawn is a Chromium-based browser that replaces Dawn with Doe as its WebGPU implementation.
+Fawn is the development platform for Doe, a Zig-first WebGPU runtime centered
+on a core technical move: separate hoistable validation from truly dynamic
+runtime behavior, keep hot paths explicit, and use Lean only where proofs can
+remove runtime branches.
 
-Doe (`doe-webgpu`, `libwebgpu_doe.so`) is a WebGPU backend written in Zig. It targets explicit allocator control, native Vulkan/Metal/D3D12 backends, and startup-time profile/quirk selection that keeps hot-path policy work out of per-command execution.
+Around that core, Doe follows a broader operating discipline: config as code,
+explicit fail-fast behavior, deterministic traceability, and artifact-backed
+benchmarking. Fawn develops, verifies, benchmarks, packages, and integrates
+Doe across headless execution, Node/Bun package surfaces, and Chromium
+bring-up.
+
+Doe (`doe-webgpu`, `libwebgpu_doe.so`) is Fawn's execution engine. It combines
+startup-time profile and quirk binding, a native WGSL pipeline (`lexer ->
+parser -> semantic analysis -> IR -> backend emitters`), and explicit
+Vulkan/Metal/D3D12 execution paths in one system.
+
+Dawn is the incumbent WebGPU implementation in Chromium and the primary
+baseline Fawn measures against. Doe is the replacement runtime Fawn is
+building: a Zig-first engine with explicit execution paths, selective
+Lean-based branch elimination, and benchmark results that are only cited from
+reproducible artifacts.
+
+Fawn currently targets Vulkan, Metal, and D3D12. It does not currently pursue
+older compatibility backends such as OpenGL or OpenGL ES: the project is
+biased toward modern GPU APIs, modern hardware, and modern workloads, and that
+narrower target is an advantage because it avoids inheriting legacy backend
+complexity just to preserve incumbent-style compatibility breadth.
+
+Lean is additive here, not foundational: it proves and removes specific
+hot-path conditions when possible. Zig owns dynamic execution, explicit
+fail-fast paths, and the runtime behavior that must remain live.
+
+Doe is the engine. Fawn is everything required to make that engine real,
+measurable, and shippable.
 
 ![Fawn logo](nursery/fawn-browser/assets/logo/compiled/linux/fawn-icon-main-256.png)
 
 ## Benchmark snapshot
 
-Current benchmark evidence is split across strict backend claim lanes and a
-separate package-surface comparison lane.
+Performance claims in Fawn are earned, not asserted. Citable results come
+from reproducible artifacts with explicit workload contracts, explicit
+comparison modes, and enough timing evidence to satisfy the claim gates in
+`process.md` and the Dawn-vs-Doe methodology in `performance-strategy.md`.
 
-The canonical aggregation layer for those surfaces now lives in the benchmark
-cube artifacts:
+Current benchmark evidence is split across strict backend claim lanes and
+separate package-surface comparison lanes. The canonical aggregation layer
+for those surfaces now lives in the benchmark cube artifacts:
 - timestamped runs under `bench/out/cube/<timestamp>/`
 - stable latest outputs under `bench/out/cube/latest/`
 - builder: `python3 bench/build_benchmark_cube.py`
@@ -168,26 +202,23 @@ Still in progress:
 - broader device/driver coverage for substantiated comparison claims
 - upstream quirk mining automation (prototype works; nightly drift ingest is not running)
 
-## Project structure
+## Platform flow
 
-```
-fawn/
-  thesis.md            goals, priorities, success criteria
-  architecture.md      module boundaries, data contracts
-  process.md           pipeline stages, gate policy
-  status.md            current state, benchmark snapshots
-  licensing.md         license terms
-  agent/               upstream quirk mining
-  config/              schemas, gates, benchmark definitions
-  lean/                Lean 4 proofs, verification boundary
-  zig/                 Doe runtime (~12,000 LOC)
-  bench/               benchmark harness, Dawn comparison, visualization
-  trace/               replay and trace tooling
-  examples/            worked examples, command seeds
-  nursery/webgpu/      canonical @simulatte/webgpu package root
-  nursery/fawn-browser/ browser integration layer for Chromium work
-  nursery/chromium_webgpu_lane/ Chromium checkout/build lane workspace
-```
+Fawn is organized as a platform pipeline, not just a source tree:
+
+`agent` -> `config` -> `lean` -> `zig` -> package/browser surfaces -> `trace` + `bench`
+
+- `agent/`: mines and normalizes upstream quirk and compatibility signals
+- `config/`: owns schemas, gates, workload contracts, and migration-visible policy
+- `lean/`: proves eliminations and emits artifacts that can remove runtime checks
+- `zig/`: implements Doe, the runtime and compiler stack that executes WebGPU work
+- `nursery/webgpu/`: packages Doe for Node.js and Bun
+- `nursery/fawn-browser/`: carries the Chromium integration lane
+- `trace/` and `bench/`: replay work, validate comparability, and produce benchmark evidence
+
+Supporting docs at the repository root define the operating contract:
+`thesis.md`, `architecture.md`, `process.md`, `status.md`, `upgrade-policy.md`,
+and `licensing.md`.
 
 ## Package
 

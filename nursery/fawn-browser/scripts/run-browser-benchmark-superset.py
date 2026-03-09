@@ -65,6 +65,8 @@ def default_chrome_binary() -> Path:
             str(REPO_ROOT / "nursery/fawn-browser/out/fawn_release_local"),
         )
     )
+    chromium_lane_out = REPO_ROOT / "nursery/chromium_webgpu_lane/out/fawn_release_local"
+    host_fawn_app = Path.home() / "Applications/Fawn.app/Contents/MacOS/Chromium"
     candidates: list[Path] = []
     env_chrome = os.getenv("FAWN_CHROME_BIN")
     if env_chrome:
@@ -74,12 +76,22 @@ def default_chrome_binary() -> Path:
             release_local_out / "chrome",
             release_local_out / "Fawn.app/Contents/MacOS/Chromium",
             release_local_out / "Chromium.app/Contents/MacOS/Chromium",
+            chromium_lane_out / "chrome",
+            chromium_lane_out / "Fawn.app/Contents/MacOS/Chromium",
+            chromium_lane_out / "Chromium.app/Contents/MacOS/Chromium",
+            host_fawn_app,
             REPO_ROOT / "nursery/fawn-browser/src/out/fawn_release/chrome",
             REPO_ROOT / "nursery/fawn-browser/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium",
             REPO_ROOT / "nursery/fawn-browser/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/chrome",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
             REPO_ROOT / "nursery/fawn-browser/src/out/fawn_debug/chrome",
             REPO_ROOT / "nursery/fawn-browser/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium",
             REPO_ROOT / "nursery/fawn-browser/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_debug/chrome",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "nursery/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium",
         ]
     )
     for candidate in candidates:

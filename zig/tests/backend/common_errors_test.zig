@@ -1,6 +1,6 @@
 const std = @import("std");
 const common_errors = @import("../../src/backend/common/errors.zig");
-const wgpu_types = @import("../../src/wgpu_types.zig");
+const wgpu_types = @import("../../src/core/abi/wgpu_types.zig");
 
 test "map_error_status returns unsupported for taxonomy errors" {
     try std.testing.expectEqual(

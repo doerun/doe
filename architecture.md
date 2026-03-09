@@ -24,6 +24,26 @@ Doe is split into five modules with hard interfaces. In v0 these interfaces are 
 - Input: runtime outputs.
 - Output: correctness verdicts, perf verdicts, replay artifacts.
 
+### Product surfaces
+
+Fawn is platform-shaped as well as module-shaped.
+
+1. Doe runtime
+- the Zig-first execution engine and compiler stack
+- owns explicit runtime behavior, backend execution, and proof-aware branch elimination
+
+2. `@simulatte/webgpu`
+- the canonical headless package surface for Node.js and Bun
+- exposes Doe for compute, offscreen execution, benchmarking, and CI workflows
+
+3. Chromium Track A
+- the browser integration lane
+- depends on the full runtime artifact plus browser-specific gates
+- is one deployment surface, not the whole identity of the project
+
+The supporting modules above exist to make those surfaces deterministic,
+measurable, and maintainable rather than to blur them together.
+
 ## 2. Incumbent Baselines
 
 Doe is benchmarked against external incumbents:

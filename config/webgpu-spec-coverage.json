@@ -36,7 +36,7 @@
       "status": "implemented",
       "priority": "p0",
       "owner": "runtime-core",
-      "contract": "zig/src/wgpu_types.zig Procs + zig/src/wgpu_loader.zig loadProcs + zig/src/wgpu_render_commands.zig executeRenderDraw",
+      "contract": "zig/src/core/abi/wgpu_types.zig Procs + zig/src/core/abi/wgpu_loader.zig loadProcs + zig/src/full/render/wgpu_render_commands.zig executeRenderDraw",
       "notes": "core render-pass APIs are first-class in the shared proc table: DeviceCreateRenderPipeline, CommandEncoderBeginRenderPass, RenderPassEncoder SetPipeline/SetVertexBuffer/SetIndexBuffer/SetBindGroup, Draw/DrawIndexed/(Indirect variants), End, and Release. render_draw fails fast as unsupported when required symbols are absent."
     },
     {

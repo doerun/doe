@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-01T02:28:58.669873Z",
+  "generatedAt": "2026-03-08T21:25:32.854269Z",
   "sourceWorkloadsPath": "bench/workloads.amd.vulkan.extended.json",
-  "sourceWorkloadsSha256": "8587f8521a55d02af8ff40da2fdba0fed2ee421fa66ab742227badb6b8dfd1a4",
+  "sourceWorkloadsSha256": "deac125c6783fc7caeb5f8685413432518ab135a62f1ab29b21cd960f7af065b",
   "rulesPath": "nursery/fawn-browser/bench/projection-rules.json",
   "rulesSha256": "06ac37731d70bb86652dbad5a6e7e80f1de4aad1b5020d530b500c98e54de245",
-  "projectionContractHash": "2f7cfca12307226249cc1adf6dc7c9ec1e8c95ef52a8507c397d63f68540ceec",
-  "sourceWorkloadCount": 77,
+  "projectionContractHash": "cc129ede4aeda8e3b216aaf6d9c4e2ea7afd09de01e61a42cc61e02ed356eee6",
+  "sourceWorkloadCount": 80,
   "rows": [
     {
       "sourceWorkloadId": "upload_write_buffer_1kb",
@@ -63,6 +63,45 @@
     {
       "sourceWorkloadId": "upload_write_buffer_16mb",
       "sourceWorkloadName": "buffer-upload 16MB",
+      "domain": "upload",
+      "projectionClass": "high",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "write_buffer_upload",
+      "comparabilityExpectation": "strict",
+      "requiredStatus": "ok",
+      "claimScope": "l1_strict_candidate",
+      "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+      "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
+    },
+    {
+      "sourceWorkloadId": "upload_write_buffer_256mb",
+      "sourceWorkloadName": "buffer-upload 256MB",
+      "domain": "upload",
+      "projectionClass": "high",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "write_buffer_upload",
+      "comparabilityExpectation": "strict",
+      "requiredStatus": "ok",
+      "claimScope": "l1_strict_candidate",
+      "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+      "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
+    },
+    {
+      "sourceWorkloadId": "upload_write_buffer_1gb",
+      "sourceWorkloadName": "buffer-upload 1GB",
+      "domain": "upload",
+      "projectionClass": "high",
+      "layerTarget": "l1_browser_api",
+      "scenarioTemplate": "write_buffer_upload",
+      "comparabilityExpectation": "strict",
+      "requiredStatus": "ok",
+      "claimScope": "l1_strict_candidate",
+      "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+      "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization."
+    },
+    {
+      "sourceWorkloadId": "upload_write_buffer_4gb",
+      "sourceWorkloadName": "buffer-upload 4GB",
       "domain": "upload",
       "projectionClass": "high",
       "layerTarget": "l1_browser_api",

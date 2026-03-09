@@ -11,6 +11,14 @@ This plan defines a detailed, contract-first rollout for:
 
 This is a planning artifact only. No production behavior is changed by this file.
 
+Current milestone status is tracked separately in:
+
+1. `nursery/fawn-browser/bench/workflows/browser-milestones.json`
+2. validated by `nursery/fawn-browser/scripts/check-browser-milestones.py`
+
+This file remains the acceptance and rollout contract; the manifest records live
+state and local evidence.
+
 ## Guiding constraints
 
 1. Keep this layer isolated in `fawn/nursery/fawn-browser/`.

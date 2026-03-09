@@ -339,6 +339,82 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&import_fence_check.step);
     test_step.dependOn(&run_tests.step);
 
+    const core_test_step = b.step("test-core", "Run core-lane Zig unit tests");
+    const core_test_exec = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test_suite_core.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    core_test_exec.linkLibC();
+    if (target.result.os.tag == .windows) {
+        core_test_exec.linkSystemLibrary("d3d12");
+        core_test_exec.linkSystemLibrary("dxgi");
+        core_test_exec.linkSystemLibrary("dxguid");
+        core_test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
+    } else {
+        core_test_exec.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            core_test_exec.linkSystemLibrary("vulkan");
+        }
+        if (target.result.os.tag == .macos) {
+            core_test_exec.linkFramework("Metal");
+            core_test_exec.linkFramework("Foundation");
+            core_test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+        }
+    }
+    const run_core_tests = b.addRunArtifact(core_test_exec);
+    core_test_step.dependOn(&import_fence_check.step);
+    core_test_step.dependOn(&run_core_tests.step);
+
+    const full_test_step = b.step("test-full", "Run full-lane Zig unit tests");
+    const full_test_exec = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test_suite_full.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    full_test_exec.linkLibC();
+    if (target.result.os.tag == .windows) {
+        full_test_exec.linkSystemLibrary("d3d12");
+        full_test_exec.linkSystemLibrary("dxgi");
+        full_test_exec.linkSystemLibrary("dxguid");
+        full_test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
+    } else {
+        full_test_exec.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            full_test_exec.linkSystemLibrary("vulkan");
+        }
+        if (target.result.os.tag == .macos) {
+            full_test_exec.linkFramework("Metal");
+            full_test_exec.linkFramework("Foundation");
+            full_test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+        }
+    }
+    const run_full_tests = b.addRunArtifact(full_test_exec);
+    full_test_step.dependOn(&import_fence_check.step);
+    full_test_step.dependOn(&run_full_tests.step);
+
     const d3d12_test_step = b.step("test-d3d12", "Run D3D12-focused Zig tests (no Metal test suite)");
     const d3d12_test_exec = b.addTest(.{
         .root_module = b.createModule(.{

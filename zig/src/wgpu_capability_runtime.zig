@@ -1,5 +1,5 @@
-const loader = @import("wgpu_loader.zig");
-const types = @import("wgpu_types.zig");
+const loader = @import("core/abi/wgpu_loader.zig");
+const types = @import("core/abi/wgpu_types.zig");
 const p1_capability_procs_mod = @import("wgpu_p1_capability_procs.zig");
 const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 

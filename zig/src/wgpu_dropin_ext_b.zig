@@ -1,11 +1,11 @@
-const types = @import("wgpu_types.zig");
+const types = @import("core/abi/wgpu_types.zig");
 const p1cap = @import("wgpu_p1_capability_procs.zig");
 const p0 = @import("wgpu_p0_procs.zig");
 const p1res = @import("wgpu_p1_resource_table_procs.zig");
 const p2life = @import("wgpu_p2_lifecycle_procs.zig");
-const surface = @import("wgpu_surface_procs.zig");
+const surface = @import("full/surface/wgpu_surface_procs.zig");
 const texture = @import("wgpu_texture_procs.zig");
-const render = @import("wgpu_render_api.zig");
+const render = @import("full/render/wgpu_render_api.zig");
 const async_procs = @import("wgpu_async_procs.zig");
 
 extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;

@@ -1,19 +1,25 @@
 # Compatibility Scope: what we actually need
 
-This note narrows optional parity work to concrete integration value.
+This note narrows compatibility work to concrete headless integration value for
+the current package surface.
 
 ## Required now
 
-1. Stable command/trace orchestration for benchmark and CI pipelines.
-2. Reliable wrappers for:
+1. Stable headless Node/Bun provider behavior for real Doe-native execution.
+2. Stable command/trace orchestration for benchmark and CI pipelines.
+3. Reliable wrappers for:
 - Doe native bench runs
 - Dawn-vs-Doe compare runs
-3. Deterministic artifact paths and non-zero exit-code propagation.
-4. Minimal in-process provider surface for Node consumers:
+4. Deterministic artifact paths and non-zero exit-code propagation.
+5. Minimal convenience entrypoints for Node consumers:
 - `create(args?)`
 - `globals`
 - `requestAdapter`/`requestDevice` convenience helpers
 - `setupGlobals` for `navigator.gpu` + enum bootstrap
+
+The point of this package is headless GPU work in Node/Bun: compute, offscreen
+execution, benchmarking, and CI. Compatibility work should serve those
+surfaces first.
 
 ## Optional later (only when demanded by integrations)
 
@@ -29,7 +35,9 @@ This note narrows optional parity work to concrete integration value.
 
 Decision rule:
 
-- Add parity features only after a concrete integration requirement is blocked by a missing capability and cannot be addressed by the existing bridge/CLI contract.
+- Add parity features only after a concrete headless integration is blocked by
+  a missing capability and cannot be addressed by the existing package,
+  bridge, or CLI contract.
 
 Layering note:
 
