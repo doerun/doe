@@ -25,6 +25,7 @@
     "prebuilds/",
     "binding.gyp",
     "README.md",
+    "CHANGELOG.md",
     "API_CONTRACT.md",
     "COMPAT_SCOPE.md",
     "SUPPORT_CONTRACTS.md",
