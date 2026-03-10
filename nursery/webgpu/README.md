@@ -174,7 +174,7 @@ Package-surface benchmark evidence lives under `bench/out/cube/latest/`. Read
 those rows as package-surface positioning data, not as substitutes for strict
 backend-native claim lanes.
 
-## Quickstart
+## Quick start
 
 ```bash
 npm install @simulatte/webgpu
