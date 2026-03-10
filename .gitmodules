@@ -1,0 +1,5 @@
+[submodule "bench/vendor/dawn"]
+	path = bench/vendor/dawn
+	url = https://dawn.googlesource.com/dawn
+	branch = main
+	ignore = dirty
