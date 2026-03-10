@@ -147,7 +147,7 @@
         "compute_dispatch_simple": "dispatch_only"
       },
       "notes": [
-        "Bun has API parity with Node via direct FFI. Compare lane: bench/bun/compare.js against the bun-webgpu package.",
+        "Bun has API parity with Node through the package-default Bun runtime entry. Compare lane: bench/bun/compare.js against the bun-webgpu package.",
         "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
       ]
     }

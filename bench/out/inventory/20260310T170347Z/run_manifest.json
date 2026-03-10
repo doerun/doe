@@ -1,0 +1,20 @@
+{
+  "claimGateRan": false,
+  "config": {
+    "explicitReports": [],
+    "reportGlobs": [
+      "bench/out/**/dawn-vs-doe*.json"
+    ]
+  },
+  "createdAtUtc": "2026-03-10T17:03:47.775933Z",
+  "dashboardPath": "bench/out/inventory/20260310T170347Z/test-dashboard.html",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "inventoryPath": "bench/out/inventory/20260310T170347Z/test-inventory.json",
+  "outputTimestamp": "20260310T170347Z",
+  "runFolder": "bench/out/inventory/20260310T170347Z",
+  "runType": "inventory_dashboard",
+  "schemaVersion": 1,
+  "status": "passed",
+  "updatedAtUtc": "2026-03-10T17:03:47.775933Z"
+}

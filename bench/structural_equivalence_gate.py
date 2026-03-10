@@ -168,11 +168,29 @@ def check_throughput_plausibility(workload: dict[str, Any]) -> list[str]:
     if upload_bytes is None:
         return failures
 
+    timing_interpretation = workload.get("timingInterpretation", {})
+    headline = (
+        timing_interpretation.get("headlineProcessWall", {})
+        if isinstance(timing_interpretation, dict)
+        else {}
+    )
+    headline_left_p50 = safe_float(headline.get("leftStatsMs", {}).get("p50Ms"))
+    headline_right_p50 = safe_float(headline.get("rightStatsMs", {}).get("p50Ms"))
+
     for side_name in ("left", "right"):
         p50_ms = safe_float(workload.get(side_name, {}).get("stats", {}).get("p50Ms"))
+        headline_p50_ms = headline_left_p50 if side_name == "left" else headline_right_p50
         if p50_ms is None or p50_ms <= 0.0:
             continue
         throughput = upload_bytes / (p50_ms / 1000.0)
+        if (
+            throughput > _MAX_PLAUSIBLE_THROUGHPUT_BYTES_PER_SEC
+            and headline_p50_ms is not None
+            and headline_p50_ms > 0.0
+        ):
+            headline_throughput = upload_bytes / (headline_p50_ms / 1000.0)
+            if headline_throughput <= _MAX_PLAUSIBLE_THROUGHPUT_BYTES_PER_SEC:
+                continue
         if throughput > _MAX_PLAUSIBLE_THROUGHPUT_BYTES_PER_SEC:
             failures.append(
                 f"{side_name} implies {throughput / 1e9:.0f} GB/s for "

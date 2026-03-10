@@ -1,0 +1,501 @@
+{
+  "generatedAtUtc": "2026-03-10T17:03:47.774248Z",
+  "inventoryPath": "bench/out/inventory/20260310T170347Z/test-inventory.json",
+  "matrices": [
+    {
+      "claimStatusCounts": {
+        "diagnostic": 5
+      },
+      "comparisonStatusCounts": {
+        "comparable": 5
+      },
+      "lane": "release",
+      "latest": {
+        "claimStatus": "diagnostic",
+        "comparisonStatus": "comparable",
+        "generatedAtUtc": "2026-03-10T15:39:03.773690Z",
+        "lane": "release",
+        "leftName": "doe",
+        "leftProfileSampleCount": 105,
+        "leftProfiles": [
+          "amd|vulkan|gfx11|24.0.0"
+        ],
+        "matrixId": "dawn-vs-doe.amd.vulkan.release",
+        "nonClaimableCount": 1,
+        "nonComparableCount": 0,
+        "outPath": "bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json",
+        "overallP50DeltaPercent": 306.70397646360954,
+        "rightName": "dawn_delegate",
+        "rightProfileSampleCount": 105,
+        "rightProfiles": [
+          "amd|vulkan|gfx11|24.0.0"
+        ],
+        "sourcePath": "bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json",
+        "workloadCount": 7
+      },
+      "matrixId": "dawn-vs-doe.amd.vulkan.release",
+      "reportCount": 5
+    },
+    {
+      "claimStatusCounts": {
+        "claimable": 1
+      },
+      "comparisonStatusCounts": {
+        "comparable": 1
+      },
+      "lane": "extended-comparable",
+      "latest": {
+        "claimStatus": "claimable",
+        "comparisonStatus": "comparable",
+        "generatedAtUtc": "2026-03-10T16:56:49.643917Z",
+        "lane": "extended-comparable",
+        "leftName": "doe",
+        "leftProfileSampleCount": 589,
+        "leftProfiles": [
+          "apple|metal|m3|1.0.0"
+        ],
+        "matrixId": "dawn-vs-doe.local.metal.extended.comparable",
+        "nonClaimableCount": 0,
+        "nonComparableCount": 0,
+        "outPath": "bench/out/apple-metal/extended-comparable/20260310T165649Z/dawn-vs-doe.local.metal.extended.comparable.json",
+        "overallP50DeltaPercent": 205.88235294117646,
+        "rightName": "dawn_delegate",
+        "rightProfileSampleCount": 589,
+        "rightProfiles": [
+          "apple|metal|m3|1.0.0"
+        ],
+        "sourcePath": "bench/out/apple-metal/extended-comparable/20260310T165649Z/dawn-vs-doe.local.metal.extended.comparable.json",
+        "workloadCount": 31
+      },
+      "matrixId": "dawn-vs-doe.local.metal.extended.comparable",
+      "reportCount": 1
+    }
+  ],
+  "outputTimestamp": "20260310T170347Z",
+  "profiles": [
+    {
+      "api": "vulkan",
+      "deviceFamily": "gfx11",
+      "driver": "24.0.0",
+      "firstSeenUtc": "2026-03-10T15:11:24.658879Z",
+      "lastSeenUtc": "2026-03-10T15:39:03.773690Z",
+      "matrixCount": 1,
+      "matrixIds": [
+        "dawn-vs-doe.amd.vulkan.release"
+      ],
+      "profileId": "amd|vulkan|gfx11|24.0.0",
+      "reportCount": 5,
+      "reportPaths": [
+        "bench/out/amd-vulkan/20260310T151124Z/dawn-vs-doe.amd.vulkan.release.json",
+        "bench/out/amd-vulkan/20260310T151411Z/dawn-vs-doe.amd.vulkan.release.json",
+        "bench/out/amd-vulkan/20260310T151714Z/dawn-vs-doe.amd.vulkan.release.json",
+        "bench/out/amd-vulkan/20260310T152435Z/dawn-vs-doe.amd.vulkan.release.json",
+        "bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json"
+      ],
+      "runtimes": [
+        "dawn_delegate",
+        "doe"
+      ],
+      "sampleCount": 1050,
+      "sides": [
+        "left",
+        "right"
+      ],
+      "vendor": "amd"
+    },
+    {
+      "api": "metal",
+      "deviceFamily": "m3",
+      "driver": "1.0.0",
+      "firstSeenUtc": "2026-03-10T16:56:49.643917Z",
+      "lastSeenUtc": "2026-03-10T16:56:49.643917Z",
+      "matrixCount": 1,
+      "matrixIds": [
+        "dawn-vs-doe.local.metal.extended.comparable"
+      ],
+      "profileId": "apple|metal|m3|1.0.0",
+      "reportCount": 1,
+      "reportPaths": [
+        "bench/out/apple-metal/extended-comparable/20260310T165649Z/dawn-vs-doe.local.metal.extended.comparable.json"
+      ],
+      "runtimes": [
+        "dawn_delegate",
+        "doe"
+      ],
+      "sampleCount": 1178,
+      "sides": [
+        "left",
+        "right"
+      ],
+      "vendor": "apple"
+    }
+  ],
+  "reports": [
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-03-10T16:56:49.643917Z",
+      "lane": "extended-comparable",
+      "leftName": "doe",
+      "leftProfileSampleCount": 589,
+      "leftProfiles": [
+        "apple|metal|m3|1.0.0"
+      ],
+      "matrixId": "dawn-vs-doe.local.metal.extended.comparable",
+      "nonClaimableCount": 0,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/apple-metal/extended-comparable/20260310T165649Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "overallP50DeltaPercent": 205.88235294117646,
+      "rightName": "dawn_delegate",
+      "rightProfileSampleCount": 589,
+      "rightProfiles": [
+        "apple|metal|m3|1.0.0"
+      ],
+      "sourcePath": "bench/out/apple-metal/extended-comparable/20260310T165649Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "workloadCount": 31
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-03-10T15:39:03.773690Z",
+      "lane": "release",
+      "leftName": "doe",
+      "leftProfileSampleCount": 105,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "matrixId": "dawn-vs-doe.amd.vulkan.release",
+      "nonClaimableCount": 1,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json",
+      "overallP50DeltaPercent": 306.70397646360954,
+      "rightName": "dawn_delegate",
+      "rightProfileSampleCount": 105,
+      "rightProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "sourcePath": "bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json",
+      "workloadCount": 7
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-03-10T15:24:35.419616Z",
+      "lane": "release",
+      "leftName": "doe",
+      "leftProfileSampleCount": 105,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "matrixId": "dawn-vs-doe.amd.vulkan.release",
+      "nonClaimableCount": 1,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/20260310T152435Z/dawn-vs-doe.amd.vulkan.release.json",
+      "overallP50DeltaPercent": 297.3232011848297,
+      "rightName": "dawn_delegate",
+      "rightProfileSampleCount": 105,
+      "rightProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "sourcePath": "bench/out/amd-vulkan/20260310T152435Z/dawn-vs-doe.amd.vulkan.release.json",
+      "workloadCount": 7
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-03-10T15:17:15.069635Z",
+      "lane": "release",
+      "leftName": "doe",
+      "leftProfileSampleCount": 105,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "matrixId": "dawn-vs-doe.amd.vulkan.release",
+      "nonClaimableCount": 2,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/20260310T151714Z/dawn-vs-doe.amd.vulkan.release.json",
+      "overallP50DeltaPercent": 322.96296808789646,
+      "rightName": "dawn_delegate",
+      "rightProfileSampleCount": 105,
+      "rightProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "sourcePath": "bench/out/amd-vulkan/20260310T151714Z/dawn-vs-doe.amd.vulkan.release.json",
+      "workloadCount": 7
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-03-10T15:14:12.002137Z",
+      "lane": "release",
+      "leftName": "doe",
+      "leftProfileSampleCount": 105,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "matrixId": "dawn-vs-doe.amd.vulkan.release",
+      "nonClaimableCount": 2,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/20260310T151411Z/dawn-vs-doe.amd.vulkan.release.json",
+      "overallP50DeltaPercent": 310.82635401672405,
+      "rightName": "dawn_delegate",
+      "rightProfileSampleCount": 105,
+      "rightProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "sourcePath": "bench/out/amd-vulkan/20260310T151411Z/dawn-vs-doe.amd.vulkan.release.json",
+      "workloadCount": 7
+    },
+    {
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-03-10T15:11:24.658879Z",
+      "lane": "release",
+      "leftName": "doe",
+      "leftProfileSampleCount": 105,
+      "leftProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "matrixId": "dawn-vs-doe.amd.vulkan.release",
+      "nonClaimableCount": 2,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/20260310T151124Z/dawn-vs-doe.amd.vulkan.release.json",
+      "overallP50DeltaPercent": 307.78914633293465,
+      "rightName": "dawn_delegate",
+      "rightProfileSampleCount": 105,
+      "rightProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "sourcePath": "bench/out/amd-vulkan/20260310T151124Z/dawn-vs-doe.amd.vulkan.release.json",
+      "workloadCount": 7
+    }
+  ],
+  "schemaVersion": 1,
+  "skippedFiles": [
+    {
+      "path": "bench/out/amd-vulkan/20260302T175045Z/dawn-vs-doe.amd.vulkan.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260306T205637Z/dawn-vs-doe.amd.vulkan.extended.native-supported.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0d88d95e29c374b9fbd93660f96a360c32991352bccd31b4e392e7958727c571 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260306T215158Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260306T230724Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260306T231500Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260306T233000Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260306T234500Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260306T235500Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260307T024910Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=35f3237a8b3460b50b88301325b9120b66f18652ca77facb22a3e806ff18368e expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260307T031517Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=1367c3b2fb650f464885e5675cf0dd16ca55010c9c562d6f77ba26847869f668 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260310T142527Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=601d07ad8bcd229f18ea4d9d521dfc2b84b27ece9de3c0313b09207de38c5fdd expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260310T142648Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=601d07ad8bcd229f18ea4d9d521dfc2b84b27ece9de3c0313b09207de38c5fdd expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260310T152002Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=625fbe22b548a4cae5f85a3df4cc2a9a2e5f25f278bdfff37f5e8afc13715b34 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/20260310T152116Z/dawn-vs-doe.amd.vulkan.release.json",
+      "reason": "non-conformant compare report: workload contract path does not exist: /tmp/repeat1000_nodeferred.workloads.json"
+    },
+    {
+      "path": "bench/out/amd-vulkan/extended-comparable/20260302T182311Z/dawn-vs-doe.amd.vulkan.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=54cc8a5c91bec73e1c42b3799c78367c1511988417be1c3ad58f348325233425 expected=e555b01264c084d264cfc4cf6578dd7191031667c9c44fe0bbf65a67816b41fb)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/extended-comparable/20260302T211209Z/dawn-vs-doe.amd.vulkan.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=8b724c325d9db45aad4d2d908227019282f53bc93d4307c17204465d288f10c0 expected=e555b01264c084d264cfc4cf6578dd7191031667c9c44fe0bbf65a67816b41fb)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/extended-comparable/20260306T212543Z/dawn-vs-doe.amd.vulkan.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=26718d0fded5d7870c665071dab8de22b805bab03c4a04d394ab867717ee419e expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/extended-comparable/20260306T215053Z/dawn-vs-doe.amd.vulkan.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=aef9869061453bfe665d1a8f0d5a72a6906060bf7d0ac03fc3495b0ad3a50902 expected=dcc9b2ac157df5329816db84331e121ae7b7f26ca0d9da255898e324ba9f8fbc)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/singles/20260302T192559Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_1kb.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/singles/20260302T192649Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_64kb.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/singles/20260302T192738Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_1mb.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/singles/20260302T192827Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_4mb.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/singles/20260302T192916Z/dawn-vs-doe.amd.vulkan.single.par_buffer_upload_16mb.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/singles/20260302T193003Z/dawn-vs-doe.amd.vulkan.single.par_workgroup_atomic_1024.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/amd-vulkan/singles/20260302T193052Z/dawn-vs-doe.amd.vulkan.single.par_workgroup_non_atomic_1024.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=fa3831ad632de589dd3387a7164d36728b454c5f00d28c7e07ee6238d0f3fd93)"
+    },
+    {
+      "path": "bench/out/apple-metal/20260306T143316Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260307T004142Z/dawn-vs-doe.local.metal.extended.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260307T005153Z/dawn-vs-doe.local.metal.extended.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T180933Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T181502Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T181944Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T182116Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T182322Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T182601Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T182730Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T182813Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T183144Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T183836Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=f539e272a90725c106536a3183fdb10c14d4d8bf2e0eedf1d2038ed5f0a0e1c4 expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T184206Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=f539e272a90725c106536a3183fdb10c14d4d8bf2e0eedf1d2038ed5f0a0e1c4 expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T184251Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=f539e272a90725c106536a3183fdb10c14d4d8bf2e0eedf1d2038ed5f0a0e1c4 expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T191534Z/dawn-vs-doe.local.metal.extended.comparable.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=f187201a363a114ecb7b2f998d921da1a5ea9f9804f02df13adab8a045108bfd expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T210659Z/dawn-vs-doe.local.metal.extended.comparable.rerun.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=d126b11004dbcae6ff28a1152c5c9fb4cff3907997c320c09231882856af4008 expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260309T235315Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v2.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=7f8d1632f4510933c3d4fc7f6f7c42372b60ab5b015c63cb9368a691300e3adc expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260310T001320Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v3.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=4a1a2b14efc1fec78419db9a6c13433a3c05739a6783dfc307ec6113ce272400 expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260310T010229Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v4.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=c8929ddafa57b6f7daef1892011b3fccc93e0871387d010f39bfbeb7a1596792 expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260310T015327Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v5.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=9dbbe0d5aa6741b11bda25cdd3395cb5e9359bb71f1bf6bb7fd4c48679ddda7e expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    },
+    {
+      "path": "bench/out/apple-metal/extended-comparable/20260310T121546Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v7.json",
+      "reason": "non-conformant compare report: workloadContract.sha256 mismatch (report=d1aeccc6ae9cafd36683bc0c847564cafc1e912a67d3515bea0173394616f49f expected=a2aea67d72cf995f3d3ded01769a1c00552cb67ac9a6f46e280d3a90cd2583ce)"
+    }
+  ],
+  "source": {
+    "explicitReports": [],
+    "reportGlobs": [
+      "bench/out/**/dawn-vs-doe*.json"
+    ]
+  },
+  "summary": {
+    "claimStatusCounts": {
+      "claimable": 1,
+      "diagnostic": 5
+    },
+    "claimableComparableReportCount": 1,
+    "claimableReportCount": 1,
+    "comparableReportCount": 6,
+    "comparisonStatusCounts": {
+      "comparable": 6
+    },
+    "includedReports": 6,
+    "latestClaimableMatrixCount": 1,
+    "latestComparableMatrixCount": 2,
+    "matrixCount": 2,
+    "skippedFiles": 50,
+    "totalMatchedFiles": 56,
+    "uniqueProfileCount": 2
+  }
+}

@@ -1,2 +1,2 @@
-export * from "./bun-ffi.js";
-export { default } from "./bun-ffi.js";
+export * from "./index.js";
+export { default } from "./index.js";

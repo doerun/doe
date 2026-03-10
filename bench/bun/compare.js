@@ -152,7 +152,7 @@ function fmt(ms) {
 async function main() {
   console.error('=== Bun WebGPU Benchmark: Doe vs bun-webgpu ===\n');
 
-  console.error('Running Doe (FFI)...');
+  console.error('Running Doe (package-default Bun runtime)...');
   let doeResults;
   try {
     doeResults = await runProvider('doe', []);

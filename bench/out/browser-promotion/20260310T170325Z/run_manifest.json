@@ -1,0 +1,13 @@
+{
+  "claimGateRan": false,
+  "createdAtUtc": "2026-03-10T17:03:35.377512Z",
+  "fullRun": true,
+  "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260310T170325Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+  "outputTimestamp": "20260310T170325Z",
+  "runFolder": "/Users/xyz/deco/fawn/bench/out/browser-promotion/20260310T170325Z",
+  "runType": "browser-gate",
+  "schemaVersion": 1,
+  "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260310T170325Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+  "status": "pass",
+  "updatedAtUtc": "2026-03-10T17:03:35.377512Z"
+}

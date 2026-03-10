@@ -191,10 +191,11 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`).
-  - prebuild infrastructure for self-contained installs:
-    - `scripts/install.js`: uses prebuilt binaries when present, falls back to node-gyp
-    - `scripts/prebuild.js`: assembles `prebuilds/<platform>-<arch>/` with `doe_napi.node` + `libwebgpu_doe` + Dawn sidecar + integrity manifest
-    - `scripts/smoke-test.js`: clean-machine verification (13 checks: import, providerInfo, globals, create, adapter, device, buffer round-trip)
+    - prebuild infrastructure for self-contained installs:
+      - `scripts/install.js`: uses prebuilt binaries when present, falls back to node-gyp
+      - `scripts/prebuild.js`: assembles `prebuilds/<platform>-<arch>/` with `doe_napi.node` + `libwebgpu_doe` + Dawn sidecar + integrity manifest
+      - tracked `prebuilds/<platform>-<arch>/` directories are the package source-of-truth; generated `.tgz` archives are not
+      - `scripts/smoke-test.js`: clean-machine verification (13 checks: import, providerInfo, globals, create, adapter, device, buffer round-trip)
     - supported prebuild targets: macOS arm64 (Metal), Linux x64 (Vulkan), Windows x64 (D3D12)
     - N-API version pinned to 8 in `binding.gyp` for ABI stability across Node versions
     - only host GPU drivers (Metal/Vulkan/D3D12) are external prerequisites
@@ -237,7 +238,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - latest 20-sample Node package lane artifact: `bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json`
     - comparable/claimable summary: `8` comparable, `6` claimable
     - compute e2e rows: `compute_e2e_4096` `+46.0%` claimable, `compute_e2e_65536` `+38.0%` claimable, `compute_e2e_256` still diagnostic on tails (`p95` slower)
-  - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (61/61 contract tests passing). All Node workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package. Latest validated run (`20260306T215526Z`) shows 7/11 claimable; compute e2e rows are comparable + claimable after readback validation was added to the timed path. `buffer_map_write_unmap` remains slower (~19µs `bufferMapSync` polling overhead). Cube maturity remains prototype pending stable multi-run cell coverage.
+  - package-default Bun entry (`nursery/webgpu/src/bun.js`) now routes through the addon-backed runtime for correctness parity with Node. The experimental Bun FFI path remains in `nursery/webgpu/src/bun-ffi.js` for future optimization work. Benchmark compare lane at `bench/bun/compare.js` remains valid for package-surface evidence, but any FFI-specific claims should stay scoped to the experimental path until revalidated.
   - benchmark cube policy now carries explicit package-surface workload-ID overrides (`config/benchmark-cube-policy.json`) so directional `compute_dispatch_simple` rows land in a `dispatch_only` cell instead of contaminating the Node/Bun `compute_e2e` cells.
     - latest cube effect on Linux x64 package surfaces:
       - Bun `compute_e2e`: `claimable` (3 comparable claimable e2e rows)

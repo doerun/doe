@@ -139,8 +139,10 @@ Increase `SAMPLES_PER_THREAD` for more precision.
 ## What this package is
 
 `@simulatte/webgpu` is the canonical package surface for Doe. Node uses an
-N-API addon and Bun uses direct FFI to load `libwebgpu_doe`. Current package
-builds still ship a Dawn sidecar where proc resolution requires it.
+N-API addon and Bun currently routes through the same addon-backed runtime
+entry to load `libwebgpu_doe`. Current package builds still ship a Dawn sidecar
+where proc resolution requires it. The experimental raw Bun FFI path remains in
+`src/bun-ffi.js`, but it is not the default package entry.
 
 Doe is a Zig-first WebGPU runtime with explicit allocator control, startup-time
 profile and quirk binding, a native WGSL pipeline (`lexer -> parser ->
@@ -157,9 +159,9 @@ profile instead of relying on hidden per-command fallback logic.
 ## Current scope
 
 - Node is the primary supported package surface (N-API bridge).
-- Bun has API parity with Node via direct FFI to `libwebgpu_doe` (61/61
-  contract tests passing). Bun benchmark cube maturity remains prototype
-  until Bun cells are populated by comparable benchmark artifacts.
+- Bun has API parity with Node through the package's addon-backed runtime entry
+  (61/61 contract tests passing). Bun benchmark cube maturity remains
+  prototype until Bun cells are populated by comparable benchmark artifacts.
 - Package-surface comparisons should be read through the benchmark cube outputs
   under `bench/out/cube/`, not as a replacement for strict backend reports.
 
@@ -256,6 +258,11 @@ npm run prebuild             # assembles prebuilds/<platform>-<arch>/
 Supported prebuild targets: macOS arm64 (Metal), Linux x64 (Vulkan),
 Windows x64 (D3D12). Host GPU drivers are the only external prerequisite.
 Install uses prebuilds when available, falls back to node-gyp from source.
+Tracked `prebuilds/<platform>-<arch>/` directories are the source of truth for
+reproducible package publishes. If a prebuild exists only on one local machine
+and is not committed, `npm pack` output will differ by environment.
+Generated `.tgz` package archives are release outputs and should not be
+committed to the repo.
 Prebuild `metadata.json` now records `doeBuild.leanVerifiedBuild` and
 `proofArtifactSha256`, and `providerInfo()` surfaces the same values when
 metadata is present.
@@ -278,10 +285,12 @@ not sufficient, for a release publish.
 - Linux Node Doe-native path is now wired end-to-end (Linux guard removed).
   No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
   are present.
-- Bun has API parity with Node (61/61 contract tests). Bun benchmark lane
-  is at `bench/bun/compare.js` and compares Doe FFI against the `bun-webgpu`
-  package. Latest validated local run observed 7/11 claimable rows, but this
-  remains prototype-quality package-surface evidence rather than a
+- Bun has API parity with Node (61/61 contract tests). The package-default Bun
+  entry currently routes through the addon-backed runtime, while
+  `src/bun-ffi.js` remains experimental. Bun benchmark lane is at
+  `bench/bun/compare.js`; benchmark interpretations should note which runtime
+  entry was exercised. Latest validated local run observed 7/11 claimable rows,
+  but this remains prototype-quality package-surface evidence rather than a
   publication-grade performance claim. Benchmark cube policy now isolates
   directional `compute_dispatch_simple` into a dispatch-only cell so the Bun
   compute-e2e cube cell reflects the claimable end-to-end rows.

@@ -166,3 +166,21 @@ test {
     _ = emit_spirv;
     _ = emit_dxil;
 }
+
+test "translate simple compute shader with builtin vector member access to MSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = data[id.x] * 2.0;
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "main_kernel") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "thread_position_in_grid") != null);
+}

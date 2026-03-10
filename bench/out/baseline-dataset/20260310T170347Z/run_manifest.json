@@ -1,0 +1,20 @@
+{
+  "claimGateRan": false,
+  "config": {
+    "explicitReports": [],
+    "reportGlobs": [
+      "bench/out/**/dawn-vs-doe*.json"
+    ]
+  },
+  "createdAtUtc": "2026-03-10T17:03:47.771439Z",
+  "datasetPath": "bench/out/baseline-dataset/20260310T170347Z/baseline-dataset.json",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "outputTimestamp": "20260310T170347Z",
+  "runFolder": "bench/out/baseline-dataset/20260310T170347Z",
+  "runType": "baseline_dataset",
+  "schemaVersion": 1,
+  "status": "passed",
+  "summaryPath": "bench/out/baseline-dataset/20260310T170347Z/baseline-dataset.md",
+  "updatedAtUtc": "2026-03-10T17:03:47.771439Z"
+}

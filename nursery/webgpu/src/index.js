@@ -307,15 +307,28 @@ class DoeGPURenderPipeline {
 }
 
 class DoeGPUShaderModule {
-  constructor(native) { this._native = native; }
+  constructor(native, code) {
+    this._native = native;
+    this._code = code;
+  }
 }
 
 class DoeGPUComputePipeline {
-  constructor(native) { this._native = native; }
+  constructor(native, device, explicitLayout, autoLayoutEntriesByGroup) {
+    this._native = native;
+    this._device = device;
+    this._explicitLayout = explicitLayout;
+    this._autoLayoutEntriesByGroup = autoLayoutEntriesByGroup;
+    this._cachedLayouts = new Map();
+  }
 
   getBindGroupLayout(index) {
-    const layout = addon.computePipelineGetBindGroupLayout(this._native, index);
-    return new DoeGPUBindGroupLayout(layout);
+    if (this._explicitLayout) return this._explicitLayout;
+    if (this._cachedLayouts.has(index)) return this._cachedLayouts.get(index);
+    const entries = this._autoLayoutEntriesByGroup?.get(index) ?? [];
+    const layout = this._device.createBindGroupLayout({ entries });
+    this._cachedLayouts.set(index, layout);
+    return layout;
   }
 }
 
@@ -368,6 +381,34 @@ const DOE_LIMITS = Object.freeze({
 
 const DOE_FEATURES = Object.freeze(new Set(['shader-f16']));
 
+function inferAutoBindGroupLayouts(code, visibility = globals.GPUShaderStage.COMPUTE) {
+  const groups = new Map();
+  const bindingPattern = /@group\((\d+)\)\s*@binding\((\d+)\)\s*var(?:<([^>]+)>)?\s+\w+\s*:\s*([^;]+);/g;
+  for (const match of code.matchAll(bindingPattern)) {
+    const group = Number(match[1]);
+    const binding = Number(match[2]);
+    const addressSpace = (match[3] ?? "").trim();
+    const typeExpr = (match[4] ?? "").trim();
+    let entry = null;
+    if (addressSpace.startsWith("uniform")) {
+      entry = { binding, visibility, buffer: { type: "uniform" } };
+    } else if (addressSpace.startsWith("storage")) {
+      const readOnly = !addressSpace.includes("read_write");
+      entry = { binding, visibility, buffer: { type: readOnly ? "read-only-storage" : "storage" } };
+    } else if (typeExpr.startsWith("sampler")) {
+      entry = { binding, visibility, sampler: {} };
+    }
+    if (!entry) continue;
+    const entries = groups.get(group) ?? [];
+    entries.push(entry);
+    groups.set(group, entries);
+  }
+  for (const entries of groups.values()) {
+    entries.sort((left, right) => left.binding - right.binding);
+  }
+  return groups;
+}
+
 class DoeGPUDevice {
   constructor(native, instance) {
     this._native = native;
@@ -387,17 +428,18 @@ class DoeGPUDevice {
     const code = descriptor.code || descriptor.source;
     if (!code) throw new Error('createShaderModule: descriptor.code is required');
     const mod = addon.createShaderModule(this._native, code);
-    return new DoeGPUShaderModule(mod);
+    return new DoeGPUShaderModule(mod, code);
   }
 
   createComputePipeline(descriptor) {
     const shader = descriptor.compute?.module;
     const entryPoint = descriptor.compute?.entryPoint || 'main';
     const layout = descriptor.layout === 'auto' ? null : descriptor.layout;
+    const autoLayoutEntriesByGroup = layout ? null : inferAutoBindGroupLayouts(shader?._code || '');
     const native = addon.createComputePipeline(
       this._native, shader._native, entryPoint,
       layout?._native ?? null);
-    return new DoeGPUComputePipeline(native);
+    return new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
   }
 
   async createComputePipelineAsync(descriptor) {

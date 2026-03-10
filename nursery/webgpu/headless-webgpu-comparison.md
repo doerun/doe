@@ -7,7 +7,7 @@ This document outlines qualitative differences and target use-cases for headless
 | **Underlying Engine** | `libwebgpu_doe` (Zig + Lean pipeline) | Google Dawn (C++) | Google Dawn (C++) |
 | **Primary Focus** | Deterministic Compute, ML/AI, Verifiability | Browser Parity, Graphics | Browser Parity, Graphics |
 | **Binary Footprint** | Smaller targeted runtime expected | Varies by build/distribution | Varies by build/distribution |
-| **JS Binding Layer** | Node-API (N-API) / Bun FFI | Node-API (N-API) | Bun FFI (Fast Foreign Function) |
+| **JS Binding Layer** | Node-API (N-API); experimental Bun FFI implementation also exists | Node-API (N-API) | Bun FFI (Fast Foreign Function) |
 | **Security Model** | Explicit schema/gate discipline in Fawn pipeline | Runtime heuristics + Dawn validation | Runtime heuristics + Dawn validation |
 | **Resource Allocation** | Arena-backed, predictable memory | General WebGPU async allocations | General WebGPU async allocations |
 | **WebGPU Spec Compliance**| Compute-prioritized subset target | Broad Chromium-aligned coverage | Broad Chromium-aligned coverage |
@@ -17,7 +17,7 @@ This document outlines qualitative differences and target use-cases for headless
 ## Architectural Takeaways for Fawn
 
 1. Determinism and fail-fast contracts are the intended Doe value proposition for benchmarking workflows.
-2. Bun FFI can reduce wrapper overhead versus heavier bridge layers, but end-to-end results must be measured per workload.
+2. The package currently defaults Bun to the addon-backed runtime for correctness parity. The separate Bun FFI path may reduce wrapper overhead later, but end-to-end results must be measured per workload.
 3. Distribution size and startup claims must be backed by measured artifacts before release claims.
 
 ## Ecosystem reference: official/community competitors and stats
@@ -38,6 +38,6 @@ Notes:
 
 ## Scaffolding the Fawn NPM Package
 
-- Doe is exposed through a native C ABI and can be bridged from JS via Bun FFI now.
+- Doe is exposed through a native C ABI and also ships an experimental Bun FFI implementation, but the package-default Bun entry currently uses the addon-backed runtime for stability.
 - Node N-API support now exists in the canonical `@simulatte/webgpu` package.
 - Browser API parity is not claimed by this draft package; the current focus is headless benchmarking workflows.

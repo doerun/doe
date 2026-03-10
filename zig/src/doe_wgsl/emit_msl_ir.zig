@@ -96,7 +96,7 @@ const Emitter = struct {
         if (stage != null) try self.write("[[kernel]]\n");
         try self.emit_type(function.return_type);
         try self.write(" ");
-        try self.write(function.name);
+        try self.write(msl_function_name(function.name, stage));
         try self.write("(");
         var need_comma = false;
         if (stage != null) {
@@ -511,6 +511,11 @@ fn unary_op_text(op: ir.UnaryOp) []const u8 {
         .not => "!",
         .bit_not => "~",
     };
+}
+
+fn msl_function_name(name: []const u8, stage: ?ir.ShaderStage) []const u8 {
+    if (stage != null and std.mem.eql(u8, name, "main")) return "main_kernel";
+    return name;
 }
 
 fn binary_op_text(op: ir.BinaryOp) []const u8 {

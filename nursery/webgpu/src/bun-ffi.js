@@ -157,6 +157,7 @@ function openLibrary(path) {
         wgpuDeviceCreateComputePipeline: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuComputePipelineRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuComputePipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
+        doeNativeComputePipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
 
         // Bind group layout / bind group / pipeline layout
         wgpuDeviceCreateBindGroupLayout: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
@@ -804,7 +805,7 @@ class DoeGPUComputePipeline {
     constructor(native) { this._native = native; }
 
     getBindGroupLayout(index) {
-        const layout = wgpu.symbols.wgpuComputePipelineGetBindGroupLayout(this._native, index);
+        const layout = wgpu.symbols.doeNativeComputePipelineGetBindGroupLayout(this._native, index);
         return new DoeGPUBindGroupLayout(layout);
     }
 }

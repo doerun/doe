@@ -28,7 +28,7 @@ const WORKLOAD_FILTER = args.workload;
 async function loadProvider(name) {
   if (name === 'doe') {
     const doe = await import('../../nursery/webgpu/src/bun.js');
-    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu (bun-ffi)' };
+    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu (bun default)' };
   }
   if (name === 'bun-webgpu') {
     // Community Bun WebGPU package: installs navigator.gpu via setupGlobals().

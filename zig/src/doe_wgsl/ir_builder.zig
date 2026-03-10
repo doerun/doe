@@ -358,6 +358,16 @@ const FunctionBuilder = struct {
         while (true) {
             switch (self.semantic.types.get(ty)) {
                 .ref => |ref_ty| ty = ref_ty.elem,
+                .vector => {
+                    if (field_name.len != 1) return error.InvalidIr;
+                    return switch (field_name[0]) {
+                        'x', 'r' => 0,
+                        'y', 'g' => 1,
+                        'z', 'b' => 2,
+                        'w', 'a' => 3,
+                        else => error.InvalidIr,
+                    };
+                },
                 .struct_ => |struct_id| {
                     const struct_info = self.semantic.structs.items[struct_id];
                     for (struct_info.fields.items, 0..) |field, index| {

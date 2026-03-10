@@ -162,7 +162,12 @@ async function main() {
   const done = { type: 'run_end', timestamp: new Date().toISOString() };
   process.stdout.write(JSON.stringify(done) + '\n');
 
-  device.destroy();
+  // The Dawn-backed `webgpu` package on macOS can segfault during explicit
+  // device teardown after all benchmark output has already been emitted.
+  // Let process shutdown reclaim the device instead of crashing the lane.
+  if (PROVIDER !== 'dawn') {
+    device.destroy();
+  }
 }
 
 main().catch((err) => {

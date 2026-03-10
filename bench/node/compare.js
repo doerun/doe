@@ -34,6 +34,16 @@ const { values: args } = parseArgs({
   },
 });
 
+function parseRunnerLines(stdout) {
+  const text = stdout.trim();
+  if (!text) return [];
+  return text.split('\n').map((line) => JSON.parse(line));
+}
+
+function hasCompleteRun(lines) {
+  return lines.some((line) => line?.type === 'run_end');
+}
+
 function runProviderWorkload(provider, workloadId, extraArgs) {
   return new Promise((resolve, reject) => {
     const cmdArgs = [
@@ -48,8 +58,22 @@ function runProviderWorkload(provider, workloadId, extraArgs) {
 
     execFile(process.execPath, cmdArgs, { maxBuffer: 64 * 1024 * 1024 }, (err, stdout, stderr) => {
       process.stderr.write(stderr);
-      if (err) return reject(new Error(`${provider} runner failed: ${err.message}`));
-      const lines = stdout.trim().split('\n').map((l) => JSON.parse(l));
+      let lines;
+      try {
+        lines = parseRunnerLines(stdout);
+      } catch (parseErr) {
+        const detail = parseErr instanceof Error ? parseErr.message : String(parseErr);
+        return reject(new Error(`${provider} runner emitted invalid JSON: ${detail}`));
+      }
+      if (err) {
+        if (hasCompleteRun(lines)) {
+          process.stderr.write(
+            `WARN: ${provider} runner exited non-zero after emitting complete output; using captured results\n`
+          );
+          return resolve(lines);
+        }
+        return reject(new Error(`${provider} runner failed: ${err.message}`));
+      }
       resolve(lines);
     });
   });
