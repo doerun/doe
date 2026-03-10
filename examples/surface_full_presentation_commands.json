@@ -12,7 +12,7 @@
     "handle": 41001,
     "width": 64,
     "height": 64,
-    "format": "rgba8unorm",
+    "format": "bgra8unorm",
     "presentMode": "fifo",
     "alphaMode": "auto"
   },

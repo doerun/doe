@@ -224,7 +224,9 @@ def ensure_doe_runtime_trace_meta_fields(
 def derive_counter_derived_divisor(
     *,
     workload_domain: str,
+    strict_normalization_unit: str,
     trace_meta: dict[str, Any],
+    command_repeat: int,
 ) -> tuple[float, int, int, int]:
     trace_row_count = parse_int(trace_meta.get("executionRowCount", 0)) or 0
     trace_dispatch_count = parse_int(trace_meta.get("executionDispatchCount", 0)) or 0
@@ -232,7 +234,13 @@ def derive_counter_derived_divisor(
     trace_submit_every = parse_int(trace_meta.get("uploadSubmitEvery", 0)) or 0
     derived_divisor = 0.0
 
-    if workload_domain == "upload" and trace_submit_every > 0:
+    if strict_normalization_unit == "cycle" and command_repeat > 0:
+        derived_divisor = float(command_repeat)
+    elif strict_normalization_unit == "dispatch" and trace_dispatch_count > 0:
+        derived_divisor = float(trace_dispatch_count)
+    elif workload_domain == "surface" and command_repeat > 0:
+        derived_divisor = float(command_repeat)
+    elif workload_domain == "upload" and trace_submit_every > 0:
         derived_divisor = float(trace_row_count)
     elif trace_dispatch_count > 0:
         derived_divisor = float(trace_dispatch_count)
@@ -251,6 +259,7 @@ def enforce_strict_counter_derived_normalization(
     comparability_mode: str,
     trace_meta: dict[str, Any],
     require_execution_success: bool,
+    command_repeat: int,
 ) -> None:
     if (
         comparability_mode != "strict"
@@ -266,7 +275,9 @@ def enforce_strict_counter_derived_normalization(
         trace_dispatch_count,
     ) = derive_counter_derived_divisor(
         workload_domain=workload.domain,
+        strict_normalization_unit=getattr(workload, "strict_normalization_unit", ""),
         trace_meta=trace_meta,
+        command_repeat=command_repeat,
     )
 
     if require_execution_success and trace_success_count <= 0:
@@ -629,6 +640,7 @@ def run_workload(
             comparability_mode=comparability_mode,
             trace_meta=preflight_meta,
             require_execution_success=True,
+            command_repeat=command_repeat,
         )
 
     for run_idx in range(max(iterations, 0)):
@@ -699,6 +711,7 @@ def run_workload(
             required_timing_class=required_timing_class,
             benchmark_policy=benchmark_policy,
             workload_domain=workload.domain,
+            command_repeat=command_repeat,
         )
         ignore_meta: dict[str, Any] = {}
         if required_timing_class != "process-wall" and ignore_first_ops > 0:
@@ -720,6 +733,7 @@ def run_workload(
             comparability_mode=comparability_mode,
             trace_meta=sample_meta,
             require_execution_success=is_doe_runtime,
+            command_repeat=command_repeat,
         )
 
         measured_ms = measured_raw_ms / effective_timing_divisor

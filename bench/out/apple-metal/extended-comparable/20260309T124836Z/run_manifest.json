@@ -1,0 +1,15 @@
+{
+  "claimGateRan": false,
+  "config": "bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+  "createdAtUtc": "2026-03-09T12:51:56.642397Z",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "outputTimestamp": "20260309T124836Z",
+  "reportPath": "bench/out/apple-metal/extended-comparable/20260309T124836Z/metal.local.claim.post_macos_fixes.json",
+  "runFolder": "bench/out/apple-metal/extended-comparable/20260309T124836Z",
+  "runType": "compare_dawn_vs_doe",
+  "schemaVersion": 1,
+  "status": "failed",
+  "updatedAtUtc": "2026-03-09T12:51:56.642397Z",
+  "workspacePath": "bench/out/apple-metal/extended-comparable/20260309T124836Z/runtime-comparisons.local.metal.extended.comparable"
+}

@@ -136,6 +136,9 @@ def build_surface_table_rows(
         conformance = str(cell.get("sourceConformance", ""))
         if not conformance and cell.get("reportCount", 0) == 0:
             conformance = "-"
+        status_detail = str(cell.get("statusDetail", ""))
+        if not status_detail:
+            status_detail = "-"
         rows.append(
             "<tr>"
             f"<td>{escape(workload_label)}</td>"
@@ -148,11 +151,12 @@ def build_surface_table_rows(
             f"<td>{escape(format_delta(safe_float(cell.get('deltaP50MedianPercent'))))}</td>"
             f"<td><code>{escape(str(cell.get('latestGeneratedAt', '-')))}</code></td>"
             f"<td><code>{escape(conformance)}</code></td>"
+            f"<td>{escape(status_detail)}</td>"
             "</tr>"
         )
     if rows:
         return "".join(rows)
-    return "<tr><td colspan='10'>No cells.</td></tr>"
+    return "<tr><td colspan='11'>No cells.</td></tr>"
 
 
 def build_source_rows(summary: dict[str, Any]) -> str:
@@ -234,7 +238,7 @@ def build_dashboard_html(summary: dict[str, Any], policy: dict[str, Any]) -> str
             "</ul></div>"
             "<table><thead><tr>"
             "<th>Workload Set</th><th>Host</th><th>Status</th><th>Comparison</th><th>Claim</th>"
-            "<th>Reports</th><th>Rows</th><th>Median p50 Delta</th><th>Latest UTC</th><th>Conformance</th>"
+            "<th>Reports</th><th>Rows</th><th>Median p50 Delta</th><th>Latest UTC</th><th>Conformance</th><th>Detail</th>"
             "</tr></thead><tbody>"
             f"{table_rows}"
             "</tbody></table>"

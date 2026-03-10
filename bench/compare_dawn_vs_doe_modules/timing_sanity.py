@@ -37,17 +37,26 @@ def _raw_operation_total_ms(sample: dict[str, Any]) -> float | None:
     if source not in OPERATION_TIMING_SOURCES:
         return None
 
-    if source == "doe-execution-row-total-ns":
-        ignored_total_ns = safe_float(timing.get("uploadTimingTotalNsAfterIgnore"))
-        if ignored_total_ns is not None and ignored_total_ns > 0.0:
-            return ignored_total_ns / 1_000_000.0
-        row_total_ns = safe_float(timing.get("executionRowTotalNs"))
-        if row_total_ns is not None and row_total_ns > 0.0:
-            return row_total_ns / 1_000_000.0
-
     raw_ms = safe_float(timing.get("timingRawMs"))
     if raw_ms is not None and raw_ms > 0.0:
         return raw_ms
+
+    if source == "doe-execution-row-total-ns":
+        adjusted_ms = safe_float(timing.get("uploadTimingRawMsAfterIgnore"))
+        if adjusted_ms is not None and adjusted_ms > 0.0:
+            return adjusted_ms
+        average_ns = safe_float(timing.get("executionRowOperationTotalAverageNs"))
+        if average_ns is not None and average_ns > 0.0:
+            return average_ns / 1_000_000.0
+        row_total_ns = safe_float(timing.get("executionRowTotalNs"))
+        row_count = safe_float(timing.get("executionRowDurationCount"))
+        if (
+            row_total_ns is not None
+            and row_total_ns > 0.0
+            and row_count is not None
+            and row_count > 0.0
+        ):
+            return (row_total_ns / row_count) / 1_000_000.0
 
     trace_meta_ms = safe_float(timing.get("traceMetaTimingMs"))
     if trace_meta_ms is not None and trace_meta_ms > 0.0:
@@ -56,8 +65,29 @@ def _raw_operation_total_ms(sample: dict[str, Any]) -> float | None:
     return None
 
 
-def sample_operation_wall_coverage_ratio(sample: dict[str, Any]) -> float | None:
+def _normalized_process_wall_ms(sample: dict[str, Any]) -> float | None:
     elapsed_ms = safe_float(sample.get("elapsedMs"))
+    if elapsed_ms is None or elapsed_ms <= 0.0:
+        return None
+    timing = sample.get("timing")
+    timing_divisor = None
+    command_repeat = None
+    if isinstance(timing, dict):
+        timing_divisor = safe_float(timing.get("timingNormalizationDivisor"))
+        command_repeat = safe_float(timing.get("commandRepeat"))
+    if timing_divisor is None or timing_divisor <= 0.0:
+        timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
+    if timing_divisor is None or timing_divisor <= 0.0:
+        timing_divisor = 1.0
+    if command_repeat is None or command_repeat <= 0.0:
+        command_repeat = safe_float(sample.get("commandRepeat"))
+    if command_repeat is None or command_repeat <= 0.0:
+        command_repeat = 1.0
+    return elapsed_ms / (command_repeat * timing_divisor)
+
+
+def sample_operation_wall_coverage_ratio(sample: dict[str, Any]) -> float | None:
+    elapsed_ms = _normalized_process_wall_ms(sample)
     if elapsed_ms is None or elapsed_ms <= 0.0:
         return None
     operation_total_ms = _raw_operation_total_ms(sample)

@@ -282,6 +282,7 @@ def main() -> int:
 
     failures = ownership_errors + smoke_errors + layered_errors
     payload = {
+        "laneId": "browser_diagnostic",
         "ok": not failures,
         "generatedAt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "ownershipOk": not ownership_errors,

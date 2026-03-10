@@ -1,0 +1,15 @@
+{
+  "claimGateRan": false,
+  "config": "/tmp/compare.local.metal.directional.json",
+  "createdAtUtc": "2026-03-09T18:42:30.253100Z",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "outputTimestamp": "20260309T184206Z",
+  "reportPath": "bench/out/apple-metal/extended-comparable/20260309T184206Z/dawn-vs-doe.local.metal.extended.comparable.json",
+  "runFolder": "bench/out/apple-metal/extended-comparable/20260309T184206Z",
+  "runType": "compare_dawn_vs_doe",
+  "schemaVersion": 1,
+  "status": "failed",
+  "updatedAtUtc": "2026-03-09T18:42:30.253100Z",
+  "workspacePath": "bench/out/apple-metal/extended-comparable/20260309T184206Z/runtime-comparisons.local.metal.extended.comparable"
+}

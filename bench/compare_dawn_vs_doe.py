@@ -13,6 +13,7 @@ import hashlib
 import json
 import functools
 import platform
+import re
 import statistics
 import subprocess
 import sys
@@ -55,6 +56,7 @@ DEFAULT_REQUIRED_TIMING_CLASS = "operation"
 DEFAULT_RESOURCE_PROBE = "none"
 DEFAULT_RESOURCE_SAMPLE_MS = 100
 DEFAULT_RESOURCE_SAMPLE_TARGET_COUNT = 0
+DEFAULT_WORKLOAD_COOLDOWN_MS = 0
 DEFAULT_CLAIMABILITY_MODE = "off"
 DEFAULT_CLAIM_MIN_TIMED_SAMPLES = 0
 DEFAULT_BENCHMARK_POLICY_PATH = ""
@@ -141,6 +143,7 @@ class Workload:
     comparability_candidate_notes: str
     path_asymmetry: bool
     path_asymmetry_note: str
+    strict_normalization_unit: str
 
 
 @dataclass(frozen=True)
@@ -274,6 +277,15 @@ def parse_args() -> argparse.Namespace:
             "Fixed probe sample target per run for strict N-vs-N resource comparability. "
             "When >0, each run records exactly this many samples; short runs are padded, "
             "and long runs are marked truncated."
+        ),
+    )
+    parser.add_argument(
+        "--workload-cooldown-ms",
+        type=int,
+        default=DEFAULT_WORKLOAD_COOLDOWN_MS,
+        help=(
+            "Optional host settling delay between workloads in milliseconds (>=0). "
+            "Applies equally between left/right workload pairs and the next workload."
         ),
     )
     parser.add_argument(
@@ -507,6 +519,16 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
             args.resource_sample_target_count = as_int(
                 value,
                 field="resource.sampleTargetCount",
+            )
+    if args.workload_cooldown_ms == DEFAULT_WORKLOAD_COOLDOWN_MS:
+        value = first_config_value(
+            payload,
+            ["run.workloadCooldownMs", "workloadCooldownMs"],
+        )
+        if value is not None:
+            args.workload_cooldown_ms = as_int(
+                value,
+                field="run.workloadCooldownMs",
             )
     if args.claimability == DEFAULT_CLAIMABILITY_MODE:
         value = first_config_value(
@@ -969,7 +991,13 @@ def load_workloads(
             comparability_candidate_notes=comparability_candidate_notes,
             path_asymmetry=bool(item.get("pathAsymmetry", False)),
             path_asymmetry_note=str(item.get("pathAsymmetryNote", "")),
+            strict_normalization_unit=str(item.get("strictNormalizationUnit", "")).strip().lower(),
         )
+        if workload.strict_normalization_unit not in {"", "command", "dispatch", "cycle"}:
+            raise ValueError(
+                f"invalid workload {workload.id}: strictNormalizationUnit must be one of "
+                "['command', 'dispatch', 'cycle'] when present"
+            )
         if workload.left_timing_divisor <= 0.0:
             raise ValueError(
                 f"invalid workload {workload.id}: leftTimingDivisor must be > 0"
@@ -1155,6 +1183,47 @@ def infer_command_shape_operation_count(
     return total
 
 
+def infer_command_shape_dispatch_count(
+    *,
+    commands_path: Path,
+    workload_id: str,
+) -> int:
+    if not commands_path.exists():
+        raise ValueError(
+            f"invalid workload {workload_id}: commands file does not exist: {commands_path}"
+        )
+    try:
+        payload = json.loads(commands_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"invalid workload {workload_id}: malformed commands JSON {commands_path}: {exc}"
+        ) from exc
+    if not isinstance(payload, list):
+        raise ValueError(
+            f"invalid workload {workload_id}: commands payload must be a JSON array in {commands_path}"
+        )
+    if not payload:
+        raise ValueError(
+            f"invalid workload {workload_id}: commands payload must not be empty in {commands_path}"
+        )
+
+    total = 0
+    for command_index, raw_command in enumerate(payload):
+        if not isinstance(raw_command, dict):
+            raise ValueError(
+                f"invalid workload {workload_id}: commands[{command_index}] must be an object"
+            )
+        kind = str(raw_command.get("kind", "")).strip().lower()
+        if kind not in {"dispatch", "dispatch_indirect", "kernel_dispatch"}:
+            continue
+        total += command_shape_multiplier(
+            raw_command,
+            workload_id=workload_id,
+            command_index=command_index,
+        )
+    return total
+
+
 def enforce_strict_command_shape_divisor_contracts(
     *,
     workloads: list[Workload],
@@ -1167,6 +1236,7 @@ def enforce_strict_command_shape_divisor_contracts(
 
     lint_right_divisors = template_uses_doe_runtime(right_command_template)
     command_shape_cache: dict[str, int] = {}
+    dispatch_shape_cache: dict[str, int] = {}
     failures: list[str] = []
 
     for workload in workloads:
@@ -1179,9 +1249,25 @@ def enforce_strict_command_shape_divisor_contracts(
                 commands_path=commands_path,
                 workload_id=workload.id,
             )
+        if cache_key not in dispatch_shape_cache:
+            dispatch_shape_cache[cache_key] = infer_command_shape_dispatch_count(
+                commands_path=commands_path,
+                workload_id=workload.id,
+            )
         per_stream_ops = command_shape_cache[cache_key]
-        expected_left_ops = per_stream_ops * workload.left_command_repeat
-        expected_right_ops = per_stream_ops * workload.right_command_repeat
+        per_stream_dispatch_ops = dispatch_shape_cache[cache_key]
+        expected_left_ops = expected_divisor_units(
+            workload=workload,
+            per_stream_ops=per_stream_ops,
+            per_stream_dispatch_ops=per_stream_dispatch_ops,
+            command_repeat=workload.left_command_repeat,
+        )
+        expected_right_ops = expected_divisor_units(
+            workload=workload,
+            per_stream_ops=per_stream_ops,
+            per_stream_dispatch_ops=per_stream_dispatch_ops,
+            command_repeat=workload.right_command_repeat,
+        )
 
         if workload.left_timing_divisor > 1.0 and abs(
             workload.left_timing_divisor - float(expected_left_ops)
@@ -1213,6 +1299,29 @@ def template_uses_doe_runtime(template: str) -> bool:
     return "doe-zig-runtime" in template
 
 
+def expected_divisor_units(
+    *,
+    workload: Workload,
+    per_stream_ops: int,
+    per_stream_dispatch_ops: int,
+    command_repeat: int,
+) -> int:
+    if workload.strict_normalization_unit == "cycle":
+        return command_repeat
+    if workload.strict_normalization_unit == "dispatch":
+        return per_stream_dispatch_ops * command_repeat
+    if workload.domain == "surface":
+        return command_repeat
+    return per_stream_ops * command_repeat
+
+
+def template_backend_lane(template: str) -> str:
+    match = re.search(r"--backend-lane\s+([A-Za-z0-9_-]+)", template)
+    if match is None:
+        return ""
+    return match.group(1)
+
+
 def enforce_strict_doe_runtime_normalization_symmetry(
     workloads: list[Workload],
     left_command_template: str,
@@ -1224,6 +1333,10 @@ def enforce_strict_doe_runtime_normalization_symmetry(
     if not template_uses_doe_runtime(left_command_template):
         return
     if not template_uses_doe_runtime(right_command_template):
+        return
+    left_lane = template_backend_lane(left_command_template)
+    right_lane = template_backend_lane(right_command_template)
+    if "dawn" in left_lane or "dawn" in right_lane:
         return
 
     failures: list[str] = []
@@ -1512,6 +1625,8 @@ def main() -> int:
         raise ValueError("--resource-sample-ms must be >= 1")
     if args.resource_sample_target_count < 0:
         raise ValueError("--resource-sample-target-count must be >= 0")
+    if args.workload_cooldown_ms < 0:
+        raise ValueError("--workload-cooldown-ms must be >= 0")
     if args.claim_min_timed_samples < 0:
         raise ValueError("--claim-min-timed-samples must be >= 0")
     if not args.right_command_template:
@@ -1632,6 +1747,7 @@ def main() -> int:
         "runParameters": {
             "iterations": args.iterations,
             "warmup": args.warmup,
+            "workloadCooldownMs": args.workload_cooldown_ms,
         },
         "left": {"name": args.left_name},
         "right": {"name": args.right_name},
@@ -1649,10 +1765,14 @@ def main() -> int:
             "headlineMetricUse": "timed-command process-wall end-to-end ranking metric",
             "headlineMetricScope": "timed-command-process-wall",
             "narrowSelectedScopeClass": "narrow-hot-path",
-            "narrowHotPathEligibleForClaims": False,
+            "narrowSelectedMetricEligibleForClaims": False,
+            "narrowHotPathClaimMetricField": "timingInterpretation.headlineProcessWall.deltaPercent",
+            "narrowHotPathClaimMetricScope": "headlineProcessWall",
             "guidance": (
                 "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, "
-                "deltaPercent is a phase-specific diagnostic, not an end-to-end latency claim."
+                "deltaPercent remains a phase-specific diagnostic. Claimability evaluates "
+                "timingInterpretation.headlineProcessWall.deltaPercent when that end-to-end "
+                "metric is available."
             ),
         },
         "comparabilityPolicy": {
@@ -1662,6 +1782,7 @@ def main() -> int:
             "resourceProbe": args.resource_probe,
             "resourceSampleMs": args.resource_sample_ms,
             "resourceSampleTargetCount": args.resource_sample_target_count,
+            "workloadCooldownMs": args.workload_cooldown_ms,
             "workloadCohort": args.workload_cohort,
             "requireNativeExecutionTimingForLeftOperation": (
                 args.require_timing_class == "operation"
@@ -1789,6 +1910,8 @@ def main() -> int:
             workload_domain=workload.domain,
             workload_path_asymmetry=workload.path_asymmetry,
             workload_path_asymmetry_note=workload.path_asymmetry_note,
+            left_command_repeat=workload.left_command_repeat,
+            right_command_repeat=workload.right_command_repeat,
             left=left,
             right=right,
             required_timing_class=args.require_timing_class,
@@ -1926,6 +2049,8 @@ def main() -> int:
         )
         claim_row_hashes.append(claim_row_hash)
         previous_claim_row_hash = claim_row_hash
+        if args.workload_cooldown_ms > 0 and idx < len(workloads):
+            time.sleep(args.workload_cooldown_ms / 1000.0)
 
     if overall_left and overall_right:
         overall_left_stats = format_stats(overall_left)

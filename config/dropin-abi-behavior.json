@@ -2,19 +2,21 @@
   "schemaVersion": 1,
   "defaultMode": "dawn_ownership",
   "laneModes": {
-    "vulkan_doe_app": "doe_vulkan_ownership",
-    "d3d12_doe_app": "doe_d3d12_ownership",
-    "metal_dawn_release": "dawn_ownership",
-    "d3d12_dawn_release": "dawn_ownership",
+    "metal_doe_app": "doe_metal_ownership",
     "metal_doe_directional": "mixed_ownership",
-    "d3d12_doe_directional": "mixed_ownership",
     "metal_doe_comparable": "doe_metal_ownership",
-    "d3d12_doe_comparable": "doe_d3d12_ownership",
     "metal_doe_release": "doe_metal_ownership",
-    "d3d12_doe_release": "doe_d3d12_ownership",
-    "vulkan_dawn_directional": "mixed_ownership",
+    "metal_dawn_release": "dawn_ownership",
+    "vulkan_doe_app": "doe_vulkan_ownership",
     "vulkan_doe_comparable": "doe_vulkan_ownership",
-    "vulkan_doe_release": "doe_vulkan_ownership"
+    "vulkan_doe_release": "doe_vulkan_ownership",
+    "vulkan_dawn_release": "dawn_ownership",
+    "vulkan_dawn_directional": "dawn_ownership",
+    "d3d12_doe_app": "doe_d3d12_ownership",
+    "d3d12_doe_directional": "mixed_ownership",
+    "d3d12_doe_comparable": "doe_d3d12_ownership",
+    "d3d12_doe_release": "doe_d3d12_ownership",
+    "d3d12_dawn_release": "dawn_ownership"
   },
   "strictFallbackForbidden": true
 }

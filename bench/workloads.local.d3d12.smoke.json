@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "workloads": [
+    {
+      "id": "compute_workgroup_atomic_1024",
+      "domain": "compute",
+      "leftTimingDivisor": 1.0,
+      "rightTimingDivisor": 1.0,
+      "name": "workgroup-atomic-smoke",
+      "description": "Windows D3D12 compute smoke for the WorkgroupAtomicPerf-aligned atomic kernel.",
+      "comparabilityNotes": "Strict D3D12 compute smoke contract with adapter-autodiscovered Dawn mapping and direct timing normalization.",
+      "commandsPath": "examples/workgroup_atomic_commands.json",
+      "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+      "vendor": "generic",
+      "api": "d3d12",
+      "family": "d3d12",
+      "driver": "1.0.0",
+      "extraArgs": [
+        "--kernel-root",
+        "bench/kernels"
+      ],
+      "comparable": true,
+      "default": true,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "@autodiscover"
+    },
+    {
+      "id": "pipeline_compile_stress",
+      "dawnFilter": "@autodiscover",
+      "default": false,
+      "description": "Shader robustness pipeline stress aligned with Dawn ShaderRobustnessPerf (MatMulFloatOneDimSharedArray, f32, 512x512x512).",
+      "domain": "pipeline",
+      "leftTimingDivisor": 1.0,
+      "name": "shader-compile pipeline stress",
+      "rightTimingDivisor": 1.0,
+      "comparabilityNotes": "Strict D3D12 pipeline smoke contract. Both sides create and execute the same compute pipeline shape with adapter-autodiscovered Dawn mapping and direct timing normalization.",
+      "commandsPath": "examples/shader_compile_stress_commands.json",
+      "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+      "vendor": "generic",
+      "api": "d3d12",
+      "family": "d3d12",
+      "driver": "1.0.0",
+      "extraArgs": [
+        "--kernel-root",
+        "bench/kernels"
+      ],
+      "comparable": true,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+    },
+    {
+      "id": "upload_write_buffer_64kb",
+      "comparable": true,
+      "default": true,
+      "domain": "upload",
+      "leftTimingDivisor": 1.0,
+      "leftUploadBufferUsage": "copy-dst",
+      "leftUploadSubmitEvery": 1,
+      "rightTimingDivisor": 1.0,
+      "rightUploadBufferUsage": "copy-dst",
+      "rightUploadSubmitEvery": 1,
+      "name": "upload-64kb-smoke",
+      "description": "Windows D3D12 upload smoke for the 64KB WriteBuffer contract.",
+      "comparabilityNotes": "Strict D3D12 smoke upload contract with staged upload-copy work on both sides and adapter-autodiscovered Dawn mapping.",
+      "commandsPath": "examples/upload_64kb_commands.json",
+      "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+      "vendor": "generic",
+      "api": "d3d12",
+      "family": "d3d12",
+      "driver": "1.0.0",
+      "extraArgs": [],
+      "dawnFilter": "@autodiscover",
+      "rightCommandRepeat": 16,
+      "rightIgnoreFirstOps": 1,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+    }
+  ]
+}

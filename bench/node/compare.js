@@ -82,10 +82,18 @@ function buildComparison(doeResults, dawnResults) {
   for (const id of allWorkloads) {
     const doe = doeByWorkload.get(id);
     const dawn = dawnByWorkload.get(id);
+    const canonicalWorkloadId = doe?.canonicalWorkloadId ?? dawn?.canonicalWorkloadId ?? id;
+
+    if (doe?.canonicalWorkloadId && dawn?.canonicalWorkloadId && doe.canonicalWorkloadId !== dawn.canonicalWorkloadId) {
+      throw new Error(
+        `canonical workload mismatch for ${id}: ${doe.canonicalWorkloadId} vs ${dawn.canonicalWorkloadId}`
+      );
+    }
 
     if (!doe || !dawn) {
       comparisons.push({
         workload: id,
+        canonicalWorkloadId,
         status: !doe ? 'doe_missing' : 'dawn_missing',
         doeMedianMs: doe?.stats?.median ?? null,
         dawnMedianMs: dawn?.stats?.median ?? null,
@@ -107,6 +115,7 @@ function buildComparison(doeResults, dawnResults) {
 
     comparisons.push({
       workload: id,
+      canonicalWorkloadId,
       domain: doe.domain,
       comparable: isComparable,
       status: 'compared',
@@ -187,6 +196,7 @@ async function main() {
 
   const report = {
     type: 'comparison_report',
+    laneId: 'node_package_compare',
     timestamp: new Date().toISOString(),
     iterations: parseInt(args.iterations, 10),
     warmup: parseInt(args.warmup, 10),

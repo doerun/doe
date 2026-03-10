@@ -173,7 +173,12 @@ def validate_backend_lane_map_invariants(root: Path) -> list[str]:
     failures: list[str] = []
     backend_ids = ("dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12")
     allowed_upload_path_policies = {"allow_mapped_shortcuts", "staged_copy_only"}
-    strict_vulkan_upload_lanes = {"vulkan_doe_comparable", "vulkan_doe_release"}
+    strict_staged_upload_lanes = {
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+    }
 
     runtime_policy_path = root / "config" / "backend-runtime-policy.json"
     lane_map_path = root / "config" / "backend-lane-map.json"
@@ -236,9 +241,9 @@ def validate_backend_lane_map_invariants(root: Path) -> list[str]:
             failures.append(
                 f"config/backend-runtime-policy.json: lane {lane_name} uploadPathPolicy has unknown value {upload_path_policy!r}"
             )
-        elif lane_name in strict_vulkan_upload_lanes and upload_path_policy != "staged_copy_only":
+        elif lane_name in strict_staged_upload_lanes and upload_path_policy != "staged_copy_only":
             failures.append(
-                f"config/backend-runtime-policy.json: strict Vulkan lane {lane_name} must set "
+                f"config/backend-runtime-policy.json: strict staged-upload lane {lane_name} must set "
                 "uploadPathPolicy='staged_copy_only'"
             )
         expected_lane_to_backend[lane_name] = backend_name

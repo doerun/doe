@@ -760,6 +760,11 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             .offset = 0,
         };
         const temp_src = try resources.getOrCreateTexture(self, temp_resource_src, types.WGPUTextureUsage_CopySrc);
+        const copy_extent = types.WGPUExtent3D{
+            .width = render.target_width,
+            .height = render.target_height,
+            .depthOrArrayLayers = 1,
+        };
         procs.wgpuCommandEncoderCopyTextureToTexture(
             encoder,
             &types.WGPUTexelCopyTextureInfo{
@@ -774,11 +779,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 .origin = .{ .x = 0, .y = 0, .z = 0 },
                 .aspect = loader.normalizeTextureAspect(model.WGPUTextureAspect_All),
             },
-            .{
-                .width = render.target_width,
-                .height = render.target_height,
-                .depthOrArrayLayers = 1,
-            },
+            &copy_extent,
         );
     }
 

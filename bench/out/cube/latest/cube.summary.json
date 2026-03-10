@@ -1,117 +1,129 @@
 {
   "artifacts": {
-    "dashboardHtmlPath": "bench/out/cube/20260307T010714Z/cube.dashboard.html",
-    "matrixMarkdownPath": "bench/out/cube/20260307T010714Z/cube.matrix.md",
-    "rowsPath": "bench/out/cube/20260307T010714Z/cube.rows.json"
+    "dashboardHtmlPath": "/tmp/cube.dashboard.html",
+    "matrixMarkdownPath": "/tmp/cube.matrix.md",
+    "rowsPath": "/tmp/cube.rows.json"
   },
   "cells": [
     {
-      "claimStatus": "diagnostic",
-      "comparisonStatus": "diagnostic",
-      "deltaP50MedianPercent": 186260.94817330368,
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
       "hostProfile": "linux_amd_vulkan",
-      "latestGeneratedAt": "2026-03-02T19:30:52.872018Z",
-      "latestReportPath": "bench/out/amd-vulkan/singles/20260302T193052Z/dawn-vs-doe.amd.vulkan.single.par_workgroup_non_atomic_1024.json",
-      "latestRunId": "20260302T193052Z",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
-      "reportCount": 4,
-      "rowCount": 1,
+      "reportCount": 0,
+      "rowCount": 0,
       "scopeType": "workload_set",
-      "sourceConformance": "legacy_nonconformant",
-      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0dad4efcca94bc2bf12ed61a2f1ea5957e4e6f1befb0a741c70babead4541112 expected=f05af63e10ec48a1d9bb0a4042ddf3e4327abcfb3f912d49ce1f84618065995b)",
-      "status": "diagnostic",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "compute_e2e"
     },
     {
-      "claimStatus": "diagnostic",
-      "comparisonStatus": "diagnostic",
-      "deltaP50MedianPercent": 89.45755276079527,
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
       "hostProfile": "linux_amd_vulkan",
-      "latestGeneratedAt": "2026-03-02T18:23:11.422574Z",
-      "latestReportPath": "bench/out/amd-vulkan/extended-comparable/20260302T182311Z/dawn-vs-doe.amd.vulkan.extended.comparable.json",
-      "latestRunId": "20260302T182311Z",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
-      "reportCount": 1,
-      "rowCount": 2,
+      "reportCount": 0,
+      "rowCount": 0,
       "scopeType": "workload_set",
-      "sourceConformance": "legacy_nonconformant",
-      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=54cc8a5c91bec73e1c42b3799c78367c1511988417be1c3ad58f348325233425 expected=ba5933223391458c7dafcebfe485fdbdc6f394379cf4aa6c0f508d3af3e7e0f9)",
-      "status": "diagnostic",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "contracts"
     },
     {
-      "claimStatus": "claimable",
-      "comparisonStatus": "comparable",
-      "deltaP50MedianPercent": 1059.3395154222446,
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": 387.6210698658589,
+      "governedLaneIds": [
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
       "hostProfile": "linux_amd_vulkan",
-      "latestGeneratedAt": "2026-03-06T23:54:31.829136Z",
-      "latestReportPath": "bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json",
-      "latestRunId": "20260306T235431Z",
+      "latestGeneratedAt": "2026-03-07T03:15:18.006748Z",
+      "latestReportPath": "bench/out/amd-vulkan/20260307T031517Z/dawn-vs-doe.amd.vulkan.release.json",
+      "latestRunId": "20260307T031518Z",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
-      "reportCount": 20,
-      "rowCount": 8,
+      "reportCount": 12,
+      "rowCount": 7,
       "scopeType": "full_matrix",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "claimable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=1367c3b2fb650f464885e5675cf0dd16ca55010c9c562d6f77ba26847869f668 expected=601d07ad8bcd229f18ea4d9d521dfc2b84b27ece9de3c0313b09207de38c5fdd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "full_comparable"
     },
     {
-      "claimStatus": "diagnostic",
-      "comparisonStatus": "diagnostic",
-      "deltaP50MedianPercent": 98.59894626157615,
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
       "hostProfile": "linux_amd_vulkan",
-      "latestGeneratedAt": "2026-03-02T18:23:11.422574Z",
-      "latestReportPath": "bench/out/amd-vulkan/extended-comparable/20260302T182311Z/dawn-vs-doe.amd.vulkan.extended.comparable.json",
-      "latestRunId": "20260302T182311Z",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
-      "reportCount": 1,
-      "rowCount": 1,
+      "reportCount": 0,
+      "rowCount": 0,
       "scopeType": "workload_set",
-      "sourceConformance": "legacy_nonconformant",
-      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=54cc8a5c91bec73e1c42b3799c78367c1511988417be1c3ad58f348325233425 expected=ba5933223391458c7dafcebfe485fdbdc6f394379cf4aa6c0f508d3af3e7e0f9)",
-      "status": "diagnostic",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "pipeline"
     },
     {
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
       "hostProfile": "linux_amd_vulkan",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -119,16 +131,24 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "render"
     },
     {
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
       "hostProfile": "linux_amd_vulkan",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -136,38 +156,48 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "texture"
     },
     {
-      "claimStatus": "claimable",
-      "comparisonStatus": "comparable",
-      "deltaP50MedianPercent": 1059.3395154222446,
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
+      "deltaP50MedianPercent": 387.6210698658589,
+      "governedLaneIds": [
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
       "hostProfile": "linux_amd_vulkan",
-      "latestGeneratedAt": "2026-03-06T23:54:31.829136Z",
-      "latestReportPath": "bench/out/amd-vulkan/20260307T001500Z/dawn-vs-doe.amd.vulkan.release.json",
-      "latestRunId": "20260306T235431Z",
+      "latestGeneratedAt": "2026-03-07T03:15:18.006748Z",
+      "latestReportPath": "bench/out/amd-vulkan/20260307T031517Z/dawn-vs-doe.amd.vulkan.release.json",
+      "latestRunId": "20260307T031518Z",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
-      "reportCount": 18,
-      "rowCount": 8,
+      "reportCount": 12,
+      "rowCount": 7,
       "scopeType": "workload_set",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "claimable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=1367c3b2fb650f464885e5675cf0dd16ca55010c9c562d6f77ba26847869f668 expected=601d07ad8bcd229f18ea4d9d521dfc2b84b27ece9de3c0313b09207de38c5fdd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "uploads"
     },
     {
-      "claimStatus": "claimable",
-      "comparisonStatus": "comparable",
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 4.487244811304736,
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_dawn_release"
+      ],
       "hostProfile": "mac_apple_silicon",
       "latestGeneratedAt": "2026-03-07T01:00:09.681245Z",
       "latestReportPath": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
@@ -176,23 +206,28 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
       "reportCount": 5,
       "rowCount": 7,
       "scopeType": "workload_set",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "claimable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "compute_e2e"
     },
     {
       "claimStatus": "diagnostic",
-      "comparisonStatus": "comparable",
+      "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 32.577319587628885,
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_dawn_release"
+      ],
       "hostProfile": "mac_apple_silicon",
       "latestGeneratedAt": "2026-03-07T01:00:09.681245Z",
       "latestReportPath": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
@@ -201,23 +236,28 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
       "reportCount": 5,
       "rowCount": 3,
       "scopeType": "workload_set",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "comparable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "contracts"
     },
     {
       "claimStatus": "diagnostic",
-      "comparisonStatus": "comparable",
+      "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 210.1990049751244,
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_dawn_release"
+      ],
       "hostProfile": "mac_apple_silicon",
       "latestGeneratedAt": "2026-03-07T01:00:09.681245Z",
       "latestReportPath": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
@@ -226,23 +266,28 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
       "reportCount": 5,
       "rowCount": 30,
       "scopeType": "full_matrix",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "comparable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "full_comparable"
     },
     {
-      "claimStatus": "claimable",
-      "comparisonStatus": "comparable",
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 882.7172537338703,
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_dawn_release"
+      ],
       "hostProfile": "mac_apple_silicon",
       "latestGeneratedAt": "2026-03-07T01:00:09.681245Z",
       "latestReportPath": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
@@ -251,23 +296,28 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
       "reportCount": 5,
       "rowCount": 2,
       "scopeType": "workload_set",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "claimable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "pipeline"
     },
     {
-      "claimStatus": "claimable",
-      "comparisonStatus": "comparable",
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 366.1290322580645,
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_dawn_release"
+      ],
       "hostProfile": "mac_apple_silicon",
       "latestGeneratedAt": "2026-03-07T01:00:09.681245Z",
       "latestReportPath": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
@@ -276,23 +326,28 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
       "reportCount": 5,
       "rowCount": 7,
       "scopeType": "workload_set",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "claimable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "render"
     },
     {
-      "claimStatus": "claimable",
-      "comparisonStatus": "comparable",
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 112.43523316062176,
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_dawn_release"
+      ],
       "hostProfile": "mac_apple_silicon",
       "latestGeneratedAt": "2026-03-07T01:00:09.681245Z",
       "latestReportPath": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
@@ -301,23 +356,28 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
       "reportCount": 5,
       "rowCount": 3,
       "scopeType": "workload_set",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "claimable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "texture"
     },
     {
-      "claimStatus": "claimable",
-      "comparisonStatus": "comparable",
+      "claimStatus": "diagnostic",
+      "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 575.3346659382535,
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_dawn_release"
+      ],
       "hostProfile": "mac_apple_silicon",
       "latestGeneratedAt": "2026-03-07T01:00:09.681245Z",
       "latestReportPath": "bench/out/apple-metal/extended-comparable/20260307T010009Z/dawn-vs-doe.local.metal.extended.release.json",
@@ -326,26 +386,35 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
       "reportCount": 5,
       "rowCount": 8,
       "scopeType": "workload_set",
-      "sourceConformance": "canonical",
-      "sourceConformanceReason": "",
-      "status": "claimable",
+      "sourceConformance": "legacy_nonconformant",
+      "sourceConformanceReason": "workloadContract.sha256 mismatch (report=0a8c18e7eed339378ed244256718cf13aa9565f58161f99add162bb25afe814d expected=cde367558689315b26408cf8329bf48101f89256a0b218df1f898348b81a27cd)",
+      "status": "diagnostic",
       "surface": "backend_native",
       "workloadSet": "uploads"
     },
     {
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
       "hostProfile": "windows_d3d12",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -353,16 +422,25 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "compute_e2e"
     },
     {
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
       "hostProfile": "windows_d3d12",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -370,16 +448,25 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "contracts"
     },
     {
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
       "hostProfile": "windows_d3d12",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -387,16 +474,25 @@
       "rowCount": 0,
       "scopeType": "full_matrix",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "full_comparable"
     },
     {
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
       "hostProfile": "windows_d3d12",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -404,16 +500,25 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "pipeline"
     },
     {
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
       "hostProfile": "windows_d3d12",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -421,16 +526,25 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "render"
     },
     {
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
       "hostProfile": "windows_d3d12",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -438,16 +552,25 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "texture"
     },
     {
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
       "hostProfile": "windows_d3d12",
       "maturity": "primary",
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ],
       "primarySupport": "backend",
       "providerPair": "doe_vs_dawn",
@@ -455,6 +578,7 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "backend_native",
       "workloadSet": "uploads"
     },
@@ -462,6 +586,9 @@
       "claimStatus": "claimable",
       "comparisonStatus": "comparable",
       "deltaP50MedianPercent": 77.2,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:26.482000Z",
       "latestReportPath": "bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T215526487Z.json",
@@ -486,6 +613,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 36.2,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:26.482000Z",
       "latestReportPath": "bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T215526487Z.json",
@@ -510,6 +640,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 27.6,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:26.482000Z",
       "latestReportPath": "bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T215526487Z.json",
@@ -534,6 +667,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 27.6,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:26.482000Z",
       "latestReportPath": "bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T215526487Z.json",
@@ -545,7 +681,7 @@
       ],
       "primarySupport": "bun",
       "providerPair": "doe_bun_vs_bun_webgpu",
-      "reportCount": 10,
+      "reportCount": 7,
       "rowCount": 1,
       "scopeType": "workload_set",
       "sourceConformance": "canonical",
@@ -558,6 +694,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 58.1,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:26.482000Z",
       "latestReportPath": "bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T215526487Z.json",
@@ -582,6 +721,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "comparable",
       "deltaP50MedianPercent": 8.6,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:26.482000Z",
       "latestReportPath": "bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-06T215526487Z.json",
@@ -603,6 +745,9 @@
       "workloadSet": "uploads"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
       "maturity": "prototype",
       "notes": [
@@ -615,10 +760,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "compute_e2e"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
       "maturity": "prototype",
       "notes": [
@@ -631,10 +780,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "dispatch_only"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
       "maturity": "prototype",
       "notes": [
@@ -647,10 +800,14 @@
       "rowCount": 0,
       "scopeType": "full_matrix",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "full_comparable"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
       "maturity": "prototype",
       "notes": [
@@ -663,10 +820,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "overhead"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
       "maturity": "prototype",
       "notes": [
@@ -679,10 +840,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "pipeline"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
       "maturity": "prototype",
       "notes": [
@@ -695,10 +860,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "uploads"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "prototype",
       "notes": [
@@ -711,10 +880,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "compute_e2e"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "prototype",
       "notes": [
@@ -727,10 +900,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "dispatch_only"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "prototype",
       "notes": [
@@ -743,10 +920,14 @@
       "rowCount": 0,
       "scopeType": "full_matrix",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "full_comparable"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "prototype",
       "notes": [
@@ -759,10 +940,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "overhead"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "prototype",
       "notes": [
@@ -775,10 +960,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "pipeline"
     },
     {
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "prototype",
       "notes": [
@@ -791,6 +980,7 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "bun_package",
       "workloadSet": "uploads"
     },
@@ -798,6 +988,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "comparable",
       "deltaP50MedianPercent": 52.7,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:19.088000Z",
       "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T215519089Z.json",
@@ -822,6 +1015,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 32.6,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:19.088000Z",
       "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T215519089Z.json",
@@ -846,6 +1042,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": 42.650000000000006,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T21:55:19.088000Z",
       "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T215519089Z.json",
@@ -870,6 +1069,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": -24.4,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
       "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
@@ -894,6 +1096,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
       "deltaP50MedianPercent": -11.9,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
       "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
@@ -918,6 +1123,9 @@
       "claimStatus": "diagnostic",
       "comparisonStatus": "comparable",
       "deltaP50MedianPercent": 1.9,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "linux_x64",
       "latestGeneratedAt": "2026-03-06T19:50:54.271000Z",
       "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T195054272Z.json",
@@ -941,11 +1149,14 @@
     {
       "claimStatus": "diagnostic",
       "comparisonStatus": "comparable",
-      "deltaP50MedianPercent": 21.2,
+      "deltaP50MedianPercent": 38.0,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
-      "latestGeneratedAt": "2026-03-06T21:40:32.181000Z",
-      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json",
-      "latestRunId": "20260306T214032Z",
+      "latestGeneratedAt": "2026-03-09T02:38:02.931000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json",
+      "latestRunId": "20260309T023802Z",
       "maturity": "primary",
       "notes": [
         "Node is the primary supported package surface for @simulatte/webgpu.",
@@ -953,7 +1164,7 @@
       ],
       "primarySupport": "node",
       "providerPair": "doe_node_vs_dawn_node",
-      "reportCount": 10,
+      "reportCount": 20,
       "rowCount": 3,
       "scopeType": "workload_set",
       "sourceConformance": "canonical",
@@ -965,11 +1176,14 @@
     {
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
-      "deltaP50MedianPercent": -936.5,
+      "deltaP50MedianPercent": -38.1,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
-      "latestGeneratedAt": "2026-03-06T21:40:32.181000Z",
-      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json",
-      "latestRunId": "20260306T214032Z",
+      "latestGeneratedAt": "2026-03-09T02:38:02.931000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json",
+      "latestRunId": "20260309T023802Z",
       "maturity": "primary",
       "notes": [
         "Node is the primary supported package surface for @simulatte/webgpu.",
@@ -977,7 +1191,7 @@
       ],
       "primarySupport": "node",
       "providerPair": "doe_node_vs_dawn_node",
-      "reportCount": 10,
+      "reportCount": 15,
       "rowCount": 1,
       "scopeType": "workload_set",
       "sourceConformance": "canonical",
@@ -989,11 +1203,14 @@
     {
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
-      "deltaP50MedianPercent": 34.1,
+      "deltaP50MedianPercent": 46.0,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
-      "latestGeneratedAt": "2026-03-06T21:40:32.181000Z",
-      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json",
-      "latestRunId": "20260306T214032Z",
+      "latestGeneratedAt": "2026-03-09T02:38:02.931000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json",
+      "latestRunId": "20260309T023802Z",
       "maturity": "primary",
       "notes": [
         "Node is the primary supported package surface for @simulatte/webgpu.",
@@ -1001,7 +1218,7 @@
       ],
       "primarySupport": "node",
       "providerPair": "doe_node_vs_dawn_node",
-      "reportCount": 10,
+      "reportCount": 20,
       "rowCount": 11,
       "scopeType": "full_matrix",
       "sourceConformance": "canonical",
@@ -1013,11 +1230,14 @@
     {
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
-      "deltaP50MedianPercent": 90.7,
+      "deltaP50MedianPercent": 92.8,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
-      "latestGeneratedAt": "2026-03-06T21:40:32.181000Z",
-      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json",
-      "latestRunId": "20260306T214032Z",
+      "latestGeneratedAt": "2026-03-09T02:38:02.931000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json",
+      "latestRunId": "20260309T023802Z",
       "maturity": "primary",
       "notes": [
         "Node is the primary supported package surface for @simulatte/webgpu.",
@@ -1025,7 +1245,7 @@
       ],
       "primarySupport": "node",
       "providerPair": "doe_node_vs_dawn_node",
-      "reportCount": 10,
+      "reportCount": 15,
       "rowCount": 1,
       "scopeType": "workload_set",
       "sourceConformance": "canonical",
@@ -1037,11 +1257,14 @@
     {
       "claimStatus": "diagnostic",
       "comparisonStatus": "diagnostic",
-      "deltaP50MedianPercent": -209.4,
+      "deltaP50MedianPercent": -225.8,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
-      "latestGeneratedAt": "2026-03-06T21:40:32.181000Z",
-      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json",
-      "latestRunId": "20260306T214032Z",
+      "latestGeneratedAt": "2026-03-09T02:38:02.931000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json",
+      "latestRunId": "20260309T023802Z",
       "maturity": "primary",
       "notes": [
         "Node is the primary supported package surface for @simulatte/webgpu.",
@@ -1049,7 +1272,7 @@
       ],
       "primarySupport": "node",
       "providerPair": "doe_node_vs_dawn_node",
-      "reportCount": 10,
+      "reportCount": 15,
       "rowCount": 1,
       "scopeType": "workload_set",
       "sourceConformance": "canonical",
@@ -1059,13 +1282,16 @@
       "workloadSet": "pipeline"
     },
     {
-      "claimStatus": "claimable",
+      "claimStatus": "diagnostic",
       "comparisonStatus": "comparable",
-      "deltaP50MedianPercent": 53.9,
+      "deltaP50MedianPercent": 64.5,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "mac_apple_silicon",
-      "latestGeneratedAt": "2026-03-06T21:40:32.181000Z",
-      "latestReportPath": "bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json",
-      "latestRunId": "20260306T214032Z",
+      "latestGeneratedAt": "2026-03-09T02:38:02.931000Z",
+      "latestReportPath": "bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json",
+      "latestRunId": "20260309T023802Z",
       "maturity": "primary",
       "notes": [
         "Node is the primary supported package surface for @simulatte/webgpu.",
@@ -1073,16 +1299,19 @@
       ],
       "primarySupport": "node",
       "providerPair": "doe_node_vs_dawn_node",
-      "reportCount": 10,
+      "reportCount": 15,
       "rowCount": 5,
       "scopeType": "workload_set",
       "sourceConformance": "canonical",
       "sourceConformanceReason": "",
-      "status": "claimable",
+      "status": "comparable",
       "surface": "node_package",
       "workloadSet": "uploads"
     },
     {
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "primary",
       "notes": [
@@ -1095,10 +1324,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "node_package",
       "workloadSet": "compute_e2e"
     },
     {
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "primary",
       "notes": [
@@ -1111,10 +1344,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "node_package",
       "workloadSet": "dispatch_only"
     },
     {
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "primary",
       "notes": [
@@ -1127,10 +1364,14 @@
       "rowCount": 0,
       "scopeType": "full_matrix",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "node_package",
       "workloadSet": "full_comparable"
     },
     {
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "primary",
       "notes": [
@@ -1143,10 +1384,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "node_package",
       "workloadSet": "overhead"
     },
     {
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "primary",
       "notes": [
@@ -1159,10 +1404,14 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "node_package",
       "workloadSet": "pipeline"
     },
     {
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
       "hostProfile": "windows_x64",
       "maturity": "primary",
       "notes": [
@@ -1175,24 +1424,25 @@
       "rowCount": 0,
       "scopeType": "workload_set",
       "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
       "surface": "node_package",
       "workloadSet": "uploads"
     }
   ],
-  "generatedAt": "2026-03-07T01:07:14.759716Z",
+  "generatedAt": "2026-03-09T18:00:30.847438Z",
   "policy": {
     "path": "config/benchmark-cube-policy.json",
-    "sha256": "e82f7162ca6f1a5a2bef56df3792cbb02c116e4ac46c35837a90c5b89138032c"
+    "sha256": "32c2433a37f993518350112be787689e351c4dc0c380b44dd3a0862118a66eab"
   },
-  "rowCount": 517,
+  "rowCount": 563,
   "schemaVersion": 1,
   "sourceCounts": {
     "backendReports": {
-      "canonicalIncluded": 13,
-      "discovered": 25,
-      "included": 25,
-      "legacyIncluded": 12,
-      "skipped": 0
+      "canonicalIncluded": 0,
+      "discovered": 27,
+      "included": 17,
+      "legacyIncluded": 17,
+      "skipped": 10
     },
     "bunReports": {
       "canonicalIncluded": 22,
@@ -1202,18 +1452,18 @@
       "skipped": 0
     },
     "nodeReports": {
-      "canonicalIncluded": 13,
-      "discovered": 13,
-      "included": 13,
+      "canonicalIncluded": 23,
+      "discovered": 23,
+      "included": 23,
       "legacyIncluded": 0,
       "skipped": 0
     }
   },
   "statusCounts": {
-    "claimable": 9,
-    "comparable": 6,
-    "diagnostic": 15,
-    "unimplemented": 27,
+    "claimable": 1,
+    "comparable": 5,
+    "diagnostic": 21,
+    "unimplemented": 30,
     "unsupported": 0
   }
 }

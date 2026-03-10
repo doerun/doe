@@ -13,6 +13,7 @@
     "host",
     "surface",
     "providerPair",
+    "governedLaneIds",
     "workloadSet",
     "workloadId",
     "workloadDomain",
@@ -99,11 +100,23 @@
       "type": "string",
       "minLength": 1
     },
+    "governedLaneIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "workloadSet": {
       "type": "string",
       "minLength": 1
     },
     "workloadId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceWorkloadId": {
       "type": "string",
       "minLength": 1
     },

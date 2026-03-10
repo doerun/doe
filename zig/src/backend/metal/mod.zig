@@ -211,13 +211,17 @@ pub const ZigMetalBackend = struct {
 fn native_capability_set() capabilities.CapabilitySet {
     var set = capabilities.CapabilitySet{};
     set.declare_all(&.{
+        .compute_dispatch,
         .buffer_upload,
+        .buffer_copy,
         .barrier_sync,
         .kernel_dispatch,
         .sampler_lifecycle,
         .texture_write,
         .texture_query,
         .texture_destroy,
+        .surface_lifecycle,
+        .surface_present,
         .render_draw,
         .render_pass,
         .indirect_draw,
@@ -395,8 +399,14 @@ fn execute_upload(self: *ZigMetalBackend, upload: model.UploadCommand) !webgpu.N
 
 fn execute_barrier(self: *ZigMetalBackend) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
-    const submit_wait_ns = try rt.barrier(self.queue_wait_mode);
+    const submit_wait_ns = try rt.barrier(self.queue_wait_mode, self.queue_sync_mode);
     return ok_result(0, 0, submit_wait_ns, 0);
+}
+
+fn execute_dispatch(self: *ZigMetalBackend, dispatch: model.DispatchCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const metrics = try rt.run_dispatch(dispatch.x, dispatch.y, dispatch.z, self.queue_sync_mode);
+    return ok_result(0, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
 }
 
 fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
@@ -407,6 +417,12 @@ fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchComma
         kd.bindings,
     );
     return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
+}
+
+fn execute_copy(self: *ZigMetalBackend, cmd: model.CopyCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const metrics = try rt.copy_command(cmd, self.queue_sync_mode);
+    return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, 0);
 }
 
 fn execute_sampler_create(self: *ZigMetalBackend, cmd: model.SamplerCreateCommand) !webgpu.NativeExecutionResult {
@@ -444,19 +460,75 @@ fn execute_texture_destroy(self: *ZigMetalBackend, cmd: model.TextureDestroyComm
     return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
 }
 
+fn execute_surface_create(self: *ZigMetalBackend, cmd: model.SurfaceCreateCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const encode_start = common_timing.now_ns();
+    try rt.surface_create(cmd);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+}
+
+fn execute_surface_capabilities(self: *ZigMetalBackend, cmd: model.SurfaceCapabilitiesCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const encode_start = common_timing.now_ns();
+    try rt.surface_capabilities(cmd);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+}
+
+fn execute_surface_configure(self: *ZigMetalBackend, cmd: model.SurfaceConfigureCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const encode_start = common_timing.now_ns();
+    try rt.surface_configure(cmd);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+}
+
+fn execute_surface_acquire(self: *ZigMetalBackend, cmd: model.SurfaceAcquireCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const encode_start = common_timing.now_ns();
+    try rt.surface_acquire(cmd);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+}
+
+fn execute_surface_present(self: *ZigMetalBackend, cmd: model.SurfacePresentCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const submit_wait_ns = try rt.surface_present(cmd);
+    return ok_result(0, 0, submit_wait_ns, 0);
+}
+
+fn execute_surface_unconfigure(self: *ZigMetalBackend, cmd: model.SurfaceUnconfigureCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const encode_start = common_timing.now_ns();
+    try rt.surface_unconfigure(cmd);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+}
+
+fn execute_surface_release(self: *ZigMetalBackend, cmd: model.SurfaceReleaseCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const encode_start = common_timing.now_ns();
+    try rt.surface_release(cmd);
+    return ok_result(0, common_timing.ns_delta(common_timing.now_ns(), encode_start), 0, 0);
+}
+
 fn execute_render_draw(self: *ZigMetalBackend, cmd: model.RenderDrawCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
-    const metrics = try rt.render_draw(cmd);
+    const metrics = try rt.render_draw(cmd, self.queue_sync_mode);
     return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.draw_count);
 }
 
 fn execute_async_diagnostics(self: *ZigMetalBackend, cmd: model.AsyncDiagnosticsCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
-    const fmt = cmd.target_format;
-    const encode_start = common_timing.now_ns();
-    try rt.ensure_render_pipeline(fmt);
-    const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-    return ok_result(0, encode_ns, 0, 1);
+    const setup_start = common_timing.now_ns();
+    switch (cmd.mode) {
+        .pipeline_async => {
+            try rt.ensure_render_pipeline(cmd.target_format);
+            const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
+            return ok_result(setup_ns, 0, 0, 0);
+        },
+        else => {
+            try rt.ensure_render_pipeline(cmd.target_format);
+            const encode_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
+            return ok_result(0, encode_ns, 0, 1);
+        },
+    }
 }
 
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
@@ -505,13 +577,22 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
 
     var result = switch (command) {
         .upload => |upload| try execute_upload(self, upload),
+        .copy_buffer_to_texture => |copy| try execute_copy(self, copy),
         .barrier => try execute_barrier(self),
+        .dispatch => |dispatch| try execute_dispatch(self, dispatch),
         .kernel_dispatch => |kd| try execute_kernel_dispatch(self, kd),
         .sampler_create => |cmd| try execute_sampler_create(self, cmd),
         .sampler_destroy => |cmd| try execute_sampler_destroy(self, cmd),
         .texture_write => |cmd| try execute_texture_write(self, cmd),
         .texture_query => |cmd| try execute_texture_query(self, cmd),
         .texture_destroy => |cmd| try execute_texture_destroy(self, cmd),
+        .surface_create => |cmd| try execute_surface_create(self, cmd),
+        .surface_capabilities => |cmd| try execute_surface_capabilities(self, cmd),
+        .surface_configure => |cmd| try execute_surface_configure(self, cmd),
+        .surface_acquire => |cmd| try execute_surface_acquire(self, cmd),
+        .surface_present => |cmd| try execute_surface_present(self, cmd),
+        .surface_unconfigure => |cmd| try execute_surface_unconfigure(self, cmd),
+        .surface_release => |cmd| try execute_surface_release(self, cmd),
         .render_draw => |cmd| try execute_render_draw(self, cmd),
         .draw_indirect => |cmd| try execute_render_draw(self, cmd),
         .draw_indexed_indirect => |cmd| try execute_render_draw(self, cmd),

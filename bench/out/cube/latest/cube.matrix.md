@@ -1,8 +1,8 @@
 # Benchmark Cube
 
-Generated: `2026-03-07T01:07:14.759716Z`
+Generated: `2026-03-09T18:00:30.847438Z`
 
-Rows: `517`
+Rows: `563`
 
 ## Backend Native
 
@@ -10,17 +10,18 @@ Maturity: `primary`. Primary support: `backend`.
 
 | Workload Set | Apple Silicon macOS | AMD Linux Vulkan | Windows D3D12 |
 | --- | --- | --- | --- |
-| Full Comparable | comparable (30 rows) | claimable (8 rows) | unimplemented |
-| Uploads | claimable (8 rows) | claimable (8 rows) | unimplemented |
-| Compute | claimable (7 rows) | diagnostic (1 rows) | unimplemented |
-| Render | claimable (7 rows) | unimplemented | unimplemented |
-| Pipeline | claimable (2 rows) | diagnostic (1 rows) | unimplemented |
-| Texture | claimable (3 rows) | unimplemented | unimplemented |
-| Contracts | comparable (3 rows) | diagnostic (2 rows) | unimplemented |
+| Full Comparable | diagnostic (30 rows) | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) |
+| Uploads | diagnostic (8 rows) | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) |
+| Compute | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Render | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Pipeline | diagnostic (2 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Texture | diagnostic (3 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Contracts | diagnostic (3 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 
 - Strict Dawn-vs-Doe backend reports are the canonical claim lane.
 - Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.
 - AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.
+- Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands.
 
 ## Node Package
 
@@ -28,12 +29,12 @@ Maturity: `primary`. Primary support: `node`.
 
 | Workload Set | Apple Silicon macOS | Linux x64 | Windows x64 |
 | --- | --- | --- | --- |
-| Full Comparable | diagnostic (11 rows) | diagnostic (4 rows) | unimplemented |
-| Uploads | claimable (5 rows) | comparable (5 rows) | unimplemented |
-| Compute | comparable (3 rows) | comparable (3 rows) | unimplemented |
-| Dispatch Only | diagnostic (1 rows) | diagnostic (1 rows) | unimplemented |
-| Pipeline | diagnostic (1 rows) | diagnostic (1 rows) | unimplemented |
-| Overhead | diagnostic (1 rows) | diagnostic (1 rows) | unimplemented |
+| Full Comparable | diagnostic (11 rows) | diagnostic (4 rows) | unimplemented (contract exists, evidence missing) |
+| Uploads | comparable (5 rows) | comparable (5 rows) | unimplemented (contract exists, evidence missing) |
+| Compute | comparable (3 rows) | comparable (3 rows) | unimplemented (contract exists, evidence missing) |
+| Dispatch Only | diagnostic (1 rows) | diagnostic (1 rows) | unimplemented (contract exists, evidence missing) |
+| Pipeline | diagnostic (1 rows) | diagnostic (1 rows) | unimplemented (contract exists, evidence missing) |
+| Overhead | diagnostic (1 rows) | diagnostic (1 rows) | unimplemented (contract exists, evidence missing) |
 
 - Node is the primary supported package surface for @simulatte/webgpu.
 - Node package comparisons are runtime/package evidence and do not replace strict backend reports.
@@ -44,12 +45,12 @@ Maturity: `prototype`. Primary support: `bun`.
 
 | Workload Set | Apple Silicon macOS | Linux x64 | Windows x64 |
 | --- | --- | --- | --- |
-| Full Comparable | unimplemented | diagnostic (11 rows) | unimplemented |
-| Uploads | unimplemented | comparable (5 rows) | unimplemented |
-| Compute | unimplemented | claimable (3 rows) | unimplemented |
-| Dispatch Only | unimplemented | diagnostic (1 rows) | unimplemented |
-| Pipeline | unimplemented | diagnostic (1 rows) | unimplemented |
-| Overhead | unimplemented | diagnostic (1 rows) | unimplemented |
+| Full Comparable | unimplemented (contract exists, evidence missing) | diagnostic (11 rows) | unimplemented (contract exists, evidence missing) |
+| Uploads | unimplemented (contract exists, evidence missing) | comparable (5 rows) | unimplemented (contract exists, evidence missing) |
+| Compute | unimplemented (contract exists, evidence missing) | claimable (3 rows) | unimplemented (contract exists, evidence missing) |
+| Dispatch Only | unimplemented (contract exists, evidence missing) | diagnostic (1 rows) | unimplemented (contract exists, evidence missing) |
+| Pipeline | unimplemented (contract exists, evidence missing) | diagnostic (1 rows) | unimplemented (contract exists, evidence missing) |
+| Overhead | unimplemented (contract exists, evidence missing) | diagnostic (1 rows) | unimplemented (contract exists, evidence missing) |
 
 - Bun has API parity with Node via direct FFI. Compare lane: bench/bun/compare.js against the bun-webgpu package.
 - Do not cite Bun cells as package parity until they are populated by comparable artifacts.

@@ -6,16 +6,20 @@
 // End-to-end workloads (dispatch + readback) ARE comparable because both
 // providers must wait for GPU completion.
 
+import { packageWorkloadContract } from './workload_contracts.js';
+
+function defineWorkload(id, comparable, factory) {
+  return {
+    ...packageWorkloadContract(id, comparable),
+    factory,
+  };
+}
+
 export const workloads = [
   // ================================================================
   // Upload workloads (comparable: writeBuffer is synchronous in both)
   // ================================================================
-  {
-    id: 'buffer_upload_1kb',
-    domain: 'upload',
-    comparable: true,
-    description: 'Write 1 KB to GPU buffer via queue.writeBuffer',
-    factory: (device, queue, G) => {
+  defineWorkload('buffer_upload_1kb', true, (device, queue, G) => {
       const size = 1024;
       const data = new Uint8Array(size);
       let buf;
@@ -26,14 +30,8 @@ export const workloads = [
         run() { queue.writeBuffer(buf, 0, data); },
         teardown() { buf.destroy(); },
       };
-    },
-  },
-  {
-    id: 'buffer_upload_64kb',
-    domain: 'upload',
-    comparable: true,
-    description: 'Write 64 KB to GPU buffer via queue.writeBuffer',
-    factory: (device, queue, G) => {
+    }),
+  defineWorkload('buffer_upload_64kb', true, (device, queue, G) => {
       const size = 65536;
       const data = new Uint8Array(size);
       let buf;
@@ -44,14 +42,8 @@ export const workloads = [
         run() { queue.writeBuffer(buf, 0, data); },
         teardown() { buf.destroy(); },
       };
-    },
-  },
-  {
-    id: 'buffer_upload_1mb',
-    domain: 'upload',
-    comparable: true,
-    description: 'Write 1 MB to GPU buffer via queue.writeBuffer',
-    factory: (device, queue, G) => {
+    }),
+  defineWorkload('buffer_upload_1mb', true, (device, queue, G) => {
       const size = 1024 * 1024;
       const data = new Uint8Array(size);
       let buf;
@@ -62,14 +54,8 @@ export const workloads = [
         run() { queue.writeBuffer(buf, 0, data); },
         teardown() { buf.destroy(); },
       };
-    },
-  },
-  {
-    id: 'buffer_upload_16mb',
-    domain: 'upload',
-    comparable: true,
-    description: 'Write 16 MB to GPU buffer via queue.writeBuffer',
-    factory: (device, queue, G) => {
+    }),
+  defineWorkload('buffer_upload_16mb', true, (device, queue, G) => {
       const size = 16 * 1024 * 1024;
       const data = new Uint8Array(size);
       let buf;
@@ -80,14 +66,8 @@ export const workloads = [
         run() { queue.writeBuffer(buf, 0, data); },
         teardown() { buf.destroy(); },
       };
-    },
-  },
-  {
-    id: 'buffer_map_write_unmap',
-    domain: 'upload',
-    comparable: true,
-    description: 'Map buffer for writing, fill 64 KB, unmap',
-    factory: (device, queue, G) => {
+    }),
+  defineWorkload('buffer_map_write_unmap', true, (device, queue, G) => {
       const size = 65536;
       let buf;
       return {
@@ -107,43 +87,19 @@ export const workloads = [
         },
         teardown() { buf.destroy(); },
       };
-    },
-  },
+    }),
 
   // ================================================================
   // End-to-end compute (comparable: both wait for GPU completion)
   // ================================================================
-  {
-    id: 'compute_e2e_256',
-    domain: 'compute',
-    comparable: true,
-    description: 'End-to-end: dispatch 256 threads + readback',
-    factory: makeComputeE2E(256, 64),
-  },
-  {
-    id: 'compute_e2e_4096',
-    domain: 'compute',
-    comparable: true,
-    description: 'End-to-end: dispatch 4096 threads + readback',
-    factory: makeComputeE2E(4096, 256),
-  },
-  {
-    id: 'compute_e2e_65536',
-    domain: 'compute',
-    comparable: true,
-    description: 'End-to-end: dispatch 65536 threads + readback',
-    factory: makeComputeE2E(65536, 256),
-  },
+  defineWorkload('compute_e2e_256', true, makeComputeE2E(256, 64)),
+  defineWorkload('compute_e2e_4096', true, makeComputeE2E(4096, 256)),
+  defineWorkload('compute_e2e_65536', true, makeComputeE2E(65536, 256)),
 
   // ================================================================
   // Dispatch-only (NOT comparable: Dawn async vs Doe sync)
   // ================================================================
-  {
-    id: 'compute_dispatch_simple',
-    domain: 'compute',
-    comparable: false,
-    description: 'Dispatch 256-thread compute (Dawn async, Doe sync — not comparable)',
-    factory: (device, queue, G) => {
+  defineWorkload('compute_dispatch_simple', false, (device, queue, G) => {
       const COUNT = 256;
       const size = COUNT * 4;
       const wgsl = `
@@ -188,32 +144,20 @@ export const workloads = [
         },
         teardown() { storageBuf.destroy(); },
       };
-    },
-  },
+    }),
 
   // ================================================================
   // Overhead workloads
   // ================================================================
-  {
-    id: 'submit_empty',
-    domain: 'overhead',
-    comparable: false,
-    description: 'Submit empty command buffer (Dawn async vs Doe sync)',
-    factory: (device, queue, G) => ({
+  defineWorkload('submit_empty', false, (device, queue, G) => ({
       setup() {},
       run() {
         const enc = device.createCommandEncoder();
         queue.submit([enc.finish()]);
       },
       teardown() {},
-    }),
-  },
-  {
-    id: 'pipeline_create',
-    domain: 'pipeline',
-    comparable: false,
-    description: 'Create compute pipeline from WGSL (Doe: MSL compile, Dawn: cached)',
-    factory: (device, queue, G) => {
+    })),
+  defineWorkload('pipeline_create', false, (device, queue, G) => {
       const wgsl = `
         @group(0) @binding(0) var<storage, read_write> out: array<u32>;
         @compute @workgroup_size(64)
@@ -238,8 +182,7 @@ export const workloads = [
         },
         teardown() {},
       };
-    },
-  },
+    }),
 ];
 
 // Helper: create end-to-end compute workload (dispatch + copy + mapAsync readback).

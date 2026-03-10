@@ -46,7 +46,8 @@ comparison modes, and enough timing evidence to satisfy the claim gates in
 
 Current benchmark evidence is split across strict backend claim lanes and
 separate package-surface comparison lanes. The canonical aggregation layer
-for those surfaces now lives in the benchmark cube artifacts:
+for those surfaces now lives in the benchmark cube artifacts, and cube rows are
+published only from governed lane-backed evidence:
 - timestamped runs under `bench/out/cube/<timestamp>/`
 - stable latest outputs under `bench/out/cube/latest/`
 - builder: `python3 bench/build_benchmark_cube.py`

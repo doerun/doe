@@ -49,7 +49,7 @@ const default_commands = [_]model.Command{
 fn printUsage(stdout: anytype) !void {
     try stdout.print(
         \\doe-zig-runtime --quirks <path> [--commands <path>] [--quirk-mode off|trace|active] [--vendor X] [--api X] [--family X] [--driver X.Y.Z] [--trace]
-        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane vulkan_dawn_release|vulkan_doe_app|d3d12_doe_app|metal_doe_directional|metal_doe_comparable|metal_doe_release|metal_dawn_release|d3d12_doe_directional|d3d12_doe_comparable|d3d12_doe_release|d3d12_dawn_release|vulkan_dawn_directional|vulkan_doe_comparable|vulkan_doe_release|metal_doe_app]
+        \\ [--trace-jsonl <path>] [--trace-meta <path>] [--backend trace|native] [--backend-lane metal_doe_app|metal_doe_directional|metal_doe_comparable|metal_doe_release|metal_dawn_release|vulkan_doe_app|vulkan_doe_comparable|vulkan_doe_release|vulkan_dawn_release|d3d12_doe_app|d3d12_doe_directional|d3d12_doe_comparable|d3d12_doe_release|d3d12_dawn_release]
         \\ [--upload-buffer-usage copy-dst-copy-src|copy-dst] [--upload-submit-every N]
         \\ [--gpu-timestamp-mode auto|off|require]
         \\ [--queue-wait-mode process-events|wait-any]
@@ -96,7 +96,7 @@ fn printUsage(stdout: anytype) !void {
         \\  trace: do not execute commands (trace-only mode)
         \\  native: execute through webgpu-native; dispatch/kernel_dispatch lower to compute passes, render_draw lowers to render-pass or render-bundle mode, and sampler/texture/surface/async diagnostics commands run through explicit WebGPU API contracts.
         \\--backend-lane selects backend selection policy lane when native execution is enabled.
-        \\  vulkan_dawn_release, vulkan_doe_app, d3d12_doe_app, metal_doe_directional, metal_doe_comparable, metal_doe_release, metal_dawn_release, d3d12_doe_directional, d3d12_doe_comparable, d3d12_doe_release, d3d12_dawn_release, vulkan_dawn_directional, vulkan_doe_comparable, vulkan_doe_release, metal_doe_app
+        \\  metal_doe_app, metal_doe_directional, metal_doe_comparable, metal_doe_release, metal_dawn_release, vulkan_doe_app, vulkan_doe_comparable, vulkan_doe_release, vulkan_dawn_release, d3d12_doe_app, d3d12_doe_directional, d3d12_doe_comparable, d3d12_doe_release, d3d12_dawn_release
         \\--upload-buffer-usage selects upload buffer usage when --execute is enabled.
         \\  copy-dst-copy-src: create upload buffers with CopyDst|CopySrc (default).
         \\  copy-dst: create upload buffers with CopyDst only.

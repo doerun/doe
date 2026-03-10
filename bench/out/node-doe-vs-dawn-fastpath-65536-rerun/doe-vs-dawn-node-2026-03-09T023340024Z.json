@@ -1,5 +1,6 @@
 {
   "type": "comparison_report",
+  "laneId": "node_package_compare",
   "timestamp": "2026-03-09T02:33:40.021Z",
   "iterations": 20,
   "warmup": 2,

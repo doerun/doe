@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn workload registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "workloads"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/workload"
+      }
+    }
+  },
+  "$defs": {
+    "surfaceEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface",
+        "workloadIds",
+        "implementationKind"
+      ],
+      "properties": {
+        "surface": {
+          "type": "string",
+          "enum": [
+            "backend_native",
+            "node_package",
+            "bun_package"
+          ]
+        },
+        "workloadIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implementationKind": {
+          "type": "string",
+          "enum": [
+            "command_contract",
+            "webgpu_factory"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalId",
+        "displayName",
+        "domain",
+        "description",
+        "surfaces"
+      ],
+      "properties": {
+        "canonicalId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "surfaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/surfaceEntry"
+          }
+        }
+      }
+    }
+  }
+}

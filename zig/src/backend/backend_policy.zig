@@ -2,21 +2,20 @@ const std = @import("std");
 const backend_ids = @import("backend_ids.zig");
 
 pub const BackendLane = enum {
-    vulkan_dawn_release,
-    vulkan_doe_app,
-    d3d12_doe_app,
+    metal_doe_app,
     metal_doe_directional,
     metal_doe_comparable,
     metal_doe_release,
     metal_dawn_release,
+    vulkan_doe_app,
+    vulkan_doe_comparable,
+    vulkan_doe_release,
+    vulkan_dawn_release,
+    d3d12_doe_app,
     d3d12_doe_directional,
     d3d12_doe_comparable,
     d3d12_doe_release,
     d3d12_dawn_release,
-    vulkan_dawn_directional,
-    vulkan_doe_comparable,
-    vulkan_doe_release,
-    metal_doe_app,
 };
 
 pub const UploadPathPolicy = enum {
@@ -49,40 +48,39 @@ pub const PolicyLoadError = error{
 
 pub fn lane_name(lane: BackendLane) []const u8 {
     return switch (lane) {
-        .vulkan_dawn_release => "vulkan_dawn_release",
-        .vulkan_doe_app => "vulkan_doe_app",
-        .d3d12_doe_app => "d3d12_doe_app",
+        .metal_doe_app => "metal_doe_app",
         .metal_doe_directional => "metal_doe_directional",
         .metal_doe_comparable => "metal_doe_comparable",
         .metal_doe_release => "metal_doe_release",
         .metal_dawn_release => "metal_dawn_release",
+        .vulkan_doe_app => "vulkan_doe_app",
+        .vulkan_doe_comparable => "vulkan_doe_comparable",
+        .vulkan_doe_release => "vulkan_doe_release",
+        .vulkan_dawn_release => "vulkan_dawn_release",
+        .d3d12_doe_app => "d3d12_doe_app",
         .d3d12_doe_directional => "d3d12_doe_directional",
         .d3d12_doe_comparable => "d3d12_doe_comparable",
         .d3d12_doe_release => "d3d12_doe_release",
         .d3d12_dawn_release => "d3d12_dawn_release",
-        .vulkan_dawn_directional => "vulkan_dawn_directional",
-        .vulkan_doe_comparable => "vulkan_doe_comparable",
-        .vulkan_doe_release => "vulkan_doe_release",
-        .metal_doe_app => "metal_doe_app",
     };
 }
 
 pub fn parse_lane(raw: []const u8) ?BackendLane {
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release")) return .vulkan_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app")) return .vulkan_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app")) return .d3d12_doe_app;
+    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal_doe_app")) return .metal_doe_app;
     if (std.ascii.eqlIgnoreCase(raw, "metal_doe_directional") or std.ascii.eqlIgnoreCase(raw, "metal_doe_directional")) return .metal_doe_directional;
     if (std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable")) return .metal_doe_comparable;
     if (std.ascii.eqlIgnoreCase(raw, "metal_doe_release") or std.ascii.eqlIgnoreCase(raw, "metal_doe_release")) return .metal_doe_release;
     if (std.ascii.eqlIgnoreCase(raw, "metal_dawn_release")) return .metal_dawn_release;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app")) return .vulkan_doe_app;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable")) return .vulkan_doe_comparable;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release")) return .vulkan_doe_release;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release")) return .vulkan_dawn_release;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional")) return .vulkan_dawn_release;
+    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app")) return .d3d12_doe_app;
     if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional")) return .d3d12_doe_directional;
     if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable")) return .d3d12_doe_comparable;
     if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_release") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_release")) return .d3d12_doe_release;
     if (std.ascii.eqlIgnoreCase(raw, "d3d12_dawn_release")) return .d3d12_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional")) return .vulkan_dawn_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable")) return .vulkan_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release")) return .vulkan_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal_doe_app")) return .metal_doe_app;
     return null;
 }
 
@@ -185,7 +183,23 @@ pub fn load_policy_for_lane(
 
 pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
     return switch (lane) {
-        .vulkan_dawn_release => .{
+        .metal_doe_app, .metal_doe_comparable, .metal_doe_release => .{
+            .lane = lane,
+            .default_backend = .doe_metal,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
+        },
+        .metal_doe_directional => .{
+            .lane = lane,
+            .default_backend = .doe_metal,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
+        },
+        .metal_dawn_release => .{
             .lane = lane,
             .default_backend = .dawn_delegate,
             .allow_fallback = false,
@@ -209,41 +223,17 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .staged_copy_only,
         },
+        .vulkan_dawn_release => .{
+            .lane = lane,
+            .default_backend = .dawn_delegate,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .allow_mapped_shortcuts,
+        },
         .d3d12_doe_app, .d3d12_doe_comparable, .d3d12_doe_release => .{
             .lane = lane,
             .default_backend = .doe_d3d12,
-            .allow_fallback = false,
-            .strict_no_fallback = true,
-            .policy_hash = DEFAULT_POLICY_HASH,
-            .upload_path_policy = .allow_mapped_shortcuts,
-        },
-        .metal_doe_directional => .{
-            .lane = lane,
-            .default_backend = .doe_metal,
-            .allow_fallback = false,
-            .strict_no_fallback = true,
-            .policy_hash = DEFAULT_POLICY_HASH,
-            .upload_path_policy = .allow_mapped_shortcuts,
-        },
-        .metal_dawn_release => .{
-            .lane = lane,
-            .default_backend = .dawn_delegate,
-            .allow_fallback = false,
-            .strict_no_fallback = true,
-            .policy_hash = DEFAULT_POLICY_HASH,
-            .upload_path_policy = .allow_mapped_shortcuts,
-        },
-        .metal_doe_comparable, .metal_doe_release, .metal_doe_app => .{
-            .lane = lane,
-            .default_backend = .doe_metal,
-            .allow_fallback = false,
-            .strict_no_fallback = true,
-            .policy_hash = DEFAULT_POLICY_HASH,
-            .upload_path_policy = .allow_mapped_shortcuts,
-        },
-        .vulkan_dawn_directional => .{
-            .lane = lane,
-            .default_backend = .dawn_delegate,
             .allow_fallback = false,
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,

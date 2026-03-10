@@ -188,6 +188,13 @@
           "type": "string",
           "minLength": 1
         },
+        "governedLaneIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
         "hostProfile": {
           "type": "string",
           "minLength": 1
@@ -228,6 +235,9 @@
             "comparable",
             "claimable"
           ]
+        },
+        "statusDetail": {
+          "type": "string"
         },
         "reportCount": {
           "type": "integer",

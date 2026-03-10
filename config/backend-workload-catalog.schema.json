@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn backend workload catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "laneOutputs",
+    "workloads"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "laneOutputs": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/laneOutput"
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/workload"
+      }
+    }
+  },
+  "$defs": {
+    "scalarOrContainer": {
+      "type": [
+        "string",
+        "number",
+        "integer",
+        "boolean",
+        "array",
+        "object",
+        "null"
+      ]
+    },
+    "laneOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outputPath"
+      ],
+      "properties": {
+        "outputPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "workloadOverride": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/scalarOrContainer"
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "fieldOrder",
+        "shared",
+        "lanes"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fieldOrder": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "shared": {
+          "$ref": "#/$defs/workloadOverride"
+        },
+        "lanes": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/workloadOverride"
+          }
+        }
+      }
+    }
+  }
+}

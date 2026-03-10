@@ -7,6 +7,8 @@
 typedef void* MetalHandle;
 
 MetalHandle metal_bridge_create_default_device(void);
+MetalHandle metal_bridge_create_surface_host(MetalHandle* layer_out);
+void        metal_bridge_configure_surface_host(MetalHandle host, uint32_t width, uint32_t height);
 void        metal_bridge_release(MetalHandle obj);
 
 MetalHandle metal_bridge_device_new_command_queue(MetalHandle device);
@@ -58,6 +60,44 @@ void metal_bridge_blit_encoder_copy(
     MetalHandle src,
     MetalHandle dst,
     size_t      byte_count);
+void metal_bridge_blit_encoder_copy_region(
+    MetalHandle encoder,
+    MetalHandle src,
+    uint64_t    src_offset,
+    MetalHandle dst,
+    uint64_t    dst_offset,
+    uint64_t    size);
+void metal_bridge_blit_encoder_copy_buffer_to_texture(
+    MetalHandle encoder,
+    MetalHandle src,
+    uint64_t    src_offset,
+    uint32_t    src_bytes_per_row,
+    uint32_t    src_rows_per_image,
+    MetalHandle dst_texture,
+    uint32_t    dst_mip_level,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_array_layers);
+void metal_bridge_blit_encoder_copy_texture_to_buffer(
+    MetalHandle encoder,
+    MetalHandle src_texture,
+    uint32_t    src_mip_level,
+    MetalHandle dst,
+    uint64_t    dst_offset,
+    uint32_t    dst_bytes_per_row,
+    uint32_t    dst_rows_per_image,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_array_layers);
+void metal_bridge_blit_encoder_copy_texture_to_texture(
+    MetalHandle encoder,
+    MetalHandle src_texture,
+    uint32_t    src_mip_level,
+    MetalHandle dst_texture,
+    uint32_t    dst_mip_level,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_array_layers);
 // End the current blit encoder. Call before commit or before starting a new encoder.
 void metal_bridge_end_blit_encoding(MetalHandle encoder);
 

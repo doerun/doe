@@ -10,6 +10,10 @@
       "data": "config/benchmark-cube-policy.json"
     },
     {
+      "schema": "config/governed-lanes.schema.json",
+      "data": "config/governed-lanes.json"
+    },
+    {
       "schema": "config/claim-cycle.schema.json",
       "data": "config/claim-cycle.active.json"
     },
@@ -104,6 +108,14 @@
     {
       "schema": "config/module-ownership.schema.json",
       "data": "config/module-ownership.json"
+    },
+    {
+      "schema": "config/backend-workload-catalog.schema.json",
+      "data": "bench/backend-workload-catalog.json"
+    },
+    {
+      "schema": "config/workload-registry.schema.json",
+      "data": "bench/workload-registry.json"
     }
   ],
   "globTargets": [

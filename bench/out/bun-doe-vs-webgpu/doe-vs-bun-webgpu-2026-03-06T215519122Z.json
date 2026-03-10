@@ -1,5 +1,6 @@
 {
   "type": "comparison_report",
+  "laneId": "bun_package_compare",
   "timestamp": "2026-03-06T21:55:19.114Z",
   "iterations": 50,
   "warmup": 5,

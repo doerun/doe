@@ -141,3 +141,44 @@ test "metal kernel_dispatch returns error when kernel file not found" {
     // Tests run from fawn/zig/ so bench/kernels/ is not on the lookup path; expect .@"error".
     try std.testing.expect(result.status == .@"error");
 }
+
+test "metal copy contract path executes native buffer-to-texture copy" {
+    if (builtin.os.tag != .macos) return;
+
+    const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
+        if (skip_if_runtime_unavailable(err)) return;
+        return err;
+    };
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_copy_contract", "test_policy_hash");
+    defer iface.deinit();
+
+    const result = try iface.execute_command(model.Command{ .copy_buffer_to_texture = .{
+        .direction = .buffer_to_texture,
+        .src = .{ .handle = 51, .offset = 0, .bytes_per_row = 8, .rows_per_image = 2 },
+        .dst = .{ .handle = 52, .kind = .texture, .width = 2, .height = 2, .depth_or_array_layers = 1, .format = model.WGPUTextureFormat_RGBA8Unorm, .usage = model.WGPUTextureUsage_CopyDst | model.WGPUTextureUsage_TextureBinding, .bytes_per_row = 8, .rows_per_image = 2 },
+        .bytes = 16,
+    } });
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+    try std.testing.expect(result.encode_ns > 0 or result.submit_wait_ns > 0);
+}
+
+test "metal surface lifecycle executes full presentation protocol" {
+    if (builtin.os.tag != .macos) return;
+
+    const backend = metal_mod.ZigMetalBackend.init(std.testing.allocator, test_profile(), null) catch |err| {
+        if (skip_if_runtime_unavailable(err)) return;
+        return err;
+    };
+    var iface = try backend.as_iface(std.testing.allocator, "test_metal_surface_contract", "test_policy_hash");
+    defer iface.deinit();
+
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_create = .{ .handle = 901 } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_capabilities = .{ .handle = 901 } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_configure = .{ .handle = 901, .width = 64, .height = 64, .format = model.WGPUTextureFormat_RGBA8Unorm } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_acquire = .{ .handle = 901 } })).status);
+    const present = try iface.execute_command(model.Command{ .surface_present = .{ .handle = 901 } });
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, present.status);
+    try std.testing.expect(present.submit_wait_ns > 0);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_unconfigure = .{ .handle = 901 } })).status);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_release = .{ .handle = 901 } })).status);
+}

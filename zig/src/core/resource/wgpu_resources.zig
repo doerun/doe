@@ -110,6 +110,19 @@ pub fn requiredBytes(bytes: u64, offset: u64) !u64 {
 }
 
 pub fn getOrCreateTexture(self: *Backend, resource: model.CopyTextureResource, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
+    return getOrCreateTextureWithOptions(self, resource, required_usage, false);
+}
+
+pub fn getOrCreateTextureInitialized(self: *Backend, resource: model.CopyTextureResource, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
+    return getOrCreateTextureWithOptions(self, resource, required_usage, true);
+}
+
+fn getOrCreateTextureWithOptions(
+    self: *Backend,
+    resource: model.CopyTextureResource,
+    required_usage: types.WGPUTextureUsage,
+    initialize_on_create: bool,
+) !types.WGPUTexture {
     if (resource.kind != .texture) return error.InvalidTextureResourceKind;
     const procs = self.core.procs orelse return error.ProceduralNotReady;
 
@@ -161,6 +174,27 @@ pub fn getOrCreateTexture(self: *Backend, resource: model.CopyTextureResource, r
     };
     const texture = procs.wgpuDeviceCreateTexture(self.core.device.?, &descriptor);
     if (texture == null) return error.TextureAllocationFailed;
+    errdefer procs.wgpuTextureRelease(texture);
+
+    if (initialize_on_create) {
+        try zeroInitializeTexture(self, texture, .{
+            .handle = resource.handle,
+            .kind = .texture,
+            .width = width,
+            .height = height,
+            .depth_or_array_layers = depth,
+            .format = format,
+            .usage = usage,
+            .dimension = dimension,
+            .view_dimension = resource.view_dimension,
+            .mip_level = resource.mip_level,
+            .sample_count = sample_count,
+            .aspect = resource.aspect,
+            .bytes_per_row = resource.bytes_per_row,
+            .rows_per_image = resource.rows_per_image,
+            .offset = resource.offset,
+        });
+    }
 
     try self.core.textures.put(handle, .{
         .texture = texture,
@@ -174,6 +208,51 @@ pub fn getOrCreateTexture(self: *Backend, resource: model.CopyTextureResource, r
     });
 
     return texture;
+}
+
+fn zeroInitializeTexture(
+    self: *Backend,
+    texture: types.WGPUTexture,
+    resource: model.CopyTextureResource,
+) !void {
+    const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
+    const queue = self.core.queue orelse return error.ProceduralNotReady;
+
+    const width = if (resource.width == 0) 1 else resource.width;
+    const height = if (resource.height == 0) 1 else resource.height;
+    const depth = if (resource.depth_or_array_layers == 0) 1 else resource.depth_or_array_layers;
+    const format = normalizeTextureFormat(resource.format);
+    const bytes_per_pixel = textureFormatBytesPerPixel(format) orelse return;
+    const bytes_per_row = if (resource.bytes_per_row != 0)
+        resource.bytes_per_row
+    else
+        width * bytes_per_pixel;
+    const rows_per_image = if (resource.rows_per_image != 0) resource.rows_per_image else height;
+    const data_size_u64 = @as(u64, bytes_per_row) * rows_per_image * depth;
+    const data_size = std.math.cast(usize, data_size_u64) orelse return error.TextureAllocationFailed;
+    const zero_bytes = try ensureZeroScratchBytes(self, data_size);
+
+    texture_procs.queue_write_texture(
+        queue,
+        &types.WGPUTexelCopyTextureInfo{
+            .texture = texture,
+            .mipLevel = resource.mip_level,
+            .origin = .{ .x = 0, .y = 0, .z = 0 },
+            .aspect = loader.normalizeTextureAspect(resource.aspect),
+        },
+        @ptrCast(zero_bytes.ptr),
+        zero_bytes.len,
+        &types.WGPUTexelCopyBufferLayout{
+            .offset = 0,
+            .bytesPerRow = bytes_per_row,
+            .rowsPerImage = rows_per_image,
+        },
+        &types.WGPUExtent3D{
+            .width = width,
+            .height = height,
+            .depthOrArrayLayers = depth,
+        },
+    );
 }
 
 pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBinding, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
@@ -641,6 +720,44 @@ pub fn normalizeTextureFormat(value: u32) types.WGPUTextureFormat {
         model.WGPUTextureFormat_Depth32Float => model.WGPUTextureFormat_Depth32Float,
         model.WGPUTextureFormat_Depth32FloatStencil8 => model.WGPUTextureFormat_Depth32FloatStencil8,
         else => types.WGPUTextureFormat_Undefined,
+    };
+}
+
+fn textureFormatBytesPerPixel(format: types.WGPUTextureFormat) ?u32 {
+    return switch (format) {
+        types.WGPUTextureFormat_R8Unorm,
+        model.WGPUTextureFormat_R8Snorm,
+        model.WGPUTextureFormat_R8Uint,
+        model.WGPUTextureFormat_R8Sint,
+        => 1,
+        model.WGPUTextureFormat_R16Unorm,
+        model.WGPUTextureFormat_R16Snorm,
+        model.WGPUTextureFormat_R16Uint,
+        model.WGPUTextureFormat_R16Sint,
+        model.WGPUTextureFormat_R16Float,
+        model.WGPUTextureFormat_RG8Unorm,
+        model.WGPUTextureFormat_RG8Snorm,
+        model.WGPUTextureFormat_RG8Uint,
+        model.WGPUTextureFormat_RG8Sint,
+        => 2,
+        model.WGPUTextureFormat_R32Float,
+        model.WGPUTextureFormat_R32Uint,
+        model.WGPUTextureFormat_R32Sint,
+        model.WGPUTextureFormat_RG16Unorm,
+        model.WGPUTextureFormat_RG16Snorm,
+        model.WGPUTextureFormat_RG16Uint,
+        model.WGPUTextureFormat_RG16Sint,
+        model.WGPUTextureFormat_RG16Float,
+        model.WGPUTextureFormat_RGBA8Unorm,
+        model.WGPUTextureFormat_RGBA8UnormSrgb,
+        model.WGPUTextureFormat_RGBA8Snorm,
+        model.WGPUTextureFormat_RGBA8Uint,
+        model.WGPUTextureFormat_RGBA8Sint,
+        model.WGPUTextureFormat_BGRA8Unorm,
+        model.WGPUTextureFormat_BGRA8UnormSrgb,
+        model.WGPUTextureFormat_Depth32Float,
+        => 4,
+        else => null,
     };
 }
 

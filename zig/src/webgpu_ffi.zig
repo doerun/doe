@@ -13,6 +13,7 @@ const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const commands = @import("wgpu_commands.zig");
 const compute_commands = @import("core/compute/wgpu_commands_compute.zig");
 const env_flags = @import("env_flags.zig");
+const surface_macos_mod = @import("full/surface/wgpu_surface_macos.zig");
 
 pub const NativeExecutionStatus = types.NativeExecutionStatus;
 pub const NativeExecutionResult = types.NativeExecutionResult;
@@ -43,6 +44,7 @@ pub const GpuTimestampMode = enum {
 
 pub const ManagedSurface = struct {
     surface: surface_procs_mod.Surface,
+    platform_surface: ?surface_macos_mod.ManagedPlatformSurface = null,
     configured: bool = false,
     acquired_texture: types.WGPUTexture = null,
     last_texture_status: u32 = 0,
@@ -262,6 +264,15 @@ pub const WebGPUBackend = struct {
                     surface_procs.surface_unconfigure(managed_surface.*.surface);
                 }
                 surface_procs.surface_release(managed_surface.*.surface);
+                surface_macos_mod.releasePlatformSurface(managed_surface.*.platform_surface);
+            }
+        } else {
+            var surface_it = self.full.surfaces.valueIterator();
+            while (surface_it.next()) |managed_surface| {
+                if (managed_surface.*.acquired_texture != null) {
+                    procs.wgpuTextureRelease(managed_surface.*.acquired_texture);
+                }
+                surface_macos_mod.releasePlatformSurface(managed_surface.*.platform_surface);
             }
         }
         self.full.surfaces.clearAndFree();

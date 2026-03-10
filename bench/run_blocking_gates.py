@@ -320,6 +320,8 @@ def main() -> int:
 
     bench_dir = Path(__file__).resolve().parent
     schema_gate = bench_dir / "schema_gate.py"
+    backend_workload_catalog_gate = bench_dir / "generate_backend_workloads.py"
+    backend_workload_catalog_tests = bench_dir / "test_backend_workload_catalog.py"
     comparability_parity_gate = bench_dir / "comparability_obligation_parity_gate.py"
     correctness_gate = bench_dir / "check_correctness.py"
     trace_gate = bench_dir / "trace_gate.py"
@@ -359,6 +361,14 @@ def main() -> int:
 
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])
+        run_gate(
+            "backend-workload-catalog",
+            [sys.executable, str(backend_workload_catalog_gate), "--verify"],
+        )
+        run_gate(
+            "backend-workload-catalog-tests",
+            [sys.executable, str(backend_workload_catalog_tests)],
+        )
         if args.with_comparability_parity_gate:
             run_gate("comparability-parity", [sys.executable, str(comparability_parity_gate)])
         run_gate(

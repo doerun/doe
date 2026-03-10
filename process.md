@@ -80,6 +80,19 @@
   - legacy simulator/runtime-state modules are not part of the D3D12 lane; command execution must flow through the instance-owned native backend implementation.
   - command support must be capability-gated via `backend/common/capabilities.zig`; unsupported commands fail fast with typed taxonomy and capability name.
   - comparability/timing labeling must be derived from shared artifact classification (`backend/common/artifact_meta.zig`): GPU timestamp valid => strict; attempted-but-invalid or no-attempt => directional CPU timing classes.
+  - the first governed D3D12 comparable workload scope is compute/upload/pipeline/p0-resource only, sourced from `bench/backend-workload-catalog.json` and generated into `bench/workloads.local.d3d12.{smoke,extended}.json`.
+  - Windows preflight is explicit and blocking before compare execution:
+    `python3 fawn/bench/preflight_d3d12_host.py --json`
+  - first compare configs:
+    - smoke: `fawn/bench/compare_dawn_vs_doe.config.local.d3d12.smoke.json`
+    - comparable: `fawn/bench/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`
+    - release scaffold: `fawn/bench/compare_dawn_vs_doe.config.local.d3d12.release.json` (contract only until a Windows host produces evidence)
+  - Windows handoff runner for the first governed D3D12 lane:
+    `python3 fawn/bench/run_local_d3d12_lane.py`
+  - backend workload catalog drift is now blocked by both generation verify and catalog tests:
+    - `python3 fawn/bench/generate_backend_workloads.py --verify`
+    - `python3 fawn/bench/test_backend_workload_catalog.py`
+  - render/texture contracts remain out of scope for strict D3D12 claim lanes until native D3D12 coverage expands beyond the current compute-first backend.
 
 6. Benchmark
 - run self-contained benchmark matrix
@@ -200,6 +213,13 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
   - `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
   - for release-claim checks, reuse the same config with `--claimability release` (and optional explicit `--out` path)
   - optional Dawn-baseline lane forcing for baseline checks: `--local-metal-lane metal_dawn_release`
+  - render/bundle rows may still select encode-only timing for strict comparability, but claim evaluation must use `timingInterpretation.headlineProcessWall` when `selectedTiming.scopeClass=narrow-hot-path`
+  - repeat-asymmetric rows must normalize both selected operation timing and `headlineProcessWall` to one workload unit via `commandRepeat` before comparability or claimability is evaluated
+  - strict comparable workloads may now declare `strictNormalizationUnit` in the workload contract when the comparable unit is not raw command-row count:
+    - `dispatch`: divisor must match repeated dispatch count
+    - `cycle`: divisor must match repeated full-workload cycles
+    - otherwise strict divisors default to repeated command-row count
+    gate evaluation must reject any comparable row whose configured divisor disagrees with the trace-derived physical-op count for the declared unit.
 
 3. blocking gates
 - run backend/timing/sync/shader checks through `run_blocking_gates.py`:

@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "workloads": [
+    {
+      "canonicalId": "upload_write_buffer_1kb",
+      "displayName": "WriteBuffer 1KB",
+      "domain": "upload",
+      "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB and package queue.writeBuffer 1KB coverage.",
+      "surfaces": [
+        {
+          "surface": "backend_native",
+          "workloadIds": [
+            "upload_write_buffer_1kb"
+          ],
+          "implementationKind": "command_contract"
+        },
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "buffer_upload_1kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "buffer_upload_1kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "upload_write_buffer_64kb",
+      "displayName": "WriteBuffer 64KB",
+      "domain": "upload",
+      "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 64KB and package queue.writeBuffer 64KB coverage.",
+      "surfaces": [
+        {
+          "surface": "backend_native",
+          "workloadIds": [
+            "upload_write_buffer_64kb"
+          ],
+          "implementationKind": "command_contract"
+        },
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "buffer_upload_64kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "buffer_upload_64kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "upload_write_buffer_1mb",
+      "displayName": "WriteBuffer 1MB",
+      "domain": "upload",
+      "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1MB and package queue.writeBuffer 1MB coverage.",
+      "surfaces": [
+        {
+          "surface": "backend_native",
+          "workloadIds": [
+            "upload_write_buffer_1mb"
+          ],
+          "implementationKind": "command_contract"
+        },
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "buffer_upload_1mb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "buffer_upload_1mb"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "upload_write_buffer_16mb",
+      "displayName": "WriteBuffer 16MB",
+      "domain": "upload",
+      "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 16MB and package queue.writeBuffer 16MB coverage.",
+      "surfaces": [
+        {
+          "surface": "backend_native",
+          "workloadIds": [
+            "upload_write_buffer_16mb"
+          ],
+          "implementationKind": "command_contract"
+        },
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "buffer_upload_16mb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "buffer_upload_16mb"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "buffer_map_write_unmap",
+      "displayName": "Map write unmap",
+      "domain": "upload",
+      "description": "Package-surface MAP_WRITE lifecycle benchmark for mapAsync plus host fill plus unmap.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "buffer_map_write_unmap"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "buffer_map_write_unmap"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "compute_e2e_256",
+      "displayName": "Compute E2E 256",
+      "domain": "compute",
+      "description": "Package-surface end-to-end dispatch plus readback benchmark with 256 threads.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "compute_e2e_256"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "compute_e2e_256"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "compute_e2e_4096",
+      "displayName": "Compute E2E 4096",
+      "domain": "compute",
+      "description": "Package-surface end-to-end dispatch plus readback benchmark with 4096 threads.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "compute_e2e_4096"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "compute_e2e_4096"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "compute_e2e_65536",
+      "displayName": "Compute E2E 65536",
+      "domain": "compute",
+      "description": "Package-surface end-to-end dispatch plus readback benchmark with 65536 threads.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "compute_e2e_65536"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "compute_e2e_65536"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "compute_dispatch_simple",
+      "displayName": "Compute dispatch simple",
+      "domain": "compute",
+      "description": "Package-surface dispatch-only compute benchmark used for directional dispatch-only evidence.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "compute_dispatch_simple"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "compute_dispatch_simple"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "submit_empty",
+      "displayName": "Submit empty",
+      "domain": "overhead",
+      "description": "Package-surface empty queue submit benchmark used for directional overhead evidence.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "submit_empty"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "submit_empty"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "pipeline_create",
+      "displayName": "Pipeline create",
+      "domain": "pipeline",
+      "description": "Package-surface compute pipeline creation benchmark used for directional pipeline-overhead evidence.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "pipeline_create"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "pipeline_create"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    }
+  ]
+}

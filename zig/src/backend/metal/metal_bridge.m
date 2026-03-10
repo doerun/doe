@@ -1,5 +1,7 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
+#import <QuartzCore/QuartzCore.h>
 #include "metal_bridge.h"
 #include <string.h>
 #include <sched.h>
@@ -47,10 +49,87 @@ static MTLPixelFormat wgpu_to_mtl_format(uint32_t wgpu) {
 // Core device / buffer / blit
 // ============================================================
 
+@interface MetalSurfaceHost : NSObject
+@property(nonatomic, strong) NSWindow* window;
+@property(nonatomic, strong) NSView* view;
+@property(nonatomic, strong) CAMetalLayer* layer;
+- (instancetype)initOffscreen;
+- (void)configureWithWidth:(uint32_t)width height:(uint32_t)height;
+@end
+
+@implementation MetalSurfaceHost
+
+- (instancetype)initOffscreen {
+    self = [super init];
+    if (self == nil) {
+        return nil;
+    }
+
+    [NSApplication sharedApplication];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyProhibited];
+
+    NSRect frame = NSMakeRect(0.0, 0.0, 64.0, 64.0);
+    self.window = [[NSWindow alloc] initWithContentRect:frame
+                                              styleMask:NSWindowStyleMaskBorderless
+                                                backing:NSBackingStoreBuffered
+                                                  defer:NO];
+    if (self.window == nil) {
+        return nil;
+    }
+    [self.window setReleasedWhenClosed:NO];
+    [self.window setOpaque:YES];
+    [self.window setAlphaValue:1.0];
+    [self.window setIgnoresMouseEvents:YES];
+
+    self.view = [[NSView alloc] initWithFrame:frame];
+    [self.view setWantsLayer:YES];
+
+    self.layer = [CAMetalLayer layer];
+    [self.layer setContentsScale:1.0];
+    [self.layer setOpaque:YES];
+
+    [self.view setLayer:self.layer];
+    [self.window setContentView:self.view];
+    [self.window orderFrontRegardless];
+    return self;
+}
+
+- (void)configureWithWidth:(uint32_t)width height:(uint32_t)height {
+    CGFloat w = (CGFloat)width;
+    CGFloat h = (CGFloat)height;
+    NSRect frame = NSMakeRect(0.0, 0.0, w, h);
+    [self.window setFrame:frame display:NO];
+    [self.view setFrame:NSMakeRect(0.0, 0.0, w, h)];
+    [self.layer setFrame:CGRectMake(0.0, 0.0, w, h)];
+    [self.layer setBounds:CGRectMake(0.0, 0.0, w, h)];
+    [self.layer setDrawableSize:CGSizeMake(w, h)];
+    [self.window orderFrontRegardless];
+    [self.window displayIfNeeded];
+    [self.view displayIfNeeded];
+    [CATransaction flush];
+}
+
+@end
+
 MetalHandle metal_bridge_create_default_device(void) {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     if (device == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(device);
+}
+
+MetalHandle metal_bridge_create_surface_host(MetalHandle* layer_out) {
+    MetalSurfaceHost* host = [[MetalSurfaceHost alloc] initOffscreen];
+    if (host == nil || host.layer == nil) return NULL;
+    if (layer_out != NULL) {
+        *layer_out = (__bridge MetalHandle)host.layer;
+    }
+    return (MetalHandle)CFBridgingRetain(host);
+}
+
+void metal_bridge_configure_surface_host(MetalHandle host_h, uint32_t width, uint32_t height) {
+    MetalSurfaceHost* host = (__bridge MetalSurfaceHost*)host_h;
+    if (host == nil) return;
+    [host configureWithWidth:width height:height];
 }
 
 void metal_bridge_release(MetalHandle obj) {
@@ -170,6 +249,103 @@ void metal_bridge_blit_encoder_copy(
     [encoder copyFromBuffer:src sourceOffset:0
                    toBuffer:dst destinationOffset:0
                        size:byte_count];
+}
+
+void metal_bridge_blit_encoder_copy_region(
+    MetalHandle encoder_h,
+    MetalHandle src_h,
+    uint64_t    src_offset,
+    MetalHandle dst_h,
+    uint64_t    dst_offset,
+    uint64_t    size)
+{
+    id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+    id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_h;
+    id<MTLBuffer> dst = (__bridge id<MTLBuffer>)dst_h;
+    [encoder copyFromBuffer:src
+               sourceOffset:(NSUInteger)src_offset
+                   toBuffer:dst
+          destinationOffset:(NSUInteger)dst_offset
+                       size:(NSUInteger)size];
+}
+
+void metal_bridge_blit_encoder_copy_buffer_to_texture(
+    MetalHandle encoder_h,
+    MetalHandle src_h,
+    uint64_t    src_offset,
+    uint32_t    src_bytes_per_row,
+    uint32_t    src_rows_per_image,
+    MetalHandle dst_texture_h,
+    uint32_t    dst_mip_level,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_array_layers)
+{
+    id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+    id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_h;
+    id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
+    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
+    [encoder copyFromBuffer:src
+               sourceOffset:(NSUInteger)src_offset
+          sourceBytesPerRow:(NSUInteger)src_bytes_per_row
+        sourceBytesPerImage:(NSUInteger)src_rows_per_image * (NSUInteger)src_bytes_per_row
+                 sourceSize:copy_size
+                  toTexture:dst
+           destinationSlice:0
+           destinationLevel:(NSUInteger)dst_mip_level
+          destinationOrigin:MTLOriginMake(0, 0, 0)];
+}
+
+void metal_bridge_blit_encoder_copy_texture_to_buffer(
+    MetalHandle encoder_h,
+    MetalHandle src_texture_h,
+    uint32_t    src_mip_level,
+    MetalHandle dst_h,
+    uint64_t    dst_offset,
+    uint32_t    dst_bytes_per_row,
+    uint32_t    dst_rows_per_image,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_array_layers)
+{
+    id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+    id<MTLTexture> src = (__bridge id<MTLTexture>)src_texture_h;
+    id<MTLBuffer> dst = (__bridge id<MTLBuffer>)dst_h;
+    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
+    [encoder copyFromTexture:src
+                 sourceSlice:0
+                 sourceLevel:(NSUInteger)src_mip_level
+                sourceOrigin:MTLOriginMake(0, 0, 0)
+                  sourceSize:copy_size
+                    toBuffer:dst
+           destinationOffset:(NSUInteger)dst_offset
+      destinationBytesPerRow:(NSUInteger)dst_bytes_per_row
+    destinationBytesPerImage:(NSUInteger)dst_rows_per_image * (NSUInteger)dst_bytes_per_row];
+}
+
+void metal_bridge_blit_encoder_copy_texture_to_texture(
+    MetalHandle encoder_h,
+    MetalHandle src_texture_h,
+    uint32_t    src_mip_level,
+    MetalHandle dst_texture_h,
+    uint32_t    dst_mip_level,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_array_layers)
+{
+    id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+    id<MTLTexture> src = (__bridge id<MTLTexture>)src_texture_h;
+    id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
+    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
+    [encoder copyFromTexture:src
+                 sourceSlice:0
+                 sourceLevel:(NSUInteger)src_mip_level
+                sourceOrigin:MTLOriginMake(0, 0, 0)
+                  sourceSize:copy_size
+                   toTexture:dst
+            destinationSlice:0
+            destinationLevel:(NSUInteger)dst_mip_level
+           destinationOrigin:MTLOriginMake(0, 0, 0)];
 }
 
 void metal_bridge_end_blit_encoding(MetalHandle encoder_h) {

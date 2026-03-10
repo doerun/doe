@@ -2,6 +2,156 @@
 
 ## 2026-03-09
 
+### macOS dispatch parity and normalization contract promotion
+
+- `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json` now
+  passes `--kernel-root bench/kernels` to both sides of the local Metal strict
+  comparable lane, so workloads that resolve WGSL kernels at runtime no longer
+  depend on ad hoc extra-arg injection.
+- `zig/src/core/compute/wgpu_commands_compute.zig` now executes plain
+  `dispatch` / `dispatch_indirect` commands through the Dawn delegate path
+  using the new built-in WGSL kernel `bench/kernels/dispatch_noop.wgsl`
+  instead of returning `unsupported`.
+- `bench/backend-workload-catalog.json` now promotes:
+  - `compute_dispatch_fallback`
+  - `compute_dispatch_grid`
+  to `comparable=true` for `local_metal_extended`, and the generated contract
+  in `bench/workloads.local.metal.extended.json` now carries the comparable
+  local-Metal overrides (`applesToApplesVetted=true`,
+  `comparabilityCandidate.enabled=false`, explicit right repeats/divisors, and
+  `strictNormalizationUnit=dispatch` for `compute_dispatch_grid`).
+- `bench/compare_dawn_vs_doe.py` and
+  `bench/compare_dawn_vs_doe_modules/runner.py` now accept explicit workload
+  `strictNormalizationUnit` contracts (`dispatch` or `cycle`) so strict
+  command-shape lint and trace-derived physical-operation checks can agree on
+  workloads whose comparable unit is not raw command-row count.
+- Behavioral difference versus the previous contract:
+  `compute_dispatch_fallback` and `compute_dispatch_grid` are no longer
+  directional-only on local Metal. Focused strict reruns:
+  - `bench/out/scratch/20260310T_dispatch_copy_promote_probe/20260310T000344Z/metal.compute_dispatch_fallback.promote.json`
+  - `bench/out/scratch/20260310T_dispatch_copy_promote_probe/20260310T001105Z/metal.compute_dispatch_grid.promote.v2.json`
+  are now both structurally comparable and claimable on the local Metal lane.
+  `copy_protocol` is no longer directional on local Metal. Focused strict rerun
+  `bench/out/scratch/20260310T_final_blockers/20260310T004034Z/copy_protocol.promote.current.rerun.json`
+  is now structurally comparable and claimable after native Metal
+  `pipeline_async` diagnostics stopped reporting a synthetic dispatch/encode phase.
+
+### macOS upload-repeat symmetry restoration
+
+- `bench/backend-workload-catalog.json` now restores symmetric left/right
+  `commandRepeat` values for local-Metal strict upload rows:
+  - `upload_write_buffer_1kb`
+  - `upload_write_buffer_64kb`
+  - `upload_write_buffer_1mb`
+  - `upload_write_buffer_4mb`
+  - `upload_write_buffer_16mb`
+- The generated contract in `bench/workloads.local.metal.extended.json` now
+  carries those restored left-side repeat values instead of silently falling
+  back to `leftCommandRepeat=1` while the Dawn side repeated 500/100/50 times.
+- Behavioral difference versus the previous contract:
+  focused strict local-Metal rerun
+  `bench/out/scratch/20260310T015302Z/20260310T_medium_upload_symmetry_probe_v2`
+  is now claimable for both `upload_write_buffer_4mb` and
+  `upload_write_buffer_16mb`, and the fresh authoritative full-lane rerun
+  `bench/out/apple-metal/extended-comparable/20260310T015327Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v5.json`
+  now keeps both rows claimable under aggregate lane pressure.
+  The smallest local-Metal upload row, `upload_write_buffer_1kb`, now also uses
+  `left/rightCommandRepeat=1000` in the generated contract so focused and full
+  local claim reruns stay above startup noise.
+
+### macOS large-upload claimability hardening
+
+- Native Metal upload benchmarking now reuses pre-zeroed shared upload sources
+  instead of re-zeroing large buffers inside every timed sample in
+  `zig/src/backend/metal/metal_native_runtime.zig`.
+- Local-Metal strict upload claims may now fall back to
+  `timingInterpretation.headlineProcessWall.deltaPercent` when selected
+  operation timing implies physically implausible throughput or otherwise
+  undercounts end-to-end upload completion on one side.
+- Behavioral difference versus the previous contract:
+  focused strict local-Metal proofs for `upload_write_buffer_1gb` and
+  `upload_write_buffer_4gb` are now claimable:
+  - `bench/out/scratch/20260310T_final_blockers/20260310T010134Z/upload_1gb_current.v3.json`
+  - `bench/out/scratch/20260310T_final_blockers/20260310T005801Z/upload_large_generated_current.v2.json`
+- Behavioral difference versus the previous contract:
+  the fresh full strict local Metal artifact
+  `bench/out/apple-metal/extended-comparable/20260310T001320Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v3.json`
+  now reclaims `upload_write_buffer_64kb` and `upload_write_buffer_1mb` as
+  claimable rows in the authoritative full-lane report. `upload_write_buffer_1kb`
+  still has a real tail-performance gap under full-lane pressure.
+
+### macOS surface presentation command contract hardening
+
+- `examples/surface_full_presentation_commands.json` now configures the
+  presentable surface with `bgra8unorm` instead of `rgba8unorm`.
+- The full WebGPU surface proc path on macOS now creates a hosted
+  `CAMetalLayer` source for `wgpuInstanceCreateSurface`:
+  - `zig/src/full/surface/wgpu_surface_commands.zig`
+  - `zig/src/full/surface/wgpu_surface_macos.zig`
+  - `zig/src/full/surface/wgpu_surface_procs.zig`
+  - `zig/src/backend/metal/metal_bridge.{h,m}`
+- Behavioral difference versus the previous contract:
+  the Dawn delegate path now uses a real macOS Metal surface source and a
+  presentable swapchain format, so `surface_full_presentation` can acquire and
+  present successfully on Apple/Metal instead of failing at
+  `wgpuSurfaceGetCurrentTexture`.
+
+### macOS surface presentation comparability promotion
+
+- `bench/backend-workload-catalog.json` now promotes `surface_full_presentation`
+  to `comparable=true` for `local_metal_extended`, and the generated contract in
+  `bench/workloads.local.metal.extended.json` now carries the comparable local
+  Metal override (`applesToApplesVetted=true`, `rightCommandRepeat=100`,
+  `left/rightTimingDivisor=100`, `comparabilityCandidate.enabled=false`).
+- `zig/src/full/surface/wgpu_surface_commands.zig` now records non-present
+  surface lifecycle wall time in `encode_ns` and present wall time in
+  `submit_wait_ns`, aligning the full WebGPU surface path with the native Metal
+  timing-phase contract used by the strict comparability gate.
+- `bench/compare_dawn_vs_doe.py` and
+  `bench/compare_dawn_vs_doe_modules/runner.py` now validate `domain=surface`
+  normalization against repeated presentation cycles, not raw per-command row
+  count, so strict comparable surface claims use one full presentation cycle as
+  the comparable unit.
+- Behavioral difference versus the previous contract:
+  `surface_full_presentation` is no longer directional-only on local Metal. A
+  focused strict rerun (`bench/out/scratch/20260309T_surface_fix/20260309T204238Z/metal.surface_full_presentation.strict.v2.json`)
+  is now both structurally comparable and claimable on the local Metal lane.
+
+### macOS copy-family comparability promotion
+
+- `bench/backend-workload-catalog.json` now promotes three local Metal copy rows:
+  - `copy_buffer_to_texture`
+  - `copy_texture_to_buffer`
+  - `copy_texture_to_texture`
+- The generated contract in `bench/workloads.local.metal.extended.json` now carries
+  local-Metal comparable overrides for those rows (`applesToApplesVetted=true`,
+  `benchmarkClass=comparable`, `comparabilityCandidate.enabled=false`, and explicit
+  `rightCommandRepeat` / `rightTimingDivisor` values matching the repeated copy
+  command sequence contract).
+- Behavioral difference versus the previous contract:
+  those rows are no longer directional-only on local Metal. Focused strict reruns
+  show `copy_buffer_to_texture`, `copy_texture_to_texture`, and now
+  `copy_texture_to_buffer` are claimable on local Metal; the latter uses
+  headline process wall at `100` repeats to avoid delegate operation-timing
+  undercount.
+  The local-Metal `copy_texture_to_buffer` contract now uses `2000` repeats and
+  matching divisors in the generated workload file so headline-process-wall
+  claimability is less sensitive to microsecond-scale tail noise in both focused
+  and full-lane reruns.
+
+### macOS full local strict lane closure
+
+- The fresh authoritative full local-Metal strict artifact
+  `bench/out/apple-metal/extended-comparable/20260310T121546Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v7.json`
+  is now fully claimable: `31/31` comparable rows claimable.
+- Behavioral difference versus the prior local-Metal full-lane state:
+  the previous residual blockers
+  - `upload_write_buffer_1kb`
+  - `upload_write_buffer_4gb`
+  - `copy_texture_to_buffer`
+  are now all claimable in the same full aggregate artifact instead of only in
+  focused reruns.
+
 ### Track A (browser) claim lane and maintenance wiring
 
 - Added a config-backed local browser claim policy:
@@ -199,10 +349,16 @@
 - `timingInterpretation.headlineProcessWall` reports timed-command process-wall
   deltas so encode-only render/report rows cannot be mistaken for end-to-end
   latency wins.
-- claimability now rejects `timingInterpretation.selectedTiming.scopeClass =
-  narrow-hot-path` in all claim modes:
-  comparable rows remain comparable, but they are emitted as diagnostic rather
-  than claimable because the selected metric is not an end-to-end speed claim.
+- claimability now keeps `deltaPercent` diagnostic for
+  `timingInterpretation.selectedTiming.scopeClass = narrow-hot-path`, but when
+  `timingInterpretation.headlineProcessWall` is available it uses that
+  end-to-end metric for claim evaluation instead of forcing the row diagnostic
+  on policy alone.
+- repeat-asymmetric compare rows now normalize both counter-derived selected
+  timing (`doe-execution-total-ns`, `doe-execution-encode-ns`,
+  `doe-execution-dispatch-window-ns`, `doe-execution-gpu-timestamp-ns`) and
+  `timingInterpretation.headlineProcessWall` by `commandRepeat`, and the
+  claim-sanity coverage audit uses the same normalized units.
 - `bench/build_claim_scope_report.py` now carries this selected-scope vs
   headline-process-wall context into citation-safe artifacts.
 
@@ -219,8 +375,8 @@
   stale nonexistent `vulkan_local_comparable`.
 - Helper lane inference in `bench/backend_selection_gate.py` and
   `bench/run_release_pipeline.py` now treats local Vulkan directional presets as
-  Doe-left diagnostics (`vulkan_doe_app`) rather than incorrectly inferring the
-  Dawn-owned `vulkan_dawn_directional` lane.
+  Doe-left diagnostics (`vulkan_doe_app`) rather than incorrectly inferring a
+  separate Dawn directional lane.
 
 ## 2026-03-06
 
@@ -230,8 +386,14 @@
   - `config/benchmark-cube-policy.schema.json` + `config/benchmark-cube-policy.json`
   - `config/benchmark-cube-row.schema.json`
   - `config/benchmark-cube.schema.json`
+- Added governed lane catalog for cube publication and cross-surface lane normalization:
+  - `config/governed-lanes.schema.json` + `config/governed-lanes.json`
 - `config/schema-targets.json` now validates `config/benchmark-cube-policy.json`
   through schema gate like other canonical config contracts.
+- benchmark cube rows now require governed lane provenance:
+  - backend compare rows carry the two source runtime lane IDs from trace/report telemetry
+  - package compare rows require explicit report `laneId`
+  - browser lanes are governed in the same catalog but remain non-cube lanes for now
 - The benchmark cube introduces explicit cross-surface reporting dimensions:
   - host profile
   - surface (`backend_native`, `node_package`, `bun_package`)
@@ -253,6 +415,8 @@
   - such rows are tagged `sourceConformance=legacy_nonconformant`
   - cube cells degrade them to `diagnostic` instead of dropping them or treating
     them as canonical claim evidence
+- package compare reports without governed `laneId` are now excluded from canonical
+  cube publication until rerun under the governed package lane contracts.
 
 ## 2026-03-05
 
@@ -465,15 +629,20 @@
 ### Metal execution lane control and trace telemetry
 
 - `doe-zig-runtime` now supports explicit backend-lane selection via `--backend-lane`:
-  - `vulkan_dawn_release`
-  - `vulkan_doe_app`
+  - `metal_doe_app`
   - `metal_doe_directional`
   - `metal_doe_comparable`
   - `metal_doe_release`
-  - `vulkan_dawn_directional`
+  - `metal_dawn_release`
+  - `vulkan_doe_app`
   - `vulkan_doe_comparable`
   - `vulkan_doe_release`
-  - `metal_doe_app`
+  - `vulkan_dawn_release`
+  - `d3d12_doe_app`
+  - `d3d12_doe_directional`
+  - `d3d12_doe_comparable`
+  - `d3d12_doe_release`
+  - `d3d12_dawn_release`
 - Native execution uses the backend runtime selection pipeline through lane resolution; this metadata is now emitted through execution summaries and trace metadata when `--trace-meta` is requested.
   - `backendLane`
   - `backendSelectionReason`
@@ -842,15 +1011,20 @@
 
 Canonical lane names are now:
 
-- `vulkan_dawn_release` (legacy alias: `vulkan_dawn_release`)
-- `vulkan_doe_app` (legacy alias: `vulkan_doe_app`)
-- `vulkan_dawn_directional` (legacy alias: `vulkan_dawn_directional`)
-- `vulkan_doe_comparable` (legacy alias: `vulkan_doe_comparable`)
-- `vulkan_doe_release` (legacy alias: `vulkan_doe_release`)
+- `metal_doe_app` (legacy alias: `metal_doe_app`)
 - `metal_doe_directional` (legacy alias: `metal_doe_directional`)
 - `metal_doe_comparable` (legacy alias: `metal_doe_comparable`)
 - `metal_doe_release` (legacy alias: `metal_doe_release`)
-- `metal_doe_app` (legacy alias: `metal_doe_app`)
+- `metal_dawn_release` (legacy alias: `metal_dawn_release`)
+- `vulkan_doe_app` (legacy alias: `vulkan_doe_app`)
+- `vulkan_doe_comparable` (legacy alias: `vulkan_doe_comparable`)
+- `vulkan_doe_release` (legacy alias: `vulkan_doe_release`)
+- `vulkan_dawn_release` (legacy alias: `vulkan_dawn_release`, compatibility alias: `vulkan_dawn_directional`)
+- `d3d12_doe_app` (legacy alias: `d3d12_doe_app`)
+- `d3d12_doe_directional` (legacy alias: `d3d12_doe_directional`)
+- `d3d12_doe_comparable` (legacy alias: `d3d12_doe_comparable`)
+- `d3d12_doe_release` (legacy alias: `d3d12_doe_release`)
+- `d3d12_dawn_release` (legacy alias: `d3d12_dawn_release`)
 
 Contract updates in this change:
 
@@ -1074,3 +1248,35 @@ Contract updates in this change:
 - Updated DOE timing-source selection for upload workloads:
   - `bench/compare_dawn_vs_doe_modules/timing_selection.py` now prefers `doe-execution-row-total-ns` (trace row execution durations) for upload-domain operation timing when execution evidence is present.
   - This removes strict upload lane drift where `doe-execution-total-ns` could violate upload timing policy allowances and mixes setup/runtime scope in per-op upload comparisons.
+
+### Canonical backend workload catalog and package workload alias normalization (2026-03-09)
+
+- Added canonical backend workload catalog:
+  - `bench/backend-workload-catalog.json`
+  - `config/backend-workload-catalog.schema.json`
+  - generator: `bench/generate_backend_workloads.py`
+- Backend lane files under `bench/workloads*.json` are now generated execution contracts derived from the canonical catalog instead of the intended hand-authored source of truth.
+- Added canonical cross-surface workload alias bridge:
+  - package registry: `bench/workload-registry.json`
+  - schema: `config/workload-registry.schema.json`
+- Node/Bun package workload factories now import canonical workload metadata from the registry, and package compare reports emit `canonicalWorkloadId`.
+- Benchmark cube normalization now maps package aliases (for example `buffer_upload_1kb`) to canonical workload IDs (`upload_write_buffer_1kb`) while preserving raw `sourceWorkloadId` in cube rows.
+
+### First governed D3D12 backend workload contracts (2026-03-09)
+
+- Added generated D3D12 workload execution contracts sourced from the canonical backend workload catalog:
+  - `bench/workloads.local.d3d12.smoke.json`
+  - `bench/workloads.local.d3d12.extended.json`
+- Added first governed Windows D3D12 compare configs:
+  - `bench/compare_dawn_vs_doe.config.local.d3d12.smoke.json`
+  - `bench/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`
+  - release scaffold: `bench/compare_dawn_vs_doe.config.local.d3d12.release.json`
+- Added Windows-host D3D12 preflight contract:
+  - `bench/preflight_d3d12_host.py`
+- Added Windows handoff runner:
+  - `bench/run_local_d3d12_lane.py`
+- `bench/run_blocking_gates.py` now runs both `python3 bench/generate_backend_workloads.py --verify` and `python3 bench/test_backend_workload_catalog.py` as blocking gates so the backend workload catalog remains authoritative and the D3D12 lane invariants stay covered.
+- Scope boundary for this first governed D3D12 lane:
+  - strict comparable coverage is limited to compute, upload, pipeline, and `p0-resource`
+  - render and texture contracts remain out of scope until native D3D12 coverage expands
+- Benchmark cube placeholders now annotate governed-but-unevidenced `windows_d3d12` cells as `contract exists, evidence missing` instead of leaving them as generic empty cells.

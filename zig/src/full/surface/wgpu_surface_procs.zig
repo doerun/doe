@@ -2,10 +2,21 @@ const std = @import("std");
 const types = @import("../../core/abi/wgpu_types.zig");
 
 pub const Surface = ?*anyopaque;
+pub const SurfaceSourceMetalLayerSType: u32 = 0x00000004;
+
+pub const ChainedStruct = extern struct {
+    next: ?*const ChainedStruct,
+    sType: u32,
+};
 
 pub const SurfaceDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
+    nextInChain: ?*const ChainedStruct,
     label: types.WGPUStringView,
+};
+
+pub const SurfaceSourceMetalLayer = extern struct {
+    chain: ChainedStruct,
+    layer: ?*anyopaque,
 };
 
 pub const SurfaceCapabilities = extern struct {
@@ -30,7 +41,6 @@ pub const SurfaceConfiguration = extern struct {
     viewFormats: ?[*]const types.WGPUTextureFormat,
     alphaMode: u32,
     presentMode: u32,
-    desiredMaximumFrameLatency: u32,
 };
 
 pub const SurfaceTexture = extern struct {

@@ -2,6 +2,9 @@ const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const copy_runtime = @import("metal_copy_runtime.zig");
+const dispatch_runtime = @import("metal_dispatch_runtime.zig");
+const surface_runtime = @import("metal_surface_runtime.zig");
 
 // Metal on Apple Silicon supports large shared buffers up to device maxBufferLength.
 // No artificial cap here — let allocation failure propagate as InvalidState.
@@ -11,7 +14,8 @@ const KERNEL_ENTRY_Z: [*:0]const u8 = "main_kernel";
 const BRIDGE_ERROR_CAP: usize = 512;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const MAX_BINDING_SLOTS: usize = 32;
-const SMALL_UPLOAD_CAPACITY: usize = 64 * 1024; // reuse staging pair for uploads <= 64KB
+const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024; // reuse staging pair for uploads <= 1MB
+const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;
 
 // Metal bridge C functions — symbols provided by metal_bridge.m.
 extern fn metal_bridge_create_default_device() callconv(.c) ?*anyopaque;
@@ -71,10 +75,6 @@ extern fn metal_bridge_device_new_icb(device: ?*anyopaque, pipeline: ?*anyopaque
 extern fn metal_bridge_icb_encode_draws(icb: ?*anyopaque, pipeline: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int) callconv(.c) void;
 extern fn metal_bridge_encode_icb_render_pass(queue: ?*anyopaque, pipeline: ?*anyopaque, icb: ?*anyopaque, target: ?*anyopaque, draw_count: u32) callconv(.c) ?*anyopaque;
 
-// ============================================================
-// Returned metric types
-// ============================================================
-
 pub const DispatchMetrics = struct {
     setup_ns: u64,
     encode_ns: u64,
@@ -89,10 +89,6 @@ pub const RenderMetrics = struct {
     draw_count: u32,
 };
 
-// ============================================================
-// Internal data types
-// ============================================================
-
 const PendingUpload = struct {
     src_buffer: ?*anyopaque,
     dst_buffer: ?*anyopaque,
@@ -106,17 +102,12 @@ const KernelPipeline = struct {
     pipeline: ?*anyopaque,
 };
 
-// ICB cache key — ICB encoding is fixed at creation time.
 const IcbKey = struct {
     draw_count: u32,
     vertex_count: u32,
     instance_count: u32,
     redundant: bool,
 };
-
-// ============================================================
-// NativeMetalRuntime
-// ============================================================
 
 pub const NativeMetalRuntime = struct {
     allocator: std.mem.Allocator,
@@ -128,55 +119,44 @@ pub const NativeMetalRuntime = struct {
 
     has_deferred_submissions: bool = false,
 
-    // Pipelined submission: commit without waiting, recycle on next flush.
     outstanding_cmd_buf: ?*anyopaque = null,
-    in_flight_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
+    deferred_releases: std.ArrayListUnmanaged(?*anyopaque) = .{},
 
-    // Lightweight GPU fence via MTLSharedEvent (avoids kernel round-trip).
     shared_event: ?*anyopaque = null,
     fence_value: u64 = 0,
 
-    // Streaming command buffer: shared across blit and render encoders.
-    // Only one encoder active at a time. Barriers are no-ops (Metal
-    // guarantees in-order execution within a command buffer).
     streaming_cmd_buf: ?*anyopaque = null,
     streaming_blit_encoder: ?*anyopaque = null,
     streaming_render_encoder: ?*anyopaque = null,
     streaming_has_render: bool = false,
+    streaming_max_upload_bytes: usize = 0,
     streaming_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
 
-    // Buffer pool: reuse Metal buffers by size to avoid repeated allocations.
     shared_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
     private_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
 
-    // Reused staging pair for small staged uploads.
     staging_src: ?*anyopaque = null,
     staging_dst: ?*anyopaque = null,
     staging_src_ptr: ?[*]u8 = null, // cached contents pointer
+    staging_src_zeroed: bool = false,
 
-    // kernel base-name (owned) → KernelPipeline
     kernel_pipelines: std.StringHashMapUnmanaged(KernelPipeline) = .{},
 
-    // resource_handle → MTLBuffer (compute bindings)
     compute_buffers: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
 
-    // handle → MTLTexture
     textures: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
 
-    // handle → MTLSamplerState
     samplers: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
+    surfaces: std.AutoHashMapUnmanaged(u64, surface_runtime.SurfaceState) = .{},
 
-    // Render pipeline (one per pixel_format, shared across render-pass/ICB)
     render_pipeline: ?*anyopaque = null,
     render_pipeline_format: u32 = 0,
 
-    // Render target cache
     render_target: ?*anyopaque = null,
     render_target_width: u32 = 0,
     render_target_height: u32 = 0,
     render_target_format: u32 = 0,
 
-    // ICB cache
     cached_icb: ?*anyopaque = null,
     cached_icb_key: IcbKey = .{ .draw_count = 0, .vertex_count = 0, .instance_count = 0, .redundant = false },
 
@@ -209,16 +189,18 @@ pub const NativeMetalRuntime = struct {
             metal_bridge_release(cb);
             self.streaming_cmd_buf = null;
         }
-        self.release_in_flight_uploads();
-        self.in_flight_uploads.deinit(self.allocator);
+        self.release_deferred_releases();
+        self.deferred_releases.deinit(self.allocator);
         self.release_buffer_pool(&self.shared_pool);
         self.release_buffer_pool(&self.private_pool);
         if (self.staging_src) |s| { metal_bridge_release(s); self.staging_src = null; }
         if (self.staging_dst) |d| { metal_bridge_release(d); self.staging_dst = null; }
+        self.staging_src_zeroed = false;
         self.release_kernel_pipelines();
         self.release_compute_buffers();
         self.release_textures();
         self.release_samplers();
+        self.release_surfaces();
         self.release_render_resources();
         if (self.shared_event) |e| { metal_bridge_release(e); self.shared_event = null; }
         if (self.queue) |q| { metal_bridge_release(q); self.queue = null; }
@@ -231,14 +213,18 @@ pub const NativeMetalRuntime = struct {
         const len: usize = @intCast(bytes);
         const use_small_staging = len <= SMALL_UPLOAD_CAPACITY and
             self.staging_src != null and self.staging_dst != null and self.staging_src_ptr != null;
+        const pooled_src = if (use_small_staging) null else pool_pop(&self.shared_pool, len);
         const src = if (use_small_staging)
             self.staging_src.?
         else
-            pool_pop(&self.shared_pool, len) orelse
+            pooled_src orelse
                 (metal_bridge_device_new_buffer_shared(self.device, len) orelse return error.InvalidState);
         if (use_small_staging) {
-            @memset(self.staging_src_ptr.?[0..len], 0);
-        } else {
+            if (!self.staging_src_zeroed) {
+                @memset(self.staging_src_ptr.?[0..len], 0);
+                self.staging_src_zeroed = true;
+            }
+        } else if (pooled_src == null) {
             const raw = metal_bridge_buffer_contents(src) orelse return error.InvalidState;
             @memset(@as([*]u8, @ptrCast(raw))[0..len], 0);
         }
@@ -247,6 +233,7 @@ pub const NativeMetalRuntime = struct {
             if (!use_small_staging) {
                 pool_push_or_release(&self.shared_pool, self.allocator, len, src);
             }
+            self.streaming_max_upload_bytes = @max(self.streaming_max_upload_bytes, len);
             self.has_deferred_submissions = true;
             return;
         }
@@ -257,14 +244,12 @@ pub const NativeMetalRuntime = struct {
             pool_pop(&self.private_pool, len) orelse
                 (metal_bridge_device_new_buffer_private(self.device, len) orelse return error.InvalidState);
 
-        // Close render encoder if transitioning from render to upload.
         if (self.streaming_render_encoder) |enc| {
             metal_bridge_render_encoder_end(enc);
             metal_bridge_release(enc);
             self.streaming_render_encoder = null;
         }
 
-        // Open streaming blit encoder if not already open.
         if (self.streaming_blit_encoder == null) {
             if (self.streaming_cmd_buf == null) {
                 var encoder: ?*anyopaque = null;
@@ -286,21 +271,16 @@ pub const NativeMetalRuntime = struct {
         }
 
         metal_bridge_blit_encoder_copy(self.streaming_blit_encoder, src, dst, len);
+        self.streaming_max_upload_bytes = @max(self.streaming_max_upload_bytes, len);
         self.has_deferred_submissions = true;
     }
 
     pub fn flush_queue(self: *NativeMetalRuntime) !u64 {
         if (!self.has_device) return 0;
-
         const has_streaming = self.streaming_cmd_buf != null;
         if (!has_streaming and !self.has_deferred_submissions) return 0;
-
         const start_ns = common_timing.now_ns();
-
-        // Wait for any previous outstanding submission.
         self.wait_outstanding();
-
-        // Primary path: close streaming encoders and commit.
         if (has_streaming) {
             if (self.streaming_render_encoder) |enc| {
                 metal_bridge_render_encoder_end(enc);
@@ -314,49 +294,44 @@ pub const NativeMetalRuntime = struct {
 
             const cmd_buf = self.streaming_cmd_buf.?;
             self.fence_value +%= 1;
-            if (!self.streaming_has_render) {
+            const use_fast_wait = !self.streaming_has_render and self.streaming_max_upload_bytes >= FAST_WAIT_UPLOAD_THRESHOLD;
+            if (use_fast_wait) {
                 if (self.shared_event) |ev| {
                     metal_bridge_command_buffer_encode_signal_event(cmd_buf, ev, self.fence_value);
                 }
                 metal_bridge_command_buffer_setup_fast_wait(cmd_buf);
             }
             metal_bridge_command_buffer_commit(cmd_buf);
-
-            if (self.streaming_has_render) {
-                metal_bridge_command_buffer_wait_completed(cmd_buf);
-            } else {
-                metal_bridge_command_buffer_wait_fast();
-            }
+            if (use_fast_wait) metal_bridge_command_buffer_wait_fast() else metal_bridge_command_buffer_wait_completed(cmd_buf);
             metal_bridge_release(cmd_buf);
             self.streaming_cmd_buf = null;
             self.streaming_has_render = false;
-
-            // Recycle streaming uploads now that GPU is done.
+            self.streaming_max_upload_bytes = 0;
             for (self.streaming_uploads.items) |item| {
                 pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
                 pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
             }
             self.streaming_uploads.clearRetainingCapacity();
         } else if (self.has_deferred_submissions) {
-            // Deferred-only path (e.g. shared-buffer queue-write style uploads).
-            // Submit an empty command buffer and block on its completion so the
-            // measured scope still includes queue submit+wait without the
-            // heavier shared-event round-trip used for streaming blit batches.
-            const empty_cmd = metal_bridge_create_command_buffer(self.queue)
-                orelse return error.InvalidState;
-            metal_bridge_command_buffer_commit(empty_cmd);
-            metal_bridge_command_buffer_wait_completed(empty_cmd);
-            metal_bridge_release(empty_cmd);
+            if (self.outstanding_cmd_buf != null) {
+                self.wait_outstanding();
+            } else {
+                const empty_cmd = metal_bridge_create_command_buffer(self.queue)
+                    orelse return error.InvalidState;
+                metal_bridge_command_buffer_commit(empty_cmd);
+                metal_bridge_command_buffer_wait_completed(empty_cmd);
+                metal_bridge_release(empty_cmd);
+            }
         }
 
         self.has_deferred_submissions = false;
         const end_ns = common_timing.now_ns();
+        self.release_deferred_releases();
         return common_timing.ns_delta(end_ns, start_ns);
     }
 
     fn wait_outstanding(self: *NativeMetalRuntime) void {
         if (self.outstanding_cmd_buf) |cb| {
-            // Use shared event for lightweight wait (avoids kernel round-trip).
             if (self.shared_event) |ev| {
                 metal_bridge_shared_event_wait(ev, self.fence_value);
             } else {
@@ -365,16 +340,27 @@ pub const NativeMetalRuntime = struct {
             metal_bridge_release(cb);
             self.outstanding_cmd_buf = null;
         }
-        // Recycle in-flight buffers now that GPU is done.
-        for (self.in_flight_uploads.items) |item| {
-            pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
-            pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
-        }
-        self.in_flight_uploads.clearRetainingCapacity();
     }
 
-    pub fn barrier(self: *NativeMetalRuntime, queue_wait_mode: webgpu.QueueWaitMode) !u64 {
+    pub fn barrier(self: *NativeMetalRuntime, queue_wait_mode: webgpu.QueueWaitMode, queue_sync_mode: webgpu.QueueSyncMode) !u64 {
         _ = queue_wait_mode;
+        if (queue_sync_mode == .deferred and self.streaming_cmd_buf == null and self.has_deferred_submissions) {
+            const start_ns = common_timing.now_ns();
+            if (self.outstanding_cmd_buf) |cb| {
+                metal_bridge_release(cb);
+                self.outstanding_cmd_buf = null;
+            }
+            const empty_cmd = metal_bridge_create_command_buffer(self.queue)
+                orelse return error.InvalidState;
+            self.fence_value +%= 1;
+            if (self.shared_event) |ev| {
+                metal_bridge_command_buffer_encode_signal_event(empty_cmd, ev, self.fence_value);
+            }
+            metal_bridge_command_buffer_commit(empty_cmd);
+            self.outstanding_cmd_buf = empty_cmd;
+            return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+        }
+
         const start_ns = common_timing.now_ns();
         if (self.streaming_cmd_buf != null or self.has_deferred_submissions) {
             _ = try self.flush_queue();
@@ -386,7 +372,6 @@ pub const NativeMetalRuntime = struct {
 
     pub fn prewarm_upload_path(self: *NativeMetalRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
         if (max_upload_bytes == 0) return;
-        // Pre-allocate staging pair for small uploads.
         if (self.staging_src == null and max_upload_bytes <= SMALL_UPLOAD_CAPACITY) {
             const cap = SMALL_UPLOAD_CAPACITY;
             self.staging_src = metal_bridge_device_new_buffer_shared(self.device, cap);
@@ -394,14 +379,11 @@ pub const NativeMetalRuntime = struct {
             if (self.staging_src) |s| {
                 self.staging_src_ptr = @ptrCast(metal_bridge_buffer_contents(s));
             }
+            self.staging_src_zeroed = false;
         }
         try self.upload_bytes(max_upload_bytes, mode);
         _ = try self.flush_queue();
     }
-
-    // --------------------------------------------------------
-    // Kernel dispatch
-    // --------------------------------------------------------
 
     pub fn run_kernel_dispatch(
         self: *NativeMetalRuntime,
@@ -458,9 +440,10 @@ pub const NativeMetalRuntime = struct {
         return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
     }
 
-    // --------------------------------------------------------
-    // Sampler lifecycle
-    // --------------------------------------------------------
+    pub fn run_dispatch(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
+        const metrics = try dispatch_runtime.run_dispatch(self, x, y, z, queue_sync_mode);
+        return .{ .setup_ns = 0, .encode_ns = metrics.encode_ns, .submit_wait_ns = metrics.submit_wait_ns, .dispatch_count = metrics.dispatch_count };
+    }
 
     pub fn sampler_create(self: *NativeMetalRuntime, cmd: model.SamplerCreateCommand) !void {
         const h = metal_bridge_device_new_sampler(
@@ -475,12 +458,8 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn sampler_destroy(self: *NativeMetalRuntime, cmd: model.SamplerDestroyCommand) !void {
-        if (self.samplers.fetchRemove(cmd.handle)) |e| metal_bridge_release(e.value);
+        if (self.samplers.fetchRemove(cmd.handle)) |e| try self.defer_or_release(e.value);
     }
-
-    // --------------------------------------------------------
-    // Texture lifecycle
-    // --------------------------------------------------------
 
     pub fn texture_write(self: *NativeMetalRuntime, cmd: model.TextureWriteCommand) !void {
         const t = &cmd.texture;
@@ -516,14 +495,10 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn texture_destroy(self: *NativeMetalRuntime, cmd: model.TextureDestroyCommand) !void {
-        if (self.textures.fetchRemove(cmd.handle)) |e| metal_bridge_release(e.value);
+        if (self.textures.fetchRemove(cmd.handle)) |e| try self.defer_or_release(e.value);
     }
 
-    // --------------------------------------------------------
-    // Render draw
-    // --------------------------------------------------------
-
-    pub fn render_draw(self: *NativeMetalRuntime, cmd: model.RenderDrawCommand) !RenderMetrics {
+    pub fn render_draw(self: *NativeMetalRuntime, cmd: model.RenderDrawCommand, queue_sync_mode: webgpu.QueueSyncMode) !RenderMetrics {
         const fmt = cmd.target_format;
         const is_bundle = cmd.encode_mode == .render_bundle;
         const red_pl: c_int = if (cmd.pipeline_mode == .redundant) 1 else 0;
@@ -552,14 +527,42 @@ pub const NativeMetalRuntime = struct {
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
         // Submit+wait: commit command buffer and wait for GPU completion.
-        const submit_wait_ns = try self.flush_queue();
+        const submit_wait_ns = if (queue_sync_mode == .deferred) 0 else try self.flush_queue();
 
         return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = cmd.draw_count };
     }
 
-    // --------------------------------------------------------
-    // Private helpers
-    // --------------------------------------------------------
+    pub fn copy_command(self: *NativeMetalRuntime, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !copy_runtime.CopyMetrics {
+        return try copy_runtime.execute_copy(self, cmd, queue_sync_mode);
+    }
+
+    pub fn surface_create(self: *NativeMetalRuntime, cmd: model.SurfaceCreateCommand) !void {
+        return try surface_runtime.create_surface(self, cmd);
+    }
+
+    pub fn surface_capabilities(self: *NativeMetalRuntime, cmd: model.SurfaceCapabilitiesCommand) !void {
+        return try surface_runtime.surface_capabilities(self, cmd);
+    }
+
+    pub fn surface_configure(self: *NativeMetalRuntime, cmd: model.SurfaceConfigureCommand) !void {
+        return try surface_runtime.configure_surface(self, cmd);
+    }
+
+    pub fn surface_acquire(self: *NativeMetalRuntime, cmd: model.SurfaceAcquireCommand) !void {
+        return try surface_runtime.acquire_surface(self, cmd);
+    }
+
+    pub fn surface_present(self: *NativeMetalRuntime, cmd: model.SurfacePresentCommand) !u64 {
+        return try surface_runtime.present_surface(self, cmd);
+    }
+
+    pub fn surface_unconfigure(self: *NativeMetalRuntime, cmd: model.SurfaceUnconfigureCommand) !void {
+        return try surface_runtime.unconfigure_surface(self, cmd);
+    }
+
+    pub fn surface_release(self: *NativeMetalRuntime, cmd: model.SurfaceReleaseCommand) !void {
+        return try surface_runtime.release_surface(self, cmd);
+    }
 
     fn bootstrap(self: *NativeMetalRuntime) !void {
         self.device = metal_bridge_create_default_device() orelse return error.UnsupportedFeature;
@@ -568,12 +571,17 @@ pub const NativeMetalRuntime = struct {
         self.has_device = true;
     }
 
-    fn release_in_flight_uploads(self: *NativeMetalRuntime) void {
-        for (self.in_flight_uploads.items) |item| {
-            metal_bridge_release(item.src_buffer);
-            metal_bridge_release(item.dst_buffer);
+    fn defer_or_release(self: *NativeMetalRuntime, obj: ?*anyopaque) !void {
+        if (self.streaming_cmd_buf != null or self.outstanding_cmd_buf != null) {
+            try self.deferred_releases.append(self.allocator, obj);
+            return;
         }
-        self.in_flight_uploads.clearRetainingCapacity();
+        metal_bridge_release(obj);
+    }
+
+    fn release_deferred_releases(self: *NativeMetalRuntime) void {
+        for (self.deferred_releases.items) |obj| metal_bridge_release(obj);
+        self.deferred_releases.clearRetainingCapacity();
     }
 
     fn release_buffer_pool(self: *NativeMetalRuntime, pool: *std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque))) void {
@@ -612,6 +620,14 @@ pub const NativeMetalRuntime = struct {
         var it = self.samplers.valueIterator();
         while (it.next()) |v| metal_bridge_release(v.*);
         self.samplers.deinit(self.allocator);
+    }
+
+    fn release_surfaces(self: *NativeMetalRuntime) void {
+        var it = self.surfaces.valueIterator();
+        while (it.next()) |state| {
+            if (state.texture) |texture| metal_bridge_release(texture);
+        }
+        self.surfaces.deinit(self.allocator);
     }
 
     fn release_render_resources(self: *NativeMetalRuntime) void {
@@ -684,9 +700,6 @@ pub const NativeMetalRuntime = struct {
         self.render_target_format = fmt;
     }
 
-    /// Ensure a render encoder is open on the streaming command buffer.
-    /// Creates the command buffer and encoder if needed. Closes blit encoder
-    /// if transitioning from upload to render. This is a setup cost (outside timing).
     fn ensure_streaming_render_encoder(self: *NativeMetalRuntime) !void {
         if (self.streaming_render_encoder != null) return;
 

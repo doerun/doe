@@ -805,6 +805,8 @@ def compare_assessment(
     workload_domain: str,
     workload_path_asymmetry: bool,
     workload_path_asymmetry_note: str,
+    left_command_repeat: int,
+    right_command_repeat: int,
     left: dict[str, Any],
     right: dict[str, Any],
     required_timing_class: str,
@@ -1152,6 +1154,31 @@ def compare_assessment(
         ),
         details=timing_phase_details,
     )
+
+    def normalize_execution_shapes(
+        shapes: list[dict[str, int]],
+        *,
+        side_name: str,
+        command_repeat: int,
+    ) -> tuple[list[dict[str, int]], str]:
+        repeat = command_repeat if command_repeat > 0 else 1
+        normalized: list[dict[str, int]] = []
+        for shape in shapes:
+            normalized_shape = dict(shape)
+            for field in ("executionDispatchCount", "executionRowCount", "executionSuccessCount"):
+                value = safe_int(shape.get(field), default=-1)
+                if value < 0:
+                    continue
+                if repeat > 1:
+                    if value % repeat != 0:
+                        return [], (
+                            f"{side_name} {field}={value} is not divisible by commandRepeat={repeat}"
+                        )
+                    value //= repeat
+                normalized_shape[field] = value
+            normalized.append(normalized_shape)
+        return normalized, ""
+
     def compare_execution_shapes(
         left_shapes: list[dict[str, int]],
         right_shapes: list[dict[str, int]],
@@ -1186,10 +1213,27 @@ def compare_assessment(
                 )
         return True, ""
 
-    execution_shape_match, execution_shape_mismatch_reason = compare_execution_shapes(
+    normalized_left_execution_shapes, left_execution_shape_reason = normalize_execution_shapes(
         left_execution_shapes,
-        right_execution_shapes,
+        side_name="left",
+        command_repeat=left_command_repeat,
     )
+    normalized_right_execution_shapes, right_execution_shape_reason = normalize_execution_shapes(
+        right_execution_shapes,
+        side_name="right",
+        command_repeat=right_command_repeat,
+    )
+    execution_shape_match = False
+    execution_shape_mismatch_reason = ""
+    if left_execution_shape_reason:
+        execution_shape_mismatch_reason = left_execution_shape_reason
+    elif right_execution_shape_reason:
+        execution_shape_mismatch_reason = right_execution_shape_reason
+    else:
+        execution_shape_match, execution_shape_mismatch_reason = compare_execution_shapes(
+            normalized_left_execution_shapes,
+            normalized_right_execution_shapes,
+        )
     _record_obligation(
         obligations,
         reasons,
@@ -1207,6 +1251,10 @@ def compare_assessment(
             "dispatchShapeDomain": dispatch_shape_domain,
             "leftExecutionShapes": left_execution_shapes,
             "rightExecutionShapes": right_execution_shapes,
+            "leftNormalizedExecutionShapes": normalized_left_execution_shapes,
+            "rightNormalizedExecutionShapes": normalized_right_execution_shapes,
+            "leftCommandRepeat": left_command_repeat,
+            "rightCommandRepeat": right_command_repeat,
             "comparisonReason": execution_shape_mismatch_reason,
         },
     )
@@ -1663,6 +1711,10 @@ def compare_assessment(
         "rightQueueSyncModes": right_queue_sync_modes,
         "leftExecutionShapes": left_execution_shapes,
         "rightExecutionShapes": right_execution_shapes,
+        "leftNormalizedExecutionShapes": normalized_left_execution_shapes,
+        "rightNormalizedExecutionShapes": normalized_right_execution_shapes,
+        "leftCommandRepeat": left_command_repeat,
+        "rightCommandRepeat": right_command_repeat,
         "workloadPathAsymmetry": bool(workload_path_asymmetry),
         "workloadPathAsymmetryNote": workload_path_asymmetry_note,
         "leftTimingClass": left_class,

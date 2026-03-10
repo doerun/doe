@@ -47,6 +47,9 @@ test "backend lane parser handles metal_doe_app and local metal lanes" {
     try std.testing.expect(
         backend_policy.parse_lane("d3d12_doe_app") == .d3d12_doe_app,
     );
+    try std.testing.expect(
+        backend_policy.parse_lane("vulkan_dawn_directional") == .vulkan_dawn_release,
+    );
 }
 
 test "backend runtime policy rejects fallback-enabled lane config" {

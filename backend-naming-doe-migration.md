@@ -38,21 +38,24 @@ Allowed executors:
 
 Current lane IDs:
 
-1. `vulkan_dawn_release`
-2. `vulkan_dawn_directional`
-3. `vulkan_doe_app`
-4. `vulkan_doe_comparable`
-5. `vulkan_doe_release`
-6. `d3d12_dawn_release`
-7. `d3d12_doe_app`
-8. `d3d12_doe_directional`
-9. `d3d12_doe_comparable`
-10. `d3d12_doe_release`
-11. `metal_dawn_release`
-12. `metal_doe_app`
-13. `metal_doe_directional`
-14. `metal_doe_comparable`
-15. `metal_doe_release`
+1. `metal_doe_app`
+2. `metal_doe_directional`
+3. `metal_doe_comparable`
+4. `metal_doe_release`
+5. `metal_dawn_release`
+6. `vulkan_doe_app`
+7. `vulkan_doe_comparable`
+8. `vulkan_doe_release`
+9. `vulkan_dawn_release`
+10. `d3d12_doe_app`
+11. `d3d12_doe_directional`
+12. `d3d12_doe_comparable`
+13. `d3d12_doe_release`
+14. `d3d12_dawn_release`
+
+Legacy compatibility aliases:
+
+1. `vulkan_dawn_directional` -> `vulkan_dawn_release`
 
 No old aliases are supported.
 

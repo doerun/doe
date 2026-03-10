@@ -2,27 +2,25 @@
   "schemaVersion": 1,
   "sourcePolicyPath": "config/backend-runtime-policy.json",
   "laneToBackend": {
+    "d3d12_dawn_release": "dawn_delegate",
     "d3d12_doe_app": "doe_d3d12",
     "d3d12_doe_comparable": "doe_d3d12",
     "d3d12_doe_directional": "doe_d3d12",
     "d3d12_doe_release": "doe_d3d12",
-    "d3d12_dawn_release": "dawn_delegate",
+    "metal_dawn_release": "dawn_delegate",
     "metal_doe_app": "doe_metal",
     "metal_doe_comparable": "doe_metal",
     "metal_doe_directional": "doe_metal",
     "metal_doe_release": "doe_metal",
-    "metal_dawn_release": "dawn_delegate",
+    "vulkan_dawn_release": "dawn_delegate",
     "vulkan_doe_app": "doe_vulkan",
     "vulkan_doe_comparable": "doe_vulkan",
-    "vulkan_dawn_directional": "dawn_delegate",
-    "vulkan_doe_release": "doe_vulkan",
-    "vulkan_dawn_release": "dawn_delegate"
+    "vulkan_doe_release": "doe_vulkan"
   },
   "backendToLanes": {
     "dawn_delegate": [
       "d3d12_dawn_release",
       "metal_dawn_release",
-      "vulkan_dawn_directional",
       "vulkan_dawn_release"
     ],
     "doe_metal": [

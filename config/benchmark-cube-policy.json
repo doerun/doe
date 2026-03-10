@@ -87,7 +87,8 @@
       "notes": [
         "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity."
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
       ]
     },
     {

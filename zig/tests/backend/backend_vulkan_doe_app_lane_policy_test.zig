@@ -14,6 +14,11 @@ test "execution backend lane parser accepts metal_dawn_release" {
     try std.testing.expect(execution.parseBackendLane("metal-dawn-release") == .metal_dawn_release);
 }
 
+test "execution backend lane parser folds vulkan dawn directional alias into release" {
+    try std.testing.expect(execution.parseBackendLane("vulkan_dawn_directional") == .vulkan_dawn_release);
+    try std.testing.expect(execution.parseBackendLane("vulkan-dawn-directional") == .vulkan_dawn_release);
+}
+
 test "execution backend lane parser accepts d3d12_doe_app" {
     try std.testing.expect(execution.parseBackendLane("d3d12_doe_app") == .d3d12_doe_app);
     try std.testing.expect(execution.parseBackendLane("d3d12-doe-app") == .d3d12_doe_app);

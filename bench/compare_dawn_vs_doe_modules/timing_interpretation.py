@@ -59,6 +59,18 @@ def command_sample_field_values_ms(
         parsed = safe_float(sample.get(field))
         if parsed is None or parsed < 0.0:
             continue
+        if field == "elapsedMs":
+            command_repeat = safe_float(sample.get("commandRepeat")) or 1.0
+            if command_repeat <= 0.0:
+                command_repeat = 1.0
+            timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
+            if timing_divisor is None or timing_divisor <= 0.0:
+                timing_meta = sample.get("timing", {})
+                if isinstance(timing_meta, dict):
+                    timing_divisor = safe_float(timing_meta.get("timingNormalizationDivisor"))
+            if timing_divisor is None or timing_divisor <= 0.0:
+                timing_divisor = 1.0
+            parsed /= command_repeat * timing_divisor
         values.append(parsed)
     return values
 
@@ -212,8 +224,9 @@ def build_timing_interpretation(
             "rightStatsMs": right_headline_stats,
             "deltaPercent": delta_percent_from_stats(left_headline_stats, right_headline_stats),
             "note": (
-                "Uses timed command process wall. This is the honest end-to-end ranking view "
-                "for the command the harness actually ran."
+                "Uses timed command process wall normalized by commandRepeat and "
+                "timingNormalizationDivisor. This is the end-to-end ranking view for one "
+                "comparable workload unit."
             ),
         },
     }

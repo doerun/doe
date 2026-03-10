@@ -1,50 +1,75 @@
+const std = @import("std");
+const common_timing = @import("../../backend/common/timing.zig");
 const model = @import("../../model.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
+const surface_macos_mod = @import("wgpu_surface_macos.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
 const ffi = @import("../../webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
 
-const SURFACE_TEXTURE_STATUS_SUCCESS: u32 = 0x00000001;
-const SURFACE_ALPHA_MODE_AUTO: u32 = 0x00000001;
-const SURFACE_PRESENT_MODE_FIFO: u32 = 0x00000002;
+const SURFACE_TEXTURE_STATUS_SUCCESS_OPTIMAL: u32 = 0x00000001;
+const SURFACE_TEXTURE_STATUS_SUCCESS_SUBOPTIMAL: u32 = 0x00000002;
+const SURFACE_ALPHA_MODE_AUTO: u32 = 0x00000000;
+const SURFACE_PRESENT_MODE_FIFO: u32 = 0x00000001;
 
 pub fn executeSurfaceCreate(self: *Backend, surface_cmd: model.SurfaceCreateCommand) !types.NativeExecutionResult {
+    const encode_start = common_timing.now_ns();
     if (self.full.surfaces.contains(surface_cmd.handle)) {
-        return .{ .status = .unsupported, .status_message = "surface handle already exists" };
+        return unsupported_encode_result("surface handle already exists", encode_start);
     }
+    const platform_surface = surface_macos_mod.createPlatformSurface() catch {
+        return error_encode_result("surface platform creation failed", encode_start);
+    };
+    errdefer surface_macos_mod.releasePlatformSurface(platform_surface);
+    var metal_layer_chain = surface_procs_mod.SurfaceSourceMetalLayer{
+        .chain = .{
+            .next = null,
+            .sType = surface_procs_mod.SurfaceSourceMetalLayerSType,
+        },
+        .layer = if (platform_surface) |surface| surface.layer else null,
+    };
     const surface = self.createSurface(.{
-        .nextInChain = null,
+        .nextInChain = if (platform_surface != null) &metal_layer_chain.chain else null,
         .label = loader.emptyStringView(),
     }) catch {
-        return .{ .status = .@"error", .status_message = "surface creation failed" };
+        return error_encode_result("surface creation failed", encode_start);
     };
-    try self.full.surfaces.put(surface_cmd.handle, .{ .surface = surface });
-    return .{ .status = .ok, .status_message = "surface created" };
+    errdefer self.releaseSurface(surface);
+    try self.full.surfaces.put(surface_cmd.handle, .{
+        .surface = surface,
+        .platform_surface = platform_surface,
+    });
+    return ok_encode_result("surface created", encode_start);
 }
 
 pub fn executeSurfaceCapabilities(self: *Backend, surface_cmd: model.SurfaceCapabilitiesCommand) !types.NativeExecutionResult {
+    const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.get(surface_cmd.handle) orelse {
-        return .{ .status = .unsupported, .status_message = "surface handle not found" };
+        return unsupported_encode_result("surface handle not found", encode_start);
     };
     const capabilities = self.getSurfaceCapabilities(managed.surface) catch {
-        return .{ .status = .@"error", .status_message = "surface capabilities query failed" };
+        return error_encode_result("surface capabilities query failed", encode_start);
     };
     defer self.freeSurfaceCapabilities(capabilities);
     if (capabilities.formatCount == 0 or capabilities.presentModeCount == 0) {
-        return .{ .status = .@"error", .status_message = "surface capabilities are empty" };
+        return error_encode_result("surface capabilities are empty", encode_start);
     }
-    return .{ .status = .ok, .status_message = "surface capabilities queried" };
+    return ok_encode_result("surface capabilities queried", encode_start);
 }
 
 pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model.SurfaceConfigureCommand) !types.NativeExecutionResult {
+    const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
-        return .{ .status = .unsupported, .status_message = "surface handle not found" };
+        return unsupported_encode_result("surface handle not found", encode_start);
     };
     if (managed.acquired_texture != null) {
         self.core.procs.?.wgpuTextureRelease(managed.acquired_texture);
         managed.acquired_texture = null;
+    }
+    if (managed.platform_surface) |surface| {
+        surface_macos_mod.configureSurfaceLayer(surface.retained_host, surface_cmd.width, surface_cmd.height);
     }
     const config = surface_procs_mod.SurfaceConfiguration{
         .nextInChain = null,
@@ -57,66 +82,75 @@ pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model.SurfaceConfigu
         .viewFormats = null,
         .alphaMode = if (surface_cmd.alpha_mode == 0) SURFACE_ALPHA_MODE_AUTO else surface_cmd.alpha_mode,
         .presentMode = if (surface_cmd.present_mode == 0) SURFACE_PRESENT_MODE_FIFO else surface_cmd.present_mode,
-        .desiredMaximumFrameLatency = surface_cmd.desired_maximum_frame_latency,
     };
     self.configureSurface(managed.surface, config) catch {
-        return .{ .status = .@"error", .status_message = "surface configure failed" };
+        return error_encode_result("surface configure failed", encode_start);
     };
     managed.configured = true;
-    return .{ .status = .ok, .status_message = "surface configured" };
+    return ok_encode_result("surface configured", encode_start);
 }
 
 pub fn executeSurfaceAcquire(self: *Backend, surface_cmd: model.SurfaceAcquireCommand) !types.NativeExecutionResult {
+    const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
-        return .{ .status = .unsupported, .status_message = "surface handle not found" };
+        return unsupported_encode_result("surface handle not found", encode_start);
     };
-    if (!managed.configured) return .{ .status = .unsupported, .status_message = "surface must be configured before acquire" };
-    if (managed.acquired_texture != null) return .{ .status = .unsupported, .status_message = "surface already has an acquired texture" };
+    if (!managed.configured) return unsupported_encode_result("surface must be configured before acquire", encode_start);
+    if (managed.acquired_texture != null) return unsupported_encode_result("surface already has an acquired texture", encode_start);
 
     const surface_texture = self.getCurrentSurfaceTexture(managed.surface) catch {
-        return .{ .status = .@"error", .status_message = "surface acquire failed" };
+        return error_encode_result("surface acquire failed", encode_start);
     };
-    if (surface_texture.status != SURFACE_TEXTURE_STATUS_SUCCESS or surface_texture.texture == null) {
-        return .{ .status = .@"error", .status_message = "surface acquire returned non-success status" };
+    if (!isSuccessfulSurfaceTextureStatus(surface_texture.status) or surface_texture.texture == null) {
+        var message_buf: [96]u8 = undefined;
+        const message = std.fmt.bufPrint(
+            &message_buf,
+            "surface acquire returned status={} texture_null={}",
+            .{ surface_texture.status, surface_texture.texture == null },
+        ) catch "surface acquire returned non-success status";
+        return error_encode_result(message, encode_start);
     }
     managed.acquired_texture = surface_texture.texture;
     managed.last_texture_status = surface_texture.status;
-    return .{ .status = .ok, .status_message = "surface texture acquired" };
+    return ok_encode_result("surface texture acquired", encode_start);
 }
 
 pub fn executeSurfacePresent(self: *Backend, surface_cmd: model.SurfacePresentCommand) !types.NativeExecutionResult {
+    const submit_wait_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
-        return .{ .status = .unsupported, .status_message = "surface handle not found" };
+        return unsupported_submit_result("surface handle not found", submit_wait_start);
     };
-    if (!managed.configured) return .{ .status = .unsupported, .status_message = "surface must be configured before present" };
-    if (managed.acquired_texture == null) return .{ .status = .unsupported, .status_message = "surface present requires an acquired texture" };
+    if (!managed.configured) return unsupported_submit_result("surface must be configured before present", submit_wait_start);
+    if (managed.acquired_texture == null) return unsupported_submit_result("surface present requires an acquired texture", submit_wait_start);
 
     self.presentSurface(managed.surface) catch {
-        return .{ .status = .@"error", .status_message = "surface present failed" };
+        return error_submit_result("surface present failed", submit_wait_start);
     };
     self.core.procs.?.wgpuTextureRelease(managed.acquired_texture);
     managed.acquired_texture = null;
-    return .{ .status = .ok, .status_message = "surface presented" };
+    return ok_submit_result("surface presented", submit_wait_start);
 }
 
 pub fn executeSurfaceUnconfigure(self: *Backend, surface_cmd: model.SurfaceUnconfigureCommand) !types.NativeExecutionResult {
+    const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
-        return .{ .status = .unsupported, .status_message = "surface handle not found" };
+        return unsupported_encode_result("surface handle not found", encode_start);
     };
     if (managed.acquired_texture != null) {
         self.core.procs.?.wgpuTextureRelease(managed.acquired_texture);
         managed.acquired_texture = null;
     }
     self.unconfigureSurface(managed.surface) catch {
-        return .{ .status = .@"error", .status_message = "surface unconfigure failed" };
+        return error_encode_result("surface unconfigure failed", encode_start);
     };
     managed.configured = false;
-    return .{ .status = .ok, .status_message = "surface unconfigured" };
+    return ok_encode_result("surface unconfigured", encode_start);
 }
 
 pub fn executeSurfaceRelease(self: *Backend, surface_cmd: model.SurfaceReleaseCommand) !types.NativeExecutionResult {
+    const encode_start = common_timing.now_ns();
     const removed = self.full.surfaces.fetchRemove(surface_cmd.handle) orelse {
-        return .{ .status = .unsupported, .status_message = "surface handle not found" };
+        return unsupported_encode_result("surface handle not found", encode_start);
     };
     if (removed.value.acquired_texture != null) {
         self.core.procs.?.wgpuTextureRelease(removed.value.acquired_texture);
@@ -125,5 +159,59 @@ pub fn executeSurfaceRelease(self: *Backend, surface_cmd: model.SurfaceReleaseCo
         _ = self.unconfigureSurface(removed.value.surface) catch {};
     }
     self.releaseSurface(removed.value.surface);
-    return .{ .status = .ok, .status_message = "surface released" };
+    surface_macos_mod.releasePlatformSurface(removed.value.platform_surface);
+    return ok_encode_result("surface released", encode_start);
+}
+
+fn isSuccessfulSurfaceTextureStatus(status: u32) bool {
+    return status == SURFACE_TEXTURE_STATUS_SUCCESS_OPTIMAL or
+        status == SURFACE_TEXTURE_STATUS_SUCCESS_SUBOPTIMAL;
+}
+
+fn ok_encode_result(message: []const u8, encode_start: u64) types.NativeExecutionResult {
+    return .{
+        .status = .ok,
+        .status_message = message,
+        .encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start),
+    };
+}
+
+fn error_encode_result(message: []const u8, encode_start: u64) types.NativeExecutionResult {
+    return .{
+        .status = .@"error",
+        .status_message = message,
+        .encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start),
+    };
+}
+
+fn unsupported_encode_result(message: []const u8, encode_start: u64) types.NativeExecutionResult {
+    return .{
+        .status = .unsupported,
+        .status_message = message,
+        .encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start),
+    };
+}
+
+fn ok_submit_result(message: []const u8, submit_wait_start: u64) types.NativeExecutionResult {
+    return .{
+        .status = .ok,
+        .status_message = message,
+        .submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_wait_start),
+    };
+}
+
+fn error_submit_result(message: []const u8, submit_wait_start: u64) types.NativeExecutionResult {
+    return .{
+        .status = .@"error",
+        .status_message = message,
+        .submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_wait_start),
+    };
+}
+
+fn unsupported_submit_result(message: []const u8, submit_wait_start: u64) types.NativeExecutionResult {
+    return .{
+        .status = .unsupported,
+        .status_message = message,
+        .submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_wait_start),
+    };
 }

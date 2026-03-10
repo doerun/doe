@@ -338,12 +338,8 @@ pub fn parseBackend(raw: []const u8) ?BackendMode {
 }
 
 pub fn parseBackendLane(raw: []const u8) ?backend_policy.BackendLane {
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-release") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-release"))
-        return .vulkan_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-app") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-app"))
-        return .vulkan_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-app") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-app"))
-        return .d3d12_doe_app;
+    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal-doe-app") or std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal-doe-app"))
+        return .metal_doe_app;
     if (std.ascii.eqlIgnoreCase(raw, "metal_doe_directional") or std.ascii.eqlIgnoreCase(raw, "metal-doe-directional") or std.ascii.eqlIgnoreCase(raw, "metal_doe_directional") or std.ascii.eqlIgnoreCase(raw, "metal-doe-directional"))
         return .metal_doe_directional;
     if (std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "metal-doe-comparable") or std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "metal-doe-comparable"))
@@ -352,6 +348,18 @@ pub fn parseBackendLane(raw: []const u8) ?backend_policy.BackendLane {
         return .metal_doe_release;
     if (std.ascii.eqlIgnoreCase(raw, "metal_dawn_release") or std.ascii.eqlIgnoreCase(raw, "metal-dawn-release"))
         return .metal_dawn_release;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-app") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-app"))
+        return .vulkan_doe_app;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-comparable"))
+        return .vulkan_doe_comparable;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-release") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-release"))
+        return .vulkan_doe_release;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-release") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-release"))
+        return .vulkan_dawn_release;
+    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-directional") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-directional"))
+        return .vulkan_dawn_release;
+    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-app") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-app"))
+        return .d3d12_doe_app;
     if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-directional") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-directional"))
         return .d3d12_doe_directional;
     if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-comparable"))
@@ -360,14 +368,6 @@ pub fn parseBackendLane(raw: []const u8) ?backend_policy.BackendLane {
         return .d3d12_doe_release;
     if (std.ascii.eqlIgnoreCase(raw, "d3d12_dawn_release") or std.ascii.eqlIgnoreCase(raw, "d3d12-dawn-release"))
         return .d3d12_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-directional") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-directional"))
-        return .vulkan_dawn_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-comparable"))
-        return .vulkan_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-release") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-release"))
-        return .vulkan_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal-doe-app") or std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal-doe-app"))
-        return .metal_doe_app;
     return null;
 }
 
@@ -381,21 +381,20 @@ pub fn defaultBackendLane(profile: model.DeviceProfile) backend_policy.BackendLa
 
 pub fn backendLaneName(lane: backend_policy.BackendLane) []const u8 {
     return switch (lane) {
-        .vulkan_dawn_release => "vulkan_dawn_release",
-        .vulkan_doe_app => "vulkan_doe_app",
-        .d3d12_doe_app => "d3d12_doe_app",
+        .metal_doe_app => "metal_doe_app",
         .metal_doe_directional => "metal_doe_directional",
         .metal_doe_comparable => "metal_doe_comparable",
         .metal_doe_release => "metal_doe_release",
         .metal_dawn_release => "metal_dawn_release",
+        .vulkan_doe_app => "vulkan_doe_app",
+        .vulkan_doe_comparable => "vulkan_doe_comparable",
+        .vulkan_doe_release => "vulkan_doe_release",
+        .vulkan_dawn_release => "vulkan_dawn_release",
+        .d3d12_doe_app => "d3d12_doe_app",
         .d3d12_doe_directional => "d3d12_doe_directional",
         .d3d12_doe_comparable => "d3d12_doe_comparable",
         .d3d12_doe_release => "d3d12_doe_release",
         .d3d12_dawn_release => "d3d12_dawn_release",
-        .vulkan_dawn_directional => "vulkan_dawn_directional",
-        .vulkan_doe_comparable => "vulkan_doe_comparable",
-        .vulkan_doe_release => "vulkan_doe_release",
-        .metal_doe_app => "metal_doe_app",
     };
 }
 

@@ -158,7 +158,9 @@ export function createDoeRuntime(options = {}) {
         require_existing_path("commandsPath", runOptions.commandsPath);
         if (runOptions.quirksPath) require_existing_path("quirksPath", runOptions.quirksPath);
         const args = build_bench_args(runOptions);
-        const result = runRaw(args);
+        const result = runRaw(args, {
+            cwd: runOptions.cwd || WORKSPACE_ROOT,
+        });
         const traceMeta = read_trace_meta(runOptions.traceMetaPath);
         return {
             ...result,

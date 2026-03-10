@@ -150,17 +150,17 @@ pub export fn wgpuCommandEncoderCopyBufferToBuffer(a0: types.WGPUCommandEncoder,
     proc(a0, a1, a2, a3, a4, a5);
 }
 
-pub export fn wgpuCommandEncoderCopyBufferToTexture(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyBufferInfo, a2: *const types.WGPUTexelCopyTextureInfo, a3: types.WGPUExtent3D) callconv(.c) void {
+pub export fn wgpuCommandEncoderCopyBufferToTexture(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyBufferInfo, a2: *const types.WGPUTexelCopyTextureInfo, a3: *const types.WGPUExtent3D) callconv(.c) void {
     const proc = loadRequiredProc(types.FnWgpuCommandEncoderCopyBufferToTexture, "wgpuCommandEncoderCopyBufferToTexture");
     proc(a0, a1, a2, a3);
 }
 
-pub export fn wgpuCommandEncoderCopyTextureToBuffer(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyTextureInfo, a2: *const types.WGPUTexelCopyBufferInfo, a3: types.WGPUExtent3D) callconv(.c) void {
+pub export fn wgpuCommandEncoderCopyTextureToBuffer(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyTextureInfo, a2: *const types.WGPUTexelCopyBufferInfo, a3: *const types.WGPUExtent3D) callconv(.c) void {
     const proc = loadRequiredProc(types.FnWgpuCommandEncoderCopyTextureToBuffer, "wgpuCommandEncoderCopyTextureToBuffer");
     proc(a0, a1, a2, a3);
 }
 
-pub export fn wgpuCommandEncoderCopyTextureToTexture(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyTextureInfo, a2: *const types.WGPUTexelCopyTextureInfo, a3: types.WGPUExtent3D) callconv(.c) void {
+pub export fn wgpuCommandEncoderCopyTextureToTexture(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyTextureInfo, a2: *const types.WGPUTexelCopyTextureInfo, a3: *const types.WGPUExtent3D) callconv(.c) void {
     const proc = loadRequiredProc(types.FnWgpuCommandEncoderCopyTextureToTexture, "wgpuCommandEncoderCopyTextureToTexture");
     proc(a0, a1, a2, a3);
 }

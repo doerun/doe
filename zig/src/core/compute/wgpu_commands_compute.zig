@@ -12,6 +12,7 @@ const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA;
 const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
 const MAX_KERNEL_SOURCE_BYTES: usize = 4 * 1024 * 1024;
 const WHOLE_BUFFER_BINDING_MIN_BYTES: u64 = 4;
+const DEFAULT_DISPATCH_WGSL_KERNEL = "dispatch_noop.wgsl";
 
 pub fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.NativeExecutionResult {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
@@ -57,23 +58,35 @@ pub fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.Nati
 }
 
 pub fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.NativeExecutionResult {
-    _ = self;
-    _ = dispatch;
-    return .{
-        .status = .unsupported,
-        .status_message = "dispatch requires kernel_dispatch with an explicit WGSL kernel",
-        .dispatch_count = 1,
-    };
+    return executeKernelDispatchKernel(
+        self,
+        DEFAULT_DISPATCH_WGSL_KERNEL,
+        "main",
+        dispatch.x,
+        dispatch.y,
+        dispatch.z,
+        1,
+        0,
+        false,
+        try resolveKernelSource(self, DEFAULT_DISPATCH_WGSL_KERNEL),
+        null,
+    );
 }
 
 pub fn executeDispatchIndirect(self: *Backend, dispatch: model.DispatchIndirectCommand) !types.NativeExecutionResult {
-    _ = self;
-    _ = dispatch;
-    return .{
-        .status = .unsupported,
-        .status_message = "dispatch_indirect requires kernel_dispatch with an explicit WGSL kernel",
-        .dispatch_count = 1,
-    };
+    return executeKernelDispatchKernel(
+        self,
+        DEFAULT_DISPATCH_WGSL_KERNEL,
+        "main",
+        dispatch.x,
+        dispatch.y,
+        dispatch.z,
+        1,
+        0,
+        false,
+        try resolveKernelSource(self, DEFAULT_DISPATCH_WGSL_KERNEL),
+        null,
+    );
 }
 
 pub fn executeKernelDispatch(self: *Backend, kernel: model.KernelDispatchCommand) !types.NativeExecutionResult {

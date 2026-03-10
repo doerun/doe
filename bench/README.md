@@ -68,13 +68,16 @@ That document defines:
   - normalizes backend compare reports plus package-surface compare reports into a single benchmark cube contract.
   - emits timestamped JSON row artifacts, JSON cube summary, and markdown matrix slices under `bench/out/cube/<timestamp>/`.
   - also writes stable latest outputs under `bench/out/cube/latest/`.
+  - cube publication is lane-governed: every included row must resolve to governed lane IDs from `config/governed-lanes.json`.
+  - backend rows carry the two source runtime lane IDs from report telemetry; package rows require explicit top-level `laneId` in the compare report.
   - package-surface compare harnesses (`bench/node/compare.js`, `bench/bun/compare.js`) now force workload validation prepasses before timing comparable rows so claimable package-surface artifacts fail early on readback/correctness drift.
   - `bench/node/compare.js` now runs each workload in a fresh provider subprocess, preventing package-state carryover from contaminating later workload timings in the same compare report.
   - package surfaces can use explicit policy workload-id overrides (`config/benchmark-cube-policy.json`) so directional rows stay isolated from comparable workload-set cells.
   - backend rows preserve both canonical and legacy report history:
     - canonical rows come from fully conformant Dawn-vs-Doe reports.
     - legacy rows are kept when old reports still parse but no longer match the active workload-contract hash or obligation contract; these rows are marked `sourceConformance=legacy_nonconformant` and degrade to diagnostic in cube cells.
-  - Node/Bun package rows stay explicit about maturity and missing-cell status instead of silently fabricating parity.
+  - Node/Bun package rows stay explicit about maturity and missing-cell status instead of silently fabricating parity; package reports without governed `laneId` are excluded from canonical cube publication.
+  - package rows now also normalize cross-surface aliases through `bench/workload-registry.json`, so package workload IDs like `buffer_upload_1kb` land in cube rows as canonical backend-aligned IDs such as `upload_write_buffer_1kb` while preserving `sourceWorkloadId`.
 - `substantiation_gate.py`
   - validates claim substantiation evidence from one or more comparison reports and/or release-window summaries using `config/substantiation-policy.json` (minimum comparable+claimable report count and minimum unique left-side profile diversity).
   - `targetUniqueLeftProfiles` can now be enforced as blocking via `releaseEvidence.enforceTargetUniqueLeftProfiles` (default in repo policy: `true`).
@@ -206,6 +209,20 @@ python3 fawn/bench/cleanup_out.py --retention-days 14
 - workloads are tagged with `domain` and `comparabilityNotes` for report transparency.
 - directional workloads that are likely parity-promotion targets can declare `comparabilityCandidate` metadata.
 - use `--workload-cohort comparability-candidates` to isolate that candidate set for directional parity work (requires `--include-noncomparable-workloads`).
+- canonical cross-surface workload identity now lives in `fawn/bench/workload-registry.json`.
+  - backend-native execution contracts still live in `bench/workloads*.json`.
+  - backend-native workload source of truth now lives in `bench/backend-workload-catalog.json`, and `python3 bench/generate_backend_workloads.py` materializes the lane-specific `bench/workloads*.json` files from that catalog.
+  - `python3 bench/generate_backend_workloads.py --verify` is now part of the canonical blocking gate flow; generated backend workload files are no longer treated as hand-authored truth.
+  - Node/Bun package execution still lives in `bench/node/workloads.js`.
+  - the registry bridges those surfaces so package aliases like `buffer_upload_1kb` normalize to canonical workload IDs such as `upload_write_buffer_1kb` in package reports and cube rows.
+  - the first Windows D3D12 execution contracts now exist as generated views:
+    - `bench/workloads.local.d3d12.smoke.json`
+    - `bench/workloads.local.d3d12.extended.json`
+  - the first governed D3D12 comparable config is `bench/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`.
+  - D3D12 release-lane scaffolding now also exists at `bench/compare_dawn_vs_doe.config.local.d3d12.release.json`, but it remains unevidenced until a Windows host runs it.
+  - run `python3 bench/preflight_d3d12_host.py --json` on a Windows x64 host before D3D12 compare runs.
+  - `python3 bench/run_local_d3d12_lane.py` is the Windows handoff runner for preflight -> smoke -> extended comparable -> blocking gates -> cube rebuild.
+  - `python3 bench/test_backend_workload_catalog.py` covers D3D12 catalog round-trip, expected ID sets, and config/policy invariants; the blocking gate now runs it after `generate_backend_workloads.py --verify`.
 - current comparable default matrix is upload scaling: `buffer_upload_{1kb,64kb,1mb,4mb,16mb}`.
 - extended domains include render/draw, shader/pipeline, texture-raster, and compute suites.
 
@@ -291,7 +308,7 @@ python3 fawn/bench/compare_dawn_vs_doe.py \
   `--claimability local|release` enforces sample-floor and positive-tail checks for claimable speed reports.
   use `--claim-min-timed-samples N` to override mode defaults loaded from `config/benchmark-methodology-thresholds.json` (`claimabilityDefaults.localMinTimedSamples`, `claimabilityDefaults.releaseMinTimedSamples`).
   claimability failures return non-zero exit status (`3`) and report `claimStatus=diagnostic`.
-  workloads whose selected timing scope is `narrow-hot-path` are non-claimable in all claim modes even when comparability is green; they are engineering diagnostics, not end-to-end speed claims.
+  workloads whose selected timing scope is `narrow-hot-path` keep `deltaPercent` as an engineering diagnostic, but claimability now evaluates `timingInterpretation.headlineProcessWall.deltaPercent` when that end-to-end metric is available. `headlineProcessWall` is normalized by `commandRepeat` and `timingNormalizationDivisor`, so repeat-asymmetric lanes still compare one workload unit to one workload unit.
 - trace replay gate supports semantic parity lanes:
   `bench/trace_gate.py --semantic-parity-mode auto|required`.
   use `required` only for runtime-to-runtime parity artifacts (for example Doe vs Dawn traces), because Dawn comparison traces are not semantic-envelope compatible.
@@ -331,6 +348,11 @@ Process-wall comparability policy:
 - if trace-meta also reports `timingSource=wall-time`, it is treated as auxiliary metadata and not as the primary timing value.
 - process/resource sampling avoids fixed sleep quantization for open-ended runs by waiting on process completion with timeout polling.
 - per-workload timing normalization divisors (`leftTimingDivisor`/`rightTimingDivisor`) are only applied in non-process-wall timing modes; process-wall runs use a normalization divisor of `1.0`.
+- strict comparable workloads can also declare `strictNormalizationUnit` when the comparable unit is not raw command-row count:
+  - `dispatch`: divisor must match repeated dispatch count
+  - `cycle`: divisor must match repeated full-workload cycles
+  - default/omitted: divisor must match repeated command-row count
+  strict compare fails fast when the configured divisor and trace-derived physical-op count disagree for the declared unit.
 
 Use `process-wall` only for startup/runtime-overhead studies, not per-op claims.
 
@@ -363,10 +385,11 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   when ignore-first is enabled and applied, source is reported as `doe-execution-row-total-ns+ignore-first-ops`.
 - compare reports now also emit `timingInterpretation` per workload:
   - `selectedTiming` describes what `deltaPercent` actually measures (`operation-total`, `operation-encode`, `process-wall`, etc.).
-  - `headlineProcessWall` reports the timed-command process-wall view for honest end-to-end ranking.
-  - when `selectedTiming.scopeClass=narrow-hot-path`, `deltaPercent` is a phase-specific diagnostic and the workload is not claimable; use `headlineProcessWall.deltaPercent` for top-line comparisons instead.
+  - `headlineProcessWall` reports the timed-command process-wall view for honest end-to-end ranking, normalized to one workload unit via `commandRepeat` and `timingNormalizationDivisor`.
+  - when `selectedTiming.scopeClass=narrow-hot-path`, `deltaPercent` stays a phase-specific diagnostic while claimability uses `headlineProcessWall.deltaPercent` for end-to-end evaluation when available.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
   in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=1` because Dawn already reports per-dispatch via `iterationsPerStep=100`).
+  repeat-asymmetric benchmark runs also normalize counter-derived operation totals and headline process wall by `commandRepeat`, so `repeat=100` vs `repeat=1` still compares a single workload unit on both sides.
 - non-comparable mappings can be explicitly flagged in workload contracts and excluded by default.
 
 Extended workload domains now include:

@@ -490,6 +490,7 @@ def main() -> int:
 
     payload = {
         "schemaVersion": 1,
+        "laneId": "browser_claim_local",
         "reportKind": "browser-claim-report",
         "generatedAt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "benchmarkClass": "comparable",

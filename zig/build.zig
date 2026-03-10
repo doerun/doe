@@ -96,6 +96,8 @@ pub fn build(b: *std.Build) void {
         if (target.result.os.tag == .macos) {
             dropin_lib.linkFramework("Metal");
             dropin_lib.linkFramework("Foundation");
+            dropin_lib.linkFramework("QuartzCore");
+            dropin_lib.linkFramework("AppKit");
             dropin_lib.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
@@ -211,6 +213,8 @@ pub fn build(b: *std.Build) void {
         if (target.result.os.tag == .macos) {
             exe.linkFramework("Metal");
             exe.linkFramework("Foundation");
+            exe.linkFramework("QuartzCore");
+            exe.linkFramework("AppKit");
             exe.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
@@ -325,6 +329,8 @@ pub fn build(b: *std.Build) void {
         if (target.result.os.tag == .macos) {
             module_runner.linkFramework("Metal");
             module_runner.linkFramework("Foundation");
+            module_runner.linkFramework("QuartzCore");
+            module_runner.linkFramework("AppKit");
             module_runner.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
@@ -368,6 +374,8 @@ pub fn build(b: *std.Build) void {
         if (target.result.os.tag == .macos) {
             test_exec.linkFramework("Metal");
             test_exec.linkFramework("Foundation");
+            test_exec.linkFramework("QuartzCore");
+            test_exec.linkFramework("AppKit");
             test_exec.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
@@ -406,6 +414,8 @@ pub fn build(b: *std.Build) void {
         if (target.result.os.tag == .macos) {
             core_test_exec.linkFramework("Metal");
             core_test_exec.linkFramework("Foundation");
+            core_test_exec.linkFramework("QuartzCore");
+            core_test_exec.linkFramework("AppKit");
             core_test_exec.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
@@ -444,6 +454,8 @@ pub fn build(b: *std.Build) void {
         if (target.result.os.tag == .macos) {
             full_test_exec.linkFramework("Metal");
             full_test_exec.linkFramework("Foundation");
+            full_test_exec.linkFramework("QuartzCore");
+            full_test_exec.linkFramework("AppKit");
             full_test_exec.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},

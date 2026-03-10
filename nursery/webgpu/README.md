@@ -141,7 +141,8 @@ Future layering note:
 The **benchmark cube** is a cross-product matrix of surface (backend_native,
 node_package, bun_package) × provider pair (e.g. doe_vs_dawn) × workload set
 (e.g. compute_e2e, render, upload). Each intersection is a **cell** with its
-own comparability and claimability status. Cube outputs live in
+own comparability and claimability status. Canonical cube rows are emitted only
+from governed lane-backed reports (`config/governed-lanes.json`). Cube outputs live in
 `bench/out/cube/` and include a dashboard, matrix summary, and per-row data.
 
 <p align="center">

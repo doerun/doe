@@ -91,6 +91,7 @@ async function runWorkload(workload, device, queue, globals) {
 
   return {
     workload: workload.id,
+    canonicalWorkloadId: workload.canonicalWorkloadId ?? workload.id,
     domain: workload.domain,
     comparable: workload.comparable ?? true,
     provider: PROVIDER,
@@ -148,6 +149,7 @@ async function main() {
     } catch (err) {
       const errRecord = {
         workload: workload.id,
+        canonicalWorkloadId: workload.canonicalWorkloadId ?? workload.id,
         provider: PROVIDER,
         error: err.message,
         type: 'workload_error',

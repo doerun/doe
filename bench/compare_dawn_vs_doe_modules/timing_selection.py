@@ -165,6 +165,7 @@ def pick_measured_timing_ms(
     required_timing_class: str,
     benchmark_policy: Any,
     workload_domain: str = "",
+    command_repeat: int = 1,
 ) -> tuple[float, str, dict[str, Any]]:
     if required_timing_class == "process-wall":
         timing_meta = {
@@ -194,6 +195,30 @@ def pick_measured_timing_ms(
     prefer_render_encode = (
         normalized_domain in RENDER_ENCODE_TIMING_DOMAINS and has_execution_evidence
     )
+    effective_repeat = command_repeat if command_repeat > 0 else 1
+
+    def maybe_normalize_by_repeat(
+        measured_ms: float,
+        timing_meta: dict[str, Any],
+        *,
+        canonical_source: str,
+    ) -> float:
+        if effective_repeat <= 1:
+            timing_meta["commandRepeat"] = effective_repeat
+            timing_meta["repeatNormalized"] = False
+            return measured_ms
+        if canonical_source in {
+            "doe-execution-total-ns",
+            "doe-execution-encode-ns",
+            "doe-execution-dispatch-window-ns",
+            "doe-execution-gpu-timestamp-ns",
+        }:
+            timing_meta["commandRepeat"] = effective_repeat
+            timing_meta["repeatNormalized"] = True
+            return measured_ms / float(effective_repeat)
+        timing_meta["commandRepeat"] = effective_repeat
+        timing_meta["repeatNormalized"] = False
+        return measured_ms
 
     meta_timing_ms = safe_float(trace_meta.get("timingMs"))
     meta_source = trace_meta.get("timingSource")
@@ -220,11 +245,16 @@ def pick_measured_timing_ms(
                 "traceMetaTimingMs": meta_timing_ms,
                 "wallTimeMs": wall_ms,
             }
+            measured_ms = maybe_normalize_by_repeat(
+                meta_timing_ms,
+                timing_meta,
+                canonical_source=canonical_source,
+            )
             if prefer_upload_row_total and canonical_source == "doe-execution-row-total-ns":
                 timing_meta["timingSelectionPolicy"] = "upload-row-total-preferred"
             if prefer_render_encode and canonical_source == "doe-execution-encode-ns":
                 timing_meta["timingSelectionPolicy"] = "render-encode-preferred"
-            return meta_timing_ms, source, timing_meta
+            return measured_ms, source, timing_meta
 
     if prefer_upload_row_total:
         row_durations_ns = parse_execution_row_total_ns_rows(trace_jsonl)
@@ -246,6 +276,8 @@ def pick_measured_timing_ms(
                     "executionSuccessCount": execution_success_count,
                     "wallTimeMs": wall_ms,
                     "timingSelectionPolicy": "upload-row-total-preferred",
+                    "commandRepeat": effective_repeat,
+                    "repeatNormalized": False,
                 }
                 return measured_ms, "doe-execution-row-total-ns", timing_meta
 
@@ -262,6 +294,11 @@ def pick_measured_timing_ms(
             "wallTimeMs": wall_ms,
             "timingSelectionPolicy": "render-encode-preferred",
         }
+        measured_ms = maybe_normalize_by_repeat(
+            measured_ms,
+            timing_meta,
+            canonical_source="doe-execution-encode-ns",
+        )
         return measured_ms, "doe-execution-encode-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
@@ -275,6 +312,11 @@ def pick_measured_timing_ms(
             "executionSuccessCount": execution_success_count,
             "wallTimeMs": wall_ms,
         }
+        measured_ms = maybe_normalize_by_repeat(
+            measured_ms,
+            timing_meta,
+            canonical_source="doe-execution-total-ns",
+        )
         return measured_ms, "doe-execution-total-ns", timing_meta
 
     gpu_timestamp_total_ns = safe_int(
@@ -293,6 +335,11 @@ def pick_measured_timing_ms(
             "wallTimeMs": wall_ms,
             "timingSelectionPolicy": "gpu-timestamp-fallback",
         }
+        measured_ms = maybe_normalize_by_repeat(
+            measured_ms,
+            timing_meta,
+            canonical_source="doe-execution-gpu-timestamp-ns",
+        )
         return measured_ms, "doe-execution-gpu-timestamp-ns", timing_meta
 
     dispatch_window_ns = -1
@@ -311,6 +358,11 @@ def pick_measured_timing_ms(
                 "executionSuccessCount": execution_success_count,
                 "wallTimeMs": wall_ms,
             }
+            measured_ms = maybe_normalize_by_repeat(
+                measured_ms,
+                timing_meta,
+                canonical_source="doe-execution-dispatch-window-ns",
+            )
             return measured_ms, "doe-execution-dispatch-window-ns", timing_meta
 
     trace_rows = parse_trace_rows(trace_jsonl)

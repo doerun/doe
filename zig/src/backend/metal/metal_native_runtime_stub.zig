@@ -1,6 +1,7 @@
 const std = @import("std");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const copy_runtime = @import("metal_copy_runtime_stub.zig");
 
 pub const DispatchMetrics = struct {
     setup_ns: u64,
@@ -85,6 +86,46 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn texture_destroy(self: *NativeMetalRuntime, cmd: model.TextureDestroyCommand) !void {
+        _ = self; _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn copy_command(self: *NativeMetalRuntime, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !copy_runtime.CopyMetrics {
+        _ = self; _ = cmd; _ = queue_sync_mode;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn surface_create(self: *NativeMetalRuntime, cmd: model.SurfaceCreateCommand) !void {
+        _ = self; _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn surface_capabilities(self: *NativeMetalRuntime, cmd: model.SurfaceCapabilitiesCommand) !void {
+        _ = self; _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn surface_configure(self: *NativeMetalRuntime, cmd: model.SurfaceConfigureCommand) !void {
+        _ = self; _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn surface_acquire(self: *NativeMetalRuntime, cmd: model.SurfaceAcquireCommand) !void {
+        _ = self; _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn surface_present(self: *NativeMetalRuntime, cmd: model.SurfacePresentCommand) !u64 {
+        _ = self; _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn surface_unconfigure(self: *NativeMetalRuntime, cmd: model.SurfaceUnconfigureCommand) !void {
+        _ = self; _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn surface_release(self: *NativeMetalRuntime, cmd: model.SurfaceReleaseCommand) !void {
         _ = self; _ = cmd;
         return error.UnsupportedFeature;
     }

@@ -57,21 +57,21 @@ fn parseCompareFunction(raw: ?[]const u8) ParseError!u32 {
 }
 
 fn parseSurfaceAlphaMode(raw: ?[]const u8) ParseError!u32 {
-    const value = raw orelse return 0x00000001;
-    if (commandKindEqualsFn(value, "auto")) return 0x00000001;
-    if (commandKindEqualsFn(value, "opaque")) return 0x00000002;
-    if (commandKindEqualsFn(value, "premultiplied")) return 0x00000003;
-    if (commandKindEqualsFn(value, "unpremultiplied")) return 0x00000004;
-    if (commandKindEqualsFn(value, "inherit")) return 0x00000005;
+    const value = raw orelse return 0x00000000;
+    if (commandKindEqualsFn(value, "auto")) return 0x00000000;
+    if (commandKindEqualsFn(value, "opaque")) return 0x00000001;
+    if (commandKindEqualsFn(value, "premultiplied")) return 0x00000002;
+    if (commandKindEqualsFn(value, "unpremultiplied")) return 0x00000003;
+    if (commandKindEqualsFn(value, "inherit")) return 0x00000004;
     return ParseError.InvalidCommandPayload;
 }
 
 fn parseSurfacePresentMode(raw: ?[]const u8) ParseError!u32 {
-    const value = raw orelse return 0x00000002;
-    if (commandKindEqualsFn(value, "fifo")) return 0x00000002;
-    if (commandKindEqualsFn(value, "immediate")) return 0x00000001;
-    if (commandKindEqualsFn(value, "mailbox")) return 0x00000003;
-    if (commandKindEqualsFn(value, "fifo-relaxed") or commandKindEqualsFn(value, "fifo_relaxed")) return 0x00000004;
+    const value = raw orelse return 0x00000001;
+    if (commandKindEqualsFn(value, "fifo")) return 0x00000001;
+    if (commandKindEqualsFn(value, "fifo-relaxed") or commandKindEqualsFn(value, "fifo_relaxed")) return 0x00000002;
+    if (commandKindEqualsFn(value, "immediate")) return 0x00000003;
+    if (commandKindEqualsFn(value, "mailbox")) return 0x00000004;
     return ParseError.InvalidCommandPayload;
 }
 

@@ -58,7 +58,7 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help=(
             "Glob for Node package compare reports. May be repeated. "
-            "Default: bench/out/node-doe-vs-dawn/*.json"
+            "Default: bench/out/node-doe-vs-dawn*/*.json"
         ),
     )
     parser.add_argument(
@@ -86,6 +86,11 @@ def parse_args() -> argparse.Namespace:
         "--policy",
         default="config/benchmark-cube-policy.json",
         help="Benchmark cube policy contract.",
+    )
+    parser.add_argument(
+        "--workload-registry",
+        default="bench/workload-registry.json",
+        help="Canonical workload registry used to normalize cross-surface workload IDs.",
     )
     parser.add_argument(
         "--comparability-obligations",
@@ -336,6 +341,115 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     }
 
 
+def load_governed_lanes(root: Path, path: Path) -> dict[str, Any]:
+    payload = load_json_object(path)
+    validate_schema(root / "config" / "governed-lanes.schema.json", payload)
+    lanes = {item["id"]: item for item in payload["lanes"]}
+    aliases: dict[str, str] = {}
+    for item in payload["lanes"]:
+        for alias in item.get("aliases", []):
+            if alias in aliases and aliases[alias] != item["id"]:
+                raise ValueError(f"duplicate governed lane alias: {alias}")
+            aliases[alias] = item["id"]
+    return {
+        "raw": payload,
+        "lanes": lanes,
+        "aliases": aliases,
+    }
+
+
+def load_workload_registry(root: Path, path: Path) -> dict[str, Any]:
+    payload = load_json_object(path)
+    validate_schema(root / "config" / "workload-registry.schema.json", payload)
+    by_surface_alias: dict[tuple[str, str], dict[str, str]] = {}
+    for item in payload["workloads"]:
+        canonical_id = item["canonicalId"]
+        domain = item["domain"]
+        description = item["description"]
+        for surface in item["surfaces"]:
+            surface_id = surface["surface"]
+            for workload_id in surface["workloadIds"]:
+                key = (surface_id, workload_id)
+                existing = by_surface_alias.get(key)
+                if existing is not None and existing["canonicalId"] != canonical_id:
+                    raise ValueError(
+                        f"conflicting workload registry alias for {surface_id}:{workload_id}: "
+                        f"{existing['canonicalId']} vs {canonical_id}"
+                    )
+                by_surface_alias[key] = {
+                    "canonicalId": canonical_id,
+                    "domain": domain,
+                    "description": description,
+                }
+    return {
+        "raw": payload,
+        "bySurfaceAlias": by_surface_alias,
+    }
+
+
+def resolve_workload_identity(
+    workload_registry: dict[str, Any],
+    *,
+    surface_id: str,
+    source_workload_id: str,
+    fallback_domain: str,
+) -> dict[str, str]:
+    alias = workload_registry["bySurfaceAlias"].get((surface_id, source_workload_id))
+    if alias is None:
+        return {
+            "workloadId": source_workload_id,
+            "sourceWorkloadId": source_workload_id,
+            "domain": fallback_domain,
+        }
+    return {
+        "workloadId": alias["canonicalId"],
+        "sourceWorkloadId": source_workload_id,
+        "domain": alias["domain"] or fallback_domain,
+    }
+
+
+def canonical_lane_id(governed_lanes: dict[str, Any], raw_lane_id: Any) -> str | None:
+    if not isinstance(raw_lane_id, str) or not raw_lane_id:
+        return None
+    lanes = governed_lanes["lanes"]
+    if raw_lane_id in lanes:
+        return raw_lane_id
+    return governed_lanes["aliases"].get(raw_lane_id)
+
+
+def validate_governed_lane_binding(
+    governed_lanes: dict[str, Any],
+    *,
+    lane_id: str,
+    source_report_type: str,
+    surface: str,
+    host_profile: str,
+    provider_pair: str,
+) -> None:
+    lane = governed_lanes["lanes"].get(lane_id)
+    if lane is None:
+        raise ValueError(f"unknown governed lane: {lane_id}")
+    if lane.get("cubeEligible") is not True:
+        raise ValueError(f"governed lane is not cube-eligible: {lane_id}")
+    if lane.get("surface") != surface:
+        raise ValueError(
+            f"governed lane {lane_id} surface mismatch: expected {surface}, got {lane.get('surface')}"
+        )
+    if host_profile not in lane.get("hostProfiles", []):
+        raise ValueError(
+            f"governed lane {lane_id} does not allow host profile {host_profile}"
+        )
+    if source_report_type not in lane.get("sourceReportTypes", []):
+        raise ValueError(
+            f"governed lane {lane_id} does not allow source report type {source_report_type}"
+        )
+    provider_pairs = lane.get("providerPairs")
+    if isinstance(provider_pairs, list) and provider_pairs and provider_pair not in provider_pairs:
+        raise ValueError(
+            f"governed lane {lane_id} does not allow provider pair {provider_pair}"
+        )
+
+
 def load_timing_scope_sanity_policy(root: Path) -> dict[str, float]:
     path = root / "config" / "benchmark-methodology-thresholds.json"
     payload = load_json_object(path)
@@ -469,6 +583,8 @@ def normalize_backend_report(
     source_path: Path,
     generated_at: datetime,
     policy: dict[str, Any],
+    workload_registry: dict[str, Any],
+    governed_lanes: dict[str, Any],
     maturity: str,
     source_conformance: str,
     source_conformance_reason: str,
@@ -481,8 +597,15 @@ def normalize_backend_report(
     for workload in payload.get("workloads", []):
         if not isinstance(workload, dict):
             continue
-        workload_id = str(workload.get("id") or "")
-        domain = str(workload.get("domain") or "overhead")
+        workload_identity = resolve_workload_identity(
+            workload_registry,
+            surface_id="backend_native",
+            source_workload_id=str(workload.get("id") or ""),
+            fallback_domain=str(workload.get("domain") or "overhead"),
+        )
+        workload_id = workload_identity["workloadId"]
+        source_workload_id = workload_identity["sourceWorkloadId"]
+        domain = workload_identity["domain"]
         workload_set = workload_set_for_row(
             policy,
             surface_id="backend_native",
@@ -495,6 +618,36 @@ def normalize_backend_report(
         claimable = isinstance(claimability, dict) and claimability.get("claimable") is True
         left_payload = workload.get("left") if isinstance(workload.get("left"), dict) else {}
         right_payload = workload.get("right") if isinstance(workload.get("right"), dict) else {}
+        left_lane_id = canonical_lane_id(
+            governed_lanes,
+            left_payload.get("lastMeta", {}).get("backendLane")
+            if isinstance(left_payload.get("lastMeta"), dict)
+            else None,
+        )
+        right_lane_id = canonical_lane_id(
+            governed_lanes,
+            right_payload.get("lastMeta", {}).get("backendLane")
+            if isinstance(right_payload.get("lastMeta"), dict)
+            else None,
+        )
+        if left_lane_id is None or right_lane_id is None:
+            raise ValueError(f"{source_path}: workload {workload_id} missing governed backend lane IDs")
+        validate_governed_lane_binding(
+            governed_lanes,
+            lane_id=left_lane_id,
+            source_report_type="backend_compare_report",
+            surface="backend_native",
+            host_profile=host["profileId"],
+            provider_pair="doe_vs_dawn",
+        )
+        validate_governed_lane_binding(
+            governed_lanes,
+            lane_id=right_lane_id,
+            source_report_type="backend_compare_report",
+            surface="backend_native",
+            host_profile=host["profileId"],
+            provider_pair="doe_vs_dawn",
+        )
         left_samples = (
             left_payload.get("commandSamples")
             if isinstance(left_payload.get("commandSamples"), list)
@@ -534,8 +687,10 @@ def normalize_backend_report(
                 "host": host,
                 "surface": "backend_native",
                 "providerPair": "doe_vs_dawn",
+                "governedLaneIds": [left_lane_id, right_lane_id],
                 "workloadSet": workload_set,
                 "workloadId": workload_id,
+                "sourceWorkloadId": source_workload_id,
                 "workloadDomain": domain,
                 "comparisonStatus": "comparable" if comparable else "diagnostic",
                 "claimStatus": "claimable" if claimable else "diagnostic",
@@ -562,6 +717,7 @@ def normalize_backend_report(
     return rows, {
         "surface": "backend_native",
         "providerPair": "doe_vs_dawn",
+        "governedLaneIds": rows[0]["governedLaneIds"] if rows else [],
         "hostProfile": host["profileId"],
         "runId": run_id,
         "generatedAt": iso_utc(generated_at),
@@ -580,6 +736,9 @@ def normalize_backend_report(
 def validate_package_report(payload: dict[str, Any], *, report_label: str) -> tuple[bool, str]:
     if payload.get("type") != "comparison_report":
         return False, f"{report_label}: type must be comparison_report"
+    lane_id = payload.get("laneId")
+    if not isinstance(lane_id, str) or not lane_id:
+        return False, f"{report_label}: laneId must be a non-empty string"
     comparisons = payload.get("comparisons")
     if not isinstance(comparisons, list) or not comparisons:
         return False, f"{report_label}: comparisons must be a non-empty list"
@@ -592,6 +751,8 @@ def normalize_package_report(
     source_path: Path,
     generated_at: datetime,
     policy: dict[str, Any],
+    workload_registry: dict[str, Any],
+    governed_lanes: dict[str, Any],
     maturity: str,
     surface: str,
     provider_pair: str,
@@ -600,12 +761,33 @@ def normalize_package_report(
     host = detect_package_host(payload)
     run_id = run_id_from_timestamp(generated_at)
     rows: list[dict[str, Any]] = []
+    lane_id = canonical_lane_id(governed_lanes, payload.get("laneId"))
+    if lane_id is None:
+        raise ValueError(f"{source_path}: missing governed package lane ID")
+    validate_governed_lane_binding(
+        governed_lanes,
+        lane_id=lane_id,
+        source_report_type=source_report_type,
+        surface=surface,
+        host_profile=host["profileId"],
+        provider_pair=provider_pair,
+    )
 
     for comparison in payload.get("comparisons", []):
         if not isinstance(comparison, dict):
             continue
-        workload_id = str(comparison.get("workload") or "")
-        domain = str(comparison.get("domain") or "overhead")
+        workload_identity = resolve_workload_identity(
+            workload_registry,
+            surface_id=surface,
+            source_workload_id=str(comparison.get("workload") or ""),
+            fallback_domain=str(comparison.get("domain") or "overhead"),
+        )
+        workload_id = (
+            str(comparison.get("canonicalWorkloadId") or "").strip()
+            or workload_identity["workloadId"]
+        )
+        source_workload_id = workload_identity["sourceWorkloadId"]
+        domain = workload_identity["domain"]
         workload_set = workload_set_for_row(
             policy,
             surface_id=surface,
@@ -627,8 +809,10 @@ def normalize_package_report(
                 "host": host,
                 "surface": surface,
                 "providerPair": provider_pair,
+                "governedLaneIds": [lane_id],
                 "workloadSet": workload_set,
                 "workloadId": workload_id,
+                "sourceWorkloadId": source_workload_id,
                 "workloadDomain": domain,
                 "comparisonStatus": "comparable" if comparable else "diagnostic",
                 "claimStatus": "claimable" if claimable else "diagnostic",
@@ -655,6 +839,7 @@ def normalize_package_report(
     return rows, {
         "surface": surface,
         "providerPair": provider_pair,
+        "governedLaneIds": [lane_id],
         "hostProfile": host["profileId"],
         "runId": run_id,
         "generatedAt": iso_utc(generated_at),
@@ -734,7 +919,8 @@ def render_matrix_markdown(summary: dict[str, Any], policy: dict[str, Any]) -> s
             for host_profile_id in surface["expectedHostProfiles"]:
                 cell = cells[(surface["id"], host_profile_id, workload_set_id)]
                 if cell["reportCount"] == 0:
-                    row.append(cell["status"])
+                    detail = str(cell.get("statusDetail") or "").strip()
+                    row.append(f"{cell['status']} ({detail})" if detail else cell["status"])
                 else:
                     row.append(f"{cell['status']} ({cell['rowCount']} rows)")
             lines.append("| " + " | ".join(row) + " |")
@@ -746,16 +932,58 @@ def render_matrix_markdown(summary: dict[str, Any], policy: dict[str, Any]) -> s
     return "\n".join(lines)
 
 
-def make_placeholder_cell(surface: dict[str, Any], host_profile: str, provider_pair: str, workload_set: str) -> dict[str, Any]:
+def eligible_governed_lane_ids(
+    governed_lanes: dict[str, Any],
+    *,
+    surface_id: str,
+    host_profile: str,
+    provider_pair: str,
+) -> list[str]:
+    lane_ids: list[str] = []
+    for lane in governed_lanes["raw"]["lanes"]:
+        if lane.get("cubeEligible") is not True:
+            continue
+        if lane.get("surface") != surface_id:
+            continue
+        if host_profile not in lane.get("hostProfiles", []):
+            continue
+        provider_pairs = lane.get("providerPairs")
+        if isinstance(provider_pairs, list) and provider_pairs and provider_pair not in provider_pairs:
+            continue
+        lane_ids.append(lane["id"])
+    return lane_ids
+
+
+def make_placeholder_cell(
+    surface: dict[str, Any],
+    host_profile: str,
+    provider_pair: str,
+    workload_set: str,
+    *,
+    governed_lanes: dict[str, Any],
+) -> dict[str, Any]:
+    lane_ids = eligible_governed_lane_ids(
+        governed_lanes,
+        surface_id=surface["id"],
+        host_profile=host_profile,
+        provider_pair=provider_pair,
+    )
+    status_detail = (
+        "contract exists, evidence missing"
+        if lane_ids
+        else "no governed lane contract"
+    )
     return {
         "surface": surface["id"],
         "providerPair": provider_pair,
+        "governedLaneIds": lane_ids,
         "hostProfile": host_profile,
         "workloadSet": workload_set,
         "scopeType": "full_matrix" if workload_set == "full_comparable" else "workload_set",
         "maturity": surface["maturity"],
         "primarySupport": surface["primarySupport"],
         "status": surface["defaultMissingStatus"],
+        "statusDetail": status_detail,
         "reportCount": 0,
         "rowCount": 0,
         "notes": surface["notes"],
@@ -765,6 +993,7 @@ def make_placeholder_cell(surface: dict[str, Any], host_profile: str, provider_p
 def build_cells(
     *,
     policy: dict[str, Any],
+    governed_lanes: dict[str, Any],
     rows: list[dict[str, Any]],
     reports: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -815,7 +1044,13 @@ def build_cells(
                         latest = latest_report_for_tuple.get(tuple_key)
                         if latest is None:
                             cells.append(
-                                make_placeholder_cell(surface, host_profile, provider_pair, workload_set)
+                                make_placeholder_cell(
+                                    surface,
+                                    host_profile,
+                                    provider_pair,
+                                    workload_set,
+                                    governed_lanes=governed_lanes,
+                                )
                             )
                             continue
                         status = latest["claimStatus"]
@@ -834,6 +1069,7 @@ def build_cells(
                             {
                                 "surface": surface["id"],
                                 "providerPair": provider_pair,
+                                "governedLaneIds": latest.get("governedLaneIds", []),
                                 "hostProfile": host_profile,
                                 "workloadSet": workload_set,
                                 "scopeType": "full_matrix",
@@ -864,7 +1100,13 @@ def build_cells(
                     latest_rows_info = latest_row_report.get(tuple_key)
                     if latest_rows_info is None:
                         cells.append(
-                            make_placeholder_cell(surface, host_profile, provider_pair, workload_set)
+                            make_placeholder_cell(
+                                surface,
+                                host_profile,
+                                provider_pair,
+                                workload_set,
+                                governed_lanes=governed_lanes,
+                            )
                         )
                         continue
                     latest_report_path, latest_rows, latest_generated_at = latest_rows_info
@@ -882,6 +1124,7 @@ def build_cells(
                         {
                             "surface": surface["id"],
                             "providerPair": provider_pair,
+                            "governedLaneIds": latest_rows[0].get("governedLaneIds", []),
                             "hostProfile": host_profile,
                             "workloadSet": workload_set,
                             "scopeType": "workload_set",
@@ -919,15 +1162,18 @@ def main() -> None:
     timestamp = output_paths.resolve_timestamp(args.timestamp)
 
     policy_path = (repo_root / args.policy).resolve()
+    workload_registry_path = (repo_root / args.workload_registry).resolve()
     obligation_path = (repo_root / args.comparability_obligations).resolve()
     policy = load_policy(repo_root, policy_path)
+    workload_registry = load_workload_registry(repo_root, workload_registry_path)
+    governed_lanes = load_governed_lanes(repo_root, repo_root / "config" / "governed-lanes.json")
     timing_scope_sanity_policy = load_timing_scope_sanity_policy(repo_root)
     obligation_schema_version, obligation_ids = report_conformance.load_obligation_contract(
         obligation_path
     )
 
     backend_patterns = args.backend_report_glob or ["bench/out/**/dawn-vs-doe*.json"]
-    node_patterns = args.node_report_glob or ["bench/out/node-doe-vs-dawn/*.json"]
+    node_patterns = args.node_report_glob or ["bench/out/node-doe-vs-dawn*/*.json"]
     bun_patterns = args.bun_report_glob or ["bench/out/bun-doe-vs-webgpu/*.json"]
 
     backend_paths = collect_paths(backend_patterns, args.backend_report)
@@ -982,16 +1228,22 @@ def main() -> None:
         )
         generated_at = parse_report_timestamp(payload, path)
         surface_policy = policy["surfaces"]["backend_native"]
-        normalized_rows, report_info = normalize_backend_report(
-            payload=payload,
-            source_path=path,
-            generated_at=generated_at,
-            policy=policy,
-            maturity=surface_policy["maturity"],
-            source_conformance="canonical" if is_canonical else "legacy_nonconformant",
-            source_conformance_reason="" if is_canonical else canonical_reason,
-            timing_scope_sanity_policy=timing_scope_sanity_policy,
-        )
+        try:
+            normalized_rows, report_info = normalize_backend_report(
+                payload=payload,
+                source_path=path,
+                generated_at=generated_at,
+                policy=policy,
+                workload_registry=workload_registry,
+                governed_lanes=governed_lanes,
+                maturity=surface_policy["maturity"],
+                source_conformance="canonical" if is_canonical else "legacy_nonconformant",
+                source_conformance_reason="" if is_canonical else canonical_reason,
+                timing_scope_sanity_policy=timing_scope_sanity_policy,
+            )
+        except ValueError:
+            source_counts["backendReports"]["skipped"] += 1
+            continue
         rows.extend(normalized_rows)
         reports.append(report_info)
         source_counts["backendReports"]["included"] += 1
@@ -1015,16 +1267,22 @@ def main() -> None:
             continue
         generated_at = parse_report_timestamp(payload, path)
         surface_policy = policy["surfaces"]["node_package"]
-        normalized_rows, report_info = normalize_package_report(
-            payload=payload,
-            source_path=path,
-            generated_at=generated_at,
-            policy=policy,
-            maturity=surface_policy["maturity"],
-            surface="node_package",
-            provider_pair="doe_node_vs_dawn_node",
-            source_report_type="node_package_compare_report",
-        )
+        try:
+            normalized_rows, report_info = normalize_package_report(
+                payload=payload,
+                source_path=path,
+                generated_at=generated_at,
+                policy=policy,
+                workload_registry=workload_registry,
+                governed_lanes=governed_lanes,
+                maturity=surface_policy["maturity"],
+                surface="node_package",
+                provider_pair="doe_node_vs_dawn_node",
+                source_report_type="node_package_compare_report",
+            )
+        except ValueError:
+            source_counts["nodeReports"]["skipped"] += 1
+            continue
         rows.extend(normalized_rows)
         reports.append(report_info)
         source_counts["nodeReports"]["included"] += 1
@@ -1045,16 +1303,22 @@ def main() -> None:
             continue
         generated_at = parse_report_timestamp(payload, path)
         surface_policy = policy["surfaces"]["bun_package"]
-        normalized_rows, report_info = normalize_package_report(
-            payload=payload,
-            source_path=path,
-            generated_at=generated_at,
-            policy=policy,
-            maturity=surface_policy["maturity"],
-            surface="bun_package",
-            provider_pair="doe_bun_vs_bun_webgpu",
-            source_report_type="bun_package_compare_report",
-        )
+        try:
+            normalized_rows, report_info = normalize_package_report(
+                payload=payload,
+                source_path=path,
+                generated_at=generated_at,
+                policy=policy,
+                workload_registry=workload_registry,
+                governed_lanes=governed_lanes,
+                maturity=surface_policy["maturity"],
+                surface="bun_package",
+                provider_pair="doe_bun_vs_bun_webgpu",
+                source_report_type="bun_package_compare_report",
+            )
+        except ValueError:
+            source_counts["bunReports"]["skipped"] += 1
+            continue
         rows.extend(normalized_rows)
         reports.append(report_info)
         source_counts["bunReports"]["included"] += 1
@@ -1089,7 +1353,7 @@ def main() -> None:
         group="cube",
     )
 
-    cells = build_cells(policy=policy, rows=rows, reports=reports)
+    cells = build_cells(policy=policy, governed_lanes=governed_lanes, rows=rows, reports=reports)
     status_counts = Counter(cell["status"] for cell in cells)
     for status in STATUS_ORDER:
         status_counts.setdefault(status, 0)

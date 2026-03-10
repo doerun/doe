@@ -51,6 +51,12 @@ Required checkpoints for benchmark contract changes:
 
 Each workload entry is parsed by `bench/compare_dawn_vs_doe.py`.
 
+Authoring rule:
+- do not hand-edit the generated backend lane files under `bench/workloads*.json`.
+- edit `bench/backend-workload-catalog.json` instead, then regenerate with:
+  `python3 bench/generate_backend_workloads.py`
+- the catalog is the canonical backend workload source of truth; the lane files are generated execution views.
+
 Required fields:
 - `id`
 - `name`
