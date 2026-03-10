@@ -1,0 +1,8702 @@
+[
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  },
+  {
+    "kind": "sampler_create",
+    "handle": 42021,
+    "magFilter": "linear",
+    "minFilter": "linear",
+    "mipmapFilter": "linear"
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 42020,
+    "width": 2,
+    "height": 2,
+    "format": "rgba8unorm",
+    "bytesPerRow": 8,
+    "rowsPerImage": 2,
+    "data": [
+      255,
+      0,
+      0,
+      255,
+      0,
+      255,
+      0,
+      255,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+      0,
+      255
+    ]
+  },
+  {
+    "kind": "copy_buffer_to_texture",
+    "bytes": 16,
+    "src_handle": 42022,
+    "dst_handle": 42020,
+    "dst_width": 2,
+    "dst_height": 2,
+    "dst_format": "rgba8unorm",
+    "dst_usage": 6,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "copy_texture_to_buffer",
+    "bytes": 16,
+    "src_handle": 42020,
+    "src_width": 2,
+    "src_height": 2,
+    "src_format": "rgba8unorm",
+    "src_usage": 6,
+    "src_bytes_per_row": 8,
+    "src_rows_per_image": 2,
+    "dst_handle": 42023,
+    "dst_bytes_per_row": 8,
+    "dst_rows_per_image": 2
+  },
+  {
+    "kind": "texture_query",
+    "handle": 42020,
+    "width": 2,
+    "height": 2,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "barrier",
+    "dependency_count": 1
+  },
+  {
+    "kind": "async_diagnostics",
+    "format": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 42020
+  },
+  {
+    "kind": "sampler_destroy",
+    "handle": 42021
+  }
+]\n

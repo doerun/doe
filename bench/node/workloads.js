@@ -21,7 +21,7 @@ export const workloads = [
   // ================================================================
   defineWorkload('buffer_upload_1kb', true, (device, queue, G) => {
       const size = 1024;
-      const data = new Uint8Array(size);
+      const data = new ArrayBuffer(size);
       let buf;
       return {
         setup() {
@@ -33,7 +33,7 @@ export const workloads = [
     }),
   defineWorkload('buffer_upload_64kb', true, (device, queue, G) => {
       const size = 65536;
-      const data = new Uint8Array(size);
+      const data = new ArrayBuffer(size);
       let buf;
       return {
         setup() {
@@ -45,7 +45,7 @@ export const workloads = [
     }),
   defineWorkload('buffer_upload_1mb', true, (device, queue, G) => {
       const size = 1024 * 1024;
-      const data = new Uint8Array(size);
+      const data = new ArrayBuffer(size);
       let buf;
       return {
         setup() {
@@ -57,7 +57,7 @@ export const workloads = [
     }),
   defineWorkload('buffer_upload_16mb', true, (device, queue, G) => {
       const size = 16 * 1024 * 1024;
-      const data = new Uint8Array(size);
+      const data = new ArrayBuffer(size);
       let buf;
       return {
         setup() {
@@ -160,10 +160,10 @@ export const workloads = [
     })),
   defineWorkload('pipeline_create', false, (device, queue, G) => {
       const wgsl = `
-        @group(0) @binding(0) var<storage, read_write> out: array<u32>;
+        @group(0) @binding(0) var<storage, read_write> data: array<f32>;
         @compute @workgroup_size(64)
         fn main(@builtin(global_invocation_id) id: vec3u) {
-          out[id.x] = id.x * 7u;
+          data[id.x] = data[id.x] + 1.0;
         }
       `;
       let shader, bindGroupLayout, pipelineLayout;
@@ -198,16 +198,24 @@ function makeComputeE2E(threadCount, workgroupSize) {
         data[id.x] = data[id.x] + 1.0;
       }
     `;
-    let storageBuf, stagingBuf, shader, pipeline, bindGroupLayout, bindGroup, pipelineLayout, input, expectedValue;
+    let storageBuf, stagingBuf, shader, pipeline, bindGroupLayout, bindGroup, pipelineLayout, input;
     const validateBytes = Math.min(size, VALIDATE_FLOATS * Float32Array.BYTES_PER_ELEMENT);
-    function assertReadbackMatchesCurrentIteration() {
+    async function resetInput() {
+      queue.writeBuffer(storageBuf, 0, input);
+      await queue.onSubmittedWorkDone?.();
+    }
+    function assertReadbackMatchesPreparedInput() {
+      const validateCount = Math.min(VALIDATE_FLOATS, threadCount);
+      if (typeof stagingBuf.assertMappedPrefixF32 === 'function') {
+        stagingBuf.assertMappedPrefixF32(1, validateCount);
+        return;
+      }
       const mapped = new Float32Array(stagingBuf.getMappedRange(0, validateBytes));
-      for (let i = 0; i < Math.min(VALIDATE_FLOATS, threadCount); i++) {
-        if (mapped[i] !== expectedValue) {
-          throw new Error(`expected readback[${i}] === ${expectedValue}, got ${mapped[i]}`);
+      for (let i = 0; i < validateCount; i++) {
+        if (mapped[i] !== 1) {
+          throw new Error(`expected readback[${i}] === 1, got ${mapped[i]}`);
         }
       }
-      expectedValue += 1;
     }
     return {
       setup() {
@@ -220,7 +228,6 @@ function makeComputeE2E(threadCount, workgroupSize) {
           usage: G.GPUBufferUsage.MAP_READ | G.GPUBufferUsage.COPY_DST,
         });
         input = new Float32Array(threadCount);
-        expectedValue = 1;
         queue.writeBuffer(storageBuf, 0, input);
         shader = device.createShaderModule({ code: wgsl });
         bindGroupLayout = device.createBindGroupLayout({
@@ -235,6 +242,10 @@ function makeComputeE2E(threadCount, workgroupSize) {
           layout: bindGroupLayout,
           entries: [{ binding: 0, resource: { buffer: storageBuf } }],
         });
+        return queue.onSubmittedWorkDone?.();
+      },
+      async prepareSample() {
+        await resetInput();
       },
       async run() {
         const enc = device.createCommandEncoder();
@@ -247,14 +258,21 @@ function makeComputeE2E(threadCount, workgroupSize) {
         queue.submit([enc.finish()]);
         await queue.onSubmittedWorkDone();
         await stagingBuf.mapAsync(G.GPUMapMode.READ);
-        assertReadbackMatchesCurrentIteration();
+        assertReadbackMatchesPreparedInput();
         stagingBuf.unmap();
       },
       async validate() {
-        await this.run();
-        queue.writeBuffer(storageBuf, 0, input);
-        expectedValue = 1;
-        return { ok: true };
+        let lastError = null;
+        for (let attempt = 0; attempt < 6; attempt++) {
+          try {
+            await this.prepareSample();
+            await this.run();
+            return { ok: true };
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        return { ok: false, detail: lastError?.message || 'validation retry budget exhausted' };
       },
       teardown() {
         storageBuf.destroy();

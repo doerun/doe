@@ -745,7 +745,7 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "rightCommandRepeat": 500,
       "rightTimingDivisor": 500,
-      "timingNormalizationNote": "Strict comparable Apple-Metal dispatch contract: normalize per fallback dispatch operation.",
+      "timingNormalizationNote": "Strict comparable Apple-Metal dispatch contract: normalize per fallback dispatch operation at 500 repeats.",
       "vendor": "apple"
     },
     {
@@ -926,14 +926,14 @@
       "domain": "copy",
       "driver": "1.0.0",
       "family": "m3",
-      "leftCommandRepeat": 200,
-      "leftTimingDivisor": 200,
+      "leftCommandRepeat": 400,
+      "leftTimingDivisor": 400,
       "name": "copy texture-to-texture contract",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence.",
+      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 400 repeats to reduce headline process wall tail volatility.",
       "vendor": "apple",
-      "rightCommandRepeat": 200,
-      "rightTimingDivisor": 200
+      "rightCommandRepeat": 400,
+      "rightTimingDivisor": 400
     },
     {
       "id": "lifecycle_refcount",

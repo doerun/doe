@@ -4524,9 +4524,11 @@
           "comparabilityNotes": "Strict comparable Apple-Metal dispatch contract after Dawn delegate plain-dispatch execution parity fix; both sides execute the same fallback dispatch stream with per-dispatch normalization.",
           "comparable": true,
           "description": "Comparable dispatch benchmark exercising the builtin fallback dispatch command path.",
+          "leftCommandRepeat": 500,
+          "leftTimingDivisor": 500,
           "rightCommandRepeat": 500,
           "rightTimingDivisor": 500,
-          "timingNormalizationNote": "Strict comparable Apple-Metal dispatch contract: normalize per fallback dispatch operation."
+          "timingNormalizationNote": "Strict comparable Apple-Metal dispatch contract: normalize per fallback dispatch operation at 500 repeats."
         },
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {}
@@ -5693,9 +5695,11 @@
           "comparabilityNotes": "Strict comparable on Apple Metal after Dawn-side copy ABI parity fixes; both sides execute the same texture-to-texture command stream with per-copy normalization.",
           "comparable": true,
           "description": "Comparable copy contract covering texture-to-texture transfer path.",
-          "rightCommandRepeat": 200,
-          "rightTimingDivisor": 200,
-          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence."
+          "leftCommandRepeat": 400,
+          "leftTimingDivisor": 400,
+          "rightCommandRepeat": 400,
+          "rightTimingDivisor": 400,
+          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 400 repeats to reduce headline process wall tail volatility."
         },
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {}

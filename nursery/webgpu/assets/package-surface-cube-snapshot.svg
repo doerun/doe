@@ -36,27 +36,27 @@
   </defs>
   <rect width="1200" height="640" fill="url(#bg)"/>
   <text x="72" y="72" class="title">@simulatte/webgpu package snapshot</text>
-  <text x="72" y="102" class="subtitle">Derived from bench/out/cube/latest/cube.summary.json | latest populated cell 2026-03-06T21:55:26.482Z</text>
+  <text x="72" y="102" class="subtitle">Derived from bench/out/cube/latest/cube.summary.json | latest populated cell 2026-03-10T20:24:06.544Z</text>
   <text x="72" y="128" class="subtitle">Package-surface evidence only. Backend-native strict claim lanes remain separate.</text>
 
   <rect x="72" y="176" width="488" height="318" rx="24" class="panel toneLeft"/>
   <text x="100" y="216" class="cardTitle">Node package lane</text>
   <text x="100" y="244" class="cardMeta">Primary support | mac_apple_silicon</text>
-  <text x="100" y="266" class="cardMeta">latest populated cell 2026-03-06T21:40:32.181Z</text>
+  <text x="100" y="266" class="cardMeta">latest populated cell 2026-03-10T20:24:06.544Z</text>
 
   <rect x="90" y="300" width="452" height="82" rx="16" class="metric toneLeft"/>
   <text x="114" y="331" class="metricTitle">Uploads</text>
   <rect x="386" y="315" width="132" height="28" rx="14" fill="#16a34a" stroke="#86efac" stroke-width="1.5"/>
   <text x="452" y="334" text-anchor="middle" class="pillText">CLAIMABLE</text>
   <text x="114" y="357" class="metricBody">5 rows | claimable</text>
-  <text x="114" y="377" class="metricBody">median p50 delta +53.9%</text>
+  <text x="114" y="377" class="metricBody">median p50 delta +37.2%</text>
 
   <rect x="90" y="396" width="452" height="82" rx="16" class="metric toneLeft"/>
   <text x="114" y="427" class="metricTitle">Compute E2E</text>
-  <rect x="386" y="411" width="132" height="28" rx="14" fill="#d97706" stroke="#fbbf24" stroke-width="1.5"/>
-  <text x="452" y="430" text-anchor="middle" class="pillText">COMPARABLE</text>
-  <text x="114" y="453" class="metricBody">3 rows | comparable</text>
-  <text x="114" y="473" class="metricBody">median p50 delta +21.2%</text>
+  <rect x="386" y="411" width="132" height="28" rx="14" fill="#16a34a" stroke="#86efac" stroke-width="1.5"/>
+  <text x="452" y="430" text-anchor="middle" class="pillText">CLAIMABLE</text>
+  <text x="114" y="453" class="metricBody">3 rows | claimable</text>
+  <text x="114" y="473" class="metricBody">median p50 delta +48.1%</text>
 
   <rect x="640" y="176" width="488" height="318" rx="24" class="panel toneRight"/>
   <text x="668" y="216" class="cardTitle">Bun package lane</text>

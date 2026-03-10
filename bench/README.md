@@ -68,6 +68,11 @@ That document defines:
   - normalizes backend compare reports plus package-surface compare reports into a single benchmark cube contract.
   - emits timestamped JSON row artifacts, JSON cube summary, and markdown matrix slices under `bench/out/cube/<timestamp>/`.
   - also writes stable latest outputs under `bench/out/cube/latest/`.
+  - preserves latest-history by default: it seeds the build with report paths referenced by the current `bench/out/cube/latest/cube.summary.json`, so explicit subset reruns cannot silently downgrade the latest mirror.
+  - latest-cell selection now prefers broader evidence before newer evidence:
+    canonical source conformance first, then larger row count, then better status, then newer timestamp.
+    This keeps focused or subset reruns from replacing full-lane historical evidence in `latest/`.
+  - use `--no-preserve-latest` only for intentionally isolated ad-hoc cube snapshots.
   - cube publication is lane-governed: every included row must resolve to governed lane IDs from `config/governed-lanes.json`.
   - backend rows carry the two source runtime lane IDs from report telemetry; package rows require explicit top-level `laneId` in the compare report.
   - package-surface compare harnesses (`bench/node/compare.js`, `bench/bun/compare.js`) now force workload validation prepasses before timing comparable rows so claimable package-surface artifacts fail early on readback/correctness drift.

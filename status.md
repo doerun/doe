@@ -45,7 +45,10 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - current generated contracts: `apple_metal_extended=31 comparable`, `amd_vulkan_extended=31 comparable`, `amd_vulkan_extended_strict=30 comparable`, `amd_vulkan_superset=16 comparable`.
   - the previously circulated `31 vs 16` gap is a mixed-lane comparison (`apple_metal_extended` vs `amd_vulkan_superset`), not a general Metal-vs-Vulkan coverage statement.
   - for that mixed comparison, Metal has `19` comparable rows that AMD Vulkan superset does not yet promote, while AMD Vulkan superset has `4` comparable rows that Apple Metal does not (`compute_matvec_*` variants plus `surface_presentation`).
-  - the old local-Metal v7 claim artifact (`bench/out/apple-metal/extended-comparable/20260310T121546Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v7.json`) predates the all-domain symmetry fix; `6` of its reported claimable rows were inflated by repeat asymmetry and need a fresh rerun before they can be cited as trusted claims, leaving a conservative pre-rerun trusted subset of `25`.
+  - fresh local-Metal strict comparable rerun after the all-domain symmetry and package refresh work is `bench/out/apple-metal/extended-comparable/20260310T191301Z/dawn-vs-doe.local.metal.extended.comparable.json`.
+  - that authoritative full rerun remains `comparisonStatus=comparable`, `claimStatus=diagnostic`, with `31` comparable workloads and only one remaining non-claimable row: `copy_texture_to_texture` (`p95` tail slightly negative).
+  - follow-up March 10 focused proof after the Metal fast-wait copy-path patch is `bench/out/scratch/20260310T202542Z/copy_texture_to_texture.direct.json`, which is `comparisonStatus=comparable`, `claimStatus=claimable` for `copy_texture_to_texture` in isolation. A broader 11-workload comparable subset rerun at `bench/out/apple-metal/extended-comparable/20260310T202715Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v9.json` still leaves that row slightly negative, so the full lane remains one-row short of claimable.
+  - the canonical package/backend cube was rebuilt after the latest package refresh (`bench/out/cube/latest/cube.summary.json`, generated `2026-03-10T20:31:02.431911Z`) and now points the macOS package cells at the fresh March 10 full-lane package artifacts: Bun `uploads`, `compute_e2e`, and `full_comparable` are `claimable`; Node `uploads`, `compute_e2e`, and `full_comparable` are also `claimable`.
 - root cause of the March 10 AMD Vulkan release regression was catalog drift, not a simulator/cost-model path:
   - the compare harness correctly normalized by effective workload contract, but several strict upload rows had right-only `commandRepeat`/`ignoreFirstOps` overrides, so Doe was being measured at one effective unit while Dawn was amortized over fifty or five hundred.
   - fresh strict rerun after repairing the catalog reduced the release blocker set from five upload rows to one genuine tiny-upload performance gap (`upload_write_buffer_1kb`).
@@ -143,6 +146,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - `upload_write_buffer_1kb`, `upload_write_buffer_64kb`, and `upload_write_buffer_1mb` restored symmetric left/right `commandRepeat` values in the generated workload contract, matching the previously validated focused claim methodology.
     - `bench/compare_dawn_vs_doe.py` / `bench/compare_dawn_vs_doe_modules/runner.py` now accept explicit workload `strictNormalizationUnit` contracts (`dispatch` or `cycle`) so strict divisor lint and trace-derived physical-op checks can agree on workloads whose comparable unit is not raw command-row count.
   - `compute_dispatch_fallback`, `compute_dispatch_grid`, and `copy_protocol` are now promoted to `comparable=true` for `apple_metal_extended`; the mixed protocol stream is structurally comparable and claimable on focused strict rerun `bench/out/scratch/20260310T_final_blockers/20260310T004034Z/copy_protocol.promote.current.rerun.json`.
+  - Apple-Metal strict `compute_dispatch_fallback` was restored to `left/rightCommandRepeat=500` with matching divisors after the full `20260310T210012Z` lane showed the `400` repeat contract was not stable under aggregate lane pressure; the earlier focused `400` rerun remained useful as a diagnostic, but the lane contract reverted to the stronger margin.
   - `copy_texture_to_buffer` is now claimable on local Metal when evaluated on headline process wall with the hardened local-Metal repeat contract; focused proof is `bench/out/scratch/20260310T_copy_texture_sweep_v5/20260310T021320Z/copy_texture_to_buffer_single_1000_current.json`.
   - native Metal upload benchmarking now reuses pre-zeroed shared upload sources instead of re-zeroing large buffers inside every timed sample, which made focused strict local-Metal reruns for `upload_write_buffer_1gb` and `upload_write_buffer_4gb` claimable:
     - `bench/out/scratch/20260310T_final_blockers/20260310T010134Z/upload_1gb_current.v3.json`
@@ -152,11 +156,15 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - focused proof: `bench/out/scratch/20260310T015302Z/20260310T_medium_upload_symmetry_probe_v2` is `comparisonStatus=comparable`, `claimStatus=claimable`
   - Apple-Metal strict `upload_write_buffer_1kb` now uses `left/rightCommandRepeat=1000` in the generated contract, and focused single-row rerun `bench/out/scratch/20260310T021644Z/20260310T_upload_1kb_probe_current` is `claimable`.
   - Apple-Metal strict `copy_texture_to_buffer` now uses `left/rightCommandRepeat=2000` and matching divisors in the generated contract to reduce microsecond-scale tail noise under aggregate lane pressure.
+  - Apple-Metal strict `copy_texture_to_texture` is currently set to `left/rightCommandRepeat=400` with matching divisors in the generated contract as a narrower stabilization step than the earlier 2000-repeat probe.
+    - historical higher-repeat probes remain useful diagnostics only:
+      - `bench/out/scratch/20260310T203910Z/copy_texture_to_texture.direct.2000.json`
+      - `bench/out/apple-metal/extended-comparable/20260310T203926Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v10.json`
   - generated Apple Metal contract coverage is now `31/50` strict comparable workloads.
-  - latest unified full Apple Metal strict artifact: `bench/out/apple-metal/extended-comparable/20260310T121546Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v7.json`
-    - `comparisonStatus=comparable`, `claimStatus=claimable`, `31` comparable workloads
-    - `31/31` are claimable in the authoritative full rerun
-    - the prior residual full-lane blockers (`upload_write_buffer_1kb`, `upload_write_buffer_4gb`, `copy_texture_to_buffer`) are now all claimable in the same aggregate artifact.
+  - latest unified full Apple Metal strict artifact after the March 10 package and symmetry refresh is `bench/out/apple-metal/extended-comparable/20260310T191301Z/dawn-vs-doe.local.metal.extended.comparable.json`
+    - `comparisonStatus=comparable`, `claimStatus=diagnostic`, `31` comparable workloads
+    - `30/31` are claimable in the current authoritative full rerun
+    - the only remaining full-lane blocker in that authoritative 31-row artifact is `copy_texture_to_texture`, which was slightly negative at `p95` before the repeat-lift stabilization above
   - supporting focused mixed-row proof: `bench/out/scratch/20260310T121427Z/20260310T_remaining_three_probe_v9` is `comparisonStatus=comparable`, `claimStatus=claimable`.
   - one attempted fresh full-lane rerun at `bench/out/apple-metal/extended-comparable/20260310T022451Z/...rerun.v6.json` was discarded because `copy_texture_to_buffer` picked up a stale `repeat5000` command materialization; do not treat that run as evidence.
 - final macOS Metal Dawn-vs-Doe evidence execution is now codified as an operator runbook:
@@ -238,23 +246,23 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - Linux Doe-native in-process path now works end-to-end; `DOE_WEBGPU_LIB` env var no longer required when prebuilds or workspace artifacts are present.
   - local workspace package loading now prefers `nursery/webgpu/build/{Release,Debug}/doe_napi.node` before packaged prebuilds, so benchmark/debug runs use freshly rebuilt addon code instead of stale prebuilt binaries.
   - the Node package compare lane now isolates each workload in its own provider subprocess (`bench/node/compare.js`) instead of reusing one long-lived process for the whole suite; this removed cross-workload contamination that was inflating Doe compute-e2e timings on macOS package runs.
-  - the Node N-API bridge now keeps `dispatch + copyBufferToBuffer` batches on the standard WebGPU submit path instead of the direct native fast path, restoring correct `compute_e2e_*` readback behavior on macOS while the combined fast path hazard is under audit.
-  - macOS package follow-up (2026-03-09): `dispatch + copyBufferToBuffer` end-to-end batches now stay on the standard recorded submit path but flush immediately inside `submitBatched`, so timed readback workloads remain correctness-clean without pushing queue-drain cost into `mapAsync`.
-    - latest 20-sample Node package lane artifact: `bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json`
-    - comparable/claimable summary: `8` comparable, `6` claimable
-    - compute e2e rows: `compute_e2e_4096` `+46.0%` claimable, `compute_e2e_65536` `+38.0%` claimable, `compute_e2e_256` still diagnostic on tails (`p95` slower)
+  - the package-default Doe hot path for `dispatch + copyBufferToBuffer + mapAsync` now uses a direct addon entrypoint for the exact compute-e2e batch shape plus native mapped-prefix validation on the Doe side, reducing small-compute package overhead on both Node and Bun without changing workload contracts.
+  - the Bun package compare lane now isolates each workload in its own provider subprocess (`bench/bun/compare.js`), matching the Node harness and removing cross-workload package-state carryover from the full Bun suite.
+  - macOS package refresh (2026-03-10): package `compute_e2e_*` rows now run as stateless per-sample benchmarks. `prepareSample()` resets the storage buffer outside the timed window, which removed the old cumulative readback drift that had been causing `doe_missing` package rows on this host.
+    - latest Node package lane artifact: `bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-10T202406545Z.json`
+    - current Node package summary: `12` total rows, `9` comparable, `9` claimable. `compute_e2e_{256,4096,65536}`, `copy_buffer_to_buffer_4kb`, and all current comparable upload rows are claimable in the full macOS package lane. The remaining three rows are intentional directional-only workloads (`submit_empty`, `pipeline_create`, `compute_dispatch_simple`).
   - package compare coverage now includes a validated copy-domain workload:
     - canonical contract: `copy_buffer_to_buffer_4kb` in `bench/workload-registry.json`
     - implementation: `bench/node/workloads.js`
     - focused Node validation: `bench/out/scratch/20260310T_package_copy_and_vulkan/node-copy-4kb/doe-vs-dawn-node-2026-03-10T165238786Z.json` (`comparable`, not claimable; `p50 +7.5%`, tails slower)
     - focused Bun validation: `bench/out/scratch/20260310T_package_copy_and_vulkan/bun-copy-4kb/doe-vs-bun-webgpu-2026-03-10T165239180Z.json` (`comparable`, `claimable`)
-  - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (61/61 contract tests passing). All 12 current package benchmark workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package. Latest validated expanded run (`bench/out/scratch/20260310T_package_copy_and_vulkan/bun-full-20/doe-vs-bun-webgpu-2026-03-10T165425643Z.json`) shows `12` total, `9` comparable, `7` claimable; compute e2e rows and the new copy row are claimable, while `buffer_upload_64kb` and `buffer_upload_16mb` remain non-claimable. Cube maturity remains prototype pending stable multi-run cell coverage.
-  - full Node expanded-lane rerun is not yet authoritative on this host because the Dawn provider failed mid-suite on `compute_e2e_4096`; keep the March 9 full-Node package lane as the latest clean aggregate Node summary for now.
+  - Bun contract coverage is green on this host through the package-default addon-backed runtime entry (`npm run test:bun`: `61 passed, 0 failed` on March 10). Benchmark compare lane at `bench/bun/compare.js`, comparing Doe against the `bun-webgpu` package, now has a fresh full macOS run at `bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-10T195022524Z.json`.
+    - current Bun package summary: all `12` current workloads execute; `9` are comparable and all `9` comparable rows are claimable. `compute_e2e_{256,4096,65536}` and `copy_buffer_to_buffer_4kb` are claimable in the full macOS lane. The directional-only rows remain `submit_empty`, `pipeline_create`, and `compute_dispatch_simple`.
   - package-default Bun entry (`nursery/webgpu/src/bun.js`) now routes through the addon-backed runtime for correctness parity with Node. The experimental Bun FFI path remains in `nursery/webgpu/src/bun-ffi.js` for future optimization work. Benchmark compare lane at `bench/bun/compare.js` remains valid for package-surface evidence, but any FFI-specific claims should stay scoped to the experimental path until revalidated.
   - benchmark cube policy now carries explicit package-surface workload-ID overrides (`config/benchmark-cube-policy.json`) so directional `compute_dispatch_simple` rows land in a `dispatch_only` cell instead of contaminating the Node/Bun `compute_e2e` cells.
-    - latest cube effect on Linux x64 package surfaces:
-      - Bun `compute_e2e`: `claimable` (3 comparable claimable e2e rows)
-      - Node `compute_e2e`: `comparable` (3 comparable rows; still not fully claimable because Node compute e2e remains slower in the latest package lane)
+    - latest macOS cube effect after the March 10 refresh (`bench/out/cube/latest/cube.summary.json`, generated `2026-03-10T20:31:02.431911Z`):
+      - Bun `uploads`: `claimable`; Bun `compute_e2e`: `claimable`; Bun `full_comparable`: `claimable`
+      - Node `uploads`: `claimable`; Node `compute_e2e`: `claimable`; Node `full_comparable`: `claimable`
   - governed lane taxonomy is now symmetric by backend family:
     - Metal: `metal_doe_app`, `metal_doe_directional`, `metal_doe_comparable`, `metal_doe_release`, `metal_dawn_release`
     - Vulkan: `vulkan_doe_app`, `vulkan_doe_comparable`, `vulkan_doe_release`, `vulkan_dawn_release`

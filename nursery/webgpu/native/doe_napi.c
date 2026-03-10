@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -884,6 +885,30 @@ static napi_value doe_buffer_get_mapped_range(napi_env env, napi_callback_info i
     return ab;
 }
 
+/* bufferAssertMappedPrefixF32(buffer, expected, count) */
+static napi_value doe_buffer_assert_mapped_prefix_f32(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
+    WGPUBuffer buf = unwrap_ptr(env, _args[0]);
+    double expected = 0.0;
+    uint32_t count = 0;
+    napi_get_value_double(env, _args[1], &expected);
+    napi_get_value_uint32(env, _args[2], &count);
+    if (!buf) NAPI_THROW(env, "bufferAssertMappedPrefixF32 requires buffer");
+    const float* mapped = (const float*)pfn_wgpuBufferGetConstMappedRange(buf, 0, count * sizeof(float));
+    if (!mapped) NAPI_THROW(env, "bufferAssertMappedPrefixF32: mapped range unavailable");
+    for (uint32_t i = 0; i < count; i++) {
+        if ((double)mapped[i] != expected) {
+            char msg[128];
+            snprintf(msg, sizeof(msg), "expected readback[%u] === %.0f, got %.9g", i, expected, (double)mapped[i]);
+            NAPI_THROW(env, msg);
+        }
+    }
+    napi_value ok;
+    napi_get_boolean(env, true, &ok);
+    return ok;
+}
+
 /* ================================================================
  * Shader Module
  * ================================================================ */
@@ -1376,9 +1401,7 @@ static napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
 }
 
 /* submitBatched(device, queue, commandsArray)
- * Fast path: single dispatch → doeNativeComputeDispatchFlush (direct Metal).
- * End-to-end dispatch+copy readback stays on the standard recorded path, but submitBatched
- * can flush it immediately so mapAsync no longer pays the queue-drain tail later.
+ * Fast path: single dispatch or dispatch+copy → doeNativeComputeDispatchFlush.
  * Larger or mixed batches stay on the standard wgpu path. */
 #define BATCH_MAX_BIND_GROUPS 4
 static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
@@ -1393,12 +1416,18 @@ static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
     napi_get_array_length(env, commands, &cmd_count);
     if (cmd_count == 0) return NULL;
 
-    /* Fast path: exactly one dispatch. */
-    if (pfn_doeNativeComputeDispatchFlush && cmd_count == 1) {
+    /* Fast path: exactly one dispatch, or dispatch followed by copy. */
+    if (pfn_doeNativeComputeDispatchFlush && (cmd_count == 1 || cmd_count == 2)) {
         napi_value cmd0;
         napi_get_element(env, commands, 0, &cmd0);
         uint32_t t0 = get_uint32_prop(env, cmd0, "t");
-        if (t0 == 0) {
+        uint32_t t1 = UINT32_MAX;
+        napi_value cmd1 = NULL;
+        if (cmd_count == 2) {
+            napi_get_element(env, commands, 1, &cmd1);
+            t1 = get_uint32_prop(env, cmd1, "t");
+        }
+        if (t0 == 0 && (cmd_count == 1 || t1 == 1)) {
             void* pipeline = unwrap_ptr(env, get_prop(env, cmd0, "p"));
             napi_value bgs = get_prop(env, cmd0, "bg");
             uint32_t bg_count = 0;
@@ -1413,10 +1442,22 @@ static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
             uint32_t dx = get_uint32_prop(env, cmd0, "x");
             uint32_t dy = get_uint32_prop(env, cmd0, "y");
             uint32_t dz = get_uint32_prop(env, cmd0, "z");
+            void* copy_src = NULL;
+            uint64_t copy_src_off = 0;
+            void* copy_dst = NULL;
+            uint64_t copy_dst_off = 0;
+            uint64_t copy_size = 0;
+            if (cmd_count == 2) {
+                copy_src = unwrap_ptr(env, get_prop(env, cmd1, "s"));
+                copy_dst = unwrap_ptr(env, get_prop(env, cmd1, "d"));
+                copy_src_off = (uint64_t)get_int64_prop(env, cmd1, "so");
+                copy_dst_off = (uint64_t)get_int64_prop(env, cmd1, "do");
+                copy_size = (uint64_t)get_int64_prop(env, cmd1, "sz");
+            }
             pfn_doeNativeComputeDispatchFlush(
                 queue, pipeline, (void**)bg_ptrs, bg_count,
                 dx, dy, dz,
-                NULL, 0, NULL, 0, 0);
+                copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size);
             return NULL;
         }
     }
@@ -1472,6 +1513,56 @@ static napi_value doe_submit_batched(napi_env env, napi_callback_info info) {
     }
     pfn_wgpuCommandBufferRelease(cmd_buf);
     pfn_wgpuCommandEncoderRelease(encoder);
+    return NULL;
+}
+
+/* submitComputeDispatchCopy(device, queue, pipeline, bindGroups, x, y, z, src, srcOff, dst, dstOff, size)
+ * Direct addon surface for the exact package compute_e2e shape so JS runtimes
+ * do not pay generic command-array parsing on every timed sample. */
+static napi_value doe_submit_compute_dispatch_copy(napi_env env, napi_callback_info info) {
+    size_t argc = 12;
+    napi_value args[12];
+    napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+    if (status != napi_ok || argc != 12) NAPI_THROW(env, "submitComputeDispatchCopy requires 12 arguments");
+    CHECK_LIB_LOADED(env);
+    WGPUDevice device = unwrap_ptr(env, args[0]);
+    WGPUQueue queue = unwrap_ptr(env, args[1]);
+    void* pipeline = unwrap_ptr(env, args[2]);
+    napi_value bgs = args[3];
+    uint32_t dx = 0;
+    uint32_t dy = 0;
+    uint32_t dz = 0;
+    int64_t copy_src_off_i = 0;
+    int64_t copy_dst_off_i = 0;
+    int64_t copy_size_i = 0;
+    napi_get_value_uint32(env, args[4], &dx);
+    napi_get_value_uint32(env, args[5], &dy);
+    napi_get_value_uint32(env, args[6], &dz);
+    void* copy_src = unwrap_ptr(env, args[7]);
+    napi_get_value_int64(env, args[8], &copy_src_off_i);
+    void* copy_dst = unwrap_ptr(env, args[9]);
+    napi_get_value_int64(env, args[10], &copy_dst_off_i);
+    napi_get_value_int64(env, args[11], &copy_size_i);
+    uint64_t copy_src_off = (uint64_t)copy_src_off_i;
+    uint64_t copy_dst_off = (uint64_t)copy_dst_off_i;
+    uint64_t copy_size = (uint64_t)copy_size_i;
+    if (!device || !queue || !pipeline) NAPI_THROW(env, "submitComputeDispatchCopy requires device, queue, and pipeline");
+    if (!pfn_doeNativeComputeDispatchFlush) NAPI_THROW(env, "submitComputeDispatchCopy: doeNativeComputeDispatchFlush not available");
+
+    uint32_t bg_count = 0;
+    napi_get_array_length(env, bgs, &bg_count);
+    if (bg_count > BATCH_MAX_BIND_GROUPS) bg_count = BATCH_MAX_BIND_GROUPS;
+    void* bg_ptrs[BATCH_MAX_BIND_GROUPS] = {NULL};
+    for (uint32_t j = 0; j < bg_count; j++) {
+        napi_value bg_val;
+        napi_get_element(env, bgs, j, &bg_val);
+        bg_ptrs[j] = unwrap_ptr(env, bg_val);
+    }
+
+    pfn_doeNativeComputeDispatchFlush(
+        queue, pipeline, (void**)bg_ptrs, bg_count,
+        dx, dy, dz,
+        copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size);
     return NULL;
 }
 
@@ -1868,6 +1959,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("bufferUnmap", doe_buffer_unmap),
         EXPORT_FN("bufferMapSync", doe_buffer_map_sync),
         EXPORT_FN("bufferGetMappedRange", doe_buffer_get_mapped_range),
+        EXPORT_FN("bufferAssertMappedPrefixF32", doe_buffer_assert_mapped_prefix_f32),
         EXPORT_FN("createShaderModule", doe_create_shader_module),
         EXPORT_FN("shaderModuleRelease", doe_shader_module_release),
         EXPORT_FN("createComputePipeline", doe_create_compute_pipeline),
@@ -1895,6 +1987,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("queueWriteBuffer", doe_queue_write_buffer),
         EXPORT_FN("queueFlush", doe_queue_flush),
         EXPORT_FN("submitBatched", doe_submit_batched),
+        EXPORT_FN("submitComputeDispatchCopy", doe_submit_compute_dispatch_copy),
         EXPORT_FN("flushAndMapSync", doe_flush_and_map_sync),
         EXPORT_FN("queueRelease", doe_queue_release),
         EXPORT_FN("createTexture", doe_create_texture),

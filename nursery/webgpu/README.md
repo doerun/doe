@@ -161,7 +161,8 @@ profile instead of relying on hidden per-command fallback logic.
 - Node is the primary supported package surface (N-API bridge).
 - Bun has API parity with Node through the package's addon-backed runtime entry
   (61/61 contract tests passing). Bun benchmark cube maturity remains
-  prototype until Bun cells are populated by comparable benchmark artifacts.
+  prototype until the comparable macOS cells stabilize across repeated
+  governed runs.
 - Package-surface comparisons should be read through the benchmark cube outputs
   under `bench/out/cube/`, not as a replacement for strict backend reports.
 
@@ -239,12 +240,13 @@ cd nursery/webgpu
 npm run build:addon
 npm run smoke
 npm test
+npm run test:bun
 npm run prebuild -- --skip-addon-build
 npm pack --dry-run
 ```
 
-That path is green on the Apple Metal host. Bun validation was not rerun on
-this host because Bun is not installed.
+That path is green on the Apple Metal host. `npm run test:bun` also passed on
+this host (`61 passed, 0 failed`) once Bun was added to `PATH`.
 
 For Fawn development setup, build toolchain requirements, and benchmark
 harness usage, see the [Fawn project README](../../README.md).
@@ -285,17 +287,28 @@ not sufficient, for a release publish.
 - Linux Node Doe-native path is now wired end-to-end (Linux guard removed).
   No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
   are present.
+- Fresh macOS package evidence from March 10, 2026 is reflected in
+  `bench/out/cube/latest/` (generated `2026-03-10T20:31:02.431911Z`):
+  Bun `uploads`, `compute_e2e`, and `full_comparable` are `claimable`;
+  Node `uploads`, `compute_e2e`, and `full_comparable` are also `claimable`.
 - Bun has API parity with Node (61/61 contract tests). The package-default Bun
   entry currently routes through the addon-backed runtime, while
   `src/bun-ffi.js` remains experimental. Bun benchmark lane is at
   `bench/bun/compare.js`; benchmark interpretations should note which runtime
-  entry was exercised. Latest validated local run observed 7/11 claimable rows,
-  but this remains prototype-quality package-surface evidence rather than a
-  publication-grade performance claim. Benchmark cube policy now isolates
-  directional `compute_dispatch_simple` into a dispatch-only cell so the Bun
-  compute-e2e cube cell reflects the claimable end-to-end rows.
-  `buffer_map_write_unmap` remains slower (~19µs polling overhead). Cube
-  maturity remains prototype until cell coverage stabilizes.
+  entry was exercised. Latest fresh macOS run
+  (`bench/out/bun-doe-vs-webgpu/doe-vs-bun-webgpu-2026-03-10T195022524Z.json`)
+  executes all `12` current workloads and has `9` comparable rows, all `9`
+  claimable. `compute_e2e_{256,4096,65536}` and
+  `copy_buffer_to_buffer_4kb` are claimable in the full macOS package lane.
+  The remaining three rows are intentional directional-only workloads
+  (`submit_empty`, `pipeline_create`, `compute_dispatch_simple`).
+- Latest fresh macOS Node package run
+  (`bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-10T202406545Z.json`)
+  has `12` total rows, `9` comparable rows, and all `9` comparable rows are
+  claimable. `compute_e2e_{256,4096,65536}`, `copy_buffer_to_buffer_4kb`,
+  and the current upload set are claimable in the full package lane. The
+  remaining three rows are intentional directional-only workloads
+  (`submit_empty`, `pipeline_create`, `compute_dispatch_simple`).
 - Self-contained install ships prebuilt `doe_napi.node` + `libwebgpu_doe` +
   Dawn sidecar per platform. See **Verify your install** above.
 - API details live in `API_CONTRACT.md`.

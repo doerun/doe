@@ -1,0 +1,3302 @@
+[
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_create",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_capabilities",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_configure",
+    "handle": 41001,
+    "width": 64,
+    "height": 64,
+    "format": "bgra8unorm",
+    "presentMode": "fifo",
+    "alphaMode": "auto"
+  },
+  {
+    "kind": "surface_acquire",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_present",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_unconfigure",
+    "handle": 41001
+  },
+  {
+    "kind": "surface_release",
+    "handle": 41001
+  }
+]\n

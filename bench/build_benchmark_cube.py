@@ -151,6 +151,15 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Stamp output artifact paths with a UTC timestamp suffix.",
     )
+    parser.add_argument(
+        "--preserve-latest",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Seed the build with report paths referenced by the current latest cube summary so "
+            "subset reruns cannot silently downgrade the latest mirror."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -262,6 +271,41 @@ def collect_paths(patterns: list[str], explicit_paths: list[str]) -> list[Path]:
             seen.add(key)
             candidates.append(path)
     return candidates
+
+
+def collect_seed_report_paths(repo_root: Path, latest_summary_path: Path) -> dict[str, list[Path]]:
+    if not latest_summary_path.exists():
+        return {"backend": [], "node": [], "bun": []}
+    try:
+        payload = load_json_object(latest_summary_path)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+        return {"backend": [], "node": [], "bun": []}
+    cells = payload.get("cells")
+    if not isinstance(cells, list):
+        return {"backend": [], "node": [], "bun": []}
+    seeded = {"backend": [], "node": [], "bun": []}
+    seen: set[str] = set()
+    for cell in cells:
+        if not isinstance(cell, dict):
+            continue
+        raw = cell.get("latestReportPath")
+        if not isinstance(raw, str) or not raw.strip():
+            continue
+        path = Path(raw)
+        if not path.is_absolute():
+            path = (repo_root / raw).resolve()
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        path_text = key.lower()
+        if "bun-doe-vs-webgpu" in path_text:
+            seeded["bun"].append(path)
+        elif "node-doe-vs-dawn" in path_text:
+            seeded["node"].append(path)
+        else:
+            seeded["backend"].append(path)
+    return seeded
 
 
 def is_scratch_namespace_path(path: Path) -> bool:
@@ -862,6 +906,14 @@ def median_non_null(values: list[float | None]) -> float | None:
     return float(median(filtered))
 
 
+def status_rank(status: str) -> int:
+    return STATUS_ORDER.get(status, -1)
+
+
+def source_conformance_rank(source_conformance: str) -> int:
+    return 1 if source_conformance == "canonical" else 0
+
+
 def summarize_row_group(rows: list[dict[str, Any]]) -> tuple[str, str, float | None]:
     if not rows:
         return "unimplemented", "unimplemented", None
@@ -1015,6 +1067,15 @@ def build_cells(
         short_key = key[:4]
         report_counts[short_key] += 1
 
+    def report_sort_key(report: dict[str, Any]) -> tuple[int, int, int, int, str]:
+        return (
+            source_conformance_rank(report.get("sourceConformance", "canonical")),
+            int(report.get("rowCount", 0)),
+            status_rank(report.get("claimStatus", "diagnostic")),
+            status_rank(report.get("comparisonStatus", "diagnostic")),
+            report["generatedAt"],
+        )
+
     for report in reports:
         full_key = (
             report["surface"],
@@ -1023,15 +1084,30 @@ def build_cells(
             "full_comparable",
         )
         existing = latest_report_for_tuple.get(full_key)
-        if existing is None or existing["generatedAt"] < report["generatedAt"]:
+        if existing is None or report_sort_key(existing) < report_sort_key(report):
             latest_report_for_tuple[full_key] = report
 
     latest_row_report: dict[tuple[str, str, str, str], tuple[str, list[dict[str, Any]], str]] = {}
+    def row_group_sort_key(grouped_rows: list[dict[str, Any]], generated_at: str) -> tuple[int, int, int, int, str]:
+        status, claim_status, _delta_percent = summarize_row_group(grouped_rows)
+        comparison_status = (
+            "comparable"
+            if all(row["comparisonStatus"] == "comparable" for row in grouped_rows)
+            else "diagnostic"
+        )
+        return (
+            source_conformance_rank(grouped_rows[0].get("sourceConformance", "canonical")),
+            len(grouped_rows),
+            status_rank(claim_status),
+            status_rank(status),
+            generated_at,
+        )
+
     for key, grouped_rows in rows_by_report.items():
         short_key = key[:4]
         generated_at = grouped_rows[0]["generatedAt"]
         existing = latest_row_report.get(short_key)
-        if existing is None or existing[2] < generated_at:
+        if existing is None or row_group_sort_key(existing[1], existing[2]) < row_group_sort_key(grouped_rows, generated_at):
             latest_row_report[short_key] = (key[4], grouped_rows, generated_at)
 
     cells: list[dict[str, Any]] = []
@@ -1179,6 +1255,11 @@ def main() -> None:
     backend_paths = collect_paths(backend_patterns, args.backend_report)
     node_paths = collect_paths(node_patterns, args.node_report)
     bun_paths = collect_paths(bun_patterns, args.bun_report)
+    if args.preserve_latest:
+        seeded = collect_seed_report_paths(repo_root, (repo_root / args.latest_summary).resolve())
+        backend_paths = collect_paths([], [str(path) for path in [*backend_paths, *seeded["backend"]]])
+        node_paths = collect_paths([], [str(path) for path in [*node_paths, *seeded["node"]]])
+        bun_paths = collect_paths([], [str(path) for path in [*bun_paths, *seeded["bun"]]])
 
     rows: list[dict[str, Any]] = []
     reports: list[dict[str, Any]] = []

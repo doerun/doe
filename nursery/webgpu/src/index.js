@@ -120,12 +120,24 @@ class DoeGPUBuffer {
   }
 
   async mapAsync(mode, offset = 0, size = this.size) {
-    if (this._queue) addon.flushAndMapSync(this._instance, this._queue, this._native, mode, offset, size);
-    else addon.bufferMapSync(this._instance, this._native, mode, offset, size);
+    if (this._queue) {
+      if (this._queue.hasPendingSubmissions()) {
+        addon.flushAndMapSync(this._instance, this._queue._native, this._native, mode, offset, size);
+        this._queue.markSubmittedWorkDone();
+      } else {
+        addon.bufferMapSync(this._instance, this._native, mode, offset, size);
+      }
+    } else {
+      addon.bufferMapSync(this._instance, this._native, mode, offset, size);
+    }
   }
 
   getMappedRange(offset = 0, size = this.size) {
     return addon.bufferGetMappedRange(this._native, offset, size);
+  }
+
+  assertMappedPrefixF32(expected, count) {
+    return addon.bufferAssertMappedPrefixF32(this._native, expected, count);
   }
 
   unmap() {
@@ -233,13 +245,57 @@ class DoeGPUQueue {
     this._native = native;
     this._instance = instance;
     this._device = device;
+    this._submittedSerial = 0;
+    this._completedSerial = 0;
+  }
+
+  hasPendingSubmissions() {
+    return this._completedSerial < this._submittedSerial;
+  }
+
+  markSubmittedWorkDone() {
+    this._completedSerial = this._submittedSerial;
   }
 
   submit(commandBuffers) {
+    if (commandBuffers.length === 0) return;
+    this._submittedSerial += 1;
+    if (commandBuffers.length === 1 && commandBuffers[0]?._batched) {
+      const cmds = commandBuffers[0]._commands;
+      if (
+        cmds.length === 2
+        && cmds[0]?.t === 0
+        && cmds[1]?.t === 1
+        && typeof addon.submitComputeDispatchCopy === 'function'
+      ) {
+        addon.submitComputeDispatchCopy(
+          this._device,
+          this._native,
+          cmds[0].p,
+          cmds[0].bg,
+          cmds[0].x,
+          cmds[0].y,
+          cmds[0].z,
+          cmds[1].s,
+          cmds[1].so,
+          cmds[1].d,
+          cmds[1].do,
+          cmds[1].sz,
+        );
+        return;
+      }
+    }
     if (commandBuffers.length > 0 && commandBuffers.every((c) => c._batched)) {
       const allCommands = [];
       for (const cb of commandBuffers) allCommands.push(...cb._commands);
       addon.submitBatched(this._device, this._native, allCommands);
+      if (
+        allCommands.length === 2
+        && allCommands[0]?.t === 0
+        && allCommands[1]?.t === 1
+      ) {
+        this.markSubmittedWorkDone();
+      }
     } else {
       const natives = commandBuffers.map((c) => c._native);
       addon.queueSubmit(this._native, natives);
@@ -259,8 +315,9 @@ class DoeGPUQueue {
   }
 
   async onSubmittedWorkDone() {
-    // No-op: Doe submit commits synchronously. GPU completion is ensured
-    // by mapAsync when data is actually needed.
+    if (!this.hasPendingSubmissions()) return;
+    addon.queueFlush(this._native);
+    this.markSubmittedWorkDone();
   }
 }
 
@@ -421,7 +478,7 @@ class DoeGPUDevice {
 
   createBuffer(descriptor) {
     const buf = addon.createBuffer(this._native, descriptor);
-    return new DoeGPUBuffer(buf, this._instance, descriptor.size, descriptor.usage, this.queue._native);
+    return new DoeGPUBuffer(buf, this._instance, descriptor.size, descriptor.usage, this.queue);
   }
 
   createShaderModule(descriptor) {

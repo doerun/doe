@@ -129,6 +129,7 @@ pub const NativeMetalRuntime = struct {
     streaming_blit_encoder: ?*anyopaque = null,
     streaming_render_encoder: ?*anyopaque = null,
     streaming_has_render: bool = false,
+    streaming_has_copy: bool = false,
     streaming_max_upload_bytes: usize = 0,
     streaming_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
 
@@ -294,7 +295,9 @@ pub const NativeMetalRuntime = struct {
 
             const cmd_buf = self.streaming_cmd_buf.?;
             self.fence_value +%= 1;
-            const use_fast_wait = !self.streaming_has_render and self.streaming_max_upload_bytes >= FAST_WAIT_UPLOAD_THRESHOLD;
+            const use_fast_wait =
+                !self.streaming_has_render and
+                (self.streaming_has_copy or self.streaming_max_upload_bytes >= FAST_WAIT_UPLOAD_THRESHOLD);
             if (use_fast_wait) {
                 if (self.shared_event) |ev| {
                     metal_bridge_command_buffer_encode_signal_event(cmd_buf, ev, self.fence_value);
@@ -306,6 +309,7 @@ pub const NativeMetalRuntime = struct {
             metal_bridge_release(cmd_buf);
             self.streaming_cmd_buf = null;
             self.streaming_has_render = false;
+            self.streaming_has_copy = false;
             self.streaming_max_upload_bytes = 0;
             for (self.streaming_uploads.items) |item| {
                 pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);

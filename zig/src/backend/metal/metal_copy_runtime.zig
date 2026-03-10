@@ -91,6 +91,7 @@ pub fn execute_copy(self: anytype, cmd: model.CopyCommand, queue_sync_mode: webg
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
     self.has_deferred_submissions = true;
+    self.streaming_has_copy = true;
     const submit_wait_ns = if (queue_sync_mode == .deferred) 0 else try self.flush_queue();
     return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns };
 }

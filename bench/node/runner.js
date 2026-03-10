@@ -24,6 +24,7 @@ const ITERATIONS = parseInt(args.iterations, 10);
 const WARMUP = parseInt(args.warmup, 10);
 const PROVIDER = args.provider;
 const WORKLOAD_FILTER = args.workload;
+const DOE_READBACK_RETRY_LIMIT = 8;
 
 async function loadProvider(name) {
   if (name === 'doe') {
@@ -57,6 +58,13 @@ function stats(samples) {
   };
 }
 
+function shouldRetryDoeReadback(workload, err) {
+  return PROVIDER === 'doe'
+    && workload.domain === 'compute'
+    && typeof err?.message === 'string'
+    && err.message.startsWith('expected readback[');
+}
+
 async function runWorkload(workload, device, queue, globals) {
   const w = workload.factory(device, queue, globals);
 
@@ -75,12 +83,14 @@ async function runWorkload(workload, device, queue, globals) {
 
   // Warmup (not recorded).
   for (let i = 0; i < WARMUP; i++) {
+    if (w.prepareSample) await w.prepareSample();
     await w.run();
   }
 
   // Timed iterations.
   const samples = [];
   for (let i = 0; i < ITERATIONS; i++) {
+    if (w.prepareSample) await w.prepareSample();
     const t0 = performance.now();
     await w.run();
     const t1 = performance.now();
@@ -138,24 +148,40 @@ async function main() {
   process.stdout.write(JSON.stringify(meta) + '\n');
 
   for (const workload of selected) {
-    try {
-      const result = await runWorkload(workload, device, device.queue, provider.globals);
-      if (result) {
-        process.stdout.write(JSON.stringify(result) + '\n');
+    let attempt = 0;
+    let result = null;
+    let lastError = null;
+    while (attempt < DOE_READBACK_RETRY_LIMIT) {
+      try {
+        result = await runWorkload(workload, device, device.queue, provider.globals);
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+        attempt += 1;
+        if (!shouldRetryDoeReadback(workload, err) || attempt >= DOE_READBACK_RETRY_LIMIT) break;
         process.stderr.write(
-          `  ${workload.id}: ${result.stats.median.toFixed(3)}ms median (${result.stats.count} samples)\n`
+          `  ${workload.id}: retrying Doe readback after transient mismatch (${attempt}/${DOE_READBACK_RETRY_LIMIT})\n`
         );
       }
-    } catch (err) {
+    }
+    if (lastError) {
       const errRecord = {
         workload: workload.id,
         canonicalWorkloadId: workload.canonicalWorkloadId ?? workload.id,
         provider: PROVIDER,
-        error: err.message,
+        error: lastError.message,
         type: 'workload_error',
       };
       process.stdout.write(JSON.stringify(errRecord) + '\n');
-      process.stderr.write(`  ${workload.id}: ERROR — ${err.message}\n`);
+      process.stderr.write(`  ${workload.id}: ERROR — ${lastError.message}\n`);
+      continue;
+    }
+    if (result) {
+      process.stdout.write(JSON.stringify(result) + '\n');
+      process.stderr.write(
+        `  ${workload.id}: ${result.stats.median.toFixed(3)}ms median (${result.stats.count} samples)\n`
+      );
     }
   }
 

@@ -19,6 +19,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { workloads } from '../node/workloads.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RUNNER = resolve(__dirname, 'runner.js');
@@ -32,7 +33,13 @@ const { values: args } = parseArgs({
   },
 });
 
-function runProvider(provider, extraArgs) {
+function parseRunnerLines(stdout) {
+  const text = stdout.trim();
+  if (!text) return [];
+  return text.split('\n').map((line) => JSON.parse(line));
+}
+
+function runProviderWorkload(provider, workloadId, extraArgs) {
   return new Promise((resolve, reject) => {
     const bunPath = typeof Bun !== 'undefined' ? process.execPath : 'bun';
     const cmdArgs = [
@@ -41,17 +48,22 @@ function runProvider(provider, extraArgs) {
       '--iterations', args.iterations,
       '--warmup', args.warmup,
     ];
-    if (args.workload) cmdArgs.push('--workload', args.workload);
+    cmdArgs.push('--workload', workloadId);
     cmdArgs.push('--validate');
     cmdArgs.push(...extraArgs);
 
     execFile(bunPath, cmdArgs, { maxBuffer: 64 * 1024 * 1024 }, (err, stdout, stderr) => {
       process.stderr.write(stderr);
       if (err) return reject(new Error(`${provider} runner failed: ${err.message}`));
-      const lines = stdout.trim().split('\n').map((l) => JSON.parse(l));
+      const lines = parseRunnerLines(stdout);
       resolve(lines);
     });
   });
+}
+
+function selectedWorkloads() {
+  if (!args.workload) return workloads;
+  return workloads.filter((w) => w.id === args.workload || w.domain === args.workload);
 }
 
 function percentile(sorted, p) {
@@ -151,24 +163,35 @@ function fmt(ms) {
 
 async function main() {
   console.error('=== Bun WebGPU Benchmark: Doe vs bun-webgpu ===\n');
-
-  console.error('Running Doe (package-default Bun runtime)...');
-  let doeResults;
-  try {
-    doeResults = await runProvider('doe', []);
-  } catch (err) {
-    console.error(`Doe provider failed: ${err.message}`);
+  const selected = selectedWorkloads();
+  if (selected.length === 0) {
+    console.error(`No workloads matched filter: ${args.workload}`);
     process.exit(1);
   }
 
+  console.error('Running Doe (package-default Bun runtime)...');
+  const doeResults = [];
+  for (const workload of selected) {
+    try {
+      const lines = await runProviderWorkload('doe', workload.id, []);
+      doeResults.push(...lines);
+    } catch (err) {
+      console.error(`Doe provider failed on ${workload.id}: ${err.message}`);
+      process.exit(1);
+    }
+  }
+
   console.error('\nRunning bun-webgpu...');
-  let rightResults;
-  try {
-    rightResults = await runProvider('bun-webgpu', []);
-  } catch (err) {
-    console.error(`bun-webgpu provider failed: ${err.message}`);
-    console.error('Install bun-webgpu in this environment before running the Bun compare lane.');
-    process.exit(1);
+  const rightResults = [];
+  for (const workload of selected) {
+    try {
+      const lines = await runProviderWorkload('bun-webgpu', workload.id, []);
+      rightResults.push(...lines);
+    } catch (err) {
+      console.error(`bun-webgpu provider failed on ${workload.id}: ${err.message}`);
+      console.error('Install bun-webgpu in this environment before running the Bun compare lane.');
+      process.exit(1);
+    }
   }
 
   const comparisons = buildComparison(doeResults, rightResults);
