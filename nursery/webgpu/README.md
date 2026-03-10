@@ -228,6 +228,22 @@ npm test                     # Node contract tests
 npm run test:bun             # Bun contract tests
 ```
 
+Current macOS arm64 validation for `0.2.3` was rerun on March 10, 2026 with:
+
+```bash
+cd zig && zig build dropin
+
+cd nursery/webgpu
+npm run build:addon
+npm run smoke
+npm test
+npm run prebuild -- --skip-addon-build
+npm pack --dry-run
+```
+
+That path is green on the local Metal host. Bun validation was not rerun on
+this host because Bun is not installed.
+
 For Fawn development setup, build toolchain requirements, and benchmark
 harness usage, see the [Fawn project README](../../README.md).
 
@@ -243,6 +259,10 @@ Install uses prebuilds when available, falls back to node-gyp from source.
 Prebuild `metadata.json` now records `doeBuild.leanVerifiedBuild` and
 `proofArtifactSha256`, and `providerInfo()` surfaces the same values when
 metadata is present.
+
+Package publication still depends on the governed Linux Vulkan release lane in
+[`process.md`](../../process.md). A green macOS package rerun is necessary, but
+not sufficient, for a release publish.
 
 ## Current caveats
 
