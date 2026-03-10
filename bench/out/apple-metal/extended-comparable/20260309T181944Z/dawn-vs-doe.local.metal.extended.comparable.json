@@ -31339,9 +31339,9 @@
       }
     }
   ],
-  "configPath": "/Users/xyz/deco/fawn/bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+  "configPath": "bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
   "configContract": {
-    "path": "/Users/xyz/deco/fawn/bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+    "path": "bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
     "sha256": "48ab1b10e1ae3280b79c744b1509cee53d59cb574387a0731f495bc98ab2cc07"
   },
   "overall": {

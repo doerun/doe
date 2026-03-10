@@ -62,7 +62,7 @@
       ],
       "shared": {
         "api": "vulkan",
-        "commandsPath": "fawn/examples/kernel_dispatch_commands.json",
+        "commandsPath": "examples/kernel_dispatch_commands.json",
         "comparabilityNotes": "Directional only: intentionally mismatched against Dawn DrawCallPerf.",
         "comparable": false,
         "dawnFilter": "DrawCallPerf.Run/Vulkan__e_skip_validation",
@@ -73,7 +73,7 @@
         "extraArgs": [],
         "family": "gen12",
         "name": "kernel-dispatch stress",
-        "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+        "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
         "vendor": "intel"
       },
       "lanes": {
@@ -114,15 +114,15 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched matrix-vector dimensions, implementation, and 100-dispatch step structure against Dawn MatrixVectorMultiplyPerf F32/F32 Naive Swizzle=0 variant.",
-          "commandsPath": "fawn/examples/matrix_vector_mul_32768x2048_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/matrix_vector_mul_32768x2048_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [
             "--kernel-root",
-            "fawn/bench/kernels"
+            "bench/kernels"
           ],
           "comparable": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
@@ -252,15 +252,15 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched matrix-vector dimensions, implementation, and 100-dispatch step structure against Dawn MatrixVectorMultiplyPerf F32/F32 Naive Swizzle=1 layout.",
-          "commandsPath": "fawn/examples/matrix_vector_mul_32768x2048_swizzle1_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/matrix_vector_mul_32768x2048_swizzle1_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [
             "--kernel-root",
-            "fawn/bench/kernels"
+            "bench/kernels"
           ],
           "comparable": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
@@ -390,15 +390,15 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched matrix-vector dimensions, workgroupshared strategy, and 100-dispatch step structure against Dawn WorkgroupShared Swizzle=1 variant.",
-          "commandsPath": "fawn/examples/matrix_vector_mul_32768x2048_workgroupshared_swizzle1_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/matrix_vector_mul_32768x2048_workgroupshared_swizzle1_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [
             "--kernel-root",
-            "fawn/bench/kernels"
+            "bench/kernels"
           ],
           "comparable": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
@@ -528,15 +528,15 @@
           "name": "workgroup-atomic 1024",
           "description": "Workgroup-atomic compute kernel with 1024 workgroups, 100 dispatches per step, matching Dawn WorkgroupAtomicPerf exactly.",
           "comparabilityNotes": "Kernel matches Dawn GenWorkgroupWithAtomics (256 threads, 1 atomicStore + 256 atomicLoads per invocation). Both sides dispatch 100 times per step with direct timing (no side-specific divisor scaling).",
-          "commandsPath": "fawn/examples/workgroup_atomic_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/workgroup_atomic_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [
             "--kernel-root",
-            "fawn/bench/kernels"
+            "bench/kernels"
           ],
           "comparable": true,
           "default": true,
@@ -785,15 +785,15 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Kernel matches Dawn GenWorkgroupNoAtomics (256 threads, 1 store + 256 loads per invocation). Both sides dispatch 100 times per step with direct timing (no side-specific divisor scaling).",
-          "commandsPath": "fawn/examples/workgroup_non_atomic_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/workgroup_non_atomic_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [
             "--kernel-root",
-            "fawn/bench/kernels"
+            "bench/kernels"
           ],
           "comparable": true,
           "default": true,
@@ -965,8 +965,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
-          "commandsPath": "fawn/examples/async_pipeline_diagnostics_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -1074,15 +1074,15 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched compute pipeline creation + dispatch shape against Dawn ShaderRobustnessPerf MatMulFloatOneDimSharedArray f32 variant, including 50-dispatch step normalization.",
-          "commandsPath": "fawn/examples/shader_compile_stress_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/shader_compile_stress_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [
             "--kernel-root",
-            "fawn/bench/kernels"
+            "bench/kernels"
           ],
           "comparable": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
@@ -1243,13 +1243,15 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn DrawCallPerf DynamicBindGroup_RenderBundle variant with per-draw normalization.",
-          "commandsPath": "fawn/examples/draw_call_render_bundle_dynamic_bindings_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_render_bundle_dynamic_bindings_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [],
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1358,13 +1360,15 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn DrawCallPerf DynamicPipeline_DynamicBindGroup_RenderBundle variant with per-draw normalization.",
-          "commandsPath": "fawn/examples/draw_call_render_bundle_dynamic_pipeline_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_render_bundle_dynamic_pipeline_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [],
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1399,6 +1403,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1411,6 +1417,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1423,6 +1431,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1435,6 +1445,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1478,8 +1490,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Directional only: larger indexed draw volume than Dawn DrawCallPerf step size; used for macro scaling analysis.",
-          "commandsPath": "fawn/examples/draw_call_indexed_proxy_macro_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_indexed_proxy_macro_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -1579,12 +1591,13 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn DrawCallPerf DynamicVertexBuffer variant as the closest draw-call throughput proxy while Fawn uses explicit indexed draws.",
-          "commandsPath": "fawn/examples/draw_call_indexed_proxy_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_indexed_proxy_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1690,8 +1703,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn DrawCallPerf RedundantPipeline_RedundantBindGroups variant with per-draw normalization.",
-          "commandsPath": "fawn/examples/draw_call_redundant_pipeline_bindings_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_redundant_pipeline_bindings_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -1731,6 +1744,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1743,6 +1758,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1755,6 +1772,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1767,6 +1786,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -1805,8 +1826,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn DrawCallPerf DynamicBindGroup variant with per-draw normalization.",
-          "commandsPath": "fawn/examples/draw_call_state_bindings_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_state_bindings_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -1919,8 +1940,8 @@
         "generic": {
           "description": "Directional macro render throughput stress using a 200k-draw command stream.",
           "comparabilityNotes": "Directional only: intentionally larger-than-Dawn-step draw volume for macro stress and setup amortization analysis.",
-          "commandsPath": "fawn/examples/draw_call_proxy_macro_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_proxy_macro_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -2032,8 +2053,8 @@
           "name": "render draw throughput",
           "description": "Native render/draw throughput workload aligned to Dawn DrawCallPerf base variant.",
           "comparabilityNotes": "Both sides execute DrawCallPerf-style draw-call throughput against a 64x64 render target with static pipeline and bind-group defaults.",
-          "commandsPath": "fawn/examples/draw_call_proxy_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/draw_call_proxy_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
@@ -2215,8 +2236,8 @@
         "generic": {
           "description": "Surface lifecycle contract benchmark covering create/capabilities/configure/acquire/present/unconfigure/release.",
           "comparabilityNotes": "No direct Dawn perf suite exists for surface lifecycle contract on all adapters; keep this workload directional and excluded from strict comparable claim runs.",
-          "commandsPath": "fawn/examples/surface_presentation_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/surface_presentation_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -2326,13 +2347,14 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn SubresourceTrackingPerf arrayLayer_16_mipLevel_3 while Fawn runs explicit sampler/write/query/destroy + raster command stream.",
-          "commandsPath": "fawn/examples/texture_sampler_write_query_destroy_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/texture_sampler_write_query_destroy_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [],
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2367,6 +2389,7 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2379,6 +2402,7 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2391,6 +2415,7 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2407,6 +2432,7 @@
             "deferred"
           ],
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2444,8 +2470,8 @@
         "generic": {
           "description": "Directional macro texture lifecycle workload with a larger render-draw phase for setup amortization analysis.",
           "comparabilityNotes": "Directional only: command shape intentionally scales render volume beyond Dawn SubresourceTrackingPerf step semantics.",
-          "commandsPath": "fawn/examples/texture_sampler_write_query_destroy_macro_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/texture_sampler_write_query_destroy_macro_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -2562,13 +2588,14 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn SubresourceTrackingPerf arrayLayer_16_mipLevel_8 with the same Fawn texture lifecycle command stream.",
-          "commandsPath": "fawn/examples/texture_sampler_write_query_destroy_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/texture_sampler_write_query_destroy_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [],
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2603,6 +2630,7 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2615,6 +2643,7 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2627,6 +2656,7 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2643,6 +2673,7 @@
             "deferred"
           ],
           "comparable": true,
+          "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2682,17 +2713,18 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Mapped to Dawn SubresourceTrackingPerf arrayLayer_16_mipLevel_3 with per-iteration normalization.",
-          "commandsPath": "fawn/examples/texture_raster_proxy_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/texture_raster_proxy_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
           "extraArgs": [
             "--kernel-root",
-            "fawn/bench/kernels"
+            "bench/kernels"
           ],
           "comparable": true,
           "leftCommandRepeat": 50,
+          "rightCommandRepeat": 50,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2748,6 +2780,7 @@
           ],
           "comparable": true,
           "leftCommandRepeat": 500,
+          "rightCommandRepeat": 500,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2767,6 +2800,7 @@
           ],
           "comparable": true,
           "leftCommandRepeat": 500,
+          "rightCommandRepeat": 500,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2786,6 +2820,7 @@
           ],
           "comparable": true,
           "leftCommandRepeat": 500,
+          "rightCommandRepeat": 500,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
@@ -2822,6 +2857,7 @@
         "domain",
         "extraArgs",
         "leftCommandRepeat",
+        "leftIgnoreFirstOps",
         "leftTimingDivisor",
         "leftUploadBufferUsage",
         "leftUploadSubmitEvery",
@@ -2860,8 +2896,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
-          "commandsPath": "fawn/examples/upload_16mb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_16mb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -2880,7 +2916,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -2893,7 +2931,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_native_supported": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -2904,7 +2944,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_doe_vs_doe": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -2917,7 +2959,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -2930,7 +2974,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_strict": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -2941,7 +2987,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_metal_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
@@ -2966,7 +3014,9 @@
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "dawnFilter": "@autodiscover"
+          "dawnFilter": "@autodiscover",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         }
       }
     },
@@ -3027,8 +3077,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same 1GB WriteBuffer workload with strict normalization.",
-          "commandsPath": "fawn/examples/upload_1gb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_1gb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -3112,6 +3162,7 @@
         "domain",
         "extraArgs",
         "leftCommandRepeat",
+        "leftIgnoreFirstOps",
         "leftTimingDivisor",
         "leftUploadBufferUsage",
         "leftUploadSubmitEvery",
@@ -3150,8 +3201,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
-          "commandsPath": "fawn/examples/upload_1kb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_1kb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -3170,7 +3221,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
@@ -3183,7 +3236,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_native_supported": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
@@ -3194,7 +3249,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_doe_vs_doe": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
@@ -3207,7 +3264,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
@@ -3220,7 +3279,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_strict": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides; Fawn uses deferred queue sync to avoid per-command wait inflation at tiny payload size while preserving per-upload timing normalization.",
@@ -3231,20 +3292,22 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 1,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 1
+        },
+        "local_metal_extended": {
+          "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
+          "commandsPath": "examples/upload_1kb_commands.json",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "amd",
+          "family": "gfx11",
+          "driver": "24.0.0",
+          "leftCommandRepeat": 1000,
+          "rightCommandRepeat": 1000,
+          "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
-      "local_metal_extended": {
-        "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
-        "commandsPath": "examples/upload_1kb_commands.json",
-        "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-        "vendor": "amd",
-        "family": "gfx11",
-        "driver": "24.0.0",
-        "leftCommandRepeat": 1000,
-        "rightCommandRepeat": 1000,
-        "rightIgnoreFirstOps": 0,
-        "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
-      },
         "local_d3d12_extended": {
           "comparabilityNotes": "Matched staged D3D12 upload-copy shape on both sides with adapter-autodiscovered Dawn mapping and strict per-upload timing normalization.",
           "commandsPath": "examples/upload_1kb_commands.json",
@@ -3256,7 +3319,9 @@
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "dawnFilter": "@autodiscover"
+          "dawnFilter": "@autodiscover",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 1
         }
       }
     },
@@ -3271,6 +3336,7 @@
         "domain",
         "extraArgs",
         "leftCommandRepeat",
+        "leftIgnoreFirstOps",
         "leftTimingDivisor",
         "leftUploadBufferUsage",
         "leftUploadSubmitEvery",
@@ -3309,8 +3375,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
-          "commandsPath": "fawn/examples/upload_1mb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_1mb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -3329,7 +3395,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3342,7 +3410,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_native_supported": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3353,7 +3423,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_doe_vs_doe": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3366,7 +3438,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3379,7 +3453,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_strict": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3390,7 +3466,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_metal_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
@@ -3415,7 +3493,9 @@
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "dawnFilter": "@autodiscover"
+          "dawnFilter": "@autodiscover",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         }
       }
     },
@@ -3476,8 +3556,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same 256MB WriteBuffer workload with strict normalization.",
-          "commandsPath": "fawn/examples/upload_256mb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_256mb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -3603,8 +3683,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same 4GB WriteBuffer workload with strict normalization.",
-          "commandsPath": "fawn/examples/upload_4gb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_4gb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -3709,6 +3789,8 @@
         "description",
         "domain",
         "extraArgs",
+        "leftCommandRepeat",
+        "leftIgnoreFirstOps",
         "leftTimingDivisor",
         "leftUploadBufferUsage",
         "leftUploadSubmitEvery",
@@ -3747,8 +3829,8 @@
       "lanes": {
         "generic": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
-          "commandsPath": "fawn/examples/upload_4mb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_4mb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
@@ -3767,7 +3849,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3780,7 +3864,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_native_supported": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3791,7 +3877,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_doe_vs_doe": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3804,7 +3892,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3817,7 +3907,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_strict": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
@@ -3828,7 +3920,9 @@
           "driver": "24.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         },
         "local_metal_extended": {
           "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
@@ -3853,7 +3947,9 @@
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "dawnFilter": "@autodiscover"
+          "dawnFilter": "@autodiscover",
+          "leftCommandRepeat": 50,
+          "leftIgnoreFirstOps": 1
         }
       }
     },
@@ -3864,6 +3960,7 @@
         "default",
         "domain",
         "leftCommandRepeat",
+        "leftIgnoreFirstOps",
         "leftTimingDivisor",
         "leftUploadBufferUsage",
         "leftUploadSubmitEvery",
@@ -3903,8 +4000,8 @@
           "name": "buffer-upload 64KB",
           "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 64KB.",
           "comparabilityNotes": "Matched single queue write upload shape on both sides.",
-          "commandsPath": "fawn/examples/upload_64kb_commands.json",
-          "quirksPath": "fawn/examples/quirks/intel_gen12_temp_buffer_list.json",
+          "commandsPath": "examples/upload_64kb_commands.json",
+          "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
           "api": "vulkan",
           "family": "gen12",
@@ -3931,7 +4028,9 @@
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_extended": {
           "name": "buffer-upload 64KB",
@@ -3949,7 +4048,9 @@
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_native_supported": {
           "name": "buffer-upload 64KB",
@@ -3965,7 +4066,9 @@
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_doe_vs_doe": {
           "name": "buffer-upload 64KB",
@@ -3983,7 +4086,9 @@
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 0
         },
         "local_vulkan_smoke": {
           "name": "upload-64kb-smoke",
@@ -4004,7 +4109,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 16,
+          "leftIgnoreFirstOps": 1
         },
         "local_vulkan_extended": {
           "name": "buffer-upload 64KB",
@@ -4022,7 +4129,9 @@
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 0
         },
         "local_vulkan_strict": {
           "name": "buffer-upload 64KB",
@@ -4038,7 +4147,9 @@
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 0
         },
         "local_metal_smoke": {
           "name": "upload-64kb-smoke",
@@ -4054,7 +4165,9 @@
           "dawnFilter": "@autodiscover",
           "rightCommandRepeat": 16,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 16,
+          "leftIgnoreFirstOps": 1
         },
         "local_metal_extended": {
           "name": "buffer-upload 64KB",
@@ -4087,7 +4200,9 @@
           "dawnFilter": "@autodiscover",
           "rightCommandRepeat": 16,
           "rightIgnoreFirstOps": 1,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 16,
+          "leftIgnoreFirstOps": 1
         },
         "local_d3d12_extended": {
           "name": "buffer-upload 64KB",
@@ -4103,7 +4218,9 @@
           "dawnFilter": "@autodiscover",
           "rightCommandRepeat": 500,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "leftCommandRepeat": 500,
+          "leftIgnoreFirstOps": 0
         }
       }
     },
@@ -4865,6 +4982,7 @@
         "amd_vulkan_doe_vs_doe": {
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 20,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "applesToApplesVetted": true,
@@ -4873,6 +4991,7 @@
         "local_vulkan_extended": {
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 20,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "applesToApplesVetted": true,
@@ -4881,6 +5000,7 @@
         "local_vulkan_strict": {
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 20,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "applesToApplesVetted": true,
@@ -5019,6 +5139,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 100,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
@@ -5030,6 +5152,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 100,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
@@ -5041,6 +5165,8 @@
           "family": "gfx11",
           "driver": "24.0.0",
           "comparable": true,
+          "leftCommandRepeat": 100,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
@@ -5227,11 +5353,11 @@
       "lanes": {
         "amd_vulkan_extended": {},
         "amd_vulkan_native_supported": {},
-      "local_metal_extended": {
-        "api": "metal",
-        "vendor": "apple",
-        "family": "m3",
-        "driver": "1.0.0",
+        "local_metal_extended": {
+          "api": "metal",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "applesToApplesVetted": true,
           "benchmarkClass": "comparable",
@@ -5439,16 +5565,16 @@
             "enabled": false,
             "tier": "targeted-dawn-parity",
             "notes": "Parity promotion complete for the local Metal lane."
+          },
+          "comparabilityNotes": "Strict comparable on local Metal after Dawn-side copy ABI parity fixes; claimability uses headline process wall because delegate operation timing undercounts end-to-end texture-to-buffer completion. The local Metal lane uses 2000 repeats to reduce tail volatility under aggregate lane pressure.",
+          "comparable": true,
+          "description": "Comparable copy contract covering texture-to-buffer transfer path.",
+          "leftCommandRepeat": 2000,
+          "leftTimingDivisor": 2000,
+          "rightCommandRepeat": 2000,
+          "rightTimingDivisor": 2000,
+          "timingNormalizationNote": "Strict comparable local-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize headline process wall claimability."
         },
-        "comparabilityNotes": "Strict comparable on local Metal after Dawn-side copy ABI parity fixes; claimability uses headline process wall because delegate operation timing undercounts end-to-end texture-to-buffer completion. The local Metal lane uses 2000 repeats to reduce tail volatility under aggregate lane pressure.",
-        "comparable": true,
-        "description": "Comparable copy contract covering texture-to-buffer transfer path.",
-        "leftCommandRepeat": 2000,
-        "leftTimingDivisor": 2000,
-        "rightCommandRepeat": 2000,
-        "rightTimingDivisor": 2000,
-        "timingNormalizationNote": "Strict comparable local-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize headline process wall claimability."
-      },
         "local_vulkan_extended": {},
         "local_vulkan_strict": {}
       }
@@ -6664,24 +6790,28 @@
         "amd_vulkan_doe_vs_doe": {
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "local_vulkan_extended": {
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "local_vulkan_strict": {
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "local_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         }
@@ -7128,6 +7258,7 @@
           "comparabilityNotes": "Apples-to-apples contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "comparable"
@@ -7136,6 +7267,7 @@
           "comparabilityNotes": "Apples-to-apples contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "comparable"
@@ -7144,6 +7276,7 @@
           "comparabilityNotes": "Apples-to-apples contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "comparable"
@@ -7152,6 +7285,7 @@
           "comparabilityNotes": "Apples-to-apples contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes; uses deferred queue sync on Metal to avoid per-command wait inflation.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "comparable"
@@ -7165,6 +7299,7 @@
           "comparabilityNotes": "Strict D3D12 upload-plus-barrier lifecycle contract with adapter-autodiscovered Dawn mapping and direct timing normalization.",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparable": true,
+          "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "comparable"
@@ -7416,12 +7551,12 @@
           },
           "comparabilityNotes": "Strict comparable on local Metal after Dawn-side CAMetalLayer surface creation, presentable BGRA8Unorm swapchain format, and phase-aligned surface timing instrumentation.",
           "comparable": true,
-      "description": "Comparable surface lifecycle contract covering capabilities/configure/acquire/present/unconfigure/release operations.",
-      "leftTimingDivisor": 100,
-      "rightCommandRepeat": 100,
-      "rightTimingDivisor": 100,
-      "timingNormalizationNote": "Strict comparable local-Metal surface contract: normalize per full presentation cycle across 100 repeated cycles."
-    },
+          "description": "Comparable surface lifecycle contract covering capabilities/configure/acquire/present/unconfigure/release operations.",
+          "leftTimingDivisor": 100,
+          "rightCommandRepeat": 100,
+          "rightTimingDivisor": 100,
+          "timingNormalizationNote": "Strict comparable local-Metal surface contract: normalize per full presentation cycle across 100 repeated cycles."
+        },
         "local_vulkan_extended": {},
         "local_vulkan_strict": {}
       }

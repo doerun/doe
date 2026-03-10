@@ -15,7 +15,7 @@ from pathlib import Path
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Ingest Fawn Benchmark JSON into SQLite")
-    parser.add_argument("--db", default="fawn/bench/out/fawn_benchmarks.sqlite", help="Path to SQLite database")
+    parser.add_argument("--db", default="bench/out/fawn_benchmarks.sqlite", help="Path to SQLite database")
     parser.add_argument("--report", required=True, help="Path to Fawn benchmark report JSON")
     return parser.parse_args()
 

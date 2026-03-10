@@ -71,7 +71,7 @@ function ensureLibrary() {
   }
   if (!DOE_LIB_PATH) {
     throw new Error(
-      '@simulatte/webgpu: libwebgpu_doe not found. Build it with `cd fawn/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
+      '@simulatte/webgpu: libwebgpu_doe not found. Build it with `cd zig && zig build dropin` or set DOE_WEBGPU_LIB.'
     );
   }
   addon.loadLibrary(DOE_LIB_PATH);

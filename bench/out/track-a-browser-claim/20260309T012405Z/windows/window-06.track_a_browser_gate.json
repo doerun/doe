@@ -5,12 +5,12 @@
   "smokeOk": true,
   "layeredOk": true,
   "artifacts": {
-    "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
-    "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
-    "summaryReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
-    "checkReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.check.json",
-    "promotionApprovals": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json",
-    "ownership": "/Users/xyz/deco/fawn/config/track-a-browser-ownership.json"
+    "smokeReport": "nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json",
+    "layeredReport": "nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+    "summaryReport": "nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.summary.json",
+    "checkReport": "nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.check.json",
+    "promotionApprovals": "nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+    "ownership": "config/track-a-browser-ownership.json"
   },
   "hashes": {
     "smokeReport": "97d0546fc92a2ceecb4f15ea507a15c2d554af8602efa9dd8887d0bf3641b3fd",

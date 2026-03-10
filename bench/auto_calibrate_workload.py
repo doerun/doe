@@ -18,20 +18,20 @@ from pathlib import Path
 def parse_args():
     parser = argparse.ArgumentParser(description="Auto-calibrate a workload for optimal benchmarking stability.")
     parser.add_argument("--workload", required=True, help="Workload ID to calibrate")
-    parser.add_argument("--workloads-file", default="fawn/bench/workloads.json", help="Path to workloads.json")
+    parser.add_argument("--workloads-file", default="bench/workloads.json", help="Path to workloads.json")
     parser.add_argument("--max-steps", type=int, default=10, help="Maximum search steps")
-    parser.add_argument("--out", default="fawn/bench/out/calibration_result.json", help="Output file for optimal configuration")
+    parser.add_argument("--out", default="bench/out/calibration_result.json", help="Output file for optimal configuration")
     parser.add_argument("--target-p95-cv", type=float, default=0.05, help="Target coefficient of variation for p95")
     return parser.parse_args()
 
 
 def run_benchmark(workload_id: str, command_repeat: int, submit_every: int) -> dict:
     cmd = [
-        "python3", "fawn/bench/compare_dawn_vs_doe.py",
+        "python3", "bench/compare_dawn_vs_doe.py",
         "--workload-filter", workload_id,
         "--iterations", "5",
         "--warmup", "2",
-        "--out", "fawn/bench/out/tmp_calibration.json",
+        "--out", "bench/out/tmp_calibration.json",
         "--claimability", "local"
     ]
     # We would ideally inject the commandRepeat and uploadSubmitEvery directly here.
@@ -39,7 +39,7 @@ def run_benchmark(workload_id: str, command_repeat: int, submit_every: int) -> d
     
     # Normally, we'd run:
     # subprocess.run(cmd, check=True, capture_output=True)
-    # with open("fawn/bench/out/tmp_calibration.json") as f:
+    # with open("bench/out/tmp_calibration.json") as f:
     #    return json.load(f)
     
     # Simulated response logic for the sake of the calibration loop skeleton

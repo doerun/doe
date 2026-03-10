@@ -100,7 +100,7 @@
     - `compute_workgroup_atomic_1024`
     - `texture_sampler_write_query_destroy`
 39. Captured strict subset report with comparable + claimable classification:
-    - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
+    - `bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
 
 ## Current State
 
@@ -118,7 +118,7 @@
 1. Forced-Doe launch command shape:
 
 ```bash
-out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-webgpu-runtime=doe --doe-webgpu-library-path=/home/x/deco/fawn/zig/zig-out/lib/libdoe_webgpu.so
+out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-webgpu-runtime=doe --doe-webgpu-library-path=zig/zig-out/lib/libdoe_webgpu.so
 ```
 
 2. Observed result:
@@ -127,7 +127,7 @@ out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-
    - rejection reason is `profile_denylisted`,
    - prior destructor crash is no longer observed.
 3. Strict comparison subset report:
-   - `/home/x/deco/fawn/bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
+   - `bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
    - `comparisonStatus = comparable`
    - `claimStatus = claimable`
 
@@ -141,7 +141,7 @@ out/fawn_debug/chrome --headless=new --no-sandbox --disable-dev-shm-usage --use-
 
 ## Immediate Next Bring-Up Commands
 
-From `fawn/` root:
+From `` root:
 
 ```bash
 cd nursery/fawn-browser

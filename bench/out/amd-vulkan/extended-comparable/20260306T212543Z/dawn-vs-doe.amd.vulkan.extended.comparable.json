@@ -3023,9 +3023,9 @@
       }
     }
   ],
-  "configPath": "/home/x/deco/fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json",
+  "configPath": "bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json",
   "configContract": {
-    "path": "/home/x/deco/fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json",
+    "path": "bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json",
     "sha256": "6fe385a57c610f9831c1803f8b8af6f4a7d516315e14014a5cc74891d07e0823"
   },
   "overall": {

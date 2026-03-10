@@ -20,7 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--report",
-        default="fawn/bench/out/dawn-vs-doe.json",
+        default="bench/out/dawn-vs-doe.json",
         help="Path to compare_dawn_vs_doe.py JSON report",
     )
     parser.add_argument(

@@ -35,8 +35,14 @@ pub const NativeMetalRuntime = struct {
 
     pub fn flush_queue(self: *NativeMetalRuntime) !u64 { _ = self; return error.UnsupportedFeature; }
 
-    pub fn barrier(self: *NativeMetalRuntime, mode: webgpu.QueueWaitMode) !u64 {
-        _ = self; _ = mode;
+    pub fn barrier(
+        self: *NativeMetalRuntime,
+        queue_wait_mode: webgpu.QueueWaitMode,
+        queue_sync_mode: webgpu.QueueSyncMode,
+    ) !u64 {
+        _ = self;
+        _ = queue_wait_mode;
+        _ = queue_sync_mode;
         return error.UnsupportedFeature;
     }
 
@@ -47,6 +53,15 @@ pub const NativeMetalRuntime = struct {
 
     pub fn run_kernel_dispatch(self: *NativeMetalRuntime, kernel: []const u8, x: u32, y: u32, z: u32, repeat: u32, warmup: u32, bindings: ?[]const model.KernelBinding) !DispatchMetrics {
         _ = self; _ = kernel; _ = x; _ = y; _ = z; _ = repeat; _ = warmup; _ = bindings;
+        return error.UnsupportedFeature;
+    }
+
+    pub fn run_dispatch(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
+        _ = self;
+        _ = x;
+        _ = y;
+        _ = z;
+        _ = queue_sync_mode;
         return error.UnsupportedFeature;
     }
 
@@ -130,8 +145,10 @@ pub const NativeMetalRuntime = struct {
         return error.UnsupportedFeature;
     }
 
-    pub fn render_draw(self: *NativeMetalRuntime, cmd: model.RenderDrawCommand) !RenderMetrics {
-        _ = self; _ = cmd;
+    pub fn render_draw(self: *NativeMetalRuntime, cmd: model.RenderDrawCommand, queue_sync_mode: webgpu.QueueSyncMode) !RenderMetrics {
+        _ = self;
+        _ = cmd;
+        _ = queue_sync_mode;
         return error.UnsupportedFeature;
     }
 };

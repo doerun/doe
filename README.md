@@ -1,5 +1,10 @@
 # Fawn
 
+> **Using the package?** This README is for contributors and developers working
+> on Fawn itself. If you installed `@simulatte/webgpu` from npm and want
+> quickstart, smoke tests, and API examples, see the
+> [package README](nursery/webgpu/README.md).
+
 Fawn is the development platform for Doe, a Zig-first WebGPU runtime centered
 on a core technical move: separate hoistable validation from truly dynamic
 runtime behavior, keep hot paths explicit, and use Lean only where proofs can
@@ -10,6 +15,10 @@ explicit fail-fast behavior, deterministic traceability, and artifact-backed
 benchmarking. Fawn develops, verifies, benchmarks, packages, and integrates
 Doe across headless execution, Node/Bun package surfaces, and Chromium
 bring-up.
+
+Simulatte is the parent organization, Fawn is the development platform and
+repo, Doe is the WebGPU runtime, and `@simulatte/webgpu` is the packaged
+distribution surface.
 
 Doe (`doe-webgpu`, `libwebgpu_doe.so`) is Fawn's execution engine. It combines
 startup-time profile and quirk binding, a native WGSL pipeline (`lexer ->
@@ -44,99 +53,48 @@ from reproducible artifacts with explicit workload contracts, explicit
 comparison modes, and enough timing evidence to satisfy the claim gates in
 `process.md` and the Dawn-vs-Doe methodology in `performance-strategy.md`.
 
-Current benchmark evidence is split across strict backend claim lanes and
-separate package-surface comparison lanes. The canonical aggregation layer
-for those surfaces now lives in the benchmark cube artifacts, and cube rows are
-published only from governed lane-backed evidence:
-- timestamped runs under `bench/out/cube/<timestamp>/`
-- stable latest outputs under `bench/out/cube/latest/`
-- builder: `python3 bench/build_benchmark_cube.py`
+Backend-native strict lanes and package-surface comparison lanes are tracked
+separately. The evolving ground truth lives in `status.md` and `bench/out/`;
+the summary below is only the current top-line read.
 
 ### AMD Vulkan (RADV, GFX11)
 
-Latest local strict comparable matrix artifact:
-`bench/out/amd-vulkan/20260307T031517Z/dawn-vs-doe.amd.vulkan.release.json`
+Latest local strict release artifact:
+`bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json`
 
 - top-level result: `comparisonStatus=comparable`, `claimStatus=diagnostic`
 - current strict release lane workload count: 7
 - current claimables in the release lane:
-  - uploads: `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`
-- current non-claimables in the release lane:
-  - uploads: `1 KB`, `64 KB`
-- current release read: strict upload comparability is fixed; remaining
-  claim-gate failures are real small-upload losses, not structural mismatch
+  - uploads: `64 KB`, `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`
+- current non-claimable workload: `upload_write_buffer_1kb`
+- current release read: strict upload comparability is fixed; the remaining
+  blocker is a real tiny-upload gap, not a structural mismatch
 
 This lane is now a workload-specific strict comparable AMD Vulkan evidence
 lane. It is not a broad "Doe Vulkan is faster than Dawn" claim.
 
 ### Apple Metal (M3)
 
-Latest local strict comparable matrix artifact:
-`bench/out/apple-metal/extended-comparable/20260306T195524Z/dawn-vs-doe.local.metal.extended.comparable.json`
+Current local Metal comparable contract:
+`bench/workloads.local.metal.extended.json`
 
-- raw artifact result: `comparisonStatus=comparable`, `claimStatus=claimable`
-- publication status: treat this lane as `comparisonStatus=comparable`, `claimStatus=diagnostic`
-- comparable workloads in the artifact: 30
-- citable claimable workload count: `0 / 30` until the timing-scope audit is closed
+- comparable workloads in contract: 31
+- latest full artifact:
+  `bench/out/apple-metal/extended-comparable/20260310T121546Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v7.json`
+- important caveat: that v7 artifact predates the all-domain repeat-symmetry
+  fix; 6 reported claimable rows need a clean Metal rerun before they can be
+  treated as trusted claims
+- conservative pre-rerun trusted subset: 25 workloads
 
-**Data quality caveat (blocking publication):** Small-upload workloads in the
-Metal extended comparable report show Doe p50 timings in the sub-microsecond
-range (e.g. 0.208µs for 1KB upload) while Dawn reports ~189µs for the same
-workload. This produces delta percentages exceeding 90,000% which are not
-credible speedups. Doe appears to be measuring encode-only latency (no GPU
-execution wait) while Dawn includes the full operation. These cells show as
-`claimable` in the raw source report, but the timing-scope mismatch must be
-resolved before any of these rows are citable.
+This lane is not currently a broad "Doe Metal is faster than Dawn" claim. A
+fresh Metal rerun is still required to cite the full 31-workload matrix.
 
-Full comparison reports, trace artifacts, and visualization tooling are in `bench/`.
+### Package surfaces
 
-### Node package comparison (`@simulatte/webgpu` vs npm `webgpu`)
-
-Latest full local Node provider report:
-`bench/out/node-doe-vs-dawn/doe-vs-dawn-node-2026-03-06T214032182Z.json`
-
-- scope: Node.js provider-surface comparison, not strict backend claim substantiation
-- host: `darwin arm64`, Node `v22.20.0`
-- total compared workloads: `11`
-- claimable wins for `@simulatte/webgpu`: `7 / 11`
-- current claimable rows in this lane:
-  - uploads: `buffer_upload_1kb`, `buffer_upload_64kb`, `buffer_upload_1mb`, `buffer_upload_16mb`
-  - overhead: `buffer_map_write_unmap`
-  - compute e2e: `compute_e2e_4096`, `compute_e2e_65536`
-- current non-claimable rows:
-  - comparable but not claimable: `compute_e2e_256`
-  - directional/non-comparable: `submit_empty`, `pipeline_create`, `compute_dispatch_simple`
-
-This Node comparison uses package-level workload timing (`performance.now()`) and
-should be read as host-local package/runtime positioning evidence, not as a
-replacement for strict Dawn-vs-Doe backend reports or a broad "the package is
-faster" claim.
-
-Current caveat:
-- Linux Node Doe-native path is wired end-to-end (Linux guard removed).
-  No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
-  are present.
-- Self-contained install ships prebuilt `doe_napi.node` + `libwebgpu_doe` +
-  Dawn sidecar per platform. Falls back to node-gyp from source.
-
-Bun has API parity with Node via direct FFI (57/57 contract tests passing).
-Bun benchmark lane is at `bench/bun/compare.js` and compares Doe FFI against
-the `bun-webgpu` package. Latest validated local run (`2026-03-06T21:55:26Z`)
-observed 7/11 claimable rows, with compute e2e rows comparable and claimable
-after readback validation was added to the timed path. The benchmark cube now
-isolates the directional `compute_dispatch_simple` row into its own
-dispatch-only cell, so the Bun `compute_e2e` cell reflects the claimable
-end-to-end rows instead of being dragged diagnostic by mixed methodology. Cube
-maturity remains prototype until cell coverage stabilizes across multiple runs,
-so treat this as preliminary package-surface evidence rather than a
-publication-grade performance claim.
-
-Remaining Bun caveats:
-- `buffer_map_write_unmap` is slower for Doe (~19µs overhead from synchronous
-  `bufferMapSync` polling vs bun-webgpu native async path)
-- directional rows (`compute_dispatch_simple`, `submit_empty`) are not
-  comparable by design (Dawn async submit vs Doe synchronous)
-- upload rows are noisier than compute; claimability is system-state dependent
+Package-level Node/Bun evidence is tracked separately from backend-native
+strict lanes. Read it through the package README, package-specific compare
+reports, and the benchmark cube outputs under `bench/out/cube/latest/`; do not
+use those package rows as substitutes for strict backend claim substantiation.
 
 ## How it works
 
@@ -190,11 +148,12 @@ Build without the flag produces identical code to before.
 
 ## Current status
 
-Working, with one strict backend lane that is now claimable, one backend lane
-under timing-scope audit, and one separate Node package-comparison lane:
-- AMD Vulkan: the latest strict comparable/release evidence is `comparisonStatus=comparable`, `claimStatus=claimable` for the local 8-workload upload matrix. This is now a citable local backend claim lane, but it is still a narrow workload set, not a broad WebGPU replacement claim.
-- Apple Metal M3: feature coverage is strongest here, but the latest broad comparable artifact is under timing-scope audit and should be treated as diagnostic for publication.
-- Node package surface: `7 / 11` claimable wins on the latest macOS Node package lane. This is package/runtime evidence, not backend claim substantiation.
+Working, with one narrow AMD Vulkan release lane still short of claimability,
+one broader Metal comparable lane awaiting a clean rerun, and one separate
+package-surface evidence lane:
+- AMD Vulkan: `comparisonStatus=comparable`, `claimStatus=diagnostic` for the local 7-workload release matrix. Only remaining blocker in the latest full artifact is `upload_write_buffer_1kb`. This is a narrow workload set, not a broad WebGPU replacement claim.
+- Apple Metal M3: the local extended comparable contract currently covers 31 workloads, but the last full artifact predates the all-domain repeat-symmetry fix; a clean Metal rerun is still required before citing all 31 as trusted claims.
+- Node package surface: host-local package/runtime evidence lives in the package README and package compare artifacts, not in the strict backend claim lane.
 
 Still in progress:
 - render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; remaining work is about broader coverage and stronger margins outside the current local strict comparable claim snapshot
@@ -217,6 +176,9 @@ Fawn is organized as a platform pipeline, not just a source tree:
 - `nursery/fawn-browser/`: carries the Chromium integration lane
 - `trace/` and `bench/`: replay work, validate comparability, and produce benchmark evidence
 
+`nursery/` is the home for Fawn's public surfaces and integration lanes; it is
+not an incubation-only area.
+
 Supporting docs at the repository root define the operating contract:
 `thesis.md`, `architecture.md`, `process.md`, `status.md`, `upgrade-policy.md`,
 and `licensing.md`.
@@ -227,7 +189,7 @@ The canonical npm package is `@simulatte/webgpu`, rooted in `nursery/webgpu/`.
 It contains the Doe-native Node provider, addon build contract, Bun FFI path,
 and CLI tools for benchmarking and CI workflows.
 
-Node is the primary supported package surface. Bun has API parity (57/57
+Node is the primary supported package surface. Bun has API parity (61/61
 contract tests) via direct FFI; cube maturity remains prototype until cells
 are populated by comparable benchmark artifacts.
 
@@ -236,15 +198,15 @@ are populated by comparable benchmark artifacts.
 npm install @simulatte/webgpu
 
 # build the drop-in library
-cd fawn/zig && zig build dropin
+cd zig && zig build dropin
 
 # publish
-cd fawn/nursery/webgpu && npm publish --access public
+cd nursery/webgpu && npm publish --access public
 ```
 
 ## Building and running
 
-Requires Zig 0.15.2 (see `config/toolchains.json`). From `fawn/zig/`:
+Requires Zig 0.15.2 (see `config/toolchains.json`). From `zig/`:
 
 ```bash
 # run with trace output

@@ -10,7 +10,7 @@
     {
       "command": [
         "/usr/bin/python3",
-        "/home/x/deco/fawn/bench/dropin_symbol_gate.py",
+        "bench/dropin_symbol_gate.py",
         "--artifact",
         "zig/zig-out/lib/libdoe_webgpu.so",
         "--symbols",
@@ -51,7 +51,7 @@
     {
       "command": [
         "/usr/bin/python3",
-        "/home/x/deco/fawn/bench/dropin_behavior_suite.py",
+        "bench/dropin_behavior_suite.py",
         "--artifact",
         "zig/zig-out/lib/libdoe_webgpu.so",
         "--report",
@@ -71,11 +71,11 @@
           "-Wextra",
           "-Werror",
           "-I",
-          "/home/x/deco/fawn/bench/vendor/dawn/third_party/webgpu-headers/src",
-          "/home/x/deco/fawn/bench/dropin_behavior_suite.c",
+          "bench/vendor/dawn/third_party/webgpu-headers/src",
+          "bench/dropin_behavior_suite.c",
           "-L",
-          "/home/x/deco/fawn/zig/zig-out/lib",
-          "-Wl,-rpath,/home/x/deco/fawn/zig/zig-out/lib",
+          "zig/zig-out/lib",
+          "-Wl,-rpath,zig/zig-out/lib",
           "-l:libdoe_webgpu.so",
           "-o",
           "/tmp/fawn-dropin-behavior-biqfk9x1/dropin_behavior_suite"
@@ -121,7 +121,7 @@
     {
       "command": [
         "/usr/bin/python3",
-        "/home/x/deco/fawn/bench/dropin_benchmark_suite.py",
+        "bench/dropin_benchmark_suite.py",
         "--artifact",
         "zig/zig-out/lib/libdoe_webgpu.so",
         "--micro-iterations",
@@ -145,12 +145,12 @@
           "-Wextra",
           "-Werror",
           "-I",
-          "/home/x/deco/fawn/bench/vendor/dawn/third_party/webgpu-headers/src",
-          "/home/x/deco/fawn/bench/dropin_benchmark_harness.c",
-          "/home/x/deco/fawn/bench/dropin_benchmark_ops.c",
+          "bench/vendor/dawn/third_party/webgpu-headers/src",
+          "bench/dropin_benchmark_harness.c",
+          "bench/dropin_benchmark_ops.c",
           "-L",
-          "/home/x/deco/fawn/zig/zig-out/lib",
-          "-Wl,-rpath,/home/x/deco/fawn/zig/zig-out/lib",
+          "zig/zig-out/lib",
+          "-Wl,-rpath,zig/zig-out/lib",
           "-l:libdoe_webgpu.so",
           "-o",
           "/tmp/fawn-dropin-bench-xg3gxn3x/dropin_benchmark_suite"
@@ -369,7 +369,7 @@
     {
       "command": [
         "/usr/bin/python3",
-        "/home/x/deco/fawn/bench/visualize_dropin_benchmark.py",
+        "bench/visualize_dropin_benchmark.py",
         "--report",
         "bench/out/dropin/20260307T031634Z/dropin_benchmark_report.json",
         "--out",

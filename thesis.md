@@ -196,7 +196,7 @@ Attribution method for "why Zig + Lean":
 No hard numeric threshold is required for v0 acceptance.
 
 Minimum acceptance contract for incumbent claims:
-1. use metric IDs defined in `fawn/config/benchmarks.json`
+1. use metric IDs defined in `config/benchmarks.json`
 2. include matching workload IDs and backend IDs in run metadata
 3. include baseline deltas for Dawn and wgpu from measured runs
 4. mark report `comparisonStatus=substantiated` before using "beats incumbents" language

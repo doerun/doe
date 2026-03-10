@@ -11,7 +11,7 @@
   "gtestFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1",
   "selectedFilter": "MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1",
   "filterResolution": "mapped",
-  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/extended-comparable/20260302T182311Z/runtime-comparisons.amd.vulkan.extended.comparable/par_matrix_vector_multiply_32768x2048_f32_swizzle1/right/dawn.run001.ndjson",
+  "command": "bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=MatrixVectorMultiplyPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_Rows_32768_Cols_2048_StoreType_F32_AccType_F32_Impl_Naive_Swizzle_1 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/extended-comparable/20260302T182311Z/runtime-comparisons.amd.vulkan.extended.comparable/par_matrix_vector_multiply_32768x2048_f32_swizzle1/right/dawn.run001.ndjson",
   "queueSyncMode": "per-command",
   "uploadBufferUsage": "copy-dst-copy-src",
   "uploadSubmitEvery": 1,

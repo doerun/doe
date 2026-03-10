@@ -11,11 +11,11 @@ Policy:
   - `guard_only`: no Lean proof required
   - `lean_preferred`: proof is advisory in v0
   - `lean_required`: proof is required (`proofLevel=proven`)
-- safetyClass may add stricter requirements only if configured in `fawn/config/gates.json`
+- safetyClass may add stricter requirements only if configured in `config/gates.json`
 
 Current integration boundary (v0):
-- Lean files in `fawn/lean/Fawn` are the formal contract/model source for verification semantics.
-- Blocking CI gates are currently schema/correctness/trace (and claim when enabled) through `fawn/bench` scripts.
+- Lean files in `lean/Fawn` are the formal contract/model source for verification semantics.
+- Blocking CI gates are currently schema/correctness/trace (and claim when enabled) through `bench` scripts.
 - Zig/Python runtime/gate logic mirrors Lean obligation fields and policy (`verificationMode`, `proofLevel`, blocking/advisory outcomes).
 - Manual Lean typecheck/build is available through `./lean/check.sh` (uses pinned toolchain version from `config/toolchains.json`).
 

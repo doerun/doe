@@ -54,7 +54,7 @@ This module implements a layered browser benchmark superset for Chromium Track A
 
 ## Quick Start
 
-From `fawn/` root:
+From `` root:
 
 ```bash
 npm install --prefix nursery/fawn-browser playwright-core

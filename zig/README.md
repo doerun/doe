@@ -60,14 +60,14 @@ Build:
 ## How to run (toolchain must be available)
 
 ```bash
-cd fawn/zig
+cd zig
 zig build run -- --vendor intel --api vulkan --family gen12 --driver 31.0.101
 zig build run -- --quirks path/to/quirks.json --commands path/to/commands.json --trace
 zig build run -- --quirks path/to/quirks.json --commands path/to/commands.json --replay path/to/trace.jsonl
 zig build run -- --quirks path/to/quirks.json --commands path/to/commands.json --backend native --execute --trace --trace-jsonl run.jsonl --trace-meta run.meta.json
-zig build run -- --commands fawn/examples/kernel_dispatch_commands.json --backend native --execute --kernel-root fawn/bench/kernels
-zig build run -- --commands fawn/examples/draw_call_proxy_commands.json --backend native --execute --trace --trace-meta run.meta.json
-zig build run -- --commands fawn/examples/draw_call_proxy_commands.json --backend native --execute --trace --queue-sync-mode deferred --trace-meta run.deferred.meta.json
+zig build run -- --commands ../examples/kernel_dispatch_commands.json --backend native --execute --kernel-root ../bench/kernels
+zig build run -- --commands ../examples/draw_call_proxy_commands.json --backend native --execute --trace --trace-meta run.meta.json
+zig build run -- --commands ../examples/draw_call_proxy_commands.json --backend native --execute --trace --queue-sync-mode deferred --trace-meta run.deferred.meta.json
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --trace
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --emit-normalized
 zig build test
@@ -86,7 +86,7 @@ Quirk records now use schemaVersion `2` with strict action payloads:
 Generate quirk records from Dawn source (no manual authoring required):
 
 ```bash
-cd fawn
+cd ..
 python3 agent/mine_upstream_quirks.py \
   --source-root bench/vendor/dawn/src/dawn/native \
   --source-repo dawn/main \
@@ -139,7 +139,7 @@ DOE_WGPU_TIMESTAMP_DEBUG=1 zig build run -- --commands path/to/commands.json --b
 
 This emits timestamp-path diagnostics to stderr, including adapter/device feature state, query artifact creation, write mode, map status, and begin/end readback values.
 
-- `--trace` now emits trace rows conforming to `fawn/config/trace.schema.json`.
+- `--trace` now emits trace rows conforming to `config/trace.schema.json`.
 - trace rows include `traceVersion`, `module`, `opCode`, deterministic `hash` and `previousHash`,
   and the full decision envelope used by Lean parity checks.
 - execution rows now include both human and machine status fields:
@@ -259,7 +259,7 @@ Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metad
 
 ### Command replay examples for Doppler-style command derivatives
 
-- `kernel_dispatch` with `kernel` label and dispatch dimensions: `fawn/examples/kernel_dispatch_commands.json`
+- `kernel_dispatch` with `kernel` label and dispatch dimensions: `examples/kernel_dispatch_commands.json`
 - `kernel_dispatch` accepts optional `repeat` (aliases: `dispatch_count`, `dispatchCount`), default `1`.
 - `kernel_dispatch` accepts optional `warmup_dispatch_count` (`warmupDispatchCount`) to run untimed warmup dispatches before timed dispatch execution, default `0`.
 - `kernel_dispatch` accepts optional `initialize_buffers_on_create` (`initializeBuffersOnCreate`) to zero-fill newly created bound buffers before first use, default `false`.

@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--left-meta", default="")
     parser.add_argument("--right-meta", default="")
-    parser.add_argument("--out", default="fawn/bench/out/runtime-comparison.json")
+    parser.add_argument("--out", default="bench/out/runtime-comparison.json")
     parser.add_argument(
         "--timestamp",
         default="",

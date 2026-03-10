@@ -21,7 +21,7 @@ state and local evidence.
 
 ## Guiding constraints
 
-1. Keep this layer isolated in `fawn/nursery/fawn-browser/`.
+1. Keep this layer isolated in `nursery/fawn-browser/`.
 2. Do not modify core runtime behavior implicitly.
 3. Preserve Fawn stage discipline and gate precedence.
 4. Require deterministic artifacts for all quality decisions.

@@ -171,8 +171,8 @@ def validate_single_trace(trace_meta: str | None, trace_jsonl: str | None, *, sk
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gates", default="fawn/config/gates.json")
-    parser.add_argument("--quirk", default="fawn/examples/quirks/intel_gen12_temp_buffer.json")
+    parser.add_argument("--gates", default="config/gates.json")
+    parser.add_argument("--quirk", default="examples/quirks/intel_gen12_temp_buffer.json")
     parser.add_argument("--trace-meta", default="")
     parser.add_argument("--trace-jsonl", default="")
     parser.add_argument("--report", default="")

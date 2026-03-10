@@ -52,6 +52,8 @@
       "comparable": true,
       "default": true,
       "domain": "upload",
+      "leftCommandRepeat": 16,
+      "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,

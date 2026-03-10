@@ -2,7 +2,7 @@
 
 Purpose:
 - run correctness and performance measurements against specialization outputs
-- enforce blocking/advisory gate modes from `fawn/config/gates.json`
+- enforce blocking/advisory gate modes from `config/gates.json`
 
 This module is self-contained and does not depend on external runtime code.
 
@@ -10,7 +10,7 @@ This module is self-contained and does not depend on external runtime code.
 
 Before running or interpreting Dawn-vs-Doe performance results, read:
 
-- `fawn/performance-strategy.md`
+- `performance-strategy.md`
 - `bench/benchmark-writing-guide.md`
 
 If you're adding or changing workloads/commands, treat the benchmark writing guide as the required authoring contract.
@@ -27,7 +27,7 @@ That document defines:
   - executes a configured workload command template, captures runtime timing samples, and emits measured metrics
   - computes timing statistics from wall time and trace-window timings when trace artifacts are present
   - emits reproducible run metadata with workload/artifact hashes and toolchain fields
-  - compares against incumbent baseline ids from `fawn/config/benchmarks.json`
+  - compares against incumbent baseline ids from `config/benchmarks.json`
   - enforces host/backend compatibility before execution and fails fast on unsupported OS/backend mixes (for example: Vulkan on macOS, Metal on Linux/Windows, D3D12 on Linux/macOS).
 - `check_correctness.py`
   - runs deterministic contract-level correctness checks
@@ -177,30 +177,30 @@ Benchmark cube output follows the same discipline:
 
 ```bash
 # normalize existing legacy top-level timestamp-suffixed artifacts into grouped run folders
-python3 fawn/bench/organize_out_by_timestamp.py
+python3 bench/organize_out_by_timestamp.py
 
 # backfill historical run manifests where missing
-python3 fawn/bench/backfill_run_manifests.py
+python3 bench/backfill_run_manifests.py
 
 # show what would be removed
-python3 fawn/bench/cleanup_out.py --dry-run
+python3 bench/cleanup_out.py --dry-run
 
 # remove legacy untimestamped bench/out entries
-python3 fawn/bench/cleanup_out.py
+python3 bench/cleanup_out.py
 
 # scratch namespace holds manual/ad-hoc outputs
-ls fawn/bench/out/scratch
+ls bench/out/scratch
 
 # show a readable run index across grouped timestamp folders
-python3 fawn/bench/list_out_runs.py --limit 25
+python3 bench/list_out_runs.py --limit 25
 
 # additionally prune timestamped artifacts older than 14 days
-python3 fawn/bench/cleanup_out.py --retention-days 14
+python3 bench/cleanup_out.py --retention-days 14
 ```
 
 ## Workload presets
 
-- `fawn/bench/workloads.json` defines replay workloads, default profiles, and command seed artifacts.
+- `bench/workloads.json` defines replay workloads, default profiles, and command seed artifacts.
 - workload IDs must follow the immutable naming contract from `bench/benchmark-writing-guide.md`:
   `domain_subject_shape_variant` (status-free, no lifecycle/maturity prefixes).
 - each workload includes `comparable` to declare whether mapping quality is apples-to-apples (`true`) or directional (`false`).
@@ -209,7 +209,7 @@ python3 fawn/bench/cleanup_out.py --retention-days 14
 - workloads are tagged with `domain` and `comparabilityNotes` for report transparency.
 - directional workloads that are likely parity-promotion targets can declare `comparabilityCandidate` metadata.
 - use `--workload-cohort comparability-candidates` to isolate that candidate set for directional parity work (requires `--include-noncomparable-workloads`).
-- canonical cross-surface workload identity now lives in `fawn/bench/workload-registry.json`.
+- canonical cross-surface workload identity now lives in `bench/workload-registry.json`.
   - backend-native execution contracts still live in `bench/workloads*.json`.
   - backend-native workload source of truth now lives in `bench/backend-workload-catalog.json`, and `python3 bench/generate_backend_workloads.py` materializes the lane-specific `bench/workloads*.json` files from that catalog.
   - `python3 bench/generate_backend_workloads.py --verify` is now part of the canonical blocking gate flow; generated backend workload files are no longer treated as hand-authored truth.
@@ -234,9 +234,9 @@ binary built from source (`dawn_perf_tests`) and a filter mapping by workload.
 Build Dawn in this repo:
 
 ```bash
-python3 fawn/bench/bootstrap_dawn.py \
-  --source-dir fawn/bench/vendor/dawn \
-  --build-dir fawn/bench/vendor/dawn/out/Release \
+python3 bench/bootstrap_dawn.py \
+  --source-dir bench/vendor/dawn \
+  --build-dir bench/vendor/dawn/out/Release \
   --build-system gn \
   --branch main \
   --targets dawn_perf_tests \
@@ -244,9 +244,9 @@ python3 fawn/bench/bootstrap_dawn.py \
 ```
 
 ```bash
-python3 fawn/bench/compare_dawn_vs_doe.py \
-  --left-command-template "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}" \
-  --right-command-template "python3 fawn/bench/dawn_benchmark_adapter.py --dawn-state fawn/bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map fawn/bench/dawn_workload_map.json --workload {workload} --dawn-extra-args --backend=vulkan --dawn-extra-args --adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
+python3 bench/compare_dawn_vs_doe.py \
+  --left-command-template "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}" \
+  --right-command-template "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --dawn-extra-args --backend=vulkan --dawn-extra-args --adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
   --comparability strict \
   --require-timing-class operation \
   --resource-probe rocm-smi \
@@ -254,25 +254,25 @@ python3 fawn/bench/compare_dawn_vs_doe.py \
   --resource-sample-target-count 104 \
   --iterations 3 \
   --warmup 1 \
-  --out fawn/bench/out/dawn-vs-doe.json
+  --out bench/out/dawn-vs-doe.json
 ```
 
 Run extended suites (non-default domains):
 
 ```bash
-python3 fawn/bench/compare_dawn_vs_doe.py \
+python3 bench/compare_dawn_vs_doe.py \
   --include-extended-workloads \
   --include-noncomparable-workloads \
   --comparability warn \
   --workload-filter compute_workgroup_atomic_1024,compute_workgroup_non_atomic_1024,compute_matvec_32768x2048_f32,compute_matvec_32768x2048_f32_swizzle1,compute_matvec_32768x2048_f32_workgroupshared_swizzle1,pipeline_compile_stress,render_draw_throughput_baseline,texture_sampling_raster_baseline \
-  --right-command-template "python3 fawn/bench/dawn_benchmark_adapter.py --dawn-state fawn/bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map fawn/bench/dawn_workload_map.json --workload {workload} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
-  --out fawn/bench/out/dawn-vs-doe.extended.json
+  --right-command-template "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
+  --out bench/out/dawn-vs-doe.extended.json
 ```
 
 With Doe's default binary path:
 
 ```bash
-python3 fawn/bench/compare_dawn_vs_doe.py \
+python3 bench/compare_dawn_vs_doe.py \
   --right-name "chromium-dawn" \
   --right-command-template "/path/to/dawn-wrapper {commands} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
 ```
@@ -329,12 +329,12 @@ Reliability guardrails for performance claims:
 Quick reliability recheck pattern:
 
 ```bash
-python3 fawn/bench/compare_dawn_vs_doe.py \
-  --config fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.json \
+python3 bench/compare_dawn_vs_doe.py \
+  --config bench/compare_dawn_vs_doe.config.amd.vulkan.json \
   --workload-filter upload_write_buffer_64kb \
   --iterations 10 \
   --warmup 1 \
-  --out fawn/bench/out/dawn-vs-doe.64kb.recheck.json
+  --out bench/out/dawn-vs-doe.64kb.recheck.json
 ```
 
 Timing classes:
@@ -427,8 +427,8 @@ and `claimStatus=claimable`. Then generate an HTML visualization artifact:
 
 ```bash
 # canonical one-command release pipeline:
-python3 fawn/bench/run_release_pipeline.py \
-  --config fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+python3 bench/run_release_pipeline.py \
+  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-claim-gate
@@ -436,54 +436,54 @@ python3 fawn/bench/run_release_pipeline.py \
 # <report>.claim-rehearsal.{claim-gate-result,tail-health,timing-invariant-audit,contract-hash-manifest,manifest}.json
 
 # drop-in compatibility + benchmark suite against a built shared-library artifact:
-python3 fawn/bench/dropin_gate.py \
-  --artifact fawn/zig/zig-out/lib/libwebgpu_doe.so \
-  --report fawn/bench/out/dropin_report.json
+python3 bench/dropin_gate.py \
+  --artifact zig/zig-out/lib/libwebgpu_doe.so \
+  --report bench/out/dropin_report.json
 
 # optional standalone drop-in benchmark visualization (micro vs end-to-end sections):
-python3 fawn/bench/visualize_dropin_benchmark.py \
-  --report fawn/bench/out/dropin_benchmark_report.json \
-  --out fawn/bench/out/dropin_benchmark_report.html
+python3 bench/visualize_dropin_benchmark.py \
+  --report bench/out/dropin_benchmark_report.json \
+  --out bench/out/dropin_benchmark_report.html
 
 # run release pipeline and include drop-in gating:
-python3 fawn/bench/run_release_pipeline.py \
-  --config fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+python3 bench/run_release_pipeline.py \
+  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact fawn/zig/zig-out/lib/libwebgpu_doe.so \
+  --dropin-artifact zig/zig-out/lib/libwebgpu_doe.so \
   --with-claim-gate
 
 # optional repeated release windows for trend evidence:
-python3 fawn/bench/run_release_claim_windows.py \
-  --config fawn/bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+python3 bench/run_release_claim_windows.py \
+  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --windows 5 \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact fawn/zig/zig-out/lib/libwebgpu_doe.so \
+  --dropin-artifact zig/zig-out/lib/libwebgpu_doe.so \
   --with-substantiation-gate \
-  --substantiation-policy fawn/config/substantiation-policy.json
+  --substantiation-policy config/substantiation-policy.json
 # disable per-window claim rehearsal artifacts only when intentionally running diagnostics:
 #   --no-with-claim-rehearsal-artifacts
 
 # optional standalone substantiation gate from existing window summaries/reports:
-python3 fawn/bench/substantiation_gate.py \
-  --policy fawn/config/substantiation-policy.json \
-  --summary fawn/bench/out/release-claim-windows.json
+python3 bench/substantiation_gate.py \
+  --policy config/substantiation-policy.json \
+  --summary bench/out/release-claim-windows.json
 
 # tested-profile inventory database + simple dashboard:
-python3 fawn/bench/build_test_inventory_dashboard.py \
-  --report-glob "fawn/bench/out/**/dawn-vs-doe*.json"
+python3 bench/build_test_inventory_dashboard.py \
+  --report-glob "bench/out/**/dawn-vs-doe*.json"
 
 # baseline trend package (JSON + markdown):
-python3 fawn/bench/build_baseline_dataset.py \
-  --report-glob "fawn/bench/out/**/dawn-vs-doe*.json"
+python3 bench/build_baseline_dataset.py \
+  --report-glob "bench/out/**/dawn-vs-doe*.json"
 
 # optional visualization after the pipeline report exists:
-python3 fawn/bench/visualize_dawn_vs_doe.py --report fawn/bench/out/dawn-vs-doe.amd.vulkan.release.json --out fawn/bench/out/dawn-vs-doe.amd.vulkan.release.html
+python3 bench/visualize_dawn_vs_doe.py --report bench/out/dawn-vs-doe.amd.vulkan.release.json --out bench/out/dawn-vs-doe.amd.vulkan.release.html
 # optional machine-readable distribution analysis:
-python3 fawn/bench/visualize_dawn_vs_doe.py --report fawn/bench/out/dawn-vs-doe.amd.vulkan.release.json --analysis-out fawn/bench/out/dawn-vs-doe.amd.vulkan.release.distribution.json
+python3 bench/visualize_dawn_vs_doe.py --report bench/out/dawn-vs-doe.amd.vulkan.release.json --analysis-out bench/out/dawn-vs-doe.amd.vulkan.release.distribution.json
 ```
 
 ## Building dawn_perf_tests
@@ -509,13 +509,13 @@ export PATH="$HOME/depot_tools:$PATH"
 Or point scripts at explicit binaries:
 
 ```bash
-python3 fawn/bench/bootstrap_dawn.py --build-system gn --gn-bin /path/to/gn --ninja-bin /path/to/ninja ...
+python3 bench/bootstrap_dawn.py --build-system gn --gn-bin /path/to/gn --ninja-bin /path/to/ninja ...
 ```
 
 Preferred bootstrap flow (run from this repo):
 
 ```bash
-python3 fawn/bench/bootstrap_dawn.py --build-system gn --targets dawn_perf_tests
+python3 bench/bootstrap_dawn.py --build-system gn --targets dawn_perf_tests
 ```
 
 If bootstrap fails with:
@@ -527,7 +527,7 @@ Could not find gn executable at: .../buildtools/.../gn/gn
 run the same command again; this repo now auto-populates `buildtools` from Dawn’s `DEPS` and
 attempts a CIPD install of GN.
 
-If your environment cannot write `fawn/bench/vendor/dawn/buildtools`, use explicit standalone
+If your environment cannot write `bench/vendor/dawn/buildtools`, use explicit standalone
 binaries.
 
 If this exact message persists:
@@ -541,12 +541,12 @@ this usually means the `depot_tools` wrapper cannot initialize itself. Use a ded
 
 ```bash
 brew install gn ninja
-python3 fawn/bench/bootstrap_dawn.py \
+python3 bench/bootstrap_dawn.py \
   --build-system gn \
   --gn-bin $(which gn) \
   --ninja-bin $(which ninja) \
-  --source-dir fawn/bench/vendor/dawn \
-  --build-dir fawn/bench/vendor/dawn/out/Release \
+  --source-dir bench/vendor/dawn \
+  --build-dir bench/vendor/dawn/out/Release \
   --targets dawn_perf_tests \
   --parallel 8
 ```
@@ -554,36 +554,36 @@ python3 fawn/bench/bootstrap_dawn.py \
 Then rerun with the normal command (explicit gn args are optional once cache is warm):
 
 ```bash
-python3 fawn/bench/bootstrap_dawn.py --build-system gn --targets dawn_perf_tests
+python3 bench/bootstrap_dawn.py --build-system gn --targets dawn_perf_tests
 ```
 
 For an already checked-out Dawn tree, you can also run manifest-only after a successful first bootstrap:
 
 ```bash
-python3 fawn/bench/bootstrap_dawn.py --manifest-only --build-system gn --targets dawn_perf_tests
+python3 bench/bootstrap_dawn.py --manifest-only --build-system gn --targets dawn_perf_tests
 ```
 
 You can disable bootstrap of Dawn buildtools if you prefer:
 
 ```bash
-python3 fawn/bench/bootstrap_dawn.py --build-system gn --skip-gn-bootstrap ...
+python3 bench/bootstrap_dawn.py --build-system gn --skip-gn-bootstrap ...
 ```
 
-That produces `fawn/bench/vendor/dawn/out/Release/dawn_perf_tests` (or your configured build dir)
-and writes `fawn/bench/dawn_runtime_state.json`.
+That produces `bench/vendor/dawn/out/Release/dawn_perf_tests` (or your configured build dir)
+and writes `bench/dawn_runtime_state.json`.
 
 Once built, discover test names and then wire one of them through `dawn_workload_map.json`:
 
 ```bash
-fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_list_tests
-fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation
+bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_list_tests
+bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=DrawCallPerf.Run/Vulkan__e_skip_validation
 ```
 
 `dawn_workload_map.json` in this directory holds workload-to-filter mappings.
 
 ## Dawn state artifact
 
-`fawn/bench/dawn_runtime_state.json` is emitted by `bootstrap_dawn.py` and records the checkout path, branch, build type, generator, and resolved binary paths.
+`bench/dawn_runtime_state.json` is emitted by `bootstrap_dawn.py` and records the checkout path, branch, build type, generator, and resolved binary paths.
 
 ## v0 Intent
 
@@ -643,27 +643,27 @@ These failures are intentional and indicate the run is not comparable.
 Use:
 
 ```bash
-python3 fawn/bench/compare_dawn_vs_doe.py --config fawn/bench/compare_dawn_vs_doe.config.json
+python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.json
 ```
 
 Config fields (CLI-compatible, config-first):
 
 ```json
 {
-  "workloads": "fawn/bench/workloads.json",
+  "workloads": "bench/workloads.json",
   "left": {
     "name": "doe",
-    "commandTemplate": "env LD_LIBRARY_PATH=fawn/bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH fawn/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+    "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
   },
   "right": {
     "name": "dawn",
-    "commandTemplate": "python3 fawn/bench/dawn_benchmark_adapter.py --dawn-state fawn/bench/dawn_runtime_state.json --dawn-filter-map fawn/bench/dawn_workload_map.json --workload {workload} --dawn-extra-args=--backend=vulkan --dawn-extra-args=--adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
+    "commandTemplate": "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --dawn-extra-args=--backend=vulkan --dawn-extra-args=--adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
   },
   "run": {
     "iterations": 3,
     "warmup": 1,
-    "out": "fawn/bench/out/dawn-vs-doe.ryzen.json",
-    "workspace": "fawn/bench/out/runtime-comparisons.ryzen",
+    "out": "bench/out/dawn-vs-doe.ryzen.json",
+    "workspace": "bench/out/runtime-comparisons.ryzen",
     "workloadCohort": "all"
   },
   "comparability": {
@@ -719,7 +719,7 @@ Preset behavior:
   `leftCommandRepeat`/`leftTimingDivisor`/`leftUploadSubmitEvery` values in
   `bench/workloads.amd.vulkan.extended.native-supported.json`.
 
-Run from `fawn/` directory:
+Run from `` directory:
 
 ```bash
 python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.json

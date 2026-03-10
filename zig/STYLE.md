@@ -1,6 +1,6 @@
 # Doe Zig Style Guide
 
-This guide is the Zig style contract for `fawn/zig`.
+This guide is the Zig style contract for `zig`.
 
 ## Core principles
 
@@ -93,7 +93,7 @@ pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
 - Do not add comments that restate the code.
 - Use `///` doc comments for public function/type intent.
 - Inline comments are for preconditions, control-flow rationale, or non-obvious constraints.
-- Do not add TODO/FIXME inline; track follow-ups in `fawn/status.md`.
+- Do not add TODO/FIXME inline; track follow-ups in `status.md`.
 
 ## Memory
 

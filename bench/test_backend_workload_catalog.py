@@ -98,14 +98,58 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         self.assertIn("surface_full_presentation", workload_ids)
         self.assertEqual(len(workload_ids), 50)
 
+    def test_comparable_rows_are_symmetric(self) -> None:
+        defaults = {
+            "leftCommandRepeat": 1,
+            "rightCommandRepeat": 1,
+            "leftIgnoreFirstOps": 0,
+            "rightIgnoreFirstOps": 0,
+            "leftUploadSubmitEvery": 1,
+            "rightUploadSubmitEvery": 1,
+            "leftTimingDivisor": 1.0,
+            "rightTimingDivisor": 1.0,
+            "leftUploadBufferUsage": None,
+            "rightUploadBufferUsage": None,
+        }
+        pairs = (
+            ("leftCommandRepeat", "rightCommandRepeat"),
+            ("leftIgnoreFirstOps", "rightIgnoreFirstOps"),
+            ("leftUploadSubmitEvery", "rightUploadSubmitEvery"),
+            ("leftTimingDivisor", "rightTimingDivisor"),
+            ("leftUploadBufferUsage", "rightUploadBufferUsage"),
+        )
+        for lane_id in self.catalog["laneOutputs"]:
+            materialized = self.generator.materialize_lane(self.catalog, lane_id)
+            for row in materialized["workloads"]:
+                if not row.get("comparable"):
+                    continue
+                for left_key, right_key in pairs:
+                    self.assertEqual(
+                        row.get(left_key, defaults[left_key]),
+                        row.get(right_key, defaults[right_key]),
+                        msg=f"{row['id']} lane={lane_id} should keep comparable symmetry for {left_key}/{right_key}",
+                    )
+
+    def test_catalog_validation_rejects_asymmetric_comparable_workload(self) -> None:
+        mutated = json.loads(json.dumps(self.catalog))
+        target = next(
+            item
+            for item in mutated["workloads"]
+            if item["id"] == "render_uniform_buffer_update_writebuffer_partial_single"
+        )
+        target["lanes"]["local_metal_extended"]["rightCommandRepeat"] = 777
+        with self.assertRaisesRegex(ValueError, "comparable workload contract asymmetry detected"):
+            self.generator.validate_catalog(mutated)
+
     def test_d3d12_config_and_policy_invariants(self) -> None:
-        smoke_config = load_json(REPO_ROOT / "bench" / "compare_dawn_vs_doe.config.local.d3d12.smoke.json")
-        comparable_config = load_json(
-            REPO_ROOT / "bench" / "compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json"
-        )
-        release_config = load_json(
-            REPO_ROOT / "bench" / "compare_dawn_vs_doe.config.local.d3d12.release.json"
-        )
+        smoke_path = REPO_ROOT / "bench" / "compare_dawn_vs_doe.config.local.d3d12.smoke.json"
+        comparable_path = REPO_ROOT / "bench" / "compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json"
+        release_path = REPO_ROOT / "bench" / "compare_dawn_vs_doe.config.local.d3d12.release.json"
+        if not smoke_path.exists() or not comparable_path.exists() or not release_path.exists():
+            self.skipTest("local D3D12 compare configs are not present in this checkout")
+        smoke_config = load_json(smoke_path)
+        comparable_config = load_json(comparable_path)
+        release_config = load_json(release_path)
         runtime_policy = load_json(REPO_ROOT / "config" / "backend-runtime-policy.json")
         governed_lanes = load_json(REPO_ROOT / "config" / "governed-lanes.json")
         cube_policy = load_json(REPO_ROOT / "config" / "benchmark-cube-policy.json")

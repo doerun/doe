@@ -7,7 +7,7 @@
   "workloadCount": 26,
   "claimableCount": 1,
   "comparableCount": 26,
-  "reportPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.json",
+  "reportPath": "bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.json",
   "failures": [
     "compute_concurrent_execution_single: flakePercent=100.00 exceeds policy maxFlakePercent=5.00; p50Percent must be > 0; p95Percent must be > 0",
     "compute_dispatch_fallback: flakePercent=100.00 exceeds policy maxFlakePercent=5.00; p50Percent must be > 0; p95Percent must be > 0",

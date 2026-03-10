@@ -2,12 +2,12 @@
   "claimGateRan": false,
   "createdAtUtc": "2026-03-09T01:51:05.070446Z",
   "fullRun": true,
-  "layeredReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+  "layeredReport": "nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
   "outputTimestamp": "20260309T015018Z",
-  "runFolder": "/Users/xyz/deco/fawn/bench/out/browser-promotion/20260309T015018Z",
+  "runFolder": "bench/out/browser-promotion/20260309T015018Z",
   "runType": "browser-gate",
   "schemaVersion": 1,
-  "smokeReport": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+  "smokeReport": "nursery/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
   "status": "pass",
   "updatedAtUtc": "2026-03-09T01:51:05.070446Z"
 }

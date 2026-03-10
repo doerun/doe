@@ -13,6 +13,7 @@ const MAX_UPLOAD_ZERO_FILL_BYTES: usize = 1024 * 1024;
 const FAST_UPLOAD_BUFFER_MAX_BYTES: u64 = 1024 * 1024;
 const DIRECT_UPLOAD_BUFFER_MAX_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 const DIRECT_UPLOAD_REUSE_SKIP_ZERO_FILL_MIN_BYTES: u64 = 4 * 1024 * 1024 * 1024;
+const HOT_UPLOAD_POOL_CACHE_MAX_BYTES: u64 = 64 * 1024;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 const DEFAULT_KERNEL_ROOT = "bench/kernels";
@@ -482,6 +483,7 @@ extern fn vkQueueSubmit(queue: VkQueue, submitCount: u32, pSubmits: [*]const VkS
 extern fn vkQueueWaitIdle(queue: VkQueue) callconv(.c) VkResult;
 extern fn vkBeginCommandBuffer(commandBuffer: VkCommandBuffer, pBeginInfo: *const VkCommandBufferBeginInfo) callconv(.c) VkResult;
 extern fn vkEndCommandBuffer(commandBuffer: VkCommandBuffer) callconv(.c) VkResult;
+extern fn vkResetCommandBuffer(commandBuffer: VkCommandBuffer, flags: VkFlags) callconv(.c) VkResult;
 extern fn vkCmdBindPipeline(commandBuffer: VkCommandBuffer, pipelineBindPoint: i32, pipeline: VkPipeline) callconv(.c) void;
 extern fn vkCmdDispatch(commandBuffer: VkCommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32) callconv(.c) void;
 extern fn vkCmdCopyBuffer(commandBuffer: VkCommandBuffer, srcBuffer: VkBuffer, dstBuffer: VkBuffer, regionCount: u32, pRegions: [*]const VkBufferCopy) callconv(.c) void;
@@ -646,6 +648,10 @@ pub const NativeVulkanRuntime = struct {
     src_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
     dst_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
     direct_upload_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
+    hot_src_pool_entry: ?VkPoolEntry = null,
+    hot_src_pool_size: u64 = 0,
+    hot_dst_pool_entry: ?VkPoolEntry = null,
+    hot_dst_pool_size: u64 = 0,
     compute_buffers: std.AutoHashMapUnmanaged(u64, ComputeBuffer) = .{},
     textures: std.AutoHashMapUnmanaged(u64, TextureResource) = .{},
 
@@ -673,6 +679,10 @@ pub const NativeVulkanRuntime = struct {
         self.release_pending_uploads();
         self.pending_uploads.deinit(self.allocator);
         self.surfaces.deinit(self.allocator);
+        release_pool_entry(self.device, self.hot_src_pool_entry);
+        release_pool_entry(self.device, self.hot_dst_pool_entry);
+        self.hot_src_pool_entry = null;
+        self.hot_dst_pool_entry = null;
         vk_release_pool(&self.src_pool, self.allocator, self.device);
         vk_release_pool(&self.dst_pool, self.allocator, self.device);
         vk_release_pool(&self.direct_upload_pool, self.allocator, self.device);
@@ -928,7 +938,7 @@ pub const NativeVulkanRuntime = struct {
         }
         if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
             try check_vk(vkQueueWaitIdle(self.queue));
-            try check_vk(vkResetCommandPool(self.device, self.command_pool, 0));
+            try check_vk(vkResetCommandBuffer(self.primary_command_buffer, 0));
             self.has_deferred_submissions = false;
             self.upload_recording_active = false;
         }
@@ -1965,7 +1975,11 @@ pub const NativeVulkanRuntime = struct {
         var src_fresh = true;
 
         // Try pool first for src (host-visible staging buffer).
-        if (vk_pool_pop(&self.src_pool, bytes)) |entry| {
+        if (hot_pool_pop(&self.hot_src_pool_entry, &self.hot_src_pool_size, bytes)) |entry| {
+            src_buffer = entry.buffer;
+            src_memory = entry.memory;
+            src_fresh = false;
+        } else if (vk_pool_pop(&self.src_pool, bytes)) |entry| {
             src_buffer = entry.buffer;
             src_memory = entry.memory;
             src_fresh = false;
@@ -1984,7 +1998,10 @@ pub const NativeVulkanRuntime = struct {
         }
 
         // Try pool for dst (device-local storage buffer).
-        if (vk_pool_pop(&self.dst_pool, bytes)) |entry| {
+        if (hot_pool_pop(&self.hot_dst_pool_entry, &self.hot_dst_pool_size, bytes)) |entry| {
+            dst_buffer = entry.buffer;
+            dst_memory = entry.memory;
+        } else if (vk_pool_pop(&self.dst_pool, bytes)) |entry| {
             dst_buffer = entry.buffer;
             dst_memory = entry.memory;
         } else {
@@ -2120,13 +2137,17 @@ pub const NativeVulkanRuntime = struct {
 
     fn release_upload(self: *NativeVulkanRuntime, item: PendingUpload) void {
         if (item.src_buffer != VK_NULL_U64 and item.src_memory != VK_NULL_U64) {
-            vk_pool_push_or_destroy(&self.src_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = null });
+            if (!hot_pool_store(&self.hot_src_pool_entry, &self.hot_src_pool_size, item.byte_count, .{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = null })) {
+                vk_pool_push_or_destroy(&self.src_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = null });
+            }
         } else {
             if (item.src_buffer != VK_NULL_U64) vkDestroyBuffer(self.device, item.src_buffer, null);
             if (item.src_memory != VK_NULL_U64) vkFreeMemory(self.device, item.src_memory, null);
         }
         if (item.dst_buffer != VK_NULL_U64 and item.dst_memory != VK_NULL_U64) {
-            vk_pool_push_or_destroy(&self.dst_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory, .mapped = null });
+            if (!hot_pool_store(&self.hot_dst_pool_entry, &self.hot_dst_pool_size, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory, .mapped = null })) {
+                vk_pool_push_or_destroy(&self.dst_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory, .mapped = null });
+            }
         } else {
             if (item.dst_buffer != VK_NULL_U64) vkDestroyBuffer(self.device, item.dst_buffer, null);
             if (item.dst_memory != VK_NULL_U64) vkFreeMemory(self.device, item.dst_memory, null);
@@ -2136,7 +2157,7 @@ pub const NativeVulkanRuntime = struct {
     fn ensure_upload_recording(self: *NativeVulkanRuntime) !void {
         if (self.upload_recording_active) return;
         if (!self.has_deferred_submissions) {
-            try check_vk(vkResetCommandPool(self.device, self.command_pool, 0));
+            try check_vk(vkResetCommandBuffer(self.primary_command_buffer, 0));
         }
         var begin = VkCommandBufferBeginInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -2584,6 +2605,23 @@ fn vk_pool_pop(pool: *VkPool, size: u64) ?VkPoolEntry {
     return null;
 }
 
+fn hot_pool_pop(entry: *?VkPoolEntry, size_slot: *u64, size: u64) ?VkPoolEntry {
+    if (size <= HOT_UPLOAD_POOL_CACHE_MAX_BYTES and entry.* != null and size_slot.* == size) {
+        const out = entry.*;
+        entry.* = null;
+        size_slot.* = 0;
+        return out;
+    }
+    return null;
+}
+
+fn hot_pool_store(entry: *?VkPoolEntry, size_slot: *u64, size: u64, value: VkPoolEntry) bool {
+    if (size > HOT_UPLOAD_POOL_CACHE_MAX_BYTES or entry.* != null) return false;
+    entry.* = value;
+    size_slot.* = size;
+    return true;
+}
+
 fn vk_pool_push_or_destroy(pool: *VkPool, allocator: std.mem.Allocator, device: VkDevice, size: u64, entry: VkPoolEntry) void {
     const gop = pool.getOrPut(allocator, size) catch {
         if (entry.mapped != null) vkUnmapMemory(device, entry.memory);
@@ -2603,6 +2641,14 @@ fn vk_pool_push_or_destroy(pool: *VkPool, allocator: std.mem.Allocator, device: 
         vkDestroyBuffer(device, entry.buffer, null);
         vkFreeMemory(device, entry.memory, null);
     };
+}
+
+fn release_pool_entry(device: VkDevice, entry: ?VkPoolEntry) void {
+    if (entry) |value| {
+        if (value.mapped != null) vkUnmapMemory(device, value.memory);
+        vkDestroyBuffer(device, value.buffer, null);
+        vkFreeMemory(device, value.memory, null);
+    }
 }
 
 fn vk_release_pool(pool: *VkPool, allocator: std.mem.Allocator, device: VkDevice) void {

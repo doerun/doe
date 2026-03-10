@@ -94,6 +94,43 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         first = errors[0]
         location = ".".join(str(part) for part in first.absolute_path) if first.absolute_path else "<root>"
         raise ValueError(f"{CATALOG_SCHEMA_PATH}: {location}: {first.message}")
+    validate_catalog_semantics(catalog)
+
+
+def effective_field(item: dict[str, Any], lane_id: str, key: str, default: Any) -> Any:
+    lane_override = item["lanes"].get(lane_id, {})
+    if key in lane_override:
+        return lane_override[key]
+    if key in item.get("shared", {}):
+        return item["shared"][key]
+    return default
+
+
+def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
+    symmetry_fields = (
+        ("leftCommandRepeat", "rightCommandRepeat", 1),
+        ("leftIgnoreFirstOps", "rightIgnoreFirstOps", 0),
+        ("leftUploadSubmitEvery", "rightUploadSubmitEvery", 1),
+        ("leftTimingDivisor", "rightTimingDivisor", 1.0),
+        ("leftUploadBufferUsage", "rightUploadBufferUsage", None),
+    )
+    problems: list[str] = []
+    for item in catalog["workloads"]:
+        for lane_id in item["lanes"]:
+            comparable = effective_field(item, lane_id, "comparable", False)
+            if not comparable:
+                continue
+            for left_key, right_key, default in symmetry_fields:
+                left_value = effective_field(item, lane_id, left_key, default)
+                right_value = effective_field(item, lane_id, right_key, default)
+                if left_value != right_value:
+                    problems.append(
+                        f"{item['id']} lane={lane_id}: {left_key}={left_value!r} != {right_key}={right_value!r}"
+                    )
+    if problems:
+        raise ValueError(
+            "comparable workload contract asymmetry detected:\n" + "\n".join(problems)
+        )
 
 
 def bootstrap_catalog() -> dict[str, Any]:

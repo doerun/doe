@@ -17,7 +17,7 @@ Source pattern (representative):
 ## 2) Normalized Record
 
 Record file:
-- `fawn/examples/quirks/intel_gen12_temp_buffer.json`
+- `examples/quirks/intel_gen12_temp_buffer.json`
 
 Key decisions:
 - `schemaVersion = 2` (strict action contract)

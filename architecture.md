@@ -74,7 +74,7 @@ This keeps proof work proportional to risk and aligned with dev-speed priority.
 
 Lean obligation decision rule:
 1. Primary selector: `verificationMode`.
-2. Optional stricter selector: `safetyClass` mapping from `fawn/config/gates.json`.
+2. Optional stricter selector: `safetyClass` mapping from `config/gates.json`.
 3. Effective requirement: strictest required `proofLevel` from active selectors.
 
 v0 defaults:
@@ -92,7 +92,7 @@ Doe uses startup profile selection, then avoids hot-path policy branching:
 
 ## 5. Data Contracts
 
-Quirk record contract is schema-first in `fawn/config/quirks.schema.json`.
+Quirk record contract is schema-first in `config/quirks.schema.json`.
 Key fields:
 - `quirkId`, `scope`, `match`, `action`, `safetyClass`, `verificationMode`, `proofLevel`, `provenance`
 
@@ -161,7 +161,7 @@ A releasable build emits:
 - `quirkSetHash`
 - `validatorHash` (if present)
 - benchmark report
-- run metadata conforming to `fawn/config/run-metadata.schema.json`
+- run metadata conforming to `config/run-metadata.schema.json`
 - trace schema version
 
 ## 9. Quirk Pipeline (automated, no human in the loop)
@@ -219,8 +219,8 @@ makes the active mode auditable.
 ## 10. Worked Example
 
 See:
-- `fawn/examples/intel_gen12_temp_buffer.md`
-- `fawn/examples/quirks/intel_gen12_temp_buffer.json`
+- `examples/intel_gen12_temp_buffer.md`
+- `examples/quirks/intel_gen12_temp_buffer.json`
 
 for one full path from upstream quirk signal to normalized record and specialization output.
 
@@ -228,7 +228,7 @@ for one full path from upstream quirk signal to normalized record and specializa
 
 Doe only claims advantage over C++/Rust incumbents when all are true:
 1. same workload + backend class + comparable device family
-2. same metric IDs from `fawn/config/benchmarks.json`
+2. same metric IDs from `config/benchmarks.json`
 3. reproducible run metadata for both sides
 4. comparison status is not `scaffold`
 

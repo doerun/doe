@@ -195,7 +195,9 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "leftCommandRepeat": 10,
+      "rightCommandRepeat": 10
     },
     {
       "id": "render_draw_indexed_200k",
@@ -259,7 +261,9 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "leftCommandRepeat": 10,
+      "rightCommandRepeat": 10
     },
     {
       "id": "render_draw_state_bindings",
@@ -352,7 +356,8 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "rightCommandRepeat": 10
     },
     {
       "id": "texture_sampler_write_query_destroy_500",
@@ -390,7 +395,8 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "rightCommandRepeat": 10
     },
     {
       "id": "texture_sampling_raster_baseline",
@@ -416,7 +422,8 @@
       "leftCommandRepeat": 500,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "rightCommandRepeat": 500
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -427,6 +434,8 @@
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 16MB.",
       "domain": "upload",
       "extraArgs": [],
+      "leftCommandRepeat": 50,
+      "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
@@ -482,6 +491,8 @@
       "description": "Single upload command used to align with Dawn BufferUploadPerf WriteBuffer 1KB.",
       "domain": "upload",
       "extraArgs": [],
+      "leftCommandRepeat": 500,
+      "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
@@ -508,6 +519,8 @@
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 1MB.",
       "domain": "upload",
       "extraArgs": [],
+      "leftCommandRepeat": 50,
+      "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
@@ -594,6 +607,8 @@
       "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 4MB.",
       "domain": "upload",
       "extraArgs": [],
+      "leftCommandRepeat": 50,
+      "leftIgnoreFirstOps": 1,
       "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
@@ -616,6 +631,8 @@
       "comparable": true,
       "default": true,
       "domain": "upload",
+      "leftCommandRepeat": 500,
+      "leftIgnoreFirstOps": 0,
       "leftTimingDivisor": 1.0,
       "leftUploadBufferUsage": "copy-dst",
       "leftUploadSubmitEvery": 1,
@@ -771,7 +788,8 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "applesToApplesVetted": true,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "rightCommandRepeat": 20
     },
     {
       "id": "compute_zero_initialize_workgroup_memory_256",
@@ -794,7 +812,9 @@
       "driver": "24.0.0",
       "comparable": true,
       "leftTimingDivisor": 1.0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "leftCommandRepeat": 100,
+      "rightCommandRepeat": 100
     },
     {
       "id": "copy_buffer_to_texture",
@@ -1043,7 +1063,8 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "comparable": true,
       "leftTimingDivisor": 1.0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "rightCommandRepeat": 100
     },
     {
       "id": "resource_lifecycle",
@@ -1064,7 +1085,8 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "rightCommandRepeat": 100
     },
     {
       "id": "resource_table_immediates",

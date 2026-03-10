@@ -9,7 +9,7 @@ This policy governs upgrades for:
 ## Rules
 
 1. Config-first upgrade
-- Update `fawn/config/toolchains.json` first.
+- Update `config/toolchains.json` first.
 
 2. Dedicated branch
 - Use `upgrade/lean-<version>` or `upgrade/zig-<version>`.
@@ -29,7 +29,7 @@ This policy governs upgrades for:
   - validator hash
   - benchmark deltas
   - baseline ids (`dawn`, `wgpu`)
-  - run metadata conforming to `fawn/config/run-metadata.schema.json`
+  - run metadata conforming to `config/run-metadata.schema.json`
 
 ## Rollback
 

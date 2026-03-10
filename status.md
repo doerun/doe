@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-03-09
+Date: 2026-03-10
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -25,6 +25,25 @@ Strict Dawn-vs-Doe operation comparability now uses direct per-side timing norma
 - comparable workloads in `bench/workloads*.json` use `leftTimingDivisor=1.0` and `rightTimingDivisor=1.0`.
 - strict compare fails fast if comparable Dawn-vs-Doe workloads attempt side-specific divisor scaling.
 AMD Vulkan strict comparable/release presets now point at the native-supported workload contract, not the broader aspirational extended matrix.
+- Linux package/drop-in integration is now corrected for workspace-local Doe loads:
+  - `zig/src/wgpu_dropin_lib.zig` now opens a target WebGPU provider via `openDropinTargetLibrary()` instead of re-opening `libwebgpu_doe.so`, which had been causing recursive proc resolution and package smoke crashes on Linux.
+  - latest Linux Vulkan package validation now passes from `nursery/webgpu/`: `npm run build:addon`, `npm run smoke`, `npm test`, `npm run prebuild -- --skip-addon-build`, and `npm run test:bun`.
+- latest AMD Vulkan strict release rerun on this host remains non-claimable for upload-heavy release evidence:
+  - artifact: `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json`
+  - status: `comparisonStatus=comparable`, `claimStatus=diagnostic`
+  - current non-claimable workloads: `upload_write_buffer_1kb`
+- comparable workload contract symmetry is now enforced at the catalog source of truth:
+  - `bench/backend-workload-catalog.json` now restores symmetric left/right repeat accounting for all currently comparable rows that had drifted into one-sided `commandRepeat` overrides across render, texture-contract, compute, p0-resource, upload, and related strict comparable lanes.
+  - `bench/generate_backend_workloads.py` now fails catalog validation when any `comparable=true` row would materialize asymmetric effective left/right repeat, ignore-first, submit cadence, timing divisor, or upload-buffer-usage values.
+  - `bench/test_backend_workload_catalog.py` now has regression coverage that materializes every lane and rejects future comparable workload asymmetry before release benchmarking runs.
+- comparable-lane count comparisons must now be read lane-by-lane, not as a generic Metal-vs-Vulkan backend statement:
+  - current generated contracts: `local_metal_extended=31 comparable`, `local_vulkan_extended=31 comparable`, `local_vulkan_extended.strict=30 comparable`, `amd_vulkan_extended=16 comparable`.
+  - the previously circulated `31 vs 16` gap is a mixed-lane comparison (`local_metal_extended` vs `amd_vulkan_extended`), not a general Metal-vs-Vulkan coverage statement.
+  - for that mixed comparison, Metal has `19` comparable rows that AMD Vulkan extended does not yet promote, while AMD Vulkan extended has `4` comparable rows that local Metal does not (`compute_matvec_*` variants plus `surface_presentation`).
+  - the old local-Metal v7 claim artifact (`bench/out/apple-metal/extended-comparable/20260310T121546Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v7.json`) predates the all-domain symmetry fix; `6` of its reported claimable rows were inflated by repeat asymmetry and need a fresh rerun before they can be cited as trusted claims, leaving a conservative pre-rerun trusted subset of `25`.
+- root cause of the March 10 AMD Vulkan release regression was catalog drift, not a simulator/cost-model path:
+  - the compare harness correctly normalized by effective workload contract, but several strict upload rows had right-only `commandRepeat`/`ignoreFirstOps` overrides, so Doe was being measured at one effective unit while Dawn was amortized over fifty or five hundred.
+  - fresh strict rerun after repairing the catalog reduced the release blocker set from five upload rows to one genuine tiny-upload performance gap (`upload_write_buffer_1kb`).
 - Backend naming cutover is complete for runtime-visible surfaces: Doe is now the only backend identity (`doe-zig-runtime`, `libwebgpu_doe.so`, Chromium `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path`).
 - Doe identity cleanup for runtime-visible diagnostics is complete:
   - drop-in helper exports are now `doeWgpuDropinLastErrorCode` / `doeWgpuDropinClearLastError`
@@ -218,7 +237,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - latest 20-sample Node package lane artifact: `bench/out/node-doe-vs-dawn-claim-full/doe-vs-dawn-node-2026-03-09T023802934Z.json`
     - comparable/claimable summary: `8` comparable, `6` claimable
     - compute e2e rows: `compute_e2e_4096` `+46.0%` claimable, `compute_e2e_65536` `+38.0%` claimable, `compute_e2e_256` still diagnostic on tails (`p95` slower)
-  - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (57/57 contract tests passing). All Node workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package. Latest validated run (`20260306T215526Z`) shows 7/11 claimable; compute e2e rows are comparable + claimable after readback validation was added to the timed path. `buffer_map_write_unmap` remains slower (~19µs `bufferMapSync` polling overhead). Cube maturity remains prototype pending stable multi-run cell coverage.
+  - Bun FFI path (`nursery/webgpu/src/bun-ffi.js`) now has full API parity with Node (61/61 contract tests passing). All Node workloads run successfully under Bun. Benchmark compare lane at `bench/bun/compare.js`, comparing Doe FFI against the `bun-webgpu` package. Latest validated run (`20260306T215526Z`) shows 7/11 claimable; compute e2e rows are comparable + claimable after readback validation was added to the timed path. `buffer_map_write_unmap` remains slower (~19µs `bufferMapSync` polling overhead). Cube maturity remains prototype pending stable multi-run cell coverage.
   - benchmark cube policy now carries explicit package-surface workload-ID overrides (`config/benchmark-cube-policy.json`) so directional `compute_dispatch_simple` rows land in a `dispatch_only` cell instead of contaminating the Node/Bun `compute_e2e` cells.
     - latest cube effect on Linux x64 package surfaces:
       - Bun `compute_e2e`: `claimable` (3 comparable claimable e2e rows)
@@ -804,7 +823,7 @@ Config and CI:
 - CI now includes `.github/workflows/dropin-compat.yml`, which builds a candidate shared-library artifact, consumes that artifact in a separate gate job, and fails hard on compatibility regressions while publishing drop-in reports every run.
 
 67. Release claim diagnostics and 1KB upload contract were hardened for actionable "faster everywhere" enforcement:
-- `bench/workloads.amd.vulkan.json` now sets `upload_write_buffer_1kb` `extraArgs` to explicit deferred queue sync (`--queue-sync-mode deferred`) and updates comparability/timing notes so the tiny-upload contract reflects the intended apples-to-apples execution semantics.
+- earlier 1KB deferred-queue-sync contract tuning is no longer the current authority. Fresh March 10 reruns on the AMD Vulkan release lane showed that forcing `--queue-sync-mode deferred` worsened `upload_write_buffer_1kb`; the current strict contract does not force that extra arg.
 - `bench/claim_gate.py` now prints non-claimable workload runtime details (delta tails, left/right p50 timing, timing sources, and claimability reasons) so gate failures directly identify which runtime path needs fixing.
 
 68. Release lane workload coverage was switched from default subset to extended comparable matrix:
@@ -1588,7 +1607,7 @@ Ownership:
     - `FAWN_WEBGPU_BUN_PROVIDER=provider` disables Doe auto-provider
     - default `auto` prefers Doe when the library is present, otherwise falls back to provider module.
 - Bun FFI path now at full API parity with Node (2026-03-06):
-  - 57/57 contract tests passing (`bun ./test-bun.js`)
+  - 61/61 contract tests passing (`bun ./test-bun.js`)
   - all 11 Node benchmark workloads run successfully under Bun via `bench/bun/runner.js`
   - Zig flat helpers added: `doeBufferMapAsyncFlat`, `doeQueueOnSubmittedWorkDoneFlat` in `zig/src/dropin/dropin_abi_procs.zig`
   - WGPUBufferBindingType enum corrected (uniform=2, storage=3, read-only-storage=4)

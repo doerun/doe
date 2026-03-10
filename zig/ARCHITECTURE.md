@@ -1,6 +1,6 @@
 # Doe Zig Architecture
 
-This document tracks the current Zig runtime topology in `fawn/zig/src`.
+This document tracks the current Zig runtime topology in `zig/src`.
 It replaces the old `parser/dispatch/executor` module naming model.
 
 ## Runtime goals
@@ -14,41 +14,41 @@ It replaces the old `parser/dispatch/executor` module naming model.
 
 Core decision/runtime lane:
 
-- `fawn/zig/src/model.zig`
+- `zig/src/model.zig`
   - typed contract enums/structs for quirks, commands, and runtime status
-- `fawn/zig/src/quirk_json.zig`
+- `zig/src/quirk_json.zig`
   - strict quirk JSON ingestion
-- `fawn/zig/src/command_json.zig`
+- `zig/src/command_json.zig`
   - strict command JSON ingestion
-- `fawn/zig/src/runtime.zig`
+- `zig/src/runtime.zig`
   - deterministic quirk matching + precedence selection
-- `fawn/zig/src/execution.zig`
+- `zig/src/execution.zig`
   - execution mode orchestration (`trace` vs `native`)
-- `fawn/zig/src/main.zig`
+- `zig/src/main.zig`
   - CLI boundary and artifact wiring
 
 Trace/replay lane:
 
-- `fawn/zig/src/trace.zig`
+- `zig/src/trace.zig`
   - trace row + trace-meta emission and hash-chain generation
-- `fawn/zig/src/replay.zig`
+- `zig/src/replay.zig`
   - replay validation against row/meta contract invariants
 
 WebGPU native execution lane:
 
-- `fawn/zig/src/webgpu_ffi.zig`
+- `zig/src/webgpu_ffi.zig`
   - backend lifecycle (instance/adapter/device/queue), capability probing, queue wait/sync behavior
-- `fawn/zig/src/core/abi/wgpu_types.zig`
+- `zig/src/core/abi/wgpu_types.zig`
   - C API type/function/proc-table contracts
-- `fawn/zig/src/core/abi/wgpu_loader.zig`
+- `zig/src/core/abi/wgpu_loader.zig`
   - dynamic proc loading and callback helpers
-- `fawn/zig/src/wgpu_resources.zig`
+- `zig/src/wgpu_resources.zig`
   - buffer/texture/shader/pipeline resource management
-- `fawn/zig/src/wgpu_commands.zig`
+- `zig/src/wgpu_commands.zig`
   - upload/copy/barrier/dispatch and command execution glue
-- `fawn/zig/src/wgpu_render_*`
+- `zig/src/wgpu_render_*`
   - render pass/bundle/resource/type-specific surfaces
-- `fawn/zig/src/wgpu_*_procs.zig`
+- `zig/src/wgpu_*_procs.zig`
   - domain-specific proc tables (P0/P1/P2 surfaces, texture/surface/async/capability APIs)
 
 ## Data flow

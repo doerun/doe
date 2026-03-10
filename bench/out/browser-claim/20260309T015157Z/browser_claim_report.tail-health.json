@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generatedAt": "2026-03-09T01:56:59Z",
-  "reportPath": "/Users/xyz/deco/fawn/bench/out/browser-claim/20260309T015157Z/browser_claim_report.json",
+  "reportPath": "bench/out/browser-claim/20260309T015157Z/browser_claim_report.json",
   "requiredPositivePercentiles": [
     "p50Percent",
     "p95Percent"

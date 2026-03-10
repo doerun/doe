@@ -1,11 +1,11 @@
 {
   "claimGateRan": false,
-  "config": "/Users/xyz/deco/fawn/bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+  "config": "bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
   "createdAtUtc": "2026-03-09T21:10:31.667719Z",
   "dropinGateRan": false,
   "fullRun": true,
   "outputTimestamp": "20260309T210659Z",
-  "reportPath": "/Users/xyz/deco/fawn/bench/out/apple-metal/extended-comparable/20260309T210659Z/dawn-vs-doe.local.metal.extended.comparable.rerun.json",
+  "reportPath": "bench/out/apple-metal/extended-comparable/20260309T210659Z/dawn-vs-doe.local.metal.extended.comparable.rerun.json",
   "runFolder": "bench/out/apple-metal/extended-comparable/20260309T210659Z",
   "runType": "compare_dawn_vs_doe",
   "schemaVersion": 1,

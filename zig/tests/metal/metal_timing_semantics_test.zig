@@ -138,7 +138,7 @@ test "metal kernel_dispatch returns error when kernel file not found" {
     } });
 
     // Native Metal implements kernel_dispatch natively via MSL.
-    // Tests run from fawn/zig/ so bench/kernels/ is not on the lookup path; expect .@"error".
+    // Tests run from zig/ so bench/kernels/ is not on the lookup path; expect .@"error".
     try std.testing.expect(result.status == .@"error");
 }
 

@@ -11,7 +11,7 @@
   "gtestFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
   "selectedFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
   "filterResolution": "mapped",
-  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/extended-comparable/20260302T182311Z/runtime-comparisons.amd.vulkan.extended.comparable/ctr_surface_presentation_contract/right/dawn.run000.ndjson",
+  "command": "bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/extended-comparable/20260302T182311Z/runtime-comparisons.amd.vulkan.extended.comparable/ctr_surface_presentation_contract/right/dawn.run000.ndjson",
   "queueSyncMode": "per-command",
   "uploadBufferUsage": "copy-dst-copy-src",
   "uploadSubmitEvery": 1,

@@ -91,7 +91,7 @@ test "metal backend kernel_dispatch returns error when kernel file not found" {
     } });
 
     // Native Metal implements kernel_dispatch; a missing .metal file returns .@"error", not .unsupported.
-    // Tests run from fawn/zig/ so bench/kernels/ is not accessible here.
+    // Tests run from zig/ so bench/kernels/ is not accessible here.
     try std.testing.expect(result.status == .@"error");
 }
 

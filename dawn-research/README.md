@@ -1,6 +1,6 @@
 # Dawn Research Pipeline (Fawn)
 
-`fawn/dawn-research` is a reusable research pipeline for mining Dawn Gerrit history, normalizing workaround signals, and producing human-review packets for Fawn quirk work.  
+`dawn-research` is a reusable research pipeline for mining Dawn Gerrit history, normalizing workaround signals, and producing human-review packets for Fawn quirk work.  
 It is designed for repeated use without re-downloading the same data.
 
 ## Goals
@@ -41,7 +41,7 @@ This folder is built as a reusable pipeline:
 ### 1) One-time bootstrap fetch
 
 ```bash
-cd /Users/xyz/deco/ouroboros/fawn/dawn-research
+cd dawn-research
 ./scripts/run_dawn_driverradar.sh \
   --status merged \
   --since 2025-01-01 \

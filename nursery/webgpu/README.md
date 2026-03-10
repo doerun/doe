@@ -4,7 +4,7 @@ Headless WebGPU for Node.js and Bun, powered by Doe, Fawn's Zig WebGPU
 runtime.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/clocksmith/fawn/main/nursery/webgpu/assets/fawn-icon-main-256.png" alt="Fawn logo" width="196" />
+  <img src="assets/fawn-icon-main-256.png" alt="Fawn logo" width="196" />
 </p>
 
 Use this package for headless compute, CI, benchmarking, and offscreen GPU
@@ -31,7 +31,12 @@ const device = await requestDevice();
 console.log(device.limits.maxBufferSize);
 ```
 
-### Upload, dispatch, and read back
+### Estimate pi on the GPU
+
+65,536 threads each test 1,024 points inside the unit square. Each thread
+hashes its index to produce sample coordinates, counts how many land inside
+the unit circle, and writes its count to a results array. The CPU sums the
+counts and computes pi ≈ 4 × hits / total.
 
 ```js
 import { globals, requestDevice } from "@simulatte/webgpu";
@@ -39,66 +44,97 @@ import { globals, requestDevice } from "@simulatte/webgpu";
 const { GPUBufferUsage, GPUMapMode, GPUShaderStage } = globals;
 const device = await requestDevice();
 
-const storage = device.createBuffer({
-  size: 4,
-  usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-});
-const readback = device.createBuffer({
-  size: 4,
-  usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-});
+const THREADS = 65536;
+const WORKGROUP_SIZE = 256;
+const SAMPLES_PER_THREAD = 1024;
 
-device.queue.writeBuffer(storage, 0, new Uint32Array([0]));
+if (THREADS % WORKGROUP_SIZE !== 0) {
+  throw new Error("THREADS must be a multiple of WORKGROUP_SIZE");
+}
 
 const shader = device.createShaderModule({
   code: `
-    @group(0) @binding(0) var<storage, read_write> data: array<u32>;
+    @group(0) @binding(0) var<storage, read_write> counts: array<u32>;
 
-    @compute @workgroup_size(1)
-    fn main() {
-      data[0] = 7u;
+    fn hash(n: u32) -> u32 {
+      var x = n;
+      x ^= x >> 16u;
+      x *= 0x45d9f3bu;
+      x ^= x >> 16u;
+      x *= 0x45d9f3bu;
+      x ^= x >> 16u;
+      return x;
+    }
+
+    @compute @workgroup_size(${WORKGROUP_SIZE})
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      var count = 0u;
+      for (var i = 0u; i < ${SAMPLES_PER_THREAD}u; i += 1u) {
+        let idx = gid.x * ${SAMPLES_PER_THREAD}u + i;
+        let x = f32(hash(idx * 2u)) / 4294967295.0;
+        let y = f32(hash(idx * 2u + 1u)) / 4294967295.0;
+        if x * x + y * y <= 1.0 {
+          count += 1u;
+        }
+      }
+      counts[gid.x] = count;
     }
   `,
 });
 
 const bindGroupLayout = device.createBindGroupLayout({
-  entries: [
-    {
-      binding: 0,
-      visibility: GPUShaderStage.COMPUTE,
-      buffer: { type: "storage" },
-    },
-  ],
+  entries: [{
+    binding: 0,
+    visibility: GPUShaderStage.COMPUTE,
+    buffer: { type: "storage" },
+  }],
 });
 
 const pipeline = device.createComputePipeline({
-  layout: device.createPipelineLayout({
-    bindGroupLayouts: [bindGroupLayout],
-  }),
+  layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
   compute: { module: shader, entryPoint: "main" },
+});
+
+const countsBuffer = device.createBuffer({
+  size: THREADS * 4,
+  usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+});
+const readback = device.createBuffer({
+  size: THREADS * 4,
+  usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
 });
 
 const bindGroup = device.createBindGroup({
   layout: bindGroupLayout,
-  entries: [{ binding: 0, resource: { buffer: storage, size: 4 } }],
+  entries: [{ binding: 0, resource: { buffer: countsBuffer } }],
 });
 
-const computeEncoder = device.createCommandEncoder();
-const computePass = computeEncoder.beginComputePass();
-computePass.setPipeline(pipeline);
-computePass.setBindGroup(0, bindGroup);
-computePass.dispatchWorkgroups(1);
-computePass.end();
-device.queue.submit([computeEncoder.finish()]);
-
-const copyEncoder = device.createCommandEncoder();
-copyEncoder.copyBufferToBuffer(storage, 0, readback, 0, 4);
-device.queue.submit([copyEncoder.finish()]);
+const encoder = device.createCommandEncoder();
+const pass = encoder.beginComputePass();
+pass.setPipeline(pipeline);
+pass.setBindGroup(0, bindGroup);
+pass.dispatchWorkgroups(THREADS / WORKGROUP_SIZE);
+pass.end();
+encoder.copyBufferToBuffer(countsBuffer, 0, readback, 0, THREADS * 4);
+device.queue.submit([encoder.finish()]);
 
 await readback.mapAsync(GPUMapMode.READ);
-console.log(new Uint32Array(readback.getMappedRange())[0]); // 7
+const counts = new Uint32Array(readback.getMappedRange());
+const hits = counts.reduce((a, b) => a + b, 0);
 readback.unmap();
+
+const total = THREADS * SAMPLES_PER_THREAD;
+const pi = 4 * hits / total;
+console.log(`${total.toLocaleString()} samples → pi ≈ ${pi.toFixed(6)}`);
 ```
+
+Expected output will vary slightly, but it should look like:
+
+```
+67,108,864 samples → pi ≈ 3.14...
+```
+
+Increase `SAMPLES_PER_THREAD` for more precision.
 
 ## What this package is
 
@@ -118,42 +154,22 @@ Doe also keeps adapter and driver quirks explicit. Profile selection happens at
 startup, quirk data is schema-backed, and the runtime binds the selected
 profile instead of relying on hidden per-command fallback logic.
 
-Future layering note:
-
-- the current package is still a single surface
-- draft `core` vs `full` support boundaries are defined in
-  `SUPPORT_CONTRACTS.md`
-- draft boundary-enforcement and refactor sequencing live in
-  `LAYERING_PLAN.md`
-- current `zig/src` extraction inventory lives in
-  `ZIG_SOURCE_INVENTORY.md`
-- those boundaries are future-facing and do not change current package behavior
-
 ## Current scope
 
 - Node is the primary supported package surface (N-API bridge).
-- Bun has API parity with Node via direct FFI to `libwebgpu_doe` (57/57
+- Bun has API parity with Node via direct FFI to `libwebgpu_doe` (61/61
   contract tests passing). Bun benchmark cube maturity remains prototype
   until Bun cells are populated by comparable benchmark artifacts.
 - Package-surface comparisons should be read through the benchmark cube outputs
   under `bench/out/cube/`, not as a replacement for strict backend reports.
 
-The **benchmark cube** is a cross-product matrix of surface (backend_native,
-node_package, bun_package) × provider pair (e.g. doe_vs_dawn) × workload set
-(e.g. compute_e2e, render, upload). Each intersection is a **cell** with its
-own comparability and claimability status. Canonical cube rows are emitted only
-from governed lane-backed reports (`config/governed-lanes.json`). Cube outputs live in
-`bench/out/cube/` and include a dashboard, matrix summary, and per-row data.
-
 <p align="center">
-  <img src="https://raw.githubusercontent.com/clocksmith/fawn/main/nursery/webgpu/assets/package-surface-cube-snapshot.svg" alt="Static package-surface benchmark cube snapshot" width="920" />
+  <img src="assets/package-surface-cube-snapshot.svg" alt="Static package-surface benchmark cube snapshot" width="920" />
 </p>
 
-Static snapshot above:
-
-- source: `bench/out/cube/latest/cube.summary.json`
-- renderer: `npm run build:readme-assets`
-- scope: package surfaces only; backend-native strict claim lanes remain separate
+Package-surface benchmark evidence lives under `bench/out/cube/latest/`. Read
+those rows as package-surface positioning data, not as substitutes for strict
+backend-native claim lanes.
 
 ## Quickstart
 
@@ -170,10 +186,36 @@ const device = await requestDevice();
 console.log(device.limits.maxBufferSize);
 ```
 
-Turnkey package install is the target shape. Current host/runtime caveats are
-listed below.
+The install ships platform-specific prebuilds for macOS arm64 (Metal) and
+Linux x64 (Vulkan). The commands are the same on both platforms; the correct
+backend is selected automatically. The only external prerequisite is GPU
+drivers on the host. If no prebuild matches your platform, install falls back
+to building from source via node-gyp.
 
-## From source
+## Verify your install
+
+After installing, run the smoke test to confirm native library loading and a
+GPU round-trip:
+
+```bash
+npm run smoke
+```
+
+To run the full contract test suite (adapter, device, buffers, compute
+dispatch with readback, textures, samplers):
+
+```bash
+npm test                     # Node
+npm run test:bun             # Bun
+```
+
+If `npm run smoke` fails, check that GPU drivers are installed and that your
+platform is supported (macOS arm64 or Linux x64).
+
+## Building from source
+
+Use this when working from the Fawn repo checkout or rebuilding the addon
+against a local Doe runtime build.
 
 ```bash
 # From the Fawn workspace root:
@@ -182,10 +224,12 @@ cd zig && zig build dropin   # build libwebgpu_doe + Dawn sidecar
 cd nursery/webgpu
 npm run build:addon          # compile doe_napi.node from source
 npm run smoke                # verify native loading + GPU round-trip
+npm test                     # Node contract tests
+npm run test:bun             # Bun contract tests
 ```
 
-Use this when working from the Fawn checkout or when rebuilding the addon
-against the local Doe runtime.
+For Fawn development setup, build toolchain requirements, and benchmark
+harness usage, see the [Fawn project README](../../README.md).
 
 ## Packaging prebuilds (CI / release)
 
@@ -199,18 +243,6 @@ Install uses prebuilds when available, falls back to node-gyp from source.
 Prebuild `metadata.json` now records `doeBuild.leanVerifiedBuild` and
 `proofArtifactSha256`, and `providerInfo()` surfaces the same values when
 metadata is present.
-
-## What lives here
-
-- `src/index.js`: default Node provider entrypoint
-- `src/node-runtime.js`: compatibility alias for the Node entrypoint
-- `src/bun-ffi.js`: Bun FFI provider (full API parity with Node)
-- `src/bun.js`: Bun re-export entrypoint
-- `src/runtime_cli.js`: Doe CLI/runtime helpers
-- `native/doe_napi.c`: N-API bridge for the in-process Node provider
-- `binding.gyp`: addon build contract
-- `bin/fawn-webgpu-bench.js`: command-stream bench wrapper
-- `bin/fawn-webgpu-compare.js`: Dawn-vs-Doe compare wrapper
 
 ## Current caveats
 
@@ -226,7 +258,7 @@ metadata is present.
 - Linux Node Doe-native path is now wired end-to-end (Linux guard removed).
   No `DOE_WEBGPU_LIB` env var needed when prebuilds or workspace artifacts
   are present.
-- Bun has API parity with Node (57/57 contract tests). Bun benchmark lane
+- Bun has API parity with Node (61/61 contract tests). Bun benchmark lane
   is at `bench/bun/compare.js` and compares Doe FFI against the `bun-webgpu`
   package. Latest validated local run observed 7/11 claimable rows, but this
   remains prototype-quality package-surface evidence rather than a
@@ -236,12 +268,6 @@ metadata is present.
   `buffer_map_write_unmap` remains slower (~19µs polling overhead). Cube
   maturity remains prototype until cell coverage stabilizes.
 - Self-contained install ships prebuilt `doe_napi.node` + `libwebgpu_doe` +
-  Dawn sidecar per platform. Clean-machine smoke test: `npm run smoke`.
+  Dawn sidecar per platform. See **Verify your install** above.
 - API details live in `API_CONTRACT.md`.
 - Compatibility scope is documented in `COMPAT_SCOPE.md`.
-- Proposed future `core` vs `full` surface contracts live in
-  `SUPPORT_CONTRACTS.md`.
-- Proposed future boundary-enforcement and extraction plan lives in
-  `LAYERING_PLAN.md`.
-- Proposed current `zig/src` extraction inventory lives in
-  `ZIG_SOURCE_INVENTORY.md`.

@@ -3872,9 +3872,9 @@
       }
     }
   ],
-  "configPath": "/Users/xyz/deco/fawn/bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+  "configPath": "bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
   "configContract": {
-    "path": "/Users/xyz/deco/fawn/bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+    "path": "bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
     "sha256": "d8948714268bc202305c5fdf3ca95712718afc4e76ae1c6b04bff84d089041ad"
   },
   "overall": {

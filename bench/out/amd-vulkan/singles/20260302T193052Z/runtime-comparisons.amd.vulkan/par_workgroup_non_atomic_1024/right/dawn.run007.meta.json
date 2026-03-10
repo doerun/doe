@@ -11,7 +11,7 @@
   "gtestFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
   "selectedFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic",
   "filterResolution": "autodiscover",
-  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/singles/20260302T193052Z/runtime-comparisons.amd.vulkan/par_workgroup_non_atomic_1024/right/dawn.run007.ndjson",
+  "command": "bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeNonAtomic --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/singles/20260302T193052Z/runtime-comparisons.amd.vulkan/par_workgroup_non_atomic_1024/right/dawn.run007.ndjson",
   "queueSyncMode": "per-command",
   "uploadBufferUsage": "copy-dst-copy-src",
   "uploadSubmitEvery": 1,

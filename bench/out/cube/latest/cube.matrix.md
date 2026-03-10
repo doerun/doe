@@ -1,8 +1,8 @@
 # Benchmark Cube
 
-Generated: `2026-03-09T18:00:30.847438Z`
+Generated: `2026-03-10T14:33:39.374944Z`
 
-Rows: `563`
+Rows: `866`
 
 ## Backend Native
 
@@ -10,13 +10,13 @@ Maturity: `primary`. Primary support: `backend`.
 
 | Workload Set | Apple Silicon macOS | AMD Linux Vulkan | Windows D3D12 |
 | --- | --- | --- | --- |
-| Full Comparable | diagnostic (30 rows) | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) |
-| Uploads | diagnostic (8 rows) | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) |
-| Compute | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Render | diagnostic (7 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Pipeline | diagnostic (2 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Texture | diagnostic (3 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Contracts | diagnostic (3 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Full Comparable | claimable (31 rows) | comparable (7 rows) | unimplemented (contract exists, evidence missing) |
+| Uploads | claimable (8 rows) | comparable (7 rows) | unimplemented (contract exists, evidence missing) |
+| Compute | claimable (6 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Render | claimable (7 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Pipeline | claimable (1 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Texture | claimable (3 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Contracts | claimable (2 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 
 - Strict Dawn-vs-Doe backend reports are the canonical claim lane.
 - Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.

@@ -49,11 +49,11 @@ class Workload:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bench-config", default="fawn/config/benchmarks.json")
-    parser.add_argument("--workloads", default="fawn/bench/workloads.json")
+    parser.add_argument("--bench-config", default="config/benchmarks.json")
+    parser.add_argument("--workloads", default="bench/workloads.json")
     parser.add_argument("--workload-id", default="compute_kernel_dispatch_100")
     parser.add_argument("--command-template", default=(
-        "fawn/zig/zig-out/bin/doe-zig-runtime"
+        "zig/zig-out/bin/doe-zig-runtime"
         " --commands {commands}"
         " --quirks {quirks}"
         " --vendor {vendor}"
@@ -65,8 +65,8 @@ def parse_args() -> argparse.Namespace:
     ))
     parser.add_argument("--iterations", type=int, default=10)
     parser.add_argument("--warmup", type=int, default=2)
-    parser.add_argument("--out-report", default="fawn/bench/out/perf_report.json")
-    parser.add_argument("--out-metadata", default="fawn/bench/out/run_metadata.json")
+    parser.add_argument("--out-report", default="bench/out/perf_report.json")
+    parser.add_argument("--out-metadata", default="bench/out/run_metadata.json")
     parser.add_argument("--backend", default="vulkan", choices=["vulkan", "metal", "d3d12", "webgpu"])
     parser.add_argument("--gpu", default="unknown")
     parser.add_argument("--driver", default="unknown")
@@ -83,7 +83,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--run-id", default="")
-    parser.add_argument("--out-dir", default="fawn/bench/out/run-bench")
+    parser.add_argument("--out-dir", default="bench/out/run-bench")
     return parser.parse_args()
 
 

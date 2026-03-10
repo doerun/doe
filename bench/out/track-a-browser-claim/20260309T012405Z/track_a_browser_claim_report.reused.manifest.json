@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "generatedAt": "2026-03-09T01:27:15Z",
-  "reportPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.json",
-  "gateResultPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.claim-gate-result.json",
-  "tailHealthPath": "/Users/xyz/deco/fawn/bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.tail-health.json",
-  "artifactsRoot": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim",
+  "reportPath": "bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.json",
+  "gateResultPath": "bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.claim-gate-result.json",
+  "tailHealthPath": "bench/out/track-a-browser-claim/20260309T012405Z/track_a_browser_claim_report.reused.tail-health.json",
+  "artifactsRoot": "nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim",
   "windowReports": [
     "",
     "",

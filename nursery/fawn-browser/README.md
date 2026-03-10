@@ -2,12 +2,12 @@
 
 ## Purpose
 
-`fawn/nursery/fawn-browser` is the repo-local browser integration layer for
+`nursery/fawn-browser` is the repo-local browser integration layer for
 Chromium work. It contains the docs, contracts, helper scripts, and diagnostic
 harnesses that drive a Chromium checkout/build lane.
 
 It is not the Chromium checkout/build workspace itself. In this repo, that
-workspace is `fawn/nursery/chromium_webgpu_lane/` when kept in-tree, or the
+workspace is `nursery/chromium_webgpu_lane/` when kept in-tree, or the
 path selected by `FAWN_CHROMIUM_LANE_DIR` for external-volume setups.
 
 This integration layer is used for:
@@ -28,7 +28,7 @@ In scope:
 
 Out of scope:
 
-1. Direct edits to core runtime execution in `fawn/zig/src`.
+1. Direct edits to core runtime execution in `zig/src`.
 2. Redefining Fawn stage order or existing gate precedence.
 3. Claims of browser-wide replacement semantics.
 
@@ -41,7 +41,7 @@ This directory is isolated from core runtime development by policy:
 3. Any future implementation promoted from this layer must:
    - move to core module directories (`zig/`, `bench/`, `config/`, etc.),
    - land with schema and migration updates,
-   - pass blocking gates defined in `fawn/process.md`.
+   - pass blocking gates defined in `process.md`.
 4. Nothing in this layer bypasses stage discipline:
    - Mine -> Normalize -> Verify -> Bind -> Gate -> Benchmark -> Release.
 
@@ -181,10 +181,10 @@ No implicit behavior switching is allowed.
 
 Future implementation promoted from this layer must use config-as-code:
 
-1. Config files in `fawn/config/*.json`.
-2. Schema files in `fawn/config/*schema*.json`.
-3. Migration notes in `fawn/config/migration-notes.md` for runtime-visible changes.
-4. Status tracking updates in `fawn/status.md` for temporary placeholders or staged methods.
+1. Config files in `config/*.json`.
+2. Schema files in `config/*schema*.json`.
+3. Migration notes in `config/migration-notes.md` for runtime-visible changes.
+4. Status tracking updates in `status.md` for temporary placeholders or staged methods.
 
 ## Gate policy alignment
 
@@ -274,7 +274,7 @@ Current browser integration layer structure:
 - Rebuild from source with:
 
 ```bash
-cd /Users/xyz/deco/fawn/nursery/fawn-browser
+cd nursery/fawn-browser
 ./scripts/build-fawn-logo-assets.sh
 ```
 
@@ -318,4 +318,4 @@ Cross-owner signoff is required before any promotion from nursery to core paths.
 
 This lane contains planning/contracts docs, lane-local bring-up scripts, and a lane-local Chromium workspace (`src/`) with in-flight Track A (browser) seam integration edits.
 
-No core `fawn/zig` production runtime behavior is introduced by this directory by default.
+No core `zig` production runtime behavior is introduced by this directory by default.

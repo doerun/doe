@@ -1,6 +1,6 @@
 # Dawn Research Operations Guide
 
-This folder documents practical operating procedures for `fawn/dawn-research` so the pipeline can be reused safely and repeatedly without reprocessing unchanged history.
+This folder documents practical operating procedures for `dawn-research` so the pipeline can be reused safely and repeatedly without reprocessing unchanged history.
 
 ## 1) Setup and initialization
 
@@ -15,7 +15,7 @@ This folder documents practical operating procedures for `fawn/dawn-research` so
 Use one larger window for a clean baseline:
 
 ```bash
-cd /Users/xyz/deco/ouroboros/fawn/dawn-research
+cd dawn-research
 ./scripts/run_dawn_driverradar.sh \
   --status merged \
   --since 2024-01-01 \

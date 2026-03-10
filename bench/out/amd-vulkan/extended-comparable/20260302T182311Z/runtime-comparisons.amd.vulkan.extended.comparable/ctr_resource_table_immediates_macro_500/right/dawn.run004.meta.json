@@ -11,7 +11,7 @@
   "gtestFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
   "selectedFilter": "ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16",
   "filterResolution": "mapped",
-  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/extended-comparable/20260302T182311Z/runtime-comparisons.amd.vulkan.extended.comparable/ctr_resource_table_immediates_macro_500/right/dawn.run004.ndjson",
+  "command": "bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=ShaderRobustnessPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151___e_disable_robustness_MatMulMethod_MatMulFloatOneDimSharedArray_ElemType_f32_DimAOuter_512_DimI__16 --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/extended-comparable/20260302T182311Z/runtime-comparisons.amd.vulkan.extended.comparable/ctr_resource_table_immediates_macro_500/right/dawn.run004.ndjson",
   "queueSyncMode": "per-command",
   "uploadBufferUsage": "copy-dst-copy-src",
   "uploadSubmitEvery": 1,

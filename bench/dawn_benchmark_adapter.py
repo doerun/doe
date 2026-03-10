@@ -163,7 +163,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dawn-binary", default=None)
     parser.add_argument(
         "--dawn-state",
-        default="fawn/bench/dawn_runtime_state.json",
+        default="bench/dawn_runtime_state.json",
         help="Optional state file emitted by bootstrap_dawn.py.",
     )
     parser.add_argument("--workload", default="")

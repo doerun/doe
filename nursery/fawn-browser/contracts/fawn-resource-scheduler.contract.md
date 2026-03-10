@@ -87,6 +87,6 @@ Advisory:
 
 ## Promotion Preconditions
 
-1. Policy schema promoted to `fawn/config`.
+1. Policy schema promoted to `config`.
 2. Determinism tests for allocation/eviction pass.
 3. Fallback taxonomy and metrics included in run artifacts.

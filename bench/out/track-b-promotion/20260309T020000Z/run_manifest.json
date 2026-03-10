@@ -4,7 +4,7 @@
   "fullRun": true,
   "moduleCount": 5,
   "outputTimestamp": "20260309T020000Z",
-  "runFolder": "/Users/xyz/deco/fawn/bench/out/track-b-promotion/20260309T020000Z",
+  "runFolder": "bench/out/track-b-promotion/20260309T020000Z",
   "runType": "track-b-gate",
   "schemaVersion": 1,
   "status": "pass",

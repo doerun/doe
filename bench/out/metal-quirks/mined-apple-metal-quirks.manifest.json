@@ -4387,7 +4387,7 @@
   "sourceCommit": "HEAD",
   "sourceRepo": "dawn/main",
   "sourceRoots": [
-    "/Users/xyz/deco/fawn/bench/vendor/dawn/src/dawn/native"
+    "bench/vendor/dawn/src/dawn/native"
   ],
   "toggleContextCounts": {
     "default_off": 5,

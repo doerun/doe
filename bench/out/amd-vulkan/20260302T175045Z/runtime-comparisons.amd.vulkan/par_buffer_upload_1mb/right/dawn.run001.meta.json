@@ -11,7 +11,7 @@
   "gtestFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
   "selectedFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB",
   "filterResolution": "autodiscover",
-  "command": "/home/x/deco/fawn/bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/20260302T175045Z/runtime-comparisons.amd.vulkan/par_buffer_upload_1mb/right/dawn.run001.ndjson",
+  "command": "bench/vendor/dawn/out/Release/dawn_perf_tests --gtest_filter=BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_1MB --backend=vulkan --adapter-vendor-id=0x1002 --trace-file=bench/out/amd-vulkan/20260302T175045Z/runtime-comparisons.amd.vulkan/par_buffer_upload_1mb/right/dawn.run001.ndjson",
   "queueSyncMode": "per-command",
   "uploadBufferUsage": "copy-dst",
   "uploadSubmitEvery": 1,

@@ -6,7 +6,7 @@ Status: `draft`
 
 Define a low-maintenance browser benchmark superset that:
 
-1. depends on core engine workload contracts in `fawn/bench/workloads.amd.vulkan.extended.json`,
+1. depends on core engine workload contracts in `bench/workloads.amd.vulkan.extended.json`,
 2. projects browser-relevant workloads automatically into browser API tests,
 3. adds browser workflow scenarios on top,
 4. keeps core/runtime and nursery logic de-duplicated.

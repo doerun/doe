@@ -961,7 +961,7 @@ function ensureLibrary() {
     if (libraryLoaded) return;
     if (!DOE_LIB_PATH) {
         throw new Error(
-            "@simulatte/webgpu: libwebgpu_doe not found. Build it with `cd fawn/zig && zig build dropin` or set DOE_WEBGPU_LIB."
+            "@simulatte/webgpu: libwebgpu_doe not found. Build it with `cd zig && zig build dropin` or set DOE_WEBGPU_LIB."
         );
     }
     wgpu = openLibrary(DOE_LIB_PATH);

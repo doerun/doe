@@ -227,7 +227,7 @@ pub export fn doeWgpuDropinClearLastError() callconv(.c) void {
 fn ensureNativeLibraryLocked() bool {
     if (g_library_ready) return !g_library_failed;
     g_library_ready = true;
-    g_native_lib = loader.openLibrary() catch {
+    g_native_lib = loader.openDropinTargetLibrary() catch {
         g_library_failed = true;
         setLastError(.library_open_failed);
         return false;

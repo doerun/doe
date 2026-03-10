@@ -18,15 +18,15 @@ Current milestone state is tracked in:
 Two layouts are supported:
 
 1. Repo-local integration layer:
-   - `fawn/nursery/fawn-browser/`
+   - `nursery/fawn-browser/`
    - docs, scripts, contracts, and diagnostic artifacts
 2. Chromium checkout/build lane:
-   - `fawn/nursery/chromium_webgpu_lane/` for in-tree use, or an external path
+   - `nursery/chromium_webgpu_lane/` for in-tree use, or an external path
      selected by `FAWN_CHROMIUM_LANE_DIR`
    - Chromium source, `depot_tools`, `out/`, and large build artifacts
 
 For a small self-contained setup, you can keep everything under
-`fawn/nursery/fawn-browser`:
+`nursery/fawn-browser`:
 
 1. `depot_tools/`
 2. `src/` (Chromium checkout)
@@ -55,7 +55,7 @@ This keeps a self-contained setup isolated inside `nursery/fawn-browser/`.
 
 ## Bring-up steps (machine commands)
 
-Example flow from `fawn/` root:
+Example flow from `` root:
 
 ```bash
 cd nursery/fawn-browser
@@ -76,7 +76,7 @@ If `fetch`/`gclient` are unavailable, confirm `depot_tools` is on `PATH`.
 When local disk is constrained, keep Chromium checkout/build state on an APFS
 external volume and sync only release artifacts back to local disk.
 
-From `fawn/` root:
+From `` root:
 
 ```bash
 cd nursery/fawn-browser
@@ -216,7 +216,7 @@ For each integration run, capture:
 4. benchmark/correctness reports and gate outcomes.
 
 Store this harness output under lane-local ignored directories by default.
-Only publish to canonical `fawn/bench/out/` flows after converting results into strict comparability/claim contracts.
+Only publish to canonical `bench/out/` flows after converting results into strict comparability/claim contracts.
 
 ## Layered browser superset harness
 

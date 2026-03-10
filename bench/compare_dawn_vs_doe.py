@@ -36,19 +36,19 @@ from compare_dawn_vs_doe_modules import timing_selection as timing_selection_mod
 from compare_dawn_vs_doe_modules import runner as runner_mod
 
 MAX_RSS_MARKER = "__DOE_MAXRSS_KB__:"
-DEFAULT_WORKLOADS_PATH = "fawn/bench/workloads.json"
+DEFAULT_WORKLOADS_PATH = "bench/workloads.json"
 DEFAULT_LEFT_NAME = "doe"
 DEFAULT_RIGHT_NAME = "dawn"
 DEFAULT_LEFT_COMMAND_TEMPLATE = (
-    "fawn/zig/zig-out/bin/doe-zig-runtime "
+    "zig/zig-out/bin/doe-zig-runtime "
     "--commands {commands} --quirks {quirks} "
     "--vendor {vendor} --api {api} --family {family} --driver {driver} "
     "--trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
 )
 DEFAULT_ITERATIONS = 3
 DEFAULT_WARMUP = 1
-DEFAULT_OUT_PATH = "fawn/bench/out/dawn-vs-doe.json"
-DEFAULT_WORKSPACE_PATH = "fawn/bench/out/runtime-comparisons"
+DEFAULT_OUT_PATH = "bench/out/dawn-vs-doe.json"
+DEFAULT_WORKSPACE_PATH = "bench/out/runtime-comparisons"
 DEFAULT_WORKLOAD_FILTER = ""
 DEFAULT_WORKLOAD_COHORT = "all"
 DEFAULT_COMPARABILITY_MODE = "strict"
@@ -62,7 +62,6 @@ DEFAULT_CLAIM_MIN_TIMED_SAMPLES = 0
 DEFAULT_BENCHMARK_POLICY_PATH = ""
 DEFAULT_BENCHMARK_POLICY_CANDIDATES = (
     "config/benchmark-methodology-thresholds.json",
-    "fawn/config/benchmark-methodology-thresholds.json",
 )
 VALID_COMPARABILITY_MODES = {"strict", "warn", "off"}
 VALID_REQUIRED_TIMING_CLASSES = {"any", "operation", "process-wall"}

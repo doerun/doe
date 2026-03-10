@@ -62,25 +62,25 @@ These are emitted as `no_op` records with workaround metadata in the manifest.
 
 ```bash
 # Full mining (toggles + non-toggle workarounds)
-python3 fawn/agent/mine_upstream_quirks.py \
-  --source-root fawn/bench/vendor/dawn/src/dawn/native \
+python3 agent/mine_upstream_quirks.py \
+  --source-root bench/vendor/dawn/src/dawn/native \
   --source-repo dawn/main \
   --source-commit <commit> \
   --vendor all \
   --api all \
-  --output fawn/bench/out/mined-quirks.json \
-  --manifest-output fawn/bench/out/mined-quirks.manifest.json
+  --output bench/out/mined-quirks.json \
+  --manifest-output bench/out/mined-quirks.manifest.json
 
 # Toggle-only mining (backward compatible)
-python3 fawn/agent/mine_upstream_quirks.py \
-  --source-root fawn/bench/vendor/dawn/src/dawn/native/vulkan \
+python3 agent/mine_upstream_quirks.py \
+  --source-root bench/vendor/dawn/src/dawn/native/vulkan \
   --source-repo dawn/main \
   --source-commit <commit> \
   --vendor amd \
   --api vulkan \
   --toggle-only \
-  --output fawn/bench/out/mined-quirks.json \
-  --manifest-output fawn/bench/out/mined-quirks.manifest.json
+  --output bench/out/mined-quirks.json \
+  --manifest-output bench/out/mined-quirks.manifest.json
 ```
 
 ## Relationship to dawn-research/

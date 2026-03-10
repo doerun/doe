@@ -41,6 +41,30 @@ pub const native_library_names = blk: {
     }
 };
 
+pub const dropin_target_library_names = blk: {
+    switch (builtin.os.tag) {
+        .windows => break :blk &[_][]const u8{
+            "webgpu.dll",
+            "webgpu_dawn.dll",
+            "webgpu-native.dll",
+            "wgpu_native.dll",
+        },
+        .macos => break :blk &[_][]const u8{
+            "libwebgpu_dawn.dylib",
+            "libwebgpu.dylib",
+            "webgpu.dylib",
+            "libwgpu_native.dylib",
+        },
+        else => break :blk &[_][]const u8{
+            "libwebgpu_dawn.so",
+            "libwebgpu.so",
+            "libwgpu_native.so",
+            "libwgpu_native.so.0",
+            "wgpu_native.so",
+        },
+    }
+};
+
 pub const BUFFER_UPLOAD_KEY = 0xFFFF_FFFF_FFFF_FFFF;
 pub const DEFAULT_TIMEOUT_NS = 2_000_000_000;
 pub const QUEUE_WAIT_TIMEOUT_NS = 2_000_000_000;
@@ -103,12 +127,12 @@ fn currentModuleDirectory(buffer: *[std.fs.max_path_bytes]u8) ?[]const u8 {
     return buffer[0..dir.len];
 }
 
-fn openLibraryRelativeToModule() ?std.DynLib {
+fn openLibraryRelativeToModule(candidates: []const []const u8) ?std.DynLib {
     var module_dir_buf: [std.fs.max_path_bytes]u8 = undefined;
     const module_dir = currentModuleDirectory(&module_dir_buf) orelse return null;
 
     var candidate_path_buf: [std.fs.max_path_bytes]u8 = undefined;
-    for (native_library_names) |candidate| {
+    for (candidates) |candidate| {
         const full_path = std.fmt.bufPrint(
             &candidate_path_buf,
             "{s}" ++ std.fs.path.sep_str ++ "{s}",
@@ -121,7 +145,7 @@ fn openLibraryRelativeToModule() ?std.DynLib {
     return null;
 }
 
-fn openLibraryFromWorkingTree() ?std.DynLib {
+fn openLibraryFromWorkingTree(candidates: []const []const u8) ?std.DynLib {
     const cwd = std.fs.cwd();
     var candidate_path_buf: [std.fs.max_path_bytes]u8 = undefined;
     const candidate_dirs = [_][]const u8{
@@ -130,7 +154,7 @@ fn openLibraryFromWorkingTree() ?std.DynLib {
     };
 
     for (candidate_dirs) |dir| {
-        for (native_library_names) |candidate| {
+        for (candidates) |candidate| {
             const full_path = std.fmt.bufPrint(
                 &candidate_path_buf,
                 "{s}" ++ std.fs.path.sep_str ++ "{s}",
@@ -156,11 +180,34 @@ pub fn openLibrary() !std.DynLib {
         return lib;
     }
 
-    if (openLibraryRelativeToModule()) |lib| {
+    if (openLibraryRelativeToModule(native_library_names)) |lib| {
         return lib;
     }
 
-    if (openLibraryFromWorkingTree()) |lib| {
+    if (openLibraryFromWorkingTree(native_library_names)) |lib| {
+        return lib;
+    }
+
+    if (last_err) |_| {}
+    return error.LibraryOpenFailed;
+}
+
+pub fn openDropinTargetLibrary() !std.DynLib {
+    var last_err: ?anyerror = null;
+
+    for (dropin_target_library_names) |candidate| {
+        const lib = std.DynLib.open(candidate) catch |err| {
+            last_err = err;
+            continue;
+        };
+        return lib;
+    }
+
+    if (openLibraryRelativeToModule(dropin_target_library_names)) |lib| {
+        return lib;
+    }
+
+    if (openLibraryFromWorkingTree(dropin_target_library_names)) |lib| {
         return lib;
     }
 

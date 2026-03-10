@@ -165,7 +165,7 @@
         "shardSize": 500,
         "totalRows": 7
       },
-      "rowInputDirectory": "/Users/xyz/deco/ouroboros/fawn/dawn-research/data/analysis/hotspots/files"
+      "rowInputDirectory": "dawn-research/data/analysis/hotspots/files"
     },
     "topFiles": [
       {

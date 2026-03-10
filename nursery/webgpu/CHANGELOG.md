@@ -7,6 +7,41 @@ retrofitted from package version history and package-surface commits so the npm
 package has a conventional release history alongside the broader Fawn status
 and process documents.
 
+## [0.2.3] - 2026-03-10
+
+### Added
+
+- macOS arm64 (Metal) prebuilds shipped alongside existing Linux x64 (Vulkan).
+- Monte Carlo pi estimation example in the README, replacing the trivial
+  buffer-readback snippet with a real GPU compute demonstration.
+- "Verify your install" section with `npm run smoke` and `npm test` guidance.
+
+### Changed
+
+- Restructured package README for consumers: examples, quickstart, and
+  verification first; building from source and Fawn developer context at the end.
+- Fixed broken README image links to use bundled asset paths instead of dead
+  raw GitHub URLs.
+- Root Fawn README now directs package users to the package README.
+- Fixed 4 Metal benchmark workload contracts with asymmetric repeat accounting;
+  all 31 comparable workloads now have symmetric `leftCommandRepeat` /
+  `rightCommandRepeat`.
+
+## [0.2.2] - 2026-03-10
+
+### Added
+
+- Added a Linux regression test guarding the drop-in loader against reopening
+  `libwebgpu_doe` as its own target WebGPU provider.
+
+### Changed
+
+- Fixed Linux drop-in proc resolution so workspace-local Node and Bun package
+  loads resolve Dawn/WebGPU target symbols instead of recursing through the Doe
+  drop-in library.
+- Validated the package release surface on Linux Vulkan with addon build, smoke,
+  Node tests, prebuild assembly, and Bun contract tests.
+
 ## [0.2.1] - 2026-03-07
 
 ### Added

@@ -36,8 +36,8 @@ These files define candidate module boundaries and promotion expectations before
    - gate coverage,
    - promotion criteria.
 2. Any runtime-visible field promoted from these drafts must gain:
-   - schema entries under `fawn/config/*schema*.json`,
-   - migration notes under `fawn/config/migration-notes.md`,
+   - schema entries under `config/*schema*.json`,
+   - migration notes under `config/migration-notes.md`,
    - status/process updates when behavior changes.
 3. No draft in this directory may silently alter core runtime behavior.
 

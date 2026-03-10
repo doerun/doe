@@ -12,7 +12,7 @@ Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation
 
 Doe is the Zig WebGPU runtime (`doe-zig-runtime`, `libwebgpu_doe.so`) built in this workspace. The objective is a full, performance-first, maintainable replacement for Dawn: Lean correctness proof support, Zig runtime execution, lighter binaries, easier development, and materially better per-command performance without sacrificing stage discipline.
 
-This workspace (`fawn/`) drives Doe development: quirk ingestion, verification, specialization, and benchmarking with explicit contracts.
+This repo drives Doe development: quirk ingestion, verification, specialization, and benchmarking with explicit contracts.
 
 - deterministic, schema-first behavior
 - reproducible artifacts for audit and replay
@@ -23,28 +23,28 @@ This workspace (`fawn/`) drives Doe development: quirk ingestion, verification, 
 
 Before changing Fawn behavior, read:
 
-- `fawn/thesis.md`
-- `fawn/architecture.md`
-- `fawn/process.md`
-- `fawn/status.md`
-- `fawn/upgrade-policy.md`
-- `fawn/licensing.md`
-- `fawn/agent/README.md`
-- `fawn/lean/README.md`
-- `fawn/zig/README.md`
-- `fawn/bench/README.md`
-- `fawn/trace/README.md`
+- `thesis.md`
+- `architecture.md`
+- `process.md`
+- `status.md`
+- `upgrade-policy.md`
+- `licensing.md`
+- `agent/README.md`
+- `lean/README.md`
+- `zig/README.md`
+- `bench/README.md`
+- `trace/README.md`
 
 If a change affects runtime-visible behavior and any mandatory doc above has not been read in the current task, stop and read it before editing code.
 
 For Dawn-vs-Doe performance work, also read:
 
-- `fawn/performance-strategy.md`
+- `performance-strategy.md`
 
 ## Core principles (adopted)
 
 1. Config as code
-- controls and thresholds live in `fawn/config/*.json`
+- controls and thresholds live in `config/*.json`
 - deterministic defaults and tunables come from config/schema, not ad-hoc code branches
 
 2. Explicit over implicit
@@ -52,7 +52,7 @@ For Dawn-vs-Doe performance work, also read:
 - no hidden heuristics and no undocumented fallback modes in runtime paths
 
 3. Contracts first
-- change contracts via `fawn/config/*schema*.json` and migration notes
+- change contracts via `config/*schema*.json` and migration notes
 - update schemas when runtime-visible behavior changes
 
 4. No silent capability branching
@@ -60,7 +60,7 @@ For Dawn-vs-Doe performance work, also read:
 - do not auto-switch to hidden behavior not declared in contracts
 
 5. Reproducibility
-- every quality decision should emit artifacts required by gates in `fawn/process.md`
+- every quality decision should emit artifacts required by gates in `process.md`
 - benchmark and trace artifacts must include traceability fields (module/op hash chain)
 
 ## Non-negotiables
@@ -69,8 +69,8 @@ For Dawn-vs-Doe performance work, also read:
 - any production behavior change must be reflected in versioned config.
 
 2. Placeholder discipline
-- placeholders are allowed only for benchmark/gate bootstrap thresholds when explicitly flagged in config and tracked in `fawn/status.md` and gate policy.
-- runtime behavior placeholders are not allowed in `fawn/zig` execution paths; implement fully or fail with explicit unsupported taxonomy.
+- placeholders are allowed only for benchmark/gate bootstrap thresholds when explicitly flagged in config and tracked in `status.md` and gate policy.
+- runtime behavior placeholders are not allowed in `zig` execution paths; implement fully or fail with explicit unsupported taxonomy.
 
 3. Schema discipline
 - never add fields that are not represented by a schema or migration entry.
@@ -158,11 +158,11 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 
 ## File size
 
-- 777 lines max for Zig runtime source files in `fawn/zig/src`; shard before exceeding this
+- 777 lines max for Zig runtime source files in `zig/src`; shard before exceeding this
 - split by cohesive functionality, not by arbitrary line count
 - group by feature (e.g. `pipeline_cache.zig`) not by type (e.g. `helpers.zig`)
 - keep related code together; splitting a file must not scatter a single concern
-- Python benchmark and tooling files must stay modular; when a file exceeds 1200 lines, add a tracked sharding follow-up in `fawn/status.md` with owner and next split target.
+- Python benchmark and tooling files must stay modular; when a file exceeds 1200 lines, add a tracked sharding follow-up in `status.md` with owner and next split target.
 
 ## Constants and thresholds
 
@@ -223,9 +223,9 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 For each change set, verify:
 
 - schema updates and migration notes are consistent
-- docs under `fawn/` reflect behavior
-- gate expectations were updated or confirmed in `fawn/process.md`
+- docs in this repo reflect behavior
+- gate expectations were updated or confirmed in `process.md`
 - trace/replay outputs are consistent with the changed behavior
 - if Dawn-vs-Doe benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
 - if any workload is marked claimable, verify structural work equivalence: both sides executed the same commands, dispatch counts match, timing phases have symmetric non-zero coverage, and no hardware-path asymmetry is unannoted
-- `fawn/status.md` records remaining placeholders, temporary methodology choices, and follow-up work
+- `status.md` records remaining placeholders, temporary methodology choices, and follow-up work

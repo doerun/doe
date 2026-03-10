@@ -3,7 +3,7 @@
   "modules": [
     {
       "moduleId": "agent",
-      "modulePath": "fawn/agent",
+      "modulePath": "agent",
       "status": "active",
       "owner": "runtime-automation",
       "inputs": ["upstream_diff"],
@@ -12,7 +12,7 @@
     },
     {
       "moduleId": "lean",
-      "modulePath": "fawn/lean",
+      "modulePath": "lean",
       "status": "active",
       "owner": "verification",
       "inputs": ["quirk_candidates"],
@@ -21,7 +21,7 @@
     },
     {
       "moduleId": "zig",
-      "modulePath": "fawn/zig",
+      "modulePath": "zig",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["validator_artifacts", "quirk_set"],
@@ -30,7 +30,7 @@
     },
     {
       "moduleId": "bench",
-      "modulePath": "fawn/bench",
+      "modulePath": "bench",
       "status": "active",
       "owner": "performance",
       "inputs": ["runtime_binary", "runtime_manifest"],
@@ -39,7 +39,7 @@
     },
     {
       "moduleId": "trace",
-      "modulePath": "fawn/trace",
+      "modulePath": "trace",
       "status": "active",
       "owner": "observability",
       "inputs": ["runtime_events"],
@@ -48,7 +48,7 @@
     },
     {
       "moduleId": "browser_integration",
-      "modulePath": "fawn/nursery/fawn-browser",
+      "modulePath": "nursery/fawn-browser",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["browser-workflow-manifest", "browser-promotion-approvals", "browser-ownership"],
@@ -57,7 +57,7 @@
     },
     {
       "moduleId": "browser_claimability",
-      "modulePath": "fawn/bench",
+      "modulePath": "bench",
       "status": "active",
       "owner": "performance",
       "inputs": ["browser-gate-report", "browser-claim-policy"],
@@ -66,7 +66,7 @@
     },
     {
       "moduleId": "compute_services_module",
-      "modulePath": "fawn/zig/src/full/modules/services",
+      "modulePath": "zig/src/full/modules/services",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["compute-services request", "compute-services policy"],
@@ -75,7 +75,7 @@
     },
     {
       "moduleId": "effects_pipeline_module",
-      "modulePath": "fawn/zig/src/full/modules/rendering",
+      "modulePath": "zig/src/full/modules/rendering",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["effects-pipeline request", "effects-pipeline policy"],
@@ -84,7 +84,7 @@
     },
     {
       "moduleId": "path_engine_module",
-      "modulePath": "fawn/zig/src/full/modules/rendering",
+      "modulePath": "zig/src/full/modules/rendering",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["path-engine request", "path-engine policy"],
@@ -93,7 +93,7 @@
     },
     {
       "moduleId": "sdf_renderer_module",
-      "modulePath": "fawn/zig/src/full/modules/rendering",
+      "modulePath": "zig/src/full/modules/rendering",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["sdf-renderer request", "sdf-renderer policy"],
@@ -102,7 +102,7 @@
     },
     {
       "moduleId": "resource_scheduler_module",
-      "modulePath": "fawn/zig/src/full/modules/services",
+      "modulePath": "zig/src/full/modules/services",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["resource-scheduler request", "resource-scheduler policy"],
