@@ -206,6 +206,28 @@
       ]
     },
     {
+      "canonicalId": "copy_buffer_to_buffer_4kb",
+      "displayName": "Copy buffer to buffer 4KB",
+      "domain": "copy",
+      "description": "Package-surface end-to-end buffer-to-buffer copy benchmark with 4KB payload and readback validation.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_4kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_4kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
       "canonicalId": "compute_dispatch_simple",
       "displayName": "Compute dispatch simple",
       "domain": "compute",

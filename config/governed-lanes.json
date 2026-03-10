@@ -43,7 +43,7 @@
       "providerPairs": ["doe_vs_dawn"],
       "sourceReportTypes": ["backend_compare_report"],
       "cubeEligible": true,
-      "notes": "Strict local Metal release lane."
+      "notes": "Strict Apple Metal release lane."
     },
     {
       "id": "metal_dawn_release",

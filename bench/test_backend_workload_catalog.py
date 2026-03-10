@@ -86,8 +86,8 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             ],
         )
 
-    def test_expected_local_metal_additional_directional_ids(self) -> None:
-        metal = self.generator.materialize_lane(self.catalog, "local_metal_extended")
+    def test_expected_apple_metal_additional_directional_ids(self) -> None:
+        metal = self.generator.materialize_lane(self.catalog, "apple_metal_extended")
         workload_ids = [row["id"] for row in metal["workloads"]]
         self.assertIn("compute_dispatch_fallback", workload_ids)
         self.assertIn("compute_dispatch_grid", workload_ids)
@@ -137,7 +137,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             for item in mutated["workloads"]
             if item["id"] == "render_uniform_buffer_update_writebuffer_partial_single"
         )
-        target["lanes"]["local_metal_extended"]["rightCommandRepeat"] = 777
+        target["lanes"]["apple_metal_extended"]["rightCommandRepeat"] = 777
         with self.assertRaisesRegex(ValueError, "comparable workload contract asymmetry detected"):
             self.generator.validate_catalog(mutated)
 

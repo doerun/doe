@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-10T17:03:32.029212Z",
-  "sourceWorkloadsPath": "bench/workloads.amd.vulkan.extended.json",
+  "generatedAt": "2026-03-10T17:22:12.131576Z",
+  "sourceWorkloadsPath": "bench/workloads.amd.vulkan.superset.json",
   "sourceWorkloadsSha256": "e555b01264c084d264cfc4cf6578dd7191031667c9c44fe0bbf65a67816b41fb",
   "rulesPath": "nursery/fawn-browser/bench/projection-rules.json",
   "rulesSha256": "06ac37731d70bb86652dbad5a6e7e80f1de4aad1b5020d530b500c98e54de245",

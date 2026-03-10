@@ -798,8 +798,8 @@ pub const NativeVulkanRuntime = struct {
         }
 
         const dst_usage: u32 = switch (mode) {
-            .copy_dst_copy_src => VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            .copy_dst => VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            .copy_dst_copy_src => VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .copy_dst => VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         };
 
         const upload = try self.record_upload_copy(bytes, dst_usage);
@@ -2006,7 +2006,7 @@ pub const NativeVulkanRuntime = struct {
             dst_memory = entry.memory;
         } else {
             const permissive_dst_usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            const effective_usage = if (dst_usage == 0) permissive_dst_usage else dst_usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            const effective_usage = if (dst_usage == 0) permissive_dst_usage else dst_usage;
             var dst_info = VkBufferCreateInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = effective_usage, .sharingMode = VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
             try check_vk(vkCreateBuffer(self.device, &dst_info, null, &dst_buffer));
             errdefer vkDestroyBuffer(self.device, dst_buffer, null);

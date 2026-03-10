@@ -243,7 +243,7 @@ npm run prebuild -- --skip-addon-build
 npm pack --dry-run
 ```
 
-That path is green on the local Metal host. Bun validation was not rerun on
+That path is green on the Apple Metal host. Bun validation was not rerun on
 this host because Bun is not installed.
 
 For Fawn development setup, build toolchain requirements, and benchmark

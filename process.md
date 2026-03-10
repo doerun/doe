@@ -201,16 +201,16 @@ Upgrade flow:
 4. compare delta reports
 5. merge only if blocking gates pass
 
-## 8. Local Metal Hardening Flow (Additive)
+## 8. Apple Metal hardening flow (additive)
 
-Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
+Apple Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 
 1. preflight
 - run `python3 bench/preflight_metal_host.py`
 
 2. compare
-- use local Metal config presets:
-  - `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
+- use Apple Metal config presets:
+  - `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
   - for release-claim checks, reuse the same config with `--claimability release` (and optional explicit `--out` path)
   - optional Dawn-baseline lane forcing for baseline checks: `--local-metal-lane metal_dawn_release`
   - render/bundle rows may still select encode-only timing for strict comparability, but claim evaluation must use `timingInterpretation.headlineProcessWall` when `selectedTiming.scopeClass=narrow-hot-path`
@@ -229,7 +229,7 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
   - `--with-shader-artifact-gate`
 
 4. strict lane policy
-- strict local Metal lanes must fail on fallback (`fallbackUsed=true`)
+- strict Apple Metal lanes must fail on fallback (`fallbackUsed=true`)
 - strict release claims should require backend telemetry and backend identity `doe_metal`
 - shader manifest checks may be required per lane (`metal_doe_release`, `metal_doe_app`)
 
@@ -239,19 +239,19 @@ Local Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 - validate rollback readiness by running `bench/cycle_gate.py` (via release pipeline with `--with-cycle-gate --cycle-enforce-rollbacks`) under the same comparable/release evidence policy.
 - runtime backend routing is strict no-fallback by contract across all lanes (`allowFallback=false`, `strictNoFallback=true` in `config/backend-runtime-policy.json`).
 
-## 9. Local Vulkan Hardening Flow (Additive)
+## 9. AMD Vulkan extended hardening flow (additive)
 
-Local Vulkan lanes are additive and must not weaken AMD Vulkan strict defaults.
+AMD Vulkan extended lanes are additive and must not weaken the governed AMD Vulkan release defaults.
 
 1. preflight
 - run `python3 bench/preflight_vulkan_host.py`
 
 2. compare
-- use local Vulkan config presets:
-  - `bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.local.vulkan.directional.json`
-  - `bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.local.vulkan.release.json`
+- use AMD Vulkan extended config presets:
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
 
 3. blocking gates
 - run backend/sync/timing/shader checks in `bench/run_blocking_gates.py`:
@@ -261,8 +261,8 @@ Local Vulkan lanes are additive and must not weaken AMD Vulkan strict defaults.
   - `--with-shader-artifact-gate`
 
 4. strict lane policy
-- strict local Vulkan lanes must fail on fallback (`fallbackUsed=true`)
-- strict local Vulkan release claims should require backend telemetry and backend identity `doe_vulkan`
+- strict AMD Vulkan extended lanes must fail on fallback (`fallbackUsed=true`)
+- strict AMD Vulkan extended release claims should require backend telemetry and backend identity `doe_vulkan`
 - shader manifest checks may be required per lane (`vulkan_doe_comparable`, `vulkan_doe_release`)
 
 ## 10. Market-Readiness Evidence Flow (Additive)

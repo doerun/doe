@@ -75,8 +75,8 @@ lane. It is not a broad "Doe Vulkan is faster than Dawn" claim.
 
 ### Apple Metal (M3)
 
-Current local Metal comparable contract:
-`bench/workloads.local.metal.extended.json`
+Current Apple Metal comparable contract:
+`bench/workloads.apple.metal.extended.json`
 
 - comparable workloads in contract: 31
 - latest full artifact:

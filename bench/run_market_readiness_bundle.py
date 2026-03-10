@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json",
+        default="bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json",
         help="compare_dawn_vs_doe config path used when release pipeline runs.",
     )
     parser.add_argument(

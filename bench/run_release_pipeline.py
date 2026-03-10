@@ -392,52 +392,77 @@ def resolve_workloads_contract_path(config_path: Path) -> Path:
     return repo_relative
 
 
-def is_local_metal_config(config_path: Path) -> bool:
-    return ".local.metal" in str(config_path).lower()
+def is_apple_metal_config(config_path: Path) -> bool:
+    config_name = str(config_path).lower()
+    return ".apple.metal" in config_name or ".local.metal" in config_name
 
 
-def is_local_vulkan_config(config_path: Path) -> bool:
-    return ".local.vulkan" in str(config_path).lower()
+def is_amd_vulkan_config(config_path: Path) -> bool:
+    config_name = str(config_path).lower()
+    return ".amd.vulkan" in config_name or ".local.vulkan" in config_name
 
 
-def infer_local_metal_lane(config_path: Path, explicit_lane: str) -> str:
+def infer_apple_metal_lane(config_path: Path, explicit_lane: str) -> str:
     if explicit_lane.strip():
         return explicit_lane.strip()
     config_name = str(config_path).lower()
-    if ".local.metal.dawn" in config_name or ".metal.dawn" in config_name:
+    if ".apple.metal.dawn" in config_name or ".local.metal.dawn" in config_name or ".metal.dawn" in config_name:
         return "metal_dawn_release"
-    if ".local.metal.release" in config_name:
+    if ".apple.metal.release" in config_name or ".local.metal.release" in config_name:
         return "metal_doe_release"
-    if ".local.metal.directional" in config_name:
+    if ".apple.metal.directional" in config_name or ".local.metal.directional" in config_name:
         return "metal_doe_directional"
-    if ".local.metal.extended" in config_name or ".local.metal.comparable" in config_name:
+    if (
+        ".apple.metal.extended" in config_name
+        or ".apple.metal.comparable" in config_name
+        or ".local.metal.extended" in config_name
+        or ".local.metal.comparable" in config_name
+    ):
         return "metal_doe_comparable"
     if "metal_doe_app" in config_name or "metal_doe_app" in config_name or "metal-doe-app" in config_name:
         return "metal_doe_app"
     return ""
 
 
-def infer_local_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
+def infer_amd_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
     if explicit_lane.strip():
         return explicit_lane.strip()
     config_name = str(config_path).lower()
-    if ".local.vulkan.release" in config_name:
+    if (
+        ".amd.vulkan.release" in config_name
+        or ".amd.vulkan.extended.strict.release" in config_name
+        or ".amd.vulkan.superset.native-supported.release" in config_name
+        or ".local.vulkan.release" in config_name
+    ):
         return "vulkan_doe_release"
-    if ".local.vulkan.directional" in config_name:
+    if (
+        ".amd.vulkan.directional" in config_name
+        or ".amd.vulkan.macro.directional" in config_name
+        or ".amd.vulkan.extended.strict.directional" in config_name
+        or ".local.vulkan.directional" in config_name
+    ):
         return "vulkan_doe_app"
-    if ".local.vulkan.extended" in config_name or ".local.vulkan.comparable" in config_name:
+    if (
+        ".amd.vulkan.comparable" in config_name
+        or ".amd.vulkan.extended.comparable" in config_name
+        or ".amd.vulkan.extended.strict.comparable" in config_name
+        or ".amd.vulkan.superset.comparable" in config_name
+        or ".amd.vulkan.superset.native-supported.comparable" in config_name
+        or ".local.vulkan.extended" in config_name
+        or ".local.vulkan.comparable" in config_name
+    ):
         return "vulkan_doe_comparable"
     return ""
 
 
-def local_metal_requires_shader_manifest(lane: str) -> bool:
+def apple_metal_requires_shader_manifest(lane: str) -> bool:
     if not lane:
         return False
     strict_lanes = {"metal_doe_comparable", "metal_doe_release", "metal_doe_app"}
     return lane in strict_lanes
 
 
-def local_vulkan_requires_shader_manifest(lane: str) -> bool:
+def amd_vulkan_requires_shader_manifest(lane: str) -> bool:
     if not lane:
         return False
     strict_lanes = {"vulkan_doe_comparable", "vulkan_doe_release"}
@@ -485,15 +510,15 @@ def main() -> int:
         if not artifact_path.exists():
             print(f"FAIL: missing --dropin-artifact: {artifact_path}")
             return 1
-    is_local_metal = is_local_metal_config(config_path)
-    is_local_vulkan = is_local_vulkan_config(config_path)
-    local_metal_lane = infer_local_metal_lane(config_path, args.local_metal_lane) if is_local_metal else ""
-    local_vulkan_lane = (
-        infer_local_vulkan_lane(config_path, args.local_vulkan_lane)
-        if is_local_vulkan
+    is_apple_metal = is_apple_metal_config(config_path)
+    is_amd_vulkan = is_amd_vulkan_config(config_path)
+    apple_metal_lane = infer_apple_metal_lane(config_path, args.local_metal_lane) if is_apple_metal else ""
+    amd_vulkan_lane = (
+        infer_amd_vulkan_lane(config_path, args.local_vulkan_lane)
+        if is_amd_vulkan
         else ""
     )
-    if is_local_metal and args.with_local_metal_gates:
+    if is_apple_metal and args.with_local_metal_gates:
         local_runtime_policy_path = Path(args.local_metal_backend_policy)
         local_timing_policy_path = Path(args.local_metal_timing_policy)
         local_shader_schema_path = Path(args.local_metal_shader_artifact_schema)
@@ -508,13 +533,13 @@ def main() -> int:
                 f"FAIL: missing --local-metal-shader-artifact-schema: {local_shader_schema_path}"
             )
             return 1
-        if args.with_local_metal_gates and not local_metal_lane:
+        if args.with_local_metal_gates and not apple_metal_lane:
             print(
-                "FAIL: unable to infer local-metal lane from --config. "
+                "FAIL: unable to infer apple-metal lane from --config. "
                 "Set --local-metal-lane explicitly."
             )
             return 1
-    if is_local_vulkan and args.with_local_vulkan_gates:
+    if is_amd_vulkan and args.with_local_vulkan_gates:
         local_runtime_policy_path = Path(args.local_vulkan_backend_policy)
         local_timing_policy_path = Path(args.local_vulkan_timing_policy)
         local_shader_schema_path = Path(args.local_vulkan_shader_artifact_schema)
@@ -529,20 +554,20 @@ def main() -> int:
                 f"FAIL: missing --local-vulkan-shader-artifact-schema: {local_shader_schema_path}"
             )
             return 1
-        if args.with_local_vulkan_gates and not local_vulkan_lane:
+        if args.with_local_vulkan_gates and not amd_vulkan_lane:
             print(
-                "FAIL: unable to infer local-vulkan lane from --config. "
+                "FAIL: unable to infer AMD Vulkan lane from --config. "
                 "Set --local-vulkan-lane explicitly."
             )
             return 1
-    if is_local_metal and args.with_local_metal_gates and args.with_dropin_gate:
+    if is_apple_metal and args.with_local_metal_gates and args.with_dropin_gate:
         local_symbol_ownership_path = Path(args.local_metal_symbol_ownership)
         if not local_symbol_ownership_path.exists():
             print(
                 f"FAIL: missing --local-metal-symbol-ownership: {local_symbol_ownership_path}"
             )
             return 1
-    if is_local_vulkan and args.with_local_vulkan_gates and args.with_dropin_gate:
+    if is_amd_vulkan and args.with_local_vulkan_gates and args.with_dropin_gate:
         local_symbol_ownership_path = Path(args.local_vulkan_symbol_ownership)
         if not local_symbol_ownership_path.exists():
             print(
@@ -670,7 +695,7 @@ def main() -> int:
                 [python_exe, str(preflight), "--strict-amd-vulkan"],
                 dry_run=args.dry_run,
             )
-        if is_local_metal and args.with_local_metal_preflight and not args.skip_preflight:
+        if is_apple_metal and args.with_local_metal_preflight and not args.skip_preflight:
             preflight_ran = True
             current_step = "preflight-metal"
             run_step(
@@ -678,7 +703,7 @@ def main() -> int:
                 [python_exe, str(preflight_metal)],
                 dry_run=args.dry_run,
             )
-        if is_local_vulkan and args.with_local_vulkan_preflight and not args.skip_preflight:
+        if is_amd_vulkan and args.with_local_vulkan_preflight and not args.skip_preflight:
             preflight_ran = True
             current_step = "preflight-vulkan"
             run_step(
@@ -747,14 +772,14 @@ def main() -> int:
                 gates_cmd.extend(["--timestamp", output_timestamp])
             else:
                 gates_cmd.append("--no-timestamp-output")
-            if is_local_metal and args.with_local_metal_gates:
+            if is_apple_metal and args.with_local_metal_gates:
                 gates_cmd.extend(
                     [
                         "--with-backend-selection-gate",
                         "--backend-runtime-policy",
                         args.local_metal_backend_policy,
                         "--backend-selection-lane",
-                        local_metal_lane,
+                        apple_metal_lane,
                         "--with-shader-artifact-gate",
                         "--shader-artifact-schema",
                         args.local_metal_shader_artifact_schema,
@@ -764,7 +789,7 @@ def main() -> int:
                         args.local_metal_timing_policy,
                     ]
                 )
-                if local_metal_requires_shader_manifest(local_metal_lane):
+                if apple_metal_requires_shader_manifest(apple_metal_lane):
                     gates_cmd.append("--shader-artifact-require-manifest")
                 if args.with_dropin_gate:
                     gates_cmd.extend(
@@ -774,14 +799,14 @@ def main() -> int:
                             args.local_metal_symbol_ownership,
                         ]
                     )
-            if is_local_vulkan and args.with_local_vulkan_gates:
+            if is_amd_vulkan and args.with_local_vulkan_gates:
                 gates_cmd.extend(
                     [
                         "--with-backend-selection-gate",
                         "--backend-runtime-policy",
                         args.local_vulkan_backend_policy,
                         "--backend-selection-lane",
-                        local_vulkan_lane,
+                        amd_vulkan_lane,
                         "--with-shader-artifact-gate",
                         "--shader-artifact-schema",
                         args.local_vulkan_shader_artifact_schema,
@@ -791,7 +816,7 @@ def main() -> int:
                         args.local_vulkan_timing_policy,
                     ]
                 )
-                if local_vulkan_requires_shader_manifest(local_vulkan_lane):
+                if amd_vulkan_requires_shader_manifest(amd_vulkan_lane):
                     gates_cmd.append("--shader-artifact-require-manifest")
                 if args.with_dropin_gate:
                     gates_cmd.extend(
@@ -846,9 +871,9 @@ def main() -> int:
                     ]
                 )
                 if (
-                    is_local_metal
+                    is_apple_metal
                     and args.with_local_metal_gates
-                    and local_metal_requires_shader_manifest(local_metal_lane)
+                    and apple_metal_requires_shader_manifest(apple_metal_lane)
                 ):
                     gates_cmd.extend(
                         [
@@ -858,9 +883,9 @@ def main() -> int:
                         ]
                     )
                 if (
-                    is_local_vulkan
+                    is_amd_vulkan
                     and args.with_local_vulkan_gates
-                    and local_vulkan_requires_shader_manifest(local_vulkan_lane)
+                    and amd_vulkan_requires_shader_manifest(amd_vulkan_lane)
                 ):
                     gates_cmd.extend(
                         [
@@ -954,10 +979,10 @@ def main() -> int:
             manifest_payload: dict[str, Any] = {
                 "runType": "release_pipeline",
                 "config": str(config_path),
-                "localMetal": is_local_metal,
-                "localMetalLane": local_metal_lane if is_local_metal else "",
-                "localVulkan": is_local_vulkan,
-                "localVulkanLane": local_vulkan_lane if is_local_vulkan else "",
+                "localMetal": is_apple_metal,
+                "localMetalLane": apple_metal_lane if is_apple_metal else "",
+                "localVulkan": is_amd_vulkan,
+                "localVulkanLane": amd_vulkan_lane if is_amd_vulkan else "",
                 "fullRun": (
                     (not args.skip_compare)
                     and (not args.skip_gates)
@@ -965,8 +990,8 @@ def main() -> int:
                         (
                             not (
                                 args.strict_amd_vulkan
-                                or (is_local_metal and args.with_local_metal_preflight)
-                                or (is_local_vulkan and args.with_local_vulkan_preflight)
+                                or (is_apple_metal and args.with_local_metal_preflight)
+                                or (is_amd_vulkan and args.with_local_vulkan_preflight)
                             )
                         )
                         or (not args.skip_preflight)
@@ -1017,10 +1042,10 @@ def main() -> int:
         manifest_payload = {
             "runType": "release_pipeline",
                 "config": str(config_path),
-                "localMetal": is_local_metal,
-                "localMetalLane": local_metal_lane if is_local_metal else "",
-                "localVulkan": is_local_vulkan,
-                "localVulkanLane": local_vulkan_lane if is_local_vulkan else "",
+                "localMetal": is_apple_metal,
+                "localMetalLane": apple_metal_lane if is_apple_metal else "",
+                "localVulkan": is_amd_vulkan,
+                "localVulkanLane": amd_vulkan_lane if is_amd_vulkan else "",
                 "fullRun": (
                     (not args.skip_compare)
                     and (not args.skip_gates)
@@ -1028,8 +1053,8 @@ def main() -> int:
                         (
                             not (
                                 args.strict_amd_vulkan
-                                or (is_local_metal and args.with_local_metal_preflight)
-                                or (is_local_vulkan and args.with_local_vulkan_preflight)
+                                or (is_apple_metal and args.with_local_metal_preflight)
+                                or (is_amd_vulkan and args.with_local_vulkan_preflight)
                             )
                         )
                         or (not args.skip_preflight)

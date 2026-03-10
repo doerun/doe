@@ -6,7 +6,7 @@ Status: `draft`
 
 Define a low-maintenance browser benchmark superset that:
 
-1. depends on core engine workload contracts in `bench/workloads.amd.vulkan.extended.json`,
+1. depends on core engine workload contracts in `bench/workloads.amd.vulkan.superset.json`,
 2. projects browser-relevant workloads automatically into browser API tests,
 3. adds browser workflow scenarios on top,
 4. keeps core/runtime and nursery logic de-duplicated.
@@ -22,7 +22,7 @@ Define a low-maintenance browser benchmark superset that:
 
 ## Source-of-Truth Rule
 
-1. `bench/workloads.amd.vulkan.extended.json` remains the only source for engine workload identity and ownership.
+1. `bench/workloads.amd.vulkan.superset.json` remains the only source for engine workload identity and ownership.
 2. nursery projection manifests are generated from this source and must not hand-copy workload lists.
 3. if a workload is added/removed in `L0`, the projection generator and gate must reflect this automatically.
 

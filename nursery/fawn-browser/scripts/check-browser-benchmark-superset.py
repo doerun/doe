@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--workloads",
-        default=str(REPO_ROOT / "bench/workloads.amd.vulkan.extended.json"),
+        default=str(REPO_ROOT / "bench/workloads.amd.vulkan.superset.json"),
         help="Path to core workload JSON.",
     )
     parser.add_argument(

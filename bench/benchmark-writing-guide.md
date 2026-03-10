@@ -26,7 +26,7 @@ Applies to:
 
 - Workload contracts:
   - `bench/workloads*.json`
-  - DOE-vs-DOE strict fullsuite contract: `bench/workloads.amd.vulkan.extended.doe-vs-doe.json`
+  - DOE-vs-DOE strict fullsuite contract: `bench/workloads.amd.vulkan.superset.doe-vs-doe.json`
 - Compare harness:
   - `bench/compare_dawn_vs_doe.py`
   - `bench/compare_dawn_vs_doe_modules/comparability.py`

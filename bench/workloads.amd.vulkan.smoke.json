@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "workloads": [
+    {
+      "id": "compute_workgroup_atomic_1024",
+      "domain": "compute",
+      "leftTimingDivisor": 1.0,
+      "rightTimingDivisor": 1.0,
+      "name": "workgroup-atomic-smoke",
+      "description": "Local Vulkan compute smoke",
+      "comparabilityNotes": "Local Vulkan compute smoke contract",
+      "commandsPath": "examples/workgroup_atomic_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "vulkan",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "extraArgs": [
+        "--queue-sync-mode",
+        "per-command",
+        "--gpu-timestamp-mode",
+        "off"
+      ],
+      "comparable": true,
+      "default": true,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "dawnFilter": "@autodiscover"
+    },
+    {
+      "id": "render_draw_throughput_baseline",
+      "default": false,
+      "domain": "render",
+      "name": "render-draw-smoke",
+      "description": "Local Vulkan render smoke",
+      "comparabilityNotes": "Local Vulkan render proxy contract",
+      "commandsPath": "examples/draw_call_proxy_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "vulkan",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "comparable": false,
+      "leftTimingDivisor": 4,
+      "timingNormalizationNote": "Directional render proxy only",
+      "dawnFilter": "@autodiscover"
+    },
+    {
+      "id": "upload_write_buffer_64kb",
+      "comparable": true,
+      "default": true,
+      "domain": "upload",
+      "leftCommandRepeat": 16,
+      "leftIgnoreFirstOps": 1,
+      "leftTimingDivisor": 1.0,
+      "leftUploadBufferUsage": "copy-dst",
+      "leftUploadSubmitEvery": 1,
+      "rightTimingDivisor": 1.0,
+      "rightUploadBufferUsage": "copy-dst",
+      "rightUploadSubmitEvery": 1,
+      "name": "upload-64kb-smoke",
+      "description": "Local Vulkan upload smoke",
+      "comparabilityNotes": "Local Vulkan smoke upload contract",
+      "commandsPath": "examples/upload_64kb_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "vulkan",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "extraArgs": [
+        "--gpu-timestamp-mode",
+        "off"
+      ],
+      "dawnFilter": "@autodiscover",
+      "rightCommandRepeat": 16,
+      "rightIgnoreFirstOps": 1,
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+    }
+  ]
+}

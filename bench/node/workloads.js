@@ -95,6 +95,7 @@ export const workloads = [
   defineWorkload('compute_e2e_256', true, makeComputeE2E(256, 64)),
   defineWorkload('compute_e2e_4096', true, makeComputeE2E(4096, 256)),
   defineWorkload('compute_e2e_65536', true, makeComputeE2E(65536, 256)),
+  defineWorkload('copy_buffer_to_buffer_4kb', true, makeCopyBufferToBufferE2E(4096)),
 
   // ================================================================
   // Dispatch-only (NOT comparable: Dawn async vs Doe sync)
@@ -258,6 +259,58 @@ function makeComputeE2E(threadCount, workgroupSize) {
       teardown() {
         storageBuf.destroy();
         stagingBuf.destroy();
+      },
+    };
+  };
+}
+
+function makeCopyBufferToBufferE2E(size) {
+  return (device, queue, G) => {
+    const sourceBytes = new Uint8Array(size);
+    for (let i = 0; i < sourceBytes.length; i++) {
+      sourceBytes[i] = i & 0xff;
+    }
+
+    const validateBytes = Math.min(size, 64);
+    let srcBuf, dstBuf;
+
+    async function assertReadbackMatchesSource() {
+      await dstBuf.mapAsync(G.GPUMapMode.READ, 0, validateBytes);
+      const mapped = new Uint8Array(dstBuf.getMappedRange(0, validateBytes));
+      for (let i = 0; i < validateBytes; i++) {
+        if (mapped[i] !== sourceBytes[i]) {
+          throw new Error(`expected copied byte ${i} === ${sourceBytes[i]}, got ${mapped[i]}`);
+        }
+      }
+      dstBuf.unmap();
+    }
+
+    return {
+      setup() {
+        srcBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.COPY_SRC | G.GPUBufferUsage.COPY_DST,
+        });
+        dstBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.COPY_DST | G.GPUBufferUsage.MAP_READ,
+        });
+        queue.writeBuffer(srcBuf, 0, sourceBytes);
+      },
+      async run() {
+        const encoder = device.createCommandEncoder();
+        encoder.copyBufferToBuffer(srcBuf, 0, dstBuf, 0, size);
+        queue.submit([encoder.finish()]);
+        await queue.onSubmittedWorkDone();
+        await assertReadbackMatchesSource();
+      },
+      async validate() {
+        await this.run();
+        return { ok: true };
+      },
+      teardown() {
+        srcBuf.destroy();
+        dstBuf.destroy();
       },
     };
   };

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Host preflight checks for local Metal lanes."""
+"""Host preflight checks for Apple Metal lanes."""
 
 from __future__ import annotations
 

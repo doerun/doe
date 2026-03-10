@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Host preflight checks for local Vulkan benchmark lanes."""
+"""Host preflight checks for AMD Vulkan extended benchmark lanes."""
 
 from __future__ import annotations
 

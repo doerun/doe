@@ -69,7 +69,7 @@ def build_heatmap_svg(
     width_per_col = 156
     height_per_row = 48
     left_margin = 196
-    top_margin = 60
+    top_margin = 28
     width = left_margin + len(surface["expectedHostProfiles"]) * width_per_col + 12
     height = top_margin + len(surface["workloadSets"]) * height_per_row + 12
     cell_map = {
@@ -78,19 +78,14 @@ def build_heatmap_svg(
     }
 
     parts = [
-        f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" role="img" '
+        f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" '
         f'aria-label="{escape(surface["displayName"])} benchmark cube heatmap">'
     ]
-    parts.append(
-        f"<text x='12' y='24' font-size='18' font-weight='700' fill='#0f172a'>"
-        f"{escape(surface['displayName'])} matrix</text>"
-    )
-
     for col_idx, host_id in enumerate(surface["expectedHostProfiles"]):
         x = left_margin + col_idx * width_per_col + 8
         label = host_profiles[host_id]["displayName"]
         parts.append(
-            f"<text x='{x + 64}' y='42' text-anchor='middle' font-size='12' fill='#334155'>"
+            f"<text x='{x + 64}' y='18' text-anchor='middle' font-size='12' fill='#334155'>"
             f"{escape(label)}</text>"
         )
 
@@ -188,6 +183,7 @@ def build_dashboard_html(summary: dict[str, Any], policy: dict[str, Any]) -> str
     raw_policy = policy["raw"]
     cells = summary.get("cells", [])
     generated_at = escape(str(summary.get("generatedAt", "")))
+    repo_base = "https://github.com/clocksmith/fawn/blob/main/"
     rows_path = escape(str(summary.get("artifacts", {}).get("rowsPath", "")))
     matrix_path = escape(str(summary.get("artifacts", {}).get("matrixMarkdownPath", "")))
     dashboard_path = escape(str(summary.get("artifacts", {}).get("dashboardHtmlPath", "")))
@@ -256,12 +252,17 @@ def build_dashboard_html(summary: dict[str, Any], policy: dict[str, Any]) -> str
         "<head>"
         "<meta charset='utf-8'/>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
-        "<title>Fawn Benchmark Cube</title>"
+        "<title>Fawn benchmarks</title>"
+        "<link rel='preconnect' href='https://fonts.googleapis.com'/>"
+        "<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin/>"
+        "<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap' rel='stylesheet'/>"
         "<style>"
-        ":root{--ink:#102033;--muted:#526277;--line:#d7e0ea;--bg:#f3f6fb;--panel:#ffffff;--accent:#0f766e;}"
-        "*{box-sizing:border-box;}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#eef4ff 0%,#f8fafc 160px,#f8fafc 100%);color:var(--ink);}"
+        ":root{--ink:#102033;--muted:#526277;--line:#d7e0ea;--bg:#f3f6fb;--panel:#ffffff;--accent:#0f766e;"
+        "--font-body:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
+        "--font-heading:'Space Grotesk',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}"
+        "*{box-sizing:border-box;}body{margin:0;font-family:var(--font-body);background:linear-gradient(180deg,#eef4ff 0%,#f8fafc 160px,#f8fafc 100%);color:var(--ink);}"
         "main{max-width:1380px;margin:0 auto;padding:28px 24px 64px;}"
-        "h1{margin:0;font-size:34px;line-height:1.1;}h2{margin:0 0 8px 0;font-size:22px;}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;}"
+        "h1{margin:0;font-family:var(--font-heading);font-size:34px;line-height:1.1;}h2{margin:0 0 8px 0;font-family:var(--font-heading);font-size:22px;}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;}"
         ".hero{display:grid;gap:18px;background:rgba(255,255,255,0.72);backdrop-filter:blur(8px);border:1px solid rgba(215,224,234,0.9);border-radius:18px;padding:22px 22px 18px;box-shadow:0 10px 30px rgba(15,23,42,0.06);}"
         ".hero p,.sub,.meta{color:var(--muted);} .meta{font-size:13px;}"
         ".cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:8px;}"
@@ -271,7 +272,7 @@ def build_dashboard_html(summary: dict[str, Any], policy: dict[str, Any]) -> str
         ".legend{display:flex;flex-wrap:wrap;gap:12px 16px;margin-top:8px;font-size:13px;color:var(--muted);}"
         ".legend-item{display:inline-flex;align-items:center;gap:8px;}"
         ".legend-swatch{width:16px;height:16px;border-radius:4px;border:1px solid rgba(15,23,42,0.12);display:inline-block;}"
-        ".artifact-list{display:grid;gap:6px;margin-top:8px;font-size:13px;}"
+        ".artifact-list{display:grid;gap:6px;margin-top:8px;font-size:13px;}.artifact-list a{color:var(--accent);text-decoration:none;}.artifact-list a:hover{text-decoration:underline;}"
         ".surface{margin-top:28px;padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,0.04);}"
         ".surface-head{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:10px;}"
         ".heatmap{margin:8px 0 16px 0;padding:12px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;overflow:auto;}"
@@ -288,16 +289,16 @@ def build_dashboard_html(summary: dict[str, Any], policy: dict[str, Any]) -> str
         "<body><main>"
         "<section class='hero'>"
         "<div>"
-        "<h1>Benchmark Cube Dashboard</h1>"
-        "<p>Cross-surface evidence view for Doe vs Dawn backend, Node, and Bun benchmark lanes.</p>"
+        "<h1>Trail Dash</h1>"
+        "<p>Doe vs Dawn benchmark results across backend, Node, and Bun lanes.</p>"
         f"<div class='meta'>generated: <code>{generated_at}</code></div>"
         "</div>"
         f"<div class='cards'>{card_html}</div>"
         f"<div class='legend'>{legend_html}</div>"
         "<div class='artifact-list'>"
-        f"<div>rows: <code>{rows_path}</code></div>"
-        f"<div>matrix: <code>{matrix_path}</code></div>"
-        f"<div>dashboard: <code>{dashboard_path}</code></div>"
+        f"<div>rows: <a href='{repo_base}{rows_path}'><code>{rows_path}</code></a></div>"
+        f"<div>matrix: <a href='{repo_base}{matrix_path}'><code>{matrix_path}</code></a></div>"
+        f"<div>dashboard: <a href='{repo_base}{dashboard_path}'><code>{dashboard_path}</code></a></div>"
         "</div>"
         "</section>"
         "<section class='surface'>"

@@ -14,7 +14,7 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_WORKLOADS = REPO_ROOT / "bench/workloads.amd.vulkan.extended.json"
+DEFAULT_WORKLOADS = REPO_ROOT / "bench/workloads.amd.vulkan.superset.json"
 DEFAULT_RULES = REPO_ROOT / "nursery/fawn-browser/bench/projection-rules.json"
 DEFAULT_MANIFEST = (
     REPO_ROOT / "nursery/fawn-browser/bench/generated/browser_projection_manifest.json"

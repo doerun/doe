@@ -1,10 +1,39 @@
 # Config Migration Notes
 
+## 2026-03-10
+
+### AMD Vulkan and Apple Metal lane naming cutover
+
+- The old host-scoped lane names have been replaced with explicit platform names:
+  - `local_vulkan_extended` -> `amd_vulkan_extended`
+  - `local_vulkan_extended.strict` -> `amd_vulkan_extended_strict`
+  - `local_vulkan_smoke` -> `amd_vulkan_smoke`
+  - `local_metal_extended` -> `apple_metal_extended`
+  - `local_metal_smoke` -> `apple_metal_smoke`
+- The previous AMD vendor-pinned 80-row catalog family is now named
+  `amd_vulkan_superset` so it no longer collides with the new primary AMD
+  Vulkan extended contract.
+- Workload/config file names were renamed to match that cutover, including:
+  - `bench/workloads.amd.vulkan.superset.json`
+  - `bench/workloads.amd.vulkan.extended.json`
+  - `bench/workloads.amd.vulkan.extended.strict.json`
+  - `bench/workloads.apple.metal.extended.json`
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.superset*.json`
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended*.json`
+  - `bench/compare_dawn_vs_doe.config.apple.metal*.json`
+- Browser-layer superset tooling now sources `bench/workloads.amd.vulkan.superset.json`
+  explicitly, so the name still matches the broader 80-row engine contract it
+  projects from.
+- `bench/run_release_pipeline.py`, `bench/backend_selection_gate.py`, and
+  `bench/output_paths.py` now recognize the renamed AMD/Apple config families
+  and artifact prefixes while still accepting legacy `local.*` names for
+  backwards compatibility.
+
 ## 2026-03-09
 
 ### macOS dispatch parity and normalization contract promotion
 
-- `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json` now
+- `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json` now
   passes `--kernel-root bench/kernels` to both sides of the local Metal strict
   comparable lane, so workloads that resolve WGSL kernels at runtime no longer
   depend on ad hoc extra-arg injection.
@@ -15,8 +44,8 @@
 - `bench/backend-workload-catalog.json` now promotes:
   - `compute_dispatch_fallback`
   - `compute_dispatch_grid`
-  to `comparable=true` for `local_metal_extended`, and the generated contract
-  in `bench/workloads.local.metal.extended.json` now carries the comparable
+  to `comparable=true` for `apple_metal_extended`, and the generated contract
+  in `bench/workloads.apple.metal.extended.json` now carries the comparable
   local-Metal overrides (`applesToApplesVetted=true`,
   `comparabilityCandidate.enabled=false`, explicit right repeats/divisors, and
   `strictNormalizationUnit=dispatch` for `compute_dispatch_grid`).
@@ -45,7 +74,7 @@
   - `upload_write_buffer_1mb`
   - `upload_write_buffer_4mb`
   - `upload_write_buffer_16mb`
-- The generated contract in `bench/workloads.local.metal.extended.json` now
+- The generated contract in `bench/workloads.apple.metal.extended.json` now
   carries those restored left-side repeat values instead of silently falling
   back to `leftCommandRepeat=1` while the Dawn side repeated 500/100/50 times.
 - Behavioral difference versus the previous contract:
@@ -99,8 +128,8 @@
 ### macOS surface presentation comparability promotion
 
 - `bench/backend-workload-catalog.json` now promotes `surface_full_presentation`
-  to `comparable=true` for `local_metal_extended`, and the generated contract in
-  `bench/workloads.local.metal.extended.json` now carries the comparable local
+  to `comparable=true` for `apple_metal_extended`, and the generated contract in
+  `bench/workloads.apple.metal.extended.json` now carries the comparable local
   Metal override (`applesToApplesVetted=true`, `rightCommandRepeat=100`,
   `left/rightTimingDivisor=100`, `comparabilityCandidate.enabled=false`).
 - `zig/src/full/surface/wgpu_surface_commands.zig` now records non-present
@@ -123,7 +152,7 @@
   - `copy_buffer_to_texture`
   - `copy_texture_to_buffer`
   - `copy_texture_to_texture`
-- The generated contract in `bench/workloads.local.metal.extended.json` now carries
+- The generated contract in `bench/workloads.apple.metal.extended.json` now carries
   local-Metal comparable overrides for those rows (`applesToApplesVetted=true`,
   `benchmarkClass=comparable`, `comparabilityCandidate.enabled=false`, and explicit
   `rightCommandRepeat` / `rightTimingDivisor` values matching the repeated copy
@@ -310,13 +339,13 @@
 - `zig/src/backend/metal/mod.zig` now records Metal upload staging work in
   `setup_ns` instead of `encode_ns`, aligning timing-phase accounting with the
   Dawn delegate upload lane.
-- `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json` now
+- `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json` now
   forwards `queue_sync_mode`, `upload_buffer_usage`, and `upload_submit_every`
   symmetrically to both left and right runtime commands.
 - Local Metal upload workload contracts no longer carry `pathAsymmetry` after
   the staged-copy restoration:
-  - `bench/workloads.local.metal.extended.json`
-  - `bench/workloads.local.metal.smoke.json`
+  - `bench/workloads.apple.metal.extended.json`
+  - `bench/workloads.apple.metal.smoke.json`
 
 ### Blocking timing-phase symmetry obligation
 
@@ -362,19 +391,19 @@
 - `bench/build_claim_scope_report.py` now carries this selected-scope vs
   headline-process-wall context into citation-safe artifacts.
 
-### Local Vulkan preset aliases restored
+### AMD Vulkan extended preset aliases restored
 
-- Restored the documented local Vulkan compare config aliases:
-  - `bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.local.vulkan.release.json`
-  - `bench/compare_dawn_vs_doe.config.local.vulkan.directional.json`
+- Restored the documented AMD Vulkan extended compare config aliases:
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
+  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
 - `.gitignore` now explicitly unignores those three aliases so the documented
   presets remain versioned instead of machine-local.
-- `bench/compare_dawn_vs_doe.config.local.vulkan.extended.comparable.json` now
+- `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` now
   uses the canonical strict lane name `vulkan_doe_comparable` instead of the
   stale nonexistent `vulkan_local_comparable`.
 - Helper lane inference in `bench/backend_selection_gate.py` and
-  `bench/run_release_pipeline.py` now treats local Vulkan directional presets as
+  `bench/run_release_pipeline.py` now treats AMD Vulkan extended directional presets as
   Doe-left diagnostics (`vulkan_doe_app`) rather than incorrectly inferring a
   separate Dawn directional lane.
 
@@ -456,7 +485,7 @@
 
 - Added `examples/quirks/apple_m3_noop_list.json`: empty quirk list for Apple M3 Metal
   benchmark runs (analogous to `amd_radv_noop_list.json` for Vulkan).
-- Updated `bench/workloads.local.metal.extended.json`: all 43 workload quirksPath entries
+- Updated `bench/workloads.apple.metal.extended.json`: all 43 workload quirksPath entries
   changed from `amd_radv_noop_list.json` to `apple_m3_noop_list.json`.
 - Added `.github/workflows/lean-check.yml`: CI workflow that installs elan and runs
   `lean/check.sh` on every push/PR, making Lean typecheck a CI gate on macOS runners.
@@ -654,9 +683,9 @@
   - missing/invalid policy contract entries now fail fast during runtime initialization (no implicit compile-time lane fallback in this path).
 - `bench/schema_gate.py` is now driven from `config/schema-targets.json` instead of a hardcoded target list.
 - Added local Metal compare preset configs to run comparable, directional, and release lanes against Dawn via Metal autodescovery:
-  - `bench/compare_dawn_vs_doe.config.local.metal.extended.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.local.metal.directional.json`
-  - `bench/compare_dawn_vs_doe.config.local.metal.release.json`
+  - `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
+  - `bench/compare_dawn_vs_doe.config.apple.metal.directional.json`
+  - `bench/compare_dawn_vs_doe.config.apple.metal.release.json`
 
 ### Metal app-lane cutover closure
 
@@ -1004,7 +1033,7 @@
 - `zig/src/backend/metal/mod.zig` no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `doe_metal` now executes through metal module contracts and returns native execution results directly.
 - Removed `catch unreachable` behavior from Metal backend wrappers; queue/upload/timestamp policy knobs are now explicit backend fields.
 - Metal shader manifest emission is now enforced on successful command routing paths so strict shader artifact gates can validate manifest linkage in strict lanes.
-- `bench/workloads.local.metal.smoke.json` `compute_workgroup_atomic_1024.commandsPath` corrected from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
+- `bench/workloads.apple.metal.smoke.json` `compute_workgroup_atomic_1024.commandsPath` corrected from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
 - Backend selection now resolves directly from strict lane policy + profile constraints with no runtime rollback override path.
 
 ### Backend lane canonical rename (2026-02-26)
@@ -1061,7 +1090,7 @@ Contract updates in this change:
 
 ### Vulkan local smoke dispatch command-path repair (2026-02-26)
 
-- Updated `bench/workloads.local.vulkan.smoke.json` `compute_workgroup_atomic_1024.commandsPath` from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
+- Updated `bench/workloads.amd.vulkan.smoke.json` `compute_workgroup_atomic_1024.commandsPath` from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
 - Added compatibility command file `examples/dispatch_commands.json` (kernel-dispatch atomic workload payload) so legacy/manual invocations no longer fail with `FileNotFound`.
 
 ### Vulkan timing policy backend-specific upload source allowance (2026-02-26)
@@ -1078,7 +1107,7 @@ Contract updates in this change:
 ### Vulkan Doe-vs-Doe strict normalization parity contract (2026-02-26)
 
 - Added a dedicated strict apples-to-apples workload contract for DOE-vs-DOE lane comparisons:
-  - `bench/workloads.amd.vulkan.extended.doe-vs-doe.json`
+  - `bench/workloads.amd.vulkan.superset.doe-vs-doe.json`
 - In that contract, right-side normalization fields are explicitly mirrored from left-side fields for comparable workloads:
   - `rightCommandRepeat`
   - `rightIgnoreFirstOps`
@@ -1102,7 +1131,7 @@ Contract updates in this change:
   - `bench/comparability_obligation_fixtures.json`
   - `bench/compare_dawn_vs_doe_modules/comparability.py`
 - Strict comparable runs now fail comparability when left/right timing scope selection diverges, preventing mixed-scope rows from being treated as claimable apples-to-apples evidence.
-- Updated `bench/workloads.amd.vulkan.extended.doe-vs-doe.json` to mark current timing-scope-unstable workloads as `comparable=false` (directional-only) for strict DOE-vs-DOE comparable runs until timing-scope parity is stabilized:
+- Updated `bench/workloads.amd.vulkan.superset.doe-vs-doe.json` to mark current timing-scope-unstable workloads as `comparable=false` (directional-only) for strict DOE-vs-DOE comparable runs until timing-scope parity is stabilized:
   - `render_draw_throughput_baseline`
   - `render_draw_state_bindings`
   - `render_draw_redundant_pipeline_bindings`
@@ -1127,7 +1156,7 @@ Contract updates in this change:
 
 ### AMD Vulkan native-supported subset contract tightening (2026-03-06)
 
-- Updated `bench/workloads.amd.vulkan.extended.native-supported.json` so the
+- Updated `bench/workloads.amd.vulkan.superset.native-supported.json` so the
   AMD native Vulkan subset no longer marks `resource_table_immediates_500` or
   `surface_presentation` as strict comparable workloads.
 - Current native Vulkan execution reports those command classes as unsupported
@@ -1147,7 +1176,7 @@ Contract updates in this change:
   under an optional `adapter` object for downstream evidence products.
 - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` and
   `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json` now point at
-  `bench/workloads.amd.vulkan.extended.native-supported.json` so strict AMD
+  `bench/workloads.amd.vulkan.superset.native-supported.json` so strict AMD
   comparable/release lanes only cite command classes that are currently native
   by contract.
 
@@ -1232,7 +1261,7 @@ Contract updates in this change:
 
 - Updated timing selection to prefer `doe-execution-total-ns` when execution evidence is present and GPU timestamp timing is unavailable.
 - Removed render-domain encode-only timing override from `bench/compare_dawn_vs_doe.py` so left/right timing selection no longer diverges by side-specific render override policy.
-- Restored the 12 previously directionalized DOE-vs-DOE Vulkan workloads in `bench/workloads.amd.vulkan.extended.doe-vs-doe.json` to `comparable=true` after timing-source parity stabilization.
+- Restored the 12 previously directionalized DOE-vs-DOE Vulkan workloads in `bench/workloads.amd.vulkan.superset.doe-vs-doe.json` to `comparable=true` after timing-source parity stabilization.
 
 ### Doe-vs-Doe strict comparability hardening for execution shape + upload timing scope (2026-02-26)
 

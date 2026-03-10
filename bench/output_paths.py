@@ -165,10 +165,32 @@ def derive_bench_out_group(path: str | Path) -> Path | None:
     stripped = _strip_known_prefix(lowered)
     if stripped.startswith("amd.vulkan.single."):
         return Path("amd-vulkan") / "singles"
+    if stripped.startswith("amd.vulkan.extended.strict.comparable"):
+        return Path("amd-vulkan") / "extended-strict-comparable"
+    if stripped.startswith("amd.vulkan.extended.strict.release"):
+        return Path("amd-vulkan") / "extended-strict-release"
+    if stripped.startswith("amd.vulkan.extended.strict.directional"):
+        return Path("amd-vulkan") / "extended-strict-directional"
     if stripped.startswith("local.vulkan.single."):
         return Path("local-vulkan") / "singles"
     if stripped.startswith("amd.vulkan.extended.comparable"):
         return Path("amd-vulkan") / "extended-comparable"
+    if stripped.startswith("amd.vulkan.superset.native-supported.comparable"):
+        return Path("amd-vulkan") / "superset-native-supported-comparable"
+    if stripped.startswith("amd.vulkan.superset.native-supported.release"):
+        return Path("amd-vulkan") / "superset-native-supported-release"
+    if stripped.startswith("amd.vulkan.superset.comparable"):
+        return Path("amd-vulkan") / "superset-comparable"
+    if stripped.startswith("apple.metal.extended.comparable"):
+        return Path("apple-metal") / "extended-comparable"
+    if stripped.startswith("apple.metal.release"):
+        return Path("apple-metal") / "release"
+    if stripped.startswith("apple.metal.comparable"):
+        return Path("apple-metal") / "comparable"
+    if stripped.startswith("apple.metal.directional"):
+        return Path("apple-metal") / "directional"
+    if stripped.startswith("apple.metal"):
+        return Path("apple-metal")
     if stripped.startswith("amd.vulkan"):
         return Path("amd-vulkan")
     if stripped.startswith("local.metal.extended.comparable"):

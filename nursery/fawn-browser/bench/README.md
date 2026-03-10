@@ -5,7 +5,7 @@ This module implements a layered browser benchmark superset for Chromium Track A
 ## Layers
 
 1. `L0 engine`
-   - core strict runtime benchmark (`bench/workloads.amd.vulkan.extended.json`).
+   - core strict runtime benchmark (`bench/workloads.amd.vulkan.superset.json`).
 2. `L1 browser-api`
    - Playwright-driven browser WebGPU projections derived from `L0`.
 3. `L2 browser-workflow`

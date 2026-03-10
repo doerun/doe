@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "package": "@simulatte/webgpu",
+  "packageVersion": "0.2.2",
+  "platform": "linux",
+  "arch": "x64",
+  "nodeNapiVersion": 8,
+  "doeVersion": "3e18a2f9b",
+  "doeBuild": {
+    "artifact": "libwebgpu_doe",
+    "leanVerifiedBuild": false,
+    "proofArtifactSha256": null
+  },
+  "files": {
+    "doe_napi.node": {
+      "sha256": "71271029290f2ffa44d69f5a4126aca5304245a6cd4f207031710d82a00e6157"
+    },
+    "libwebgpu_doe.so": {
+      "sha256": "28c5da84da65a5d6f4a3a74b9757279cddee738aaa93fe8ece6e358d4d94cdb1"
+    },
+    "libwebgpu_dawn.so": {
+      "sha256": "9d329301f59fbe85a190cee4faacde97f9c991b07264a18a6750b890899cc417"
+    }
+  },
+  "builtAt": "2026-03-10T14:33:23.891Z"
+}

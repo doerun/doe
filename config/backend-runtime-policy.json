@@ -52,7 +52,7 @@
       "allowFallback": false,
       "strictNoFallback": true,
       "uploadPathPolicy": "staged_copy_only",
-      "notes": "Strict local Vulkan release lane with staged-copy-only uploads"
+      "notes": "Strict AMD Vulkan extended release lane with staged-copy-only uploads"
     },
     "vulkan_dawn_release": {
       "defaultBackend": "dawn_delegate",
