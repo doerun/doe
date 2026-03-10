@@ -291,6 +291,10 @@ not sufficient, for a release publish.
   `bench/out/cube/latest/` (generated `2026-03-10T20:31:02.431911Z`):
   Bun `uploads`, `compute_e2e`, and `full_comparable` are `claimable`;
   Node `uploads`, `compute_e2e`, and `full_comparable` are also `claimable`.
+- Separate Apple Metal extended-comparable backend evidence from March 10, 2026
+  (`bench/out/apple-metal/extended-comparable/20260310T121546Z/`) is
+  `31/31` comparable and `31/31` claimable. Read that lane as stricter
+  backend evidence, not as a replacement for the package-surface cube rows.
 - Bun has API parity with Node (61/61 contract tests). The package-default Bun
   entry currently routes through the addon-backed runtime, while
   `src/bun-ffi.js` remains experimental. Bun benchmark lane is at
