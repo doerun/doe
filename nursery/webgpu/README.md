@@ -137,9 +137,9 @@ For raw WebGPU buffers or non-bindable/ambiguous usage, pass
 ## What this package is
 
 `@simulatte/webgpu` is the canonical package surface for Doe. Node uses an
-N-API addon and Bun currently routes through the same addon-backed runtime
-entry to load `libwebgpu_doe`. Current builds still ship a Dawn sidecar where
-proc resolution requires it.
+N-API addon while Bun uses the package FFI runtime surface to load
+`libwebgpu_doe`. Current builds still ship a Dawn sidecar where proc
+resolution requires it.
 
 Doe is Fawn's Zig-first WebGPU runtime with explicit profile and quirk binding,
 a native WGSL pipeline (`lexer -> parser -> semantic analysis -> IR -> backend
@@ -169,9 +169,10 @@ covers the Node package contract and a packed-tarball export/import check.
 - This is a headless package, not a browser DOM/canvas package.
 - `@simulatte/webgpu/compute` is intentionally narrower than the default full
   surface.
-- Bun currently shares the addon-backed runtime entry with Node. Package-surface
-  contract tests are green, and package benchmark rows are positioning data
-  rather than the source of truth for strict backend-native Doe-vs-Dawn claims.
+- Bun uses the package FFI runtime surface while Node uses the addon-backed
+  runtime entry. Package-surface contract tests are green, and package
+  benchmark rows are positioning data rather than the source of truth for
+  strict backend-native Doe-vs-Dawn claims.
 
 ## Further reading
 

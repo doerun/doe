@@ -4,7 +4,7 @@
 
 1. `webgpu/`
    - package/runtime surface for `@simulatte/webgpu`
-   - Node N-API bridge, Bun FFI bridge, prebuild packaging
+   - Node addon-backed runtime surface, Bun FFI runtime surface, prebuild packaging
 2. `fawn-browser/`
    - browser integration layer for Chromium work
    - repo-local docs, contracts, helper scripts, and diagnostic harnesses

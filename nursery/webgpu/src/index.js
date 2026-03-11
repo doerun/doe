@@ -944,7 +944,7 @@ class DoeGPUComputePipeline {
     if (this._explicitLayout) return this._explicitLayout;
     if (this._cachedLayouts.has(index)) return this._cachedLayouts.get(index);
     let layout;
-    if (this._autoLayoutEntriesByGroup) {
+    if (this._autoLayoutEntriesByGroup && process.platform === 'darwin') {
       const entries = this._autoLayoutEntriesByGroup.get(index) ?? [];
       layout = this._device.createBindGroupLayout({ entries });
     } else if (typeof addon.computePipelineGetBindGroupLayout === 'function') {
@@ -1131,7 +1131,10 @@ class DoeGPUDevice {
     const shader = descriptor.compute?.module;
     const entryPoint = descriptor.compute?.entryPoint || 'main';
     const layout = descriptor.layout === 'auto' ? null : descriptor.layout;
-    const autoLayoutEntriesByGroup = layout ? null : inferAutoBindGroupLayouts(shader?._code || '');
+    const autoLayoutEntriesByGroup = layout ? null : inferAutoBindGroupLayouts(
+      shader?._code || '',
+      globals.GPUShaderStage.COMPUTE,
+    );
     const native = addon.createComputePipeline(
       this._native, shader._native, entryPoint,
       layout?._native ?? null);

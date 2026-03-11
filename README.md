@@ -186,12 +186,12 @@ and `licensing.md`.
 ## Package
 
 The canonical npm package is `@simulatte/webgpu`, rooted in `nursery/webgpu/`.
-It contains the Doe-native Node provider, addon build contract, Bun FFI path,
-and CLI tools for benchmarking and CI workflows.
+It contains the Doe-native Node provider, addon build contract, the Bun FFI
+runtime surface, and CLI tools for benchmarking and CI workflows.
 
 Node is the primary supported package surface. Bun has API parity (61/61
-contract tests) via direct FFI; cube maturity remains prototype until cells
-are populated by comparable benchmark artifacts.
+contract tests) through the package FFI surface; cube maturity remains
+prototype until cells are populated by comparable benchmark artifacts.
 
 ```bash
 # install from npm

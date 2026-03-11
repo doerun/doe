@@ -121,7 +121,7 @@ let wgpu = null;
 // ---------------------------------------------------------------------------
 
 function openLibrary(path) {
-    return dlopen(path, {
+    const symbols = {
         // Instance
         wgpuCreateInstance:       { args: [FFIType.ptr], returns: FFIType.ptr },
         wgpuInstanceRelease:      { args: [FFIType.ptr], returns: FFIType.void },
@@ -158,7 +158,6 @@ function openLibrary(path) {
         wgpuDeviceCreateComputePipeline: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuComputePipelineRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuComputePipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
-        doeNativeComputePipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
 
         // Bind group layout / bind group / pipeline layout
         wgpuDeviceCreateBindGroupLayout: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
@@ -204,7 +203,14 @@ function openLibrary(path) {
         wgpuRenderPassEncoderDraw: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
         wgpuRenderPassEncoderEnd: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuRenderPassEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
-    });
+    };
+    if (process.platform === "darwin") {
+        symbols.doeNativeComputePipelineGetBindGroupLayout = {
+            args: [FFIType.ptr, FFIType.u32],
+            returns: FFIType.ptr,
+        };
+    }
+    return dlopen(path, symbols);
 }
 
 // ---------------------------------------------------------------------------
@@ -819,11 +825,13 @@ class DoeGPUComputePipeline {
         if (this._cachedLayouts.has(index)) return this._cachedLayouts.get(index);
 
         let layout;
-        if (this._autoLayoutEntriesByGroup) {
+        if (this._autoLayoutEntriesByGroup && process.platform === "darwin") {
             const entries = this._autoLayoutEntriesByGroup.get(index) ?? [];
             layout = this._device.createBindGroupLayout({ entries });
         } else {
-            const native = wgpu.symbols.doeNativeComputePipelineGetBindGroupLayout(this._native, index);
+            const native = process.platform === "darwin"
+                ? wgpu.symbols.doeNativeComputePipelineGetBindGroupLayout(this._native, index)
+                : wgpu.symbols.wgpuComputePipelineGetBindGroupLayout(this._native, index);
             layout = new DoeGPUBindGroupLayout(native);
         }
 
