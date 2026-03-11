@@ -478,7 +478,15 @@ function wrap_device(raw) {
      * - The returned pipeline is wrapped back into the compute facade.
      */
     createComputePipeline(descriptor) {
-      return wrap_compute_pipeline(raw.createComputePipeline(descriptor));
+      const compute = descriptor.compute ?? {};
+      return wrap_compute_pipeline(raw.createComputePipeline({
+        ...descriptor,
+        layout: descriptor.layout === 'auto' ? 'auto' : unwrap(descriptor.layout),
+        compute: {
+          ...compute,
+          module: unwrap(compute.module),
+        },
+      }));
     },
     /**
      * Create a compute pipeline through an async-shaped API.

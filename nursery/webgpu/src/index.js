@@ -942,8 +942,15 @@ class DoeGPUComputePipeline {
   getBindGroupLayout(index) {
     if (this._explicitLayout) return this._explicitLayout;
     if (this._cachedLayouts.has(index)) return this._cachedLayouts.get(index);
-    const entries = this._autoLayoutEntriesByGroup?.get(index) ?? [];
-    const layout = this._device.createBindGroupLayout({ entries });
+    let layout;
+    if (typeof addon.computePipelineGetBindGroupLayout === 'function') {
+      layout = new DoeGPUBindGroupLayout(
+        addon.computePipelineGetBindGroupLayout(this._native, index),
+      );
+    } else {
+      const entries = this._autoLayoutEntriesByGroup?.get(index) ?? [];
+      layout = this._device.createBindGroupLayout({ entries });
+    }
     this._cachedLayouts.set(index, layout);
     return layout;
   }
