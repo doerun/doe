@@ -7,6 +7,18 @@ retrofitted from package version history and package-surface commits so the npm
 package has a conventional release history alongside the broader Fawn status
 and process documents.
 
+## [0.3.1] - 2026-03-11
+
+### Changed
+
+- Tightened the published package README wording, section names, and layering
+  narrative after the `0.3.0` release.
+- Clarified the terminology split between the `Doe runtime` underneath the
+  package and the `Doe API` / `Doe routines` JS convenience surface exposed by
+  the package.
+- Fixed the layered README SVG asset so it renders correctly on package
+  surfaces.
+
 ## [0.3.0] - 2026-03-11
 
 ### Changed

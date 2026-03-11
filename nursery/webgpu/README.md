@@ -26,7 +26,7 @@ Terminology in this README is deliberate:
 
 ## Start here
 
-### Same workload, two layers
+### From direct WebGPU to Doe
 
 The same simple compute pass, shown first at the raw WebGPU layer and then at
 the explicit Doe API layer.
@@ -134,7 +134,7 @@ await gpu.compute.run({
 console.log(await gpu.buffers.read(dst, Float32Array)); // Float32Array(4) [ 2, 4, 6, 8 ]
 ```
 
-The package identity is simple:
+What this package gives you:
 
 - `requestDevice()` gives you real headless WebGPU
 - `doe` gives you the same runtime with less boilerplate and explicit resource control
@@ -200,11 +200,11 @@ const result = await gpu.compute.once({
 console.log(result.subarray(0, 8)); // Float32Array(8) [ ... ]
 ```
 
-### Benchmarked package surface
+### Benchmark snapshot
 
-The package is not just a wrapper API. It is the headless package surface of
-the Doe runtime, Fawn's Zig-first WebGPU implementation, and it is exercised as
-a measured package surface with explicit package lanes.
+This package is the headless package surface of the Doe runtime, Fawn's
+Zig-first WebGPU implementation, and it is benchmarked through separate
+Node and Bun package lanes.
 
 <p align="center">
   <img src="assets/package-surface-cube-snapshot.svg" alt="Static package-surface benchmark cube snapshot" width="920" />
@@ -240,7 +240,7 @@ for AI workloads and other buffer/dispatch-heavy headless execution. The
 compute surface intentionally omits render and sampler methods from the JS
 facade.
 
-## Package basics
+## Basic entry points
 
 ### Inspect the provider
 
@@ -269,9 +269,9 @@ console.log(typeof device.createComputePipeline); // "function"
 console.log(typeof device.createRenderPipeline); // "undefined"
 ```
 
-## Doe layers
+## API layers
 
-The package exposes three layers over the same runtime:
+The package gives you three API styles over the same Doe runtime:
 
 <p align="center">
   <img src="assets/package-layers.svg" alt="Layered package graph showing direct WebGPU, Doe API, and Doe routines over the same package surfaces." width="920" />
