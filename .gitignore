@@ -28,6 +28,8 @@ bench/out/20??????T??????Z/
 bench/out/scratch/
 bench/out/**/tmp.*
 bench/out/**/tmp.*/
+nursery/webgpu/out/node-smoke.meta.json
+nursery/webgpu/out/node-smoke.ndjson
 
 # Generated Lean proof artifacts
 lean/artifacts/
