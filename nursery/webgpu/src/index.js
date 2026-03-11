@@ -7,6 +7,7 @@ import {
   runDawnVsDoeCompare as runDawnVsDoeCompareCli,
 } from './runtime_cli.js';
 import { loadDoeBuildMetadata } from './build_metadata.js';
+import { inferAutoBindGroupLayouts } from './auto_bind_group_layout.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -943,13 +944,15 @@ class DoeGPUComputePipeline {
     if (this._explicitLayout) return this._explicitLayout;
     if (this._cachedLayouts.has(index)) return this._cachedLayouts.get(index);
     let layout;
-    if (typeof addon.computePipelineGetBindGroupLayout === 'function') {
+    if (this._autoLayoutEntriesByGroup) {
+      const entries = this._autoLayoutEntriesByGroup.get(index) ?? [];
+      layout = this._device.createBindGroupLayout({ entries });
+    } else if (typeof addon.computePipelineGetBindGroupLayout === 'function') {
       layout = new DoeGPUBindGroupLayout(
         addon.computePipelineGetBindGroupLayout(this._native, index),
       );
     } else {
-      const entries = this._autoLayoutEntriesByGroup?.get(index) ?? [];
-      layout = this._device.createBindGroupLayout({ entries });
+      layout = this._device.createBindGroupLayout({ entries: [] });
     }
     this._cachedLayouts.set(index, layout);
     return layout;
@@ -1036,34 +1039,6 @@ const DOE_LIMITS = Object.freeze({
 });
 
 const DOE_FEATURES = Object.freeze(new Set(['shader-f16']));
-
-function inferAutoBindGroupLayouts(code, visibility = globals.GPUShaderStage.COMPUTE) {
-  const groups = new Map();
-  const bindingPattern = /@group\((\d+)\)\s*@binding\((\d+)\)\s*var(?:<([^>]+)>)?\s+\w+\s*:\s*([^;]+);/g;
-  for (const match of code.matchAll(bindingPattern)) {
-    const group = Number(match[1]);
-    const binding = Number(match[2]);
-    const addressSpace = (match[3] ?? "").trim();
-    const typeExpr = (match[4] ?? "").trim();
-    let entry = null;
-    if (addressSpace.startsWith("uniform")) {
-      entry = { binding, visibility, buffer: { type: "uniform" } };
-    } else if (addressSpace.startsWith("storage")) {
-      const readOnly = !addressSpace.includes("read_write");
-      entry = { binding, visibility, buffer: { type: readOnly ? "read-only-storage" : "storage" } };
-    } else if (typeExpr.startsWith("sampler")) {
-      entry = { binding, visibility, sampler: {} };
-    }
-    if (!entry) continue;
-    const entries = groups.get(group) ?? [];
-    entries.push(entry);
-    groups.set(group, entries);
-  }
-  for (const entries of groups.values()) {
-    entries.sort((left, right) => left.binding - right.binding);
-  }
-  return groups;
-}
 
 /**
  * Device returned by `adapter.requestDevice()`.

@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDoeRuntime, runDawnVsDoeCompare } from "./runtime_cli.js";
 import { loadDoeBuildMetadata } from "./build_metadata.js";
+import { inferAutoBindGroupLayouts } from "./auto_bind_group_layout.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, "..");
@@ -798,15 +799,36 @@ class DoeGPURenderPipeline {
 }
 
 class DoeGPUShaderModule {
-    constructor(native) { this._native = native; }
+    constructor(native, code) {
+        this._native = native;
+        this._code = code;
+    }
 }
 
 class DoeGPUComputePipeline {
-    constructor(native) { this._native = native; }
+    constructor(native, device, explicitLayout, autoLayoutEntriesByGroup) {
+        this._native = native;
+        this._device = device;
+        this._explicitLayout = explicitLayout;
+        this._autoLayoutEntriesByGroup = autoLayoutEntriesByGroup;
+        this._cachedLayouts = new Map();
+    }
 
     getBindGroupLayout(index) {
-        const layout = wgpu.symbols.doeNativeComputePipelineGetBindGroupLayout(this._native, index);
-        return new DoeGPUBindGroupLayout(layout);
+        if (this._explicitLayout) return this._explicitLayout;
+        if (this._cachedLayouts.has(index)) return this._cachedLayouts.get(index);
+
+        let layout;
+        if (this._autoLayoutEntriesByGroup) {
+            const entries = this._autoLayoutEntriesByGroup.get(index) ?? [];
+            layout = this._device.createBindGroupLayout({ entries });
+        } else {
+            const native = wgpu.symbols.doeNativeComputePipelineGetBindGroupLayout(this._native, index);
+            layout = new DoeGPUBindGroupLayout(native);
+        }
+
+        this._cachedLayouts.set(index, layout);
+        return layout;
     }
 }
 
@@ -844,18 +866,22 @@ class DoeGPUDevice {
         const { desc, _refs } = buildShaderModuleDescriptor(code);
         const mod = wgpu.symbols.wgpuDeviceCreateShaderModule(this._native, desc);
         void _refs;
-        return new DoeGPUShaderModule(mod);
+        return new DoeGPUShaderModule(mod, code);
     }
 
     createComputePipeline(descriptor) {
         const shader = descriptor.compute?.module;
         const entryPoint = descriptor.compute?.entryPoint || "main";
         const layout = descriptor.layout === "auto" ? null : descriptor.layout;
+        const autoLayoutEntriesByGroup = layout ? null : inferAutoBindGroupLayouts(
+            shader?._code || "",
+            globals.GPUShaderStage.COMPUTE,
+        );
         const { desc, _refs } = buildComputePipelineDescriptor(
             shader._native, entryPoint, layout?._native ?? null);
         const native = wgpu.symbols.wgpuDeviceCreateComputePipeline(this._native, desc);
         void _refs;
-        return new DoeGPUComputePipeline(native);
+        return new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
     }
 
     async createComputePipelineAsync(descriptor) {

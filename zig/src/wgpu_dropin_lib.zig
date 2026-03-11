@@ -300,6 +300,7 @@ fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateShaderModule")) return @ptrCast(&N.doeNativeDeviceCreateShaderModule);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuShaderModuleRelease")) return @ptrCast(&N.doeNativeShaderModuleRelease);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateComputePipeline")) return @ptrCast(&N.doeNativeDeviceCreateComputePipeline);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePipelineGetBindGroupLayout")) return @ptrCast(&N.doeNativeComputePipelineGetBindGroupLayout);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePipelineRelease")) return @ptrCast(&N.doeNativeComputePipelineRelease);
     // Bind Group / Pipeline Layout
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateBindGroupLayout")) return @ptrCast(&N.doeNativeDeviceCreateBindGroupLayout);
