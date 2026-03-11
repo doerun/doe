@@ -6,14 +6,58 @@ Headless WebGPU for Node.js and Bun, powered by Doe.
   <img src="assets/fawn-icon-main-256.png" alt="Fawn logo" width="196" />
 </p>
 
-Use this package for compute, CI, benchmarking, and offscreen GPU execution.
+Run real WebGPU workloads in Node.js and Bun.
+
+This package gives you two immediate entry points:
+
+- full headless WebGPU parity through `requestDevice()` and `device.*`
+- lower-boilerplate Doe API + routines when you want the same workload with far less setup
+
 It is a headless package: DOM/canvas ownership and browser-process parity
 belong to the separate `nursery/fawn-browser` lane.
 
-Doe is Fawn's Zig-first WebGPU runtime. `@simulatte/webgpu` is the Node.js and
-Bun package surface for that runtime: it exposes Doe-backed WebGPU APIs plus
-the Doe API and Doe routines surface for headless compute, CI, and
-benchmarking.
+## Start here
+
+### Doe routines: one-shot compute in a few lines
+
+```js
+import { doe } from "@simulatte/webgpu/compute";
+
+const gpu = await doe.requestDevice();
+
+const result = await gpu.compute.once({
+  code: `
+    @group(0) @binding(0) var<storage, read> src: array<f32>;
+    @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+    @compute @workgroup_size(4)
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      let i = gid.x;
+      dst[i] = src[i] * 3.0;
+    }
+  `,
+  inputs: [new Float32Array([1, 2, 3, 4])],
+  output: { type: Float32Array },
+  workgroups: 1,
+});
+
+console.log(result); // Float32Array(4) [ 3, 6, 9, 12 ]
+```
+
+The same package also exposes the raw WebGPU path for the same class of work:
+`requestDevice()`, `device.createBuffer(...)`, `device.createComputePipeline(...)`,
+and explicit bind groups/command encoders are all there when you want the full
+surface directly.
+
+### Benchmarked package surface
+
+The package is not just a wrapper API. It is the headless package surface of
+Doe, Fawn's Zig-first WebGPU runtime, and it is exercised as a measured package
+surface with explicit package lanes.
+
+<p align="center">
+  <img src="assets/package-surface-cube-snapshot.svg" alt="Static package-surface benchmark cube snapshot" width="920" />
+</p>
 
 `@simulatte/webgpu` is the headless package surface of the broader
 [Fawn](https://github.com/clocksmith/fawn) project. The same repository also
@@ -36,8 +80,8 @@ platforms, use a local Fawn workspace build for those runtime libraries.
 
 | Import                      | Surface               | Includes                                                  |
 | --------------------------- | --------------------- | --------------------------------------------------------- |
-| `@simulatte/webgpu`         | Default full surface  | Buffers, compute, textures, samplers, render, Doe API     |
-| `@simulatte/webgpu/compute` | Compute-first surface | Buffers, compute, copy/upload/readback, Doe API           |
+| `@simulatte/webgpu`         | Default full surface  | Buffers, compute, textures, samplers, render, Doe API + routines |
+| `@simulatte/webgpu/compute` | Compute-first surface | Buffers, compute, copy/upload/readback, Doe API + routines |
 | `@simulatte/webgpu/full`    | Explicit full surface | Same contract as the default package surface              |
 
 Use `@simulatte/webgpu/compute` when you want the constrained package contract
@@ -74,7 +118,7 @@ console.log(typeof device.createComputePipeline); // "function"
 console.log(typeof device.createRenderPipeline); // "undefined"
 ```
 
-### Run a small compute job with `doe`
+### Doe API: explicit buffers, lower boilerplate
 
 ```js
 import { doe } from "@simulatte/webgpu/compute";
@@ -96,6 +140,7 @@ await gpu.compute.run({
       dst[i] = src[i] * 2.0;
     }
   `,
+  // Doe infers storageRead / storageReadWrite access from the buffer usage tokens above.
   bindings: [src, dst],
   workgroups: 1,
 });
@@ -103,7 +148,19 @@ await gpu.compute.run({
 console.log(Array.from(await gpu.buffers.read(dst, Float32Array))); // [2, 4, 6, 8]
 ```
 
-The package exposes three API styles:
+### Doe routines: one-shot typed-array flow
+
+See **Start here** above for the smallest `gpu.compute.once(...)` path.
+
+The package exposes three layers over the same runtime:
+
+```mermaid
+graph TD
+  P["@simulatte/webgpu / @simulatte/webgpu/compute"]
+  P --> W["Direct WebGPU\nrequestDevice() -> device.*"]
+  P --> A["Doe API\nawait doe.requestDevice() -> gpu.buffers.*, gpu.compute.run/compile"]
+  A --> R["Doe routines\ngpu.compute.once(...)"]
+```
 
 - `Direct WebGPU`
   raw `requestDevice()` plus direct `device.*`
@@ -117,6 +174,11 @@ Examples for each style ship in:
 - `examples/direct-webgpu/`
 - `examples/doe-api/`
 - `examples/doe-routines/`
+
+The direct WebGPU compute-dispatch example in `examples/direct-webgpu/compute-dispatch.js`
+is intentionally the same kind of workload as the Doe API and Doe routines examples:
+the first wow is raw WebGPU parity, the second is that Doe can collapse the same
+job into much less boilerplate when you want it to.
 
 `doe` is the package's shared Doe surface over the runtime. It is available
 from both `@simulatte/webgpu` and `@simulatte/webgpu/compute`.
@@ -148,10 +210,6 @@ Optional `-Dlean-verified=true` builds use Lean 4 as build-time proof support,
 not as a runtime interpreter. When a condition is proved ahead of time, Doe can
 remove that runtime branch instead of re-checking it on every command; package
 consumers should not assume that path by default.
-
-<p align="center">
-  <img src="assets/package-surface-cube-snapshot.svg" alt="Static package-surface benchmark cube snapshot" width="920" />
-</p>
 
 ## Verify your install
 

@@ -951,6 +951,9 @@ class DoeGPUComputePipeline {
       layout = new DoeGPUBindGroupLayout(
         addon.computePipelineGetBindGroupLayout(this._native, index),
       );
+    } else if (this._autoLayoutEntriesByGroup) {
+      const entries = this._autoLayoutEntriesByGroup.get(index) ?? [];
+      layout = this._device.createBindGroupLayout({ entries });
     } else {
       layout = this._device.createBindGroupLayout({ entries: [] });
     }
