@@ -16,12 +16,14 @@ const DOE_GPU_MAP_MODE = {
 
 const DOE_BUFFER_META = new WeakMap();
 
-function resolveBufferUsageToken(token) {
+function resolveBufferUsageToken(token, combined = false) {
   switch (token) {
     case 'upload':
       return DOE_GPU_BUFFER_USAGE.COPY_DST;
     case 'readback':
-      return DOE_GPU_BUFFER_USAGE.COPY_SRC | DOE_GPU_BUFFER_USAGE.COPY_DST | DOE_GPU_BUFFER_USAGE.MAP_READ;
+      return combined
+        ? DOE_GPU_BUFFER_USAGE.COPY_SRC
+        : DOE_GPU_BUFFER_USAGE.COPY_SRC | DOE_GPU_BUFFER_USAGE.COPY_DST | DOE_GPU_BUFFER_USAGE.MAP_READ;
     case 'uniform':
       return DOE_GPU_BUFFER_USAGE.UNIFORM | DOE_GPU_BUFFER_USAGE.COPY_DST;
     case 'storageRead':
@@ -37,7 +39,8 @@ function resolveBufferUsage(usage) {
   if (typeof usage === 'number') return usage;
   if (typeof usage === 'string') return resolveBufferUsageToken(usage);
   if (Array.isArray(usage)) {
-    return usage.reduce((mask, token) => mask | resolveBufferUsageToken(token), 0);
+    const combined = usage.length > 1;
+    return usage.reduce((mask, token) => mask | resolveBufferUsageToken(token, combined), 0);
   }
   throw new Error('Doe buffer usage must be a number, string, or string array.');
 }
@@ -265,6 +268,12 @@ function createBufferLike(device, source, options = {}) {
 async function readBuffer(device, buffer, type, options = {}) {
   const offset = options.offset ?? 0;
   const size = options.size ?? Math.max(0, (buffer.size ?? 0) - offset);
+  if (((buffer.usage ?? 0) & DOE_GPU_BUFFER_USAGE.MAP_READ) !== 0) {
+    await buffer.mapAsync(DOE_GPU_MAP_MODE.READ, offset, size);
+    const copy = buffer.getMappedRange(offset, size).slice(0);
+    buffer.unmap();
+    return new type(copy);
+  }
   const staging = device.createBuffer({
     label: options.label ?? undefined,
     size,
