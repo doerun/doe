@@ -7,6 +7,27 @@ retrofitted from package version history and package-surface commits so the npm
 package has a conventional release history alongside the broader Fawn status
 and process documents.
 
+## [0.3.0] - 2026-03-11
+
+### Changed
+
+- Breaking: redesigned the shared `doe` surface around `await
+  doe.requestDevice()`, grouped `gpu.buffers.*`, and grouped
+  `gpu.compute.*` instead of the earlier flat bound-helper methods.
+- Added `gpu.buffers.like(...)` for buffer-allocation boilerplate reduction and
+  `gpu.compute.once(...)` for the first `Doe routines` workflow.
+- Doe helper token values now use camelCase (`storageRead`,
+  `storageReadWrite`) and Doe workgroups now accept `[x, y]` in addition to
+  `number` and `[x, y, z]`.
+- `gpu.compute.once(...)` now rejects raw numeric WebGPU usage flags; use Doe
+  usage tokens there or drop to `gpu.buffers.*` for explicit raw-flag control.
+- Kept the same `doe` shape on `@simulatte/webgpu` and
+  `@simulatte/webgpu/compute`; the package split remains the underlying raw
+  device surface (`full` vs compute-only facade), not separate helper dialects.
+- Updated the package README, API contract, and JSDoc guide to standardize the
+  `Direct WebGPU`, `Doe API`, and `Doe routines` model and the boundary between the headless package lane and
+  `nursery/fawn-browser`.
+
 ## [0.2.4] - 2026-03-11
 
 ### Changed

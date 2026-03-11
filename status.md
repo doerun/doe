@@ -247,6 +247,10 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - `@simulatte/webgpu` => full headless surface
     - `@simulatte/webgpu/compute` => AI-workload-oriented compute subset
     - both surfaces export the `doe` ergonomic namespace for buffer/readback/compute helpers
+  - package helper layering is now explicit for the upcoming `0.3.0` surface:
+    - `await doe.requestDevice()` returns the bound helper object directly
+    - helper methods are grouped under `gpu.buffers.*` and `gpu.compute.*`
+    - both package surfaces share the same helper shape; the raw Layer 1 device is what differs (`full` vs compute-only facade)
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
   - Linux Doe-native in-process path now works end-to-end; `DOE_WEBGPU_LIB` env var no longer required when prebuilds or workspace artifacts are present.
   - local workspace package loading now prefers `nursery/webgpu/build/{Release,Debug}/doe_napi.node` before packaged prebuilds, so benchmark/debug runs use freshly rebuilt addon code instead of stale prebuilt binaries.

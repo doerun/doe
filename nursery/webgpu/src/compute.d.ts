@@ -126,7 +126,8 @@ export interface ComputeDoeNamespace
     ComputeGPUBuffer,
     ComputeDoeKernel,
     ComputeBoundDoeNamespace,
-    ComputeDoeRunComputeOptions
+    ComputeDoeRunComputeOptions,
+    RequestDeviceOptions
   > {}
 
 export const globals: Record<string, unknown>;

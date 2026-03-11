@@ -1,6 +1,6 @@
 {
   "name": "@simulatte/webgpu",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Headless WebGPU runtime for Node.js and Bun, powered by Doe",
   "type": "module",
   "main": "./src/node-runtime.js",
@@ -35,6 +35,7 @@
   "files": [
     "assets/",
     "bin/",
+    "examples/",
     "src/",
     "scripts/",
     "native/",

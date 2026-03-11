@@ -1,11 +1,54 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PACKAGE_DIR = dirname(fileURLToPath(import.meta.url));
+const EXAMPLE_EXPECTATIONS = [
+  {
+    relativePath: join("examples", "direct-webgpu", "request-device.js"),
+    expected: {
+      createBuffer: true,
+      createComputePipeline: true,
+      createRenderPipeline: true,
+      writeBuffer: true,
+    },
+  },
+  {
+    relativePath: join("examples", "direct-webgpu", "compute-dispatch.js"),
+    expected: [2, 4, 6, 8],
+  },
+  {
+    relativePath: join("examples", "direct-webgpu", "explicit-bind-group.js"),
+    expected: [4, 8, 12, 16],
+  },
+  {
+    relativePath: join("examples", "doe-api", "buffers-readback.js"),
+    expected: [1, 2, 3, 4],
+  },
+  {
+    relativePath: join("examples", "doe-api", "compute-dispatch.js"),
+    expected: [2, 4, 6, 8],
+  },
+  {
+    relativePath: join("examples", "doe-api", "compile-and-dispatch.js"),
+    expected: [5, 10, 15, 20],
+  },
+  {
+    relativePath: join("examples", "doe-routines", "compute-once.js"),
+    expected: [3, 6, 9, 12],
+  },
+  {
+    relativePath: join("examples", "doe-routines", "compute-once-like-input.js"),
+    expected: [2, 4, 6, 8],
+  },
+  {
+    relativePath: join("examples", "doe-routines", "compute-once-multiple-inputs.js"),
+    expected: [11, 22, 33, 44],
+  },
+];
 
 function npm_json(args, cwd) {
   return JSON.parse(execFileSync("npm", args, {
@@ -39,16 +82,46 @@ function main() {
       stdio: ["ignore", "pipe", "pipe"],
     });
 
-    const installed_package = JSON.parse(readFileSync(join(
+    const installed_package_dir = join(
       consumer_dir,
       "node_modules",
       "@simulatte",
       "webgpu",
+    );
+    const installed_package = JSON.parse(readFileSync(join(
+      installed_package_dir,
       "package.json",
     ), "utf8"));
 
+    for (const entry of readdirSync(join(installed_package_dir, "prebuilds"), { withFileTypes: true })) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+      const metadata_path = join(installed_package_dir, "prebuilds", entry.name, "metadata.json");
+      if (!existsSync(metadata_path)) {
+        continue;
+      }
+      const prebuild_metadata = JSON.parse(readFileSync(metadata_path, "utf8"));
+      assert.equal(
+        prebuild_metadata.package,
+        installed_package.name,
+        `prebuild metadata package mismatch for ${entry.name}`,
+      );
+      assert.equal(
+        prebuild_metadata.packageVersion,
+        installed_package.version,
+        `prebuild metadata packageVersion mismatch for ${entry.name}`,
+      );
+    }
+
     assert.ok(installed_package.exports["./compute"], "packed tarball is missing ./compute export");
     assert.ok(installed_package.exports["./full"], "packed tarball is missing ./full export");
+    for (const example of EXAMPLE_EXPECTATIONS) {
+      assert.ok(
+        existsSync(join(installed_package_dir, example.relativePath)),
+        `packed tarball is missing example ${example.relativePath}`,
+      );
+    }
 
     const import_check = `
       import assert from "node:assert/strict";
@@ -58,25 +131,26 @@ function main() {
 
       assert.equal(typeof full.requestDevice, "function");
       assert.equal(typeof full.providerInfo, "function");
-      assert.equal(typeof full.doe.runCompute, "function");
+      assert.equal(typeof full.doe.requestDevice, "function");
       assert.equal(typeof full.doe.bind, "function");
+      assert.equal(typeof full.doe.buffers.fromData, "function");
+      assert.equal(typeof full.doe.compute.run, "function");
 
       assert.equal(typeof compute.requestDevice, "function");
-      assert.equal(typeof compute.doe.readBuffer, "function");
-      assert.equal(typeof compute.doe.bind, "function");
+      assert.equal(typeof compute.doe.requestDevice, "function");
+      assert.equal(typeof compute.doe.buffers.read, "function");
+      assert.equal(typeof compute.doe.compute.once, "function");
 
       assert.equal(typeof explicitFull.requestDevice, "function");
-      assert.equal(typeof explicitFull.doe.compileCompute, "function");
+      assert.equal(typeof explicitFull.doe.compute.compile, "function");
 
-      const device = await compute.requestDevice();
-      const gpu = compute.doe.bind(device);
-      const input = gpu.createBufferFromData(new Float32Array([1, 2, 3, 4]));
-      const output = gpu.createBuffer({
-        size: input.size,
-        usage: "storage-readwrite",
+      const gpu = await compute.doe.requestDevice();
+      const input = gpu.buffers.fromData(new Float32Array([1, 2, 3, 4]));
+      const output = gpu.buffers.like(input, {
+        usage: "storageReadWrite",
       });
 
-      await gpu.runCompute({
+      await gpu.compute.run({
         code: \`
           @group(0) @binding(0) var<storage, read> src: array<f32>;
           @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
@@ -91,15 +165,34 @@ function main() {
         workgroups: 1,
       });
 
-      const result = await gpu.readBuffer(output, Float32Array);
+      const result = await gpu.buffers.read(output, Float32Array);
       assert.deepEqual(Array.from(result), [2, 4, 6, 8]);
 
-      const raw = device.createBuffer({
+      const oneShot = await gpu.compute.once({
+        code: \`
+          @group(0) @binding(0) var<storage, read> src: array<f32>;
+          @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+          @compute @workgroup_size(4)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            let i = gid.x;
+            dst[i] = src[i] * 3.0;
+          }
+        \`,
+        inputs: [new Float32Array([1, 2, 3, 4])],
+        output: {
+          type: Float32Array,
+        },
+        workgroups: 1,
+      });
+      assert.deepEqual(Array.from(oneShot), [3, 6, 9, 12]);
+
+      const raw = gpu.device.createBuffer({
         size: input.size,
         usage: compute.globals.GPUBufferUsage.STORAGE | compute.globals.GPUBufferUsage.COPY_DST,
       });
       await assert.rejects(
-        gpu.runCompute({
+        gpu.compute.run({
           code: \`
             @group(0) @binding(0) var<storage, read> src: array<f32>;
 
@@ -113,6 +206,29 @@ function main() {
         }),
         /Doe binding access is required/
       );
+
+      await assert.rejects(
+        gpu.compute.once({
+          code: \`
+            @group(0) @binding(0) var<storage, read> src: array<f32>;
+            @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+            @compute @workgroup_size(1)
+            fn main(@builtin(global_invocation_id) gid: vec3u) {
+              dst[gid.x] = src[gid.x];
+            }
+          \`,
+          inputs: [{
+            data: new Float32Array([1]),
+            usage: /** @type {any} */ (compute.globals.GPUBufferUsage.STORAGE),
+          }],
+          output: {
+            type: Float32Array,
+          },
+          workgroups: [1, 1],
+        }),
+        /does not accept raw numeric usage flags/
+      );
     `;
 
     execFileSync("node", ["--input-type=module", "-e", import_check], {
@@ -120,6 +236,15 @@ function main() {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     });
+
+    for (const example of EXAMPLE_EXPECTATIONS) {
+      const output = execFileSync("node", [example.relativePath], {
+        cwd: installed_package_dir,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }).trim();
+      assert.deepEqual(JSON.parse(output), example.expected);
+    }
   } finally {
     if (tarball_path) {
       rmSync(tarball_path, { force: true });

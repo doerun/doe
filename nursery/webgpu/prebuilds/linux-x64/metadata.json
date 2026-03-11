@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@simulatte/webgpu",
-  "packageVersion": "0.2.3",
+  "packageVersion": "0.3.0",
   "platform": "linux",
   "arch": "x64",
   "nodeNapiVersion": 8,

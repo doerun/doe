@@ -60,7 +60,7 @@ function copyArtifact(src, destName) {
   const dest = resolve(prebuildDir, destName);
   copyFileSync(src, dest);
   console.log(`  ${destName} <- ${src}`);
-  return { name: destName, sha256: sha256(dest) };
+  return { name: destName, path: dest };
 }
 
 // 1. Build addon if needed.
@@ -122,13 +122,31 @@ console.log(`\nAssembling prebuilds/${platform}-${arch}/`);
 
 const files = {};
 const addonEntry = copyArtifact(addonSrc, 'doe_napi.node');
-if (addonEntry) files[addonEntry.name] = { sha256: addonEntry.sha256 };
+if (addonEntry) files[addonEntry.name] = { path: addonEntry.path };
 
 const doeEntry = copyArtifact(doeLib, `libwebgpu_doe.${ext}`);
-if (doeEntry) files[doeEntry.name] = { sha256: doeEntry.sha256 };
+if (doeEntry) files[doeEntry.name] = { path: doeEntry.path };
 
 const sidecarEntry = copyArtifact(sidecarSrc, sidecarName);
-if (sidecarEntry) files[sidecarEntry.name] = { sha256: sidecarEntry.sha256 };
+if (sidecarEntry) files[sidecarEntry.name] = { path: sidecarEntry.path };
+
+// macOS: ad-hoc sign dylibs for distribution.
+if (platform === 'darwin') {
+  console.log('\nSigning dylibs (ad-hoc)...');
+  for (const name of Object.keys(files)) {
+    if (name.endsWith('.dylib')) {
+      try {
+        execFileSync('codesign', ['-s', '-', resolve(prebuildDir, name)], { stdio: 'inherit' });
+      } catch {
+        console.warn(`  Warning: codesign failed for ${name} (may already be signed)`);
+      }
+    }
+  }
+}
+
+const metadataFiles = Object.fromEntries(
+  Object.entries(files).map(([name, entry]) => [name, { sha256: sha256(entry.path) }]),
+);
 
 // 5. Write metadata manifest.
 const pkg = JSON.parse(readFileSync(resolve(PACKAGE_ROOT, 'package.json'), 'utf8'));
@@ -153,27 +171,13 @@ const metadata = {
     leanVerifiedBuild: doeBuild.leanVerifiedBuild,
     proofArtifactSha256: doeBuild.proofArtifactSha256,
   },
-  files,
+  files: metadataFiles,
   builtAt: new Date().toISOString(),
 };
 
 const metadataPath = resolve(prebuildDir, 'metadata.json');
 writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
 console.log(`  metadata.json`);
-
-// macOS: ad-hoc sign dylibs for distribution.
-if (platform === 'darwin') {
-  console.log('\nSigning dylibs (ad-hoc)...');
-  for (const name of Object.keys(files)) {
-    if (name.endsWith('.dylib')) {
-      try {
-        execFileSync('codesign', ['-s', '-', resolve(prebuildDir, name)], { stdio: 'inherit' });
-      } catch {
-        console.warn(`  Warning: codesign failed for ${name} (may already be signed)`);
-      }
-    }
-  }
-}
 
 console.log(`\nDone. Prebuild artifacts in prebuilds/${platform}-${arch}/`);
 console.log(`Total files: ${Object.keys(files).length}`);

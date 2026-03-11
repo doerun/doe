@@ -78,7 +78,14 @@ export interface FullBoundDoeNamespace
   extends BoundDoeNamespace<GPUDevice, GPUBuffer, FullDoeKernel, FullDoeRunComputeOptions> {}
 
 export interface FullDoeNamespace
-  extends DoeNamespace<GPUDevice, GPUBuffer, FullDoeKernel, FullBoundDoeNamespace, FullDoeRunComputeOptions> {}
+  extends DoeNamespace<
+    GPUDevice,
+    GPUBuffer,
+    FullDoeKernel,
+    FullBoundDoeNamespace,
+    FullDoeRunComputeOptions,
+    RequestDeviceOptions
+  > {}
 
 export const globals: Record<string, unknown>;
 export function create(createArgs?: string[] | null): GPU;
