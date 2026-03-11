@@ -5,7 +5,7 @@
   "platform": "linux",
   "arch": "x64",
   "nodeNapiVersion": 8,
-  "doeVersion": "b09d34586",
+  "doeVersion": "737d89d2f",
   "doeBuild": {
     "artifact": "libwebgpu_doe",
     "leanVerifiedBuild": false,
@@ -13,14 +13,14 @@
   },
   "files": {
     "doe_napi.node": {
-      "sha256": "21475bcd04b499e1a0ed6e75d8af2a7bead08d365ddfb09708d509d0de62bf28"
+      "sha256": "08e6019b07dee38ac7140c27d4c1e10237fec5778e68506fcf85ea85dee797ec"
     },
     "libwebgpu_doe.so": {
-      "sha256": "28c5da84da65a5d6f4a3a74b9757279cddee738aaa93fe8ece6e358d4d94cdb1"
+      "sha256": "cfdda11deca1460022553b0ba916a1aaf4565168b353fcb37bb6b4ca1a3197d8"
     },
     "libwebgpu_dawn.so": {
       "sha256": "9d329301f59fbe85a190cee4faacde97f9c991b07264a18a6750b890899cc417"
     }
   },
-  "builtAt": "2026-03-10T21:30:16.241Z"
+  "builtAt": "2026-03-11T17:36:45.134Z"
 }

@@ -683,7 +683,14 @@ class DoeGPUQueue {
    */
   async onSubmittedWorkDone() {
     if (!this.hasPendingSubmissions()) return;
-    addon.queueFlush(this._native);
+    try {
+      addon.queueFlush(this._instance, this._native);
+    } catch (error) {
+      if (/queueFlush: wgpuInstanceWaitAny failed|queueFlush: doeNativeQueueFlush not available/.test(String(error?.message ?? error))) {
+        return;
+      }
+      throw error;
+    }
     this.markSubmittedWorkDone();
   }
 }

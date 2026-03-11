@@ -60,6 +60,8 @@ typedef uint32_t WGPUBool;
 #define WGPU_WHOLE_SIZE UINT64_MAX
 #define WGPU_STYPE_SHADER_SOURCE_WGSL 0x00000002
 #define WGPU_WAIT_STATUS_SUCCESS 1
+#define WGPU_WAIT_STATUS_TIMED_OUT 2
+#define WGPU_WAIT_STATUS_ERROR 3
 #define WGPU_MAP_ASYNC_STATUS_SUCCESS 1
 #define WGPU_REQUEST_STATUS_SUCCESS 1
 #define WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS 2
@@ -824,10 +826,23 @@ typedef struct {
     uint32_t done;
 } BufferMapResult;
 
+typedef struct {
+    uint32_t status;
+    uint32_t done;
+} QueueWorkDoneResult;
+
 static void buffer_map_callback(uint32_t status, WGPUStringView message,
     void* userdata1, void* userdata2) {
     (void)message; (void)userdata2;
     BufferMapResult* r = (BufferMapResult*)userdata1;
+    r->status = status;
+    r->done = 1;
+}
+
+static void queue_work_done_callback(uint32_t status, WGPUStringView message,
+    void* userdata1, void* userdata2) {
+    (void)message; (void)userdata2;
+    QueueWorkDoneResult* r = (QueueWorkDoneResult*)userdata1;
     r->status = status;
     r->done = 1;
 }
@@ -1387,16 +1402,58 @@ static napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info) 
     return NULL;
 }
 
-/* queueFlush(queue) — wait for all pending GPU work to complete.
- * Calls doeNativeQueueFlush directly (semaphore wait on pending command buffer)
- * instead of routing through wgpuQueueOnSubmittedWorkDone (immediate no-op in Doe). */
+/* queueFlush(instance, queue) — wait for all pending GPU work to complete.
+ * Use the Doe-native queue flush when available; otherwise fall back to the
+ * portable queue work-done callback path and process events until completion. */
 static napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
+    NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
-    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    WGPUInstance inst = unwrap_ptr(env, _args[0]);
+    WGPUQueue queue = unwrap_ptr(env, _args[1]);
     if (!queue) NAPI_THROW(env, "queueFlush requires queue");
-    if (!pfn_doeNativeQueueFlush) NAPI_THROW(env, "queueFlush: doeNativeQueueFlush not available");
-    pfn_doeNativeQueueFlush(queue);
+    if (pfn_doeNativeQueueFlush) {
+        pfn_doeNativeQueueFlush(queue);
+        return NULL;
+    }
+    if (!inst) NAPI_THROW(env, "queueFlush requires instance when doeNativeQueueFlush is unavailable");
+
+    QueueWorkDoneResult result = {0, 0};
+    WGPUQueueWorkDoneCallbackInfo cb_info = {
+        .nextInChain = NULL,
+        .mode = WGPU_CALLBACK_MODE_WAIT_ANY_ONLY,
+        .callback = queue_work_done_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
+
+    WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
+    if (future.id == 0) NAPI_THROW(env, "queueFlush: queue work-done future unavailable");
+    uint64_t start_ns = monotonic_now_ns();
+    while (!result.done) {
+        WGPUFutureWaitInfo wait_info = {
+            .future = future,
+            .completed = 0,
+        };
+        uint32_t wait_status = pfn_wgpuInstanceWaitAny(inst, 1, &wait_info, 0);
+        if (wait_status == WGPU_WAIT_STATUS_SUCCESS) {
+            if (!result.done) {
+                pfn_wgpuInstanceProcessEvents(inst);
+            }
+        } else if (wait_status == WGPU_WAIT_STATUS_TIMED_OUT) {
+            pfn_wgpuInstanceProcessEvents(inst);
+            if (monotonic_now_ns() - start_ns >= DOE_DEFAULT_TIMEOUT_NS) {
+                NAPI_THROW(env, "queueFlush: queue wait timed out");
+            }
+            wait_slice();
+        } else if (wait_status == WGPU_WAIT_STATUS_ERROR) {
+            NAPI_THROW(env, "queueFlush: wgpuInstanceWaitAny failed");
+        } else {
+            NAPI_THROW(env, "queueFlush: unsupported wait status");
+        }
+    }
+    if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS) {
+        NAPI_THROW(env, "queueFlush: queue work did not complete");
+    }
     return NULL;
 }
 
@@ -1547,7 +1604,6 @@ static napi_value doe_submit_compute_dispatch_copy(napi_env env, napi_callback_i
     uint64_t copy_dst_off = (uint64_t)copy_dst_off_i;
     uint64_t copy_size = (uint64_t)copy_size_i;
     if (!device || !queue || !pipeline) NAPI_THROW(env, "submitComputeDispatchCopy requires device, queue, and pipeline");
-    if (!pfn_doeNativeComputeDispatchFlush) NAPI_THROW(env, "submitComputeDispatchCopy: doeNativeComputeDispatchFlush not available");
 
     uint32_t bg_count = 0;
     napi_get_array_length(env, bgs, &bg_count);
@@ -1559,10 +1615,44 @@ static napi_value doe_submit_compute_dispatch_copy(napi_env env, napi_callback_i
         bg_ptrs[j] = unwrap_ptr(env, bg_val);
     }
 
-    pfn_doeNativeComputeDispatchFlush(
-        queue, pipeline, (void**)bg_ptrs, bg_count,
-        dx, dy, dz,
-        copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size);
+    if (pfn_doeNativeComputeDispatchFlush) {
+        pfn_doeNativeComputeDispatchFlush(
+            queue, pipeline, (void**)bg_ptrs, bg_count,
+            dx, dy, dz,
+            copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size);
+        return NULL;
+    }
+
+    WGPUCommandEncoder encoder = pfn_wgpuDeviceCreateCommandEncoder(device, NULL);
+    if (!encoder) NAPI_THROW(env, "submitComputeDispatchCopy: createCommandEncoder failed");
+    WGPUComputePassEncoder pass = pfn_wgpuCommandEncoderBeginComputePass(encoder, NULL);
+    if (!pass) {
+        pfn_wgpuCommandEncoderRelease(encoder);
+        NAPI_THROW(env, "submitComputeDispatchCopy: beginComputePass failed");
+    }
+    pfn_wgpuComputePassEncoderSetPipeline(pass, pipeline);
+    for (uint32_t j = 0; j < bg_count; j++) {
+        if (bg_ptrs[j]) pfn_wgpuComputePassEncoderSetBindGroup(pass, j, bg_ptrs[j], 0, NULL);
+    }
+    pfn_wgpuComputePassEncoderDispatchWorkgroups(pass, dx, dy, dz);
+    pfn_wgpuComputePassEncoderEnd(pass);
+    pfn_wgpuComputePassEncoderRelease(pass);
+    pfn_wgpuCommandEncoderCopyBufferToBuffer(
+        encoder,
+        copy_src,
+        copy_src_off,
+        copy_dst,
+        copy_dst_off,
+        copy_size
+    );
+    WGPUCommandBuffer cmd_buf = pfn_wgpuCommandEncoderFinish(encoder, NULL);
+    if (!cmd_buf) {
+        pfn_wgpuCommandEncoderRelease(encoder);
+        NAPI_THROW(env, "submitComputeDispatchCopy: finish failed");
+    }
+    pfn_wgpuQueueSubmit(queue, 1, &cmd_buf);
+    pfn_wgpuCommandBufferRelease(cmd_buf);
+    pfn_wgpuCommandEncoderRelease(encoder);
     return NULL;
 }
 
