@@ -633,6 +633,36 @@ function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
     }
 }
 
+function waitForSubmittedWorkDoneSync(instancePtr, queuePtr) {
+    let queueStatus = null;
+    let done = false;
+    const cb = new JSCallback(
+        (status, _msgData, _msgLen, _ud1, _ud2) => {
+            queueStatus = status;
+            done = true;
+        },
+        { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+    );
+    try {
+        const futureId = wgpu.symbols.doeQueueOnSubmittedWorkDoneFlat(
+            queuePtr,
+            CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+            cb.ptr,
+            null,
+            null,
+        );
+        if (futureId === 0 || futureId === 0n) {
+            throw new Error("[fawn-webgpu] queue work-done future unavailable");
+        }
+        processEventsUntilDone(instancePtr, () => done);
+        if (queueStatus !== REQUEST_DEVICE_STATUS_SUCCESS) {
+            throw new Error(`[fawn-webgpu] queue work-done failed (status=${queueStatus})`);
+        }
+    } finally {
+        cb.close();
+    }
+}
+
 // ---------------------------------------------------------------------------
 // WebGPU wrapper classes — matches index.js surface exactly
 // ---------------------------------------------------------------------------
@@ -647,6 +677,10 @@ class DoeGPUBuffer {
     }
 
     async mapAsync(mode, offset = 0, size = this.size) {
+        if (this._queue?.hasPendingSubmissions()) {
+            waitForSubmittedWorkDoneSync(this._instance, this._queue._native);
+            this._queue.markSubmittedWorkDone();
+        }
         bufferMapSync(this._instance, this._native, mode, offset, size);
         this._mapMode = mode;
     }
@@ -734,6 +768,15 @@ class DoeGPUQueue {
     constructor(native, instance) {
         this._native = native;
         this._instance = instance;
+        this._pendingSubmissions = 0;
+    }
+
+    hasPendingSubmissions() {
+        return this._pendingSubmissions > 0;
+    }
+
+    markSubmittedWorkDone() {
+        this._pendingSubmissions = 0;
     }
 
     submit(commandBuffers) {
@@ -742,6 +785,9 @@ class DoeGPUQueue {
             ptrs[i] = BigInt(commandBuffers[i]._native);
         }
         wgpu.symbols.wgpuQueueSubmit(this._native, BigInt(commandBuffers.length), ptrs);
+        if (commandBuffers.length > 0) {
+            this._pendingSubmissions += commandBuffers.length;
+        }
     }
 
     writeBuffer(buffer, bufferOffset, data, dataOffset = 0, size) {
@@ -757,8 +803,9 @@ class DoeGPUQueue {
     }
 
     async onSubmittedWorkDone() {
-        // Match the Node provider contract: Doe submit commits synchronously,
-        // and mapAsync flushes when readback synchronization is required.
+        if (!this.hasPendingSubmissions()) return;
+        waitForSubmittedWorkDoneSync(this._instance, this._native);
+        this.markSubmittedWorkDone();
     }
 }
 
@@ -865,7 +912,7 @@ class DoeGPUDevice {
     createBuffer(descriptor) {
         const descBytes = buildBufferDescriptor(descriptor);
         const buf = wgpu.symbols.wgpuDeviceCreateBuffer(this._native, descBytes);
-        return new DoeGPUBuffer(buf, this._instance, descriptor.size, descriptor.usage, this.queue._native);
+        return new DoeGPUBuffer(buf, this._instance, descriptor.size, descriptor.usage, this.queue);
     }
 
     createShaderModule(descriptor) {

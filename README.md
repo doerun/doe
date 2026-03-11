@@ -20,6 +20,14 @@ Simulatte is the parent organization, Fawn is the development platform and
 repo, Doe is the WebGPU runtime, and `@simulatte/webgpu` is the packaged
 distribution surface.
 
+Terminology note:
+
+- `Doe runtime` refers to the Zig/native WebGPU implementation
+- `Doe API` and `Doe routines` refer to the JS convenience surface exposed by
+  `@simulatte/webgpu`
+- the exported `doe` object belongs to that JS surface; it is not a separate
+  runtime from the Doe runtime underneath
+
 Doe (`doe-webgpu`, `libwebgpu_doe.so`) is Fawn's execution engine. It combines
 startup-time profile and quirk binding, a native WGSL pipeline (`lexer ->
 parser -> semantic analysis -> IR -> backend emitters`), and explicit
@@ -186,12 +194,15 @@ and `licensing.md`.
 ## Package
 
 The canonical npm package is `@simulatte/webgpu`, rooted in `nursery/webgpu/`.
-It contains the Doe-native Node provider, addon build contract, the Bun FFI
-runtime surface, and CLI tools for benchmarking and CI workflows.
+It packages the Doe runtime for Node.js and Bun, exposes raw WebGPU entry
+points plus the Doe API / Doe routines JS surface, and includes CLI tools for
+benchmarking and CI workflows. Bun currently uses a platform-split bridge path
+(FFI on Linux, full/addon-backed on macOS).
 
 Node is the primary supported package surface. Bun has API parity (61/61
-contract tests) through the package FFI surface; cube maturity remains
-prototype until cells are populated by comparable benchmark artifacts.
+contract tests) through the package surface; the bridge layer is platform-
+dependent, but the intended package semantics stay the same. Cube maturity
+remains prototype until cells are populated by comparable benchmark artifacts.
 
 ```bash
 # install from npm

@@ -502,10 +502,11 @@ function createBoundDoe(device) {
 }
 
 /**
- * Build the shared Doe namespace for a package surface.
+ * Build the shared Doe API / Doe routines namespace for a package surface.
  *
  * This creates the public `doe` object used by both `@simulatte/webgpu` and
- * `@simulatte/webgpu/compute` for the `Doe API` and `Doe routines` surface.
+ * `@simulatte/webgpu/compute` for the JS convenience surface layered over the
+ * Doe runtime.
  *
  * - If no `requestDevice` implementation is supplied, `doe.requestDevice()` throws, but `doe.bind(device)` and the static helper groups still work.
  * - Both package surfaces share this helper shape; only the underlying raw device contract differs.
@@ -513,7 +514,7 @@ function createBoundDoe(device) {
 export function createDoeNamespace({ requestDevice } = {}) {
   return {
     /**
-     * Request a device and return the bound Doe helper object in one step.
+     * Request a device and return the bound Doe API helper object in one step.
      *
      * This calls the package-local `requestDevice(...)` implementation, then
      * wraps the resulting device into the `Doe API` surface.
@@ -627,7 +628,7 @@ export function createDoeNamespace({ requestDevice } = {}) {
 }
 
 /**
- * Unbound Doe namespace without a package-local `requestDevice(...)`.
+ * Unbound Doe API / Doe routines namespace without a package-local `requestDevice(...)`.
  *
  * This export is primarily for internal composition and advanced consumers who
  * want the shared Doe API and Doe routines groups without choosing the full or compute package entry.

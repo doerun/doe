@@ -7,6 +7,17 @@ default `full` surface, an explicit `compute` subpath, and the Doe API / Doe
 routines surface used by benchmarking, CI, and artifact-backed comparison
 workflows.
 
+Terminology in this contract is explicit:
+
+- `Doe runtime`
+  the Zig/native WebGPU runtime underneath the package
+- `Doe API`
+  the explicit JS convenience surface under `doe.bind(...)`, `gpu.buffers.*`,
+  `gpu.compute.run(...)`, and `gpu.compute.compile(...)`
+- `Doe routines`
+  the narrower, more opinionated JS flows layered on that same runtime;
+  currently `gpu.compute.once(...)`
+
 For the current `compute` vs `full` support split, see
 [`./support-contracts.md`](./support-contracts.md).
 
@@ -27,10 +38,11 @@ The current package surface is organized around three API styles:
 - `Direct WebGPU`
   raw `requestAdapter(...)`, `requestDevice(...)`, and direct `device.*` usage
 - `Doe API`
-  Doe's explicit convenience surface under `doe.bind(...)`, `gpu.buffers.*`,
-  `gpu.compute.run(...)`, and `gpu.compute.compile(...)`
+  the package's explicit JS convenience surface under `doe.bind(...)`,
+  `gpu.buffers.*`, `gpu.compute.run(...)`, and `gpu.compute.compile(...)`
 - `Doe routines`
-  Doe's more opinionated precomposed flows; currently `gpu.compute.once(...)`
+  the package's more opinionated precomposed flows; currently
+  `gpu.compute.once(...)`
 
 ## Export surfaces
 
@@ -41,7 +53,7 @@ Default package surface.
 Contract:
 
 - headless `full` surface
-- includes compute plus render/sampler/surface APIs already exposed by the package runtime
+- includes compute plus render/sampler/surface APIs already exposed by the Doe runtime package surface
 - also exports the shared `doe` namespace for the Doe API and Doe routines surface
 
 ### `@simulatte/webgpu/compute`
@@ -95,6 +107,8 @@ Behavior:
 
 - provides the `Doe API` and `Doe routines` surface for common headless
   compute tasks
+- the exported `doe` namespace is the JS convenience surface, distinct from
+  the underlying Doe runtime
 - `requestDevice(options?)` resolves the package-local `requestDevice(...)` and returns
   the bound helper object directly
 - supports both static helper calls and `doe.bind(device)` for device-bound workflows
