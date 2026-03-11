@@ -1,2 +1,2 @@
-export * from "./index.js";
-export { default } from "./index.js";
+export * from "./full.js";
+export { default } from "./full.js";

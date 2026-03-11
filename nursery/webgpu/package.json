@@ -1,16 +1,32 @@
 {
   "name": "@simulatte/webgpu",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Headless WebGPU runtime for Node.js and Bun, powered by Doe",
   "type": "module",
   "main": "./src/node-runtime.js",
+  "types": "./src/full.d.ts",
   "exports": {
     ".": {
+      "types": "./src/full.d.ts",
       "bun": "./src/bun.js",
       "default": "./src/node-runtime.js"
     },
-    "./bun": "./src/bun.js",
-    "./node": "./src/node-runtime.js"
+    "./bun": {
+      "types": "./src/full.d.ts",
+      "default": "./src/bun.js"
+    },
+    "./node": {
+      "types": "./src/full.d.ts",
+      "default": "./src/node-runtime.js"
+    },
+    "./compute": {
+      "types": "./src/compute.d.ts",
+      "default": "./src/compute.js"
+    },
+    "./full": {
+      "types": "./src/full.d.ts",
+      "default": "./src/full.js"
+    }
   },
   "bin": {
     "fawn-webgpu-bench": "./bin/fawn-webgpu-bench.js",
@@ -26,11 +42,11 @@
     "binding.gyp",
     "README.md",
     "CHANGELOG.md",
-    "API_CONTRACT.md",
-    "COMPAT_SCOPE.md",
-    "SUPPORT_CONTRACTS.md",
-    "LAYERING_PLAN.md",
-    "ZIG_SOURCE_INVENTORY.md",
+    "api-contract.md",
+    "compat-scope.md",
+    "support-contracts.md",
+    "layering-plan.md",
+    "zig-source-inventory.md",
     "headless-webgpu-comparison.md",
     "doe-build-metadata.schema.json",
     "prebuild-metadata.schema.json"
@@ -40,7 +56,7 @@
     "build:addon": "node-gyp rebuild",
     "build:readme-assets": "node scripts/generate-readme-assets.js",
     "prebuild": "node scripts/prebuild.js",
-    "test": "node ./test-node.js",
+    "test": "node ./test-node.js && node ./test-package-exports.js",
     "test:bun": "bun ./test-bun.js",
     "smoke": "node scripts/smoke-test.js"
   },

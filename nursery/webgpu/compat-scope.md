@@ -43,4 +43,4 @@ Layering note:
 
 - this file describes the current package surface and its present non-goals
 - proposed future `core` vs `full` support contracts are defined separately in
-  `SUPPORT_CONTRACTS.md`
+  [`./support-contracts.md`](./support-contracts.md)

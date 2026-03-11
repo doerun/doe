@@ -1,6 +1,6 @@
 // doe_wgsl/parser.zig — WGSL parser producing an AST.
 //
-// Parses the subset of WGSL used by Doppler compute shaders:
+// Parses the subset of WGSL used by AI workload compute shaders:
 // - enable directives
 // - struct declarations (with nested array fields)
 // - global var/let/const/override declarations with attributes

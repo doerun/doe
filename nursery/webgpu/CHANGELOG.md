@@ -7,19 +7,41 @@ retrofitted from package version history and package-surface commits so the npm
 package has a conventional release history alongside the broader Fawn status
 and process documents.
 
+## [0.2.4] - 2026-03-11
+
+### Changed
+
+- `doe.runCompute()` now infers binding access from Doe helper-created buffer
+  usage and fails fast when a bare binding lacks Doe usage metadata or uses a
+  non-bindable/ambiguous usage shape.
+- Simplified the compute-surface README example to use inferred binding access
+  (`bindings: [input, output]`) and the device-bound `doe.bind(await
+  requestDevice())` flow directly.
+- Clarified the install contract for non-prebuilt platforms: the `node-gyp`
+  fallback only builds the native addon and does not bundle `libwebgpu_doe`
+  plus the required Dawn sidecar.
+- Aligned the published package docs and API contract with the current
+  `@simulatte/webgpu`, `@simulatte/webgpu/compute`, and `@simulatte/webgpu/full`
+  export surface.
+
 ## [0.2.3] - 2026-03-10
 
 ### Added
 
 - macOS arm64 (Metal) prebuilds shipped alongside existing Linux x64 (Vulkan).
-- Monte Carlo pi estimation example in the README, replacing the trivial
-  buffer-readback snippet with a real GPU compute demonstration.
 - "Verify your install" section with `npm run smoke` and `npm test` guidance.
+- Added explicit package export surfaces for `@simulatte/webgpu` (default
+  full) and `@simulatte/webgpu/compute`, plus the first `doe` ergonomic
+  namespace for buffer/readback/compute helpers.
+- Added `doe.bind(device)` so the ergonomic helper surface supports device-bound
+  workflows in addition to static helper calls.
 
 ### Changed
 
-- Restructured package README for consumers: examples, quickstart, and
-  verification first; building from source and Fawn developer context at the end.
+- Restructured the package README around the default full surface,
+  `@simulatte/webgpu/compute`, and the `doe` helper surface.
+- `doe.runCompute()` now infers binding access from Doe helper-created buffer
+  usage and fails fast for bare bindings that do not carry Doe usage metadata.
 - Fixed broken README image links to use bundled asset paths instead of dead
   raw GitHub URLs.
 - Root Fawn README now directs package users to the package README.

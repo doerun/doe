@@ -22,8 +22,8 @@ This document maps the current `zig/src` tree into four buckets:
 
 Use this with:
 
-- `SUPPORT_CONTRACTS.md`
-- `LAYERING_PLAN.md`
+- `support-contracts.md`
+- `layering-plan.md`
 
 ## Reading rule
 

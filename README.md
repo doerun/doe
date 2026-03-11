@@ -44,7 +44,7 @@ fail-fast paths, and the runtime behavior that must remain live.
 Doe is the engine. Fawn is everything required to make that engine real,
 measurable, and shippable.
 
-![Fawn logo](nursery/fawn-browser/assets/logo/compiled/linux/fawn-icon-main-256.png)
+![Fawn logo](nursery/webgpu/assets/fawn-icon-main-256.png)
 
 ## Benchmark snapshot
 

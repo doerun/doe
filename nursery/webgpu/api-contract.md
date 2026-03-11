@@ -2,21 +2,45 @@
 
 Contract version: `v1`
 
-Scope: current single-surface headless WebGPU package contract for Node.js and
-Bun, plus Doe runtime helpers used by benchmarking, CI, and artifact-backed
-comparison workflows.
+Scope: current headless WebGPU package contract for Node.js and Bun, with a
+default `full` surface, an explicit `compute` subpath, and Doe runtime helpers
+used by benchmarking, CI, and artifact-backed comparison workflows.
 
-This is the current single-surface package contract.
-For the proposed future layered `core` vs `full` support split, see
-`SUPPORT_CONTRACTS.md`.
+For the current `compute` vs `full` support split, see
+[`./support-contracts.md`](./support-contracts.md).
 
 This contract covers package-surface GPU access, provider metadata, and helper
 entrypoints. It does not promise DOM/canvas ownership or browser-process
 parity.
 
-## Node runtime API
+## Export surfaces
 
-Module: `@simulatte/webgpu` (Node default export target)
+### `@simulatte/webgpu`
+
+Default package surface.
+
+Contract:
+
+- headless `full` surface
+- includes compute plus render/sampler/surface APIs already exposed by the package runtime
+- also exports the `doe` ergonomic namespace
+
+### `@simulatte/webgpu/compute`
+
+Compute-first package surface.
+
+Contract:
+
+- sized for AI workloads and other buffer/dispatch-heavy headless execution
+- excludes render/sampler/surface methods from the public JS facade
+- also exports the same `doe` ergonomic namespace
+
+## Shared runtime API
+
+Modules:
+
+- `@simulatte/webgpu`
+- `@simulatte/webgpu/compute`
 
 ### `create(createArgs?)`
 
@@ -73,6 +97,11 @@ Output:
 
 - `Promise<GPUDevice>`
 
+On `@simulatte/webgpu/compute`, the returned device is a compute-only facade:
+
+- buffer / bind group / compute pipeline / command encoder / queue methods are available
+- render / sampler / surface methods are intentionally absent from the facade
+
 ### `providerInfo()`
 
 Output object:
@@ -94,6 +123,27 @@ Behavior:
 - reports package-surface library provenance when prebuild metadata or Zig build
   metadata is available
 - does not guess: if metadata is unavailable, `leanVerifiedBuild` is `null`
+
+### `doe`
+
+Output object:
+
+- `bind(device)`
+- `createBuffer(device, options)`
+- `createBufferFromData(device, data, options?)`
+- `readBuffer(device, buffer, TypedArray, options?)`
+- `runCompute(device, options)`
+- `compileCompute(device, options)`
+
+Behavior:
+
+- provides an ergonomic JS surface for common headless compute tasks
+- supports both static helper calls and `doe.bind(device)` for device-bound workflows
+- infers `runCompute(...).bindings` access from Doe helper-created buffer usage when that
+  usage maps to one bindable access mode (`uniform`, `storage-read`, `storage-readwrite`)
+- fails fast for bare bindings that do not carry Doe helper usage metadata or whose
+  usage is non-bindable/ambiguous; callers must pass `{ buffer, access }` explicitly
+- additive only; it does not replace the raw WebGPU-facing package API
 
 ### `createDoeRuntime(options?)`
 

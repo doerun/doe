@@ -204,6 +204,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`).
+  - `doe.runCompute()` now infers binding access from Doe helper-created buffer usage and fails fast when a bare binding lacks Doe helper metadata or resolves to non-bindable/ambiguous usage.
     - prebuild infrastructure for self-contained installs:
       - `scripts/install.js`: uses prebuilt binaries when present, falls back to node-gyp
       - `scripts/prebuild.js`: assembles `prebuilds/<platform>-<arch>/` with `doe_napi.node` + `libwebgpu_doe` + Dawn sidecar + integrity manifest
@@ -241,7 +242,11 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - `bench/run_blocking_gates.py` now treats `python3 bench/generate_backend_workloads.py --verify` as a blocking catalog-authority gate.
     - `bench/run_blocking_gates.py` now also runs `python3 bench/test_backend_workload_catalog.py` as a blocking regression gate for D3D12 catalog round-trip, expected workload IDs, and policy/config invariants.
     - benchmark cube placeholders now distinguish governed but unevidenced Windows D3D12 coverage as `contract exists, evidence missing`.
-  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/API_CONTRACT.md` and compatibility boundary in `nursery/webgpu/COMPAT_SCOPE.md`.
+  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/api-contract.md` and compatibility boundary in `nursery/webgpu/compat-scope.md`.
+  - package exports now distinguish default `full` and explicit `compute` surfaces:
+    - `@simulatte/webgpu` => full headless surface
+    - `@simulatte/webgpu/compute` => AI-workload-oriented compute subset
+    - both surfaces export the `doe` ergonomic namespace for buffer/readback/compute helpers
   - legacy package identities `@doe/webgpu-core` and `@doe/webgpu` are no longer the canonical package contract.
   - Linux Doe-native in-process path now works end-to-end; `DOE_WEBGPU_LIB` env var no longer required when prebuilds or workspace artifacts are present.
   - local workspace package loading now prefers `nursery/webgpu/build/{Release,Debug}/doe_napi.node` before packaged prebuilds, so benchmark/debug runs use freshly rebuilt addon code instead of stale prebuilt binaries.
@@ -468,8 +473,8 @@ Legend: ● implemented ◐ partial ○ missing
 
 ### Architecture notes
 
-- **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` for the earlier Node headless path and Doppler inference. 729 + 155 lines.
-- **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by Doppler. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
+- **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` for the earlier Node headless path and AI workload inference. 729 + 155 lines.
+- **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by the current AI workload package lanes. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
 - **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Live WGSL kernels now compile through the shared WGSL→IR→SPIR-V path in `doe_wgsl/emit_spirv.zig`; prebuilt `.spv` artifacts still load directly. The native compute path now includes Vulkan descriptor-set layout/pool/bind wiring for buffer bindings, entry-point-aware pipeline creation, and live bound-buffer dispatch.
 - **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Accepts pre-compiled DXIL/CSO/DXBC bytecode blobs. Live WGSL still lowers through `WGSL -> IR -> HLSL -> DXC`; native `translateToDxil` API surface exists but native DXIL emission is not implemented yet.
 
@@ -477,7 +482,7 @@ Legend: ● implemented ◐ partial ○ missing
 
 AST-based WGSL compiler replacing the old regex-based line translator. Architecture: lexer → parser → AST → backend emitter.
 
-- **MSL emitter**: Production. Covers Doppler's full compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
+- **MSL emitter**: Production. Covers the current AI-workload compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
 - **SPIR-V emitter**: Native Zig IR→SPIR-V binary emitter for parser-supported compute kernels. Current compute scope now includes bound uniform/storage buffers, structured control flow, workgroup/storage barriers, and atomic builtins. Remaining gaps are primarily texture/storage-texture resource types, texture builtins, and broader non-compute WGSL coverage.
 - **HLSL emitter**: Production path for parser-supported compute kernels, feeding DXC bytecode generation for D3D12 only.
 

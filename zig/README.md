@@ -257,7 +257,7 @@ Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metad
 - `selectionPolicyHash`
 - `backendLane`
 
-### Command replay examples for Doppler-style command derivatives
+### Command replay examples for AI workload command derivatives
 
 - `kernel_dispatch` with `kernel` label and dispatch dimensions: `examples/kernel_dispatch_commands.json`
 - `kernel_dispatch` accepts optional `repeat` (aliases: `dispatch_count`, `dispatchCount`), default `1`.

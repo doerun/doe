@@ -12,8 +12,8 @@ Scope:
 
 This document defines three explicit layers:
 
-1. `core`
-   - compute-first headless WebGPU
+1. `compute` (`core` runtime boundary)
+   - compute-first headless WebGPU for AI workloads and other buffer/dispatch-heavy tasks
    - minimal releaseable package/runtime surface
    - explicit unsupported for sampled/render/browser gaps
 2. `full`
@@ -30,7 +30,7 @@ depends on the full runtime artifact plus browser-specific gates; it must not
 depend on npm packaging shape.
 
 Boundary-enforcement and refactor-order details are defined in
-`LAYERING_PLAN.md`.
+[`./layering-plan.md`](./layering-plan.md).
 
 ## Dependency contract
 
@@ -62,7 +62,7 @@ Implementation intent:
 
 Three surfaces are implied by this split:
 
-1. `core`
+1. `compute`
    - headless compute-first package/runtime
 2. `full`
    - headless full WebGPU package/runtime
@@ -100,11 +100,11 @@ Browser-owned semantics remain outside both `core` and `full`.
 | Fallback policy / denylist / kill switch | `out_of_scope` | `out_of_scope` | `required` |
 | Chromium process behavior | `out_of_scope` | `out_of_scope` | `required` |
 
-## Core support contract
+## Compute support contract (`core` runtime, `@simulatte/webgpu/compute` export)
 
 ### Target user
 
-- ML inference
+- AI workloads
 - simulation
 - data processing
 - CI and benchmark orchestration
@@ -112,59 +112,44 @@ Browser-owned semantics remain outside both `core` and `full`.
 
 ### Promise
 
-`core` promises a stable compute-first headless WebGPU surface with explicit
+`compute` promises a stable compute-first headless WebGPU surface sized for AI
+workloads and other buffer/dispatch-heavy headless execution, with explicit
 unsupported behavior for sampled-texture, render, and browser-owned semantics.
 
 ### Included object model
 
-`core` includes:
+`compute` includes:
 
 - `GPU`, `GPUAdapter`, `GPUDevice`, `GPUQueue`
 - `GPUBuffer`
 - `GPUShaderModule` for compute WGSL
 - `GPUBindGroupLayout`, `GPUBindGroup`, `GPUPipelineLayout`
 - `GPUComputePipeline`
+- `createComputePipelineAsync`
 - `GPUCommandEncoder` for copy, upload, clear, barrier, and compute encoding
 - `GPUComputePassEncoder`
 - `dispatchWorkgroups`
 - `dispatchWorkgroupsIndirect`
-
-### Texture contract
-
-`core` gets samplerless compute textures only.
-
-Included usage classes:
-
-- `COPY_SRC`
-- `COPY_DST`
-- `TEXTURE_BINDING`
-- `STORAGE_BINDING`
-
-Excluded from `core`:
-
-- `GPUSampler`
-- sampled-texture semantics
-- render-attachment semantics
-- browser presentation semantics
-
-Best rule:
-
-- `core` gets samplerless compute textures only
-- `full` gets sampled textures and render semantics
+- queue `writeBuffer`
+- buffer readback via `MAP_READ` + `copyBufferToBuffer`
+- Node/Bun bootstrap globals required for headless execution:
+  - `navigator.gpu`
+  - `GPUBufferUsage`
+  - `GPUShaderStage`
+  - `GPUMapMode`
+  - `GPUTextureUsage`
 
 ### WGSL contract
 
-WGSL required in `core`:
+WGSL required in `compute`:
 
 - storage buffers
 - uniform buffers
 - workgroup buffers
 - atomics
 - barriers
-- `textureLoad`
-- `textureStore`
 
-WGSL out of scope for `core`:
+WGSL out of scope for `compute`:
 
 - sampler declarations and binding semantics
 - `textureSample*`
@@ -174,9 +159,10 @@ WGSL out of scope for `core`:
 
 ### Explicit exclusions
 
-`core` does not own:
+`compute` does not own:
 
 - `GPUSampler`
+- sampled textures
 - `GPURenderPipeline`
 - `GPURenderPassEncoder`
 - `GPURenderBundleEncoder`
@@ -191,7 +177,7 @@ WGSL out of scope for `core`:
 
 ### Release gates for `core`
 
-`core` acceptance requires:
+`compute` acceptance requires:
 
 1. schema, correctness, and trace gates green
 2. package contract tests green for Node and declared Bun surface
@@ -199,9 +185,9 @@ WGSL out of scope for `core`:
    - adapter/device acquisition
    - buffers
    - copy/upload
+   - readback
    - compute pipeline
    - compute dispatch
-   - compute-visible texture load/store paths
 4. benchmark cube evidence limited to:
    - upload
    - compute e2e
@@ -209,7 +195,7 @@ WGSL out of scope for `core`:
 5. explicit unsupported taxonomy for any sampler, sampled-texture, render,
    surface, or browser API request outside the `core` contract
 
-### Non-goals for `core`
+### Non-goals for `compute`
 
 1. full WebGPU JS object-model parity
 2. sampled-texture semantics
@@ -229,8 +215,8 @@ WGSL out of scope for `core`:
 ### Promise
 
 `full` promises a full headless WebGPU surface. It is a strict superset of
-`core`, but it still does not claim browser-process ownership, DOM integration,
-or Chromium wire/drop-in readiness by itself.
+`compute`, but it still does not claim browser-process ownership, DOM
+integration, or Chromium wire/drop-in readiness by itself.
 
 ### Added object model
 

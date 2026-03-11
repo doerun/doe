@@ -305,7 +305,7 @@ doe-core ──────────► doe-runtime ────────�
   ▼                     ▼                       ▼
   CI/perf teams         Engine/embedded teams   Enterprise/regulated
   AI/ML infra           Dawn/wgpu replacers     Government/defense
-  Doppler integration   Native app developers   Healthcare/finance
+  AI workload integration   Native app developers   Healthcare/finance
 ```
 
 ### Promotion Criteria
@@ -316,7 +316,7 @@ doe-core ──────────► doe-runtime ────────�
 2. `dropin_gate.py` passes on full `webgpu.h` symbol set
 3. First CTS subset run published with pass/fail counts
 4. Binary size and build time comparison vs Dawn published
-5. At least one external consumer validated (Doppler, game engine, or embedded integrator)
+5. At least one external consumer validated (AI workload stack, game engine, or embedded integrator)
 
 **doe-runtime → fawn-browser:**
 
@@ -347,18 +347,18 @@ The claim discipline rules from the positioning report apply universally, but th
 
 ---
 
-## Relationship to Doppler
+## Relationship to AI workloads
 
-Doppler is a consumer of Doe, not a tier of Doe. Doppler's tier requirements:
+AI workload stacks are consumers of Doe, not tiers of Doe. Representative tier requirements:
 
-| Doppler Use Case | Minimum Doe Tier | Reason |
+| AI workload use case | Minimum Doe Tier | Reason |
 |-----------------|-----------------|--------|
 | Browser inference on stock WebGPU | None (uses Dawn/wgpu via host browser) | Doe not involved |
-| Headless inference via `DOPPLER_NODE_WEBGPU_MODULE` | doe-core | Needs `requestAdapter`/`requestDevice` in Node |
-| Vertically integrated browser AI (Doppler + Fawn) | fawn-browser | Needs browser-integrated `navigator.gpu` on Doe |
+| Headless inference via Node provider module | doe-core | Needs `requestAdapter`/`requestDevice` in Node |
+| Vertically integrated browser AI stack | fawn-browser | Needs browser-integrated `navigator.gpu` on Doe |
 | Sovereign AI stack (all three) | fawn-browser | Full stack requires all tiers |
 
-Doppler can ship value today on stock WebGPU (no Doe dependency). The Doe integration path adds value incrementally as tiers mature.
+AI workload stacks can ship value today on stock WebGPU (no Doe dependency). The Doe integration path adds value incrementally as tiers mature.
 
 ---
 

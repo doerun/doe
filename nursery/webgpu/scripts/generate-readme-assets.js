@@ -26,8 +26,8 @@ const SURFACE_SPECS = [
   {
     surface: 'bun_package',
     title: 'Bun package lane',
-    supportLabel: 'Prototype support',
-    preferredHostProfile: 'linux_x64',
+    supportLabel: 'Validated support',
+    preferredHostProfile: 'mac_apple_silicon',
     focusSets: ['compute_e2e', 'uploads'],
     tone: 'right',
   },

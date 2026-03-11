@@ -20,10 +20,10 @@ It answers four questions:
 
 Use this together with:
 
-- `SUPPORT_CONTRACTS.md` for product/support scope
-- `API_CONTRACT.md` for the current single-surface package contract
-- `COMPAT_SCOPE.md` for current package non-goals
-- `ZIG_SOURCE_INVENTORY.md` for the current `zig/src` file map
+- `support-contracts.md` for product/support scope
+- `api-contract.md` for the current package contract (`full` default, `compute` subpath)
+- `compat-scope.md` for current package non-goals
+- `zig-source-inventory.md` for the current `zig/src` file map
 
 ## Current state
 
@@ -37,7 +37,7 @@ Current reality:
 4. Canonical texture command handling now lives in `zig/src/core/resource/wgpu_texture_commands.zig`; canonical sampler and surface command handling now lives in `zig/src/full/render/wgpu_sampler_commands.zig` and `zig/src/full/surface/wgpu_surface_commands.zig`.
 5. `zig/src/wgpu_commands.zig`, `zig/src/wgpu_resources.zig`, and `zig/src/wgpu_extended_commands.zig` are now compatibility façades over the canonical subtrees, while `zig/src/webgpu_ffi.zig` remains the public façade and owner of `WebGPUBackend`.
 6. Dedicated Zig test lanes now exist as `zig build test-core` and `zig build test-full`, but split coverage remains thin and capability tracking is still represented by one shared coverage ledger.
-7. The JS package still exposes a single surface today.
+7. The JS package now exposes a default `full` surface plus an explicit `compute` subpath, while the underlying JS implementation is still shared.
 
 That means this plan is now materially physicalized in the tree, and the remaining semantic split is concentrated in the public façade files and backend roots.
 
@@ -195,12 +195,14 @@ lean/Fawn/Core/
 lean/Fawn/Full/
 ```
 
-Matching package layout can be one of:
+Matching package layout is currently:
 
 1. one package with scoped exports
-2. separate packages with separate contracts
+   - `@simulatte/webgpu` => `full`
+   - `@simulatte/webgpu/compute` => compute-first subset
 
-Packaging choice is secondary. The source boundary must come first.
+Separate packages remain optional later, but they are not the current shape.
+The source boundary still comes first.
 
 ## Refactor order
 

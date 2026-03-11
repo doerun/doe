@@ -139,7 +139,7 @@ That document defines:
   - executes a configured WebGPU CTS query subset and emits per-query pass/fail + wall-time artifacts (JSON + markdown).
   - supports `--dry-run`, `--stop-on-fail`, and bounded query execution via `--max-queries`.
 - `build_model_capacity_matrix.py`
-  - builds a hardware×model capacity matrix artifact from measured Doppler/Doe runs, including status classes (`pass`, `fail`, `oom`, `unsupported`) and per-hardware max passable model size.
+  - builds a hardware×model capacity matrix artifact from measured AI workload/Doe runs, including status classes (`pass`, `fail`, `oom`, `unsupported`) and per-hardware max passable model size.
   - emits JSON + markdown summaries for explicit model-size ceiling disclosure.
 - `run_market_readiness_bundle.py`
   - one-command orchestrator for release evidence packaging:
