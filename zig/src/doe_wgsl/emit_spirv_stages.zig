@@ -49,11 +49,15 @@ pub fn emit_stage_entry_wrapper(emitter: *Emitter, entry: ir.EntryPoint) EmitErr
 
     for (function.params.items) |param| {
         const range_start: u32 = @intCast(interface_ids.items.len);
-        const io = param.io orelse return error.UnsupportedConstruct;
-        if (io.builtin == .none and io.location == null) {
-            // Struct-typed parameter: expand fields into individual input variables.
+        const is_struct = switch (emitter.module.types.get(param.ty)) {
+            .struct_ => true,
+            else => false,
+        };
+        if (is_struct) {
+            if (param.io != null) return error.UnsupportedConstruct;
             try emit_struct_io_vars(emitter, param.ty, spirv.StorageClass.Input, &interface_ids);
         } else {
+            const io = param.io orelse return error.UnsupportedConstruct;
             const value_type = try emitter.lower_type(param.ty);
             const ptr_type = try emitter.builder.type_pointer(spirv.StorageClass.Input, value_type);
             const var_id = try emitter.builder.variable_global(ptr_type, spirv.StorageClass.Input);
@@ -65,7 +69,7 @@ pub fn emit_stage_entry_wrapper(emitter: *Emitter, entry: ir.EntryPoint) EmitErr
         try param_input_ranges.append(emitter.alloc, .{
             .start = range_start,
             .len = range_end - range_start,
-            .is_struct = io.builtin == .none and io.location == null,
+            .is_struct = is_struct,
         });
     }
 

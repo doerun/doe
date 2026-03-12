@@ -188,3 +188,49 @@ test "translate simple compute shader with builtin vector member access to MSL" 
     try std.testing.expect(std.mem.indexOf(u8, msl, "main_kernel") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "thread_position_in_grid") != null);
 }
+
+test "translate vertex shader with struct input to SPIR-V" {
+    const source =
+        \\struct VsIn {
+        \\    @builtin(vertex_index) vertex_index: u32,
+        \\    @location(0) uv: vec2f,
+        \\};
+        \\
+        \\struct VsOut {
+        \\    @builtin(position) position: vec4f,
+        \\    @location(0) uv: vec2f,
+        \\};
+        \\
+        \\@vertex
+        \\fn main(input: VsIn) -> VsOut {
+        \\    var out: VsOut;
+        \\    return out;
+        \\}
+    ;
+
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "translate fragment shader with struct input to SPIR-V" {
+    const source =
+        \\struct FsIn {
+        \\    @location(0) uv: vec2f,
+        \\};
+        \\
+        \\struct FsOut {
+        \\    @location(0) color: vec4f,
+        \\};
+        \\
+        \\@fragment
+        \\fn main(input: FsIn) -> FsOut {
+        \\    var out: FsOut;
+        \\    return out;
+        \\}
+    ;
+
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
