@@ -27,8 +27,11 @@ pub fn concrete_numeric_type(module: *SemanticModule, lhs: ir.TypeId, rhs: ir.Ty
     return lhs;
 }
 
+const SPAN_START_MASK: u32 = 0xFFFF;
+const SPAN_LEN_SHIFT: u5 = 16;
+
 pub fn decode_packed_span(raw: u32) struct { start: u32, len: u32 } {
-    return .{ .start = raw & 0xFFFF, .len = raw >> 16 };
+    return .{ .start = raw & SPAN_START_MASK, .len = raw >> SPAN_LEN_SHIFT };
 }
 
 pub fn parse_single_int_attr(tree: *const Ast, attr_idx: u32) !u32 {

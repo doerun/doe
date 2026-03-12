@@ -5,6 +5,8 @@ const loader = @import("../abi/wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
 const ffi = @import("../../webgpu_ffi.zig");
 const Backend = ffi.WebGPUBackend;
+const TEMP_BUFFER_TO_TEXTURE_KEY_OFFSET: u64 = 0xFFFF_0000_0000_0001;
+const TEMP_TEXTURE_TO_TEXTURE_KEY_OFFSET: u64 = 0xFFFF_0000_0000_0002;
 
 const MapAsyncContext = struct {
     resolved: bool = false,
@@ -184,7 +186,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                     src_size,
                     types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
                 );
-                const temp_key = copy.src.handle +% 0xFFFF_0000_0000_0001;
+                const temp_key = copy.src.handle +% TEMP_BUFFER_TO_TEXTURE_KEY_OFFSET;
                 const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst);
                 procs.wgpuCommandEncoderCopyBufferToBuffer(encoder, src, copy.src.offset, temp, 0, bytes);
                 procs.wgpuCommandEncoderCopyBufferToTexture(
@@ -274,7 +276,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                 // Workaround path: tex → temp buffer → tex (avoids direct tex-to-tex copy bugs)
                 const alignment: u64 = @max(copy.temporary_buffer_alignment, 1);
                 const aligned_size = ((bytes + alignment - 1) / alignment) * alignment;
-                const temp_key = copy.src.handle +% 0xFFFF_0000_0000_0002;
+                const temp_key = copy.src.handle +% TEMP_TEXTURE_TO_TEXTURE_KEY_OFFSET;
                 const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst);
                 const src = try resources.getOrCreateTextureInitialized(
                     self,

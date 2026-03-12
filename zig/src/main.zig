@@ -472,7 +472,7 @@ pub fn main() !void {
 
     if (execution_context) |*ctx| {
         if (ctx.telemetry()) |selection| {
-            trace_summary.execution_backend = execution.backendIdName(selection.backend_id);
+            trace_summary.execution_backend = execution.backend_id_name(selection.backend_id);
             trace_summary.backend_selection_reason = selection.backend_selection_reason;
             trace_summary.fallback_used = selection.fallback_used;
             trace_summary.selection_policy_hash = selection.selection_policy_hash;

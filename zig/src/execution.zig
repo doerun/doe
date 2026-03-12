@@ -152,7 +152,7 @@ pub const ExecutionContext = struct {
                     0;
                 const command_telemetry = backend.telemetry();
                 return .{
-                    .backend = backendIdName(backend_telemetry_snapshot.backend_id),
+                    .backend = backend_id_name(backend_telemetry_snapshot.backend_id),
                     .status = .@"error",
                     .status_code = @errorName(err),
                     .duration_ns = elapsed_ns,
@@ -182,7 +182,7 @@ pub const ExecutionContext = struct {
             const command_telemetry = backend.telemetry();
 
             return .{
-                .backend = backendIdName(backend_telemetry_snapshot.backend_id),
+                .backend = backend_id_name(backend_telemetry_snapshot.backend_id),
                 .status = if (status.status == .ok) .ok else if (status.status == .@"error") .@"error" else .unsupported,
                 .status_code = status.status_message,
                 .duration_ns = elapsed_ns,
@@ -398,8 +398,8 @@ pub fn backendLaneName(lane: backend_policy.BackendLane) []const u8 {
     };
 }
 
-pub fn backendIdName(id: backend_ids.BackendId) []const u8 {
-    return backend_ids.backendIdName(id);
+pub fn backend_id_name(id: backend_ids.BackendId) []const u8 {
+    return backend_ids.backend_id_name(id);
 }
 
 pub fn executionModeName(mode: BackendMode) []const u8 {
