@@ -663,28 +663,6 @@ def percent_delta(left: float, right: float) -> float:
     return ((right / left) - 1.0) * 100.0
 
 
-def safe_float(value: Any) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def parse_int(value: Any) -> int | None:
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str):
-        text = value.strip()
-        if text.isdigit():
-            try:
-                return int(text)
-            except ValueError:
-                return None
-    return None
-
-
 def parse_extra_args(value: Any, *, workload_id: str) -> list[str]:
     if isinstance(value, list):
         args: list[str] = []

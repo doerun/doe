@@ -199,7 +199,7 @@ def pick_measured_timing_ms(wall_ms: float, trace_rows: list[dict[str, Any]], tr
                 "executionBackend": trace_meta.get("executionBackend", "unknown"),
             },
         )
-        return float(meta_execution_ns) / 1_000_000.0, "execution-duration", timing_meta
+        return float(meta_execution_ns) / NS_PER_MS, "execution-duration", timing_meta
 
     row_execution_ns: list[int] = []
     for row in trace_rows:
@@ -216,7 +216,7 @@ def pick_measured_timing_ms(wall_ms: float, trace_rows: list[dict[str, Any]], tr
                 "executionBackend": trace_rows[0].get("executionBackend", "unknown"),
             },
         )
-        return float(sum(row_execution_ns)) / 1_000_000.0, "execution-duration", timing_meta
+        return float(sum(row_execution_ns)) / NS_PER_MS, "execution-duration", timing_meta
 
     if not trace_rows:
         if isinstance(trace_meta.get("seqMax"), int):
@@ -234,7 +234,7 @@ def pick_measured_timing_ms(wall_ms: float, trace_rows: list[dict[str, Any]], tr
 
     first = min(timestamps)
     last = max(timestamps)
-    measured_ms = float(last - first) / 1_000_000.0
+    measured_ms = float(last - first) / NS_PER_MS
     if measured_ms < 0:
         return wall_ms, "wall-time", timing_meta
 

@@ -36,6 +36,7 @@ FILE_SUFFIXES = {
     ".log",
     ".csv",
 }
+SCHEMA_VERSION = 1
 DROPIN_PREFIXES = (
     "dropin_report",
     "dropin_symbol_report",

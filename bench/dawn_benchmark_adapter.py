@@ -152,7 +152,7 @@ AUTODISCOVER_WORKLOAD_PATTERNS: dict[str, tuple[str, str | None]] = {
     "compute_kernel_dispatch_100": ("DrawCallPerf", "__e_skip_validation"),
 }
 TIME_UNIT_TO_MS = {
-    "ns": 1.0 / 1_000_000.0,
+    "ns": 1.0 / NS_PER_MS,
     "us": 1.0 / 1_000.0,
     "ms": 1.0,
     "s": 1000.0,
