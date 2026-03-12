@@ -253,6 +253,7 @@ pub const Emitter = struct {
             try self.builder.emit_builtin_decoration(var_id, try builtin_to_spirv(io_attr.builtin));
             try interface_ids.append(self.alloc, var_id);
         }
+        const param_interface_len = interface_ids.items.len;
 
         for (self.module.globals.items, 0..) |global, index| {
             if (global.binding == null and global.class != .input and global.class != .output) continue;
@@ -269,7 +270,7 @@ pub const Emitter = struct {
         _ = try self.builder.label();
         var call_args = std.ArrayListUnmanaged(u32){};
         defer call_args.deinit(self.alloc);
-        for (function.params.items, interface_ids.items) |param, interface_id| {
+        for (function.params.items, interface_ids.items[0..param_interface_len]) |param, interface_id| {
             try call_args.append(self.alloc, try self.emit_function_load(try self.lower_type(param.ty), interface_id));
         }
         _ = try self.emit_function_call(void_type, self.function_ids[entry.function], call_args.items);

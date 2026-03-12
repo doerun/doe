@@ -2,6 +2,7 @@ const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
 const sema = @import("sema.zig");
+const sema_helpers = @import("sema_helpers.zig");
 const token_mod = @import("token.zig");
 
 const Ast = ast_mod.Ast;
@@ -301,6 +302,7 @@ const FunctionBuilder = struct {
                 .rhs = try self.lower_value_expr(node.data.rhs),
             } },
             .call_expr => try self.lower_call(node_idx, node),
+            .construct_expr => try self.lower_construct(node_idx, node),
             .member_expr => ir.Expr{ .member = .{
                 .base = if (category == .ref) try self.lower_ref_expr(node.data.lhs) else try self.lower_value_expr(node.data.lhs),
                 .field_name = try ir.dup_string(self.allocator, self.tree.tokenSlice(node.data.rhs)),
@@ -350,6 +352,24 @@ const FunctionBuilder = struct {
             return .{ .construct = .{ .ty = self.semantic.nodeType(node_idx), .args = range } };
         }
         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
+    }
+
+    fn lower_construct(self: *FunctionBuilder, node_idx: u32, node: Node) !ir.Expr {
+        var args = std.ArrayListUnmanaged(ir.ExprId){};
+        defer args.deinit(self.allocator);
+
+        const span = sema_helpers.decode_packed_span(node.data.rhs);
+        var i: u32 = 0;
+        while (i < span.len) : (i += 1) {
+            try args.append(self.allocator, try self.lower_value_expr(self.tree.extra_data.items[span.start + i]));
+        }
+
+        return .{
+            .construct = .{
+                .ty = self.semantic.nodeType(node_idx),
+                .args = try self.function.append_expr_args(self.allocator, args.items),
+            },
+        };
     }
 
     fn resolve_member_index(self: *FunctionBuilder, base_node_idx: u32, field_token: u32) !u32 {

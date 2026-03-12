@@ -234,3 +234,35 @@ test "translate fragment shader with struct input to SPIR-V" {
     const len = try translateToSpirv(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
 }
+
+test "translate vec4f constructor to SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let value = vec4f(1.0, 2.0, 3.0, 4.0);
+        \\    data[id.x] = value.x;
+        \\}
+    ;
+
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "translate vec4 generic constructor to SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let value = vec4<f32>(1.0, 2.0, 3.0, 4.0);
+        \\    data[id.x] = value.x;
+        \\}
+    ;
+
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}

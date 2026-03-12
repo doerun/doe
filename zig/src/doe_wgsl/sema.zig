@@ -6,14 +6,22 @@ const sema_types = @import("sema_types.zig");
 const sema_helpers = @import("sema_helpers.zig");
 const sema_resolve = @import("sema_resolve.zig");
 
-const Ast = ast_mod.Ast; const Node = ast_mod.Node; const NodeTag = ast_mod.NodeTag;
-const NULL_NODE = ast_mod.NULL_NODE; const Tag = token_mod.Tag;
+const Ast = ast_mod.Ast;
+const Node = ast_mod.Node;
+const NodeTag = ast_mod.NodeTag;
+const NULL_NODE = ast_mod.NULL_NODE;
+const Tag = token_mod.Tag;
 
-pub const AnalyzeError = sema_types.AnalyzeError; pub const SymbolRef = sema_types.SymbolRef;
-pub const NodeInfo = sema_types.NodeInfo; pub const AliasInfo = sema_types.AliasInfo;
-pub const StructFieldInfo = sema_types.StructFieldInfo; pub const StructInfo = sema_types.StructInfo;
-pub const GlobalInfo = sema_types.GlobalInfo; pub const ParamInfo = sema_types.ParamInfo;
-pub const LocalInfo = sema_types.LocalInfo; pub const FunctionInfo = sema_types.FunctionInfo;
+pub const AnalyzeError = sema_types.AnalyzeError;
+pub const SymbolRef = sema_types.SymbolRef;
+pub const NodeInfo = sema_types.NodeInfo;
+pub const AliasInfo = sema_types.AliasInfo;
+pub const StructFieldInfo = sema_types.StructFieldInfo;
+pub const StructInfo = sema_types.StructInfo;
+pub const GlobalInfo = sema_types.GlobalInfo;
+pub const ParamInfo = sema_types.ParamInfo;
+pub const LocalInfo = sema_types.LocalInfo;
+pub const FunctionInfo = sema_types.FunctionInfo;
 pub const SemanticModule = sema_types.SemanticModule;
 
 pub fn analyze(allocator: std.mem.Allocator, tree: *const Ast) !SemanticModule {
@@ -442,6 +450,7 @@ const Analyzer = struct {
             .unary_expr => try self.analyze_unary(node, body),
             .binary_expr => try self.analyze_binary(node, body),
             .call_expr => try self.analyze_call(node, body),
+            .construct_expr => try self.analyze_construct(node, body),
             .member_expr => try self.analyze_member(node, body, &info),
             .index_expr => try self.analyze_index(node, body, &info),
             else => return error.UnsupportedConstruct,
@@ -519,6 +528,32 @@ const Analyzer = struct {
             return fn_info.return_type;
         }
         return try self.infer_builtin_call(name, arg_types_buf[0..args_len]);
+    }
+
+    fn analyze_construct(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
+        const target_ty = try self.resolve_type_node(node.data.lhs);
+        const span = decode_packed_span(node.data.rhs);
+
+        var arg_types_buf: [16]ir.TypeId = undefined;
+        if (span.len > arg_types_buf.len) return error.UnsupportedConstruct;
+        var i: u32 = 0;
+        while (i < span.len) : (i += 1) {
+            arg_types_buf[i] = try self.analyze_expr(self.module.tree.extra_data.items[span.start + i], body);
+        }
+
+        switch (self.module.types.get(target_ty)) {
+            .scalar => if (span.len != 1) return error.TypeMismatch,
+            .struct_ => |struct_id| {
+                const fields = self.module.structs.items[struct_id].fields.items;
+                if (fields.len != span.len) return error.TypeMismatch;
+                for (fields, 0..) |field, field_index| {
+                    if (!self.type_compatible(field.ty, arg_types_buf[field_index])) return error.TypeMismatch;
+                }
+            },
+            else => {},
+        }
+
+        return target_ty;
     }
 
     fn analyze_member(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) AnalyzeError!ir.TypeId {
@@ -741,7 +776,11 @@ fn is_handle_type(ty: ir.Type) bool {
     };
 }
 
-const init_builtin_types = sema_helpers.init_builtin_types; const concrete_numeric_type = sema_helpers.concrete_numeric_type;
-const decode_packed_span = sema_helpers.decode_packed_span; const parse_single_int_attr = sema_helpers.parse_single_int_attr;
-const parse_builtin_attr = sema_helpers.parse_builtin_attr; const parse_address_space = sema_helpers.parse_address_space;
-const parse_access = sema_helpers.parse_access; const parse_storage_texture_format = sema_helpers.parse_storage_texture_format;
+const init_builtin_types = sema_helpers.init_builtin_types;
+const concrete_numeric_type = sema_helpers.concrete_numeric_type;
+const decode_packed_span = sema_helpers.decode_packed_span;
+const parse_single_int_attr = sema_helpers.parse_single_int_attr;
+const parse_builtin_attr = sema_helpers.parse_builtin_attr;
+const parse_address_space = sema_helpers.parse_address_space;
+const parse_access = sema_helpers.parse_access;
+const parse_storage_texture_format = sema_helpers.parse_storage_texture_format;

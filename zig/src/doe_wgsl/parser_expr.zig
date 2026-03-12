@@ -257,24 +257,49 @@ fn parsePrimary(self: anytype) @TypeOf(self.*).Error!u32 {
         .ident => return parseIdentOrCall(self),
 
         // Type constructors: vec4f(...), array(...), etc.
-        .kw_vec2f, .kw_vec3f, .kw_vec4f,
-        .kw_vec2h, .kw_vec3h, .kw_vec4h,
-        .kw_vec2i, .kw_vec3i, .kw_vec4i,
-        .kw_vec2u, .kw_vec3u, .kw_vec4u,
-        .kw_mat2x2f, .kw_mat3x3f, .kw_mat4x4f,
-        .kw_mat2x2h, .kw_mat3x3h, .kw_mat4x4h,
+        .kw_vec2f,
+        .kw_vec3f,
+        .kw_vec4f,
+        .kw_vec2h,
+        .kw_vec3h,
+        .kw_vec4h,
+        .kw_vec2i,
+        .kw_vec3i,
+        .kw_vec4i,
+        .kw_vec2u,
+        .kw_vec3u,
+        .kw_vec4u,
+        .kw_mat2x2f,
+        .kw_mat3x3f,
+        .kw_mat4x4f,
+        .kw_mat2x2h,
+        .kw_mat3x3h,
+        .kw_mat4x4h,
         => return parseTypeConstructor(self),
 
         // Parameterized type constructors: vec4<f32>(...), array<T>(...).
-        .kw_vec2, .kw_vec3, .kw_vec4,
-        .kw_mat2x2, .kw_mat3x3, .kw_mat4x4,
-        .kw_mat2x3, .kw_mat2x4, .kw_mat3x2,
-        .kw_mat3x4, .kw_mat4x2, .kw_mat4x3,
-        .kw_array, .kw_atomic,
+        .kw_vec2,
+        .kw_vec3,
+        .kw_vec4,
+        .kw_mat2x2,
+        .kw_mat3x3,
+        .kw_mat4x4,
+        .kw_mat2x3,
+        .kw_mat2x4,
+        .kw_mat3x2,
+        .kw_mat3x4,
+        .kw_mat4x2,
+        .kw_mat4x3,
+        .kw_array,
+        .kw_atomic,
         => return parseTypeConstructor(self),
 
         // Scalar type constructors: f32(x), u32(x), i32(x), f16(x), bool(x).
-        .kw_f32, .kw_f16, .kw_u32, .kw_i32, .kw_bool,
+        .kw_f32,
+        .kw_f16,
+        .kw_u32,
+        .kw_i32,
+        .kw_bool,
         => return parseTypeConstructor(self),
 
         else => {
@@ -311,30 +336,74 @@ fn parseIdentOrCall(self: anytype) @TypeOf(self.*).Error!u32 {
 }
 
 fn parseTypeConstructor(self: anytype) @TypeOf(self.*).Error!u32 {
-    const name_token = self.token_idx;
-    self.advance();
-
-    // Skip type parameters if present: <T, N>.
-    if (self.peekTag() == .@"<") {
-        self.advance();
-        var depth: u32 = 1;
-        while (depth > 0 and self.peekTag() != .eof) {
-            if (self.peekTag() == .@"<") depth += 1;
-            if (self.peekTag() == .@">") depth -= 1;
-            if (depth > 0) self.advance();
-        }
-        if (self.peekTag() == .@">") self.advance();
-    }
+    const type_node = switch (self.peekTag()) {
+        .kw_vec2f,
+        .kw_vec3f,
+        .kw_vec4f,
+        .kw_vec2h,
+        .kw_vec3h,
+        .kw_vec4h,
+        .kw_vec2i,
+        .kw_vec3i,
+        .kw_vec4i,
+        .kw_vec2u,
+        .kw_vec3u,
+        .kw_vec4u,
+        => blk: {
+            const tok = self.token_idx;
+            self.advance();
+            break :blk try self.tree.addNode(.{
+                .tag = .type_vec_shorthand,
+                .main_token = tok,
+                .data = .{},
+            });
+        },
+        .kw_mat2x2f,
+        .kw_mat3x3f,
+        .kw_mat4x4f,
+        .kw_mat2x2h,
+        .kw_mat3x3h,
+        .kw_mat4x4h,
+        => blk: {
+            const tok = self.token_idx;
+            self.advance();
+            break :blk try self.tree.addNode(.{
+                .tag = .type_mat_shorthand,
+                .main_token = tok,
+                .data = .{},
+            });
+        },
+        .kw_vec2,
+        .kw_vec3,
+        .kw_vec4,
+        .kw_mat2x2,
+        .kw_mat3x3,
+        .kw_mat4x4,
+        .kw_mat2x3,
+        .kw_mat2x4,
+        .kw_mat3x2,
+        .kw_mat3x4,
+        .kw_mat4x2,
+        .kw_mat4x3,
+        .kw_array,
+        .kw_atomic,
+        .kw_ptr,
+        .kw_sampler,
+        .kw_texture_2d,
+        .kw_f32,
+        .kw_f16,
+        .kw_u32,
+        .kw_i32,
+        .kw_bool,
+        => try parseTypeExpr(self),
+        else => return error.UnexpectedToken,
+    };
 
     if (self.peekTag() == .@"(") {
-        return parseCallArgs(self, name_token);
+        return parseConstructArgs(self, type_node);
     }
 
-    return self.tree.addNode(.{
-        .tag = .ident_expr,
-        .main_token = name_token,
-        .data = .{},
-    });
+    return type_node;
 }
 
 fn parseGenericCall(self: anytype, name_token: u32) @TypeOf(self.*).Error!u32 {
@@ -382,6 +451,31 @@ pub fn parseCallArgs(self: anytype, name_token: u32) @TypeOf(self.*).Error!u32 {
     });
 }
 
+fn parseConstructArgs(self: anytype, type_node: u32) @TypeOf(self.*).Error!u32 {
+    _ = try self.expect(.@"(");
+
+    const scratch_top = self.scratch.items.len;
+    defer self.scratch.shrinkRetainingCapacity(scratch_top);
+
+    while (self.peekTag() != .@")" and self.peekTag() != .eof) {
+        const arg = try parseExpr(self);
+        try self.scratch.append(self.allocator, arg);
+        if (self.peekTag() == .@",") self.advance();
+    }
+    _ = try self.expect(.@")");
+
+    const args = self.scratch.items[scratch_top..];
+    const extra_start = try self.tree.addExtraSlice(args);
+    const count: u32 = @intCast(args.len);
+    const main_token = self.tree.nodes.items[type_node].main_token;
+
+    return self.tree.addNode(.{
+        .tag = .construct_expr,
+        .main_token = main_token,
+        .data = .{ .lhs = type_node, .rhs = extra_start | (count << 16) },
+    });
+}
+
 /// Heuristic: does `<` start type arguments (vs a less-than comparison)?
 /// Check if we see a closing `>` before `;`, `{`, `}`, or binary operators.
 fn looksLikeTypeArgs(self: anytype) bool {
@@ -397,9 +491,17 @@ fn looksLikeTypeArgs(self: anytype) bool {
             },
             .@";", .@"{", .@"}", .eof => return false,
             // Operators that cannot appear in type args.
-            .@"+", .@"-", .@"*", .@"/", .@"%",
-            .eq_eq, .not_eq, .lte, .gte,
-            .and_and, .or_or,
+            .@"+",
+            .@"-",
+            .@"*",
+            .@"/",
+            .@"%",
+            .eq_eq,
+            .not_eq,
+            .lte,
+            .gte,
+            .and_and,
+            .or_or,
             => return false,
             else => {},
         }
@@ -416,10 +518,18 @@ pub fn parseTypeExpr(self: anytype) @TypeOf(self.*).Error!u32 {
     const tag = self.peekTag();
     switch (tag) {
         // Shorthand types.
-        .kw_vec2f, .kw_vec3f, .kw_vec4f,
-        .kw_vec2h, .kw_vec3h, .kw_vec4h,
-        .kw_vec2i, .kw_vec3i, .kw_vec4i,
-        .kw_vec2u, .kw_vec3u, .kw_vec4u,
+        .kw_vec2f,
+        .kw_vec3f,
+        .kw_vec4f,
+        .kw_vec2h,
+        .kw_vec3h,
+        .kw_vec4h,
+        .kw_vec2i,
+        .kw_vec3i,
+        .kw_vec4i,
+        .kw_vec2u,
+        .kw_vec3u,
+        .kw_vec4u,
         => {
             const tok = self.token_idx;
             self.advance();
@@ -429,8 +539,12 @@ pub fn parseTypeExpr(self: anytype) @TypeOf(self.*).Error!u32 {
                 .data = .{},
             });
         },
-        .kw_mat2x2f, .kw_mat3x3f, .kw_mat4x4f,
-        .kw_mat2x2h, .kw_mat3x3h, .kw_mat4x4h,
+        .kw_mat2x2f,
+        .kw_mat3x3f,
+        .kw_mat4x4f,
+        .kw_mat2x2h,
+        .kw_mat3x3h,
+        .kw_mat4x4h,
         => {
             const tok = self.token_idx;
             self.advance();
@@ -442,16 +556,31 @@ pub fn parseTypeExpr(self: anytype) @TypeOf(self.*).Error!u32 {
         },
 
         // Parameterized built-in types.
-        .kw_vec2, .kw_vec3, .kw_vec4,
-        .kw_mat2x2, .kw_mat3x3, .kw_mat4x4,
-        .kw_mat2x3, .kw_mat2x4, .kw_mat3x2,
-        .kw_mat3x4, .kw_mat4x2, .kw_mat4x3,
-        .kw_array, .kw_atomic, .kw_ptr,
-        .kw_sampler, .kw_texture_2d,
+        .kw_vec2,
+        .kw_vec3,
+        .kw_vec4,
+        .kw_mat2x2,
+        .kw_mat3x3,
+        .kw_mat4x4,
+        .kw_mat2x3,
+        .kw_mat2x4,
+        .kw_mat3x2,
+        .kw_mat3x4,
+        .kw_mat4x2,
+        .kw_mat4x3,
+        .kw_array,
+        .kw_atomic,
+        .kw_ptr,
+        .kw_sampler,
+        .kw_texture_2d,
         => return parseParameterizedType(self),
 
         // Scalar types.
-        .kw_f32, .kw_f16, .kw_u32, .kw_i32, .kw_bool,
+        .kw_f32,
+        .kw_f16,
+        .kw_u32,
+        .kw_i32,
+        .kw_bool,
         => {
             const tok = self.token_idx;
             self.advance();

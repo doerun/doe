@@ -152,6 +152,10 @@ pub const NodeTag = enum(u8) {
     /// main_token = name token. data.lhs = extra start of arg nodes, data.rhs = arg count.
     call_expr,
 
+    /// Type constructor call: `vec4<f32>(...)`, `vec4f(...)`, `f32(...)`.
+    /// main_token = constructor token. data.lhs = type node, data.rhs = packed arg span.
+    construct_expr,
+
     /// Member access: `expr.field`. main_token = `.`. data.lhs = expr, data.rhs = field token.
     member_expr,
 
