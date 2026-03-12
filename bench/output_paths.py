@@ -290,7 +290,7 @@ def write_run_manifest_for_outputs(
         now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         merged = dict(current)
         merged.update(payload)
-        merged["schemaVersion"] = 1
+        merged["schemaVersion"] = SCHEMA_VERSION
         merged["runFolder"] = str(folder)
         merged["outputTimestamp"] = _timestamp_from_run_folder(folder)
         merged.setdefault("createdAtUtc", now_utc)

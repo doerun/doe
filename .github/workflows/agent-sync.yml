@@ -1,0 +1,20 @@
+name: fawn-agent-sync
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  agent-sync-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check CLAUDE.md/AGENTS.md/GEMINI.md are in sync
+        run: |
+          diff CLAUDE.md AGENTS.md || { echo "AGENTS.md is out of sync with CLAUDE.md"; exit 1; }
+          diff CLAUDE.md GEMINI.md || { echo "GEMINI.md is out of sync with CLAUDE.md"; exit 1; }
+          echo "Agent instruction files are in sync."
