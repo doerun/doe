@@ -50,6 +50,207 @@ normalize_backend_report = cube_reports_mod.normalize_backend_report
 validate_package_report = cube_reports_mod.validate_package_report
 normalize_package_report = cube_reports_mod.normalize_package_report
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--backend-report-glob",
+        action="append",
+        default=[],
+        help=(
+            "Glob for backend Dawn-vs-Doe compare reports. May be repeated. "
+            "Default: bench/out/**/dawn-vs-doe*.json"
+        ),
+    )
+    parser.add_argument(
+        "--backend-report",
+        action="append",
+        default=[],
+        help="Explicit backend compare report path. May be repeated.",
+    )
+    parser.add_argument(
+        "--node-report-glob",
+        action="append",
+        default=[],
+        help=(
+            "Glob for Node package compare reports. May be repeated. "
+            "Default: bench/out/node-doe-vs-dawn*/*.json"
+        ),
+    )
+    parser.add_argument(
+        "--node-report",
+        action="append",
+        default=[],
+        help="Explicit Node package compare report path. May be repeated.",
+    )
+    parser.add_argument(
+        "--bun-report-glob",
+        action="append",
+        default=[],
+        help=(
+            "Glob for Bun package compare reports. May be repeated. "
+            "Default: bench/out/bun-doe-vs-webgpu/*.json"
+        ),
+    )
+    parser.add_argument(
+        "--bun-report",
+        action="append",
+        default=[],
+        help="Explicit Bun package compare report path. May be repeated.",
+    )
+    parser.add_argument(
+        "--policy",
+        default="config/benchmark-cube-policy.json",
+        help="Benchmark cube policy contract.",
+    )
+    parser.add_argument(
+        "--workload-registry",
+        default="bench/workload-registry.json",
+        help="Canonical workload registry used to normalize cross-surface workload IDs.",
+    )
+    parser.add_argument(
+        "--comparability-obligations",
+        default="config/comparability-obligations.json",
+        help="Canonical comparability obligation contract for backend report conformance.",
+    )
+    parser.add_argument(
+        "--summary-out",
+        default="bench/out/cube/cube.summary.json",
+        help="Output JSON summary path.",
+    )
+    parser.add_argument(
+        "--rows-out",
+        default="bench/out/cube/cube.rows.json",
+        help="Output JSON rows path.",
+    )
+    parser.add_argument(
+        "--matrix-md-out",
+        default="bench/out/cube/cube.matrix.md",
+        help="Output markdown matrix path.",
+    )
+    parser.add_argument(
+        "--dashboard-html-out",
+        default="bench/out/cube/cube.dashboard.html",
+        help="Output HTML dashboard path.",
+    )
+    parser.add_argument(
+        "--latest-summary",
+        default="bench/out/cube/latest/cube.summary.json",
+        help="Stable latest summary path.",
+    )
+    parser.add_argument(
+        "--latest-rows",
+        default="bench/out/cube/latest/cube.rows.json",
+        help="Stable latest rows path.",
+    )
+    parser.add_argument(
+        "--latest-matrix-md",
+        default="bench/out/cube/latest/cube.matrix.md",
+        help="Stable latest markdown matrix path.",
+    )
+    parser.add_argument(
+        "--latest-dashboard-html",
+        default="bench/out/cube/latest/cube.dashboard.html",
+        help="Stable latest HTML dashboard path.",
+    )
+    parser.add_argument(
+        "--timestamp",
+        default="",
+        help=(
+            "UTC suffix for timestamped outputs (YYYYMMDDTHHMMSSZ). "
+            "Defaults to current UTC time when --timestamp-output is enabled."
+        ),
+    )
+    parser.add_argument(
+        "--timestamp-output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Stamp output artifact paths with a UTC timestamp suffix.",
+    )
+    parser.add_argument(
+        "--preserve-latest",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Seed the build with report paths referenced by the current latest cube summary so "
+            "subset reruns cannot silently downgrade the latest mirror."
+        ),
+    )
+    return parser.parse_args()
+
+
+def write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_text(path: Path, payload: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(payload, encoding="utf-8")
+
+
+def collect_paths(patterns: list[str], explicit_paths: list[str]) -> list[Path]:
+    candidates: list[Path] = []
+    seen: set[str] = set()
+    for raw in explicit_paths:
+        path = Path(raw)
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        candidates.append(path)
+    for pattern in patterns:
+        for raw in sorted(glob(pattern, recursive=True)):
+            path = Path(raw)
+            key = str(path)
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(path)
+    return candidates
+
+
+def collect_seed_report_paths(repo_root: Path, latest_summary_path: Path) -> dict[str, list[Path]]:
+    if not latest_summary_path.exists():
+        return {"backend": [], "node": [], "bun": []}
+    try:
+        payload = load_json_object(latest_summary_path)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+        return {"backend": [], "node": [], "bun": []}
+    cells = payload.get("cells")
+    if not isinstance(cells, list):
+        return {"backend": [], "node": [], "bun": []}
+    seeded = {"backend": [], "node": [], "bun": []}
+    seen: set[str] = set()
+    for cell in cells:
+        if not isinstance(cell, dict):
+            continue
+        raw = cell.get("latestReportPath")
+        if not isinstance(raw, str) or not raw.strip():
+            continue
+        path = Path(raw)
+        if not path.is_absolute():
+            path = (repo_root / raw).resolve()
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        path_text = key.lower()
+        if "bun-doe-vs-webgpu" in path_text:
+            seeded["bun"].append(path)
+        elif "node-doe-vs-dawn" in path_text:
+            seeded["node"].append(path)
+        else:
+            seeded["backend"].append(path)
+    return seeded
+
+
+def is_scratch_namespace_path(path: Path) -> bool:
+    parts = path.parts
+    for idx in range(len(parts) - 2):
+        if parts[idx] == "bench" and parts[idx + 1] == "out" and parts[idx + 2] == "scratch":
+            return True
+    return False
+
 
 def median_non_null(values: list[float | None]) -> float | None:
     filtered = [value for value in values if value is not None]
