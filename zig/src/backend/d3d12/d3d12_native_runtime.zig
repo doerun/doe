@@ -3,7 +3,18 @@ const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const common_errors = @import("../common/errors.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const model = @import("../../model.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
+
+const d3d12_texture = @import("resources/d3d12_texture.zig");
+const d3d12_sampler = @import("resources/d3d12_sampler.zig");
+const d3d12_copy = @import("commands/d3d12_copy.zig");
+const d3d12_dispatch = @import("commands/d3d12_dispatch.zig");
+const d3d12_render = @import("commands/d3d12_render.zig");
+const d3d12_surface = @import("surface/d3d12_surface.zig");
+const d3d12_async = @import("commands/d3d12_async_diagnostics.zig");
+const d3d12_timestamps = @import("commands/d3d12_gpu_timestamps.zig");
+const d3d12_map = @import("commands/d3d12_map_async.zig");
 
 const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
@@ -78,6 +89,13 @@ pub const NativeD3D12Runtime = struct {
     has_compute_pipeline: bool = false,
     has_compute_cmd: bool = false,
 
+    texture_map: d3d12_texture.TextureMap = .{},
+    sampler_state: d3d12_sampler.SamplerState = .{},
+    dispatch_state: d3d12_dispatch.DispatchState = .{},
+    render_state: d3d12_render.RenderState = .{},
+    surface_state: d3d12_surface.SurfaceState = .{},
+    timestamp_state: d3d12_timestamps.TimestampState = .{},
+
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeD3D12Runtime {
         var self = NativeD3D12Runtime{ .allocator = allocator, .kernel_root = kernel_root };
         errdefer self.deinit();
@@ -92,6 +110,12 @@ pub const NativeD3D12Runtime = struct {
         d3d12_release_pool(&self.upload_pool, self.allocator);
         d3d12_release_pool(&self.default_pool, self.allocator);
         self.destroy_compute_objects();
+        self.timestamp_state.deinit();
+        self.render_state.deinit();
+        self.dispatch_state.deinit();
+        self.surface_state.deinit(self.allocator);
+        self.sampler_state.deinit(self.allocator);
+        d3d12_texture.release_all(&self.texture_map);
         if (self.fence) |f| { d3d12_bridge_release(f); self.fence = null; }
         if (self.queue) |q| { d3d12_bridge_release(q); self.queue = null; }
         if (self.device) |d| { d3d12_bridge_release(d); self.device = null; self.has_device = false; }
@@ -250,6 +274,86 @@ pub const NativeD3D12Runtime = struct {
 
         return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
     }
+
+    // --- Forwarding to sub-modules ---
+
+    pub fn texture_write(self: *NativeD3D12Runtime, cmd: model.TextureWriteCommand) !u64 {
+        return d3d12_texture.texture_write(self.device, self.queue, &self.texture_map, self.allocator, cmd);
+    }
+
+    pub fn texture_query(self: *const NativeD3D12Runtime, cmd: model.TextureQueryCommand) !u64 {
+        return d3d12_texture.texture_query(&self.texture_map, cmd);
+    }
+
+    pub fn texture_destroy(self: *NativeD3D12Runtime, cmd: model.TextureDestroyCommand) !u64 {
+        return d3d12_texture.texture_destroy(&self.texture_map, cmd);
+    }
+
+    pub fn sampler_create(self: *NativeD3D12Runtime, cmd: model.SamplerCreateCommand) !u64 {
+        return self.sampler_state.sampler_create(self.device, self.allocator, cmd);
+    }
+
+    pub fn sampler_destroy(self: *NativeD3D12Runtime, cmd: model.SamplerDestroyCommand) !u64 {
+        return self.sampler_state.sampler_destroy(cmd);
+    }
+
+    pub fn execute_compute_dispatch(self: *NativeD3D12Runtime, cmd: model.DispatchCommand) !d3d12_dispatch.DispatchMetrics {
+        return self.dispatch_state.execute_dispatch(self.device, self.queue, self.fence, &self.fence_value, cmd);
+    }
+
+    pub fn execute_dispatch_indirect(self: *NativeD3D12Runtime, cmd: model.DispatchIndirectCommand) !d3d12_dispatch.DispatchMetrics {
+        return self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd);
+    }
+
+    pub fn execute_copy(self: *NativeD3D12Runtime, cmd: model.CopyCommand) !d3d12_copy.CopyMetrics {
+        return d3d12_copy.execute_copy(self.device, self.queue, &self.texture_map, self.allocator, cmd);
+    }
+
+    pub fn execute_render_draw(self: *NativeD3D12Runtime, cmd: model.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool) !d3d12_render.RenderMetrics {
+        return self.render_state.execute_render_draw(self.device, self.queue, self.fence, &self.fence_value, cmd, is_indirect, is_indexed_indirect);
+    }
+
+    pub fn surface_create(self: *NativeD3D12Runtime, cmd: model.SurfaceCreateCommand) !u64 {
+        return self.surface_state.create_surface(self.allocator, cmd);
+    }
+
+    pub fn surface_capabilities(self: *NativeD3D12Runtime, cmd: model.SurfaceCapabilitiesCommand) !u64 {
+        return self.surface_state.surface_capabilities(self.allocator, cmd);
+    }
+
+    pub fn surface_configure(self: *NativeD3D12Runtime, cmd: model.SurfaceConfigureCommand) !u64 {
+        return self.surface_state.configure_surface(self.device, self.queue, self.allocator, cmd);
+    }
+
+    pub fn surface_acquire(self: *NativeD3D12Runtime, cmd: model.SurfaceAcquireCommand) !u64 {
+        return self.surface_state.acquire_surface(self.allocator, cmd);
+    }
+
+    pub fn surface_present(self: *NativeD3D12Runtime, cmd: model.SurfacePresentCommand) !u64 {
+        return self.surface_state.present_surface(cmd);
+    }
+
+    pub fn surface_unconfigure(self: *NativeD3D12Runtime, cmd: model.SurfaceUnconfigureCommand) !u64 {
+        return self.surface_state.unconfigure_surface(self.allocator, cmd);
+    }
+
+    pub fn surface_release(self: *NativeD3D12Runtime, cmd: model.SurfaceReleaseCommand) !u64 {
+        return self.surface_state.release_surface(cmd);
+    }
+
+    pub fn execute_async_diagnostics(self: *NativeD3D12Runtime, cmd: model.AsyncDiagnosticsCommand) !d3d12_async.AsyncDiagnosticsMetrics {
+        return d3d12_async.execute_async_diagnostics(self.device, cmd);
+    }
+
+    pub fn execute_map_async(self: *NativeD3D12Runtime, cmd: model.MapAsyncCommand) !u64 {
+        return d3d12_map.execute_map_async(self.device, cmd);
+    }
+
+    pub fn init_timestamps(self: *NativeD3D12Runtime) !void {
+        try self.timestamp_state.init_resources(self.device, self.queue);
+    }
+
+    // --- Private ---
 
     fn bootstrap(self: *NativeD3D12Runtime) !void {
         self.device = d3d12_bridge_create_device() orelse return error.UnsupportedFeature;

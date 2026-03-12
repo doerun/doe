@@ -16,37 +16,15 @@ const vk_resources = @import("vk_resources.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
 const model = @import("../../model.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
-const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
-const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
+const native_runtime = @import("native_runtime.zig");
+const Runtime = native_runtime.NativeVulkanRuntime;
+const DispatchMetrics = native_runtime.DispatchMetrics;
 
-// Passthrough vertex shader: emits a fullscreen triangle from vertex_index.
-const PASSTHROUGH_VERTEX_WGSL =
-    \\struct VertexOutput {
-    \\    @builtin(position) position: vec4f,
-    \\    @location(0) uv: vec2f,
-    \\};
-    \\
-    \\@vertex fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
-    \\    var out: VertexOutput;
-    \\    let x = f32(i32(vi & 1u) * 4 - 1);
-    \\    let y = f32(i32(vi >> 1u & 1u) * 4 - 1);
-    \\    out.position = vec4f(x, y, 0.0, 1.0);
-    \\    out.uv = vec2f(x * 0.5 + 0.5, y * 0.5 + 0.5);
-    \\    return out;
-    \\}
-;
-
-// Solid-color fragment shader.
-const PASSTHROUGH_FRAGMENT_WGSL =
-    \\@fragment fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-    \\    return vec4f(uv.x, uv.y, 0.5, 1.0);
-    \\}
-;
-
-// Combined vertex+fragment WGSL source for pipeline compilation.
+// Passthrough vertex+fragment WGSL: vertex_index generates a fullscreen triangle,
+// fragment outputs a UV-gradient color. Single combined source for both entry points.
 const RENDER_SHADER_WGSL =
     \\struct VertexOutput {
     \\    @builtin(position) position: vec4f,
@@ -69,7 +47,6 @@ const RENDER_SHADER_WGSL =
 
 const VERTEX_ENTRY_POINT: [*:0]const u8 = "vs_main";
 const FRAGMENT_ENTRY_POINT: [*:0]const u8 = "fs_main";
-const SPIRV_MAGIC: u32 = 0x07230203;
 
 pub const RenderState = struct {
     render_pass: c.VkRenderPass = VK_NULL_U64,
@@ -119,7 +96,7 @@ pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
 pub fn execute_render_draw(
     self: *Runtime,
     cmd: model.RenderDrawCommand,
-) !Runtime.DispatchMetrics {
+) !DispatchMetrics {
     const draw_count = if (cmd.draw_count > 0) cmd.draw_count else 1;
     const target_width = if (cmd.target_width > 0) cmd.target_width else model.DEFAULT_RENDER_TARGET_WIDTH;
     const target_height = if (cmd.target_height > 0) cmd.target_height else model.DEFAULT_RENDER_TARGET_HEIGHT;

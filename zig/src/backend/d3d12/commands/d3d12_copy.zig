@@ -86,7 +86,7 @@ fn resolve_resource(
         const width = if (res.width > 0) res.width else 1;
         const height = if (res.height > 0) res.height else 1;
         const format: u32 = if (res.format != model.WGPUTextureFormat_Undefined) res.format else model.WGPUTextureFormat_RGBA8Unorm;
-        const usage: u32 = @truncate(res.usage);
+        _ = @as(u32, @truncate(res.usage));
         const tex = d3d12_bridge_device_create_buffer(device, @as(usize, width) * @as(usize, height) * 4, HEAP_TYPE_DEFAULT) orelse return null;
         texture_map.put(allocator, res.handle, .{
             .handle = res.handle,

@@ -211,6 +211,27 @@ fn native_capability_set() capabilities.CapabilitySet {
         .buffer_upload,
         .barrier_sync,
         .kernel_dispatch,
+        .compute_dispatch,
+        .compute_dispatch_indirect,
+        .buffer_copy,
+        .sampler_lifecycle,
+        .texture_write,
+        .texture_query,
+        .texture_destroy,
+        .surface_lifecycle,
+        .surface_present,
+        .async_pipeline_diagnostics,
+        .async_capability_introspection,
+        .async_resource_table_immediates,
+        .async_lifecycle_refcount,
+        .async_pixel_local_storage,
+        .map_async,
+        .gpu_timestamps,
+        .timestamp_inside_passes,
+        .indirect_draw,
+        .indexed_indirect_draw,
+        .render_pass,
+        .render_draw,
     });
     return set;
 }
@@ -417,6 +438,122 @@ fn execute_kernel_dispatch(self: *ZigD3D12Backend, setup_ns: u64, kd: model.Kern
     };
 }
 
+fn execute_compute_dispatch_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const metrics = try rt.execute_compute_dispatch(cmd);
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns,
+        .encode_ns = metrics.encode_ns,
+        .submit_wait_ns = metrics.submit_wait_ns,
+        .dispatch_count = metrics.dispatch_count,
+    };
+}
+
+fn execute_dispatch_indirect_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchIndirectCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const metrics = try rt.execute_dispatch_indirect(cmd);
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns,
+        .encode_ns = metrics.encode_ns,
+        .submit_wait_ns = metrics.submit_wait_ns,
+        .dispatch_count = metrics.dispatch_count,
+    };
+}
+
+fn execute_copy_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.CopyCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const metrics = try rt.execute_copy(cmd);
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns +| metrics.setup_ns,
+        .encode_ns = metrics.encode_ns,
+        .submit_wait_ns = metrics.submit_wait_ns,
+    };
+}
+
+fn execute_texture_write_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.TextureWriteCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const encode_ns = try rt.texture_write(cmd);
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+}
+
+fn execute_texture_query_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.TextureQueryCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const encode_ns = try rt.texture_query(cmd);
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+}
+
+fn execute_texture_destroy_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.TextureDestroyCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const encode_ns = try rt.texture_destroy(cmd);
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+}
+
+fn execute_sampler_create_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.SamplerCreateCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const encode_ns = try rt.sampler_create(cmd);
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+}
+
+fn execute_sampler_destroy_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.SamplerDestroyCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const encode_ns = try rt.sampler_destroy(cmd);
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+}
+
+fn execute_render_draw_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const metrics = try rt.execute_render_draw(cmd, is_indirect, is_indexed_indirect);
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns +| metrics.setup_ns,
+        .encode_ns = metrics.encode_ns,
+        .submit_wait_ns = metrics.submit_wait_ns,
+        .dispatch_count = metrics.draw_count,
+    };
+}
+
+fn execute_surface_cmd(self: *ZigD3D12Backend, setup_ns: u64, command: model.Command) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const encode_ns: u64 = switch (command) {
+        .surface_create => |cmd| try rt.surface_create(cmd),
+        .surface_capabilities => |cmd| try rt.surface_capabilities(cmd),
+        .surface_configure => |cmd| try rt.surface_configure(cmd),
+        .surface_acquire => |cmd| try rt.surface_acquire(cmd),
+        .surface_unconfigure => |cmd| try rt.surface_unconfigure(cmd),
+        .surface_release => |cmd| try rt.surface_release(cmd),
+        .surface_present => |cmd| {
+            const submit_wait_ns = try rt.surface_present(cmd);
+            return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .submit_wait_ns = submit_wait_ns };
+        },
+        else => return error.Unsupported,
+    };
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+}
+
+fn execute_async_diagnostics_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.AsyncDiagnosticsCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const metrics = try rt.execute_async_diagnostics(cmd);
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns +| metrics.setup_ns,
+        .encode_ns = metrics.encode_ns,
+    };
+}
+
+fn execute_map_async_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.MapAsyncCommand) !webgpu.NativeExecutionResult {
+    const rt = try ensure_runtime_bootstrapped(self);
+    const encode_ns = try rt.execute_map_async(cmd);
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+}
+
 fn flush_pending_uploads_if_required(self: *ZigD3D12Backend, command: model.Command) !u64 {
     switch (command) {
         .upload => return 0,
@@ -453,7 +590,21 @@ fn execute_native_command(self: *ZigD3D12Backend, command: model.Command) !webgp
         .upload => |upload| try execute_upload(self, setup_ns, upload),
         .barrier => try execute_barrier(self, setup_ns),
         .kernel_dispatch => |kd| try execute_kernel_dispatch(self, setup_ns, kd),
-        else => return error.Unsupported,
+        .dispatch => |cmd| try execute_compute_dispatch_cmd(self, setup_ns, cmd),
+        .dispatch_indirect => |cmd| try execute_dispatch_indirect_cmd(self, setup_ns, cmd),
+        .copy_buffer_to_texture => |cmd| try execute_copy_cmd(self, setup_ns, cmd),
+        .texture_write => |cmd| try execute_texture_write_cmd(self, setup_ns, cmd),
+        .texture_query => |cmd| try execute_texture_query_cmd(self, setup_ns, cmd),
+        .texture_destroy => |cmd| try execute_texture_destroy_cmd(self, setup_ns, cmd),
+        .sampler_create => |cmd| try execute_sampler_create_cmd(self, setup_ns, cmd),
+        .sampler_destroy => |cmd| try execute_sampler_destroy_cmd(self, setup_ns, cmd),
+        .render_draw => |cmd| try execute_render_draw_cmd(self, setup_ns, cmd, false, false),
+        .draw_indirect => |cmd| try execute_render_draw_cmd(self, setup_ns, cmd, true, false),
+        .draw_indexed_indirect => |cmd| try execute_render_draw_cmd(self, setup_ns, cmd, false, true),
+        .render_pass => |cmd| try execute_render_draw_cmd(self, setup_ns, cmd, false, false),
+        .surface_create, .surface_capabilities, .surface_configure, .surface_acquire, .surface_present, .surface_unconfigure, .surface_release => try execute_surface_cmd(self, setup_ns, command),
+        .async_diagnostics => |cmd| try execute_async_diagnostics_cmd(self, setup_ns, cmd),
+        .map_async => |cmd| try execute_map_async_cmd(self, setup_ns, cmd),
     };
     result.submit_wait_ns +|= pending_submit_wait_ns;
 
@@ -555,9 +706,13 @@ pub fn run_contract_path_for_test(
 }
 
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
-    _ = ctx;
-    _ = kernel;
+    const self = cast(ctx);
+    if (kernel.len == 0) return;
+    const rt = try ensure_runtime_bootstrapped(self);
     _ = bindings;
+    const bytecode = rt.load_kernel_cso(self.allocator, kernel) catch return;
+    defer self.allocator.free(bytecode);
+    rt.set_compute_shader(bytecode) catch return;
 }
 
 const VTABLE = backend_iface.BackendVTable{
