@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
+const EXPECTED_SCHEMA_VERSION = 1;
+const EXPECTED_ARTIFACT_TYPE = 'libwebgpu_doe';
+
 export const UNKNOWN_DOE_BUILD_METADATA = Object.freeze({
   source: 'none',
   path: '',
@@ -18,8 +21,8 @@ function normalizeProofArtifactSha256(value) {
 
 function parseDoeBuildSidecar(json, metadataPath, source) {
   if (!isObject(json)) return null;
-  if (json.schemaVersion !== 1) return null;
-  if (json.artifact !== 'libwebgpu_doe') return null;
+  if (json.schemaVersion !== EXPECTED_SCHEMA_VERSION) return null;
+  if (json.artifact !== EXPECTED_ARTIFACT_TYPE) return null;
   if (typeof json.leanVerifiedBuild !== 'boolean') return null;
   const proofArtifactSha256 = normalizeProofArtifactSha256(json.proofArtifactSha256);
   if (proofArtifactSha256 === undefined) return null;
@@ -33,10 +36,10 @@ function parseDoeBuildSidecar(json, metadataPath, source) {
 
 function parsePrebuildMetadata(json, metadataPath, source) {
   if (!isObject(json)) return null;
-  if (json.schemaVersion !== 1) return null;
+  if (json.schemaVersion !== EXPECTED_SCHEMA_VERSION) return null;
   const doeBuild = json.doeBuild;
   if (!isObject(doeBuild)) return null;
-  if (doeBuild.artifact !== 'libwebgpu_doe') return null;
+  if (doeBuild.artifact !== EXPECTED_ARTIFACT_TYPE) return null;
   if (typeof doeBuild.leanVerifiedBuild !== 'boolean') return null;
   const proofArtifactSha256 = normalizeProofArtifactSha256(doeBuild.proofArtifactSha256);
   if (proofArtifactSha256 === undefined) return null;

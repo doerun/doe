@@ -5,7 +5,12 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REGISTRY_PATH = resolve(__dirname, '..', 'workload-registry.json');
 
-const registry = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
+let registry;
+try {
+  registry = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
+} catch (err) {
+  throw new Error(`Cannot load workload registry ${REGISTRY_PATH}: ${err.message}`);
+}
 const packageContracts = new Map();
 
 for (const workload of registry.workloads ?? []) {

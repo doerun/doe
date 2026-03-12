@@ -1,12 +1,8 @@
 const std = @import("std");
 const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
-const common_errors = @import("../../common/errors.zig");
+const dc = @import("../d3d12_constants.zig");
 
-const HEAP_TYPE_UPLOAD: c_int = 2;
-const RESOURCE_STATE_COPY_DEST: c_int = 0x00000800;
-const RESOURCE_STATE_GENERIC_READ: c_int = 0x00000001 | 0x00000002 | 0x00000040 | 0x00000080 | 0x00000200 | 0x00000800;
-const RESOURCE_STATE_PIXEL_SHADER_RESOURCE: c_int = 0x00000080;
 const MAX_TEXTURE_WRITE_BYTES: usize = 64 * 1024 * 1024;
 
 extern fn d3d12_bridge_device_create_texture_2d(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, format: u32, usage_flags: u32) callconv(.c) ?*anyopaque;
@@ -71,7 +67,7 @@ pub fn texture_write(
         entry = new_entry;
     }
 
-    const staging = d3d12_bridge_device_create_buffer(device, data.len, HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+    const staging = d3d12_bridge_device_create_buffer(device, data.len, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
     defer d3d12_bridge_release(staging);
 
     const cmd_alloc = d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
@@ -83,7 +79,7 @@ pub fn texture_write(
     const bytes_per_row = if (tex_res.bytes_per_row > 0) tex_res.bytes_per_row else @as(u32, @intCast(data.len / height));
 
     d3d12_bridge_command_list_copy_texture_region(cmd_list, entry.?.resource, staging, 0, width, height, bytes_per_row, format);
-    d3d12_bridge_command_list_resource_barrier_transition(cmd_list, entry.?.resource, RESOURCE_STATE_COPY_DEST, RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    d3d12_bridge_command_list_resource_barrier_transition(cmd_list, entry.?.resource, dc.RESOURCE_STATE_COPY_DEST, dc.RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
     d3d12_bridge_command_list_close(cmd_list);
     d3d12_bridge_queue_execute_command_list(queue, cmd_list);
 

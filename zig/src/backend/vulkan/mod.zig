@@ -10,25 +10,19 @@ const command_info = @import("../common/command_info.zig");
 const command_requirements = @import("../common/command_requirements.zig");
 const capabilities = @import("../common/capabilities.zig");
 const artifact_meta = @import("../common/artifact_meta.zig");
+const artifact_policy = @import("../common/artifact_policy.zig");
+const hash_utils = @import("../common/hash_utils.zig");
+const artifact_emit = @import("artifact_emit.zig");
 const native_runtime = if (builtin.os.tag == .macos)
     @import("native_runtime_stub.zig")
 else
     @import("native_runtime.zig");
 
-const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
-const HASH_HEX_SIZE: usize = 64;
-const MANIFEST_CONTENT_CAPACITY: usize = 4096;
+const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
 const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
-const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
-const HEX = "0123456789abcdef";
-const SHADER_TOOLCHAIN_PATH = "config/shader-toolchain.json";
-const MAX_TOOLCHAIN_BYTES: usize = 64 * 1024;
-const HASH_INPUT_CAPACITY: usize = 512;
-const STAGES_JSON_CAPACITY: usize = 1024;
-const TAXONOMY_CODE_CAPACITY: usize = 128;
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
@@ -173,29 +167,15 @@ pub const ZigVulkanBackend = struct {
     }
 
     fn manifest_path(self: *const ZigVulkanBackend) ?[]const u8 {
-        if (self.manifest_path_len == 0) return null;
-        return self.manifest_path_storage[0..self.manifest_path_len];
+        return artifact_emit.manifest_path(self);
     }
 
     fn manifest_hash(self: *const ZigVulkanBackend) ?[]const u8 {
-        if (self.manifest_hash_len == 0) return null;
-        return self.manifest_hash_storage[0..self.manifest_hash_len];
-    }
-
-    fn previous_manifest_hash(self: *const ZigVulkanBackend) []const u8 {
-        return self.manifest_hash() orelse ZERO_HASH;
+        return artifact_emit.manifest_hash(self);
     }
 
     fn flush_pending_artifact(self: *ZigVulkanBackend) void {
-        if (!self.pending_artifact_write) return;
-        self.pending_artifact_write = false;
-        const status_code = self.pending_artifact_status_storage[0..self.pending_artifact_status_len];
-        if (manifest_signature_matches(self, self.pending_artifact_module, self.pending_artifact_meta, status_code)) return;
-        self.emit_shader_artifact_manifest_for_signature(
-            self.pending_artifact_module,
-            self.pending_artifact_meta,
-            status_code,
-        ) catch {};
+        artifact_emit.flush_pending_artifact(self);
     }
 
     fn emit_shader_artifact_manifest_for_signature(
@@ -204,90 +184,7 @@ pub const ZigVulkanBackend = struct {
         meta: artifact_meta.ArtifactMeta,
         status_code: []const u8,
     ) common_errors.BackendNativeError!void {
-        self.manifest_emit_count +|= 1;
-
-        var path_buffer: [MANIFEST_PATH_CAPACITY]u8 = undefined;
-        const path = std.fmt.bufPrint(
-            &path_buffer,
-            "{s}/vulkan_shader_artifact_{d}.json",
-            .{ SHADER_ARTIFACT_DIR, self.manifest_emit_count },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        const toolchain_hash = load_toolchain_sha256(self.allocator) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        var taxonomy_buffer: [TAXONOMY_CODE_CAPACITY]u8 = undefined;
-        const taxonomy_code = normalize_taxonomy_code(&taxonomy_buffer, status_code);
-
-        var pipeline_seed_buffer: [HASH_INPUT_CAPACITY]u8 = undefined;
-        const pipeline_seed = std.fmt.bufPrint(
-            &pipeline_seed_buffer,
-            "doe_vulkan|{s}|{s}|{s}|{s}|{}",
-            .{
-                module,
-                taxonomy_code,
-                meta.backend_kind.name(),
-                meta.timing_source.name(),
-                meta.is_claimable(),
-            },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        const pipeline_hash = sha256_hex(pipeline_seed);
-        const wgsl_hash = sha256_hex(module);
-        const sema_hash = derive_stage_hash(wgsl_hash[0..], "sema");
-        const ir_hash = derive_stage_hash(sema_hash[0..], "ir_build");
-        const ir_validate_hash = derive_stage_hash(ir_hash[0..], "ir_validate");
-        const spirv_hash = derive_stage_hash(ir_validate_hash[0..], "ir_to_spirv");
-
-        var stages_buffer: [STAGES_JSON_CAPACITY]u8 = undefined;
-        const stages_json = std.fmt.bufPrint(
-            &stages_buffer,
-            "[{{\"stage\":\"wgsl_parse\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"sema\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_build\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_validate\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_to_spirv\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}}]",
-            .{
-                wgsl_hash[0..],
-                sema_hash[0..],
-                ir_hash[0..],
-                ir_validate_hash[0..],
-                spirv_hash[0..],
-            },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        var prehash_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
-        const prehash = std.fmt.bufPrint(
-            &prehash_buffer,
-            "{{\"schemaVersion\":2,\"backendId\":\"doe_vulkan\",\"module\":\"{s}\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"irSha256\":\"{s}\",\"spirvSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"{s}\",\"previousHash\":\"{s}\",\"stages\":{s}}}",
-            .{
-                module,
-                pipeline_hash[0..],
-                wgsl_hash[0..],
-                ir_hash[0..],
-                spirv_hash[0..],
-                toolchain_hash[0..],
-                taxonomy_code,
-                self.previous_manifest_hash(),
-                stages_json,
-            },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        const hash = sha256_hex(prehash);
-
-        var content_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
-        const content = std.fmt.bufPrint(
-            &content_buffer,
-            "{s},\"hash\":\"{s}\"}}\n",
-            .{
-                prehash[0 .. prehash.len - 1],
-                hash[0..],
-            },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-        const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-        defer file.close();
-        file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        persist_manifest_path(self, path);
-        persist_manifest_hash(self, hash[0..]);
-        persist_manifest_signature(self, module, meta, status_code);
+        return artifact_emit.emit_shader_artifact_manifest_for_signature(self, module, meta, status_code);
     }
 };
 
@@ -385,8 +282,8 @@ fn annotate_result(self: *ZigVulkanBackend, command: model.Command, result: webg
         );
     }
 
-    if (should_emit_shader_artifact(command)) {
-        const status_code = artifact_status_code(out);
+    if (artifact_policy.should_emit_shader_artifact(command)) {
+        const status_code = artifact_policy.artifact_status_code(out);
         const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
         std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
         self.pending_artifact_status_len = copy_len;
@@ -846,131 +743,6 @@ fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]con
     const spirv_words = try runtime.load_kernel_spirv(self.allocator, kernel);
     defer self.allocator.free(spirv_words);
     try runtime.set_compute_shader_spirv(spirv_words, null, bindings, false);
-}
-
-fn should_emit_shader_artifact(command: model.Command) bool {
-    return switch (command) {
-        .dispatch, .dispatch_indirect, .kernel_dispatch, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => true,
-        else => false,
-    };
-}
-
-fn artifact_status_code(result: webgpu.NativeExecutionResult) []const u8 {
-    if (result.status_message.len != 0) return result.status_message;
-    return switch (result.status) {
-        .ok => "ok",
-        .unsupported => "unsupported",
-        .@"error" => "error",
-    };
-}
-
-fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
-    var output: [HASH_HEX_SIZE]u8 = undefined;
-    var digest: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
-    for (digest, 0..) |byte, index| {
-        const output_index = index * 2;
-        output[output_index] = HEX[(byte >> 4) & 0x0F];
-        output[output_index + 1] = HEX[byte & 0x0F];
-    }
-    return output;
-}
-
-fn derive_stage_hash(seed: []const u8, label: []const u8) [HASH_HEX_SIZE]u8 {
-    var buffer: [HASH_INPUT_CAPACITY]u8 = undefined;
-    const input = std.fmt.bufPrint(&buffer, "{s}|{s}", .{ seed, label }) catch label;
-    return sha256_hex(input);
-}
-
-fn load_toolchain_sha256(allocator: std.mem.Allocator) ![HASH_HEX_SIZE]u8 {
-    const bytes = try std.fs.cwd().readFileAlloc(allocator, SHADER_TOOLCHAIN_PATH, MAX_TOOLCHAIN_BYTES);
-    defer allocator.free(bytes);
-    return sha256_hex(bytes);
-}
-
-fn normalize_taxonomy_code(buffer: []u8, raw: []const u8) []const u8 {
-    var out_len: usize = 0;
-    var previous_underscore = false;
-    for (raw) |byte| {
-        if (out_len >= buffer.len) break;
-        const lowered = std.ascii.toLower(byte);
-        const is_valid = (lowered >= 'a' and lowered <= 'z') or (lowered >= '0' and lowered <= '9');
-        if (is_valid) {
-            buffer[out_len] = lowered;
-            out_len += 1;
-            previous_underscore = false;
-            continue;
-        }
-        if (!previous_underscore and out_len < buffer.len) {
-            buffer[out_len] = '_';
-            out_len += 1;
-            previous_underscore = true;
-        }
-    }
-    if (out_len == 0) {
-        const fallback = "error";
-        std.mem.copyForwards(u8, buffer[0..fallback.len], fallback);
-        return buffer[0..fallback.len];
-    }
-    while (out_len > 1 and buffer[out_len - 1] == '_') out_len -= 1;
-    return buffer[0..out_len];
-}
-
-fn persist_manifest_path(self: *ZigVulkanBackend, value: []const u8) void {
-    if (value.len > self.manifest_path_storage.len) {
-        self.manifest_path_len = 0;
-        return;
-    }
-    std.mem.copyForwards(u8, self.manifest_path_storage[0..value.len], value);
-    self.manifest_path_len = value.len;
-}
-
-fn persist_manifest_hash(self: *ZigVulkanBackend, value: []const u8) void {
-    if (value.len > self.manifest_hash_storage.len) {
-        self.manifest_hash_len = 0;
-        return;
-    }
-    std.mem.copyForwards(u8, self.manifest_hash_storage[0..value.len], value);
-    self.manifest_hash_len = value.len;
-}
-
-fn manifest_signature_matches(
-    self: *const ZigVulkanBackend,
-    module: []const u8,
-    meta: artifact_meta.ArtifactMeta,
-    status_code: []const u8,
-) bool {
-    const last_meta = self.last_manifest_meta orelse return false;
-    if (last_meta.backend_kind != meta.backend_kind or
-        last_meta.timing_source != meta.timing_source or
-        last_meta.comparability != meta.comparability)
-    {
-        return false;
-    }
-    if (!std.mem.eql(u8, self.last_manifest_module_storage[0..self.last_manifest_module_len], module)) return false;
-    if (!std.mem.eql(u8, self.last_manifest_status_storage[0..self.last_manifest_status_len], status_code)) return false;
-    return true;
-}
-
-fn persist_manifest_signature(
-    self: *ZigVulkanBackend,
-    module: []const u8,
-    meta: artifact_meta.ArtifactMeta,
-    status_code: []const u8,
-) void {
-    self.last_manifest_meta = meta;
-    if (module.len > self.last_manifest_module_storage.len) {
-        self.last_manifest_module_len = 0;
-    } else {
-        std.mem.copyForwards(u8, self.last_manifest_module_storage[0..module.len], module);
-        self.last_manifest_module_len = module.len;
-    }
-    if (status_code.len > self.last_manifest_status_storage.len) {
-        self.last_manifest_status_len = 0;
-    } else {
-        std.mem.copyForwards(u8, self.last_manifest_status_storage[0..status_code.len], status_code);
-        self.last_manifest_status_len = status_code.len;
-    }
 }
 
 const VTABLE = backend_iface.BackendVTable{

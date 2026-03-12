@@ -1,6 +1,8 @@
 const std = @import("std");
 const vulkan_errors = @import("vulkan_errors.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
+const artifact_state = @import("../common/artifact_state.zig");
+const hash_utils = @import("../common/hash_utils.zig");
 
 pub const UploadUsageMode = enum {
     copy_dst_copy_src,
@@ -43,12 +45,11 @@ const State = struct {
 
 var state = State{};
 const MANIFEST_PATH_CAPACITY = 256;
-const HASH_HEX_SIZE = 64;
+const HASH_HEX_SIZE = hash_utils.SHA256_HEX_SIZE;
 const MANIFEST_MODULE_CAPACITY = 96;
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 const DEFAULT_MANIFEST_MODULE = "vulkan_dispatch";
-const HEX = "0123456789abcdef";
 const INITIAL_TIMING_NS: u64 = 4_000;
 const CREATE_INSTANCE_COST_NS: u64 = 14_000;
 const SELECT_ADAPTER_COST_NS: u64 = 11_000;
@@ -95,20 +96,12 @@ var current_manifest_hash_len: usize = 0;
 var current_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = undefined;
 var current_manifest_module_len: usize = 0;
 
-fn fmtToken(buf: []u8, comptime fmt: []const u8, args: anytype) []const u8 {
+fn fmt_token(buf: []u8, comptime fmt: []const u8, args: anytype) []const u8 {
     return std.fmt.bufPrint(buf, fmt, args) catch "";
 }
 
-fn sha256Hex(input: []const u8) [HASH_HEX_SIZE]u8 {
-    var output: [HASH_HEX_SIZE]u8 = undefined;
-    var digest: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
-    for (digest, 0..) |byte, index| {
-        const offset = index * 2;
-        output[offset] = HEX[(byte >> 4) & 0x0F];
-        output[offset + 1] = HEX[byte & 0x0F];
-    }
-    return output;
+fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
+    return hash_utils.sha256_hex(input);
 }
 
 fn charge(cost_ns: u64) void {
@@ -138,7 +131,7 @@ fn scaled_cost(bytes: u64, bytes_per_ns: u64, max_cost_ns: u64) u64 {
     return @min(raw, max_cost_ns);
 }
 
-fn previousManifestHash() []const u8 {
+fn previous_manifest_hash() []const u8 {
     if (current_manifest_hash_len == 0) return ZERO_HASH;
     return current_manifest_hash_storage[0..current_manifest_hash_len];
 }
@@ -148,25 +141,22 @@ fn manifest_module_name() []const u8 {
     return current_manifest_module_storage[0..current_manifest_module_len];
 }
 
-fn persistManifestPath(path: []const u8) void {
-    if (path.len == 0 or path.len > MANIFEST_PATH_CAPACITY) return;
-    std.mem.copyForwards(u8, current_manifest_path_storage[0..path.len], path);
-    current_manifest_path_len = path.len;
+fn persist_manifest_path(path: []const u8) void {
+    if (path.len == 0) return;
+    artifact_state.persist_value(current_manifest_path_storage[0..], &current_manifest_path_len, path);
 }
 
-fn persistManifestHash(hash: []const u8) void {
-    if (hash.len == 0 or hash.len > HASH_HEX_SIZE) return;
-    std.mem.copyForwards(u8, current_manifest_hash_storage[0..hash.len], hash);
-    current_manifest_hash_len = hash.len;
+fn persist_manifest_hash(hash: []const u8) void {
+    if (hash.len == 0) return;
+    artifact_state.persist_value(current_manifest_hash_storage[0..], &current_manifest_hash_len, hash);
 }
 
-fn persistManifestModule(module: []const u8) void {
-    if (module.len == 0 or module.len > MANIFEST_MODULE_CAPACITY) return;
-    std.mem.copyForwards(u8, current_manifest_module_storage[0..module.len], module);
-    current_manifest_module_len = module.len;
+fn persist_manifest_module(module: []const u8) void {
+    if (module.len == 0) return;
+    artifact_state.persist_value(current_manifest_module_storage[0..], &current_manifest_module_len, module);
 }
 
-fn writeManifestFile(path: []const u8, content: []const u8) vulkan_errors.VulkanError!void {
+fn write_manifest_file(path: []const u8, content: []const u8) vulkan_errors.VulkanError!void {
     std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
     const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return vulkan_errors.VulkanError.ShaderCompileFailed;
     defer file.close();
@@ -261,15 +251,15 @@ pub fn run_spirv_opt() vulkan_errors.VulkanError!void {
 }
 
 pub fn set_manifest_module(module: []const u8) void {
-    persistManifestModule(module);
+    persist_manifest_module(module);
 }
 
 pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
     ensure_device();
     state.manifest_emits +|= 1;
-    const previous = previousManifestHash();
+    const previous = previous_manifest_hash();
     var path_buf: [MANIFEST_PATH_CAPACITY]u8 = undefined;
-    const path = fmtToken(
+    const path = fmt_token(
         &path_buf,
         "{s}/vulkan-manifest-{d}.json",
         .{ SHADER_ARTIFACT_DIR, state.manifest_emits },
@@ -280,7 +270,7 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
     const taxonomy_code = "ok";
 
     var token_buf: [1536]u8 = undefined;
-    const wgsl_artifact = fmtToken(
+    const wgsl_artifact = fmt_token(
         &token_buf,
         "wgsl:module={s}:wgsl_ingests={d}:wgsl_to_spirv_runs={d}",
         .{
@@ -289,9 +279,9 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             state.wgsl_to_spirv_runs,
         },
     );
-    const wgsl_hash = sha256Hex(wgsl_artifact);
+    const wgsl_hash = sha256_hex(wgsl_artifact);
 
-    const ir_artifact = fmtToken(
+    const ir_artifact = fmt_token(
         &token_buf,
         "ir:module={s}:proc_tables_built={d}:proc_exports={d}:resource_lookups={d}",
         .{
@@ -301,9 +291,9 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             state.resource_lookups,
         },
     );
-    const ir_hash = sha256Hex(ir_artifact);
+    const ir_hash = sha256_hex(ir_artifact);
 
-    const spirv_artifact = fmtToken(
+    const spirv_artifact = fmt_token(
         &token_buf,
         "spirv:module={s}:pipeline_cache_lookups={d}:compute_passes={d}:copy_passes={d}:render_passes={d}:manifest_emits={d}:wgsl_sha={s}:ir_sha={s}",
         .{
@@ -317,8 +307,8 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             ir_hash[0..],
         },
     );
-    const spirv_hash = sha256Hex(spirv_artifact);
-    const pipeline_hash = sha256Hex(fmtToken(
+    const spirv_hash = sha256_hex(spirv_artifact);
+    const pipeline_hash = sha256_hex(fmt_token(
         &token_buf,
         "pipeline:module={s}:wgsl_sha={s}:ir_sha={s}:spirv_sha={s}:manifest_emits={d}",
         .{
@@ -330,8 +320,8 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
         },
     ));
 
-    const toolchain_hash = sha256Hex("toolchain:spirv-tools:vulkan:v1");
-    const stages_json = fmtToken(
+    const toolchain_hash = sha256_hex("toolchain:spirv-tools:vulkan:v1");
+    const stages_json = fmt_token(
         &token_buf,
         "[{{\"stage\":\"wgsl_parse\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"sema\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_build\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_validate\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}},{{\"stage\":\"ir_to_spirv\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}}]",
         .{
@@ -342,7 +332,7 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
             spirv_hash[0..],
         },
     );
-    const chain_hash = sha256Hex(fmtToken(
+    const chain_hash = sha256_hex(fmt_token(
         &token_buf,
         "backendId={s}|module={s}|pipelineHash={s}|wgslSha256={s}|irSha256={s}|spirvSha256={s}|toolchainSha256={s}|taxonomyCode={s}|previousHash={s}|count={d}",
         .{
@@ -360,7 +350,7 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
     ));
 
     var manifest_buf: [2048]u8 = undefined;
-    const manifest_text = fmtToken(
+    const manifest_text = fmt_token(
         &manifest_buf,
         "{{\"schemaVersion\":2,\"backendId\":\"{s}\",\"module\":\"{s}\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"irSha256\":\"{s}\",\"spirvSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"{s}\",\"previousHash\":\"{s}\",\"hash\":\"{s}\",\"stages\":{s}}}",
         .{
@@ -378,9 +368,9 @@ pub fn emit_shader_artifact_manifest() vulkan_errors.VulkanError!void {
         },
     );
 
-    persistManifestPath(path);
-    persistManifestHash(chain_hash[0..]);
-    try writeManifestFile(path, manifest_text);
+    persist_manifest_path(path);
+    persist_manifest_hash(chain_hash[0..]);
+    try write_manifest_file(path, manifest_text);
     charge(MANIFEST_EMIT_COST_NS);
 }
 

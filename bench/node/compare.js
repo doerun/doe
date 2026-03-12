@@ -17,6 +17,9 @@
 
 import { execFile } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { RUNNER_MAX_BUFFER } from '../lib/constants.js';
+import { fmt } from '../lib/format.js';
+import { parseRunnerLines, selectedWorkloads } from '../lib/runner_io.js';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -34,12 +37,6 @@ const { values: args } = parseArgs({
   },
 });
 
-function parseRunnerLines(stdout) {
-  const text = stdout.trim();
-  if (!text) return [];
-  return text.split('\n').map((line) => JSON.parse(line));
-}
-
 function hasCompleteRun(lines) {
   return lines.some((line) => line?.type === 'run_end');
 }
@@ -56,7 +53,7 @@ function runProviderWorkload(provider, workloadId, extraArgs) {
     cmdArgs.push('--validate');
     cmdArgs.push(...extraArgs);
 
-    execFile(process.execPath, cmdArgs, { maxBuffer: 64 * 1024 * 1024 }, (err, stdout, stderr) => {
+    execFile(process.execPath, cmdArgs, { maxBuffer: RUNNER_MAX_BUFFER }, (err, stdout, stderr) => {
       process.stderr.write(stderr);
       let lines;
       try {
@@ -66,6 +63,7 @@ function runProviderWorkload(provider, workloadId, extraArgs) {
         return reject(new Error(`${provider} runner emitted invalid JSON: ${detail}`));
       }
       if (err) {
+        // Preserve a complete stream when teardown exits non-zero after run_end.
         if (hasCompleteRun(lines)) {
           process.stderr.write(
             `WARN: ${provider} runner exited non-zero after emitting complete output; using captured results\n`
@@ -77,16 +75,6 @@ function runProviderWorkload(provider, workloadId, extraArgs) {
       resolve(lines);
     });
   });
-}
-
-function selectedWorkloads() {
-  if (!args.workload) return workloads;
-  return workloads.filter((w) => w.id === args.workload || w.domain === args.workload);
-}
-
-function percentile(sorted, p) {
-  const idx = Math.ceil(p / 100 * sorted.length) - 1;
-  return sorted[Math.max(0, idx)];
 }
 
 function buildComparison(doeResults, dawnResults) {
@@ -174,15 +162,9 @@ function formatTable(comparisons) {
   return [header, sep, ...rows].join('\n');
 }
 
-function fmt(ms) {
-  if (ms == null) return '-';
-  if (ms < 0.01) return (ms * 1000).toFixed(1) + 'us';
-  return ms.toFixed(3) + 'ms';
-}
-
 async function main() {
   console.error('=== Node.js WebGPU Benchmark: Doe vs Dawn ===\n');
-  const selected = selectedWorkloads();
+  const selected = selectedWorkloads(workloads, args.workload);
   if (selected.length === 0) {
     console.error(`No workloads matched filter: ${args.workload}`);
     process.exit(1);

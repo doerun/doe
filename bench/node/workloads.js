@@ -8,6 +8,9 @@
 
 import { packageWorkloadContract } from './workload_contracts.js';
 
+const VALIDATE_RETRY_LIMIT = 6;
+const COPY_VALIDATE_BYTES = 64;
+
 function defineWorkload(id, comparable, factory) {
   return {
     ...packageWorkloadContract(id, comparable),
@@ -263,7 +266,8 @@ function makeComputeE2E(threadCount, workgroupSize) {
       },
       async validate() {
         let lastError = null;
-        for (let attempt = 0; attempt < 6; attempt++) {
+        // Validation budget is separate from timed-run readback retries.
+        for (let attempt = 0; attempt < VALIDATE_RETRY_LIMIT; attempt++) {
           try {
             await this.prepareSample();
             await this.run();
@@ -289,7 +293,8 @@ function makeCopyBufferToBufferE2E(size) {
       sourceBytes[i] = i & 0xff;
     }
 
-    const validateBytes = Math.min(size, 64);
+    // Validate only a small prefix to bound map/readback cost in the harness.
+    const validateBytes = Math.min(size, COPY_VALIDATE_BYTES);
     let srcBuf, dstBuf;
 
     async function assertReadbackMatchesSource() {

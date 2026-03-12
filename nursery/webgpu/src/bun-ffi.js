@@ -5,9 +5,12 @@ import { fileURLToPath } from "node:url";
 import { createDoeRuntime, runDawnVsDoeCompare } from "./runtime_cli.js";
 import { loadDoeBuildMetadata } from "./build_metadata.js";
 import { inferAutoBindGroupLayouts } from "./auto_bind_group_layout.js";
+import { globals } from "./webgpu_constants.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, "..");
+
+export { globals };
 
 const CALLBACK_MODE_ALLOW_PROCESS_EVENTS = 2;
 const REQUEST_ADAPTER_STATUS_SUCCESS = 1;
@@ -19,38 +22,14 @@ const PROCESS_EVENTS_TIMEOUT_NS = 5_000_000_000;
 // Struct layout constants for 64-bit platforms (LP64 / LLP64).
 const PTR_SIZE = 8;
 const SIZE_T_SIZE = 8;
-
-// WebGPU enum constants (standard values) — matches index.js.
-export const globals = {
-    GPUBufferUsage: {
-        MAP_READ:      0x0001,
-        MAP_WRITE:     0x0002,
-        COPY_SRC:      0x0004,
-        COPY_DST:      0x0008,
-        INDEX:         0x0010,
-        VERTEX:        0x0020,
-        UNIFORM:       0x0040,
-        STORAGE:       0x0080,
-        INDIRECT:      0x0100,
-        QUERY_RESOLVE: 0x0200,
-    },
-    GPUShaderStage: {
-        VERTEX:   0x1,
-        FRAGMENT: 0x2,
-        COMPUTE:  0x4,
-    },
-    GPUMapMode: {
-        READ:  0x0001,
-        WRITE: 0x0002,
-    },
-    GPUTextureUsage: {
-        COPY_SRC:          0x01,
-        COPY_DST:          0x02,
-        TEXTURE_BINDING:   0x04,
-        STORAGE_BINDING:   0x08,
-        RENDER_ATTACHMENT: 0x10,
-    },
-};
+const WGPU_BUFFER_DESCRIPTOR_SIZE = 48;
+const WGPU_SHADER_SOURCE_WGSL_SIZE = 32;
+const WGPU_SHADER_MODULE_DESCRIPTOR_SIZE = 24;
+const WGPU_COMPUTE_PIPELINE_DESCRIPTOR_SIZE = 80;
+const WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_SIZE = 40;
+const WGPU_BIND_GROUP_DESCRIPTOR_SIZE = 48;
+const WGPU_PIPELINE_LAYOUT_DESCRIPTOR_SIZE = 48;
+const WGPU_RENDER_PASS_DESCRIPTOR_SIZE = 64;
 
 const DOE_LIMITS = Object.freeze({
     maxTextureDimension1D: 16384,
@@ -238,7 +217,7 @@ function writePtr(view, offset, ptr) {
 
 // WGPUBufferDescriptor: { nextInChain:ptr@0, label:sv@8, usage:u64@24, size:u64@32, mappedAtCreation:u32@40 } = 48
 function buildBufferDescriptor(descriptor) {
-    const buf = new ArrayBuffer(48);
+    const buf = new ArrayBuffer(WGPU_BUFFER_DESCRIPTOR_SIZE);
     const v = new DataView(buf);
     // nextInChain = null
     writePtr(v, 0, null);
@@ -258,14 +237,14 @@ function buildBufferDescriptor(descriptor) {
 function buildShaderModuleDescriptor(code) {
     const codeBytes = encoder.encode(code);
 
-    const wgslBuf = new ArrayBuffer(32);
+    const wgslBuf = new ArrayBuffer(WGPU_SHADER_SOURCE_WGSL_SIZE);
     const wgslView = new DataView(wgslBuf);
     writePtr(wgslView, 0, null);
     wgslView.setUint32(8, STYPE_SHADER_SOURCE_WGSL, true);
     writeStringView(wgslView, 16, codeBytes);
     const wgslArr = new Uint8Array(wgslBuf);
 
-    const descBuf = new ArrayBuffer(24);
+    const descBuf = new ArrayBuffer(WGPU_SHADER_MODULE_DESCRIPTOR_SIZE);
     const descView = new DataView(descBuf);
     writePtr(descView, 0, bunPtr(wgslArr));
     writeStringView(descView, 8, null);
@@ -279,7 +258,7 @@ function buildShaderModuleDescriptor(code) {
 // Total descriptor: 24 + 8 (layout) + 48 (compute) = 80
 function buildComputePipelineDescriptor(shaderModulePtr, entryPoint, layoutPtr) {
     const epBytes = encoder.encode(entryPoint);
-    const buf = new ArrayBuffer(80);
+    const buf = new ArrayBuffer(WGPU_COMPUTE_PIPELINE_DESCRIPTOR_SIZE);
     const v = new DataView(buf);
     // nextInChain
     writePtr(v, 0, null);
@@ -346,7 +325,7 @@ function buildBindGroupLayoutDescriptor(entries) {
     }
 
     // WGPUBindGroupLayoutDescriptor: { nextInChain:ptr@0, label:sv@8, entryCount:size_t@24, entries:ptr@32 } = 40
-    const descBuf = new ArrayBuffer(40);
+    const descBuf = new ArrayBuffer(WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_SIZE);
     const descView = new DataView(descBuf);
     writePtr(descView, 0, null);
     writeStringView(descView, 8, null);
@@ -379,7 +358,7 @@ function buildBindGroupDescriptor(layoutPtr, entries) {
     }
 
     // WGPUBindGroupDescriptor: { nextInChain:ptr@0, label:sv@8, layout:ptr@24, entryCount:size_t@32, entries:ptr@40 } = 48
-    const descBuf = new ArrayBuffer(48);
+    const descBuf = new ArrayBuffer(WGPU_BIND_GROUP_DESCRIPTOR_SIZE);
     const descView = new DataView(descBuf);
     writePtr(descView, 0, null);
     writeStringView(descView, 8, null);
@@ -398,7 +377,7 @@ function buildPipelineLayoutDescriptor(layouts) {
         ptrs[i] = BigInt(layouts[i]);
     }
 
-    const descBuf = new ArrayBuffer(48);
+    const descBuf = new ArrayBuffer(WGPU_PIPELINE_LAYOUT_DESCRIPTOR_SIZE);
     const descView = new DataView(descBuf);
     writePtr(descView, 0, null);
     writeStringView(descView, 8, null);
@@ -521,7 +500,7 @@ function buildRenderPassDescriptor(descriptor) {
         attView.setFloat64(off + 64, cv.a ?? 1, true);
     }
 
-    const descBuf = new ArrayBuffer(64);
+    const descBuf = new ArrayBuffer(WGPU_RENDER_PASS_DESCRIPTOR_SIZE);
     const descView = new DataView(descBuf);
     writePtr(descView, 0, null);
     writeStringView(descView, 8, null);

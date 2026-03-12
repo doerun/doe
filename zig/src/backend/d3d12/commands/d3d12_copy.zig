@@ -3,10 +3,7 @@ const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
 const d3d12_texture = @import("../resources/d3d12_texture.zig");
 
-const HEAP_TYPE_UPLOAD: c_int = 2;
 const HEAP_TYPE_DEFAULT: c_int = 1;
-const RESOURCE_STATE_COPY_DEST: c_int = 0x00000800;
-const RESOURCE_STATE_COPY_SOURCE: c_int = 0x00000400;
 
 extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;

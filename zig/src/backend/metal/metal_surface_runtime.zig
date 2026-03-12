@@ -1,12 +1,12 @@
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const model = @import("../../model.zig");
-
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_device_new_render_target(device: ?*anyopaque, width: u32, height: u32, pixel_format: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_create_command_buffer(queue: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_command_buffer_commit(cmd_buf: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_wait_completed(cmd_buf: ?*anyopaque) callconv(.c) void;
+const bridge = @import("metal_bridge_decls.zig");
+const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
+const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
+const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
+const metal_bridge_device_new_render_target = bridge.metal_bridge_device_new_render_target;
+const metal_bridge_release = bridge.metal_bridge_release;
 
 pub const SurfaceState = struct {
     texture: ?*anyopaque = null,

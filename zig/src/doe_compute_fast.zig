@@ -1,32 +1,7 @@
 const native = @import("doe_wgpu_native.zig");
-
-extern fn metal_bridge_compute_dispatch_copy_signal_commit(
-    queue: ?*anyopaque,
-    pipeline: ?*anyopaque,
-    bufs: ?[*]?*anyopaque,
-    buf_count: u32,
-    x: u32,
-    y: u32,
-    z: u32,
-    wg_x: u32,
-    wg_y: u32,
-    wg_z: u32,
-    copy_src: ?*anyopaque,
-    copy_src_off: u64,
-    copy_dst: ?*anyopaque,
-    copy_dst_off: u64,
-    copy_size: u64,
-    event: ?*anyopaque,
-    event_value: u64,
-) callconv(.c) ?*anyopaque;
+const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const metal_bridge_compute_dispatch_copy_signal_commit = bridge.metal_bridge_compute_dispatch_copy_signal_commit;
 const MAX_BIND = native.MAX_BIND;
-
-fn cast(comptime T: type, raw: ?*anyopaque) ?*T {
-    const ptr = raw orelse return null;
-    const typed: *T = @ptrCast(@alignCast(ptr));
-    if (typed.magic != T.TYPE_MAGIC) return null;
-    return typed;
-}
 
 /// Single-call compute dispatch + optional same-submit copy + event signal + commit.
 /// When the follow-on copy is a CPU-visible shared-buffer readback, we schedule it as
@@ -46,15 +21,15 @@ pub export fn doeNativeComputeDispatchFlush(
     copy_dst_off: u64,
     copy_size: u64,
 ) callconv(.c) void {
-    const q = cast(native.DoeQueue, q_raw) orelse return;
-    const pipe = cast(native.DoeComputePipeline, pipe_raw) orelse return;
+    const q = native.cast(native.DoeQueue, q_raw) orelse return;
+    const pipe = native.cast(native.DoeComputePipeline, pipe_raw) orelse return;
     native.flush_pending_work(q);
 
     // Flatten bind groups into linear Metal buffer array.
     var bufs: [MAX_BIND * 4]?*anyopaque = [_]?*anyopaque{null} ** (MAX_BIND * 4);
     var buf_total: u32 = 0;
     for (0..@min(bg_count, 4)) |i| {
-        const bg = cast(native.DoeBindGroup, bg_ptrs[i]) orelse continue;
+        const bg = native.cast(native.DoeBindGroup, bg_ptrs[i]) orelse continue;
         for (0..bg.count) |j| {
             const idx = i * MAX_BIND + j;
             if (idx < bufs.len) {
@@ -77,8 +52,8 @@ pub export fn doeNativeComputeDispatchFlush(
             copy_dst_off_local = 0;
             copy_size_local = 0;
         } else {
-            if (cast(native.DoeBuffer, copy_src)) |sb| mtl_copy_src = sb.mtl;
-            if (cast(native.DoeBuffer, copy_dst)) |db| mtl_copy_dst = db.mtl;
+            if (native.cast(native.DoeBuffer, copy_src)) |sb| mtl_copy_src = sb.mtl;
+            if (native.cast(native.DoeBuffer, copy_dst)) |db| mtl_copy_dst = db.mtl;
         }
     }
 
@@ -88,10 +63,16 @@ pub export fn doeNativeComputeDispatchFlush(
         pipe.mtl_pso,
         @ptrCast(&bufs),
         buf_total,
-        dx, dy, dz,
-        pipe.wg_x, pipe.wg_y, pipe.wg_z,
-        mtl_copy_src, copy_src_off_local,
-        mtl_copy_dst, copy_dst_off_local,
+        dx,
+        dy,
+        dz,
+        pipe.wg_x,
+        pipe.wg_y,
+        pipe.wg_z,
+        mtl_copy_src,
+        copy_src_off_local,
+        mtl_copy_dst,
+        copy_dst_off_local,
         copy_size_local,
         q.mtl_event,
         q.event_counter,

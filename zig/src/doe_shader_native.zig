@@ -5,6 +5,11 @@ const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const native = @import("doe_wgpu_native.zig");
+const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
+const metal_bridge_device_new_library_msl = bridge.metal_bridge_device_new_library_msl;
+const metal_bridge_library_new_function = bridge.metal_bridge_library_new_function;
+const metal_bridge_release = bridge.metal_bridge_release;
 
 const alloc = native.alloc;
 const make = native.make;
@@ -15,11 +20,6 @@ const ERR_CAP = native.ERR_CAP;
 const DoeDevice = native.DoeDevice;
 const DoeShaderModule = native.DoeShaderModule;
 const DoeComputePipeline = native.DoeComputePipeline;
-
-extern fn metal_bridge_device_new_library_msl(device: ?*anyopaque, src: [*]const u8, src_len: usize, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_library_new_function(library: ?*anyopaque, name: [*:0]const u8) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_compute_pipeline(device: ?*anyopaque, function: ?*anyopaque, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 // ============================================================
 // Shader Module (WGSL → MSL → MTLLibrary)

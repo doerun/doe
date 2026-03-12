@@ -17,8 +17,6 @@ const DoeBindGroup = native.DoeBindGroup;
 const DoeBindGroupLayout = native.DoeBindGroupLayout;
 const RecordedCmd = native.RecordedCmd;
 
-extern fn metal_bridge_cmd_buf_encode_compute_dispatch_indirect(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, indirect_offset: u64, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
-
 // ============================================================
 // Compute Pass operations
 // ============================================================

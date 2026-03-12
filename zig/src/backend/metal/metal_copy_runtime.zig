@@ -2,18 +2,17 @@ const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
-
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_device_new_buffer_shared(device: ?*anyopaque, length: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, pixel_format: u32, usage: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_create_command_buffer(queue: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_cmd_buf_blit_encoder(cmd_buf: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_end_blit_encoding(encoder: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_render_encoder_end(encoder: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_blit_encoder_copy_region(encoder: ?*anyopaque, src: ?*anyopaque, src_offset: u64, dst: ?*anyopaque, dst_offset: u64, size: u64) callconv(.c) void;
-extern fn metal_bridge_blit_encoder_copy_buffer_to_texture(encoder: ?*anyopaque, src: ?*anyopaque, src_offset: u64, src_bytes_per_row: u32, src_rows_per_image: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
-extern fn metal_bridge_blit_encoder_copy_texture_to_buffer(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst: ?*anyopaque, dst_offset: u64, dst_bytes_per_row: u32, dst_rows_per_image: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
-extern fn metal_bridge_blit_encoder_copy_texture_to_texture(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
+const bridge = @import("metal_bridge_decls.zig");
+const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
+const metal_bridge_blit_encoder_copy_region = bridge.metal_bridge_blit_encoder_copy_region;
+const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
+const metal_bridge_blit_encoder_copy_texture_to_texture = bridge.metal_bridge_blit_encoder_copy_texture_to_texture;
+const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
+const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
+const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
+const metal_bridge_device_new_texture = bridge.metal_bridge_device_new_texture;
+const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 
 pub const CopyMetrics = struct {
     setup_ns: u64,

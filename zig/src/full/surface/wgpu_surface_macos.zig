@@ -1,12 +1,8 @@
 const builtin = @import("builtin");
-
-extern fn metal_bridge_create_surface_host(layer_out: *?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_configure_surface_host(
-    host: ?*anyopaque,
-    width: u32,
-    height: u32,
-) callconv(.c) void;
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+const bridge = @import("../../backend/metal/metal_bridge_decls.zig");
+const metal_bridge_configure_surface_host = bridge.metal_bridge_configure_surface_host;
+const metal_bridge_create_surface_host = bridge.metal_bridge_create_surface_host;
+const metal_bridge_release = bridge.metal_bridge_release;
 
 pub const ManagedPlatformSurface = struct {
     retained_host: ?*anyopaque,

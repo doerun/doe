@@ -1,6 +1,7 @@
 const std = @import("std");
 const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
+const dc = @import("../d3d12_constants.zig");
 
 extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_compute_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, bytecode: [*]const u8, bytecode_size: usize) callconv(.c) ?*anyopaque;
@@ -20,7 +21,6 @@ extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, valu
 extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
-const HEAP_TYPE_UPLOAD: c_int = 2;
 const DISPATCH_INDIRECT_ARG_BYTES: usize = 12;
 
 pub const DispatchMetrics = struct {
@@ -89,7 +89,7 @@ pub const DispatchState = struct {
             self.dispatch_cmd_sig = d3d12_bridge_device_create_command_signature_dispatch(device, self.root_signature) orelse return error.InvalidState;
         }
         if (self.indirect_arg_buffer == null) {
-            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DISPATCH_INDIRECT_ARG_BYTES, HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DISPATCH_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
 
         const encode_start = common_timing.now_ns();

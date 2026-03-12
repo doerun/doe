@@ -1,8 +1,12 @@
 const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
+const sema_helpers = @import("sema_helpers.zig");
 
 const Ast = ast_mod.Ast;
+const decode_packed_span = sema_helpers.decode_packed_span;
+const parse_single_int_attr = sema_helpers.parse_single_int_attr;
+const parse_builtin_attr = sema_helpers.parse_builtin_attr;
 
 pub fn parse_stage(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.ShaderStage {
     var stage: ?ir.ShaderStage = null;
@@ -89,6 +93,13 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => error.UnsupportedBuiltin,
         };
     }
+    if (std.mem.eql(u8, name, "textureStore")) {
+        if (arg_types.len == 0) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .storage_texture_2d => self.module.void_type,
+            else => error.UnsupportedBuiltin,
+        };
+    }
     if (std.mem.eql(u8, name, "atomicLoad") or std.mem.eql(u8, name, "atomicStore") or std.mem.eql(u8, name, "atomicAdd") or std.mem.eql(u8, name, "atomicSub") or std.mem.eql(u8, name, "atomicMax") or std.mem.eql(u8, name, "atomicMin") or std.mem.eql(u8, name, "atomicAnd") or std.mem.eql(u8, name, "atomicOr") or std.mem.eql(u8, name, "atomicXor") or std.mem.eql(u8, name, "atomicExchange")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return switch (self.module.types.get(arg_types[0])) {
@@ -116,40 +127,5 @@ pub fn parse_access(name: []const u8) !ir.AccessMode {
     if (std.mem.eql(u8, name, "read")) return .read;
     if (std.mem.eql(u8, name, "write")) return .write;
     if (std.mem.eql(u8, name, "read_write")) return .read_write;
-    return error.InvalidAttribute;
-}
-
-fn decode_packed_span(raw: u32) struct { start: u32, len: u32 } {
-    return .{ .start = raw & 0xFFFF, .len = raw >> 16 };
-}
-
-fn parse_single_int_attr(tree: *const Ast, attr_idx: u32) !u32 {
-    const attr = tree.nodes.items[attr_idx];
-    const span = decode_packed_span(attr.data.rhs);
-    if (span.len == 0) return error.InvalidAttribute;
-    const arg = tree.nodes.items[tree.extra_data.items[span.start]];
-    if (arg.tag != .int_literal) return error.InvalidAttribute;
-    return try std.fmt.parseInt(u32, tree.tokenSlice(arg.main_token), 10);
-}
-
-fn parse_builtin_attr(tree: *const Ast, attr_idx: u32) !ir.Builtin {
-    const attr = tree.nodes.items[attr_idx];
-    const span = decode_packed_span(attr.data.rhs);
-    if (span.len == 0) return error.InvalidAttribute;
-    const arg = tree.nodes.items[tree.extra_data.items[span.start]];
-    if (arg.tag != .ident_expr) return error.InvalidAttribute;
-    const name = tree.tokenSlice(arg.main_token);
-    if (std.mem.eql(u8, name, "position")) return .position;
-    if (std.mem.eql(u8, name, "frag_depth")) return .frag_depth;
-    if (std.mem.eql(u8, name, "front_facing")) return .front_facing;
-    if (std.mem.eql(u8, name, "global_invocation_id")) return .global_invocation_id;
-    if (std.mem.eql(u8, name, "local_invocation_id")) return .local_invocation_id;
-    if (std.mem.eql(u8, name, "local_invocation_index")) return .local_invocation_index;
-    if (std.mem.eql(u8, name, "workgroup_id")) return .workgroup_id;
-    if (std.mem.eql(u8, name, "num_workgroups")) return .num_workgroups;
-    if (std.mem.eql(u8, name, "sample_index")) return .sample_index;
-    if (std.mem.eql(u8, name, "sample_mask")) return .sample_mask;
-    if (std.mem.eql(u8, name, "vertex_index")) return .vertex_index;
-    if (std.mem.eql(u8, name, "instance_index")) return .instance_index;
     return error.InvalidAttribute;
 }

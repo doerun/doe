@@ -25,17 +25,6 @@ var g_records: [MAX_DIAGNOSTIC_RECORDS]DiagnosticRecord = [_]DiagnosticRecord{.{
 var g_next_index: usize = 0;
 var g_record_count: usize = 0;
 
-fn write_text_into_slot(
-    destination: []u8,
-    text: []const u8,
-) void {
-    const copy_len = @min(text.len, destination.len);
-    @memcpy(destination[0..copy_len], text[0..copy_len]);
-    for (destination[copy_len..]) |*value| {
-        value.* = 0;
-    }
-}
-
 pub fn clear() void {
     g_lock.lock();
     defer g_lock.unlock();
@@ -56,8 +45,13 @@ pub fn record(
     g_next_index += 1;
     g_record_count = @min(g_record_count + 1, MAX_DIAGNOSTIC_RECORDS);
 
-    write_text_into_slot(g_records[index].symbol[0..], symbol);
-    write_text_into_slot(g_records[index].owner[0..], owner);
+    const symbol_copy_len = @min(symbol.len, g_records[index].symbol.len);
+    @memcpy(g_records[index].symbol[0..symbol_copy_len], symbol[0..symbol_copy_len]);
+    for (g_records[index].symbol[symbol_copy_len..]) |*value| value.* = 0;
+
+    const owner_copy_len = @min(owner.len, g_records[index].owner.len);
+    @memcpy(g_records[index].owner[0..owner_copy_len], owner[0..owner_copy_len]);
+    for (g_records[index].owner[owner_copy_len..]) |*value| value.* = 0;
     g_records[index].symbol_len = @as(u8, @min(symbol.len, MAX_SYMBOL_BYTES));
     g_records[index].owner_len = @as(u8, @min(owner.len, MAX_OWNER_BYTES));
     g_records[index].resolved = resolved;

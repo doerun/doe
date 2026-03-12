@@ -1,13 +1,14 @@
 const std = @import("std");
 const metal_errors = @import("metal_errors.zig");
+const artifact_state = @import("../common/artifact_state.zig");
+const hash_utils = @import("../common/hash_utils.zig");
 
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY = 256;
-const HASH_HEX_SIZE = 64;
+const HASH_HEX_SIZE = hash_utils.SHA256_HEX_SIZE;
 const MANIFEST_MODULE_CAPACITY = 96;
 
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
-const HEX = "0123456789abcdef";
 const DEFAULT_MANIFEST_MODULE = "metal_dispatch";
 
 const STAGING_RESERVE_BASE_NS: u64 = 2_500;
@@ -99,40 +100,29 @@ fn require_device() metal_errors.MetalError!void {
     }
 }
 
-fn sha256Hex(input: []const u8) [HASH_HEX_SIZE]u8 {
-    var output: [HASH_HEX_SIZE]u8 = undefined;
-    var digest: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
-    for (digest, 0..) |byte, index| {
-        const out_index = index * 2;
-        output[out_index] = HEX[(byte >> 4) & 0x0F];
-        output[out_index + 1] = HEX[byte & 0x0F];
-    }
-    return output;
+fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
+    return hash_utils.sha256_hex(input);
 }
 
-fn fmtToken(buf: []u8, comptime fmt: []const u8, args: anytype) []const u8 {
+fn fmt_token(buf: []u8, comptime fmt: []const u8, args: anytype) []const u8 {
     return std.fmt.bufPrint(buf, fmt, args) catch "";
 }
 
-fn persistManifestPath(path: []const u8) void {
-    if (path.len == 0 or path.len > MANIFEST_PATH_CAPACITY) return;
-    std.mem.copyForwards(u8, current_manifest_path_storage[0..path.len], path);
-    current_manifest_path_len = path.len;
+fn persist_manifest_path(path: []const u8) void {
+    if (path.len == 0) return;
+    artifact_state.persist_value(current_manifest_path_storage[0..], &current_manifest_path_len, path);
 }
 
-fn persistManifestHash(hash: [HASH_HEX_SIZE]u8) void {
-    std.mem.copyForwards(u8, &current_manifest_hash_storage, &hash);
-    current_manifest_hash_len = HASH_HEX_SIZE;
+fn persist_manifest_hash(hash: [HASH_HEX_SIZE]u8) void {
+    artifact_state.persist_value(current_manifest_hash_storage[0..], &current_manifest_hash_len, hash[0..]);
 }
 
-fn persistManifestModule(module: []const u8) void {
-    if (module.len == 0 or module.len > MANIFEST_MODULE_CAPACITY) return;
-    std.mem.copyForwards(u8, current_manifest_module_storage[0..module.len], module);
-    current_manifest_module_len = module.len;
+fn persist_manifest_module(module: []const u8) void {
+    if (module.len == 0) return;
+    artifact_state.persist_value(current_manifest_module_storage[0..], &current_manifest_module_len, module);
 }
 
-fn previousManifestHash() []const u8 {
+fn previous_manifest_hash() []const u8 {
     if (current_manifest_hash_len == 0) return ZERO_HASH;
     return current_manifest_hash_storage[0..current_manifest_hash_len];
 }
@@ -147,7 +137,7 @@ fn scaled_cost(bytes: u64, bytes_per_ns: u64, max_cost_ns: u64) u64 {
     return @min(raw, max_cost_ns);
 }
 
-fn writeManifestFile(path: []const u8, content: []const u8) metal_errors.MetalError!void {
+fn write_manifest_file(path: []const u8, content: []const u8) metal_errors.MetalError!void {
     std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return metal_errors.MetalError.InvalidState;
     const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return metal_errors.MetalError.InvalidState;
     defer file.close();
@@ -258,7 +248,7 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
     state.manifest_emits +|= 1;
 
     var path_buf: [MANIFEST_PATH_CAPACITY]u8 = undefined;
-    const path = fmtToken(
+    const path = fmt_token(
         &path_buf,
         "{s}/metal_shader_artifact_{d}.json",
         .{ SHADER_ARTIFACT_DIR, state.manifest_emits },
@@ -269,7 +259,7 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
     const module = manifest_module_name();
     const taxonomy_code = "pipeline_dispatch_ready";
 
-    const wgsl_artifact = fmtToken(
+    const wgsl_artifact = fmt_token(
         &token_buf,
         "wgsl:module={s}:wgsl_ingests={d}:wgsl_to_msl_runs={d}",
         .{
@@ -278,9 +268,9 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
             state.wgsl_to_msl_runs,
         },
     );
-    const wgsl_hash = sha256Hex(wgsl_artifact);
+    const wgsl_hash = sha256_hex(wgsl_artifact);
 
-    const msl_artifact = fmtToken(
+    const msl_artifact = fmt_token(
         &token_buf,
         "msl:module={s}:msl_compile_runs={d}:manifest_emits={d}",
         .{
@@ -289,9 +279,9 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
             state.manifest_emits,
         },
     );
-    const msl_hash = sha256Hex(msl_artifact);
+    const msl_hash = sha256_hex(msl_artifact);
 
-    const metallib_artifact = fmtToken(
+    const metallib_artifact = fmt_token(
         &token_buf,
         "metallib:module={s}:pipeline_cache_lookups={d}:resource_lookups={d}",
         .{
@@ -300,9 +290,9 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
             state.resource_lookups,
         },
     );
-    const metallib_hash = sha256Hex(metallib_artifact);
+    const metallib_hash = sha256_hex(metallib_artifact);
 
-    const pipeline_artifact = fmtToken(
+    const pipeline_artifact = fmt_token(
         &token_buf,
         "pipeline:module={s}:pipeline_cache_lookups={d}:compute_passes={d}:copy_passes={d}:render_passes={d}:manifest_emits={d}:wgsl_sha={s}:msl_sha={s}:metallib_sha={s}",
         .{
@@ -317,12 +307,12 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
             metallib_hash[0..],
         },
     );
-    const pipeline_hash = sha256Hex(pipeline_artifact);
+    const pipeline_hash = sha256_hex(pipeline_artifact);
 
-    const toolchain_hash = sha256Hex("toolchain:xcrun:metal3.1");
-    const previous = previousManifestHash();
+    const toolchain_hash = sha256_hex("toolchain:xcrun:metal3.1");
+    const previous = previous_manifest_hash();
 
-    const chain = sha256Hex(fmtToken(
+    const chain = sha256_hex(fmt_token(
         &token_buf,
         "backendId={s}|module={s}|pipelineHash={s}|wgslSha256={s}|mslSha256={s}|metallibSha256={s}|toolchainSha256={s}|taxonomyCode={s}|previousHash={s}|count={d}",
         .{
@@ -340,7 +330,7 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
     ));
 
     var manifest_buf: [1536]u8 = undefined;
-    const manifest_text = fmtToken(
+    const manifest_text = fmt_token(
         &manifest_buf,
         "{{\"schemaVersion\":1,\"backendId\":\"{s}\",\"module\":\"{s}\",\"pipelineHash\":\"{s}\",\"wgslSha256\":\"{s}\",\"mslSha256\":\"{s}\",\"metallibSha256\":\"{s}\",\"toolchainSha256\":\"{s}\",\"taxonomyCode\":\"{s}\",\"previousHash\":\"{s}\",\"hash\":\"{s}\"}}",
         .{
@@ -357,11 +347,11 @@ pub fn emit_shader_artifact_manifest() metal_errors.MetalError!void {
         },
     );
 
-    writeManifestFile(path, manifest_text) catch {
+    write_manifest_file(path, manifest_text) catch {
         return metal_errors.MetalError.InvalidState;
     };
-    persistManifestPath(path);
-    persistManifestHash(chain);
+    persist_manifest_path(path);
+    persist_manifest_hash(chain);
     charge(4_000);
 }
 
@@ -523,7 +513,7 @@ pub fn current_manifest_hash() ?[]const u8 {
 }
 
 pub fn set_manifest_module(module: []const u8) void {
-    persistManifestModule(module);
+    persist_manifest_module(module);
 }
 
 pub fn current_manifest_module() ?[]const u8 {

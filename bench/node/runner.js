@@ -7,6 +7,9 @@
 //   node runner.js --provider dawn [--workload id] [--iterations 50] [--warmup 5]
 
 import { workloads } from './workloads.js';
+import { DOE_READBACK_RETRY_LIMIT } from '../lib/constants.js';
+import { shouldRetryDoeReadback } from '../lib/doe_util.js';
+import { stats } from '../lib/stats.js';
 import { performance } from 'node:perf_hooks';
 import { parseArgs } from 'node:util';
 
@@ -24,7 +27,6 @@ const ITERATIONS = parseInt(args.iterations, 10);
 const WARMUP = parseInt(args.warmup, 10);
 const PROVIDER = args.provider;
 const WORKLOAD_FILTER = args.workload;
-const DOE_READBACK_RETRY_LIMIT = 8;
 
 async function loadProvider(name) {
   if (name === 'doe') {
@@ -37,32 +39,6 @@ async function loadProvider(name) {
     return { create: dawn.create, globals: dawn.globals, name: 'webgpu (dawn)' };
   }
   throw new Error(`Unknown provider: ${name}. Use 'doe' or 'dawn'.`);
-}
-
-function percentile(sorted, p) {
-  const idx = Math.ceil(p / 100 * sorted.length) - 1;
-  return sorted[Math.max(0, idx)];
-}
-
-function stats(samples) {
-  const sorted = [...samples].sort((a, b) => a - b);
-  const sum = sorted.reduce((a, b) => a + b, 0);
-  return {
-    count: sorted.length,
-    mean: sum / sorted.length,
-    min: sorted[0],
-    max: sorted[sorted.length - 1],
-    median: percentile(sorted, 50),
-    p95: percentile(sorted, 95),
-    p99: percentile(sorted, 99),
-  };
-}
-
-function shouldRetryDoeReadback(workload, err) {
-  return PROVIDER === 'doe'
-    && workload.domain === 'compute'
-    && typeof err?.message === 'string'
-    && err.message.startsWith('expected readback[');
 }
 
 async function runWorkload(workload, device, queue, globals) {
@@ -159,7 +135,7 @@ async function main() {
       } catch (err) {
         lastError = err;
         attempt += 1;
-        if (!shouldRetryDoeReadback(workload, err) || attempt >= DOE_READBACK_RETRY_LIMIT) break;
+        if (!shouldRetryDoeReadback(PROVIDER, workload, err) || attempt >= DOE_READBACK_RETRY_LIMIT) break;
         process.stderr.write(
           `  ${workload.id}: retrying Doe readback after transient mismatch (${attempt}/${DOE_READBACK_RETRY_LIMIT})\n`
         );

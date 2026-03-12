@@ -3,6 +3,7 @@ const ast_mod = @import("ast.zig");
 const token_mod = @import("token.zig");
 const ir = @import("ir.zig");
 const sema_types = @import("sema_types.zig");
+const sema_attrs = @import("sema_attrs.zig");
 const sema_helpers = @import("sema_helpers.zig");
 const sema_resolve = @import("sema_resolve.zig");
 
@@ -218,7 +219,7 @@ const Analyzer = struct {
             const member = self.module.tree.nodes.items[member_idx];
             const field_ty = try self.resolve_type_node(member.data.lhs);
             const field_name = try ir.dup_string(self.module.allocator, self.module.tree.tokenSlice(member.main_token));
-            const io = try self.parse_io_attr(member.data.rhs & 0xFFFF, member.data.rhs >> 16);
+            const io = try sema_attrs.parse_io_attr(self, member.data.rhs & 0xFFFF, member.data.rhs >> 16);
             try struct_info.fields.append(self.module.allocator, .{
                 .name = field_name,
                 .ty = field_ty,
@@ -249,7 +250,7 @@ const Analyzer = struct {
                 global_info.ty = try self.resolve_type_node(node.data.lhs);
                 if (extra[base + 1] != 0) global_info.addr_space = try parse_address_space(self.module.tree.tokenSlice(extra[base + 1]));
                 if (extra[base + 2] != 0) global_info.access = try parse_access(self.module.tree.tokenSlice(extra[base + 2]));
-                global_info.binding = try self.parse_binding(extra[base + 4], extra[base + 5]);
+                global_info.binding = try sema_attrs.parse_binding(self, extra[base + 4], extra[base + 5]);
                 if (global_info.addr_space == null and is_handle_type(self.module.types.get(global_info.ty))) {
                     global_info.addr_space = .handle;
                 }
@@ -284,15 +285,15 @@ const Analyzer = struct {
         const attrs_len = extra[extra_start + 5];
 
         function_info.return_type = if (return_type_node != NULL_NODE) try self.resolve_type_node(return_type_node) else self.module.void_type;
-        function_info.stage = try self.parse_stage(attrs_start, attrs_len);
-        function_info.workgroup_size = try self.parse_workgroup_size(attrs_start, attrs_len);
+        function_info.stage = try sema_attrs.parse_stage(self, attrs_start, attrs_len);
+        function_info.workgroup_size = try sema_attrs.parse_workgroup_size(self, attrs_start, attrs_len);
 
         var i: u32 = 0;
         while (i < params_len) : (i += 1) {
             const param_extra_start = extra[params_start + i];
             const param_name = try ir.dup_string(self.module.allocator, self.module.tree.tokenSlice(extra[param_extra_start + 0]));
             const param_ty = try self.resolve_type_node(extra[param_extra_start + 1]);
-            const param_io = try self.parse_io_attr(extra[param_extra_start + 2], extra[param_extra_start + 3]);
+            const param_io = try sema_attrs.parse_io_attr(self, extra[param_extra_start + 2], extra[param_extra_start + 3]);
             try function_info.params.append(self.module.allocator, .{
                 .name = param_name,
                 .ty = param_ty,
@@ -527,7 +528,7 @@ const Analyzer = struct {
             }
             return fn_info.return_type;
         }
-        return try self.infer_builtin_call(name, arg_types_buf[0..args_len]);
+        return try sema_attrs.infer_builtin_call(self, name, arg_types_buf[0..args_len]);
     }
 
     fn analyze_construct(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
@@ -647,112 +648,6 @@ const Analyzer = struct {
 
     fn resolve_type_parameterized(self: *Analyzer, node: Node) AnalyzeError!ir.TypeId {
         return sema_resolve.resolve_type_parameterized(self, node);
-    }
-
-    fn parse_stage(self: *Analyzer, attrs_start: u32, attrs_len: u32) !?ir.ShaderStage {
-        var stage: ?ir.ShaderStage = null;
-        for (self.module.tree.extra_data.items[attrs_start .. attrs_start + attrs_len]) |attr_idx| {
-            const attr = self.module.tree.nodes.items[attr_idx];
-            const name = self.module.tree.tokenSlice(attr.data.lhs);
-            if (std.mem.eql(u8, name, "compute")) stage = .compute;
-            if (std.mem.eql(u8, name, "vertex")) stage = .vertex;
-            if (std.mem.eql(u8, name, "fragment")) stage = .fragment;
-        }
-        return stage;
-    }
-
-    fn parse_workgroup_size(self: *Analyzer, attrs_start: u32, attrs_len: u32) ![3]u32 {
-        var result: [3]u32 = .{ 1, 1, 1 };
-        for (self.module.tree.extra_data.items[attrs_start .. attrs_start + attrs_len]) |attr_idx| {
-            const attr = self.module.tree.nodes.items[attr_idx];
-            if (!std.mem.eql(u8, self.module.tree.tokenSlice(attr.data.lhs), "workgroup_size")) continue;
-            const span = decode_packed_span(attr.data.rhs);
-            var i: usize = 0;
-            while (i < span.len and i < result.len) : (i += 1) {
-                const arg_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[span.start + i]];
-                if (arg_node.tag != .int_literal) return error.InvalidAttribute;
-                result[i] = try std.fmt.parseInt(u32, self.module.tree.tokenSlice(arg_node.main_token), 10);
-            }
-        }
-        return result;
-    }
-
-    fn parse_binding(self: *Analyzer, attrs_start: u32, attrs_len: u32) !?ir.BindingPoint {
-        var group: ?u32 = null;
-        var binding: ?u32 = null;
-        for (self.module.tree.extra_data.items[attrs_start .. attrs_start + attrs_len]) |attr_idx| {
-            const attr = self.module.tree.nodes.items[attr_idx];
-            const name = self.module.tree.tokenSlice(attr.data.lhs);
-            const value = try parse_single_int_attr(self.module.tree, attr_idx);
-            if (std.mem.eql(u8, name, "group")) group = value;
-            if (std.mem.eql(u8, name, "binding")) binding = value;
-        }
-        if (group != null and binding != null) return .{ .group = group.?, .binding = binding.? };
-        return null;
-    }
-
-    fn parse_io_attr(self: *Analyzer, attrs_start: u32, attrs_len: u32) !?ir.IoAttr {
-        if (attrs_len == 0) return null;
-        var result = ir.IoAttr{};
-        var seen = false;
-        for (self.module.tree.extra_data.items[attrs_start .. attrs_start + attrs_len]) |attr_idx| {
-            const attr = self.module.tree.nodes.items[attr_idx];
-            const name = self.module.tree.tokenSlice(attr.data.lhs);
-            if (std.mem.eql(u8, name, "builtin")) {
-                result.builtin = try parse_builtin_attr(self.module.tree, attr_idx);
-                seen = true;
-            } else if (std.mem.eql(u8, name, "location")) {
-                result.location = try parse_single_int_attr(self.module.tree, attr_idx);
-                seen = true;
-            } else if (std.mem.eql(u8, name, "flat")) {
-                result.interpolation = .flat;
-                seen = true;
-            } else if (std.mem.eql(u8, name, "invariant")) {
-                result.invariant = true;
-                seen = true;
-            }
-        }
-        return if (seen) result else null;
-    }
-
-    fn infer_builtin_call(self: *Analyzer, name: []const u8, arg_types: []const ir.TypeId) !ir.TypeId {
-        if (std.mem.eql(u8, name, "workgroupBarrier") or std.mem.eql(u8, name, "storageBarrier")) return self.module.void_type;
-        if (std.mem.eql(u8, name, "arrayLength")) return self.module.u32_type;
-        if (std.mem.eql(u8, name, "dot")) {
-            if (arg_types.len == 0) return error.UnsupportedBuiltin;
-            const first = self.module.types.get(arg_types[0]);
-            return switch (first) {
-                .vector => |vec| vec.elem,
-                else => error.UnsupportedBuiltin,
-            };
-        }
-        if (std.mem.eql(u8, name, "textureLoad")) {
-            if (arg_types.len == 0) return error.UnsupportedBuiltin;
-            const first = self.module.types.get(arg_types[0]);
-            return switch (first) {
-                .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
-                else => error.UnsupportedBuiltin,
-            };
-        }
-        if (std.mem.eql(u8, name, "textureStore")) {
-            if (arg_types.len == 0) return error.UnsupportedBuiltin;
-            return switch (self.module.types.get(arg_types[0])) {
-                .storage_texture_2d => self.module.void_type,
-                else => error.UnsupportedBuiltin,
-            };
-        }
-        if (std.mem.eql(u8, name, "atomicLoad") or std.mem.eql(u8, name, "atomicStore") or std.mem.eql(u8, name, "atomicAdd") or std.mem.eql(u8, name, "atomicSub") or std.mem.eql(u8, name, "atomicMax") or std.mem.eql(u8, name, "atomicMin") or std.mem.eql(u8, name, "atomicAnd") or std.mem.eql(u8, name, "atomicOr") or std.mem.eql(u8, name, "atomicXor") or std.mem.eql(u8, name, "atomicExchange")) {
-            if (arg_types.len == 0) return error.UnsupportedBuiltin;
-            return switch (self.module.types.get(arg_types[0])) {
-                .atomic => |inner| inner,
-                else => arg_types[0],
-            };
-        }
-        if (std.mem.eql(u8, name, "min") or std.mem.eql(u8, name, "max") or std.mem.eql(u8, name, "clamp") or std.mem.eql(u8, name, "select") or std.mem.eql(u8, name, "abs") or std.mem.eql(u8, name, "sqrt") or std.mem.eql(u8, name, "sin") or std.mem.eql(u8, name, "cos") or std.mem.eql(u8, name, "normalize") or std.mem.eql(u8, name, "length") or std.mem.eql(u8, name, "distance")) {
-            if (arg_types.len == 0) return error.UnsupportedBuiltin;
-            return arg_types[0];
-        }
-        return error.UnsupportedBuiltin;
     }
 
     fn type_compatible(self: *Analyzer, expected: ir.TypeId, actual: ir.TypeId) bool {

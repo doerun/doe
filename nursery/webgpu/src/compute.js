@@ -5,7 +5,7 @@ function unwrap(value) {
   return value && typeof value === 'object' && '_raw' in value ? value._raw : value;
 }
 
-function wrap_buffer(raw) {
+function wrapBuffer(raw) {
   return {
     _raw: raw,
     size: raw.size,
@@ -100,19 +100,19 @@ function wrap_buffer(raw) {
   };
 }
 
-function wrap_bind_group_layout(raw) {
+function wrapBindGroupLayout(raw) {
   return { _raw: raw };
 }
 
-function wrap_bind_group(raw) {
+function wrapBindGroup(raw) {
   return { _raw: raw };
 }
 
-function wrap_pipeline_layout(raw) {
+function wrapPipelineLayout(raw) {
   return { _raw: raw };
 }
 
-function wrap_compute_pipeline(raw) {
+function wrapComputePipeline(raw) {
   return {
     _raw: raw,
     /**
@@ -131,12 +131,12 @@ function wrap_compute_pipeline(raw) {
      * - The returned layout is wrapped back into the compute facade.
      */
     getBindGroupLayout(index) {
-      return wrap_bind_group_layout(raw.getBindGroupLayout(index));
+      return wrapBindGroupLayout(raw.getBindGroupLayout(index));
     },
   };
 }
 
-function wrap_compute_pass(raw) {
+function wrapComputePass(raw) {
   return {
     _raw: raw,
     /**
@@ -246,7 +246,7 @@ function wrap_compute_pass(raw) {
   };
 }
 
-function wrap_command_encoder(raw) {
+function wrapCommandEncoder(raw) {
   return {
     _raw: raw,
     /**
@@ -264,7 +264,7 @@ function wrap_command_encoder(raw) {
      * - The returned pass is wrapped back into the compute facade.
      */
     beginComputePass(descriptor) {
-      return wrap_compute_pass(raw.beginComputePass(descriptor));
+      return wrapComputePass(raw.beginComputePass(descriptor));
     },
     /**
      * Record a buffer-to-buffer copy.
@@ -336,7 +336,7 @@ function wrap_command_encoder(raw) {
   };
 }
 
-function wrap_queue(raw) {
+function wrapQueue(raw) {
   return {
     _raw: raw,
     /**
@@ -394,7 +394,7 @@ function wrap_queue(raw) {
   };
 }
 
-function wrap_query_set(raw) {
+function wrapQuerySet(raw) {
   return {
     _raw: raw,
     /**
@@ -417,10 +417,10 @@ function wrap_query_set(raw) {
   };
 }
 
-function wrap_device(raw) {
+function wrapDevice(raw) {
   return {
     _raw: raw,
-    queue: wrap_queue(raw.queue),
+    queue: wrapQueue(raw.queue),
     limits: raw.limits,
     features: raw.features,
     /**
@@ -441,7 +441,7 @@ function wrap_device(raw) {
      * - The returned buffer is wrapped back into the compute facade.
      */
     createBuffer(descriptor) {
-      return wrap_buffer(raw.createBuffer(descriptor));
+      return wrapBuffer(raw.createBuffer(descriptor));
     },
     /**
      * Create a shader module from WGSL source.
@@ -479,7 +479,7 @@ function wrap_device(raw) {
      */
     createComputePipeline(descriptor) {
       const compute = descriptor.compute ?? {};
-      return wrap_compute_pipeline(raw.createComputePipeline({
+      return wrapComputePipeline(raw.createComputePipeline({
         ...descriptor,
         layout: descriptor.layout === 'auto' ? 'auto' : unwrap(descriptor.layout),
         compute: {
@@ -503,7 +503,7 @@ function wrap_device(raw) {
      * - The returned pipeline is wrapped back into the compute facade.
      */
     async createComputePipelineAsync(descriptor) {
-      return wrap_compute_pipeline(await raw.createComputePipelineAsync(descriptor));
+      return wrapComputePipeline(await raw.createComputePipelineAsync(descriptor));
     },
     /**
      * Create a bind-group layout.
@@ -520,7 +520,7 @@ function wrap_device(raw) {
      * - The returned layout is wrapped for compute-surface use.
      */
     createBindGroupLayout(descriptor) {
-      return wrap_bind_group_layout(raw.createBindGroupLayout(descriptor));
+      return wrapBindGroupLayout(raw.createBindGroupLayout(descriptor));
     },
     /**
      * Create a bind group.
@@ -543,7 +543,7 @@ function wrap_device(raw) {
           ? { ...entry.resource, buffer: unwrap(entry.resource.buffer) }
           : entry.resource,
       }));
-      return wrap_bind_group(raw.createBindGroup({
+      return wrapBindGroup(raw.createBindGroup({
         ...descriptor,
         layout: unwrap(descriptor.layout),
         entries,
@@ -564,7 +564,7 @@ function wrap_device(raw) {
      * - Wrapped bind-group layouts are unwrapped before creation.
      */
     createPipelineLayout(descriptor) {
-      return wrap_pipeline_layout(raw.createPipelineLayout({
+      return wrapPipelineLayout(raw.createPipelineLayout({
         ...descriptor,
         bindGroupLayouts: (descriptor.bindGroupLayouts ?? []).map(unwrap),
       }));
@@ -584,7 +584,7 @@ function wrap_device(raw) {
      * - The returned encoder is wrapped back into the compute facade.
      */
     createCommandEncoder(descriptor) {
-      return wrap_command_encoder(raw.createCommandEncoder(descriptor));
+      return wrapCommandEncoder(raw.createCommandEncoder(descriptor));
     },
     /**
      * Create a query set.
@@ -604,7 +604,7 @@ function wrap_device(raw) {
       if (typeof raw.createQuerySet !== 'function') {
         throw new Error('query sets are unsupported on the compute surface');
       }
-      return wrap_query_set(raw.createQuerySet(descriptor));
+      return wrapQuerySet(raw.createQuerySet(descriptor));
     },
     /**
      * Release the wrapped device.
@@ -626,7 +626,7 @@ function wrap_device(raw) {
   };
 }
 
-function wrap_adapter(raw) {
+function wrapAdapter(raw) {
   return {
     _raw: raw,
     features: raw.features,
@@ -646,7 +646,7 @@ function wrap_adapter(raw) {
      * - The wrapped device intentionally omits render and surface APIs.
      */
     async requestDevice(descriptor) {
-      return wrap_device(await raw.requestDevice(descriptor));
+      return wrapDevice(await raw.requestDevice(descriptor));
     },
     /**
      * Release the wrapped adapter.
@@ -667,7 +667,7 @@ function wrap_adapter(raw) {
   };
 }
 
-function wrap_gpu(raw) {
+function wrapGpu(raw) {
   return {
     _raw: raw,
     /**
@@ -685,7 +685,7 @@ function wrap_gpu(raw) {
      * - The wrapped adapter later produces compute-only devices.
      */
     async requestAdapter(options) {
-      return wrap_adapter(await raw.requestAdapter(options));
+      return wrapAdapter(await raw.requestAdapter(options));
     },
   };
 }
@@ -728,7 +728,7 @@ export const globals = full.globals;
  * - The returned device intentionally omits render, sampler, and surface methods.
  */
 export function create(createArgs = null) {
-  return wrap_gpu(full.create(createArgs));
+  return wrapGpu(full.create(createArgs));
 }
 
 /**

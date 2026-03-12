@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { globals } from './webgpu_constants.js';
 import {
   createDoeRuntime as createDoeRuntimeCli,
   runDawnVsDoeCompare as runDawnVsDoeCompareCli,
@@ -19,6 +20,8 @@ const DOE_BUILD_METADATA = loadDoeBuildMetadata({
   libraryPath: DOE_LIB_PATH ?? '',
 });
 let libraryLoaded = false;
+
+export { globals };
 
 function loadAddon() {
   const prebuildPath = resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, 'doe_napi.node');
@@ -85,8 +88,8 @@ function ensureLibrary() {
 /**
  * Standard WebGPU enum objects exposed by the Doe package runtime.
  *
- * This is a package-local copy of the enum tables commonly needed by Node and
- * Bun callers that want WebGPU constants without relying on browser globals.
+ * These package-local shared enum tables are commonly needed by Node and Bun
+ * callers that want WebGPU constants without relying on browser globals.
  *
  * This example shows the API in its basic form.
  *
@@ -100,37 +103,6 @@ function ensureLibrary() {
  * - They do not install themselves on `globalThis`; use `setupGlobals(...)` if needed.
  * - `@simulatte/webgpu/compute` shares the same constants even though its device facade is narrower.
  */
-export const globals = {
-  GPUBufferUsage: {
-    MAP_READ:      0x0001,
-    MAP_WRITE:     0x0002,
-    COPY_SRC:      0x0004,
-    COPY_DST:      0x0008,
-    INDEX:         0x0010,
-    VERTEX:        0x0020,
-    UNIFORM:       0x0040,
-    STORAGE:       0x0080,
-    INDIRECT:      0x0100,
-    QUERY_RESOLVE: 0x0200,
-  },
-  GPUShaderStage: {
-    VERTEX:   0x1,
-    FRAGMENT: 0x2,
-    COMPUTE:  0x4,
-  },
-  GPUMapMode: {
-    READ:  0x0001,
-    WRITE: 0x0002,
-  },
-  GPUTextureUsage: {
-    COPY_SRC:          0x01,
-    COPY_DST:          0x02,
-    TEXTURE_BINDING:   0x04,
-    STORAGE_BINDING:   0x08,
-    RENDER_ATTACHMENT: 0x10,
-  },
-};
-
 /**
  * WebGPU buffer returned by the Doe full package surface.
  *

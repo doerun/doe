@@ -1,6 +1,7 @@
 const std = @import("std");
 const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
+const dc = @import("../d3d12_constants.zig");
 
 extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_graphics_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, vs_bytecode: [*]const u8, vs_size: usize, ps_bytecode: [*]const u8, ps_size: usize, target_format: u32) callconv(.c) ?*anyopaque;
@@ -30,10 +31,6 @@ extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, valu
 extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
-const HEAP_TYPE_UPLOAD: c_int = 2;
-const RESOURCE_STATE_RENDER_TARGET: c_int = 0x00000004;
-const RESOURCE_STATE_PRESENT: c_int = 0x00000000;
-const D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST: c_int = 4;
 const RENDER_ATTACHMENT_USAGE: u32 = 0x00000010;
 const DRAW_INDIRECT_ARG_BYTES: usize = 16;
 const DRAW_INDEXED_INDIRECT_ARG_BYTES: usize = 20;
@@ -80,7 +77,7 @@ pub const RenderState = struct {
         if (d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
         if (d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
 
-        d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, RESOURCE_STATE_PRESENT, RESOURCE_STATE_RENDER_TARGET);
+        d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_PRESENT, dc.RESOURCE_STATE_RENDER_TARGET);
         d3d12_bridge_command_list_set_graphics_root_signature(self.cmd_list, self.root_signature);
         d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.graphics_pipeline);
         d3d12_bridge_command_list_set_render_target(self.cmd_list, self.rtv_heap, 0);
@@ -95,7 +92,7 @@ pub const RenderState = struct {
         const sc_y: i32 = @intCast(cmd.scissor_y);
         d3d12_bridge_command_list_set_scissor(self.cmd_list, sc_x, sc_y, sc_x + sc_w, sc_y + sc_h);
 
-        d3d12_bridge_command_list_ia_set_primitive_topology(self.cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        d3d12_bridge_command_list_ia_set_primitive_topology(self.cmd_list, dc.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         var draw_count: u32 = 0;
 
@@ -125,7 +122,7 @@ pub const RenderState = struct {
             }
         }
 
-        d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, RESOURCE_STATE_RENDER_TARGET, RESOURCE_STATE_PRESENT);
+        d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
         d3d12_bridge_command_list_close(self.cmd_list);
 
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
@@ -178,7 +175,7 @@ pub const RenderState = struct {
         if (self.draw_cmd_sig != null) return;
         self.draw_cmd_sig = d3d12_bridge_device_create_command_signature_draw(device, self.root_signature) orelse return error.InvalidState;
         if (self.indirect_arg_buffer == null) {
-            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DRAW_INDIRECT_ARG_BYTES, HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DRAW_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
     }
 
@@ -186,7 +183,7 @@ pub const RenderState = struct {
         if (self.draw_indexed_cmd_sig != null) return;
         self.draw_indexed_cmd_sig = d3d12_bridge_device_create_command_signature_draw_indexed(device, self.root_signature) orelse return error.InvalidState;
         if (self.indirect_arg_buffer == null) {
-            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DRAW_INDEXED_INDIRECT_ARG_BYTES, HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DRAW_INDEXED_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
     }
 

@@ -16,6 +16,9 @@
 
 import { execFile } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { RUNNER_MAX_BUFFER } from '../lib/constants.js';
+import { fmt } from '../lib/format.js';
+import { parseRunnerLines, selectedWorkloads } from '../lib/runner_io.js';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -33,12 +36,6 @@ const { values: args } = parseArgs({
   },
 });
 
-function parseRunnerLines(stdout) {
-  const text = stdout.trim();
-  if (!text) return [];
-  return text.split('\n').map((line) => JSON.parse(line));
-}
-
 function runProviderWorkload(provider, workloadId, extraArgs) {
   return new Promise((resolve, reject) => {
     const bunPath = typeof Bun !== 'undefined' ? process.execPath : 'bun';
@@ -52,23 +49,15 @@ function runProviderWorkload(provider, workloadId, extraArgs) {
     cmdArgs.push('--validate');
     cmdArgs.push(...extraArgs);
 
-    execFile(bunPath, cmdArgs, { maxBuffer: 64 * 1024 * 1024 }, (err, stdout, stderr) => {
+    execFile(bunPath, cmdArgs, { maxBuffer: RUNNER_MAX_BUFFER }, (err, stdout, stderr) => {
       process.stderr.write(stderr);
+      // Bun lane treats any non-zero runner exit as fatal instead of salvaging
+      // a possibly partial NDJSON stream.
       if (err) return reject(new Error(`${provider} runner failed: ${err.message}`));
       const lines = parseRunnerLines(stdout);
       resolve(lines);
     });
   });
-}
-
-function selectedWorkloads() {
-  if (!args.workload) return workloads;
-  return workloads.filter((w) => w.id === args.workload || w.domain === args.workload);
-}
-
-function percentile(sorted, p) {
-  const idx = Math.ceil(p / 100 * sorted.length) - 1;
-  return sorted[Math.max(0, idx)];
 }
 
 function buildComparison(doeResults, rightResults) {
@@ -155,15 +144,9 @@ function formatTable(comparisons) {
   return [header, sep, ...rows].join('\n');
 }
 
-function fmt(ms) {
-  if (ms == null) return '-';
-  if (ms < 0.01) return (ms * 1000).toFixed(1) + 'us';
-  return ms.toFixed(3) + 'ms';
-}
-
 async function main() {
   console.error('=== Bun WebGPU Benchmark: Doe vs bun-webgpu ===\n');
-  const selected = selectedWorkloads();
+  const selected = selectedWorkloads(workloads, args.workload);
   if (selected.length === 0) {
     console.error(`No workloads matched filter: ${args.workload}`);
     process.exit(1);

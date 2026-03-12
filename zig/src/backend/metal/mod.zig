@@ -9,6 +9,9 @@ const command_info = @import("../common/command_info.zig");
 const command_requirements = @import("../common/command_requirements.zig");
 const capabilities = @import("../common/capabilities.zig");
 const artifact_meta = @import("../common/artifact_meta.zig");
+const artifact_policy = @import("../common/artifact_policy.zig");
+const artifact_state = @import("../common/artifact_state.zig");
+const hash_utils = @import("../common/hash_utils.zig");
 const native_runtime = if (builtin.os.tag == .macos)
     @import("metal_native_runtime.zig")
 else
@@ -16,13 +19,12 @@ else
 
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
-const HASH_HEX_SIZE: usize = 64;
+const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
 const MANIFEST_CONTENT_CAPACITY: usize = 2048;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
 const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
-const HEX = "0123456789abcdef";
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
@@ -195,16 +197,25 @@ pub const ZigMetalBackend = struct {
             },
         ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
-        const hash = sha256_hex(content);
+        const hash = hash_utils.sha256_hex(content);
 
         std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
         const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
         defer file.close();
         file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
-        persist_manifest_path(self, path);
-        persist_manifest_hash(self, hash[0..]);
-        persist_manifest_signature(self, module, meta, status_code);
+        artifact_state.persist_value(self.manifest_path_storage[0..], &self.manifest_path_len, path);
+        artifact_state.persist_value(self.manifest_hash_storage[0..], &self.manifest_hash_len, hash[0..]);
+        artifact_state.persist_manifest_signature(
+            &self.last_manifest_meta,
+            self.last_manifest_module_storage[0..],
+            &self.last_manifest_module_len,
+            self.last_manifest_status_storage[0..],
+            &self.last_manifest_status_len,
+            module,
+            meta,
+            status_code,
+        );
     }
 };
 
@@ -235,96 +246,20 @@ fn native_capability_set() capabilities.CapabilitySet {
     return set;
 }
 
-fn should_emit_shader_artifact(command: model.Command) bool {
-    return switch (command) {
-        .dispatch,
-        .dispatch_indirect,
-        .kernel_dispatch,
-        .render_draw,
-        .draw_indirect,
-        .draw_indexed_indirect,
-        .render_pass,
-        => true,
-        else => false,
-    };
-}
-
-fn artifact_status_code(result: webgpu.NativeExecutionResult) []const u8 {
-    if (result.status_message.len != 0) return result.status_message;
-    return switch (result.status) {
-        .ok => "ok",
-        .unsupported => "unsupported",
-        .@"error" => "error",
-    };
-}
-
-fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
-    var output: [HASH_HEX_SIZE]u8 = undefined;
-    var digest: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
-    for (digest, 0..) |byte, index| {
-        const output_index = index * 2;
-        output[output_index] = HEX[(byte >> 4) & 0x0F];
-        output[output_index + 1] = HEX[byte & 0x0F];
-    }
-    return output;
-}
-
-fn persist_manifest_path(self: *ZigMetalBackend, value: []const u8) void {
-    if (value.len > self.manifest_path_storage.len) {
-        self.manifest_path_len = 0;
-        return;
-    }
-    std.mem.copyForwards(u8, self.manifest_path_storage[0..value.len], value);
-    self.manifest_path_len = value.len;
-}
-
-fn persist_manifest_hash(self: *ZigMetalBackend, value: []const u8) void {
-    if (value.len > self.manifest_hash_storage.len) {
-        self.manifest_hash_len = 0;
-        return;
-    }
-    std.mem.copyForwards(u8, self.manifest_hash_storage[0..value.len], value);
-    self.manifest_hash_len = value.len;
-}
-
 fn manifest_signature_matches(
     self: *const ZigMetalBackend,
     module: []const u8,
     meta: artifact_meta.ArtifactMeta,
     status_code: []const u8,
 ) bool {
-    const last_meta = self.last_manifest_meta orelse return false;
-    if (last_meta.backend_kind != meta.backend_kind or
-        last_meta.timing_source != meta.timing_source or
-        last_meta.comparability != meta.comparability)
-    {
-        return false;
-    }
-    if (!std.mem.eql(u8, self.last_manifest_module_storage[0..self.last_manifest_module_len], module)) return false;
-    if (!std.mem.eql(u8, self.last_manifest_status_storage[0..self.last_manifest_status_len], status_code)) return false;
-    return true;
-}
-
-fn persist_manifest_signature(
-    self: *ZigMetalBackend,
-    module: []const u8,
-    meta: artifact_meta.ArtifactMeta,
-    status_code: []const u8,
-) void {
-    self.last_manifest_meta = meta;
-    if (module.len > self.last_manifest_module_storage.len) {
-        self.last_manifest_module_len = 0;
-    } else {
-        std.mem.copyForwards(u8, self.last_manifest_module_storage[0..module.len], module);
-        self.last_manifest_module_len = module.len;
-    }
-    if (status_code.len > self.last_manifest_status_storage.len) {
-        self.last_manifest_status_len = 0;
-    } else {
-        std.mem.copyForwards(u8, self.last_manifest_status_storage[0..status_code.len], status_code);
-        self.last_manifest_status_len = status_code.len;
-    }
+    return artifact_state.manifest_signature_matches(
+        self.last_manifest_meta,
+        self.last_manifest_module_storage[0..self.last_manifest_module_len],
+        self.last_manifest_status_storage[0..self.last_manifest_status_len],
+        module,
+        meta,
+        status_code,
+    );
 }
 
 fn write_status(self: *ZigMetalBackend, comptime fmt: []const u8, args: anytype) []const u8 {
@@ -412,8 +347,12 @@ fn execute_dispatch(self: *ZigMetalBackend, dispatch: model.DispatchCommand) !we
 fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const metrics = try rt.run_kernel_dispatch(
-        kd.kernel, kd.x, kd.y, kd.z,
-        kd.repeat, kd.warmup_dispatch_count,
+        kd.kernel,
+        kd.x,
+        kd.y,
+        kd.z,
+        kd.repeat,
+        kd.warmup_dispatch_count,
         kd.bindings,
     );
     return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
@@ -603,13 +542,13 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
     result.setup_ns +|= flush_setup_ns;
     result.submit_wait_ns +|= pending_submit_wait_ns;
 
-    if (should_emit_shader_artifact(command)) {
+    if (artifact_policy.should_emit_shader_artifact(command)) {
         const meta = artifact_meta.classify(
             .native_metal,
             result.gpu_timestamp_valid,
             result.gpu_timestamp_attempted,
         );
-        const status_code = artifact_status_code(result);
+        const status_code = artifact_policy.artifact_status_code(result);
         const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
         std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
         self.pending_artifact_status_len = copy_len;

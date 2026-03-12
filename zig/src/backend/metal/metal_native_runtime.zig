@@ -5,6 +5,44 @@ const webgpu = @import("../../webgpu_ffi.zig");
 const copy_runtime = @import("metal_copy_runtime.zig");
 const dispatch_runtime = @import("metal_dispatch_runtime.zig");
 const surface_runtime = @import("metal_surface_runtime.zig");
+const bridge = @import("metal_bridge_decls.zig");
+const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
+const metal_bridge_blit_encoder_copy = bridge.metal_bridge_blit_encoder_copy;
+const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
+const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
+const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
+const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
+const metal_bridge_command_buffer_encode_signal_event = bridge.metal_bridge_command_buffer_encode_signal_event;
+const metal_bridge_command_buffer_setup_fast_wait = bridge.metal_bridge_command_buffer_setup_fast_wait;
+const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
+const metal_bridge_command_buffer_wait_fast = bridge.metal_bridge_command_buffer_wait_fast;
+const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
+const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
+const metal_bridge_device_new_buffer_private = bridge.metal_bridge_device_new_buffer_private;
+const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
+const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
+const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
+const metal_bridge_device_new_icb = bridge.metal_bridge_device_new_icb;
+const metal_bridge_device_new_library_msl = bridge.metal_bridge_device_new_library_msl;
+const metal_bridge_device_new_render_pipeline = bridge.metal_bridge_device_new_render_pipeline;
+const metal_bridge_device_new_render_target = bridge.metal_bridge_device_new_render_target;
+const metal_bridge_device_new_sampler = bridge.metal_bridge_device_new_sampler;
+const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
+const metal_bridge_device_new_texture = bridge.metal_bridge_device_new_texture;
+const metal_bridge_encode_compute_dispatch_batch = bridge.metal_bridge_encode_compute_dispatch_batch;
+const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
+const metal_bridge_icb_encode_draws = bridge.metal_bridge_icb_encode_draws;
+const metal_bridge_library_new_function = bridge.metal_bridge_library_new_function;
+const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw;
+const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
+const metal_bridge_render_encoder_execute_icb = bridge.metal_bridge_render_encoder_execute_icb;
+const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
+const metal_bridge_texture_depth = bridge.metal_bridge_texture_depth;
+const metal_bridge_texture_height = bridge.metal_bridge_texture_height;
+const metal_bridge_texture_replace_region = bridge.metal_bridge_texture_replace_region;
+const metal_bridge_texture_sample_count = bridge.metal_bridge_texture_sample_count;
+const metal_bridge_texture_width = bridge.metal_bridge_texture_width;
 
 // Metal on Apple Silicon supports large shared buffers up to device maxBufferLength.
 // No artificial cap here — let allocation failure propagate as InvalidState.
@@ -16,64 +54,6 @@ const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const MAX_BINDING_SLOTS: usize = 32;
 const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024; // reuse staging pair for uploads <= 1MB
 const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;
-
-// Metal bridge C functions — symbols provided by metal_bridge.m.
-extern fn metal_bridge_create_default_device() callconv(.c) ?*anyopaque;
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_device_new_command_queue(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_buffer_shared(device: ?*anyopaque, length: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_buffer_private(device: ?*anyopaque, length: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_encode_blit_copy(queue: ?*anyopaque, src: ?*anyopaque, dst: ?*anyopaque, length: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_encode_blit_batch(queue: ?*anyopaque, srcs: ?[*]?*anyopaque, dsts: ?[*]?*anyopaque, lengths: ?[*]usize, count: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_begin_blit_encoding(queue: ?*anyopaque, encoder_out: *?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_blit_encoder_copy(encoder: ?*anyopaque, src: ?*anyopaque, dst: ?*anyopaque, byte_count: usize) callconv(.c) void;
-extern fn metal_bridge_end_blit_encoding(encoder: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_commit(cmd_buf: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_wait_completed(cmd_buf: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_setup_fast_wait(cmd_buf: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_wait_fast() callconv(.c) void;
-
-// Streaming command buffer (shared across blit/render encoders)
-extern fn metal_bridge_create_command_buffer(queue: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_cmd_buf_blit_encoder(cmd_buf: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_cmd_buf_encode_render_pass(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, redundant_bindgroup: c_int) callconv(.c) void;
-extern fn metal_bridge_cmd_buf_encode_icb_render_pass(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, icb: ?*anyopaque, target: ?*anyopaque, draw_count: u32) callconv(.c) void;
-extern fn metal_bridge_cmd_buf_render_encoder(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_render_encoder_draw(encoder: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, pipeline: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_render_encoder_execute_icb(encoder: ?*anyopaque, icb: ?*anyopaque, draw_count: u32) callconv(.c) void;
-extern fn metal_bridge_render_encoder_end(encoder: ?*anyopaque) callconv(.c) void;
-
-// Shared event (lightweight GPU fence)
-extern fn metal_bridge_device_new_shared_event(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_command_buffer_encode_signal_event(cmd_buf: ?*anyopaque, event: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn metal_bridge_shared_event_wait(event: ?*anyopaque, value: u64) callconv(.c) void;
-
-// Compute bridge
-extern fn metal_bridge_device_new_library_msl(device: ?*anyopaque, src: [*]const u8, src_len: usize, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_library_new_function(library: ?*anyopaque, name: [*:0]const u8) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_compute_pipeline(device: ?*anyopaque, function: ?*anyopaque, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_encode_compute_dispatch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_encode_compute_dispatch_batch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32, repeat_count: u32) callconv(.c) ?*anyopaque;
-
-// Texture bridge
-extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, pixel_format: u32, usage: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_texture_replace_region(texture: ?*anyopaque, width: u32, height: u32, data: *const anyopaque, bytes_per_row: u32, mip_level: u32) callconv(.c) void;
-extern fn metal_bridge_texture_width(texture: ?*anyopaque) callconv(.c) u32;
-extern fn metal_bridge_texture_height(texture: ?*anyopaque) callconv(.c) u32;
-extern fn metal_bridge_texture_depth(texture: ?*anyopaque) callconv(.c) u32;
-extern fn metal_bridge_texture_sample_count(texture: ?*anyopaque) callconv(.c) u32;
-
-// Sampler bridge
-extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_filter: u32, mag_filter: u32, mipmap_filter: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
-
-// Render bridge
-extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_render_target(device: ?*anyopaque, width: u32, height: u32, pixel_format: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_encode_render_pass(queue: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, redundant_bindgroup: c_int) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_icb(device: ?*anyopaque, pipeline: ?*anyopaque, command_count: u32, redundant_pipeline: c_int) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_icb_encode_draws(icb: ?*anyopaque, pipeline: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int) callconv(.c) void;
-extern fn metal_bridge_encode_icb_render_pass(queue: ?*anyopaque, pipeline: ?*anyopaque, icb: ?*anyopaque, target: ?*anyopaque, draw_count: u32) callconv(.c) ?*anyopaque;
 
 pub const DispatchMetrics = struct {
     setup_ns: u64,
@@ -194,8 +174,8 @@ pub const NativeMetalRuntime = struct {
         self.deferred_releases.deinit(self.allocator);
         self.release_buffer_pool(&self.shared_pool);
         self.release_buffer_pool(&self.private_pool);
-        if (self.staging_src) |s| { metal_bridge_release(s); self.staging_src = null; }
-        if (self.staging_dst) |d| { metal_bridge_release(d); self.staging_dst = null; }
+        release_ref(&self.staging_src);
+        release_ref(&self.staging_dst);
         self.staging_src_zeroed = false;
         self.release_kernel_pipelines();
         self.release_compute_buffers();
@@ -203,9 +183,9 @@ pub const NativeMetalRuntime = struct {
         self.release_samplers();
         self.release_surfaces();
         self.release_render_resources();
-        if (self.shared_event) |e| { metal_bridge_release(e); self.shared_event = null; }
-        if (self.queue) |q| { metal_bridge_release(q); self.queue = null; }
-        if (self.device) |d| { metal_bridge_release(d); self.device = null; }
+        release_ref(&self.shared_event);
+        release_ref(&self.queue);
+        release_ref(&self.device);
         self.has_device = false;
     }
 
@@ -254,12 +234,10 @@ pub const NativeMetalRuntime = struct {
         if (self.streaming_blit_encoder == null) {
             if (self.streaming_cmd_buf == null) {
                 var encoder: ?*anyopaque = null;
-                self.streaming_cmd_buf = metal_bridge_begin_blit_encoding(self.queue, &encoder)
-                    orelse return error.InvalidState;
+                self.streaming_cmd_buf = metal_bridge_begin_blit_encoding(self.queue, &encoder) orelse return error.InvalidState;
                 self.streaming_blit_encoder = encoder;
             } else {
-                self.streaming_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.streaming_cmd_buf)
-                    orelse return error.InvalidState;
+                self.streaming_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.streaming_cmd_buf) orelse return error.InvalidState;
             }
         }
 
@@ -320,8 +298,7 @@ pub const NativeMetalRuntime = struct {
             if (self.outstanding_cmd_buf != null) {
                 self.wait_outstanding();
             } else {
-                const empty_cmd = metal_bridge_create_command_buffer(self.queue)
-                    orelse return error.InvalidState;
+                const empty_cmd = metal_bridge_create_command_buffer(self.queue) orelse return error.InvalidState;
                 metal_bridge_command_buffer_commit(empty_cmd);
                 metal_bridge_command_buffer_wait_completed(empty_cmd);
                 metal_bridge_release(empty_cmd);
@@ -354,8 +331,7 @@ pub const NativeMetalRuntime = struct {
                 metal_bridge_release(cb);
                 self.outstanding_cmd_buf = null;
             }
-            const empty_cmd = metal_bridge_create_command_buffer(self.queue)
-                orelse return error.InvalidState;
+            const empty_cmd = metal_bridge_create_command_buffer(self.queue) orelse return error.InvalidState;
             self.fence_value +%= 1;
             if (self.shared_event) |ev| {
                 metal_bridge_command_buffer_encode_signal_event(empty_cmd, ev, self.fence_value);
@@ -420,7 +396,14 @@ pub const NativeMetalRuntime = struct {
 
         if (warmup > 0) {
             const wcb = metal_bridge_encode_compute_dispatch_batch(
-                self.queue, pipeline, buf_ptr, slot_count, x, y, z, warmup,
+                self.queue,
+                pipeline,
+                buf_ptr,
+                slot_count,
+                x,
+                y,
+                z,
+                warmup,
             ) orelse return error.InvalidState;
             metal_bridge_command_buffer_commit(wcb);
             metal_bridge_command_buffer_wait_completed(wcb);
@@ -431,7 +414,14 @@ pub const NativeMetalRuntime = struct {
         // Timed run: batch all repeat dispatches into one command buffer.
         const t_enc_start = common_timing.now_ns();
         const cmd_buf = metal_bridge_encode_compute_dispatch_batch(
-            self.queue, pipeline, buf_ptr, slot_count, x, y, z, run_count,
+            self.queue,
+            pipeline,
+            buf_ptr,
+            slot_count,
+            x,
+            y,
+            z,
+            run_count,
         ) orelse return error.InvalidState;
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), t_enc_start);
 
@@ -452,9 +442,15 @@ pub const NativeMetalRuntime = struct {
     pub fn sampler_create(self: *NativeMetalRuntime, cmd: model.SamplerCreateCommand) !void {
         const h = metal_bridge_device_new_sampler(
             self.device,
-            cmd.min_filter, cmd.mag_filter, cmd.mipmap_filter,
-            cmd.address_mode_u, cmd.address_mode_v, cmd.address_mode_w,
-            cmd.lod_min_clamp, cmd.lod_max_clamp, cmd.max_anisotropy,
+            cmd.min_filter,
+            cmd.mag_filter,
+            cmd.mipmap_filter,
+            cmd.address_mode_u,
+            cmd.address_mode_v,
+            cmd.address_mode_w,
+            cmd.lod_min_clamp,
+            cmd.lod_max_clamp,
+            cmd.max_anisotropy,
         ) orelse return error.InvalidState;
         const gop = try self.samplers.getOrPut(self.allocator, cmd.handle);
         if (gop.found_existing) metal_bridge_release(gop.value_ptr.*);
@@ -474,7 +470,12 @@ pub const NativeMetalRuntime = struct {
         if (!gop.found_existing or gop.value_ptr.* == null) {
             const mip_count: u32 = if (t.mip_level > 0) t.mip_level + 1 else 1;
             const tex = metal_bridge_device_new_texture(
-                self.device, t.width, t.height, mip_count, t.format, @intCast(t.usage),
+                self.device,
+                t.width,
+                t.height,
+                mip_count,
+                t.format,
+                @intCast(t.usage),
             ) orelse return error.InvalidState;
             if (gop.found_existing and gop.value_ptr.* != null) metal_bridge_release(gop.value_ptr.*);
             gop.value_ptr.* = tex;
@@ -482,8 +483,12 @@ pub const NativeMetalRuntime = struct {
 
         if (cmd.data.len > 0) {
             metal_bridge_texture_replace_region(
-                gop.value_ptr.*, mip_w, mip_h,
-                cmd.data.ptr, t.bytes_per_row, t.mip_level,
+                gop.value_ptr.*,
+                mip_w,
+                mip_h,
+                cmd.data.ptr,
+                t.bytes_per_row,
+                t.mip_level,
             );
         }
     }
@@ -519,13 +524,18 @@ pub const NativeMetalRuntime = struct {
         const encode_start = common_timing.now_ns();
         if (is_bundle) {
             metal_bridge_render_encoder_execute_icb(
-                self.streaming_render_encoder, icb, cmd.draw_count,
+                self.streaming_render_encoder,
+                icb,
+                cmd.draw_count,
             );
         } else {
             metal_bridge_render_encoder_draw(
                 self.streaming_render_encoder,
-                cmd.draw_count, cmd.vertex_count, cmd.instance_count,
-                red_pl, self.render_pipeline,
+                cmd.draw_count,
+                cmd.vertex_count,
+                cmd.instance_count,
+                red_pl,
+                self.render_pipeline,
             );
         }
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
@@ -635,9 +645,9 @@ pub const NativeMetalRuntime = struct {
     }
 
     fn release_render_resources(self: *NativeMetalRuntime) void {
-        if (self.cached_icb) |icb| { metal_bridge_release(icb); self.cached_icb = null; }
-        if (self.render_pipeline) |p| { metal_bridge_release(p); self.render_pipeline = null; }
-        if (self.render_target) |t| { metal_bridge_release(t); self.render_target = null; }
+        release_ref(&self.cached_icb);
+        release_ref(&self.render_pipeline);
+        release_ref(&self.render_target);
         self.render_pipeline_format = 0;
     }
 
@@ -656,7 +666,11 @@ pub const NativeMetalRuntime = struct {
 
         var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
         const lib = metal_bridge_device_new_library_msl(
-            self.device, source.ptr, source.len, &err_buf, BRIDGE_ERROR_CAP,
+            self.device,
+            source.ptr,
+            source.len,
+            &err_buf,
+            BRIDGE_ERROR_CAP,
         ) orelse return error.ShaderCompileFailed;
         errdefer metal_bridge_release(lib);
 
@@ -664,7 +678,10 @@ pub const NativeMetalRuntime = struct {
         errdefer metal_bridge_release(func);
 
         const pso = metal_bridge_device_new_compute_pipeline(
-            self.device, func, &err_buf, BRIDGE_ERROR_CAP,
+            self.device,
+            func,
+            &err_buf,
+            BRIDGE_ERROR_CAP,
         ) orelse return error.ShaderCompileFailed;
         metal_bridge_release(func);
 
@@ -684,10 +701,17 @@ pub const NativeMetalRuntime = struct {
     pub fn ensure_render_pipeline(self: *NativeMetalRuntime, fmt: u32) !void {
         if (self.render_pipeline != null and self.render_pipeline_format == fmt) return;
         if (self.render_pipeline) |p| metal_bridge_release(p);
-        if (self.cached_icb) |icb| { metal_bridge_release(icb); self.cached_icb = null; }
+        if (self.cached_icb) |icb| {
+            metal_bridge_release(icb);
+            self.cached_icb = null;
+        }
         var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
         self.render_pipeline = metal_bridge_device_new_render_pipeline(
-            self.device, fmt, 1, &err_buf, BRIDGE_ERROR_CAP,
+            self.device,
+            fmt,
+            1,
+            &err_buf,
+            BRIDGE_ERROR_CAP,
         ) orelse return error.ShaderCompileFailed;
         self.render_pipeline_format = fmt;
     }
@@ -715,12 +739,13 @@ pub const NativeMetalRuntime = struct {
 
         // Ensure streaming command buffer exists.
         if (self.streaming_cmd_buf == null) {
-            self.streaming_cmd_buf = metal_bridge_create_command_buffer(self.queue)
-                orelse return error.InvalidState;
+            self.streaming_cmd_buf = metal_bridge_create_command_buffer(self.queue) orelse return error.InvalidState;
         }
 
         self.streaming_render_encoder = metal_bridge_cmd_buf_render_encoder(
-            self.streaming_cmd_buf, self.render_pipeline, self.render_target,
+            self.streaming_cmd_buf,
+            self.render_pipeline,
+            self.render_target,
         ) orelse return error.InvalidState;
         self.streaming_has_render = true;
     }
@@ -751,6 +776,13 @@ fn strip_extension(name: []const u8) []const u8 {
 }
 
 const BufferPool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));
+
+inline fn release_ref(ref: *?*anyopaque) void {
+    if (ref.*) |obj| {
+        metal_bridge_release(obj);
+        ref.* = null;
+    }
+}
 
 fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
     if (pool.getPtr(size)) |list| {

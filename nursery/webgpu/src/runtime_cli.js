@@ -11,7 +11,7 @@ const LIB_EXTENSION_BY_PLATFORM = {
 
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
-function first_existing_path(paths) {
+function firstExistingPath(paths) {
     for (const path of paths) {
         if (!path) continue;
         if (existsSync(path)) return path;
@@ -19,7 +19,7 @@ function first_existing_path(paths) {
     return null;
 }
 
-function require_existing_path(label, path) {
+function requireExistingPath(label, path) {
     if (!path) {
         throw new Error(`Missing ${label}.`);
     }
@@ -28,7 +28,7 @@ function require_existing_path(label, path) {
     }
 }
 
-function run_process(command, args, spawn_options = {}) {
+function runProcess(command, args, spawn_options = {}) {
     const result = spawnSync(command, args, {
         encoding: "utf8",
         ...spawn_options,
@@ -44,13 +44,13 @@ function run_process(command, args, spawn_options = {}) {
     };
 }
 
-function read_trace_meta(path) {
+function readTraceMeta(path) {
     if (!path || !existsSync(path)) return null;
     const raw = readFileSync(path, "utf8");
     return JSON.parse(raw);
 }
 
-function build_bench_args(options) {
+function buildBenchArgs(options) {
     const args = ["--commands", options.commandsPath];
     if (options.quirksPath) args.push("--quirks", options.quirksPath);
     if (options.vendor) args.push("--vendor", options.vendor);
@@ -72,12 +72,12 @@ function build_bench_args(options) {
     return args;
 }
 
-function has_option_flag(args, flag) {
+function hasOptionFlag(args, flag) {
     return Array.isArray(args) && args.includes(flag);
 }
 
 export function resolveFawnRepoRoot(explicitPath) {
-    const resolved = first_existing_path([
+    const resolved = firstExistingPath([
         explicitPath ? resolve(explicitPath, "bench/compare_dawn_vs_doe.py") : null,
         resolve(process.cwd(), "bench/compare_dawn_vs_doe.py"),
         resolve(WORKSPACE_ROOT, "bench/compare_dawn_vs_doe.py"),
@@ -91,7 +91,7 @@ export function resolveFawnRepoRoot(explicitPath) {
 }
 
 export function resolveDoeBinaryPath(explicitPath) {
-    const resolved = first_existing_path([
+    const resolved = firstExistingPath([
         explicitPath,
         process.env.FAWN_DOE_BIN,
         resolve(process.cwd(), "zig/zig-out/bin/doe-zig-runtime"),
@@ -107,7 +107,7 @@ export function resolveDoeBinaryPath(explicitPath) {
 
 export function resolveDoeLibraryPath(explicitPath) {
     const preferredExt = LIB_EXTENSION_BY_PLATFORM[process.platform] ?? "so";
-    return first_existing_path([
+    return firstExistingPath([
         explicitPath,
         process.env.FAWN_DOE_LIB,
         resolve(process.cwd(), `zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
@@ -122,7 +122,7 @@ export function resolveDoeLibraryPath(explicitPath) {
 }
 
 export function resolveCompareScriptPath(explicitPath, repoRoot = null) {
-    const resolved = first_existing_path([
+    const resolved = firstExistingPath([
         explicitPath,
         repoRoot ? resolve(repoRoot, "bench/compare_dawn_vs_doe.py") : null,
         resolve(process.cwd(), "bench/compare_dawn_vs_doe.py"),
@@ -145,7 +145,7 @@ export function createDoeRuntime(options = {}) {
         if (libPath) {
             env.FAWN_DOE_LIB = libPath;
         }
-        return run_process(binPath, args, {
+        return runProcess(binPath, args, {
             ...spawnOptions,
             env,
         });
@@ -155,13 +155,13 @@ export function createDoeRuntime(options = {}) {
         if (!runOptions || typeof runOptions !== "object") {
             throw new Error("runBench requires an options object.");
         }
-        require_existing_path("commandsPath", runOptions.commandsPath);
-        if (runOptions.quirksPath) require_existing_path("quirksPath", runOptions.quirksPath);
-        const args = build_bench_args(runOptions);
+        requireExistingPath("commandsPath", runOptions.commandsPath);
+        if (runOptions.quirksPath) requireExistingPath("quirksPath", runOptions.quirksPath);
+        const args = buildBenchArgs(runOptions);
         const result = runRaw(args, {
             cwd: runOptions.cwd || WORKSPACE_ROOT,
         });
-        const traceMeta = read_trace_meta(runOptions.traceMetaPath);
+        const traceMeta = readTraceMeta(runOptions.traceMetaPath);
         return {
             ...result,
             traceJsonlPath: runOptions.traceJsonlPath ?? null,
@@ -193,11 +193,11 @@ export function runDawnVsDoeCompare(options = {}) {
     }
     args.push(...extraArgs);
 
-    if (!options.configPath && !has_option_flag(extraArgs, "--config")) {
+    if (!options.configPath && !hasOptionFlag(extraArgs, "--config")) {
         throw new Error("runDawnVsDoeCompare requires configPath or --config in extraArgs.");
     }
 
-    return run_process(pythonBin, args, {
+    return runProcess(pythonBin, args, {
         cwd: repoRoot,
         env: { ...process.env, ...(options.env ?? {}) },
     });

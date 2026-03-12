@@ -1,12 +1,12 @@
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const bridge = @import("metal_bridge_decls.zig");
+const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
+const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
+const metal_bridge_encode_compute_dispatch = bridge.metal_bridge_encode_compute_dispatch;
+const metal_bridge_release = bridge.metal_bridge_release;
 
 const DEFAULT_DISPATCH_KERNEL = "dispatch_noop.metal";
-
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_encode_compute_dispatch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_command_buffer_commit(cmd_buf: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_wait_completed(cmd_buf: ?*anyopaque) callconv(.c) void;
 
 pub const DispatchRunMetrics = struct {
     encode_ns: u64,

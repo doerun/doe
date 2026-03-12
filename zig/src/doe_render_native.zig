@@ -4,6 +4,11 @@
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
+const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const metal_bridge_device_new_render_pipeline = bridge.metal_bridge_device_new_render_pipeline;
+const metal_bridge_device_new_sampler = bridge.metal_bridge_device_new_sampler;
+const metal_bridge_device_new_texture = bridge.metal_bridge_device_new_texture;
+const metal_bridge_release = bridge.metal_bridge_release;
 
 const alloc = native.alloc;
 const make = native.make;
@@ -18,12 +23,6 @@ const DoeSampler = native.DoeSampler;
 const DoeRenderPipeline = native.DoeRenderPipeline;
 const DoeRenderPass = native.DoeRenderPass;
 const DoeCommandEncoder = native.DoeCommandEncoder;
-
-// Metal bridge externs (resolved at link time from metal_bridge.m).
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, pixel_format: u32, usage: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_f: u32, mag_f: u32, mip_f: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
 
 // ============================================================
 // Texture

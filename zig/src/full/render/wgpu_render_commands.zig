@@ -12,48 +12,8 @@ const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_draw_loops = @import("wgpu_render_draw_loops.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const ffi = @import("../../webgpu_ffi.zig");
+const rc = @import("wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
-
-const RENDER_LOAD_OP_CLEAR: u32 = 0x00000002;
-const RENDER_STORE_OP_STORE: u32 = 0x00000001;
-const RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: u32 = 0x00000004;
-const RENDER_FRONT_FACE_CCW: u32 = 0x00000001;
-const RENDER_CULL_MODE_NONE: u32 = 0x00000001;
-const RENDER_COLOR_WRITE_MASK_ALL: u64 = 0x000000000000000F;
-const RENDER_TARGET_DEPTH_SLICE_UNDEFINED: u32 = std.math.maxInt(u32);
-const RENDER_MULTISAMPLE_MASK_ALL: u32 = 0xFFFF_FFFF;
-const RENDER_DEPTH_STENCIL_FORMAT: types.WGPUTextureFormat = model.WGPUTextureFormat_Depth24PlusStencil8;
-const RENDER_DEPTH_STENCIL_CLEAR_VALUE: f32 = 1.0;
-const RENDER_STENCIL_CLEAR_VALUE: u32 = 0;
-const RENDER_COMPARE_FUNCTION_ALWAYS: u32 = 0x00000008;
-const RENDER_STENCIL_OPERATION_KEEP: u32 = 0x00000001;
-const RENDER_OPTIONAL_BOOL_FALSE: u32 = 0x00000000;
-const RENDER_STENCIL_MASK_DEFAULT: u32 = 0x000000FF;
-const RENDER_DEPTH_ATTACHMENT_HANDLE_MASK: u64 = 0x8C9F_2400_0000_0000;
-const RENDER_VERTEX_BUFFER_HANDLE: u64 = 0x8C9F_2500_0000_0000;
-const RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE: u64 = 0x8C9F_2A00_0000_0000;
-const RENDER_VERTEX_FORMAT_FLOAT32X4: u32 = 0x0000001F;
-const RENDER_VERTEX_STEP_MODE_VERTEX: u32 = 0x00000001;
-const RENDER_VERTEX_STRIDE_BYTES: u64 = 4 * @sizeOf(f32);
-const RENDER_UNIFORM_BINDING_INDEX: u32 = render_resource_mod.RENDER_UNIFORM_BINDING_INDEX;
-const RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES;
-const RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES;
-const RENDER_UNIFORM_TOTAL_BYTES: u64 = render_resource_mod.RENDER_UNIFORM_TOTAL_BYTES;
-
-const RenderColor = render_types_mod.RenderColor;
-const RenderBundleDescriptor = render_types_mod.RenderBundleDescriptor;
-const RenderBundleEncoderDescriptor = render_types_mod.RenderBundleEncoderDescriptor;
-const RenderPassColorAttachment = render_types_mod.RenderPassColorAttachment;
-const RenderPassDescriptor = render_types_mod.RenderPassDescriptor;
-const RenderPassDepthStencilAttachment = render_types_mod.RenderPassDepthStencilAttachment;
-const RenderVertexAttribute = render_types_mod.RenderVertexAttribute;
-const RenderVertexBufferLayout = render_types_mod.RenderVertexBufferLayout;
-const RenderColorTargetState = render_types_mod.RenderColorTargetState;
-const RenderFragmentState = render_types_mod.RenderFragmentState;
-const RenderStencilFaceState = render_types_mod.RenderStencilFaceState;
-const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
-const RenderPipelineDescriptor = render_types_mod.RenderPipelineDescriptor;
-const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingResources;
 
 pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types.NativeExecutionResult {
     if (render.draw_count == 0) {
@@ -104,7 +64,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const render_vertex_usage = types.WGPUBufferUsage_Vertex | types.WGPUBufferUsage_CopyDst;
     const render_vertex_bytes_u64 = @as(u64, @intCast(render_vertex_bytes.len));
     const should_upload_vertex_data = blk: {
-        if (self.core.buffers.get(RENDER_VERTEX_BUFFER_HANDLE)) |existing| {
+        if (self.core.buffers.get(rc.RENDER_VERTEX_BUFFER_HANDLE)) |existing| {
             if (existing.size >= render_vertex_bytes_u64 and
                 (existing.usage & render_vertex_usage) == render_vertex_usage)
             {
@@ -115,7 +75,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     };
     const render_vertex_buffer = try resources.getOrCreateBuffer(
         self,
-        RENDER_VERTEX_BUFFER_HANDLE,
+        rc.RENDER_VERTEX_BUFFER_HANDLE,
         render_vertex_bytes_u64,
         render_vertex_usage,
     );
@@ -156,10 +116,10 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     if (requested_dynamic_offsets.len == 1) {
         dynamic_offsets[0] = requested_dynamic_offsets[0];
     }
-    if (dynamic_offsets[0] % @as(u32, @intCast(RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES)) != 0) {
+    if (dynamic_offsets[0] % @as(u32, @intCast(rc.RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES)) != 0) {
         return .{ .status = .unsupported, .status_message = "render_draw dynamic offset must align to uniform stride" };
     }
-    if (@as(u64, dynamic_offsets[0]) + RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES > RENDER_UNIFORM_TOTAL_BYTES) {
+    if (@as(u64, dynamic_offsets[0]) + rc.RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES > rc.RENDER_UNIFORM_TOTAL_BYTES) {
         return .{ .status = .unsupported, .status_message = "render_draw dynamic offset exceeds uniform buffer bounds" };
     }
 
@@ -168,14 +128,14 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         model.WGPUTextureFormat_RGBA8Unorm
     else
         normalized_target_format;
-    const depth_handle = render.target_handle ^ RENDER_DEPTH_ATTACHMENT_HANDLE_MASK;
+    const depth_handle = render.target_handle ^ rc.RENDER_DEPTH_ATTACHMENT_HANDLE_MASK;
     const depth_resource = model.CopyTextureResource{
         .handle = depth_handle,
         .kind = .texture,
         .width = render.target_width,
         .height = render.target_height,
         .depth_or_array_layers = 1,
-        .format = RENDER_DEPTH_STENCIL_FORMAT,
+        .format = rc.RENDER_DEPTH_STENCIL_FORMAT,
         .usage = types.WGPUTextureUsage_RenderAttachment,
         .dimension = model.WGPUTextureDimension_2D,
         .view_dimension = model.WGPUTextureViewDimension_2D,
@@ -217,7 +177,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         depth_texture,
         render.target_width,
         render.target_height,
-        RENDER_DEPTH_STENCIL_FORMAT,
+        rc.RENDER_DEPTH_STENCIL_FORMAT,
         types.WGPUTextureUsage_RenderAttachment,
     ) catch |err| {
         return .{
@@ -257,26 +217,26 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             };
         };
 
-        var color_target = RenderColorTargetState{
+        var color_target = rc.RenderColorTargetState{
             .nextInChain = null,
             .format = target_format,
             .blend = null,
-            .writeMask = RENDER_COLOR_WRITE_MASK_ALL,
+            .writeMask = rc.RENDER_COLOR_WRITE_MASK_ALL,
         };
-        const vertex_attribute = RenderVertexAttribute{
+        const vertex_attribute = rc.RenderVertexAttribute{
             .nextInChain = null,
-            .format = RENDER_VERTEX_FORMAT_FLOAT32X4,
+            .format = rc.RENDER_VERTEX_FORMAT_FLOAT32X4,
             .offset = 0,
             .shaderLocation = 0,
         };
-        const vertex_buffer_layout = RenderVertexBufferLayout{
+        const vertex_buffer_layout = rc.RenderVertexBufferLayout{
             .nextInChain = null,
-            .stepMode = RENDER_VERTEX_STEP_MODE_VERTEX,
-            .arrayStride = RENDER_VERTEX_STRIDE_BYTES,
+            .stepMode = rc.RENDER_VERTEX_STEP_MODE_VERTEX,
+            .arrayStride = rc.RENDER_VERTEX_STRIDE_BYTES,
             .attributeCount = 1,
             .attributes = @ptrCast(&vertex_attribute),
         };
-        var fragment_state = RenderFragmentState{
+        var fragment_state = rc.RenderFragmentState{
             .nextInChain = null,
             .module = shader_module,
             .entryPoint = loader.stringView("fs_main"),
@@ -285,21 +245,21 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             .targetCount = 1,
             .targets = @ptrCast(&color_target),
         };
-        const stencil_face_state = RenderStencilFaceState{
-            .compare = RENDER_COMPARE_FUNCTION_ALWAYS,
-            .failOp = RENDER_STENCIL_OPERATION_KEEP,
-            .depthFailOp = RENDER_STENCIL_OPERATION_KEEP,
-            .passOp = RENDER_STENCIL_OPERATION_KEEP,
+        const stencil_face_state = rc.RenderStencilFaceState{
+            .compare = rc.RENDER_COMPARE_FUNCTION_ALWAYS,
+            .failOp = rc.RENDER_STENCIL_OPERATION_KEEP,
+            .depthFailOp = rc.RENDER_STENCIL_OPERATION_KEEP,
+            .passOp = rc.RENDER_STENCIL_OPERATION_KEEP,
         };
-        const depth_stencil_state = RenderDepthStencilState{
+        const depth_stencil_state = rc.RenderDepthStencilState{
             .nextInChain = null,
-            .format = RENDER_DEPTH_STENCIL_FORMAT,
-            .depthWriteEnabled = RENDER_OPTIONAL_BOOL_FALSE,
-            .depthCompare = RENDER_COMPARE_FUNCTION_ALWAYS,
+            .format = rc.RENDER_DEPTH_STENCIL_FORMAT,
+            .depthWriteEnabled = rc.RENDER_OPTIONAL_BOOL_FALSE,
+            .depthCompare = rc.RENDER_COMPARE_FUNCTION_ALWAYS,
             .stencilFront = stencil_face_state,
             .stencilBack = stencil_face_state,
-            .stencilReadMask = RENDER_STENCIL_MASK_DEFAULT,
-            .stencilWriteMask = RENDER_STENCIL_MASK_DEFAULT,
+            .stencilReadMask = rc.RENDER_STENCIL_MASK_DEFAULT,
+            .stencilWriteMask = rc.RENDER_STENCIL_MASK_DEFAULT,
             .depthBias = 0,
             .depthBiasSlopeScale = 0,
             .depthBiasClamp = 0,
@@ -335,7 +295,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         async_procs_mod.pushErrorScope(async_procs, self.core.device.?, async_procs_mod.ERROR_FILTER_INTERNAL);
         async_procs_mod.pushErrorScope(async_procs, self.core.device.?, async_procs_mod.ERROR_FILTER_OUT_OF_MEMORY);
 
-        const pipeline_desc = RenderPipelineDescriptor{
+        const pipeline_desc = rc.RenderPipelineDescriptor{
             .nextInChain = null,
             .label = loader.stringView("doe.render_draw"),
             .layout = render_pipeline_layout,
@@ -350,17 +310,17 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             },
             .primitive = .{
                 .nextInChain = null,
-                .topology = RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                .topology = rc.RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
                 .stripIndexFormat = 0,
-                .frontFace = RENDER_FRONT_FACE_CCW,
-                .cullMode = RENDER_CULL_MODE_NONE,
+                .frontFace = rc.RENDER_FRONT_FACE_CCW,
+                .cullMode = rc.RENDER_CULL_MODE_NONE,
                 .unclippedDepth = types.WGPU_FALSE,
             },
             .depthStencil = &depth_stencil_state,
             .multisample = .{
                 .nextInChain = null,
                 .count = 1,
-                .mask = RENDER_MULTISAMPLE_MASK_ALL,
+                .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
                 .alphaToCoverageEnabled = types.WGPU_FALSE,
             },
             .fragment = &fragment_state,
@@ -417,7 +377,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         };
         break :blk pipeline;
     };
-    const p0_state = render_p0_mod.prepare(self, procs, render_api, indexed_draw, RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE);
+    const p0_state = render_p0_mod.prepare(self, procs, render_api, indexed_draw, rc.RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE);
     defer render_p0_mod.deinit(p0_state, procs);
     const command_encoder_write_buffer = p0_state.command_encoder_write_buffer;
     const occlusion_query_set = p0_state.occlusion_query_set;
@@ -435,12 +395,12 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         const bundle_color_formats = [_]types.WGPUTextureFormat{target_format};
         const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
             self.core.device.?,
-            &RenderBundleEncoderDescriptor{
+            &rc.RenderBundleEncoderDescriptor{
                 .nextInChain = null,
                 .label = loader.stringView("doe.render_bundle_encoder"),
                 .colorFormatCount = 1,
                 .colorFormats = bundle_color_formats[0..].ptr,
-                .depthStencilFormat = RENDER_DEPTH_STENCIL_FORMAT,
+                .depthStencilFormat = rc.RENDER_DEPTH_STENCIL_FORMAT,
                 .sampleCount = 1,
                 .depthReadOnly = types.WGPU_FALSE,
                 .stencilReadOnly = types.WGPU_FALSE,
@@ -471,7 +431,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             );
         }
         if (render.bind_group_mode == .no_change) {
-            render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
+            render_api.render_bundle_encoder_set_bind_group(render_bundle_encoder, rc.RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
         }
 
         if (indexed_draw) {
@@ -497,7 +457,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
 
         prepared_render_bundle = render_api.render_bundle_encoder_finish(
             render_bundle_encoder,
-            &RenderBundleDescriptor{
+            &rc.RenderBundleDescriptor{
                 .nextInChain = null,
                 .label = loader.stringView("doe.render_bundle"),
             },
@@ -551,12 +511,12 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
 
     // Temp render texture workaround: redirect to temp texture for affected formats at high mip levels.
     const needs_temp_render_texture = render.uses_temporary_render_texture and
-        isAffectedRenderFormat(target_format) and
+        rc.is_affected_render_format(target_format) and
         target_resource.mip_level >= render.temporary_render_texture_min_mip_level;
 
     var temp_render_view: ?types.WGPUTextureView = null;
     if (needs_temp_render_texture) {
-        const temp_handle = render.target_handle +% 0xBEEF_0000_0000_0001;
+        const temp_handle = render.target_handle +% rc.TEMP_RENDER_TEXTURE_OFFSET;
         const temp_resource = model.CopyTextureResource{
             .handle = temp_handle,
             .kind = .texture,
@@ -595,28 +555,28 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
 
     const effective_view = if (temp_render_view) |tv| tv else target_view;
 
-    var color_attachment = RenderPassColorAttachment{
+    var color_attachment = rc.RenderPassColorAttachment{
         .nextInChain = null,
         .view = effective_view,
-        .depthSlice = RENDER_TARGET_DEPTH_SLICE_UNDEFINED,
+        .depthSlice = rc.RENDER_TARGET_DEPTH_SLICE_UNDEFINED,
         .resolveTarget = null,
-        .loadOp = RENDER_LOAD_OP_CLEAR,
-        .storeOp = RENDER_STORE_OP_STORE,
+        .loadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .storeOp = rc.RENDER_STORE_OP_STORE,
         .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     };
-    const depth_stencil_attachment = RenderPassDepthStencilAttachment{
+    const depth_stencil_attachment = rc.RenderPassDepthStencilAttachment{
         .nextInChain = null,
         .view = depth_view,
-        .depthLoadOp = RENDER_LOAD_OP_CLEAR,
-        .depthStoreOp = RENDER_STORE_OP_STORE,
-        .depthClearValue = RENDER_DEPTH_STENCIL_CLEAR_VALUE,
+        .depthLoadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .depthStoreOp = rc.RENDER_STORE_OP_STORE,
+        .depthClearValue = rc.RENDER_DEPTH_STENCIL_CLEAR_VALUE,
         .depthReadOnly = types.WGPU_FALSE,
-        .stencilLoadOp = RENDER_LOAD_OP_CLEAR,
-        .stencilStoreOp = RENDER_STORE_OP_STORE,
-        .stencilClearValue = RENDER_STENCIL_CLEAR_VALUE,
+        .stencilLoadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .stencilStoreOp = rc.RENDER_STORE_OP_STORE,
+        .stencilClearValue = rc.RENDER_STENCIL_CLEAR_VALUE,
         .stencilReadOnly = types.WGPU_FALSE,
     };
-    const render_pass = render_api.command_encoder_begin_render_pass(encoder, &RenderPassDescriptor{
+    const render_pass = render_api.command_encoder_begin_render_pass(encoder, &rc.RenderPassDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .colorAttachmentCount = 1,
@@ -652,7 +612,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const blend_is_default = render.blend_constant[0] == 0 and render.blend_constant[1] == 0 and
         render.blend_constant[2] == 0 and render.blend_constant[3] == 0;
     if (!blend_is_default) {
-        const blend_constant = RenderColor{
+        const blend_constant = rc.RenderColor{
             .r = render.blend_constant[0],
             .g = render.blend_constant[1],
             .b = render.blend_constant[2],
@@ -683,7 +643,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         render_api.render_pass_encoder_set_pipeline(render_pass, render_pipeline);
     }
     if (render.encode_mode == .render_pass and render.bind_group_mode == .no_change) {
-        render_api.render_pass_encoder_set_bind_group(render_pass, RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
+        render_api.render_pass_encoder_set_bind_group(render_pass, rc.RENDER_UNIFORM_BINDING_INDEX, render_uniform_resources.bind_group, dynamic_offsets.len, dynamic_offsets[0..].ptr);
     }
 
     if (render.encode_mode == .render_pass) {
@@ -741,7 +701,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
 
     // Temp render texture workaround: copy temp texture back to original target
     if (needs_temp_render_texture) {
-        const temp_handle = render.target_handle +% 0xBEEF_0000_0000_0001;
+        const temp_handle = render.target_handle +% rc.TEMP_RENDER_TEXTURE_OFFSET;
         const temp_resource_src = model.CopyTextureResource{
             .handle = temp_handle,
             .kind = .texture,
@@ -814,9 +774,4 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         .dispatch_count = render.draw_count,
         .gpu_timestamp_ns = 0,
     };
-}
-
-fn isAffectedRenderFormat(format: types.WGPUTextureFormat) bool {
-    return format == model.WGPUTextureFormat_R8Unorm or
-        format == model.WGPUTextureFormat_RG8Unorm;
 }

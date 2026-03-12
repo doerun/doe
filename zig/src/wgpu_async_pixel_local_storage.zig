@@ -8,15 +8,9 @@ const async_procs_mod = @import("wgpu_async_procs.zig");
 const render_api_mod = @import("full/render/wgpu_render_api.zig");
 const render_types_mod = @import("full/render/wgpu_render_types.zig");
 const ffi = @import("webgpu_ffi.zig");
+const rc = @import("full/render/wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
-
-const RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: u32 = 0x00000004;
-const RENDER_FRONT_FACE_CCW: u32 = 0x00000001;
-const RENDER_CULL_MODE_NONE: u32 = 0x00000001;
-const RENDER_COLOR_WRITE_MASK_ALL: u64 = 0x000000000000000F;
-const RENDER_MULTISAMPLE_MASK_ALL: u32 = 0xFFFF_FFFF;
-const RENDER_LOAD_OP_CLEAR: u32 = 0x00000002;
-const RENDER_STORE_OP_STORE: u32 = 0x00000001;
+const DIAG_RENDER_TARGET_HANDLE: u64 = 0x8C9F_2C00_0000_0000;
 const DIAG_RENDER_TARGET_WIDTH: u32 = 4;
 const DIAG_RENDER_TARGET_HEIGHT: u32 = 4;
 const DIAG_PLS_ATTACHMENT_HANDLE: u64 = 0x8C9F_2D00_0000_0000;
@@ -127,8 +121,8 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
         .view = target_view,
         .depthSlice = std.math.maxInt(u32),
         .resolveTarget = null,
-        .loadOp = RENDER_LOAD_OP_CLEAR,
-        .storeOp = RENDER_STORE_OP_STORE,
+        .loadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .storeOp = rc.RENDER_STORE_OP_STORE,
         .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     };
     const storage_attachments = [_]render_types_mod.RenderPassStorageAttachment{
@@ -136,8 +130,8 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
             .nextInChain = null,
             .offset = DIAG_PLS_SLOT_OFFSET_BYTES,
             .storage = storage_view,
-            .loadOp = RENDER_LOAD_OP_CLEAR,
-            .storeOp = RENDER_STORE_OP_STORE,
+            .loadOp = rc.RENDER_LOAD_OP_CLEAR,
+            .storeOp = rc.RENDER_STORE_OP_STORE,
             .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 0 },
         },
     };
@@ -206,8 +200,8 @@ pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: ty
         .view = target_view,
         .depthSlice = std.math.maxInt(u32),
         .resolveTarget = null,
-        .loadOp = RENDER_LOAD_OP_CLEAR,
-        .storeOp = RENDER_STORE_OP_STORE,
+        .loadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .storeOp = rc.RENDER_STORE_OP_STORE,
         .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     };
     const render_pass = render_api.command_encoder_begin_render_pass(
@@ -279,7 +273,7 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
         .nextInChain = null,
         .format = target_format,
         .blend = null,
-        .writeMask = RENDER_COLOR_WRITE_MASK_ALL,
+        .writeMask = rc.RENDER_COLOR_WRITE_MASK_ALL,
     };
     var fragment_state = render_types_mod.RenderFragmentState{
         .nextInChain = null,
@@ -305,17 +299,17 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
         },
         .primitive = .{
             .nextInChain = null,
-            .topology = RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .topology = rc.RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .stripIndexFormat = 0,
-            .frontFace = RENDER_FRONT_FACE_CCW,
-            .cullMode = RENDER_CULL_MODE_NONE,
+            .frontFace = rc.RENDER_FRONT_FACE_CCW,
+            .cullMode = rc.RENDER_CULL_MODE_NONE,
             .unclippedDepth = types.WGPU_FALSE,
         },
         .depthStencil = null,
         .multisample = .{
             .nextInChain = null,
             .count = 1,
-            .mask = RENDER_MULTISAMPLE_MASK_ALL,
+            .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
             .alphaToCoverageEnabled = types.WGPU_FALSE,
         },
         .fragment = &fragment_state,
@@ -358,7 +352,7 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
         .nextInChain = null,
         .format = target_format,
         .blend = null,
-        .writeMask = RENDER_COLOR_WRITE_MASK_ALL,
+        .writeMask = rc.RENDER_COLOR_WRITE_MASK_ALL,
     };
     var fragment_state = render_types_mod.RenderFragmentState{
         .nextInChain = null,
@@ -384,17 +378,17 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
         },
         .primitive = .{
             .nextInChain = null,
-            .topology = RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .topology = rc.RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .stripIndexFormat = 0,
-            .frontFace = RENDER_FRONT_FACE_CCW,
-            .cullMode = RENDER_CULL_MODE_NONE,
+            .frontFace = rc.RENDER_FRONT_FACE_CCW,
+            .cullMode = rc.RENDER_CULL_MODE_NONE,
             .unclippedDepth = types.WGPU_FALSE,
         },
         .depthStencil = null,
         .multisample = .{
             .nextInChain = null,
             .count = 1,
-            .mask = RENDER_MULTISAMPLE_MASK_ALL,
+            .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
             .alphaToCoverageEnabled = types.WGPU_FALSE,
         },
         .fragment = &fragment_state,
@@ -412,7 +406,7 @@ fn getOrCreateDiagnosticRenderTexture(self: *Backend, target_format: types.WGPUT
     return resources.getOrCreateTexture(
         self,
         .{
-            .handle = 0x8C9F_2C00_0000_0000,
+            .handle = DIAG_RENDER_TARGET_HANDLE,
             .kind = .texture,
             .width = DIAG_RENDER_TARGET_WIDTH,
             .height = DIAG_RENDER_TARGET_HEIGHT,

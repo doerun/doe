@@ -7,43 +7,27 @@
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
+const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
+const metal_bridge_cmd_buf_encode_blit_copy = bridge.metal_bridge_cmd_buf_encode_blit_copy;
+const metal_bridge_cmd_buf_encode_compute_dispatch = bridge.metal_bridge_cmd_buf_encode_compute_dispatch;
+const metal_bridge_cmd_buf_encode_compute_dispatch_indirect = bridge.metal_bridge_cmd_buf_encode_compute_dispatch_indirect;
+const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
+const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
+const metal_bridge_command_buffer_encode_signal_event = bridge.metal_bridge_command_buffer_encode_signal_event;
+const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
+const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
+const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
+const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
+const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
+const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw;
+const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
+const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
 
 // GPA for handle allocations — page_allocator wastes 16KB per 24-byte struct.
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const alloc = gpa.allocator();
-
-// Metal bridge C functions (provided by metal_bridge.m).
-extern fn metal_bridge_create_default_device() callconv(.c) ?*anyopaque;
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_device_new_command_queue(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_buffer_shared(device: ?*anyopaque, length: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?[*]u8;
-extern fn metal_bridge_device_new_library_msl(device: ?*anyopaque, src: [*]const u8, src_len: usize, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_library_new_function(library: ?*anyopaque, name: [*:0]const u8) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_compute_pipeline(device: ?*anyopaque, function: ?*anyopaque, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_encode_compute_dispatch(queue: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_encode_blit_copy(queue: ?*anyopaque, src: ?*anyopaque, dst: ?*anyopaque, length: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_command_buffer_commit(cmd: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_wait_completed(cmd: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_create_command_buffer(queue: ?*anyopaque) callconv(.c) ?*anyopaque;
-// Texture / Sampler / Render pipeline bridge functions.
-extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, pixel_format: u32, usage: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_f: u32, mag_f: u32, mip_f: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_render_target(device: ?*anyopaque, width: u32, height: u32, pixel_format: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_cmd_buf_render_encoder(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_render_encoder_draw(encoder: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, pipeline: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_render_encoder_end(encoder: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_cmd_buf_encode_compute_dispatch(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
-extern fn metal_bridge_cmd_buf_encode_compute_dispatch_indirect(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, indirect_offset: u64, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
-extern fn metal_bridge_cmd_buf_encode_blit_copy(cmd_buf: ?*anyopaque, src: ?*anyopaque, src_off: u64, dst: ?*anyopaque, dst_off: u64, size: u64) callconv(.c) void;
-// SharedEvent — lightweight GPU fence (user-space spin, no kernel transition).
-extern fn metal_bridge_device_new_shared_event(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_command_buffer_encode_signal_event(cmd: ?*anyopaque, event: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn metal_bridge_shared_event_wait(event: ?*anyopaque, value: u64) callconv(.c) void;
-// Semaphore-based completion (faster than waitUntilCompleted for short GPU work).
-extern fn metal_bridge_command_buffer_setup_fast_wait(cmd: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_command_buffer_wait_fast() callconv(.c) void;
 
 // ============================================================
 // Handle types — heap-allocated structs cast to opaque pointers.
@@ -620,7 +604,16 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                 .dispatch => |d| {
                     var bufs_copy = d.bufs;
                     metal_bridge_cmd_buf_encode_compute_dispatch(
-                        mtl_cmd, d.pso, @as(?[*]?*anyopaque, &bufs_copy), d.buf_count, d.x, d.y, d.z, d.wg_x, d.wg_y, d.wg_z,
+                        mtl_cmd,
+                        d.pso,
+                        @as(?[*]?*anyopaque, &bufs_copy),
+                        d.buf_count,
+                        d.x,
+                        d.y,
+                        d.z,
+                        d.wg_x,
+                        d.wg_y,
+                        d.wg_z,
                     );
                     has_gpu_work = true;
                 },
@@ -629,7 +622,12 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                     // whenever both buffers expose shared contents.
                     if (!try_schedule_deferred_copy(q, c.src, c.src_off, c.dst, c.dst_off, c.size)) {
                         metal_bridge_cmd_buf_encode_blit_copy(
-                            mtl_cmd, c.src, @intCast(c.src_off), c.dst, @intCast(c.dst_off), @intCast(c.size),
+                            mtl_cmd,
+                            c.src,
+                            @intCast(c.src_off),
+                            c.dst,
+                            @intCast(c.dst_off),
+                            @intCast(c.size),
                         );
                         has_gpu_work = true;
                     }
@@ -637,7 +635,15 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                 .dispatch_indirect => |d| {
                     var bufs_copy = d.bufs;
                     metal_bridge_cmd_buf_encode_compute_dispatch_indirect(
-                        mtl_cmd, d.pso, @as(?[*]?*anyopaque, &bufs_copy), d.buf_count, d.indirect_buf, d.offset, d.wg_x, d.wg_y, d.wg_z,
+                        mtl_cmd,
+                        d.pso,
+                        @as(?[*]?*anyopaque, &bufs_copy),
+                        d.buf_count,
+                        d.indirect_buf,
+                        d.offset,
+                        d.wg_x,
+                        d.wg_y,
+                        d.wg_z,
                     );
                     has_gpu_work = true;
                 },

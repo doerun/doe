@@ -1,8 +1,8 @@
 const std = @import("std");
 const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
+const dc = @import("../d3d12_constants.zig");
 
-const HEAP_TYPE_UPLOAD: c_int = 2;
 const HEAP_TYPE_READBACK: c_int = 3;
 const MAX_MAP_BYTES: usize = 256 * 1024 * 1024;
 
@@ -21,7 +21,7 @@ pub fn execute_map_async(
     const encode_start = common_timing.now_ns();
 
     const heap_type: c_int = switch (cmd.mode) {
-        .write => HEAP_TYPE_UPLOAD,
+        .write => dc.HEAP_TYPE_UPLOAD,
         .read => HEAP_TYPE_READBACK,
     };
 

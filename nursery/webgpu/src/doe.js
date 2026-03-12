@@ -77,13 +77,13 @@ function inferBindingAccess(usage) {
 
 function rememberBufferUsage(buffer, usage) {
   DOE_BUFFER_META.set(buffer, {
-    binding_access: inferBindingAccess(usage),
+    bindingAccess: inferBindingAccess(usage),
   });
   return buffer;
 }
 
 function inferredBindingAccessForBuffer(buffer) {
-  return DOE_BUFFER_META.get(buffer)?.binding_access ?? null;
+  return DOE_BUFFER_META.get(buffer)?.bindingAccess ?? null;
 }
 
 function normalizeWorkgroups(workgroups) {
@@ -351,11 +351,11 @@ function normalizeOnceOutput(device, output, inputs) {
     throw new Error('Doe compute.once output.type must be a typed-array constructor.');
   }
 
-  const fallback_input_index = inputs.length > 0 ? 0 : null;
-  const like_input_index = output.likeInput ?? fallback_input_index;
+  const fallbackInputIndex = inputs.length > 0 ? 0 : null;
+  const likeInputIndex = output.likeInput ?? fallbackInputIndex;
   const size = output.size ?? (
-    like_input_index != null && inputs[like_input_index]
-      ? inputs[like_input_index].byte_length
+    likeInputIndex != null && inputs[likeInputIndex]
+      ? inputs[likeInputIndex].byte_length
       : null
   );
 

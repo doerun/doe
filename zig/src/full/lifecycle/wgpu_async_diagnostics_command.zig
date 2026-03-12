@@ -14,15 +14,8 @@ const render_types_mod = @import("../render/wgpu_render_types.zig");
 const surface_procs_mod = @import("../surface/wgpu_surface_procs.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
 const ffi = @import("../../webgpu_ffi.zig");
+const rc = @import("../render/wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
-
-const RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: u32 = 0x00000004;
-const RENDER_FRONT_FACE_CCW: u32 = 0x00000001;
-const RENDER_CULL_MODE_NONE: u32 = 0x00000001;
-const RENDER_COLOR_WRITE_MASK_ALL: u64 = 0x000000000000000F;
-const RENDER_MULTISAMPLE_MASK_ALL: u32 = 0xFFFF_FFFF;
-const RENDER_LOAD_OP_CLEAR: u32 = 0x00000002;
-const RENDER_STORE_OP_STORE: u32 = 0x00000001;
 const DIAG_RESOURCE_TABLE_BUFFER_HANDLE: u64 = 0x8C9F_2B00_0000_0000;
 const DIAG_RESOURCE_TABLE_BUFFER_SIZE: u64 = 256;
 const DIAG_RESOURCE_TABLE_SIZE: u32 = 8;
@@ -232,8 +225,8 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
         .view = target_view,
         .depthSlice = std.math.maxInt(u32),
         .resolveTarget = null,
-        .loadOp = RENDER_LOAD_OP_CLEAR,
-        .storeOp = RENDER_STORE_OP_STORE,
+        .loadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .storeOp = rc.RENDER_STORE_OP_STORE,
         .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     };
     const render_pass = render_api.command_encoder_begin_render_pass(
@@ -326,8 +319,8 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
         .view = target_view,
         .depthSlice = std.math.maxInt(u32),
         .resolveTarget = null,
-        .loadOp = RENDER_LOAD_OP_CLEAR,
-        .storeOp = RENDER_STORE_OP_STORE,
+        .loadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .storeOp = rc.RENDER_STORE_OP_STORE,
         .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     };
     const render_pass = render_api.command_encoder_begin_render_pass(
@@ -459,8 +452,8 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUText
         .view = texture_view,
         .depthSlice = std.math.maxInt(u32),
         .resolveTarget = null,
-        .loadOp = RENDER_LOAD_OP_CLEAR,
-        .storeOp = RENDER_STORE_OP_STORE,
+        .loadOp = rc.RENDER_LOAD_OP_CLEAR,
+        .storeOp = rc.RENDER_STORE_OP_STORE,
         .clearValue = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     };
     const render_pass = render_api.command_encoder_begin_render_pass(
@@ -574,7 +567,7 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUT
         .nextInChain = null,
         .format = normalizeDiagnosticFormat(target_format),
         .blend = null,
-        .writeMask = RENDER_COLOR_WRITE_MASK_ALL,
+        .writeMask = rc.RENDER_COLOR_WRITE_MASK_ALL,
     };
     var fragment_state = render_types_mod.RenderFragmentState{
         .nextInChain = null,
@@ -600,17 +593,17 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUT
         },
         .primitive = .{
             .nextInChain = null,
-            .topology = RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .topology = rc.RENDER_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .stripIndexFormat = 0,
-            .frontFace = RENDER_FRONT_FACE_CCW,
-            .cullMode = RENDER_CULL_MODE_NONE,
+            .frontFace = rc.RENDER_FRONT_FACE_CCW,
+            .cullMode = rc.RENDER_CULL_MODE_NONE,
             .unclippedDepth = types.WGPU_FALSE,
         },
         .depthStencil = null,
         .multisample = .{
             .nextInChain = null,
             .count = 1,
-            .mask = RENDER_MULTISAMPLE_MASK_ALL,
+            .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
             .alphaToCoverageEnabled = types.WGPU_FALSE,
         },
         .fragment = &fragment_state,

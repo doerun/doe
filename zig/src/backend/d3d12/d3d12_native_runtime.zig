@@ -15,6 +15,7 @@ const d3d12_surface = @import("surface/d3d12_surface.zig");
 const d3d12_async = @import("commands/d3d12_async_diagnostics.zig");
 const d3d12_timestamps = @import("commands/d3d12_gpu_timestamps.zig");
 const d3d12_map = @import("commands/d3d12_map_async.zig");
+const dc = @import("d3d12_constants.zig");
 
 const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
@@ -25,7 +26,6 @@ const MAX_DXC_OUTPUT_BYTES: usize = 64 * 1024;
 const DXC_PROFILE: []const u8 = "cs_6_0";
 const DXC_ENTRYPOINT: []const u8 = "main";
 const HEAP_TYPE_DEFAULT: c_int = 1;
-const HEAP_TYPE_UPLOAD: c_int = 2;
 
 extern fn d3d12_bridge_create_device() callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
@@ -116,9 +116,19 @@ pub const NativeD3D12Runtime = struct {
         self.surface_state.deinit(self.allocator);
         self.sampler_state.deinit(self.allocator);
         d3d12_texture.release_all(&self.texture_map);
-        if (self.fence) |f| { d3d12_bridge_release(f); self.fence = null; }
-        if (self.queue) |q| { d3d12_bridge_release(q); self.queue = null; }
-        if (self.device) |d| { d3d12_bridge_release(d); self.device = null; self.has_device = false; }
+        if (self.fence) |f| {
+            d3d12_bridge_release(f);
+            self.fence = null;
+        }
+        if (self.queue) |q| {
+            d3d12_bridge_release(q);
+            self.queue = null;
+        }
+        if (self.device) |d| {
+            d3d12_bridge_release(d);
+            self.device = null;
+            self.has_device = false;
+        }
     }
 
     pub fn upload_bytes(self: *NativeD3D12Runtime, bytes: u64, _mode: webgpu.UploadBufferUsageMode) !void {
@@ -134,7 +144,7 @@ pub const NativeD3D12Runtime = struct {
         errdefer d3d12_bridge_release(cmd_list);
 
         const src_buf = d3d12_pool_pop(&self.upload_pool, len) orelse
-            (d3d12_bridge_device_create_buffer(self.device, len, HEAP_TYPE_UPLOAD) orelse return error.InvalidState);
+            (d3d12_bridge_device_create_buffer(self.device, len, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState);
         errdefer d3d12_pool_push_or_release(&self.upload_pool, self.allocator, len, src_buf);
 
         const dst_buf = d3d12_pool_pop(&self.default_pool, len) orelse
@@ -412,7 +422,10 @@ pub const NativeD3D12Runtime = struct {
         }
 
         self.compute_pipeline = d3d12_bridge_device_create_compute_pipeline(
-            self.device, self.root_signature, bytecode.ptr, bytecode.len,
+            self.device,
+            self.root_signature,
+            bytecode.ptr,
+            bytecode.len,
         ) orelse return error.ShaderCompileFailed;
         self.has_compute_pipeline = true;
         self.current_shader_hash = shader_hash;

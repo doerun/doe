@@ -9,6 +9,9 @@ const command_info = @import("../common/command_info.zig");
 const command_requirements = @import("../common/command_requirements.zig");
 const capabilities = @import("../common/capabilities.zig");
 const artifact_meta = @import("../common/artifact_meta.zig");
+const artifact_policy = @import("../common/artifact_policy.zig");
+const artifact_state = @import("../common/artifact_state.zig");
+const hash_utils = @import("../common/hash_utils.zig");
 const native_runtime = if (builtin.os.tag == .windows)
     @import("d3d12_native_runtime.zig")
 else
@@ -16,13 +19,12 @@ else
 
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
-const HASH_HEX_SIZE: usize = 64;
+const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
 const MANIFEST_CONTENT_CAPACITY: usize = 2048;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
 const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
-const HEX = "0123456789abcdef";
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
@@ -192,16 +194,25 @@ pub const ZigD3D12Backend = struct {
             },
         ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
-        const hash = sha256_hex(content);
+        const hash = hash_utils.sha256_hex(content);
 
         std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
         const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
         defer file.close();
         file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
-        persist_manifest_path(self, path);
-        persist_manifest_hash(self, hash[0..]);
-        persist_manifest_signature(self, module, meta, status_code);
+        artifact_state.persist_value(self.manifest_path_storage[0..], &self.manifest_path_len, path);
+        artifact_state.persist_value(self.manifest_hash_storage[0..], &self.manifest_hash_len, hash[0..]);
+        artifact_state.persist_manifest_signature(
+            &self.last_manifest_meta,
+            self.last_manifest_module_storage[0..],
+            &self.last_manifest_module_len,
+            self.last_manifest_status_storage[0..],
+            &self.last_manifest_status_len,
+            module,
+            meta,
+            status_code,
+        );
     }
 };
 
@@ -236,96 +247,20 @@ fn native_capability_set() capabilities.CapabilitySet {
     return set;
 }
 
-fn should_emit_shader_artifact(command: model.Command) bool {
-    return switch (command) {
-        .dispatch,
-        .dispatch_indirect,
-        .kernel_dispatch,
-        .render_draw,
-        .draw_indirect,
-        .draw_indexed_indirect,
-        .render_pass,
-        => true,
-        else => false,
-    };
-}
-
-fn artifact_status_code(result: webgpu.NativeExecutionResult) []const u8 {
-    if (result.status_message.len != 0) return result.status_message;
-    return switch (result.status) {
-        .ok => "ok",
-        .unsupported => "unsupported",
-        .@"error" => "error",
-    };
-}
-
-fn sha256_hex(input: []const u8) [HASH_HEX_SIZE]u8 {
-    var output: [HASH_HEX_SIZE]u8 = undefined;
-    var digest: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
-    for (digest, 0..) |byte, index| {
-        const output_index = index * 2;
-        output[output_index] = HEX[(byte >> 4) & 0x0F];
-        output[output_index + 1] = HEX[byte & 0x0F];
-    }
-    return output;
-}
-
-fn persist_manifest_path(self: *ZigD3D12Backend, value: []const u8) void {
-    if (value.len > self.manifest_path_storage.len) {
-        self.manifest_path_len = 0;
-        return;
-    }
-    std.mem.copyForwards(u8, self.manifest_path_storage[0..value.len], value);
-    self.manifest_path_len = value.len;
-}
-
-fn persist_manifest_hash(self: *ZigD3D12Backend, value: []const u8) void {
-    if (value.len > self.manifest_hash_storage.len) {
-        self.manifest_hash_len = 0;
-        return;
-    }
-    std.mem.copyForwards(u8, self.manifest_hash_storage[0..value.len], value);
-    self.manifest_hash_len = value.len;
-}
-
 fn manifest_signature_matches(
     self: *const ZigD3D12Backend,
     module: []const u8,
     meta: artifact_meta.ArtifactMeta,
     status_code: []const u8,
 ) bool {
-    const last_meta = self.last_manifest_meta orelse return false;
-    if (last_meta.backend_kind != meta.backend_kind or
-        last_meta.timing_source != meta.timing_source or
-        last_meta.comparability != meta.comparability)
-    {
-        return false;
-    }
-    if (!std.mem.eql(u8, self.last_manifest_module_storage[0..self.last_manifest_module_len], module)) return false;
-    if (!std.mem.eql(u8, self.last_manifest_status_storage[0..self.last_manifest_status_len], status_code)) return false;
-    return true;
-}
-
-fn persist_manifest_signature(
-    self: *ZigD3D12Backend,
-    module: []const u8,
-    meta: artifact_meta.ArtifactMeta,
-    status_code: []const u8,
-) void {
-    self.last_manifest_meta = meta;
-    if (module.len > self.last_manifest_module_storage.len) {
-        self.last_manifest_module_len = 0;
-    } else {
-        std.mem.copyForwards(u8, self.last_manifest_module_storage[0..module.len], module);
-        self.last_manifest_module_len = module.len;
-    }
-    if (status_code.len > self.last_manifest_status_storage.len) {
-        self.last_manifest_status_len = 0;
-    } else {
-        std.mem.copyForwards(u8, self.last_manifest_status_storage[0..status_code.len], status_code);
-        self.last_manifest_status_len = status_code.len;
-    }
+    return artifact_state.manifest_signature_matches(
+        self.last_manifest_meta,
+        self.last_manifest_module_storage[0..self.last_manifest_module_len],
+        self.last_manifest_status_storage[0..self.last_manifest_status_len],
+        module,
+        meta,
+        status_code,
+    );
 }
 
 fn write_status(self: *ZigD3D12Backend, comptime fmt: []const u8, args: anytype) []const u8 {
@@ -370,17 +305,17 @@ fn ensure_runtime_bootstrapped(self: *ZigD3D12Backend) !*native_runtime.NativeD3
 }
 
 fn execute_upload(self: *ZigD3D12Backend, setup_ns: u64, upload: model.UploadCommand) !webgpu.NativeExecutionResult {
-    const rt = try ensure_runtime_bootstrapped(self);
+    const runtime = try ensure_runtime_bootstrapped(self);
 
     const encode_start = common_timing.now_ns();
-    try rt.upload_bytes(@as(u64, @intCast(upload.bytes)), self.upload_buffer_usage_mode);
+    try runtime.upload_bytes(@as(u64, @intCast(upload.bytes)), self.upload_buffer_usage_mode);
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
     var submit_wait_ns: u64 = 0;
     self.pending_upload_commands +|= 1;
     if (self.pending_upload_commands >= self.upload_submit_every) {
         self.pending_upload_commands = 0;
-        submit_wait_ns = try rt.flush_queue();
+        submit_wait_ns = try runtime.flush_queue();
     }
 
     return .{
@@ -397,8 +332,8 @@ fn execute_upload(self: *ZigD3D12Backend, setup_ns: u64, upload: model.UploadCom
 }
 
 fn execute_barrier(self: *ZigD3D12Backend, setup_ns: u64) !webgpu.NativeExecutionResult {
-    const rt = try ensure_runtime_bootstrapped(self);
-    const submit_wait_ns = try rt.barrier(self.queue_wait_mode);
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const submit_wait_ns = try runtime.barrier(self.queue_wait_mode);
 
     return .{
         .status = .ok,
@@ -414,17 +349,17 @@ fn execute_barrier(self: *ZigD3D12Backend, setup_ns: u64) !webgpu.NativeExecutio
 }
 
 fn execute_kernel_dispatch(self: *ZigD3D12Backend, setup_ns: u64, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
-    const rt = try ensure_runtime_bootstrapped(self);
-    const bytecode = try rt.load_kernel_cso(self.allocator, kd.kernel);
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const bytecode = try runtime.load_kernel_cso(self.allocator, kd.kernel);
     defer self.allocator.free(bytecode);
-    try rt.set_compute_shader(bytecode);
+    try runtime.set_compute_shader(bytecode);
 
-    var warmup_i: u32 = 0;
-    while (warmup_i < kd.warmup_dispatch_count) : (warmup_i += 1) {
-        _ = try rt.run_dispatch(kd.x, kd.y, kd.z, 1);
+    var warmup_index: u32 = 0;
+    while (warmup_index < kd.warmup_dispatch_count) : (warmup_index += 1) {
+        _ = try runtime.run_dispatch(kd.x, kd.y, kd.z, 1);
     }
 
-    const metrics = try rt.run_dispatch(kd.x, kd.y, kd.z, kd.repeat);
+    const metrics = try runtime.run_dispatch(kd.x, kd.y, kd.z, kd.repeat);
     return .{
         .status = .ok,
         .status_message = "",
@@ -608,13 +543,13 @@ fn execute_native_command(self: *ZigD3D12Backend, command: model.Command) !webgp
     };
     result.submit_wait_ns +|= pending_submit_wait_ns;
 
-    if (should_emit_shader_artifact(command)) {
+    if (artifact_policy.should_emit_shader_artifact(command)) {
         const meta = artifact_meta.classify(
             .native_d3d12,
             result.gpu_timestamp_valid,
             result.gpu_timestamp_attempted,
         );
-        const status_code = artifact_status_code(result);
+        const status_code = artifact_policy.artifact_status_code(result);
         const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
         std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
         self.pending_artifact_status_len = copy_len;
