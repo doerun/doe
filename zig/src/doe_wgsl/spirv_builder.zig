@@ -38,10 +38,14 @@ pub const ImageOperandsMask = struct {
 };
 
 pub const ExecutionModel = struct {
+    pub const Vertex: u32 = 0;
+    pub const Fragment: u32 = 4;
     pub const GLCompute: u32 = 5;
 };
 
 pub const ExecutionMode = struct {
+    pub const OriginUpperLeft: u32 = 7;
+    pub const DepthReplacing: u32 = 12;
     pub const LocalSize: u32 = 17;
 };
 
@@ -66,6 +70,7 @@ pub const StorageClass = struct {
     pub const UniformConstant: u32 = 0;
     pub const Input: u32 = 1;
     pub const Uniform: u32 = 2;
+    pub const Output: u32 = 3;
     pub const Workgroup: u32 = 4;
     pub const Private: u32 = 6;
     pub const Function: u32 = 7;
@@ -73,22 +78,34 @@ pub const StorageClass = struct {
 };
 
 pub const Decoration = struct {
+    pub const Invariant: u32 = 0;
     pub const Block: u32 = 2;
     pub const ArrayStride: u32 = 6;
     pub const BuiltIn: u32 = 11;
+    pub const NoPerspective: u32 = 13;
+    pub const Flat: u32 = 14;
     pub const NonWritable: u32 = 24;
     pub const NonReadable: u32 = 25;
+    pub const Location: u32 = 30;
     pub const Binding: u32 = 33;
     pub const DescriptorSet: u32 = 34;
     pub const Offset: u32 = 35;
 };
 
 pub const Builtin = struct {
+    pub const Position: u32 = 0;
+    pub const FragCoord: u32 = 15;
+    pub const FrontFacing: u32 = 17;
+    pub const SampleIndex: u32 = 18;
+    pub const SampleMask: u32 = 20;
+    pub const FragDepth: u32 = 22;
     pub const NumWorkgroups: u32 = 25;
     pub const WorkgroupId: u32 = 26;
     pub const GlobalInvocationId: u32 = 28;
     pub const LocalInvocationId: u32 = 29;
     pub const LocalInvocationIndex: u32 = 30;
+    pub const VertexIndex: u32 = 42;
+    pub const InstanceIndex: u32 = 43;
 };
 
 pub const FunctionControl = struct {
@@ -202,12 +219,13 @@ pub const Opcode = struct {
     pub const Branch: u16 = 249;
     pub const BranchConditional: u16 = 250;
     pub const Switch: u16 = 251;
+    pub const Kill: u16 = 252;
     pub const Return: u16 = 253;
     pub const ReturnValue: u16 = 254;
     pub const FunctionCallResult: u16 = 57;
     pub const LoopMerge: u16 = 246;
     pub const SelectionMerge: u16 = 247;
-    pub const MemoryModel: u16 = 14;
+    pub const OpMemoryModel: u16 = 14;
 };
 
 const VecKey = struct { elem: u32, len: u32 };
@@ -312,7 +330,7 @@ pub const Builder = struct {
     }
 
     fn emit_memory_model(self: *Builder) EmitError!void {
-        try self.append_inst(&self.memory_model, Opcode.MemoryModel, &.{ AddressingModel.Logical, MemoryModel.GLSL450 });
+        try self.append_inst(&self.memory_model, Opcode.OpMemoryModel, &.{ AddressingModel.Logical, MemoryModel.GLSL450 });
     }
 
     pub fn glsl450_import_id(self: *Builder) EmitError!u32 {
@@ -335,10 +353,14 @@ pub const Builder = struct {
     }
 
     pub fn emit_entry_point(self: *Builder, fn_id: u32, name: []const u8, interfaces: []const u32) EmitError!void {
+        try self.emit_entry_point_with_model(ExecutionModel.GLCompute, fn_id, name, interfaces);
+    }
+
+    pub fn emit_entry_point_with_model(self: *Builder, execution_model: u32, fn_id: u32, name: []const u8, interfaces: []const u32) EmitError!void {
         self.entry_point_fn = fn_id;
         self.entry_point_name = name;
         try self.entry_points.append(self.allocator, (@as(u32, @intCast(3 + string_word_len(name) + interfaces.len)) << 16) | Opcode.EntryPoint);
-        try self.entry_points.append(self.allocator, ExecutionModel.GLCompute);
+        try self.entry_points.append(self.allocator, execution_model);
         try self.entry_points.append(self.allocator, fn_id);
         try append_string_words(&self.entry_points, self.allocator, name);
         try self.entry_points.appendSlice(self.allocator, interfaces);
@@ -346,6 +368,10 @@ pub const Builder = struct {
 
     pub fn emit_execution_mode_local_size(self: *Builder, fn_id: u32, x: u32, y: u32, z: u32) EmitError!void {
         try self.append_inst(&self.execution_modes, Opcode.ExecutionMode, &.{ fn_id, ExecutionMode.LocalSize, x, y, z });
+    }
+
+    pub fn emit_execution_mode(self: *Builder, fn_id: u32, mode: u32) EmitError!void {
+        try self.append_inst(&self.execution_modes, Opcode.ExecutionMode, &.{ fn_id, mode });
     }
 
     pub fn type_void(self: *Builder) EmitError!u32 {
@@ -581,6 +607,22 @@ pub const Builder = struct {
 
     pub fn emit_non_readable_decoration(self: *Builder, target_id: u32) EmitError!void {
         try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.NonReadable });
+    }
+
+    pub fn emit_location_decoration(self: *Builder, target_id: u32, location: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Location, location });
+    }
+
+    pub fn emit_flat_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Flat });
+    }
+
+    pub fn emit_noperspective_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.NoPerspective });
+    }
+
+    pub fn emit_invariant_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Invariant });
     }
 
     pub fn emit_member_offset_decoration(self: *Builder, target_id: u32, member_index: u32, offset: u32) EmitError!void {

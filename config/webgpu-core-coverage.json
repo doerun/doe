@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "surfaceId": "doe-core",
+  "surfaceVersion": 1,
+  "lastUpdated": "2026-03-11",
+  "commandCount": 10,
+  "coverage": [
+    {
+      "commandKind": "upload",
+      "domain": "copy",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Buffer upload with configurable usage flags and submit cadence."
+    },
+    {
+      "commandKind": "copy_buffer_to_texture",
+      "domain": "copy",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Copy commands including buffer-to-texture, buffer-to-buffer, texture-to-buffer, and texture-to-texture directions."
+    },
+    {
+      "commandKind": "barrier",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Compute barrier with dependency count."
+    },
+    {
+      "commandKind": "dispatch",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Plain dispatch with workgroup dimensions."
+    },
+    {
+      "commandKind": "dispatch_indirect",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Indirect dispatch through indirect buffer."
+    },
+    {
+      "commandKind": "kernel_dispatch",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Kernel dispatch with shader lookup, repeat, warmup, and optional GPU timestamps."
+    },
+    {
+      "commandKind": "texture_write",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "QueueWriteTexture with full texture resource descriptor."
+    },
+    {
+      "commandKind": "texture_query",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking",
+      "notes": "Texture property query with optional expected-value assertions."
+    },
+    {
+      "commandKind": "texture_destroy",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking",
+      "notes": "Explicit texture destroy lifecycle."
+    },
+    {
+      "commandKind": "map_async",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "directional",
+      "gateStatus": "advisory",
+      "notes": "Async buffer map for read/write with callback completion."
+    }
+  ]
+}

@@ -346,6 +346,52 @@ pub fn build(b: *std.Build) void {
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);
 
+    const coverage_gate_check = b.addSystemCommand(&.{ "python3", "../bench/split_coverage_gate.py", "--surface", "both" });
+    coverage_gate_check.setCwd(b.path(".."));
+    const coverage_gate_step = b.step("coverage-gate", "Validate split core/full coverage ledgers against Zig partitions");
+    coverage_gate_step.dependOn(&coverage_gate_check.step);
+
+    const core_dropin_lib = b.addLibrary(.{
+        .name = "webgpu_doe_core",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/wgpu_dropin_lib.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    core_dropin_lib.linkLibC();
+    if (target.result.os.tag == .windows) {
+        core_dropin_lib.linkSystemLibrary("d3d12");
+        core_dropin_lib.linkSystemLibrary("dxgi");
+        core_dropin_lib.linkSystemLibrary("dxguid");
+        core_dropin_lib.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
+    } else {
+        core_dropin_lib.linkSystemLibrary("dl");
+        if (target.result.os.tag == .linux) {
+            core_dropin_lib.linkSystemLibrary("vulkan");
+        }
+        if (target.result.os.tag == .macos) {
+            core_dropin_lib.linkFramework("Metal");
+            core_dropin_lib.linkFramework("Foundation");
+            core_dropin_lib.linkFramework("QuartzCore");
+            core_dropin_lib.linkFramework("AppKit");
+            core_dropin_lib.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+        }
+    }
+    const install_core_dropin = b.addInstallArtifact(core_dropin_lib, .{});
+    const core_dropin_step = b.step("dropin-core", "Build the core-only drop-in WebGPU shared library");
+    core_dropin_step.dependOn(&install_core_dropin.step);
+
     const test_step = b.step("test", "Run Zig unit tests");
     const test_exec = b.addTest(.{
         .root_module = b.createModule(.{

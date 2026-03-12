@@ -183,7 +183,7 @@ pub const DoeBindGroupLayout = struct {
     entry_count: u32 = 0,
 };
 
-const DoePipelineLayout = struct {
+pub const DoePipelineLayout = struct {
     const TYPE_MAGIC = MAGIC_PIPE_LAYOUT;
     magic: u32 = TYPE_MAGIC,
 };
@@ -530,53 +530,17 @@ pub const doeNativeShaderModuleRelease = shader.doeNativeShaderModuleRelease;
 pub const doeNativeDeviceCreateComputePipeline = shader.doeNativeDeviceCreateComputePipeline;
 pub const doeNativeComputePipelineRelease = shader.doeNativeComputePipelineRelease;
 
-// ============================================================
-// Bind Group Layout / Bind Group / Pipeline Layout
-// ============================================================
-
-pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?*const types.WGPUBindGroupLayoutDescriptor) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
-    const d = desc orelse return null;
-    const bgl = make(DoeBindGroupLayout) orelse return null;
-    bgl.* = .{ .entry_count = @intCast(d.entryCount) };
-    return toOpaque(bgl);
+// Bind group, bind group layout, and pipeline layout exports are in doe_bind_group_native.zig.
+const bind_group = @import("doe_bind_group_native.zig");
+comptime {
+    _ = bind_group;
 }
-
-pub export fn doeNativeBindGroupLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeBindGroupLayout, raw)) |l| alloc.destroy(l);
-}
-
-pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const types.WGPUBindGroupDescriptor) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
-    const d = desc orelse return null;
-    const bg = make(DoeBindGroup) orelse return null;
-    bg.* = .{};
-    for (d.entries[0..d.entryCount]) |e| {
-        if (e.binding < MAX_BIND) {
-            const doe_buf = cast(DoeBuffer, e.buffer) orelse continue;
-            bg.buffers[e.binding] = doe_buf.mtl;
-            bg.offsets[e.binding] = e.offset;
-            if (e.binding + 1 > bg.count) bg.count = e.binding + 1;
-        }
-    }
-    return toOpaque(bg);
-}
-
-pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeBindGroup, raw)) |g| alloc.destroy(g);
-}
-
-pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*const types.WGPUPipelineLayoutDescriptor) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
-    _ = desc;
-    const pl = make(DoePipelineLayout) orelse return null;
-    pl.* = .{};
-    return toOpaque(pl);
-}
-
-pub export fn doeNativePipelineLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoePipelineLayout, raw)) |l| alloc.destroy(l);
-}
+pub const doeNativeDeviceCreateBindGroupLayout = bind_group.doeNativeDeviceCreateBindGroupLayout;
+pub const doeNativeBindGroupLayoutRelease = bind_group.doeNativeBindGroupLayoutRelease;
+pub const doeNativeDeviceCreateBindGroup = bind_group.doeNativeDeviceCreateBindGroup;
+pub const doeNativeBindGroupRelease = bind_group.doeNativeBindGroupRelease;
+pub const doeNativeDeviceCreatePipelineLayout = bind_group.doeNativeDeviceCreatePipelineLayout;
+pub const doeNativePipelineLayoutRelease = bind_group.doeNativePipelineLayoutRelease;
 
 // ============================================================
 // Command Encoder / Compute Pass

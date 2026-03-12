@@ -5,6 +5,8 @@ const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
+const vk = @import("vulkan_types.zig");
+const vulkan_surface = @import("vulkan_surface.zig");
 
 // Vulkan upload path should follow device allocation limits, not an artificial
 // 64MB runtime cap. Let allocation/driver failure surface explicitly.
@@ -22,9 +24,9 @@ const APP_NAME: [*:0]const u8 = "doe-zig-runtime";
 const ENGINE_NAME: [*:0]const u8 = "doe-vulkan-runtime";
 const SPIRV_MAGIC: u32 = 0x07230203;
 
-const VK_SUCCESS: i32 = 0;
-const VK_TRUE: u32 = 1;
-const VK_FALSE: u32 = 0;
+const VK_SUCCESS = vk.VK_SUCCESS;
+const VK_TRUE = vk.VK_TRUE;
+const VK_FALSE = vk.VK_FALSE;
 const VK_API_VERSION_1_0: u32 = 0x00400000;
 
 const VK_STRUCTURE_TYPE_APPLICATION_INFO: i32 = 0;
@@ -104,33 +106,34 @@ const DEFAULT_RUNTIME_TEXTURE_USAGE: model.WGPUFlags =
     model.WGPUTextureUsage_CopyDst;
 const REQUIRED_TEXTURE_UPLOAD_USAGE: model.WGPUFlags = model.WGPUTextureUsage_CopyDst;
 
-const VkBool32 = u32;
-const VkFlags = u32;
-const VkDeviceSize = u64;
-const VkStructureType = i32;
-const VkResult = i32;
-const VkInstance = ?*opaque {};
-const VkPhysicalDevice = ?*opaque {};
-const VkDevice = ?*opaque {};
-const VkQueue = ?*opaque {};
-const VkCommandBuffer = ?*opaque {};
-const VkPipelineCache = u64;
-const VkCommandPool = u64;
-const VkFence = u64;
-const VkBuffer = u64;
-const VkDeviceMemory = u64;
-const VkShaderModule = u64;
-const VkPipelineLayout = u64;
-const VkPipeline = u64;
-const VkQueryPool = u64;
-const VkDescriptorSetLayout = u64;
-const VkDescriptorPool = u64;
-const VkDescriptorSet = u64;
-const VkImage = u64;
-const VkImageView = u64;
-const VK_NULL_U64: u64 = 0;
 
-const VkAllocationCallbacks = opaque {};
+const VkBool32 = vk.VkBool32;
+const VkFlags = vk.VkFlags;
+const VkDeviceSize = vk.VkDeviceSize;
+const VkStructureType = vk.VkStructureType;
+const VkResult = vk.VkResult;
+const VkInstance = vk.VkInstance;
+const VkPhysicalDevice = vk.VkPhysicalDevice;
+const VkDevice = vk.VkDevice;
+const VkQueue = vk.VkQueue;
+const VkCommandBuffer = vk.VkCommandBuffer;
+const VkPipelineCache = vk.VkPipelineCache;
+const VkCommandPool = vk.VkCommandPool;
+const VkFence = vk.VkFence;
+const VkBuffer = vk.VkBuffer;
+const VkDeviceMemory = vk.VkDeviceMemory;
+const VkShaderModule = vk.VkShaderModule;
+const VkPipelineLayout = vk.VkPipelineLayout;
+const VkPipeline = vk.VkPipeline;
+const VkQueryPool = vk.VkQueryPool;
+const VkDescriptorSetLayout = vk.VkDescriptorSetLayout;
+const VkDescriptorPool = vk.VkDescriptorPool;
+const VkDescriptorSet = vk.VkDescriptorSet;
+const VkImage = vk.VkImage;
+const VkImageView = vk.VkImageView;
+const VK_NULL_U64 = vk.VK_NULL_U64;
+
+const VkAllocationCallbacks = vk.VkAllocationCallbacks;
 
 const VkApplicationInfo = extern struct {
     sType: VkStructureType,
@@ -536,6 +539,9 @@ const PendingUpload = struct {
     dst_buffer: VkBuffer,
     dst_memory: VkDeviceMemory,
     byte_count: u64 = 0,
+    // Persistently-mapped pointer for the staging (src) buffer.
+    // Retained across pool cycles to avoid per-upload vkMapMemory/vkUnmapMemory.
+    src_mapped: ?*anyopaque = null,
 };
 
 const VkPoolEntry = struct {
@@ -597,17 +603,7 @@ const PhysicalDeviceSelection = struct {
     score: u64,
 };
 
-const HeadlessSurface = struct {
-    configured: bool = false,
-    acquired: bool = false,
-    width: u32 = 0,
-    height: u32 = 0,
-    format: model.WGPUTextureFormat = model.WGPUTextureFormat_RGBA8Unorm,
-    usage: model.WGPUFlags = model.WGPUTextureUsage_RenderAttachment,
-    alpha_mode: u32 = 0x00000001,
-    present_mode: u32 = 0x00000002,
-    desired_maximum_frame_latency: u32 = 2,
-};
+const VulkanSurface = vulkan_surface.VulkanSurface;
 
 pub const NativeVulkanRuntime = struct {
     allocator: std.mem.Allocator,
@@ -643,7 +639,7 @@ pub const NativeVulkanRuntime = struct {
     fast_upload_mapped: ?*anyopaque = null,
 
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
-    surfaces: std.AutoHashMapUnmanaged(u64, HeadlessSurface) = .{},
+    surfaces: std.AutoHashMapUnmanaged(u64, VulkanSurface) = .{},
 
     src_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
     dst_pool: std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry)) = .{},
@@ -666,6 +662,9 @@ pub const NativeVulkanRuntime = struct {
     has_descriptor_pool: bool = false,
     has_deferred_submissions: bool = false,
     upload_recording_active: bool = false,
+    // Tracks whether flush_queue left the command buffer in reset state,
+    // avoiding a redundant vkResetCommandBuffer in ensure_upload_recording.
+    command_buffer_reset_clean: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
         var self = NativeVulkanRuntime{ .allocator = allocator, .kernel_root = kernel_root };
@@ -678,7 +677,7 @@ pub const NativeVulkanRuntime = struct {
         _ = self.flush_queue() catch {};
         self.release_pending_uploads();
         self.pending_uploads.deinit(self.allocator);
-        self.surfaces.deinit(self.allocator);
+        self.release_all_surfaces();
         release_pool_entry(self.device, self.hot_src_pool_entry);
         release_pool_entry(self.device, self.hot_dst_pool_entry);
         self.hot_src_pool_entry = null;
@@ -933,15 +932,21 @@ pub const NativeVulkanRuntime = struct {
                 .signalSemaphoreCount = 0,
                 .pSignalSemaphores = null,
             };
-            try check_vk(vkQueueSubmit(self.queue, 1, @ptrCast(&submit), VK_NULL_U64));
-            self.has_deferred_submissions = true;
-        }
-        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
-            try check_vk(vkQueueWaitIdle(self.queue));
-            try check_vk(vkResetCommandBuffer(self.primary_command_buffer, 0));
+            // Fence-based wait targets only this submission; vkQueueWaitIdle
+            // synchronizes the entire queue and carries higher driver overhead
+            // on RADV, which dominates tiny-upload latency.
+            try check_vk(vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+            try check_vk(vkQueueSubmit(self.queue, 1, @ptrCast(&submit), self.fence));
+            try check_vk(vkWaitForFences(self.device, 1, @ptrCast(&self.fence), VK_TRUE, WAIT_TIMEOUT_NS));
             self.has_deferred_submissions = false;
-            self.upload_recording_active = false;
+        } else if (self.has_deferred_submissions) {
+            // No pending uploads but earlier deferred work exists; drain fully.
+            try check_vk(vkQueueWaitIdle(self.queue));
+            self.has_deferred_submissions = false;
         }
+        self.upload_recording_active = false;
+        try check_vk(vkResetCommandBuffer(self.primary_command_buffer, 0));
+        self.command_buffer_reset_clean = true;
         self.release_pending_uploads();
         const end_ns = common_timing.now_ns();
         return common_timing.ns_delta(end_ns, start_ns);
@@ -1149,40 +1154,71 @@ pub const NativeVulkanRuntime = struct {
     }
 
     pub fn get_surface_capabilities(self: *NativeVulkanRuntime, handle: u64) !void {
-        _ = self.surfaces.get(handle) orelse return error.SurfaceUnavailable;
+        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
+        if (surface.vk_surface != 0) {
+            const caps = vulkan_surface.query_surface_capabilities(
+                self.physical_device,
+                self.queue_family_index,
+                surface.vk_surface,
+            ) catch return;
+            surface.cached_capabilities = caps;
+            surface.capabilities_queried = true;
+        }
     }
 
     pub fn configure_surface(self: *NativeVulkanRuntime, cmd: model.SurfaceConfigureCommand) !void {
         if (cmd.width == 0 or cmd.height == 0) return error.InvalidArgument;
         const surface = self.surfaces.getPtr(cmd.handle) orelse return error.SurfaceUnavailable;
-        surface.* = .{
-            .configured = true,
-            .acquired = false,
-            .width = cmd.width,
-            .height = cmd.height,
-            .format = cmd.format,
-            .usage = if (cmd.usage == 0) model.WGPUTextureUsage_RenderAttachment else cmd.usage,
-            .alpha_mode = if (cmd.alpha_mode == 0) 0x00000001 else cmd.alpha_mode,
-            .present_mode = if (cmd.present_mode == 0) 0x00000002 else cmd.present_mode,
-            .desired_maximum_frame_latency = if (cmd.desired_maximum_frame_latency == 0) 2 else cmd.desired_maximum_frame_latency,
-        };
+        // Unconfigure before reconfiguring to release stale swapchain state
+        if (surface.configured and surface.swapchain != 0) {
+            vulkan_surface.destroy_swapchain(self.device, surface);
+        }
+        surface.configured = true;
+        surface.acquired = false;
+        surface.width = cmd.width;
+        surface.height = cmd.height;
+        surface.format = cmd.format;
+        surface.usage = if (cmd.usage == 0) model.WGPUTextureUsage_RenderAttachment else cmd.usage;
+        surface.alpha_mode = if (cmd.alpha_mode == 0) 0x00000001 else cmd.alpha_mode;
+        surface.present_mode = if (cmd.present_mode == 0) 0x00000002 else cmd.present_mode;
+        surface.desired_maximum_frame_latency = if (cmd.desired_maximum_frame_latency == 0) 2 else cmd.desired_maximum_frame_latency;
+        // Create a real swapchain when a VkSurfaceKHR is available
+        if (surface.vk_surface != 0) {
+            try vulkan_surface.create_swapchain(
+                self.device,
+                self.physical_device,
+                surface,
+                self.queue_family_index,
+            );
+        }
     }
 
     pub fn acquire_surface(self: *NativeVulkanRuntime, handle: u64) !void {
         const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
         if (!surface.configured or surface.acquired) return error.SurfaceUnavailable;
-        surface.acquired = true;
+        if (surface.swapchain != 0) {
+            _ = try vulkan_surface.acquire_next_image(self.device, surface);
+        } else {
+            surface.acquired = true;
+        }
     }
 
     pub fn present_surface(self: *NativeVulkanRuntime, handle: u64) !void {
         const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
         if (!surface.configured or !surface.acquired) return error.SurfaceUnavailable;
-        surface.acquired = false;
-        _ = try self.flush_queue();
+        if (surface.swapchain != 0) {
+            try vulkan_surface.present_image(self.queue, surface);
+        } else {
+            surface.acquired = false;
+            _ = try self.flush_queue();
+        }
     }
 
     pub fn unconfigure_surface(self: *NativeVulkanRuntime, handle: u64) !void {
         const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
+        if (surface.swapchain != 0) {
+            vulkan_surface.destroy_swapchain(self.device, surface);
+        }
         surface.configured = false;
         surface.acquired = false;
         surface.width = 0;
@@ -1190,8 +1226,23 @@ pub const NativeVulkanRuntime = struct {
     }
 
     pub fn release_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        if (!self.surfaces.remove(handle)) return error.SurfaceUnavailable;
+        const removed = self.surfaces.fetchRemove(handle) orelse return error.SurfaceUnavailable;
+        var surface_copy = removed.value;
+        if (surface_copy.vk_surface != 0 or surface_copy.swapchain != 0) {
+            vulkan_surface.destroy_all(self.instance, self.device, &surface_copy);
+        }
     }
+
+    fn release_all_surfaces(self: *NativeVulkanRuntime) void {
+        var it = self.surfaces.valueIterator();
+        while (it.next()) |surface| {
+            if (surface.vk_surface != 0 or surface.swapchain != 0) {
+                vulkan_surface.destroy_all(self.instance, self.device, surface);
+            }
+        }
+        self.surfaces.deinit(self.allocator);
+    }
+
 
     fn bootstrap(self: *NativeVulkanRuntime) !void {
         try self.create_instance();
@@ -1202,8 +1253,26 @@ pub const NativeVulkanRuntime = struct {
     }
 
     fn create_instance(self: *NativeVulkanRuntime) !void {
-        var app_info = VkApplicationInfo{ .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO, .pNext = null, .pApplicationName = APP_NAME, .applicationVersion = 0, .pEngineName = ENGINE_NAME, .engineVersion = 0, .apiVersion = VK_API_VERSION_1_0 };
-        var create_info = VkInstanceCreateInfo{ .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, .pNext = null, .flags = 0, .pApplicationInfo = &app_info, .enabledLayerCount = 0, .ppEnabledLayerNames = null, .enabledExtensionCount = 0, .ppEnabledExtensionNames = null };
+        const surface_exts = vulkan_surface.required_instance_extensions();
+        var app_info = VkApplicationInfo{
+            .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pNext = null,
+            .pApplicationName = APP_NAME,
+            .applicationVersion = 0,
+            .pEngineName = ENGINE_NAME,
+            .engineVersion = 0,
+            .apiVersion = VK_API_VERSION_1_0,
+        };
+        var create_info = VkInstanceCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .pApplicationInfo = &app_info,
+            .enabledLayerCount = 0,
+            .ppEnabledLayerNames = null,
+            .enabledExtensionCount = @intCast(surface_exts.len),
+            .ppEnabledExtensionNames = if (surface_exts.len > 0) surface_exts.ptr else null,
+        };
         try check_vk(vkCreateInstance(&create_info, null, &self.instance));
         self.has_instance = true;
     }
@@ -1225,9 +1294,28 @@ pub const NativeVulkanRuntime = struct {
     }
 
     fn create_device_and_queue(self: *NativeVulkanRuntime) !void {
+        const device_exts = vulkan_surface.required_device_extensions();
         var priority: f32 = 1.0;
-        var queue_info = VkDeviceQueueCreateInfo{ .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, .pNext = null, .flags = 0, .queueFamilyIndex = self.queue_family_index, .queueCount = 1, .pQueuePriorities = @ptrCast(&priority) };
-        var device_info = VkDeviceCreateInfo{ .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, .pNext = null, .flags = 0, .queueCreateInfoCount = 1, .pQueueCreateInfos = @ptrCast(&queue_info), .enabledLayerCount = 0, .ppEnabledLayerNames = null, .enabledExtensionCount = 0, .ppEnabledExtensionNames = null, .pEnabledFeatures = null };
+        var queue_info = VkDeviceQueueCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .queueFamilyIndex = self.queue_family_index,
+            .queueCount = 1,
+            .pQueuePriorities = @ptrCast(&priority),
+        };
+        var device_info = VkDeviceCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .queueCreateInfoCount = 1,
+            .pQueueCreateInfos = @ptrCast(&queue_info),
+            .enabledLayerCount = 0,
+            .ppEnabledLayerNames = null,
+            .enabledExtensionCount = @intCast(device_exts.len),
+            .ppEnabledExtensionNames = if (device_exts.len > 0) device_exts.ptr else null,
+            .pEnabledFeatures = null,
+        };
         try check_vk(vkCreateDevice(self.physical_device, &device_info, null, &self.device));
         self.has_device = true;
         vkGetDeviceQueue(self.device, self.queue_family_index, 0, &self.queue);
@@ -1972,16 +2060,19 @@ pub const NativeVulkanRuntime = struct {
         var dst_buffer: VkBuffer = VK_NULL_U64;
         var src_memory: VkDeviceMemory = VK_NULL_U64;
         var dst_memory: VkDeviceMemory = VK_NULL_U64;
+        var src_mapped: ?*anyopaque = null;
         var src_fresh = true;
 
         // Try pool first for src (host-visible staging buffer).
         if (hot_pool_pop(&self.hot_src_pool_entry, &self.hot_src_pool_size, bytes)) |entry| {
             src_buffer = entry.buffer;
             src_memory = entry.memory;
+            src_mapped = entry.mapped;
             src_fresh = false;
         } else if (vk_pool_pop(&self.src_pool, bytes)) |entry| {
             src_buffer = entry.buffer;
             src_memory = entry.memory;
+            src_mapped = entry.mapped;
             src_fresh = false;
         } else {
             var src_info = VkBufferCreateInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .sharingMode = VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
@@ -2019,7 +2110,8 @@ pub const NativeVulkanRuntime = struct {
             errdefer vkFreeMemory(self.device, dst_memory, null);
             try check_vk(vkBindBufferMemory(self.device, dst_buffer, dst_memory, 0));
         }
-        // Only zero-fill fresh (non-pooled) src allocations.
+        // Zero-fill fresh src allocations; keep the mapping persistent to
+        // avoid per-upload vkMapMemory/vkUnmapMemory on pool reuse cycles.
         if (src_fresh) {
             var mapped: ?*anyopaque = null;
             try check_vk(vkMapMemory(self.device, src_memory, 0, bytes, 0, &mapped));
@@ -2027,7 +2119,7 @@ pub const NativeVulkanRuntime = struct {
                 const fill_len = @min(@as(usize, @intCast(bytes)), MAX_UPLOAD_ZERO_FILL_BYTES);
                 @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
             }
-            vkUnmapMemory(self.device, src_memory);
+            src_mapped = mapped;
         }
 
         var region = VkBufferCopy{ .srcOffset = 0, .dstOffset = 0, .size = bytes };
@@ -2039,6 +2131,7 @@ pub const NativeVulkanRuntime = struct {
             .dst_buffer = dst_buffer,
             .dst_memory = dst_memory,
             .byte_count = bytes,
+            .src_mapped = src_mapped,
         };
     }
 
@@ -2136,11 +2229,15 @@ pub const NativeVulkanRuntime = struct {
     }
 
     fn release_upload(self: *NativeVulkanRuntime, item: PendingUpload) void {
+        // Carry src_mapped through the pool so staging buffers stay
+        // persistently mapped, eliminating per-upload map/unmap overhead.
         if (item.src_buffer != VK_NULL_U64 and item.src_memory != VK_NULL_U64) {
-            if (!hot_pool_store(&self.hot_src_pool_entry, &self.hot_src_pool_size, item.byte_count, .{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = null })) {
-                vk_pool_push_or_destroy(&self.src_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = null });
+            const src_entry = VkPoolEntry{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = item.src_mapped };
+            if (!hot_pool_store(&self.hot_src_pool_entry, &self.hot_src_pool_size, item.byte_count, src_entry)) {
+                vk_pool_push_or_destroy(&self.src_pool, self.allocator, self.device, item.byte_count, src_entry);
             }
         } else {
+            if (item.src_mapped != null) vkUnmapMemory(self.device, item.src_memory);
             if (item.src_buffer != VK_NULL_U64) vkDestroyBuffer(self.device, item.src_buffer, null);
             if (item.src_memory != VK_NULL_U64) vkFreeMemory(self.device, item.src_memory, null);
         }
@@ -2156,9 +2253,11 @@ pub const NativeVulkanRuntime = struct {
 
     fn ensure_upload_recording(self: *NativeVulkanRuntime) !void {
         if (self.upload_recording_active) return;
-        if (!self.has_deferred_submissions) {
+        // Skip reset when flush_queue already left the buffer in reset state.
+        if (!self.has_deferred_submissions and !self.command_buffer_reset_clean) {
             try check_vk(vkResetCommandBuffer(self.primary_command_buffer, 0));
         }
+        self.command_buffer_reset_clean = false;
         var begin = VkCommandBufferBeginInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .pNext = null,

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn WebGPU core surface coverage",
+  "description": "Coverage ledger for the core (compute/copy/resource/queue) command surface only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "surfaceId", "surfaceVersion", "lastUpdated", "commandCount", "coverage"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "surfaceId": { "type": "string", "const": "doe-core" },
+    "surfaceVersion": { "type": "integer" },
+    "lastUpdated": { "type": "string" },
+    "commandCount": {
+      "type": "integer",
+      "description": "Total number of command kinds in the core surface. Must match the Zig CORE_COMMAND_COUNT."
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["commandKind", "domain", "status", "owner"],
+        "properties": {
+          "commandKind": {
+            "type": "string",
+            "pattern": "^[a-z_]+$"
+          },
+          "domain": {
+            "type": "string",
+            "enum": ["compute", "copy", "resource", "queue"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["implemented", "partial", "planned", "blocked"]
+          },
+          "owner": { "type": "string" },
+          "benchmarkClass": {
+            "type": "string",
+            "enum": ["comparable", "directional"]
+          },
+          "gateStatus": {
+            "type": "string",
+            "enum": ["blocking", "advisory", "pending"],
+            "description": "Whether this command kind has blocking gate coverage."
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

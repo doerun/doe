@@ -4,6 +4,7 @@ const token_mod = @import("token.zig");
 const ir = @import("ir.zig");
 const sema_types = @import("sema_types.zig");
 const sema_helpers = @import("sema_helpers.zig");
+const sema_resolve = @import("sema_resolve.zig");
 
 const Ast = ast_mod.Ast; const Node = ast_mod.Node; const NodeTag = ast_mod.NodeTag;
 const NULL_NODE = ast_mod.NULL_NODE; const Tag = token_mod.Tag;
@@ -556,7 +557,7 @@ const Analyzer = struct {
         };
     }
 
-    fn resolve_type_node(self: *Analyzer, node_idx: u32) AnalyzeError!ir.TypeId {
+    pub fn resolve_type_node(self: *Analyzer, node_idx: u32) AnalyzeError!ir.TypeId {
         const node = self.module.tree.nodes.items[node_idx];
         return switch (node.tag) {
             .type_name => try self.resolve_type_name(self.module.tree.tokenSlice(node.main_token)),
@@ -610,67 +611,7 @@ const Analyzer = struct {
     }
 
     fn resolve_type_parameterized(self: *Analyzer, node: Node) AnalyzeError!ir.TypeId {
-        const name = self.module.tree.tokenSlice(node.main_token);
-        const params_start = node.data.lhs;
-        const params_len = node.data.rhs;
-        if (std.mem.eql(u8, name, "vec2") or std.mem.eql(u8, name, "vec3") or std.mem.eql(u8, name, "vec4")) {
-            if (params_len != 1) return error.InvalidType;
-            const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
-            const len: u8 = if (std.mem.eql(u8, name, "vec2")) 2 else if (std.mem.eql(u8, name, "vec3")) 3 else 4;
-            return try self.module.types.intern(.{ .vector = .{ .elem = elem, .len = len } });
-        }
-        if (std.mem.eql(u8, name, "mat2x2") or std.mem.eql(u8, name, "mat3x3") or std.mem.eql(u8, name, "mat4x4")) {
-            if (params_len != 1) return error.InvalidType;
-            const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
-            const dim: u8 = if (std.mem.eql(u8, name, "mat2x2")) 2 else if (std.mem.eql(u8, name, "mat3x3")) 3 else 4;
-            return try self.module.types.intern(.{ .matrix = .{ .elem = elem, .columns = dim, .rows = dim } });
-        }
-        if (std.mem.eql(u8, name, "array")) {
-            if (params_len < 1 or params_len > 2) return error.InvalidType;
-            const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
-            var len: ?u32 = null;
-            if (params_len == 2) {
-                const len_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 1]];
-                if (len_node.tag != .int_literal) return error.InvalidType;
-                len = std.fmt.parseInt(u32, self.module.tree.tokenSlice(len_node.main_token), 10) catch return error.InvalidType;
-            }
-            return try self.module.types.intern(.{ .array = .{ .elem = elem, .len = len } });
-        }
-        if (std.mem.eql(u8, name, "atomic")) {
-            if (params_len != 1) return error.InvalidType;
-            return try self.module.types.intern(.{ .atomic = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
-        }
-        if (std.mem.eql(u8, name, "texture_2d")) {
-            if (params_len != 1) return error.InvalidType;
-            return try self.module.types.intern(.{ .texture_2d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
-        }
-        if (std.mem.eql(u8, name, "texture_storage_2d")) {
-            if (params_len != 2) return error.InvalidType;
-            const format_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start]];
-            if (format_node.tag != .type_name) return error.InvalidType;
-            const access_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 1]];
-            if (access_node.tag != .type_name) return error.InvalidType;
-            const access = try parse_access(self.module.tree.tokenSlice(access_node.main_token));
-            if (access != .write) return error.InvalidType;
-            return try self.module.types.intern(.{ .storage_texture_2d = .{
-                .format = try parse_storage_texture_format(self.module.tree.tokenSlice(format_node.main_token)),
-                .access = access,
-            } });
-        }
-        if (std.mem.eql(u8, name, "ptr")) {
-            if (params_len < 2 or params_len > 3) return error.InvalidType;
-            const addr_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start]];
-            if (addr_node.tag != .type_name) return error.InvalidType;
-            const addr_space = try parse_address_space(self.module.tree.tokenSlice(addr_node.main_token));
-            const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start + 1]);
-            const access = if (params_len == 3) blk: {
-                const access_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 2]];
-                if (access_node.tag != .type_name) return error.InvalidType;
-                break :blk try parse_access(self.module.tree.tokenSlice(access_node.main_token));
-            } else .read_write;
-            return try self.module.types.intern(.{ .ref = .{ .elem = elem, .addr_space = addr_space, .access = access } });
-        }
-        return error.UnknownType;
+        return sema_resolve.resolve_type_parameterized(self, node);
     }
 
     fn parse_stage(self: *Analyzer, attrs_start: u32, attrs_len: u32) !?ir.ShaderStage {

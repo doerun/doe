@@ -54,8 +54,18 @@ WebGPU backend:
 - `src/wgpu_async_procs.zig` — async render-pipeline/error-scope/compilation-info proc surface and wait helpers.
 - `src/wgpu_resources.zig` — buffer/texture management, bind group building, shader module and pipeline creation.
 
+Public surface (core/full split):
+- `src/core/surface.zig` — core-only public API surface: validate, accept, coverage ledger for compute/copy/resource/queue commands.
+- `src/full/surface_api.zig` — full public API surface: classify (core vs full-only), accept, combined coverage ledger for all commands.
+- `src/core/command_partition.zig` — core command kind enum and partition membership.
+- `src/full/command_partition.zig` — full-only command kind enum and partition membership.
+
 Build:
 - `build.zig` — compile and run hooks, links libC and libdl.
+- `zig build dropin` — full drop-in shared library (`libwebgpu_doe.so`).
+- `zig build dropin-core` — core-only drop-in shared library (`libwebgpu_doe_core.so`).
+- `zig build coverage-gate` — validate split coverage ledgers against Zig command partitions.
+- `zig build import-fence` — validate core/full one-way import boundaries.
 
 ## How to run (toolchain must be available)
 

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn WebGPU full surface coverage",
+  "description": "Coverage ledger for the full (core + render/surface/sampler/lifecycle/async) command surface.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "surfaceId", "surfaceVersion", "lastUpdated", "coreCommandCount", "fullOnlyCommandCount", "totalCommandCount", "coreCoverage", "fullOnlyCoverage"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "surfaceId": { "type": "string", "const": "doe-full" },
+    "surfaceVersion": { "type": "integer" },
+    "lastUpdated": { "type": "string" },
+    "coreCommandCount": {
+      "type": "integer",
+      "description": "Number of core command kinds inherited by the full surface."
+    },
+    "fullOnlyCommandCount": {
+      "type": "integer",
+      "description": "Number of full-only command kinds (render, surface, sampler, lifecycle, async)."
+    },
+    "totalCommandCount": {
+      "type": "integer",
+      "description": "Total command kinds: coreCommandCount + fullOnlyCommandCount."
+    },
+    "coreCoverage": {
+      "type": "array",
+      "description": "Core command coverage inherited by the full surface.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["commandKind", "domain", "status", "owner"],
+        "properties": {
+          "commandKind": { "type": "string", "pattern": "^[a-z_]+$" },
+          "domain": { "type": "string", "enum": ["compute", "copy", "resource", "queue"] },
+          "status": { "type": "string", "enum": ["implemented", "partial", "planned", "blocked"] },
+          "owner": { "type": "string" },
+          "benchmarkClass": { "type": "string", "enum": ["comparable", "directional"] },
+          "gateStatus": { "type": "string", "enum": ["blocking", "advisory", "pending"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "fullOnlyCoverage": {
+      "type": "array",
+      "description": "Full-only command coverage (not present in core surface).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["commandKind", "domain", "status", "owner"],
+        "properties": {
+          "commandKind": { "type": "string", "pattern": "^[a-z_]+$" },
+          "domain": { "type": "string", "enum": ["render", "surface", "resource", "lifecycle"] },
+          "status": { "type": "string", "enum": ["implemented", "partial", "planned", "blocked"] },
+          "owner": { "type": "string" },
+          "benchmarkClass": { "type": "string", "enum": ["comparable", "directional"] },
+          "gateStatus": { "type": "string", "enum": ["blocking", "advisory", "pending"] },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

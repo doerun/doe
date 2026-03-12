@@ -32,6 +32,12 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - artifact: `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json`
   - status: `comparisonStatus=comparable`, `claimStatus=diagnostic`
   - current non-claimable workloads: `upload_write_buffer_1kb`
+- `upload_write_buffer_1kb` Vulkan staged-copy path optimized (three changes in `zig/src/backend/vulkan/native_runtime.zig`):
+  - replaced `vkQueueWaitIdle` with fence-based `vkWaitForFences` in `flush_queue` to reduce per-submission driver synchronization overhead on RADV
+  - eliminated redundant `vkResetCommandBuffer` between `flush_queue` and `ensure_upload_recording` via `command_buffer_reset_clean` tracking flag
+  - persisted staging buffer mapping through hot pool (`src_mapped` in `PendingUpload` and `release_upload`) to avoid per-upload `vkMapMemory`/`vkUnmapMemory` overhead
+  - all three optimizations preserve staged-copy-only comparability for the Vulkan comparable/release lanes
+  - pending: rerun strict release benchmark to verify claimability after optimization
 - strict Vulkan upload destination usage now follows the explicit upload contract instead of inflating `copy-dst` uploads into storage-buffer usage:
   - file: `zig/src/backend/vulkan/native_runtime.zig`
   - focused March 10 probe: `bench/out/scratch/20260310T_package_copy_and_vulkan/amd-vulkan.upload_1kb.focused.json`
@@ -503,8 +509,12 @@ Runtime layering:
 - `zig/src/model.zig` still owns one combined public `Command` union even though `CoreCommand` / `FullCommand` projections now exist
 - `zig/src/webgpu_ffi.zig` now composes `core` plus `full` backend state honestly, but backend root modules still serve mixed compute/render state from one runtime-owned backend per API
 - the remaining root compatibility façades are `zig/src/wgpu_commands.zig`, `zig/src/wgpu_resources.zig`, and `zig/src/wgpu_extended_commands.zig`; the old root ABI shims `zig/src/wgpu_types.zig` and `zig/src/wgpu_loader.zig` have been retired
-- split coverage ledgers and split gate runners do not exist yet; capability tracking still uses one shared coverage ledger
-- separate core/full package or runtime artifacts are not built yet
+- split coverage ledgers now exist: `config/webgpu-core-coverage.json` (10 core commands) and `config/webgpu-full-coverage.json` (10 core + 14 full-only = 24 total), with matching schemas and a split gate runner (`bench/split_coverage_gate.py`)
+- public surface API modules exist: `zig/src/core/surface.zig` (typed core-only API boundary with validate/accept/coverage-ledger) and `zig/src/full/surface_api.zig` (full superset API with classify/accept/combined-ledger)
+- `zig build dropin-core` now produces a core-only `libwebgpu_doe_core.so` artifact
+- `zig build coverage-gate` validates split coverage ledgers against Zig command partitions
+- `bench/run_blocking_gates.py --with-split-coverage-gate` runs the split coverage gate in the blocking sequence
+- the shared combined coverage ledger in `config/webgpu-spec-coverage.json` still exists for backward compatibility; full runtime artifact separation (separate core-only vs full binaries with different command vocabularies) is still open
 
 Shader compiler:
 - native WGSL lowering remains compute-first; vertex/fragment pipeline coverage is still not implemented across the non-Metal emitters
@@ -515,9 +525,12 @@ Shader compiler:
 - native DXIL emission remains deferred; D3D12 still relies on WGSL -> IR -> HLSL -> DXC for live source translation
 
 Tests and proofs:
-- `zig/tests/core/` and `zig/tests/full/` now contain real command-partition tests and dedicated `zig build test-core` / `zig build test-full` lanes, but split coverage is still very thin
-- `lean/Fawn/Core/` and `lean/Fawn/Full/` are still placeholder READMEs only; proof movement into split theorem packs has not happened yet
-- Lean CI and proof artifact validation are blocking at the repo level, but the proof split itself is still undone
+- `zig/tests/core/` and `zig/tests/full/` now contain command-partition tests and surface API tests, with dedicated `zig build test-core` / `zig build test-full` lanes; surface tests validate typed API boundaries, coverage ledgers, domain classification, and superset invariants
+- `lean/Fawn/Core/` contains canonical core theorem pack (Model, Runtime, Dispatch, Bridge) matching `zig/src/core/` boundary
+- `lean/Fawn/Full/` contains canonical full theorem pack (Comparability, ComparabilityFixtures) matching `zig/src/full/` boundary
+- original `lean/Fawn/*.lean` files are re-export shims for backward compatibility
+- `check.sh` and `extract.sh` compile Core/Full canonical sources then re-export shims
+- Lean CI and proof artifact validation are blocking at the repo level; the proof split is complete
 
 D3D12:
 - D3D12 is no longer a pure stub; it is a real compute-first backend on Windows
@@ -537,7 +550,7 @@ Performance substantiation:
 Config and CI:
 - bootstrap threshold placeholders in `config/gates.json` still exist
 - file-size policy exists, but automated enforcement of the 777-line limit is still missing
-- split coverage schemas such as `webgpu-core-coverage.json` / `webgpu-full-coverage.json` do not exist yet
+- split coverage schemas and ledgers now exist: `config/webgpu-core-coverage.schema.json`, `config/webgpu-full-coverage.schema.json`, and corresponding data files; `bench/split_coverage_gate.py` validates ledger-partition alignment
 
 ## Developer flow state (engineering, governance, and release pipeline)
 

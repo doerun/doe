@@ -14,6 +14,8 @@ pub const ir_validate = @import("ir_validate.zig");
 pub const emit_msl = @import("emit_msl.zig");
 pub const emit_hlsl = @import("emit_hlsl.zig");
 pub const emit_spirv = @import("emit_spirv.zig");
+pub const emit_spirv_fn = @import("emit_spirv_fn.zig");
+pub const emit_spirv_stages = @import("emit_spirv_stages.zig");
 pub const emit_dxil = @import("emit_dxil.zig");
 
 const std = @import("std");
@@ -164,6 +166,8 @@ test {
     _ = emit_msl;
     _ = emit_hlsl;
     _ = emit_spirv;
+    _ = emit_spirv_fn;
+    _ = emit_spirv_stages;
     _ = emit_dxil;
 }
 

@@ -25,8 +25,26 @@ fi
 
 BUILD_DIR="$(mktemp -d /tmp/fawn-lean-check.XXXXXX)"
 trap 'rm -rf "${BUILD_DIR}"' EXIT
-mkdir -p "${BUILD_DIR}/Fawn"
+mkdir -p "${BUILD_DIR}/Fawn/Core"
+mkdir -p "${BUILD_DIR}/Fawn/Full"
 
+# Core layer (canonical sources)
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Model.olean" "${ROOT_DIR}/lean/Fawn/Core/Model.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Runtime.olean" "${ROOT_DIR}/lean/Fawn/Core/Runtime.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Dispatch.olean" "${ROOT_DIR}/lean/Fawn/Core/Dispatch.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Bridge.olean" "${ROOT_DIR}/lean/Fawn/Core/Bridge.lean"
+
+# Full layer (canonical sources)
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/Comparability.olean" "${ROOT_DIR}/lean/Fawn/Full/Comparability.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/ComparabilityFixtures.olean" "${ROOT_DIR}/lean/Fawn/Full/ComparabilityFixtures.lean"
+
+# Re-export shims (backward compatibility)
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Model.olean" "${ROOT_DIR}/lean/Fawn/Model.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \

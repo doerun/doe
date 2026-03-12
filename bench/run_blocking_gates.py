@@ -146,6 +146,22 @@ def parse_args() -> argparse.Namespace:
         help="Run structural_equivalence_gate.py after trace gate.",
     )
     parser.add_argument(
+        "--with-file-size-gate",
+        action="store_true",
+        help="Run file_size_gate.py to enforce line-count limits on source files.",
+    )
+    parser.add_argument(
+        "--with-split-coverage-gate",
+        action="store_true",
+        help="Run split_coverage_gate.py to validate core/full coverage ledgers.",
+    )
+    parser.add_argument(
+        "--split-coverage-surface",
+        choices=["core", "full", "both"],
+        default="both",
+        help="Which surface(s) to validate in the split coverage gate.",
+    )
+    parser.add_argument(
         "--with-dropin-proc-resolution-gate",
         action="store_true",
         help="Run dropin_proc_resolution_tests.py in the drop-in phase.",
@@ -320,6 +336,8 @@ def main() -> int:
 
     bench_dir = Path(__file__).resolve().parent
     schema_gate = bench_dir / "schema_gate.py"
+    file_size_gate = bench_dir / "file_size_gate.py"
+    split_coverage_gate = bench_dir / "split_coverage_gate.py"
     backend_workload_catalog_gate = bench_dir / "generate_backend_workloads.py"
     backend_workload_catalog_tests = bench_dir / "test_backend_workload_catalog.py"
     comparability_parity_gate = bench_dir / "comparability_obligation_parity_gate.py"
@@ -361,6 +379,18 @@ def main() -> int:
 
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])
+        if args.with_file_size_gate:
+            run_gate("file-size", [sys.executable, str(file_size_gate)])
+        if args.with_split_coverage_gate:
+            run_gate(
+                "split-coverage",
+                [
+                    sys.executable,
+                    str(split_coverage_gate),
+                    "--surface",
+                    args.split_coverage_surface,
+                ],
+            )
         run_gate(
             "backend-workload-catalog",
             [sys.executable, str(backend_workload_catalog_gate), "--verify"],

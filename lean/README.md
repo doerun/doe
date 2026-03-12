@@ -19,15 +19,23 @@ Current integration boundary (v0):
 - Zig/Python runtime/gate logic mirrors Lean obligation fields and policy (`verificationMode`, `proofLevel`, blocking/advisory outcomes).
 - Manual Lean typecheck/build is available through `./lean/check.sh` (uses pinned toolchain version from `config/toolchains.json`).
 
-Current formalization:
-- `Fawn/Model.lean` (core enums, precedence lattice, requirement predicates)
-- `Fawn/Dispatch.lean` (dispatch-level theorems proven against Runtime's types: `toggleAlwaysSupported`, `strongerSafetyRaisesProofDemand`)
-- `Fawn/Runtime.lean` (deterministic matching + scoring + selector for quirk streams, driver-range matching, dispatch decision metadata)
-- `Fawn/Bridge.lean` (obligation gate evaluation from dispatch decisions)
-- `Fawn/Comparability.lean` (machine-checkable apples-to-apples comparability obligation model and blocking-failure semantics)
-- `Fawn/ComparabilityFixtures.lean` (fixed comparability-facts parity fixtures with expected blocking-obligation proofs)
-- `Fawn/Runtime.lean` includes `kernelDispatch` as a first-class command kind.
-- `Fawn/Extract.lean` (proof artifact extraction program)
+Current formalization (core/full split):
+
+Core theorem pack (`Fawn/Core/`, maps to `zig/src/core/`):
+- `Fawn/Core/Model.lean` (foundational enums, precedence lattice, requirement predicates)
+- `Fawn/Core/Runtime.lean` (deterministic matching + scoring + selector for quirk streams, driver-range matching, dispatch decision metadata; includes `kernelDispatch` as a first-class command kind)
+- `Fawn/Core/Dispatch.lean` (dispatch-level theorems: `toggleAlwaysSupported`, `strongerSafetyRaisesProofDemand`, `identityActionComplete`)
+- `Fawn/Core/Bridge.lean` (obligation gate evaluation from dispatch decisions)
+
+Full theorem pack (`Fawn/Full/`, maps to `zig/src/full/`):
+- `Fawn/Full/Comparability.lean` (machine-checkable apples-to-apples comparability obligation model and blocking-failure semantics)
+- `Fawn/Full/ComparabilityFixtures.lean` (fixed comparability-facts parity fixtures with expected blocking-obligation proofs)
+
+Re-export shims (backward compatibility):
+- `Fawn/Model.lean`, `Fawn/Runtime.lean`, `Fawn/Dispatch.lean`, `Fawn/Bridge.lean`, `Fawn/Comparability.lean`, `Fawn/ComparabilityFixtures.lean` re-export from `Fawn.Core.*` / `Fawn.Full.*` so existing imports continue to work.
+
+Extraction:
+- `Fawn/Extract.lean` (proof artifact extraction program, imports from both Core and Full)
 
 Bridge layer contract:
 - input: runtime `DispatchResult` stream

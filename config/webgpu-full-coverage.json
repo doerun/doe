@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "surfaceId": "doe-full",
+  "surfaceVersion": 1,
+  "lastUpdated": "2026-03-11",
+  "coreCommandCount": 10,
+  "fullOnlyCommandCount": 14,
+  "totalCommandCount": 24,
+  "coreCoverage": [
+    {
+      "commandKind": "upload",
+      "domain": "copy",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "copy_buffer_to_texture",
+      "domain": "copy",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "barrier",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "dispatch",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "dispatch_indirect",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "kernel_dispatch",
+      "domain": "compute",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "texture_write",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "texture_query",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "texture_destroy",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "map_async",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "directional",
+      "gateStatus": "advisory"
+    }
+  ],
+  "fullOnlyCoverage": [
+    {
+      "commandKind": "render_draw",
+      "domain": "render",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Render draw with pipeline/bind-group mode, encode mode, indexed mode, viewport/scissor/blend/stencil state."
+    },
+    {
+      "commandKind": "draw_indirect",
+      "domain": "render",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Indirect draw through render_draw pathway."
+    },
+    {
+      "commandKind": "draw_indexed_indirect",
+      "domain": "render",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Indexed indirect draw through render_draw pathway."
+    },
+    {
+      "commandKind": "render_pass",
+      "domain": "render",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Render pass command through render_draw pathway."
+    },
+    {
+      "commandKind": "sampler_create",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking",
+      "notes": "Sampler creation with full address/filter/compare/anisotropy parameters."
+    },
+    {
+      "commandKind": "sampler_destroy",
+      "domain": "resource",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking",
+      "notes": "Explicit sampler destroy lifecycle."
+    },
+    {
+      "commandKind": "surface_create",
+      "domain": "surface",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking",
+      "notes": "Platform surface creation with macOS hosted CAMetalLayer support."
+    },
+    {
+      "commandKind": "surface_capabilities",
+      "domain": "surface",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "surface_configure",
+      "domain": "surface",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "surface_acquire",
+      "domain": "surface",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "surface_present",
+      "domain": "surface",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "surface_unconfigure",
+      "domain": "surface",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "surface_release",
+      "domain": "surface",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "async_diagnostics",
+      "domain": "lifecycle",
+      "status": "implemented",
+      "owner": "runtime-full",
+      "benchmarkClass": "directional",
+      "gateStatus": "advisory",
+      "notes": "Async pipeline diagnostics with multiple introspection modes."
+    }
+  ]
+}

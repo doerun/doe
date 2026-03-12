@@ -1,0 +1,286 @@
+// Vertex and fragment shader stage emission for the SPIR-V backend.
+//
+// Handles entry point wrappers, stage I/O variable creation with location
+// and built-in decorations, and struct-typed return value decomposition for
+// vertex/fragment pipelines.
+
+const std = @import("std");
+const ir = @import("ir.zig");
+const spirv = @import("spirv_builder.zig");
+const emit_spirv = @import("emit_spirv.zig");
+
+const Emitter = emit_spirv.Emitter;
+const EmitError = emit_spirv.EmitError;
+
+/// Maximum number of I/O variables per entry point (params + return fields).
+const MAX_IO_VARS: usize = 64;
+
+/// Emit a module-scope Input or Output variable with IO decorations.
+pub fn emit_io_global(emitter: *Emitter, global: ir.Global) EmitError!u32 {
+    const storage_class = try emitter.global_storage_class(global);
+    const value_type = try emitter.lower_type(global.ty);
+    const ptr_type = try emitter.builder.type_pointer(storage_class, value_type);
+    const var_id = try emitter.builder.variable_global(ptr_type, storage_class);
+    try emitter.builder.emit_name(var_id, global.name);
+
+    const io = global.io orelse return error.InvalidIr;
+    try decorate_io_var(&emitter.builder, var_id, io);
+
+    return var_id;
+}
+
+/// Emit a vertex or fragment entry point wrapper function with stage-appropriate
+/// execution model, I/O variable binding, and return value decomposition.
+pub fn emit_stage_entry_wrapper(emitter: *Emitter, entry: ir.EntryPoint) EmitError!void {
+    const function = &emitter.module.functions.items[entry.function];
+    const wrapper_id = emitter.entry_wrapper_ids[entry.function];
+    const void_type = try emitter.builder.type_void();
+    const fn_type = try emitter.builder.type_function(void_type, &.{});
+    const wrapper_name = try std.fmt.allocPrint(emitter.alloc, "{s}_entry", .{function.name});
+    defer emitter.alloc.free(wrapper_name);
+
+    var interface_ids = std.ArrayListUnmanaged(u32){};
+    defer interface_ids.deinit(emitter.alloc);
+
+    // Phase 1: create all Input/Output variables at module scope.
+    // Track per-param input var IDs for later reconstruction in the body.
+    var param_input_ranges = std.ArrayListUnmanaged(IoRange){};
+    defer param_input_ranges.deinit(emitter.alloc);
+
+    for (function.params.items) |param| {
+        const range_start: u32 = @intCast(interface_ids.items.len);
+        const io = param.io orelse return error.UnsupportedConstruct;
+        if (io.builtin == .none and io.location == null) {
+            // Struct-typed parameter: expand fields into individual input variables.
+            try emit_struct_io_vars(emitter, param.ty, spirv.StorageClass.Input, &interface_ids);
+        } else {
+            const value_type = try emitter.lower_type(param.ty);
+            const ptr_type = try emitter.builder.type_pointer(spirv.StorageClass.Input, value_type);
+            const var_id = try emitter.builder.variable_global(ptr_type, spirv.StorageClass.Input);
+            try emitter.builder.emit_name(var_id, param.name);
+            try decorate_io_var(&emitter.builder, var_id, io);
+            try interface_ids.append(emitter.alloc, var_id);
+        }
+        const range_end: u32 = @intCast(interface_ids.items.len);
+        try param_input_ranges.append(emitter.alloc, .{
+            .start = range_start,
+            .len = range_end - range_start,
+            .is_struct = io.builtin == .none and io.location == null,
+        });
+    }
+
+    // Emit output variables for the return type.
+    const output_range_start: u32 = @intCast(interface_ids.items.len);
+    const has_return = !ir.is_scalar(&emitter.module.types, function.return_type, .void);
+    if (has_return) {
+        try emit_return_output_vars(emitter, function.return_type, &interface_ids);
+    }
+    const output_range_len: u32 = @as(u32, @intCast(interface_ids.items.len)) - output_range_start;
+
+    // Collect bound resource globals as interface variables.
+    for (emitter.module.globals.items, 0..) |global, index| {
+        if (global.binding == null and global.class != .input and global.class != .output) continue;
+        const global_id = emitter.global_ids[index];
+        if (global_id == 0) return error.InvalidIr;
+        try interface_ids.append(emitter.alloc, global_id);
+    }
+
+    // Emit entry point instruction and execution modes.
+    const execution_model = stage_to_execution_model(entry.stage);
+    try emitter.builder.emit_name(wrapper_id, wrapper_name);
+    try emitter.builder.emit_entry_point_with_model(execution_model, wrapper_id, function.name, interface_ids.items);
+
+    if (entry.stage == .fragment) {
+        try emitter.builder.emit_execution_mode(wrapper_id, spirv.ExecutionMode.OriginUpperLeft);
+        if (return_has_frag_depth(emitter, function.return_type)) {
+            try emitter.builder.emit_execution_mode(wrapper_id, spirv.ExecutionMode.DepthReplacing);
+        }
+    }
+
+    // Phase 2: generate wrapper function body.
+    try emitter.builder.begin_function(void_type, wrapper_id, fn_type);
+    _ = try emitter.builder.label();
+
+    // Build call arguments by loading from input variables.
+    var call_args = std.ArrayListUnmanaged(u32){};
+    defer call_args.deinit(emitter.alloc);
+
+    for (function.params.items, param_input_ranges.items) |param, range| {
+        const input_vars = interface_ids.items[range.start .. range.start + range.len];
+        if (range.is_struct) {
+            // Struct-typed: load each field and CompositeConstruct.
+            const composite = try load_and_construct_struct(emitter, param.ty, input_vars);
+            try call_args.append(emitter.alloc, composite);
+        } else {
+            // Direct IO param: single load.
+            try call_args.append(emitter.alloc, try emitter.emit_function_load(try emitter.lower_type(param.ty), input_vars[0]));
+        }
+    }
+
+    if (has_return) {
+        const return_type = try emitter.lower_type(function.return_type);
+        const result = try emitter.emit_function_call(return_type, emitter.function_ids[entry.function], call_args.items);
+        const output_vars = interface_ids.items[output_range_start .. output_range_start + output_range_len];
+        try store_return_to_outputs(emitter, function.return_type, result, output_vars);
+    } else {
+        _ = try emitter.emit_function_call(void_type, emitter.function_ids[entry.function], call_args.items);
+    }
+
+    try emitter.builder.append_function_inst(spirv.Opcode.Return, &.{});
+    try emitter.builder.finish_function();
+}
+
+// -- Internal types --
+
+const IoRange = struct {
+    start: u32,
+    len: u32,
+    is_struct: bool,
+};
+
+// -- I/O variable helpers --
+
+/// Create individual Input or Output variables for each field of a struct type.
+fn emit_struct_io_vars(
+    emitter: *Emitter,
+    ty: ir.TypeId,
+    storage_class: u32,
+    interface_ids: *std.ArrayListUnmanaged(u32),
+) EmitError!void {
+    const struct_id = switch (emitter.module.types.get(ty)) {
+        .struct_ => |sid| sid,
+        else => return error.UnsupportedConstruct,
+    };
+    const struct_def = emitter.module.structs.items[struct_id];
+
+    for (struct_def.fields.items) |field| {
+        const io = field.io orelse return error.InvalidIr;
+        const value_type = try emitter.lower_type(field.ty);
+        const ptr_type = try emitter.builder.type_pointer(storage_class, value_type);
+        const var_id = try emitter.builder.variable_global(ptr_type, storage_class);
+        try emitter.builder.emit_name(var_id, field.name);
+        try decorate_io_var(&emitter.builder, var_id, io);
+        try interface_ids.append(emitter.alloc, var_id);
+    }
+}
+
+/// Emit Output variables for the return type. For struct returns, one Output
+/// variable per field.
+fn emit_return_output_vars(
+    emitter: *Emitter,
+    return_type: ir.TypeId,
+    interface_ids: *std.ArrayListUnmanaged(u32),
+) EmitError!void {
+    switch (emitter.module.types.get(return_type)) {
+        .struct_ => |struct_id| {
+            const struct_def = emitter.module.structs.items[struct_id];
+            for (struct_def.fields.items) |field| {
+                const io = field.io orelse return error.InvalidIr;
+                const value_type = try emitter.lower_type(field.ty);
+                const ptr_type = try emitter.builder.type_pointer(spirv.StorageClass.Output, value_type);
+                const var_id = try emitter.builder.variable_global(ptr_type, spirv.StorageClass.Output);
+                try emitter.builder.emit_name(var_id, field.name);
+                try decorate_io_var(&emitter.builder, var_id, io);
+                try interface_ids.append(emitter.alloc, var_id);
+            }
+        },
+        else => return error.UnsupportedConstruct,
+    }
+}
+
+/// Load each field from individual Input variables and CompositeConstruct.
+fn load_and_construct_struct(
+    emitter: *Emitter,
+    ty: ir.TypeId,
+    field_var_ids: []const u32,
+) EmitError!u32 {
+    const struct_id = switch (emitter.module.types.get(ty)) {
+        .struct_ => |sid| sid,
+        else => return error.UnsupportedConstruct,
+    };
+    const struct_def = emitter.module.structs.items[struct_id];
+    if (struct_def.fields.items.len != field_var_ids.len) return error.InvalidIr;
+
+    var operands = std.ArrayListUnmanaged(u32){};
+    defer operands.deinit(emitter.alloc);
+    const struct_type = try emitter.lower_type(ty);
+    const result_id = emitter.builder.reserve_id();
+    try operands.append(emitter.alloc, struct_type);
+    try operands.append(emitter.alloc, result_id);
+
+    for (struct_def.fields.items, field_var_ids) |field, var_id| {
+        const field_type = try emitter.lower_type(field.ty);
+        try operands.append(emitter.alloc, try emitter.emit_function_load(field_type, var_id));
+    }
+
+    try emitter.builder.append_function_inst(spirv.Opcode.CompositeConstruct, operands.items);
+    return result_id;
+}
+
+/// Store a function return value (struct composite) into Output variables.
+fn store_return_to_outputs(
+    emitter: *Emitter,
+    return_type: ir.TypeId,
+    composite_id: u32,
+    output_var_ids: []const u32,
+) EmitError!void {
+    switch (emitter.module.types.get(return_type)) {
+        .struct_ => |struct_id| {
+            const struct_def = emitter.module.structs.items[struct_id];
+            if (struct_def.fields.items.len != output_var_ids.len) return error.InvalidIr;
+            for (struct_def.fields.items, 0..) |field, field_index| {
+                const field_type = try emitter.lower_type(field.ty);
+                const result_id = emitter.builder.reserve_id();
+                try emitter.builder.append_function_inst(
+                    spirv.Opcode.CompositeExtract,
+                    &.{ field_type, result_id, composite_id, @as(u32, @intCast(field_index)) },
+                );
+                try emitter.emit_store(output_var_ids[field_index], result_id);
+            }
+        },
+        else => return error.InvalidIr,
+    }
+}
+
+/// Apply IO decorations (builtin, location, interpolation, invariant) to a variable.
+fn decorate_io_var(builder: *spirv.Builder, var_id: u32, io: ir.IoAttr) EmitError!void {
+    if (io.builtin != .none) {
+        try builder.emit_builtin_decoration(var_id, try emit_spirv.builtin_to_spirv(io.builtin));
+    }
+    if (io.location) |loc| {
+        try builder.emit_location_decoration(var_id, loc);
+    }
+    if (io.interpolation) |interp| {
+        switch (interp) {
+            .flat => try builder.emit_flat_decoration(var_id),
+            .linear => try builder.emit_noperspective_decoration(var_id),
+            .perspective => {},
+        }
+    }
+    if (io.invariant) {
+        try builder.emit_invariant_decoration(var_id);
+    }
+}
+
+fn stage_to_execution_model(stage: ir.ShaderStage) u32 {
+    return switch (stage) {
+        .vertex => spirv.ExecutionModel.Vertex,
+        .fragment => spirv.ExecutionModel.Fragment,
+        .compute => spirv.ExecutionModel.GLCompute,
+    };
+}
+
+/// Check whether the return type includes a frag_depth field.
+fn return_has_frag_depth(emitter: *Emitter, return_type: ir.TypeId) bool {
+    switch (emitter.module.types.get(return_type)) {
+        .struct_ => |struct_id| {
+            const struct_def = emitter.module.structs.items[struct_id];
+            for (struct_def.fields.items) |field| {
+                const io = field.io orelse continue;
+                if (io.builtin == .frag_depth) return true;
+            }
+        },
+        else => {},
+    }
+    return false;
+}
