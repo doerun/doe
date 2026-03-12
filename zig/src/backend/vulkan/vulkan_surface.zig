@@ -68,6 +68,7 @@ const VK_IMAGE_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
 const VK_SHARING_MODE_EXCLUSIVE: u32 = 0;
 
 // Limits
+const DEFAULT_SURFACE_MAX_FRAME_LATENCY: u32 = 2;
 const MAX_SWAPCHAIN_IMAGES: usize = 8;
 const MAX_SURFACE_FORMATS: usize = 32;
 const MAX_PRESENT_MODES: usize = 8;
@@ -223,9 +224,9 @@ pub const VulkanSurface = struct {
     height: u32 = 0,
     format: model.WGPUTextureFormat = model.WGPUTextureFormat_RGBA8Unorm,
     usage: model.WGPUFlags = model.WGPUTextureUsage_RenderAttachment,
-    alpha_mode: u32 = 0x00000001,
+    alpha_mode: u32 = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
     present_mode: u32 = WGPU_PRESENT_MODE_FIFO,
-    desired_maximum_frame_latency: u32 = 2,
+    desired_maximum_frame_latency: u32 = DEFAULT_SURFACE_MAX_FRAME_LATENCY,
 
     // Cached capabilities
     capabilities_queried: bool = false,
@@ -673,9 +674,19 @@ fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
     return map_vk_result(result);
 }
 
+// VkResult error codes (named for fail-fast error mapping)
+const VK_ERROR_TOO_MANY_OBJECTS: VkResult = -7;
+const VK_ERROR_FORMAT_NOT_SUPPORTED: VkResult = -9;
+const VK_ERROR_FRAGMENTED_POOL: VkResult = -10;
+const VK_ERROR_UNKNOWN: VkResult = -11;
+
 fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
     return switch (result) {
-        -7, -9, -10, -11 => error.UnsupportedFeature,
+        VK_ERROR_TOO_MANY_OBJECTS,
+        VK_ERROR_FORMAT_NOT_SUPPORTED,
+        VK_ERROR_FRAGMENTED_POOL,
+        VK_ERROR_UNKNOWN,
+        => error.UnsupportedFeature,
         VK_ERROR_OUT_OF_DATE_KHR => error.SurfaceUnavailable,
         else => error.InvalidState,
     };

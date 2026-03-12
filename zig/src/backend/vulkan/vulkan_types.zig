@@ -30,6 +30,9 @@ pub const VkDescriptorSet = u64;
 pub const VkImage = u64;
 pub const VkImageView = u64;
 pub const VkSemaphore = u64;
+pub const VkRenderPass = u64;
+pub const VkFramebuffer = u64;
+pub const VkSampler = u64;
 pub const VkSurfaceKHR = u64;
 pub const VkSwapchainKHR = u64;
 

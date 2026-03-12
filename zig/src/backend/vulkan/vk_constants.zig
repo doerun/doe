@@ -30,6 +30,9 @@ pub const VkDescriptorPool = vk.VkDescriptorPool;
 pub const VkDescriptorSet = vk.VkDescriptorSet;
 pub const VkImage = vk.VkImage;
 pub const VkImageView = vk.VkImageView;
+pub const VkRenderPass = vk.VkRenderPass;
+pub const VkFramebuffer = vk.VkFramebuffer;
+pub const VkSampler = vk.VkSampler;
 pub const VK_NULL_U64 = vk.VK_NULL_U64;
 pub const VkAllocationCallbacks = vk.VkAllocationCallbacks;
 
@@ -72,10 +75,14 @@ pub const VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: u32 = 0x00000001;
 pub const VK_PIPELINE_BIND_POINT_COMPUTE: i32 = 1;
 
 // --- Shader and pipeline stage bits ---
+pub const VK_SHADER_STAGE_VERTEX_BIT: u32 = 0x00000001;
+pub const VK_SHADER_STAGE_FRAGMENT_BIT: u32 = 0x00000010;
 pub const VK_SHADER_STAGE_COMPUTE_BIT: u32 = 0x00000020;
 pub const VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT: u32 = 0x00000001;
+pub const VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT: u32 = 0x00000400;
 pub const VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT: u32 = 0x00000800;
 pub const VK_PIPELINE_STAGE_TRANSFER_BIT: u32 = 0x00001000;
+pub const VK_PIPELINE_BIND_POINT_GRAPHICS: i32 = 0;
 
 // --- Query ---
 pub const VK_QUERY_TYPE_TIMESTAMP: u32 = 2;
@@ -87,12 +94,15 @@ pub const VK_BUFFER_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
 pub const VK_BUFFER_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
 pub const VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT: u32 = 0x00000010;
 pub const VK_BUFFER_USAGE_STORAGE_BUFFER_BIT: u32 = 0x00000020;
+pub const VK_BUFFER_USAGE_INDEX_BUFFER_BIT: u32 = 0x00000040;
+pub const VK_BUFFER_USAGE_VERTEX_BUFFER_BIT: u32 = 0x00000080;
 
 // --- Image usage ---
 pub const VK_IMAGE_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
 pub const VK_IMAGE_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
 pub const VK_IMAGE_USAGE_SAMPLED_BIT: u32 = 0x00000004;
 pub const VK_IMAGE_USAGE_STORAGE_BIT: u32 = 0x00000008;
+pub const VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT: u32 = 0x00000010;
 
 // --- Memory and sharing ---
 pub const VK_SHARING_MODE_EXCLUSIVE: i32 = 0;
@@ -103,6 +113,8 @@ pub const VK_MEMORY_PROPERTY_HOST_COHERENT_BIT: u32 = 0x00000004;
 // --- Access flags ---
 pub const VK_ACCESS_SHADER_READ_BIT: u32 = 0x00000020;
 pub const VK_ACCESS_SHADER_WRITE_BIT: u32 = 0x00000040;
+pub const VK_ACCESS_COLOR_ATTACHMENT_READ_BIT: u32 = 0x00000080;
+pub const VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT: u32 = 0x00000100;
 pub const VK_ACCESS_TRANSFER_WRITE_BIT: u32 = 0x00001000;
 
 // --- Descriptor types ---
@@ -120,6 +132,7 @@ pub const VK_IMAGE_VIEW_TYPE_2D: u32 = 1;
 pub const VK_IMAGE_TILING_OPTIMAL: u32 = 0;
 pub const VK_IMAGE_LAYOUT_UNDEFINED: u32 = 0;
 pub const VK_IMAGE_LAYOUT_GENERAL: u32 = 1;
+pub const VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: u32 = 2;
 pub const VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: u32 = 7;
 pub const VK_IMAGE_ASPECT_COLOR_BIT: u32 = 0x00000001;
 pub const VK_SAMPLE_COUNT_1_BIT: u32 = 0x00000001;
@@ -138,6 +151,63 @@ pub const VK_PRESENT_MODE_FIFO_KHR: u32 = 0x00000002;
 
 // --- Default frame latency for surface configuration ---
 pub const DEFAULT_SURFACE_MAX_FRAME_LATENCY: u32 = 2;
+
+// --- Render pass constants ---
+pub const VK_ATTACHMENT_LOAD_OP_CLEAR: u32 = 1;
+pub const VK_ATTACHMENT_LOAD_OP_DONT_CARE: u32 = 2;
+pub const VK_ATTACHMENT_STORE_OP_STORE: u32 = 0;
+pub const VK_ATTACHMENT_STORE_OP_DONT_CARE: u32 = 1;
+pub const VK_SUBPASS_EXTERNAL: u32 = std.math.maxInt(u32);
+pub const VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT: u32 = 0x00002000;
+
+// --- Graphics pipeline structure type IDs ---
+pub const VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO: i32 = 38;
+pub const VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO: i32 = 37;
+pub const VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO: i32 = 28 - 1; // sType = 27
+pub const VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO: i32 = 19;
+pub const VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO: i32 = 20;
+pub const VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO: i32 = 22;
+pub const VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO: i32 = 23;
+pub const VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO: i32 = 24;
+pub const VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO: i32 = 26;
+pub const VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO: i32 = 27;
+pub const VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO: i32 = 43;
+pub const VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO: i32 = 31;
+pub const VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO: i32 = 25;
+
+// --- Graphics topology and polygon mode ---
+pub const VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: u32 = 3;
+pub const VK_POLYGON_MODE_FILL: u32 = 0;
+pub const VK_CULL_MODE_NONE: u32 = 0;
+pub const VK_FRONT_FACE_COUNTER_CLOCKWISE: u32 = 0;
+pub const VK_LOGIC_OP_CLEAR: u32 = 0;
+
+// --- Color blend ---
+pub const VK_COLOR_COMPONENT_R_BIT: u32 = 0x00000001;
+pub const VK_COLOR_COMPONENT_G_BIT: u32 = 0x00000002;
+pub const VK_COLOR_COMPONENT_B_BIT: u32 = 0x00000004;
+pub const VK_COLOR_COMPONENT_A_BIT: u32 = 0x00000008;
+pub const VK_BLEND_FACTOR_ONE: u32 = 1;
+pub const VK_BLEND_FACTOR_ZERO: u32 = 0;
+pub const VK_BLEND_OP_ADD: u32 = 0;
+
+// --- Dynamic state ---
+pub const VK_DYNAMIC_STATE_VIEWPORT: u32 = 0;
+pub const VK_DYNAMIC_STATE_SCISSOR: u32 = 1;
+
+// --- Sampler constants ---
+pub const VK_FILTER_NEAREST: u32 = 0;
+pub const VK_SAMPLER_MIPMAP_MODE_NEAREST: u32 = 0;
+pub const VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE: u32 = 2;
+pub const VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK: u32 = 0;
+pub const VK_COMPARE_OP_NEVER: u32 = 0;
+
+// --- Index type ---
+pub const VK_INDEX_TYPE_UINT16: u32 = 0;
+pub const VK_INDEX_TYPE_UINT32: u32 = 1;
+
+// --- Descriptor type for combined image sampler ---
+pub const VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: u32 = 1;
 
 // --- Extern struct types ---
 
