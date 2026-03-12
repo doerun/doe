@@ -26,7 +26,7 @@ Each tier is additive: doe-runtime includes all doe-core commitments; fawn-brows
 
 Headless compute, benchmarking, and evidence infrastructure via Node/Bun/CLI.
 
-### Deployment Surface
+### Deployment surface
 
 - `@simulatte/webgpu` (Node runtime, Bun FFI, CLI)
 - `doe-zig-runtime` CLI binary
@@ -55,7 +55,7 @@ CLI tools:
 | `fawn-webgpu-bench` | Required |
 | `fawn-webgpu-compare` | Required |
 
-### Not Supported
+### Not supported
 
 - Full browser-parity `navigator.gpu` object model emulation
 - Full WebGPU enum surface (only constants required by real integrations)
@@ -64,7 +64,7 @@ CLI tools:
 - npm `webgpu` drop-in compatibility guarantee for arbitrary packages
 - Doe-native Bun FFI callback trampoline for `wgpuInstanceRequestAdapter`/`wgpuAdapterRequestDevice` (in progress)
 
-### Required Gates
+### Required gates
 
 | Gate | Mode | Script |
 |------|------|--------|
@@ -75,20 +75,20 @@ CLI tools:
 | Claim | Blocking for claim artifacts | `bench/claim_gate.py` |
 | Performance | Advisory | `gates.json` ratchet |
 
-### Conformance Requirements
+### Conformance requirements
 
 - No CTS publication requirement.
 - Correctness is validated by internal trace replay and comparability gates, not external CTS.
 - Behavioral correctness for supported operations (buffer upload, copy, barrier, dispatch, render) must pass internal gate suite.
 
-### SLA / Support Commitments
+### SLA / support commitments
 
 - Artifact reproducibility: any published benchmark artifact must be reproducible from the same inputs, config, and runtime version.
 - Gate stability: blocking gates must not regress (pass→fail) without a tracked config or code change.
 - API stability: `@simulatte/webgpu` API contract v1 surface is stable; breaking changes require version bump.
 - No uptime/availability SLA (headless tooling, not a service).
 
-### Allowed Marketing Claims
+### Allowed marketing claims
 
 | Claim | Allowed | Condition |
 |-------|---------|-----------|
@@ -108,7 +108,7 @@ CLI tools:
 
 Drop-in native WebGPU runtime for applications, engines, and embedded systems. Replaces Dawn or wgpu as the `webgpu.h` provider.
 
-### Deployment Surface
+### Deployment surface
 
 - `libwebgpu_doe.so` / `libwebgpu_doe.dylib` as shared library
 - Static linking for embedded targets
@@ -131,7 +131,7 @@ All of doe-core, plus:
 | Command encoding | Required | Full `GPUCommandEncoder` surface |
 | Queue operations | Required | Submit, writeBuffer, writeTexture, onSubmittedWorkDone |
 
-### Expanded Scope vs doe-core
+### Expanded scope vs doe-core
 
 | Capability | doe-core | doe-runtime |
 |-----------|----------|-------------|
@@ -143,13 +143,13 @@ All of doe-core, plus:
 | Device lost events | Not required | Required |
 | Shader module creation | Via CLI | In-process via `webgpu.h` |
 
-### Not Supported
+### Not supported
 
 - Browser-specific presentation integration (swapchain is native-window, not `GPUCanvasContext`)
 - Chromium GPU process integration
 - Browser security sandbox enforcement (that is fawn-browser)
 
-### Required Gates
+### Required gates
 
 All doe-core gates, plus:
 
@@ -162,13 +162,13 @@ All doe-core gates, plus:
 | Timing policy | Blocking per backend | Metal: `--with-metal-timing-policy-gate`; Vulkan: `--with-vulkan-timing-policy-gate` |
 | Shader artifact | Blocking | `--with-shader-artifact-gate` |
 
-### Conformance Requirements
+### Conformance requirements
 
 - **CTS subset publication required.** Select a meaningful CTS subset covering implemented operations. Publish pass/fail counts per backend per release. Track trend.
 - **Minimum pass rate target:** To be established after first CTS run. Initial publication of any number (even low) is required; trend direction matters more than absolute value.
 - **Regression policy:** CTS pass rate must not regress between releases. Any regression blocks release until fixed or explicitly waived with tracking in `status.md`.
 
-### SLA / Support Commitments
+### SLA / support commitments
 
 All doe-core commitments, plus:
 
@@ -178,7 +178,7 @@ All doe-core commitments, plus:
 - Conformance trend: CTS subset results published per release.
 - Bug response: issues with reproducible trace artifacts get priority triage.
 
-### Allowed Marketing Claims
+### Allowed marketing claims
 
 All doe-core claims, plus:
 
@@ -200,7 +200,7 @@ All doe-core claims, plus:
 
 Managed Chromium distribution with Doe as the WebGPU runtime. Deployable as an enterprise/regulated browser product.
 
-### Deployment Surface
+### Deployment surface
 
 - Chromium fork binary (macOS, Linux, Windows)
 - Doe integrated as `--use-webgpu-runtime=doe`
@@ -217,7 +217,7 @@ All of doe-runtime, plus:
 | Chromium GPU process integration | Required | Doe runs in GPU process with sandbox |
 | Chromium flags | Required | `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path` |
 
-### Expanded Scope vs doe-runtime
+### Expanded scope vs doe-runtime
 
 | Capability | doe-runtime | fawn-browser |
 |-----------|-------------|--------------|
@@ -228,13 +228,13 @@ All of doe-runtime, plus:
 | Upstream rebase | Not applicable | Required cadence |
 | Rollback to Dawn | Explicit lane/config selection only (no runtime override switch) | Managed, policy-driven |
 
-### Not Supported at Launch
+### Not supported at launch
 
 - Full WebGPU spec conformance parity with Chrome/Dawn (may lag on edge cases)
 - WebGPU extensions not in `webgpu.h` core
 - WebCodecs GPU integration (future)
 
-### Required Gates
+### Required gates
 
 All doe-runtime gates, plus:
 
@@ -245,7 +245,7 @@ All doe-runtime gates, plus:
 | Claim rehearsal | Required for release claims | `bench/build_claim_rehearsal_artifacts.py` |
 | Substantiation | Required for trend publication | `bench/run_release_claim_windows.py` |
 
-### Conformance Requirements
+### Conformance requirements
 
 All doe-runtime requirements, plus:
 
@@ -253,7 +253,7 @@ All doe-runtime requirements, plus:
 - **Browser smoke tests:** Standard WebGPU samples (rotating cube, compute boids, deferred rendering) must render correctly in Fawn.
 - **Regression gate:** No CTS regression and no browser smoke test regression between releases.
 
-### Operational Commitments
+### Operational commitments
 
 | Commitment | Target | Notes |
 |-----------|--------|-------|
@@ -263,7 +263,7 @@ All doe-runtime requirements, plus:
 | Diff size tracking | Published per release | Fawn-vs-upstream Chromium diff LOC tracked; growing diff requires justification |
 | Release cadence | Monthly minimum, aligned with Chrome stable | Hotfix releases for security within SLA |
 
-### Fork Maintenance Contracts
+### Fork maintenance contracts
 
 | Area | Contract |
 |------|----------|
@@ -272,7 +272,7 @@ All doe-runtime requirements, plus:
 | Diff ceiling | If Fawn-vs-upstream diff exceeds 50K LOC (excluding `third_party/dawn/` replacement), trigger architectural review to re-isolate. |
 | Security audit | Doe runtime code in GPU process is in-scope for security review. Sandbox boundary behavior must match Dawn's guarantees or explicitly document deviations. |
 
-### Allowed Marketing Claims
+### Allowed marketing claims
 
 All doe-runtime claims, plus:
 
@@ -288,7 +288,7 @@ All doe-runtime claims, plus:
 
 ---
 
-## Tier Progression
+## Tier progression
 
 ```
 doe-core ──────────► doe-runtime ──────────► fawn-browser
@@ -308,7 +308,7 @@ doe-core ──────────► doe-runtime ────────�
   AI workload integration   Native app developers   Healthcare/finance
 ```
 
-### Promotion Criteria
+### Promotion criteria
 
 **doe-core → doe-runtime:**
 
@@ -330,7 +330,7 @@ doe-core ──────────► doe-runtime ────────�
 
 ---
 
-## Claim Discipline by Tier
+## Claim discipline by tier
 
 The claim discipline rules from the positioning report apply universally, but the *scope* of allowed claims differs by tier:
 
@@ -362,7 +362,7 @@ AI workload stacks can ship value today on stock WebGPU (no Doe dependency). The
 
 ---
 
-## Current Status (2026-03-01)
+## Current status (2026-03-01)
 
 | Tier | Status | Blocking Gaps |
 |------|--------|--------------|

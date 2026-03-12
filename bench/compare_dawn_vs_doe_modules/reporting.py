@@ -6,11 +6,25 @@ import statistics
 from typing import Any
 
 
+NS_PER_MS: float = 1_000_000.0
+
+
 def safe_float(value: Any) -> float | None:
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError):
         return None
+    if parsed != parsed:  # NaN
+        return None
+    return parsed
+
+
+def safe_int(value: Any, default: int = 0) -> int:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    return default
 
 
 def parse_int(value: Any) -> int | None:
@@ -26,6 +40,10 @@ def parse_int(value: Any) -> int | None:
             except ValueError:
                 return None
     return None
+
+
+def valid_sync_mode(value: Any) -> bool:
+    return isinstance(value, str) and value in {"per-command", "deferred"}
 
 
 def format_stats(values: list[float]) -> dict[str, float]:

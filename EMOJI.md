@@ -1,10 +1,10 @@
-# Emoji Policy: STRICT NO EMOJIS
+# Emoji policy: STRICT NO EMOJIS
 
 This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visual indicators.
 
-## Approved Unicode Symbols
+## Approved Unicode symbols
 
-### Status & System
+### Status & system
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -22,7 +22,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ☁ | U+2601 | `&#9729;` | Cloud, network |
 | ☨ | U+2628 | `&#9768;` | Debug |
 
-### File System & Data
+### File system & data
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -39,7 +39,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ⛝ | U+26DD | `&#9949;` | Package |
 | ☙ | U+2619 | `&#9753;` | Text, log |
 
-### Actions & Controls
+### Actions & controls
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -63,7 +63,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ⏎ | U+23CE | `&#9166;` | Submit, enter, return |
 | ⎋ | U+238B | `&#9099;` | Escape, back |
 
-### Hardware & Facility
+### Hardware & facility
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -76,7 +76,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ⚗ | U+2697 | `&#9879;` | Formula, concentrate |
 | ⚖ | U+2696 | `&#9878;` | Cost, pricing, scales |
 
-### Brackets & Delimiters
+### Brackets & delimiters
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -88,7 +88,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ⸢ ⸣ | U+2E22 U+2E23 | `&#11810;` `&#11811;` | Top half brackets |
 | ⸤ ⸥ | U+2E24 U+2E25 | `&#11812;` `&#11813;` | Bottom half brackets |
 
-### Mathematical & Logic
+### Mathematical & logic
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -107,7 +107,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ⊢ | U+22A2 | `&#8866;` | Proves, entails |
 | ⊨ | U+22A8 | `&#8872;` | Models, satisfies |
 
-### Block Elements & Shading
+### Block elements & shading
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -123,7 +123,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ▊ | U+258A | `&#9610;` | ¾ block |
 | ▉ | U+2589 | `&#9609;` | ⅞ block |
 
-### Keyboard & Technical
+### Keyboard & technical
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -146,7 +146,7 @@ This codebase follows a **strict no-emoji policy**. Use Unicode symbols for visu
 | ⇄ | U+21C4 | `&#8644;` | Swap, bidirectional |
 | ↕ | U+2195 | `&#8597;` | Resize vertical, up-down |
 
-### Legal & Identity
+### Legal & identity
 
 | Symbol | Code | HTML Entity | Usage |
 |--------|------|-------------|-------|
@@ -195,7 +195,7 @@ In UI:
 [●] In progress
 ```
 
-## Why No Emojis?
+## Why no emojis?
 
 1. **Terminal compatibility** - Unicode symbols render consistently
 2. **Professional appearance** - Cleaner, more technical aesthetic

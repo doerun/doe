@@ -90,3 +90,37 @@ pub fn map_vk_result(result: vk.VkResult) common_errors.BackendNativeError {
         else => error.InvalidState,
     };
 }
+
+const std = @import("std");
+
+test "check_vk succeeds on VK_SUCCESS" {
+    try check_vk(vk.VK_SUCCESS);
+}
+
+test "check_vk returns error on failure code" {
+    const result = check_vk(vk.VK_ERROR_TOO_MANY_OBJECTS);
+    try std.testing.expectEqual(error.UnsupportedFeature, result);
+}
+
+test "map_vk_result maps TOO_MANY_OBJECTS to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_TOO_MANY_OBJECTS));
+}
+
+test "map_vk_result maps FORMAT_NOT_SUPPORTED to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_FORMAT_NOT_SUPPORTED));
+}
+
+test "map_vk_result maps FRAGMENTED_POOL to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_FRAGMENTED_POOL));
+}
+
+test "map_vk_result maps UNKNOWN to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_UNKNOWN));
+}
+
+test "map_vk_result maps other errors to InvalidState" {
+    // VK_ERROR_OUT_OF_HOST_MEMORY = -1, not in the UnsupportedFeature set
+    try std.testing.expectEqual(error.InvalidState, map_vk_result(-1));
+    // VK_ERROR_OUT_OF_DEVICE_MEMORY = -2
+    try std.testing.expectEqual(error.InvalidState, map_vk_result(-2));
+}

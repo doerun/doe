@@ -1,6 +1,6 @@
 # Fawn Process
 
-## 1. Pipeline: Mine -> Normalize -> Verify -> Bind -> Gate
+## 1. Pipeline: Mine -> Normalize -> Verify -> Bind -> Gate -> Benchmark -> Release
 
 1. Intake
 - pull upstream sources

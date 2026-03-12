@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-
-def valid_sync_mode(value: Any) -> bool:
-    return isinstance(value, str) and value in {"per-command", "deferred"}
+from compare_dawn_vs_doe_modules.reporting import valid_sync_mode
 
 
 def evaluate_sync_meta(trace_meta: dict[str, Any], expected: str) -> list[str]:

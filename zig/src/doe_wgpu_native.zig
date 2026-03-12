@@ -506,9 +506,6 @@ pub export fn doeNativeBufferGetMappedRange(buf_raw: ?*anyopaque, offset: usize,
 
 // Shader module and compute pipeline creation in doe_shader_native.zig.
 const shader = @import("doe_shader_native.zig");
-comptime {
-    _ = shader;
-}
 pub const doeNativeDeviceCreateShaderModule = shader.doeNativeDeviceCreateShaderModule;
 pub const doeNativeShaderModuleRelease = shader.doeNativeShaderModuleRelease;
 pub const doeNativeDeviceCreateComputePipeline = shader.doeNativeDeviceCreateComputePipeline;
@@ -516,9 +513,6 @@ pub const doeNativeComputePipelineRelease = shader.doeNativeComputePipelineRelea
 
 // Bind group, bind group layout, and pipeline layout exports are in doe_bind_group_native.zig.
 const bind_group = @import("doe_bind_group_native.zig");
-comptime {
-    _ = bind_group;
-}
 pub const doeNativeDeviceCreateBindGroupLayout = bind_group.doeNativeDeviceCreateBindGroupLayout;
 pub const doeNativeBindGroupLayoutRelease = bind_group.doeNativeBindGroupLayoutRelease;
 pub const doeNativeDeviceCreateBindGroup = bind_group.doeNativeDeviceCreateBindGroup;
@@ -679,9 +673,6 @@ pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
 }
 
 const compute_fast = @import("doe_compute_fast.zig");
-comptime {
-    _ = compute_fast;
-}
 
 pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque, offset: u64, data: [*]const u8, size: usize) callconv(.c) void {
     _ = q_raw;
@@ -701,9 +692,6 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
 
 // Texture, Sampler, Render Pipeline, Render Pass exports are in doe_render_native.zig.
 const render = @import("doe_render_native.zig");
-comptime {
-    _ = render;
-}
 pub const doeNativeDeviceCreateTexture = render.doeNativeDeviceCreateTexture;
 pub const doeNativeTextureCreateView = render.doeNativeTextureCreateView;
 pub const doeNativeTextureRelease = render.doeNativeTextureRelease;
@@ -728,9 +716,6 @@ pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.
 
 // Compute extensions (getBindGroupLayout, dispatchIndirect) in doe_compute_ext_native.zig.
 const compute_ext = @import("doe_compute_ext_native.zig");
-comptime {
-    _ = compute_ext;
-}
 pub const doeNativeComputePassSetPipeline = compute_ext.doeNativeComputePassSetPipeline;
 pub const doeNativeComputePassSetBindGroup = compute_ext.doeNativeComputePassSetBindGroup;
 pub const doeNativeComputePassDispatch = compute_ext.doeNativeComputePassDispatch;
@@ -741,13 +726,19 @@ pub const doeNativeComputePassDispatchIndirect = compute_ext.doeNativeComputePas
 
 // Feature queries and device limits are in doe_device_caps.zig.
 const caps = @import("doe_device_caps.zig");
-comptime {
-    _ = caps;
-}
 pub const doeNativeAdapterHasFeature = caps.doeNativeAdapterHasFeature;
 pub const doeNativeDeviceHasFeature = caps.doeNativeDeviceHasFeature;
 pub const doeNativeDeviceGetLimits = caps.doeNativeDeviceGetLimits;
 pub const doeNativeAdapterGetLimits = caps.doeNativeAdapterGetLimits;
+
+comptime {
+    _ = shader;
+    _ = bind_group;
+    _ = compute_fast;
+    _ = render;
+    _ = compute_ext;
+    _ = caps;
+}
 
 // Instance process events (no-op for sync).
 pub export fn doeNativeInstanceProcessEvents(raw: ?*anyopaque) callconv(.c) void {

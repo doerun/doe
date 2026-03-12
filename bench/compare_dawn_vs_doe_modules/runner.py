@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from compare_dawn_vs_doe_modules.reporting import NS_PER_MS, parse_int, safe_float
 from compare_dawn_vs_doe_modules.timing_selection import (
     pick_measured_timing_ms,
     maybe_adjust_timing_for_ignored_first_ops,
@@ -56,26 +57,6 @@ def collect_trace_meta_hashes(command_samples: list[dict[str, Any]]) -> list[dic
         by_path[path] = file_sha256(trace_meta_path)
     return [{"path": path, "sha256": by_path[path]} for path in sorted(by_path.keys())]
 
-def safe_float(value: Any) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-def parse_int(value: Any) -> int | None:
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str):
-        text = value.strip()
-        if text.isdigit():
-            try:
-                return int(text)
-            except ValueError:
-                return None
-    return None
-
 def dawn_metric_median_ms(trace_meta: dict[str, Any], metric_name: str) -> float | None:
     medians = trace_meta.get("dawnMetricMediansMs")
     if not isinstance(medians, dict):
@@ -97,7 +78,7 @@ def extract_timing_metrics_ms(
 
     fawn_gpu_total_ns = int(trace_meta.get("executionGpuTimestampTotalNs") or 0)
     fawn_gpu_ms = (
-        float(fawn_gpu_total_ns) / 1_000_000.0
+        float(fawn_gpu_total_ns) / NS_PER_MS
         if fawn_gpu_total_ns > 0
         else None
     )

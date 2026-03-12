@@ -5,6 +5,7 @@ from __future__ import annotations
 import statistics
 from typing import Any
 
+from compare_dawn_vs_doe_modules.reporting import NS_PER_MS, safe_float
 from compare_dawn_vs_doe_modules.timing_selection import canonical_timing_source
 
 
@@ -15,16 +16,6 @@ OPERATION_TIMING_SOURCES = {
     "doe-execution-dispatch-window-ns",
     "doe-execution-gpu-timestamp-ns",
 }
-
-
-def safe_float(value: Any) -> float | None:
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError):
-        return None
-    if parsed != parsed:
-        return None
-    return parsed
 
 
 def _raw_operation_total_ms(sample: dict[str, Any]) -> float | None:
@@ -47,7 +38,7 @@ def _raw_operation_total_ms(sample: dict[str, Any]) -> float | None:
             return adjusted_ms
         average_ns = safe_float(timing.get("executionRowOperationTotalAverageNs"))
         if average_ns is not None and average_ns > 0.0:
-            return average_ns / 1_000_000.0
+            return average_ns / NS_PER_MS
         row_total_ns = safe_float(timing.get("executionRowTotalNs"))
         row_count = safe_float(timing.get("executionRowDurationCount"))
         if (
@@ -56,7 +47,7 @@ def _raw_operation_total_ms(sample: dict[str, Any]) -> float | None:
             and row_count is not None
             and row_count > 0.0
         ):
-            return (row_total_ns / row_count) / 1_000_000.0
+            return (row_total_ns / row_count) / NS_PER_MS
 
     trace_meta_ms = safe_float(timing.get("traceMetaTimingMs"))
     if trace_meta_ms is not None and trace_meta_ms > 0.0:

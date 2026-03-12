@@ -50,3 +50,37 @@ pub fn is_affected_render_format(format: types.WGPUTextureFormat) bool {
     return format == model.WGPUTextureFormat_R8Unorm or
         format == model.WGPUTextureFormat_RG8Unorm;
 }
+
+const testing = std.testing;
+
+test "is_affected_render_format returns true for R8Unorm" {
+    try testing.expect(is_affected_render_format(model.WGPUTextureFormat_R8Unorm));
+}
+
+test "is_affected_render_format returns true for RG8Unorm" {
+    try testing.expect(is_affected_render_format(model.WGPUTextureFormat_RG8Unorm));
+}
+
+test "is_affected_render_format returns false for RGBA8Unorm" {
+    try testing.expect(!is_affected_render_format(model.WGPUTextureFormat_RGBA8Unorm));
+}
+
+test "is_affected_render_format returns false for BGRA8Unorm" {
+    try testing.expect(!is_affected_render_format(model.WGPUTextureFormat_BGRA8Unorm));
+}
+
+test "is_affected_render_format returns false for Undefined" {
+    try testing.expect(!is_affected_render_format(model.WGPUTextureFormat_Undefined));
+}
+
+test "RENDER_LOAD_OP_CLEAR is nonzero" {
+    try testing.expect(RENDER_LOAD_OP_CLEAR != 0);
+}
+
+test "RENDER_STORE_OP_STORE is nonzero" {
+    try testing.expect(RENDER_STORE_OP_STORE != 0);
+}
+
+test "RENDER_MULTISAMPLE_MASK_ALL is 0xFFFFFFFF" {
+    try testing.expectEqual(@as(u32, 0xFFFFFFFF), RENDER_MULTISAMPLE_MASK_ALL);
+}

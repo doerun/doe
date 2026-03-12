@@ -417,3 +417,141 @@ pub fn executionStatusName(status: ExecutionStatus) []const u8 {
         .@"error" => "error",
     };
 }
+
+// --- Inline tests ---
+
+const testing = std.testing;
+
+test "executionModeName returns correct strings for all modes" {
+    try testing.expectEqualStrings("trace", executionModeName(.trace));
+    try testing.expectEqualStrings("webgpu-ffi", executionModeName(.native));
+}
+
+test "executionStatusName returns correct strings for all statuses" {
+    try testing.expectEqualStrings("skipped", executionStatusName(.skipped));
+    try testing.expectEqualStrings("ok", executionStatusName(.ok));
+    try testing.expectEqualStrings("unsupported", executionStatusName(.unsupported));
+    try testing.expectEqualStrings("error", executionStatusName(.@"error"));
+}
+
+test "parseBackend accepts valid modes and rejects unknown input" {
+    try testing.expectEqual(BackendMode.trace, parseBackend("trace").?);
+    try testing.expectEqual(BackendMode.native, parseBackend("native").?);
+    try testing.expectEqual(BackendMode.native, parseBackend("webgpu").?);
+    // case-insensitive
+    try testing.expectEqual(BackendMode.trace, parseBackend("TRACE").?);
+    try testing.expectEqual(BackendMode.native, parseBackend("Native").?);
+    try testing.expectEqual(BackendMode.native, parseBackend("WebGPU").?);
+    // unknown returns null
+    try testing.expect(parseBackend("opengl") == null);
+    try testing.expect(parseBackend("") == null);
+}
+
+test "parseUploadBufferUsage accepts valid modes and rejects unknown input" {
+    try testing.expectEqual(UploadBufferUsageMode.copy_dst_copy_src, parseUploadBufferUsage("copy-dst-copy-src").?);
+    try testing.expectEqual(UploadBufferUsageMode.copy_dst, parseUploadBufferUsage("copy-dst").?);
+    // case-insensitive
+    try testing.expectEqual(UploadBufferUsageMode.copy_dst, parseUploadBufferUsage("COPY-DST").?);
+    // unknown
+    try testing.expect(parseUploadBufferUsage("map-write") == null);
+    try testing.expect(parseUploadBufferUsage("") == null);
+}
+
+test "parseQueueWaitMode accepts valid modes and rejects unknown input" {
+    try testing.expectEqual(QueueWaitMode.process_events, parseQueueWaitMode("process-events").?);
+    try testing.expectEqual(QueueWaitMode.wait_any, parseQueueWaitMode("wait-any").?);
+    // case-insensitive
+    try testing.expectEqual(QueueWaitMode.wait_any, parseQueueWaitMode("Wait-Any").?);
+    // unknown
+    try testing.expect(parseQueueWaitMode("spin") == null);
+}
+
+test "parseQueueSyncMode accepts valid modes and rejects unknown input" {
+    try testing.expectEqual(QueueSyncMode.per_command, parseQueueSyncMode("per-command").?);
+    try testing.expectEqual(QueueSyncMode.deferred, parseQueueSyncMode("deferred").?);
+    // case-insensitive
+    try testing.expectEqual(QueueSyncMode.deferred, parseQueueSyncMode("DEFERRED").?);
+    // unknown
+    try testing.expect(parseQueueSyncMode("batch") == null);
+}
+
+test "parseGpuTimestampMode accepts valid modes and rejects unknown input" {
+    try testing.expectEqual(GpuTimestampMode.auto, parseGpuTimestampMode("auto").?);
+    try testing.expectEqual(GpuTimestampMode.off, parseGpuTimestampMode("off").?);
+    try testing.expectEqual(GpuTimestampMode.require, parseGpuTimestampMode("require").?);
+    // case-insensitive
+    try testing.expectEqual(GpuTimestampMode.require, parseGpuTimestampMode("REQUIRE").?);
+    // unknown
+    try testing.expect(parseGpuTimestampMode("maybe") == null);
+}
+
+test "parseBackendLane accepts snake_case and kebab-case variants" {
+    // metal lanes
+    try testing.expectEqual(backend_policy.BackendLane.metal_doe_app, parseBackendLane("metal_doe_app").?);
+    try testing.expectEqual(backend_policy.BackendLane.metal_doe_app, parseBackendLane("metal-doe-app").?);
+    try testing.expectEqual(backend_policy.BackendLane.metal_dawn_release, parseBackendLane("metal-dawn-release").?);
+    try testing.expectEqual(backend_policy.BackendLane.metal_doe_comparable, parseBackendLane("metal_doe_comparable").?);
+    // vulkan lanes
+    try testing.expectEqual(backend_policy.BackendLane.vulkan_doe_app, parseBackendLane("vulkan-doe-app").?);
+    try testing.expectEqual(backend_policy.BackendLane.vulkan_dawn_release, parseBackendLane("vulkan-dawn-release").?);
+    // d3d12 lanes
+    try testing.expectEqual(backend_policy.BackendLane.d3d12_doe_app, parseBackendLane("d3d12_doe_app").?);
+    try testing.expectEqual(backend_policy.BackendLane.d3d12_dawn_release, parseBackendLane("d3d12-dawn-release").?);
+    // unknown
+    try testing.expect(parseBackendLane("opengl_doe_app") == null);
+    try testing.expect(parseBackendLane("") == null);
+}
+
+test "backendLaneName round-trips with parseBackendLane for all lanes" {
+    const lanes = [_]backend_policy.BackendLane{
+        .metal_doe_app,
+        .metal_doe_directional,
+        .metal_doe_comparable,
+        .metal_doe_release,
+        .metal_dawn_release,
+        .vulkan_doe_app,
+        .vulkan_doe_comparable,
+        .vulkan_doe_release,
+        .vulkan_dawn_release,
+        .d3d12_doe_app,
+        .d3d12_doe_directional,
+        .d3d12_doe_comparable,
+        .d3d12_doe_release,
+        .d3d12_dawn_release,
+    };
+    for (lanes) |lane| {
+        const name = backendLaneName(lane);
+        const parsed = parseBackendLane(name);
+        try testing.expect(parsed != null);
+        try testing.expectEqual(lane, parsed.?);
+    }
+}
+
+test "defaultBackendLane selects correct lane per API" {
+    const base_ver = model.SemVer{ .major = 1, .minor = 0, .patch = 0 };
+    const metal_profile = model.DeviceProfile{
+        .vendor = "apple",
+        .api = .metal,
+        .driver_version = base_ver,
+    };
+    const vulkan_profile = model.DeviceProfile{
+        .vendor = "nvidia",
+        .api = .vulkan,
+        .driver_version = base_ver,
+    };
+    const d3d12_profile = model.DeviceProfile{
+        .vendor = "amd",
+        .api = .d3d12,
+        .driver_version = base_ver,
+    };
+    const webgpu_profile = model.DeviceProfile{
+        .vendor = "generic",
+        .api = .webgpu,
+        .driver_version = base_ver,
+    };
+    try testing.expectEqual(backend_policy.BackendLane.metal_doe_app, defaultBackendLane(metal_profile));
+    try testing.expectEqual(backend_policy.BackendLane.d3d12_doe_app, defaultBackendLane(d3d12_profile));
+    try testing.expectEqual(backend_policy.BackendLane.vulkan_doe_app, defaultBackendLane(vulkan_profile));
+    // webgpu falls to the else branch -> vulkan_doe_app
+    try testing.expectEqual(backend_policy.BackendLane.vulkan_doe_app, defaultBackendLane(webgpu_profile));
+}

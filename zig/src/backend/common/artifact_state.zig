@@ -44,3 +44,109 @@ pub fn persist_manifest_signature(
     persist_value(module_storage, module_len, module);
     persist_value(status_storage, status_len, status_code);
 }
+
+test "persist_value stores value and sets length" {
+    var storage: [64]u8 = undefined;
+    var len: usize = 0;
+    persist_value(&storage, &len, "hello");
+    try std.testing.expectEqual(@as(usize, 5), len);
+    try std.testing.expect(std.mem.eql(u8, storage[0..len], "hello"));
+}
+
+test "persist_value truncates when value exceeds storage" {
+    var storage: [4]u8 = undefined;
+    var len: usize = 99;
+    persist_value(&storage, &len, "too long for buffer");
+    try std.testing.expectEqual(@as(usize, 0), len);
+}
+
+test "manifest_signature_matches returns false when no last meta" {
+    const meta = artifact_meta.ArtifactMeta{
+        .backend_kind = .native_metal,
+        .timing_source = .gpu_timestamp,
+        .comparability = .strict,
+    };
+    try std.testing.expect(!manifest_signature_matches(
+        null,
+        "mod",
+        "ok",
+        "mod",
+        meta,
+        "ok",
+    ));
+}
+
+test "manifest_signature_matches returns false on module mismatch" {
+    const meta = artifact_meta.ArtifactMeta{
+        .backend_kind = .native_metal,
+        .timing_source = .gpu_timestamp,
+        .comparability = .strict,
+    };
+    try std.testing.expect(!manifest_signature_matches(
+        meta,
+        "module_a",
+        "ok",
+        "module_b",
+        meta,
+        "ok",
+    ));
+}
+
+test "manifest_signature_matches returns true on full match" {
+    const meta = artifact_meta.ArtifactMeta{
+        .backend_kind = .native_vulkan,
+        .timing_source = .cpu_submit_wait,
+        .comparability = .directional,
+    };
+    try std.testing.expect(manifest_signature_matches(
+        meta,
+        "my_module",
+        "success",
+        "my_module",
+        meta,
+        "success",
+    ));
+}
+
+test "persist_manifest_signature round-trips with manifest_signature_matches" {
+    const meta = artifact_meta.ArtifactMeta{
+        .backend_kind = .native_metal,
+        .timing_source = .gpu_timestamp,
+        .comparability = .strict,
+    };
+    var last_meta: ?artifact_meta.ArtifactMeta = null;
+    var module_storage: [128]u8 = undefined;
+    var module_len: usize = 0;
+    var status_storage: [128]u8 = undefined;
+    var status_len: usize = 0;
+
+    persist_manifest_signature(
+        &last_meta,
+        &module_storage,
+        &module_len,
+        &status_storage,
+        &status_len,
+        "test_module",
+        meta,
+        "ok",
+    );
+
+    try std.testing.expect(manifest_signature_matches(
+        last_meta,
+        module_storage[0..module_len],
+        status_storage[0..status_len],
+        "test_module",
+        meta,
+        "ok",
+    ));
+
+    // Different module should not match
+    try std.testing.expect(!manifest_signature_matches(
+        last_meta,
+        module_storage[0..module_len],
+        status_storage[0..status_len],
+        "other_module",
+        meta,
+        "ok",
+    ));
+}

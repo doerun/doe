@@ -17,7 +17,7 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
 
     // Zig's strict parser crashes if the string has a trailing newline after the valid JSON array end.
     const cleanly_trimmed = std.mem.trimRight(u8, text, " \n\r\t\\n");
-    const parsed = try std.json.parseFromSliceLeaky([]const RawCommand, allocator, cleanly_trimmed, .{ 
+    const parsed = try std.json.parseFromSliceLeaky([]const RawCommand, allocator, cleanly_trimmed, .{
         .ignore_unknown_fields = true,
         .allocate = .alloc_always,
     });
@@ -567,4 +567,154 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     }
 
     return ParseError.UnknownCommandKind;
+}
+
+// --- inline tests ---
+
+fn testArena() std.heap.ArenaAllocator {
+    return std.heap.ArenaAllocator.init(std.testing.allocator);
+}
+
+test "parseCommands returns empty slice for empty JSON array" {
+    const result = try parseCommands(std.testing.allocator, "[]");
+    try std.testing.expectEqual(@as(usize, 0), result.len);
+}
+
+test "parseCommands returns empty slice for whitespace-padded empty array" {
+    const result = try parseCommands(std.testing.allocator, "  [  ]  \n");
+    try std.testing.expectEqual(@as(usize, 0), result.len);
+}
+
+test "parseCommands parses upload command with defaults" {
+    var arena = testArena();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const cmds = try parseCommands(alloc,
+        \\[{"command": "upload", "bytes": 1024}]
+    );
+    try std.testing.expectEqual(@as(usize, 1), cmds.len);
+    try std.testing.expectEqual(@as(usize, 1024), cmds[0].upload.bytes);
+    try std.testing.expectEqual(@as(u32, 4), cmds[0].upload.align_bytes);
+}
+
+test "parseCommands recognizes buffer_upload alias for upload" {
+    var arena = testArena();
+    defer arena.deinit();
+    const cmds = try parseCommands(arena.allocator(),
+        \\[{"command": "buffer_upload", "bytes": 512}]
+    );
+    try std.testing.expectEqual(@as(usize, 512), cmds[0].upload.bytes);
+}
+
+test "parseKind resolves command field" {
+    const raw = RawCommand{ .command = "barrier" };
+    try std.testing.expectEqual(NormalizedKind.barrier, try parseKind(raw));
+}
+
+test "parseKind resolves kind field" {
+    const raw = RawCommand{ .kind = "upload" };
+    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw));
+}
+
+test "parseKind resolves command_kind field" {
+    const raw = RawCommand{ .command_kind = "dispatch" };
+    try std.testing.expectEqual(NormalizedKind.dispatch, try parseKind(raw));
+}
+
+test "parseKind is case-insensitive" {
+    const raw = RawCommand{ .command = "UPLOAD" };
+    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw));
+}
+
+test "parseKind recognizes upload aliases" {
+    const raw_upload = RawCommand{ .command = "upload" };
+    const raw_buffer_upload = RawCommand{ .command = "buffer_upload" };
+    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw_upload));
+    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw_buffer_upload));
+}
+
+test "parseKind recognizes render_draw aliases" {
+    const aliases = [_][]const u8{ "render_draw", "draw", "draw_call", "draw_indexed" };
+    for (aliases) |alias| {
+        const raw = RawCommand{ .command = alias };
+        try std.testing.expectEqual(NormalizedKind.render_draw, try parseKind(raw));
+    }
+}
+
+test "parseKind recognizes copy aliases" {
+    const aliases = [_][]const u8{
+        "copy_buffer_to_texture",  "copy_texture",          "texture_copy",
+        "copy_texture_to_buffer",  "copy_buffer_to_buffer", "buffer_copy",
+        "copyBufferToTexture",     "copyTextureToBuffer",   "copyBufferToBuffer",
+        "copy_texture_to_texture",
+    };
+    for (aliases) |alias| {
+        const raw = RawCommand{ .command = alias };
+        try std.testing.expectEqual(NormalizedKind.copy, try parseKind(raw));
+    }
+}
+
+test "parseKind returns error for missing command kind" {
+    const raw = RawCommand{};
+    try std.testing.expectError(ParseError.MissingCommandKind, parseKind(raw));
+}
+
+test "parseKind returns error for unknown command kind" {
+    const raw = RawCommand{ .command = "nonexistent_command" };
+    try std.testing.expectError(ParseError.UnknownCommandKind, parseKind(raw));
+}
+
+test "parseCommands returns error for upload without bytes" {
+    var arena = testArena();
+    defer arena.deinit();
+    const result = parseCommands(arena.allocator(),
+        \\[{"command": "upload"}]
+    );
+    try std.testing.expectError(ParseError.InvalidCommandPayload, result);
+}
+
+test "parseCommands parses dispatch with workgroupCount array" {
+    var arena = testArena();
+    defer arena.deinit();
+    const cmds = try parseCommands(arena.allocator(),
+        \\[{"command": "dispatch", "workgroupCount": [8, 4, 2]}]
+    );
+    try std.testing.expectEqual(@as(u32, 8), cmds[0].dispatch.x);
+    try std.testing.expectEqual(@as(u32, 4), cmds[0].dispatch.y);
+    try std.testing.expectEqual(@as(u32, 2), cmds[0].dispatch.z);
+}
+
+test "parseCommands dispatch defaults to 1,1,1 when no dimensions given" {
+    var arena = testArena();
+    defer arena.deinit();
+    const cmds = try parseCommands(arena.allocator(),
+        \\[{"command": "dispatch"}]
+    );
+    try std.testing.expectEqual(@as(u32, 1), cmds[0].dispatch.x);
+    try std.testing.expectEqual(@as(u32, 1), cmds[0].dispatch.y);
+    try std.testing.expectEqual(@as(u32, 1), cmds[0].dispatch.z);
+}
+
+test "parseCommands parses map_async with default write mode" {
+    var arena = testArena();
+    defer arena.deinit();
+    const cmds = try parseCommands(arena.allocator(),
+        \\[{"command": "map_async", "bytes": 4096}]
+    );
+    try std.testing.expectEqual(@as(usize, 4096), cmds[0].map_async.bytes);
+    try std.testing.expectEqual(model.MapAsyncMode.write, cmds[0].map_async.mode);
+}
+
+test "parseCommands parses multiple heterogeneous commands" {
+    var arena = testArena();
+    defer arena.deinit();
+    const cmds = try parseCommands(arena.allocator(),
+        \\[{"command": "upload", "bytes": 100},
+        \\ {"command": "barrier"},
+        \\ {"command": "dispatch", "x": 2}]
+    );
+    try std.testing.expectEqual(@as(usize, 3), cmds.len);
+    try std.testing.expectEqual(@as(usize, 100), cmds[0].upload.bytes);
+    try std.testing.expectEqual(@as(u32, 0), cmds[1].barrier.dependency_count);
+    try std.testing.expectEqual(@as(u32, 2), cmds[2].dispatch.x);
 }

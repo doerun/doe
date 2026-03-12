@@ -324,6 +324,155 @@ pub fn printTraceLine(
     try writef(stdout, "}}\n", .{});
 }
 
+// --- Inline tests ---
+
+test "traceHashByte is deterministic for same inputs" {
+    const a = traceHashByte(0x9e3779b97f4a7c15, 42);
+    const b = traceHashByte(0x9e3779b97f4a7c15, 42);
+    try std.testing.expectEqual(a, b);
+}
+
+test "traceHashByte differs for different bytes" {
+    const a = traceHashByte(0x9e3779b97f4a7c15, 0);
+    const b = traceHashByte(0x9e3779b97f4a7c15, 1);
+    try std.testing.expect(a != b);
+}
+
+test "traceHashBytes produces chained result matching sequential traceHashByte" {
+    const input = "abc";
+    const chained = traceHashBytes(0x9e3779b97f4a7c15, input);
+    var manual: u64 = 0x9e3779b97f4a7c15;
+    manual = traceHashByte(manual, 'a');
+    manual = traceHashByte(manual, 'b');
+    manual = traceHashByte(manual, 'c');
+    try std.testing.expectEqual(manual, chained);
+}
+
+test "traceHashStr hashes null as single zero byte" {
+    const from_null = traceHashStr(0x9e3779b97f4a7c15, null);
+    const from_zero_byte = traceHashByte(0x9e3779b97f4a7c15, 0);
+    try std.testing.expectEqual(from_zero_byte, from_null);
+}
+
+test "traceHashStr with value differs from null" {
+    const from_null = traceHashStr(0x9e3779b97f4a7c15, null);
+    const from_value = traceHashStr(0x9e3779b97f4a7c15, "hello");
+    try std.testing.expect(from_null != from_value);
+}
+
+test "traceHashBool encodes true as 1 and false as 0" {
+    const from_true = traceHashBool(0x9e3779b97f4a7c15, true);
+    const from_false = traceHashBool(0x9e3779b97f4a7c15, false);
+    const from_byte_1 = traceHashByte(0x9e3779b97f4a7c15, 1);
+    const from_byte_0 = traceHashByte(0x9e3779b97f4a7c15, 0);
+    try std.testing.expectEqual(from_byte_1, from_true);
+    try std.testing.expectEqual(from_byte_0, from_false);
+}
+
+test "normalizeExecutionStatusCode lowercases and replaces non-alnum with underscores" {
+    var buf: [160]u8 = undefined;
+    const result = normalizeExecutionStatusCode("Hello World!", "fallback", &buf);
+    try std.testing.expectEqualStrings("hello_world", result);
+}
+
+test "normalizeExecutionStatusCode collapses consecutive separators" {
+    var buf: [160]u8 = undefined;
+    const result = normalizeExecutionStatusCode("a---b", "fallback", &buf);
+    try std.testing.expectEqualStrings("a_b", result);
+}
+
+test "normalizeExecutionStatusCode uses fallback when message is empty" {
+    var buf: [160]u8 = undefined;
+    const result = normalizeExecutionStatusCode("", "my_fallback", &buf);
+    try std.testing.expectEqualStrings("my_fallback", result);
+}
+
+test "normalizeExecutionStatusCode strips trailing underscores" {
+    var buf: [160]u8 = undefined;
+    const result = normalizeExecutionStatusCode("trailing!!!", "fb", &buf);
+    try std.testing.expectEqualStrings("trailing", result);
+}
+
+test "normalizeExecutionStatusCode returns fallback verbatim when all chars are separators" {
+    var buf: [160]u8 = undefined;
+    const result = normalizeExecutionStatusCode("!!!", "fallback_code", &buf);
+    try std.testing.expectEqualStrings("fallback_code", result);
+}
+
+test "actionName returns correct strings for all variants and null" {
+    try std.testing.expectEqualStrings("none", actionName(null));
+    try std.testing.expectEqualStrings("no_op", actionName(.no_op));
+    const toggle_action = model.QuirkAction{ .toggle = .{ .toggle_name = "test_toggle" } };
+    try std.testing.expectEqualStrings("toggle", actionName(toggle_action));
+}
+
+test "scopeName returns none for null and correct name for values" {
+    try std.testing.expectEqualStrings("none", scopeName(null));
+    try std.testing.expectEqualStrings("barrier", scopeName(.barrier));
+    try std.testing.expectEqualStrings("memory", scopeName(.memory));
+}
+
+test "safetyClassName returns none for null and correct name for values" {
+    try std.testing.expectEqualStrings("none", safetyClassName(null));
+    try std.testing.expectEqualStrings("critical", safetyClassName(.critical));
+    try std.testing.expectEqualStrings("low", safetyClassName(.low));
+}
+
+test "verificationModeName returns none for null and correct name for values" {
+    try std.testing.expectEqualStrings("none", verificationModeName(null));
+    try std.testing.expectEqualStrings("lean_required", verificationModeName(.lean_required));
+}
+
+test "proofLevelName returns none for null and correct name for values" {
+    try std.testing.expectEqualStrings("none", proofLevelName(null));
+    try std.testing.expectEqualStrings("proven", proofLevelName(.proven));
+    try std.testing.expectEqualStrings("rejected", proofLevelName(.rejected));
+}
+
+test "apiName returns correct string for each Api variant" {
+    try std.testing.expectEqualStrings("vulkan", apiName(.vulkan));
+    try std.testing.expectEqualStrings("metal", apiName(.metal));
+    try std.testing.expectEqualStrings("d3d12", apiName(.d3d12));
+    try std.testing.expectEqualStrings("webgpu", apiName(.webgpu));
+}
+
+test "commandToTag maps command variants to expected tags" {
+    const upload_cmd = model.Command{ .upload = .{ .bytes = 0, .align_bytes = 0 } };
+    try std.testing.expectEqualStrings("upload", commandToTag(upload_cmd));
+
+    const barrier_cmd = model.Command{ .barrier = .{ .dependency_count = 1 } };
+    try std.testing.expectEqualStrings("barrier", commandToTag(barrier_cmd));
+
+    const diag_cmd = model.Command{ .async_diagnostics = .{} };
+    try std.testing.expectEqualStrings("diagnostics", commandToTag(diag_cmd));
+
+    const map_cmd = model.Command{ .map_async = .{ .bytes = 64 } };
+    try std.testing.expectEqualStrings("sync", commandToTag(map_cmd));
+}
+
+test "writeJsonString escapes special characters correctly" {
+    var buf: [256]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buf);
+    const writer = fbs.writer();
+    try writeJsonString(writer, "hello\"world\\end\nnew\ttab");
+    const result = fbs.getWritten();
+    try std.testing.expectEqualStrings("\"hello\\\"world\\\\end\\nnew\\ttab\"", result);
+}
+
+test "writeJsonString escapes control characters as unicode escapes" {
+    var buf: [256]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buf);
+    const writer = fbs.writer();
+    try writeJsonString(writer, &[_]u8{0x01});
+    const result = fbs.getWritten();
+    try std.testing.expectEqualStrings("\"\\u0001\"", result);
+}
+
+test "TraceState default previous_hash is golden ratio constant" {
+    const state = TraceState{};
+    try std.testing.expectEqual(@as(u64, 0x9e3779b97f4a7c15), state.previous_hash);
+}
+
 pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     const file = try std.fs.cwd().createFile(path, .{});
     defer file.close();

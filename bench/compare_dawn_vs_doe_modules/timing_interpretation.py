@@ -6,6 +6,7 @@ from typing import Any
 
 from compare_dawn_vs_doe_modules import reporting as reporting_mod
 from compare_dawn_vs_doe_modules import timing_selection as timing_selection_mod
+from compare_dawn_vs_doe_modules.reporting import safe_float
 
 
 _OPERATION_TOTAL_SOURCES = {
@@ -23,13 +24,6 @@ _NARROW_OPERATION_SCOPE_BY_SOURCE = {
     "doe-execution-encode-ns": "operation-encode",
     "doe-execution-dispatch-window-ns": "operation-dispatch-window",
 }
-
-
-def safe_float(value: Any) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def percent_delta(left: float, right: float) -> float:

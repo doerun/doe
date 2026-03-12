@@ -6,23 +6,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+from compare_dawn_vs_doe_modules.reporting import NS_PER_MS, safe_float, safe_int
+
 
 RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
-
-
-def safe_int(value: Any, default: int = 0) -> int:
-    if isinstance(value, bool):
-        return default
-    if isinstance(value, int):
-        return value
-    return default
-
-
-def safe_float(value: Any) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def parse_trace_rows(path: Path) -> list[dict[str, Any]]:
@@ -40,10 +27,6 @@ def parse_trace_rows(path: Path) -> list[dict[str, Any]]:
             print(f"WARN: invalid trace jsonl row in {path}: {exc}")
             return []
     return rows
-
-
-def parse_execution_duration_ns_rows(path: Path) -> list[int]:
-    return parse_execution_row_total_ns_rows(path)
 
 
 def parse_execution_row_total_ns_rows(path: Path) -> list[int]:
@@ -110,10 +93,10 @@ def maybe_adjust_timing_for_ignored_first_ops(
     # adjustments when primary timing selection used a different source.
     base_row_total_ns = sum(durations_ns)
     base_row_count = len(durations_ns)
-    base_row_avg_ms = (float(base_row_total_ns) / float(base_row_count)) / 1_000_000.0
+    base_row_avg_ms = (float(base_row_total_ns) / float(base_row_count)) / NS_PER_MS
     adjusted_ns = sum(durations_ns[ignore_first_ops:])
     adjusted_count = len(durations_ns) - ignore_first_ops
-    adjusted_ms = (float(adjusted_ns) / float(adjusted_count)) / 1_000_000.0
+    adjusted_ms = (float(adjusted_ns) / float(adjusted_count)) / NS_PER_MS
     adjusted_source = "doe-execution-row-total-ns+ignore-first-ops"
     return adjusted_ms, adjusted_source, {
         "uploadIgnoreFirstOps": ignore_first_ops,
@@ -263,7 +246,7 @@ def pick_measured_timing_ms(
             row_count = len(row_durations_ns)
             if row_total_ns > 0 and row_count > 0:
                 row_average_ns = float(row_total_ns) / float(row_count)
-                measured_ms = row_average_ns / 1_000_000.0
+                measured_ms = row_average_ns / NS_PER_MS
                 timing_meta = {
                     "source": "trace-meta",
                     "traceMetaSource": "doe-execution-row-total-ns",
@@ -282,7 +265,7 @@ def pick_measured_timing_ms(
                 return measured_ms, "doe-execution-row-total-ns", timing_meta
 
     if prefer_render_encode and execution_encode_total_ns > 0:
-        measured_ms = float(execution_encode_total_ns) / 1_000_000.0
+        measured_ms = float(execution_encode_total_ns) / NS_PER_MS
         timing_meta = {
             "source": "trace-meta",
             "traceMetaSource": "doe-execution-encode-ns",
@@ -302,7 +285,7 @@ def pick_measured_timing_ms(
         return measured_ms, "doe-execution-encode-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
-        measured_ms = float(execution_total_ns) / 1_000_000.0
+        measured_ms = float(execution_total_ns) / NS_PER_MS
         timing_meta = {
             "source": "trace-meta",
             "traceMetaSource": "doe-execution-total-ns",
@@ -323,7 +306,7 @@ def pick_measured_timing_ms(
         trace_meta.get("executionGpuTimestampTotalNs"), default=-1
     )
     if gpu_timestamp_total_ns > 0:
-        measured_ms = float(gpu_timestamp_total_ns) / 1_000_000.0
+        measured_ms = float(gpu_timestamp_total_ns) / NS_PER_MS
         timing_meta = {
             "source": "trace-meta",
             "traceMetaSource": "doe-execution-gpu-timestamp-ns",
@@ -346,7 +329,7 @@ def pick_measured_timing_ms(
     if execution_encode_total_ns >= 0 and execution_submit_wait_total_ns >= 0:
         dispatch_window_ns = execution_encode_total_ns + execution_submit_wait_total_ns
         if dispatch_window_ns > 0 and has_execution_evidence:
-            measured_ms = float(dispatch_window_ns) / 1_000_000.0
+            measured_ms = float(dispatch_window_ns) / NS_PER_MS
             timing_meta = {
                 "source": "trace-meta",
                 "traceMetaSource": "doe-execution-dispatch-window-ns",
@@ -385,7 +368,7 @@ def pick_measured_timing_ms(
 
     first = min(timestamps)
     last = max(timestamps)
-    measured_ms = float(last - first) / 1_000_000.0
+    measured_ms = float(last - first) / NS_PER_MS
     if measured_ms < 0:
         timing_meta["traceRows"] = len(timestamps)
         return wall_ms, "wall-time", timing_meta

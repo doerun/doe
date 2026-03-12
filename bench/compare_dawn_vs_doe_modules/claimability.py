@@ -5,22 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from compare_dawn_vs_doe_modules import timing_sanity
+from compare_dawn_vs_doe_modules.reporting import safe_float, safe_int
 from compare_dawn_vs_doe_modules.timing_selection import canonical_timing_source
-
-
-def safe_int(value: Any, default: int = 0) -> int:
-    if isinstance(value, bool):
-        return default
-    if isinstance(value, int):
-        return value
-    return default
-
-
-def safe_float(value: Any) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def coverage_ratio(measured_ms: float | None, wall_ms: float | None) -> float | None:

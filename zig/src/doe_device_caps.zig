@@ -78,3 +78,82 @@ pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULi
     if (limits) |l| l.* = METAL_LIMITS;
     return types.WGPUStatus_Success;
 }
+
+// ============================================================
+// Inline tests
+const std = @import("std");
+const testing = std.testing;
+
+test "METAL_LIMITS texture dimensions are positive" {
+    try testing.expect(METAL_LIMITS.maxTextureDimension1D > 0);
+    try testing.expect(METAL_LIMITS.maxTextureDimension2D > 0);
+    try testing.expect(METAL_LIMITS.maxTextureDimension3D > 0);
+    try testing.expect(METAL_LIMITS.maxTextureArrayLayers > 0);
+}
+
+test "METAL_LIMITS compute workgroup sizes are positive" {
+    try testing.expect(METAL_LIMITS.maxComputeWorkgroupSizeX > 0);
+    try testing.expect(METAL_LIMITS.maxComputeWorkgroupSizeY > 0);
+    try testing.expect(METAL_LIMITS.maxComputeWorkgroupSizeZ > 0);
+    try testing.expect(METAL_LIMITS.maxComputeInvocationsPerWorkgroup > 0);
+    try testing.expect(METAL_LIMITS.maxComputeWorkgroupsPerDimension > 0);
+    try testing.expect(METAL_LIMITS.maxComputeWorkgroupStorageSize > 0);
+}
+
+test "METAL_LIMITS buffer sizes respect hierarchy" {
+    // maxBufferSize >= maxStorageBufferBindingSize >= maxUniformBufferBindingSize
+    try testing.expect(METAL_LIMITS.maxBufferSize >= METAL_LIMITS.maxStorageBufferBindingSize);
+    try testing.expect(METAL_LIMITS.maxStorageBufferBindingSize >= METAL_LIMITS.maxUniformBufferBindingSize);
+}
+
+test "METAL_LIMITS alignment values are powers of two" {
+    try testing.expect(METAL_LIMITS.minUniformBufferOffsetAlignment > 0);
+    try testing.expect(METAL_LIMITS.minStorageBufferOffsetAlignment > 0);
+    // Power-of-two check: n & (n - 1) == 0 for n > 0
+    try testing.expectEqual(@as(u32, 0), METAL_LIMITS.minUniformBufferOffsetAlignment & (METAL_LIMITS.minUniformBufferOffsetAlignment - 1));
+    try testing.expectEqual(@as(u32, 0), METAL_LIMITS.minStorageBufferOffsetAlignment & (METAL_LIMITS.minStorageBufferOffsetAlignment - 1));
+}
+
+test "METAL_LIMITS named constants match struct fields" {
+    try testing.expectEqual(METAL_MAX_TEXTURE_DIMENSION_1D, METAL_LIMITS.maxTextureDimension1D);
+    try testing.expectEqual(METAL_MAX_TEXTURE_DIMENSION_2D, METAL_LIMITS.maxTextureDimension2D);
+    try testing.expectEqual(METAL_MAX_TEXTURE_DIMENSION_3D, METAL_LIMITS.maxTextureDimension3D);
+    try testing.expectEqual(METAL_MAX_TEXTURE_ARRAY_LAYERS, METAL_LIMITS.maxTextureArrayLayers);
+    try testing.expectEqual(METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE, METAL_LIMITS.maxUniformBufferBindingSize);
+    try testing.expectEqual(METAL_MAX_STORAGE_BUFFER_BINDING_SIZE, METAL_LIMITS.maxStorageBufferBindingSize);
+    try testing.expectEqual(METAL_MAX_BUFFER_SIZE, METAL_LIMITS.maxBufferSize);
+    try testing.expectEqual(METAL_MAX_VERTEX_BUFFER_ARRAY_STRIDE, METAL_LIMITS.maxVertexBufferArrayStride);
+    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUP_STORAGE_SIZE, METAL_LIMITS.maxComputeWorkgroupStorageSize);
+    try testing.expectEqual(METAL_MAX_COMPUTE_INVOCATIONS_PER_WORKGROUP, METAL_LIMITS.maxComputeInvocationsPerWorkgroup);
+    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUP_SIZE_X, METAL_LIMITS.maxComputeWorkgroupSizeX);
+    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUP_SIZE_Y, METAL_LIMITS.maxComputeWorkgroupSizeY);
+    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUPS_PER_DIMENSION, METAL_LIMITS.maxComputeWorkgroupsPerDimension);
+}
+
+test "adapter and device feature query returns true for ShaderF16" {
+    try testing.expectEqual(@as(u32, 1), doeNativeAdapterHasFeature(null, types.WGPUFeatureName_ShaderF16));
+    try testing.expectEqual(@as(u32, 1), doeNativeDeviceHasFeature(null, types.WGPUFeatureName_ShaderF16));
+}
+
+test "adapter and device feature query returns false for unsupported features" {
+    // TimestampQuery is not reported as supported
+    try testing.expectEqual(@as(u32, 0), doeNativeAdapterHasFeature(null, types.WGPUFeatureName_TimestampQuery));
+    try testing.expectEqual(@as(u32, 0), doeNativeDeviceHasFeature(null, types.WGPUFeatureName_TimestampQuery));
+    // Unknown feature ID
+    try testing.expectEqual(@as(u32, 0), doeNativeAdapterHasFeature(null, 0xFFFFFFFF));
+    try testing.expectEqual(@as(u32, 0), doeNativeDeviceHasFeature(null, 0xFFFFFFFF));
+}
+
+test "device and adapter GetLimits populates limits struct" {
+    var limits: types.WGPULimits = undefined;
+    const device_status = doeNativeDeviceGetLimits(null, &limits);
+    try testing.expectEqual(types.WGPUStatus_Success, device_status);
+    try testing.expectEqual(METAL_LIMITS.maxTextureDimension2D, limits.maxTextureDimension2D);
+    try testing.expectEqual(METAL_LIMITS.maxComputeWorkgroupSizeX, limits.maxComputeWorkgroupSizeX);
+    try testing.expectEqual(METAL_LIMITS.maxBufferSize, limits.maxBufferSize);
+
+    var adapter_limits: types.WGPULimits = undefined;
+    const adapter_status = doeNativeAdapterGetLimits(null, &adapter_limits);
+    try testing.expectEqual(types.WGPUStatus_Success, adapter_status);
+    try testing.expectEqual(METAL_LIMITS.maxTextureDimension2D, adapter_limits.maxTextureDimension2D);
+}

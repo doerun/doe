@@ -26,6 +26,13 @@ const quirk_mod_test = @import("src/quirk/mod.zig");
 const quirk_runtime_test = @import("src/quirk/runtime.zig");
 const quirk_actions_test = @import("src/quirk/quirk_actions.zig");
 const quirk_toggle_registry_test = @import("src/quirk/toggle_registry.zig");
+const render_constants_test = @import("src/full/render/wgpu_render_constants.zig");
+const doe_device_caps_test = @import("src/doe_device_caps.zig");
+const trace_test = @import("src/trace.zig");
+const wgpu_resource_normalizers_test = @import("src/core/resource/wgpu_resource_normalizers.zig");
+const command_json_test = @import("src/command_json.zig");
+const common_hash_utils = @import("src/backend/common/hash_utils.zig");
+const common_artifact_state = @import("src/backend/common/artifact_state.zig");
 
 comptime {
     _ = metal_mod_integration_test;
@@ -56,4 +63,11 @@ comptime {
     _ = quirk_runtime_test;
     _ = quirk_actions_test;
     _ = quirk_toggle_registry_test;
+    _ = render_constants_test;
+    _ = doe_device_caps_test;
+    _ = trace_test;
+    _ = wgpu_resource_normalizers_test;
+    _ = command_json_test;
+    _ = common_hash_utils;
+    _ = common_artifact_state;
 }

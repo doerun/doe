@@ -515,27 +515,6 @@ def evaluate_comparability_from_facts(
     }
 
 
-def safe_int(value: Any, default: int = 0) -> int:
-    if isinstance(value, bool):
-        return default
-    if isinstance(value, int):
-        return value
-    return default
-
-
-def parse_int(value: Any) -> int | None:
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str):
-        text = value.strip()
-        if text.isdigit():
-            try:
-                return int(text)
-            except ValueError:
-                return None
-    return None
 
 
 def _median_phase_fractions(

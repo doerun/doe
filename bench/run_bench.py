@@ -19,6 +19,7 @@ from typing import Any
 import output_paths
 
 
+NS_PER_MS: float = 1_000_000.0
 DEFAULT_TIMESTAMP = "1970-01-01T00:00:00Z"
 TRACE_SEED = "0x9e3779b97f4a7c15"
 KNOWN_GPU_BACKENDS = {"vulkan", "metal", "d3d12", "webgpu"}

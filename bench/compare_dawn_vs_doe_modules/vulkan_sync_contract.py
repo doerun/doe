@@ -4,22 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from compare_dawn_vs_doe_modules.reporting import safe_int, valid_sync_mode
 from compare_dawn_vs_doe_modules.timing_selection import (
     canonical_timing_source,
     classify_timing_source,
 )
-
-
-def _safe_int(value: Any, default: int = 0) -> int:
-    if isinstance(value, bool):
-        return default
-    if isinstance(value, int):
-        return value
-    return default
-
-
-def valid_sync_mode(value: Any) -> bool:
-    return isinstance(value, str) and value in {"per-command", "deferred"}
 
 
 def evaluate_sync_meta(
@@ -44,12 +33,12 @@ def evaluate_sync_meta(
             f"queueSyncMode mismatch: expected {expected_sync_mode}, got {sync_mode}"
         )
 
-    success = _safe_int(trace_meta.get("executionSuccessCount"), default=-1)
-    error_count = _safe_int(trace_meta.get("executionErrorCount"), default=-1)
-    row_count = _safe_int(trace_meta.get("executionRowCount"), default=-1)
-    skipped_count = _safe_int(trace_meta.get("executionSkippedCount"), default=-1)
-    unsupported_count = _safe_int(trace_meta.get("executionUnsupportedCount"), default=-1)
-    total_ns = _safe_int(trace_meta.get("executionTotalNs"), default=-1)
+    success = safe_int(trace_meta.get("executionSuccessCount"), default=-1)
+    error_count = safe_int(trace_meta.get("executionErrorCount"), default=-1)
+    row_count = safe_int(trace_meta.get("executionRowCount"), default=-1)
+    skipped_count = safe_int(trace_meta.get("executionSkippedCount"), default=-1)
+    unsupported_count = safe_int(trace_meta.get("executionUnsupportedCount"), default=-1)
+    total_ns = safe_int(trace_meta.get("executionTotalNs"), default=-1)
 
     if success < 0:
         errors.append("executionSuccessCount missing/invalid")
@@ -98,7 +87,7 @@ def evaluate_sync_meta(
             errors.append("timing metadata missing/invalid")
             return errors
 
-        ignore_ops = _safe_int(timing.get("uploadIgnoreFirstOps"), default=0)
+        ignore_ops = safe_int(timing.get("uploadIgnoreFirstOps"), default=0)
         if row_count >= 0 and ignore_ops > 0 and row_count <= ignore_ops:
             errors.append(
                 f"upload ignore-first invalid: row count {row_count} <= ignore count {ignore_ops}"

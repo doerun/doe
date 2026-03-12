@@ -190,6 +190,10 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - UPPER_SNAKE_CASE for comptime constants
 - file names: snake_case.zig
 
+## Naming (JavaScript)
+
+- file names: kebab-case.js — do not use `.mjs`; all modules are ESM via `"type": "module"` in package.json
+
 ## Naming (config/JSON)
 
 - camelCase for JSON fields

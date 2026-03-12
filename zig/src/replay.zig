@@ -122,3 +122,109 @@ fn freeReplayExpectation(allocator: std.mem.Allocator, expectation: ReplayExpect
     allocator.free(expectation.command);
     if (expectation.kernel) |kernel| allocator.free(kernel);
 }
+
+test "parseTraceHash parses plain hex string" {
+    const result = try parseTraceHash("deadbeef");
+    try std.testing.expectEqual(@as(u64, 0xdeadbeef), result);
+}
+
+test "parseTraceHash parses 0x-prefixed hex string" {
+    const result = try parseTraceHash("0xCAFE");
+    try std.testing.expectEqual(@as(u64, 0xCAFE), result);
+}
+
+test "parseTraceHash parses 0X-prefixed hex string" {
+    const result = try parseTraceHash("0X1a2b");
+    try std.testing.expectEqual(@as(u64, 0x1a2b), result);
+}
+
+test "parseTraceHash rejects empty string" {
+    const result = parseTraceHash("");
+    try std.testing.expectError(ReplayValidationError.InvalidReplayHash, result);
+}
+
+test "parseTraceHash rejects non-hex content" {
+    const result = parseTraceHash("zzzz");
+    try std.testing.expectError(ReplayValidationError.InvalidReplayHash, result);
+}
+
+test "matchOptionalText returns true for two null values" {
+    try std.testing.expect(matchOptionalText(null, null));
+}
+
+test "matchOptionalText returns false when only one side is null" {
+    try std.testing.expect(!matchOptionalText("abc", null));
+    try std.testing.expect(!matchOptionalText(null, "abc"));
+}
+
+test "matchOptionalText compares non-null strings" {
+    try std.testing.expect(matchOptionalText("hello", "hello"));
+    try std.testing.expect(!matchOptionalText("hello", "world"));
+}
+
+test "parseReplayLine returns expectation for valid row" {
+    const allocator = std.testing.allocator;
+    const row = RawReplayRow{
+        .seq = 0,
+        .command = "buffer_upload",
+        .kernel = null,
+        .hash = "0xabc",
+        .previousHash = "0x0",
+        .opCode = "dispatch",
+        .module = "doe-zig-runtime",
+    };
+    const result = try parseReplayLine(allocator, "doe-zig-runtime", &row);
+    defer freeReplayExpectation(allocator, result);
+
+    try std.testing.expectEqual(@as(usize, 0), result.seq);
+    try std.testing.expect(std.mem.eql(u8, "buffer_upload", result.command));
+    try std.testing.expectEqual(@as(?[]const u8, null), result.kernel);
+    try std.testing.expectEqual(@as(u64, 0xabc), result.hash);
+    try std.testing.expectEqual(@as(u64, 0x0), result.previous_hash);
+}
+
+test "parseReplayLine rejects mismatched module" {
+    const allocator = std.testing.allocator;
+    const row = RawReplayRow{
+        .seq = 1,
+        .command = "dispatch",
+        .hash = "ff",
+        .previousHash = "00",
+        .module = "wrong-module",
+    };
+    const result = parseReplayLine(allocator, "doe-zig-runtime", &row);
+    try std.testing.expectError(ReplayValidationError.ReplayArtifactModuleMismatch, result);
+}
+
+test "parseReplayLine rejects mismatched opCode" {
+    const allocator = std.testing.allocator;
+    const row = RawReplayRow{
+        .seq = 1,
+        .command = "dispatch",
+        .hash = "ff",
+        .previousHash = "00",
+        .opCode = "render",
+    };
+    const result = parseReplayLine(allocator, "doe-zig-runtime", &row);
+    try std.testing.expectError(ReplayValidationError.ReplayArtifactOpCodeMismatch, result);
+}
+
+test "parseReplayLine returns error for missing required fields" {
+    const allocator = std.testing.allocator;
+
+    // missing command
+    const no_cmd = RawReplayRow{ .seq = 0, .hash = "aa", .previousHash = "00" };
+    try std.testing.expectError(ReplayValidationError.ReplayCommandFieldMissing, parseReplayLine(allocator, "x", &no_cmd));
+
+    // missing hash
+    const no_hash = RawReplayRow{ .seq = 0, .command = "c", .previousHash = "00" };
+    try std.testing.expectError(ReplayValidationError.ReplayHashFieldMissing, parseReplayLine(allocator, "x", &no_hash));
+
+    // missing previousHash
+    const no_prev = RawReplayRow{ .seq = 0, .command = "c", .hash = "aa" };
+    try std.testing.expectError(ReplayValidationError.ReplayPreviousHashFieldMissing, parseReplayLine(allocator, "x", &no_prev));
+
+    // missing seq
+    const no_seq = RawReplayRow{ .command = "c", .hash = "aa", .previousHash = "00" };
+    try std.testing.expectError(ReplayValidationError.ReplaySeqFieldMissing, parseReplayLine(allocator, "x", &no_seq));
+}

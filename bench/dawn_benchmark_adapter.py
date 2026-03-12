@@ -19,6 +19,8 @@ import subprocess
 import time
 from pathlib import Path
 
+NS_PER_MS: float = 1_000_000.0
+
 RESULT_METRIC_RE = re.compile(
     r"\*RESULT\s+[^\n]*?\.(wall_time|cpu_time|gpu_time):\s+[^\n]*?=\s*([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\s*(ns|us|ms|s)\b"
 )
