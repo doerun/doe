@@ -92,6 +92,8 @@ pub const ZigVulkanBackend = struct {
             .kernel_dispatch,
             .buffer_upload,
             .barrier_sync,
+            .render_draw,
+            .render_pass,
             .texture_write,
             .texture_query,
             .texture_destroy,
@@ -540,6 +542,28 @@ fn execute_kernel_dispatch(self: *ZigVulkanBackend, setup_ns: u64, kernel_dispat
     );
 }
 
+fn execute_render_draw_command(
+    self: *ZigVulkanBackend,
+    setup_ns: u64,
+    render_draw: model.RenderDrawCommand,
+) !webgpu.NativeExecutionResult {
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const metrics = try runtime.run_render_draw(render_draw);
+    const draw_count = if (render_draw.draw_count > 0) render_draw.draw_count else 1;
+
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns,
+        .encode_ns = metrics.encode_ns,
+        .submit_wait_ns = metrics.submit_wait_ns,
+        .dispatch_count = draw_count,
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+    };
+}
+
 fn execute_async_diagnostics(
     self: *ZigVulkanBackend,
     setup_ns: u64,
@@ -680,6 +704,10 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .barrier => try execute_barrier(self, setup_ns),
         .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
         .kernel_dispatch => |kernel_dispatch| try execute_kernel_dispatch(self, setup_ns, kernel_dispatch),
+        .render_draw => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
+        .draw_indirect => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
+        .draw_indexed_indirect => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
+        .render_pass => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
         .async_diagnostics => |diagnostics| try execute_async_diagnostics(self, setup_ns, diagnostics),
         .texture_write,
         .texture_query,
@@ -707,6 +735,8 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .kernel_dispatch,
         .buffer_upload,
         .barrier_sync,
+        .render_draw,
+        .render_pass,
         .texture_write,
         .texture_query,
         .texture_destroy,

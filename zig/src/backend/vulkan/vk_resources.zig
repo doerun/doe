@@ -395,9 +395,13 @@ pub fn create_texture_resource(
 }
 
 pub fn release_texture_resource(self: *Runtime, texture: TextureResource) void {
-    if (texture.view != VK_NULL_U64) c.vkDestroyImageView(self.device, texture.view, null);
-    if (texture.image != VK_NULL_U64) c.vkDestroyImage(self.device, texture.image, null);
-    if (texture.memory != VK_NULL_U64) c.vkFreeMemory(self.device, texture.memory, null);
+    release_texture_resource_with_device(self.device, texture);
+}
+
+pub fn release_texture_resource_with_device(device: c.VkDevice, texture: TextureResource) void {
+    if (texture.view != VK_NULL_U64) c.vkDestroyImageView(device, texture.view, null);
+    if (texture.image != VK_NULL_U64) c.vkDestroyImage(device, texture.image, null);
+    if (texture.memory != VK_NULL_U64) c.vkFreeMemory(device, texture.memory, null);
 }
 
 pub fn release_textures(self: *Runtime) void {

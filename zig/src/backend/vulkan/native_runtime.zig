@@ -6,6 +6,7 @@
 //   vk_upload     — upload staging, pool management, flush lifecycle
 //   vk_pipeline   — compute pipeline, shader, descriptor set management
 //   vk_resources  — buffer/texture resource lifecycle and format helpers
+//   vk_render     — render pass, graphics pipeline, and draw call execution
 
 const std = @import("std");
 const model = @import("../../model.zig");
@@ -20,6 +21,7 @@ const vk_device = @import("vk_device.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
 const vk_resources = @import("vk_resources.zig");
+const vk_render = @import("vk_render.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 
@@ -316,6 +318,12 @@ pub const NativeVulkanRuntime = struct {
         };
     }
 
+    // --- Render ---
+
+    pub fn run_render_draw(self: *NativeVulkanRuntime, cmd: model.RenderDrawCommand) !DispatchMetrics {
+        return vk_render.execute_render_draw(self, cmd);
+    }
+
     // --- Queue management ---
 
     pub fn flush_queue(self: *NativeVulkanRuntime) !u64 {
@@ -538,9 +546,7 @@ pub const NativeVulkanRuntime = struct {
                 self.physical_device,
                 self.queue_family_index,
                 surface.vk_surface,
-            ) catch |err| {
-                return err;
-            };
+            ) catch |err| return err;
             surface.cached_capabilities = caps;
             surface.capabilities_queried = true;
         }

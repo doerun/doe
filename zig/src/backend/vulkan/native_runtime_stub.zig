@@ -103,6 +103,12 @@ pub const NativeVulkanRuntime = struct {
         return error.UnsupportedFeature;
     }
 
+    pub fn run_render_draw(self: *NativeVulkanRuntime, cmd: model.RenderDrawCommand) !DispatchMetrics {
+        _ = self;
+        _ = cmd;
+        return error.UnsupportedFeature;
+    }
+
     pub fn adapter_ordinal(self: *NativeVulkanRuntime) ?u32 {
         _ = self;
         return null;

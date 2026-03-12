@@ -55,7 +55,7 @@ pub const VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO: i32 = 15;
 pub const VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO: i32 = 16;
 pub const VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO: i32 = 17;
 pub const VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO: i32 = 18;
-pub const VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO: i32 = 28;
+pub const VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO: i32 = 29;
 pub const VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO: i32 = 30;
 pub const VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO: i32 = 32;
 pub const VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO: i32 = 33;
@@ -163,7 +163,7 @@ pub const VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT: u32 = 0x00002000;
 // --- Graphics pipeline structure type IDs ---
 pub const VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO: i32 = 38;
 pub const VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO: i32 = 37;
-pub const VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO: i32 = 28 - 1; // sType = 27
+pub const VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO: i32 = 28;
 pub const VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO: i32 = 19;
 pub const VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO: i32 = 20;
 pub const VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO: i32 = 22;
@@ -519,6 +519,266 @@ pub const VkImageMemoryBarrier = extern struct {
     subresourceRange: VkImageSubresourceRange,
 };
 
+// --- Render pass struct types ---
+
+pub const VkAttachmentDescription = extern struct {
+    flags: VkFlags,
+    format: u32,
+    samples: u32,
+    loadOp: u32,
+    storeOp: u32,
+    stencilLoadOp: u32,
+    stencilStoreOp: u32,
+    initialLayout: u32,
+    finalLayout: u32,
+};
+
+pub const VkAttachmentReference = extern struct {
+    attachment: u32,
+    layout: u32,
+};
+
+pub const VkSubpassDescription = extern struct {
+    flags: VkFlags,
+    pipelineBindPoint: i32,
+    inputAttachmentCount: u32,
+    pInputAttachments: ?[*]const VkAttachmentReference,
+    colorAttachmentCount: u32,
+    pColorAttachments: ?[*]const VkAttachmentReference,
+    pResolveAttachments: ?[*]const VkAttachmentReference,
+    pDepthStencilAttachment: ?*const VkAttachmentReference,
+    preserveAttachmentCount: u32,
+    pPreserveAttachments: ?[*]const u32,
+};
+
+pub const VkSubpassDependency = extern struct {
+    srcSubpass: u32,
+    dstSubpass: u32,
+    srcStageMask: VkFlags,
+    dstStageMask: VkFlags,
+    srcAccessMask: VkFlags,
+    dstAccessMask: VkFlags,
+    dependencyFlags: VkFlags,
+};
+
+pub const VkRenderPassCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    attachmentCount: u32,
+    pAttachments: ?[*]const VkAttachmentDescription,
+    subpassCount: u32,
+    pSubpasses: ?[*]const VkSubpassDescription,
+    dependencyCount: u32,
+    pDependencies: ?[*]const VkSubpassDependency,
+};
+
+pub const VkFramebufferCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    renderPass: VkRenderPass,
+    attachmentCount: u32,
+    pAttachments: ?[*]const VkImageView,
+    width: u32,
+    height: u32,
+    layers: u32,
+};
+
+pub const VkRect2D = extern struct {
+    offset: VkOffset2D,
+    extent: VkExtent2D,
+};
+
+pub const VkOffset2D = extern struct {
+    x: i32,
+    y: i32,
+};
+
+pub const VkExtent2D = extern struct {
+    width: u32,
+    height: u32,
+};
+
+pub const VkClearValue = extern union {
+    color: VkClearColorValue,
+    depthStencil: VkClearDepthStencilValue,
+};
+
+pub const VkClearColorValue = extern union {
+    float32: [4]f32,
+    int32: [4]i32,
+    uint32: [4]u32,
+};
+
+pub const VkClearDepthStencilValue = extern struct {
+    depth: f32,
+    stencil: u32,
+};
+
+pub const VkRenderPassBeginInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    renderPass: VkRenderPass,
+    framebuffer: VkFramebuffer,
+    renderArea: VkRect2D,
+    clearValueCount: u32,
+    pClearValues: ?[*]const VkClearValue,
+};
+
+pub const VkViewport = extern struct {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    minDepth: f32,
+    maxDepth: f32,
+};
+
+// --- Graphics pipeline struct types ---
+
+pub const VkVertexInputBindingDescription = extern struct {
+    binding: u32,
+    stride: u32,
+    inputRate: u32,
+};
+
+pub const VkVertexInputAttributeDescription = extern struct {
+    location: u32,
+    binding: u32,
+    format: u32,
+    offset: u32,
+};
+
+pub const VkPipelineVertexInputStateCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    vertexBindingDescriptionCount: u32,
+    pVertexBindingDescriptions: ?[*]const VkVertexInputBindingDescription,
+    vertexAttributeDescriptionCount: u32,
+    pVertexAttributeDescriptions: ?[*]const VkVertexInputAttributeDescription,
+};
+
+pub const VkPipelineInputAssemblyStateCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    topology: u32,
+    primitiveRestartEnable: VkBool32,
+};
+
+pub const VkPipelineViewportStateCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    viewportCount: u32,
+    pViewports: ?[*]const VkViewport,
+    scissorCount: u32,
+    pScissors: ?[*]const VkRect2D,
+};
+
+pub const VkPipelineRasterizationStateCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    depthClampEnable: VkBool32,
+    rasterizerDiscardEnable: VkBool32,
+    polygonMode: u32,
+    cullMode: VkFlags,
+    frontFace: u32,
+    depthBiasEnable: VkBool32,
+    depthBiasConstantFactor: f32,
+    depthBiasClamp: f32,
+    depthBiasSlopeFactor: f32,
+    lineWidth: f32,
+};
+
+pub const VkPipelineMultisampleStateCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    rasterizationSamples: u32,
+    sampleShadingEnable: VkBool32,
+    minSampleShading: f32,
+    pSampleMask: ?*const u32,
+    alphaToCoverageEnable: VkBool32,
+    alphaToOneEnable: VkBool32,
+};
+
+pub const VkPipelineColorBlendAttachmentState = extern struct {
+    blendEnable: VkBool32,
+    srcColorBlendFactor: u32,
+    dstColorBlendFactor: u32,
+    colorBlendOp: u32,
+    srcAlphaBlendFactor: u32,
+    dstAlphaBlendFactor: u32,
+    alphaBlendOp: u32,
+    colorWriteMask: VkFlags,
+};
+
+pub const VkPipelineColorBlendStateCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    logicOpEnable: VkBool32,
+    logicOp: u32,
+    attachmentCount: u32,
+    pAttachments: ?[*]const VkPipelineColorBlendAttachmentState,
+    blendConstants: [4]f32,
+};
+
+pub const VkPipelineDynamicStateCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    dynamicStateCount: u32,
+    pDynamicStates: ?[*]const u32,
+};
+
+pub const VkGraphicsPipelineCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    stageCount: u32,
+    pStages: [*]const VkPipelineShaderStageCreateInfo,
+    pVertexInputState: *const VkPipelineVertexInputStateCreateInfo,
+    pInputAssemblyState: *const VkPipelineInputAssemblyStateCreateInfo,
+    pTessellationState: ?*const anyopaque,
+    pViewportState: *const VkPipelineViewportStateCreateInfo,
+    pRasterizationState: *const VkPipelineRasterizationStateCreateInfo,
+    pMultisampleState: *const VkPipelineMultisampleStateCreateInfo,
+    pDepthStencilState: ?*const anyopaque,
+    pColorBlendState: *const VkPipelineColorBlendStateCreateInfo,
+    pDynamicState: ?*const VkPipelineDynamicStateCreateInfo,
+    layout: VkPipelineLayout,
+    renderPass: VkRenderPass,
+    subpass: u32,
+    basePipelineHandle: VkPipeline,
+    basePipelineIndex: i32,
+};
+
+pub const VkSamplerCreateInfo = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    magFilter: u32,
+    minFilter: u32,
+    mipmapMode: u32,
+    addressModeU: u32,
+    addressModeV: u32,
+    addressModeW: u32,
+    mipLodBias: f32,
+    anisotropyEnable: VkBool32,
+    maxAnisotropy: f32,
+    compareEnable: VkBool32,
+    compareOp: u32,
+    minLod: f32,
+    maxLod: f32,
+    borderColor: u32,
+    unnormalizedCoordinates: VkBool32,
+};
+
 pub const VkQueueFamilyProperties = extern struct {
     queueFlags: VkFlags,
     queueCount: u32,
@@ -602,6 +862,27 @@ pub extern fn vkCreateQueryPool(device: VkDevice, pCreateInfo: *const VkQueryPoo
 pub extern fn vkDestroyQueryPool(device: VkDevice, queryPool: VkQueryPool, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkCmdWriteTimestamp(commandBuffer: VkCommandBuffer, pipelineStage: VkFlags, queryPool: VkQueryPool, query: u32) callconv(.c) void;
 pub extern fn vkGetQueryPoolResults(device: VkDevice, queryPool: VkQueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: ?*anyopaque, stride: VkDeviceSize, flags: VkFlags) callconv(.c) VkResult;
+
+// --- Render pass and graphics pipeline functions ---
+
+pub extern fn vkCreateRenderPass(device: VkDevice, pCreateInfo: *const VkRenderPassCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pRenderPass: *VkRenderPass) callconv(.c) VkResult;
+pub extern fn vkDestroyRenderPass(device: VkDevice, renderPass: VkRenderPass, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+pub extern fn vkCreateFramebuffer(device: VkDevice, pCreateInfo: *const VkFramebufferCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pFramebuffer: *VkFramebuffer) callconv(.c) VkResult;
+pub extern fn vkDestroyFramebuffer(device: VkDevice, framebuffer: VkFramebuffer, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+pub extern fn vkCreateGraphicsPipelines(device: VkDevice, pipelineCache: VkPipelineCache, createInfoCount: u32, pCreateInfos: [*]const VkGraphicsPipelineCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pPipelines: [*]VkPipeline) callconv(.c) VkResult;
+pub extern fn vkCreateSampler(device: VkDevice, pCreateInfo: *const VkSamplerCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pSampler: *VkSampler) callconv(.c) VkResult;
+pub extern fn vkDestroySampler(device: VkDevice, sampler: VkSampler, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
+pub extern fn vkCmdBeginRenderPass(commandBuffer: VkCommandBuffer, pRenderPassBegin: *const VkRenderPassBeginInfo, contents: u32) callconv(.c) void;
+pub extern fn vkCmdEndRenderPass(commandBuffer: VkCommandBuffer) callconv(.c) void;
+pub extern fn vkCmdSetViewport(commandBuffer: VkCommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: [*]const VkViewport) callconv(.c) void;
+pub extern fn vkCmdSetScissor(commandBuffer: VkCommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: [*]const VkRect2D) callconv(.c) void;
+pub extern fn vkCmdBindVertexBuffers(commandBuffer: VkCommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: [*]const VkBuffer, pOffsets: [*]const VkDeviceSize) callconv(.c) void;
+pub extern fn vkCmdBindIndexBuffer(commandBuffer: VkCommandBuffer, buffer: VkBuffer, offset: VkDeviceSize, indexType: u32) callconv(.c) void;
+pub extern fn vkCmdDraw(commandBuffer: VkCommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32) callconv(.c) void;
+pub extern fn vkCmdDrawIndexed(commandBuffer: VkCommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32) callconv(.c) void;
+
+// --- Subpass contents ---
+pub const VK_SUBPASS_CONTENTS_INLINE: u32 = 0;
 
 // --- Error mapping ---
 
