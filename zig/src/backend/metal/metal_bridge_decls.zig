@@ -17,8 +17,17 @@ pub extern fn metal_bridge_command_buffer_setup_fast_wait(cmd_buf: ?*anyopaque) 
 pub extern fn metal_bridge_command_buffer_wait_fast() callconv(.c) void;
 pub extern fn metal_bridge_cmd_buf_encode_render_pass(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, redundant_bindgroup: c_int) callconv(.c) void;
 pub extern fn metal_bridge_cmd_buf_encode_icb_render_pass(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, icb: ?*anyopaque, target: ?*anyopaque, draw_count: u32) callconv(.c) void;
-pub extern fn metal_bridge_cmd_buf_render_encoder(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque) callconv(.c) ?*anyopaque;
-pub extern fn metal_bridge_render_encoder_draw(encoder: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, pipeline: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_cmd_buf_render_encoder(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, depth_target: ?*anyopaque, use_depth_store: c_int) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_render_encoder_set_bind_buffer(encoder: ?*anyopaque, slot: u32, buffer: ?*anyopaque, offset: u64) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_bind_texture(encoder: ?*anyopaque, slot: u32, texture: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_bind_sampler(encoder: ?*anyopaque, slot: u32, sampler: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_vertex_buffer(encoder: ?*anyopaque, slot: u32, buffer: ?*anyopaque, offset: u64) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_depth_stencil_state(encoder: ?*anyopaque, depth_state: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_depth_stencil_values(encoder: ?*anyopaque, compare_fn: u32, write_enabled: c_int) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_front_facing(encoder: ?*anyopaque, front_face: u32) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_cull_mode(encoder: ?*anyopaque, cull_mode: u32) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_draw(encoder: ?*anyopaque, topology: u32, draw_count: u32, vertex_count: u32, instance_count: u32, first_vertex: u32, first_instance: u32, redundant_pipeline: c_int, pipeline: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_draw_indexed(encoder: ?*anyopaque, topology: u32, draw_count: u32, index_count: u32, instance_count: u32, index_buffer: ?*anyopaque, index_offset: u64, index_format: u32, base_vertex: i32, first_instance: u32) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_execute_icb(encoder: ?*anyopaque, icb: ?*anyopaque, draw_count: u32) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_end(encoder: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_device_new_shared_event(device: ?*anyopaque) callconv(.c) ?*anyopaque;
@@ -39,6 +48,9 @@ pub extern fn metal_bridge_texture_depth(texture: ?*anyopaque) callconv(.c) u32;
 pub extern fn metal_bridge_texture_sample_count(texture: ?*anyopaque) callconv(.c) u32;
 pub extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_filter: u32, mag_filter: u32, mipmap_filter: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_device_new_render_pipeline_functions(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_device_new_render_pipeline_full(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, depth_format: u32, vertex_layouts: ?[*]const MetalVertexBufferLayout, vertex_layout_count: u32, vertex_attributes: ?[*]const MetalVertexAttributeDesc, vertex_attribute_count: u32, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_device_new_depth_stencil_state(device: ?*anyopaque, compare_fn: u32, write_enabled: c_int, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_device_new_render_target(device: ?*anyopaque, width: u32, height: u32, pixel_format: u32) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_encode_render_pass(queue: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, redundant_bindgroup: c_int) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_device_new_icb(device: ?*anyopaque, pipeline: ?*anyopaque, command_count: u32, redundant_pipeline: c_int) callconv(.c) ?*anyopaque;
@@ -52,3 +64,15 @@ pub extern fn metal_bridge_blit_encoder_copy_texture_to_buffer(encoder: ?*anyopa
 pub extern fn metal_bridge_blit_encoder_copy_texture_to_texture(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
 pub extern fn metal_bridge_create_surface_host(layer_out: *?*anyopaque) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_configure_surface_host(host: ?*anyopaque, width: u32, height: u32) callconv(.c) void;
+pub const MetalVertexBufferLayout = extern struct {
+    array_stride: u64,
+    step_mode: u32,
+    buffer_index: u32,
+};
+
+pub const MetalVertexAttributeDesc = extern struct {
+    format: u32,
+    offset: u64,
+    shader_location: u32,
+    buffer_index: u32,
+};

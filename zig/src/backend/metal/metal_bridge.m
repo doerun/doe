@@ -16,8 +16,9 @@
 
 static MTLRenderPassDescriptor* _cachedRenderPassDesc = nil;
 static id<MTLTexture> _cachedRenderPassTarget = nil;
+static id<MTLTexture> _cachedDepthTarget = nil;
 
-static MTLRenderPassDescriptor* cachedRenderPassDescriptor(id<MTLTexture> target) {
+static MTLRenderPassDescriptor* cachedRenderPassDescriptor(id<MTLTexture> target, id<MTLTexture> depth_target, BOOL use_depth_store) {
     if (_cachedRenderPassDesc == nil) {
         _cachedRenderPassDesc = [MTLRenderPassDescriptor new];
         _cachedRenderPassDesc.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
@@ -26,6 +27,17 @@ static MTLRenderPassDescriptor* cachedRenderPassDescriptor(id<MTLTexture> target
     if (_cachedRenderPassTarget != target) {
         _cachedRenderPassDesc.colorAttachments[0].texture = target;
         _cachedRenderPassTarget = target;
+    }
+    if (_cachedDepthTarget != depth_target) {
+        _cachedRenderPassDesc.depthAttachment.texture = depth_target;
+        _cachedDepthTarget = depth_target;
+    }
+    if (depth_target != nil) {
+        _cachedRenderPassDesc.depthAttachment.loadAction = MTLLoadActionClear;
+        _cachedRenderPassDesc.depthAttachment.storeAction = use_depth_store ? MTLStoreActionStore : MTLStoreActionDontCare;
+        _cachedRenderPassDesc.depthAttachment.clearDepth = 1.0;
+    } else {
+        _cachedRenderPassDesc.depthAttachment.texture = nil;
     }
     return _cachedRenderPassDesc;
 }
@@ -40,9 +52,80 @@ static MTLPixelFormat wgpu_to_mtl_format(uint32_t wgpu) {
         case 0x00000017: return MTLPixelFormatRGBA8Unorm_sRGB;
         case 0x0000001B: return MTLPixelFormatBGRA8Unorm;
         case 0x0000001C: return MTLPixelFormatBGRA8Unorm_sRGB;
+        case 0x0000002F: return MTLPixelFormatDepth32Float;
         case 0x00000030: return MTLPixelFormatDepth32Float;
         default:         return MTLPixelFormatRGBA8Unorm;
     }
+}
+
+static MTLPrimitiveType wgpu_to_mtl_primitive(uint32_t topology) {
+    switch (topology) {
+        case 0x00000001: return MTLPrimitiveTypePoint;
+        case 0x00000002: return MTLPrimitiveTypeLine;
+        case 0x00000003: return MTLPrimitiveTypeLineStrip;
+        case 0x00000005: return MTLPrimitiveTypeTriangleStrip;
+        case 0x00000004:
+        default: return MTLPrimitiveTypeTriangle;
+    }
+}
+
+static MTLWinding wgpu_to_mtl_winding(uint32_t front_face) {
+    return front_face == 0x00000002 ? MTLWindingClockwise : MTLWindingCounterClockwise;
+}
+
+static MTLCullMode wgpu_to_mtl_cull(uint32_t cull_mode) {
+    switch (cull_mode) {
+        case 0x00000002: return MTLCullModeFront;
+        case 0x00000003: return MTLCullModeBack;
+        case 0x00000001:
+        default: return MTLCullModeNone;
+    }
+}
+
+static MTLCompareFunction wgpu_to_mtl_compare(uint32_t compare_fn) {
+    switch (compare_fn) {
+        case 0x00000001: return MTLCompareFunctionNever;
+        case 0x00000002: return MTLCompareFunctionLess;
+        case 0x00000003: return MTLCompareFunctionEqual;
+        case 0x00000004: return MTLCompareFunctionLessEqual;
+        case 0x00000005: return MTLCompareFunctionGreater;
+        case 0x00000006: return MTLCompareFunctionNotEqual;
+        case 0x00000007: return MTLCompareFunctionGreaterEqual;
+        case 0x00000008: return MTLCompareFunctionAlways;
+        default: return MTLCompareFunctionAlways;
+    }
+}
+
+static MTLVertexFormat wgpu_to_mtl_vertex_format(uint32_t format) {
+    switch (format) {
+        case 0x00000019: return MTLVertexFormatFloat;
+        case 0x0000001A: return MTLVertexFormatFloat2;
+        case 0x0000001B: return MTLVertexFormatFloat3;
+        case 0x0000001C: return MTLVertexFormatFloat4;
+        case 0x00000001: return MTLVertexFormatUChar2Normalized;
+        case 0x00000002: return MTLVertexFormatUChar4Normalized;
+        case 0x00000003: return MTLVertexFormatChar2Normalized;
+        case 0x00000004: return MTLVertexFormatChar4Normalized;
+        case 0x0000000D: return MTLVertexFormatUShort2Normalized;
+        case 0x0000000E: return MTLVertexFormatUShort4Normalized;
+        case 0x0000000F: return MTLVertexFormatShort2Normalized;
+        case 0x00000010: return MTLVertexFormatShort4Normalized;
+        case 0x00000015: return MTLVertexFormatHalf2;
+        case 0x00000016: return MTLVertexFormatHalf4;
+        case 0x00000021: return MTLVertexFormatUInt;
+        case 0x00000022: return MTLVertexFormatUInt2;
+        case 0x00000023: return MTLVertexFormatUInt3;
+        case 0x00000024: return MTLVertexFormatUInt4;
+        case 0x00000025: return MTLVertexFormatInt;
+        case 0x00000026: return MTLVertexFormatInt2;
+        case 0x00000027: return MTLVertexFormatInt3;
+        case 0x00000028: return MTLVertexFormatInt4;
+        default: return MTLVertexFormatInvalid;
+    }
+}
+
+static MTLIndexType wgpu_to_mtl_index_type(uint32_t format) {
+    return format == 0x00000002 ? MTLIndexTypeUInt32 : MTLIndexTypeUInt16;
 }
 
 // ============================================================
@@ -456,7 +539,7 @@ void metal_bridge_cmd_buf_encode_render_pass(
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
     id<MTLTexture>              target   = (__bridge id<MTLTexture>)target_h;
 
-    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target, nil, NO);
     id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
     [encoder setRenderPipelineState:pipeline];
 
@@ -484,7 +567,7 @@ void metal_bridge_cmd_buf_encode_icb_render_pass(
     id<MTLIndirectCommandBuffer> icb      = (__bridge id<MTLIndirectCommandBuffer>)icb_h;
     id<MTLTexture>               target   = (__bridge id<MTLTexture>)target_h;
 
-    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target, nil, NO);
     id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
     [encoder setRenderPipelineState:pipeline];
     [encoder executeCommandsInBuffer:icb withRange:NSMakeRange(0, draw_count)];
@@ -496,38 +579,154 @@ void metal_bridge_cmd_buf_encode_icb_render_pass(
 MetalHandle metal_bridge_cmd_buf_render_encoder(
     MetalHandle cmd_buf_h,
     MetalHandle pipeline_h,
-    MetalHandle target_h)
+    MetalHandle target_h,
+    MetalHandle depth_target_h,
+    int         use_depth_store)
 {
     id<MTLCommandBuffer>        cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
     id<MTLTexture>              target   = (__bridge id<MTLTexture>)target_h;
+    id<MTLTexture>              depth_target = (__bridge id<MTLTexture>)depth_target_h;
 
-    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target, depth_target, use_depth_store ? YES : NO);
     id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
     if (encoder == nil) return NULL;
     [encoder setRenderPipelineState:pipeline];
     return (MetalHandle)CFBridgingRetain(encoder); // +1 retained; caller must release
 }
 
+void metal_bridge_render_encoder_set_bind_buffer(
+    MetalHandle encoder_h,
+    uint32_t    slot,
+    MetalHandle buffer_h,
+    uint64_t    offset)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLBuffer> buffer = (__bridge id<MTLBuffer>)buffer_h;
+    [encoder setVertexBuffer:buffer offset:(NSUInteger)offset atIndex:slot];
+    [encoder setFragmentBuffer:buffer offset:(NSUInteger)offset atIndex:slot];
+}
+
+void metal_bridge_render_encoder_set_bind_texture(
+    MetalHandle encoder_h,
+    uint32_t    slot,
+    MetalHandle texture_h)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLTexture> texture = (__bridge id<MTLTexture>)texture_h;
+    [encoder setVertexTexture:texture atIndex:slot];
+    [encoder setFragmentTexture:texture atIndex:slot];
+}
+
+void metal_bridge_render_encoder_set_bind_sampler(
+    MetalHandle encoder_h,
+    uint32_t    slot,
+    MetalHandle sampler_h)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLSamplerState> sampler = (__bridge id<MTLSamplerState>)sampler_h;
+    [encoder setVertexSamplerState:sampler atIndex:slot];
+    [encoder setFragmentSamplerState:sampler atIndex:slot];
+}
+
+void metal_bridge_render_encoder_set_vertex_buffer(
+    MetalHandle encoder_h,
+    uint32_t    slot,
+    MetalHandle buffer_h,
+    uint64_t    offset)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLBuffer> buffer = (__bridge id<MTLBuffer>)buffer_h;
+    [encoder setVertexBuffer:buffer offset:(NSUInteger)offset atIndex:slot];
+}
+
+void metal_bridge_render_encoder_set_depth_stencil_state(
+    MetalHandle encoder_h,
+    MetalHandle depth_state_h)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLDepthStencilState> depth_state = (__bridge id<MTLDepthStencilState>)depth_state_h;
+    [encoder setDepthStencilState:depth_state];
+}
+
+void metal_bridge_render_encoder_set_depth_stencil_values(
+    MetalHandle encoder_h,
+    uint32_t    compare_fn,
+    int         write_enabled)
+{
+    (void)encoder_h;
+    (void)compare_fn;
+    (void)write_enabled;
+}
+
+void metal_bridge_render_encoder_set_front_facing(
+    MetalHandle encoder_h,
+    uint32_t    front_face)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    [encoder setFrontFacingWinding:wgpu_to_mtl_winding(front_face)];
+}
+
+void metal_bridge_render_encoder_set_cull_mode(
+    MetalHandle encoder_h,
+    uint32_t    cull_mode)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    [encoder setCullMode:wgpu_to_mtl_cull(cull_mode)];
+}
+
 void metal_bridge_render_encoder_draw(
     MetalHandle encoder_h,
+    uint32_t    topology,
     uint32_t    draw_count,
     uint32_t    vertex_count,
     uint32_t    instance_count,
+    uint32_t    first_vertex,
+    uint32_t    first_instance,
     int         redundant_pipeline,
     MetalHandle pipeline_h)
 {
     id<MTLRenderCommandEncoder> encoder  = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
+    const MTLPrimitiveType primitive = wgpu_to_mtl_primitive(topology);
 
     for (uint32_t i = 0; i < draw_count; i++) {
         if (redundant_pipeline) {
             [encoder setRenderPipelineState:pipeline];
         }
-        [encoder drawPrimitives:MTLPrimitiveTypeTriangle
-                    vertexStart:0
+        [encoder drawPrimitives:primitive
+                    vertexStart:first_vertex
                     vertexCount:vertex_count
-                  instanceCount:instance_count];
+                  instanceCount:instance_count
+                    baseInstance:first_instance];
+    }
+}
+
+void metal_bridge_render_encoder_draw_indexed(
+    MetalHandle encoder_h,
+    uint32_t    topology,
+    uint32_t    draw_count,
+    uint32_t    index_count,
+    uint32_t    instance_count,
+    MetalHandle index_buffer_h,
+    uint64_t    index_offset,
+    uint32_t    index_format,
+    int32_t     base_vertex,
+    uint32_t    first_instance)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    id<MTLBuffer> index_buffer = (__bridge id<MTLBuffer>)index_buffer_h;
+    const MTLPrimitiveType primitive = wgpu_to_mtl_primitive(topology);
+    const MTLIndexType index_type = wgpu_to_mtl_index_type(index_format);
+    for (uint32_t i = 0; i < draw_count; i++) {
+        [encoder drawIndexedPrimitives:primitive
+                            indexCount:index_count
+                             indexType:index_type
+                           indexBuffer:index_buffer
+                     indexBufferOffset:(NSUInteger)index_offset
+                         instanceCount:instance_count
+                            baseVertex:base_vertex
+                          baseInstance:first_instance];
     }
 }
 
@@ -945,6 +1144,118 @@ MetalHandle metal_bridge_device_new_render_pipeline(
     return (MetalHandle)CFBridgingRetain(pso);
 }
 
+MetalHandle metal_bridge_device_new_render_pipeline_functions(
+    MetalHandle device_h,
+    MetalHandle vertex_function_h,
+    MetalHandle fragment_function_h,
+    uint32_t    pixel_format,
+    char*       error_buf,
+    size_t      error_cap)
+{
+    id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
+    id<MTLFunction> vert_fn = (__bridge id<MTLFunction>)vertex_function_h;
+    id<MTLFunction> frag_fn = (__bridge id<MTLFunction>)fragment_function_h;
+    if (device == nil || vert_fn == nil || frag_fn == nil) {
+        if (error_buf && error_cap) {
+            strncpy(error_buf, "render pipeline requires valid vertex and fragment functions", error_cap - 1);
+            error_buf[error_cap - 1] = '\0';
+        }
+        return NULL;
+    }
+
+    NSError* err = nil;
+    MTLRenderPipelineDescriptor* desc = [MTLRenderPipelineDescriptor new];
+    desc.vertexFunction = vert_fn;
+    desc.fragmentFunction = frag_fn;
+    desc.colorAttachments[0].pixelFormat = wgpu_to_mtl_format(pixel_format);
+
+    id<MTLRenderPipelineState> pso = [device newRenderPipelineStateWithDescriptor:desc error:&err];
+    if (pso == nil) { write_error(err, error_buf, error_cap); return NULL; }
+    return (MetalHandle)CFBridgingRetain(pso);
+}
+
+MetalHandle metal_bridge_device_new_render_pipeline_full(
+    MetalHandle                     device_h,
+    MetalHandle                     vertex_function_h,
+    MetalHandle                     fragment_function_h,
+    uint32_t                        pixel_format,
+    uint32_t                        depth_format,
+    const MetalVertexBufferLayout*  vertex_layouts,
+    uint32_t                        vertex_layout_count,
+    const MetalVertexAttributeDesc* vertex_attributes,
+    uint32_t                        vertex_attribute_count,
+    char*                           error_buf,
+    size_t                          error_cap)
+{
+    id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
+    id<MTLFunction> vert_fn = (__bridge id<MTLFunction>)vertex_function_h;
+    id<MTLFunction> frag_fn = (__bridge id<MTLFunction>)fragment_function_h;
+    if (device == nil || vert_fn == nil || frag_fn == nil) {
+        if (error_buf && error_cap) {
+            strncpy(error_buf, "render pipeline requires valid vertex and fragment functions", error_cap - 1);
+            error_buf[error_cap - 1] = '\0';
+        }
+        return NULL;
+    }
+
+    NSError* err = nil;
+    MTLRenderPipelineDescriptor* desc = [MTLRenderPipelineDescriptor new];
+    desc.vertexFunction = vert_fn;
+    desc.fragmentFunction = frag_fn;
+    desc.colorAttachments[0].pixelFormat = wgpu_to_mtl_format(pixel_format);
+    if (depth_format != 0) {
+        desc.depthAttachmentPixelFormat = wgpu_to_mtl_format(depth_format);
+    }
+    if (vertex_layout_count > 0 || vertex_attribute_count > 0) {
+        MTLVertexDescriptor* vertex_desc = [MTLVertexDescriptor vertexDescriptor];
+        for (uint32_t i = 0; i < vertex_layout_count; i++) {
+            const MetalVertexBufferLayout layout = vertex_layouts[i];
+            vertex_desc.layouts[layout.buffer_index].stride = (NSUInteger)layout.array_stride;
+            vertex_desc.layouts[layout.buffer_index].stepFunction =
+                layout.step_mode == 0x00000002 ? MTLVertexStepFunctionPerInstance : MTLVertexStepFunctionPerVertex;
+            vertex_desc.layouts[layout.buffer_index].stepRate = 1;
+        }
+        for (uint32_t i = 0; i < vertex_attribute_count; i++) {
+            const MetalVertexAttributeDesc attr = vertex_attributes[i];
+            const MTLVertexFormat format = wgpu_to_mtl_vertex_format(attr.format);
+            if (format == MTLVertexFormatInvalid) {
+                if (error_buf && error_cap) {
+                    strncpy(error_buf, "unsupported vertex attribute format", error_cap - 1);
+                    error_buf[error_cap - 1] = '\0';
+                }
+                return NULL;
+            }
+            vertex_desc.attributes[attr.shader_location].format = format;
+            vertex_desc.attributes[attr.shader_location].offset = (NSUInteger)attr.offset;
+            vertex_desc.attributes[attr.shader_location].bufferIndex = attr.buffer_index;
+        }
+        desc.vertexDescriptor = vertex_desc;
+    }
+
+    id<MTLRenderPipelineState> pso = [device newRenderPipelineStateWithDescriptor:desc error:&err];
+    if (pso == nil) { write_error(err, error_buf, error_cap); return NULL; }
+    return (MetalHandle)CFBridgingRetain(pso);
+}
+
+MetalHandle metal_bridge_device_new_depth_stencil_state(
+    MetalHandle device_h,
+    uint32_t    compare_fn,
+    int         write_enabled,
+    char*       error_buf,
+    size_t      error_cap)
+{
+    (void)error_buf;
+    (void)error_cap;
+    id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
+    if (device == nil) return NULL;
+    MTLDepthStencilDescriptor* desc = [MTLDepthStencilDescriptor new];
+    desc.depthCompareFunction = wgpu_to_mtl_compare(compare_fn);
+    desc.depthWriteEnabled = write_enabled ? YES : NO;
+    id<MTLDepthStencilState> state = [device newDepthStencilStateWithDescriptor:desc];
+    if (state == nil) return NULL;
+    return (MetalHandle)CFBridgingRetain(state);
+}
+
 MetalHandle metal_bridge_device_new_render_target(
     MetalHandle device_h,
     uint32_t    width,
@@ -980,7 +1291,7 @@ MetalHandle metal_bridge_encode_render_pass(
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
     id<MTLTexture>              target   = (__bridge id<MTLTexture>)target_h;
 
-    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target, nil, NO);
 
     id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
@@ -1166,7 +1477,7 @@ MetalHandle metal_bridge_encode_icb_render_pass(
     id<MTLIndirectCommandBuffer> icb      = (__bridge id<MTLIndirectCommandBuffer>)icb_h;
     id<MTLTexture>               target   = (__bridge id<MTLTexture>)target_h;
 
-    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target);
+    MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target, nil, NO);
 
     id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;

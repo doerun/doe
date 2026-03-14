@@ -38,6 +38,7 @@ const DOE_LIMITS = Object.freeze({
   maxComputeWorkgroupsPerDimension: 65535,
 });
 
+const DOE_LIMIT_NAMES = Object.freeze(Object.keys(DOE_LIMITS));
 const DOE_FEATURES = Object.freeze(new Set());
 
 function featureSet(hasFeature) {
@@ -45,13 +46,45 @@ function featureSet(hasFeature) {
   for (const [name, value] of KNOWN_FEATURES) {
     if (hasFeature(value)) supported.push(name);
   }
-  return Object.freeze(new Set(supported));
+  return supported.length === 0 ? DOE_FEATURES : Object.freeze(new Set(supported));
+}
+
+function isPublishedLimitValue(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+function publishLimits(queried) {
+  if (!queried || typeof queried !== 'object') {
+    return DOE_LIMITS;
+  }
+  let sawNativeValue = false;
+  const published = {};
+  for (const name of DOE_LIMIT_NAMES) {
+    const value = queried[name];
+    if (isPublishedLimitValue(value)) {
+      published[name] = value;
+      sawNativeValue = true;
+      continue;
+    }
+    published[name] = DOE_LIMITS[name];
+  }
+  return sawNativeValue ? Object.freeze(published) : DOE_LIMITS;
+}
+
+function publishFeatures(hasFeature) {
+  if (typeof hasFeature !== 'function') {
+    return DOE_FEATURES;
+  }
+  return featureSet(hasFeature);
 }
 
 export {
   SHADER_F16_FEATURE,
   KNOWN_FEATURES,
   DOE_LIMITS,
+  DOE_LIMIT_NAMES,
   DOE_FEATURES,
   featureSet,
+  publishLimits,
+  publishFeatures,
 };

@@ -341,7 +341,11 @@ fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u
     if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPipelineRelease")) return @ptrCast(&N.doeNativeRenderPipelineRelease);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderBeginRenderPass")) return @ptrCast(&N.doeNativeCommandEncoderBeginRenderPass);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetPipeline")) return @ptrCast(&N.doeNativeRenderPassSetPipeline);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetBindGroup")) return @ptrCast(&N.doeNativeRenderPassSetBindGroup);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetVertexBuffer")) return @ptrCast(&N.doeNativeRenderPassSetVertexBuffer);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetIndexBuffer")) return @ptrCast(&N.doeNativeRenderPassSetIndexBuffer);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDraw")) return @ptrCast(&N.doeNativeRenderPassDraw);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDrawIndexed")) return @ptrCast(&N.doeNativeRenderPassDrawIndexed);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderEnd")) return @ptrCast(&N.doeNativeRenderPassEnd);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderRelease")) return @ptrCast(&N.doeNativeRenderPassRelease);
     // Sampler

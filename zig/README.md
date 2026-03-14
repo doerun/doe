@@ -198,12 +198,12 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 
 ### Active eliminations (`-Dlean-verified=true`)
 
-Four Lean theorems currently eliminate runtime branches:
+Six theorems gate runtime branch elimination. All are classified `comptime_verified` — they operate on finite enums and could equivalently be verified by Zig `comptime` exhaustion. Lean provides a redundant second check, not the sole authority. See `lean/README.md` for the full tier classification.
 
-- Init time: `toggleAlwaysSupported` skips per-scope bucketing checks for `driver_toggle` quirks. `requiredProof_forbidden_reject_from_rank` and `strongerSafetyRaisesProofDemand` narrow the `is_blocking` computation in `finalizeBucket`.
-- Per command: `identityActionComplete` proves that informational toggles, unhandled toggles, and no-op actions are identity transforms. The toggle effect is resolved once at init time; the per-command dispatch path skips `applyAction` (and its 12-entry toggle registry scan) entirely when the action is provably identity.
+- Init time: `scopeCommandTableComplete` — comptime `[5×24]bool` table replaces `supportsCommand` switch. Subsumes `toggleAlwaysSupported`. `requiredProof_forbidden_reject_from_rank` and `strongerSafetyRaisesProofDemand` narrow `is_blocking` in `finalizeBucket`.
+- Per command: `identityActionComplete` + `identityActionPreservesCommand` — identity actions (no_op, informational/unhandled toggle) skip `applyAction` entirely. Toggle effect resolved at init time.
 
-At 10,000 dispatched commands (autoregressive decode or diffusion step loops), the per-command elimination saves 1-2ms from proof alone. Build without the flag produces identical code to before.
+Build without `-Dlean-verified=true` produces identical logic to before (the non-lean code paths are equivalent). The payoff is simpler runtime code (662 lines, down from 796) with less duplication.
 
 ## Native execution status
 

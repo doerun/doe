@@ -115,11 +115,10 @@ pub fn parseFnDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 {
 
     // Return type.
     var return_type: u32 = NULL_NODE;
+    var ret_attrs: AttrSpan = .{ .start = 0, .len = 0 };
     if (self.peekTag() == .arrow) {
         self.advance(); // consume `->`
-        // Collect return attributes.
-        const ret_attrs = try parseAttributes(self);
-        _ = ret_attrs;
+        ret_attrs = try parseAttributes(self);
         return_type = try parser_expr.parseTypeExpr(self);
     }
 
@@ -134,6 +133,8 @@ pub fn parseFnDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 {
         params_start,
         params_len,
         return_type,
+        ret_attrs.start,
+        ret_attrs.len,
         attrs.start,
         attrs.len,
     });

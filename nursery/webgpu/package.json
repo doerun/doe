@@ -57,7 +57,7 @@
     "build:addon": "node-gyp rebuild",
     "build:readme-assets": "node scripts/generate-readme-assets.js",
     "prebuild": "node scripts/prebuild.js",
-    "test": "node ./test-node.js && node ./test-package-exports.js",
+    "test": "node ./test-node.js && node ./test-surface-node.js && node ./test-package-exports.js",
     "test:bun": "bun ./test-bun.js",
     "smoke": "node scripts/smoke-test.js"
   },

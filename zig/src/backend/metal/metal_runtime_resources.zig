@@ -111,6 +111,8 @@ pub fn ensure_streaming_render_encoder(self: anytype) !void {
         self.streaming_cmd_buf,
         self.render_pipeline,
         self.render_target,
+        null,
+        0,
     ) orelse return error.InvalidState;
     self.streaming_has_render = true;
 }

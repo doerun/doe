@@ -105,19 +105,38 @@ def profileMatches (profile : DeviceProfile) (spec : MatchSpec) : Bool :=
 
 def supportsScope (scope : Scope) (command : CommandKind) : Bool :=
   match scope with
-  | .alignment => command = CommandKind.upload || command = CommandKind.copyBuffer
-  | .layout => command = CommandKind.dispatch || command = CommandKind.copyBuffer || command = CommandKind.kernelDispatch
-  | .barrier => command = CommandKind.barrier || command = CommandKind.dispatch || command = CommandKind.kernelDispatch
+  | .alignment => command = .upload || command = .copyBufferToTexture
+  | .layout =>
+    command = .dispatch || command = .dispatchIndirect ||
+    command = .kernelDispatch || command = .renderDraw ||
+    command = .drawIndirect || command = .drawIndexedIndirect ||
+    command = .renderPass || command = .copyBufferToTexture ||
+    command = .samplerCreate || command = .samplerDestroy ||
+    command = .textureWrite || command = .textureQuery ||
+    command = .textureDestroy || command = .surfaceCreate ||
+    command = .surfaceCapabilities || command = .surfaceConfigure ||
+    command = .surfaceAcquire || command = .surfacePresent ||
+    command = .surfaceUnconfigure || command = .surfaceRelease ||
+    command = .asyncDiagnostics
+  | .barrier =>
+    command = .barrier || command = .dispatch ||
+    command = .dispatchIndirect || command = .kernelDispatch ||
+    command = .renderDraw || command = .drawIndirect ||
+    command = .drawIndexedIndirect || command = .renderPass ||
+    command = .surfacePresent
   | .driver_toggle => True
-  | .memory => command = CommandKind.upload || command = CommandKind.copyBuffer
+  | .memory =>
+    command = .copyBufferToTexture || command = .upload ||
+    command = .textureWrite || command = .textureQuery ||
+    command = .textureDestroy
 
 def supportsQuirk (quirk : Quirk) (command : CommandKind) : Bool :=
   supportsScope quirk.scope command
 
 def scopeBias (scope : Scope) (command : CommandKind) : Nat :=
   match scope, command with
-  | .alignment, CommandKind.upload => 5
-  | .memory, CommandKind.copyBuffer => 8
+  | .alignment, .upload => 5
+  | .memory, .copyBufferToTexture => 8
   | _, _ => 0
 
 def scoreQuirk (profile : DeviceProfile) (quirk : Quirk) (command : CommandKind) : Nat :=
@@ -143,14 +162,29 @@ def scoreQuirk (profile : DeviceProfile) (quirk : Quirk) (command : CommandKind)
     match command with
     | .upload =>
       if quirk.scope == .alignment then 5 else 0
-    | .copyBuffer =>
+    | .copyBufferToTexture =>
       if quirk.scope == .memory then 8 else if quirk.scope == .alignment then 4 else 0
     | .dispatch =>
+      if quirk.scope == .layout then 4 else if quirk.scope == .barrier then 6 else 0
+    | .dispatchIndirect =>
       if quirk.scope == .layout then 4 else if quirk.scope == .barrier then 6 else 0
     | .barrier =>
       if quirk.scope == .barrier then 8 else 0
     | .kernelDispatch =>
       if quirk.scope == .layout then 7 else if quirk.scope == .barrier then 2 else 0
+    | .renderDraw | .drawIndirect | .drawIndexedIndirect | .renderPass =>
+      if quirk.scope == .layout then 6 else if quirk.scope == .barrier then 3 else 0
+    | .samplerCreate | .samplerDestroy =>
+      if quirk.scope == .layout then 3 else 0
+    | .textureWrite | .textureQuery | .textureDestroy =>
+      if quirk.scope == .memory then 6 else if quirk.scope == .layout then 2 else 0
+    | .surfaceCreate | .surfaceCapabilities | .surfaceConfigure
+    | .surfaceAcquire | .surfacePresent | .surfaceUnconfigure | .surfaceRelease =>
+      if quirk.scope == .memory then 5 else 0
+    | .asyncDiagnostics =>
+      if quirk.scope == .memory then 5 else 0
+    | .mapAsync =>
+      if quirk.scope == .memory then 6 else 0
   base +
   explicitFamilyScore +
   driverRangeScore +

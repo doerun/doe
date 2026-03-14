@@ -494,47 +494,6 @@ fn emit_dot(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
     );
 }
 
-fn emit_glsl_ext_inst(self: anytype, call: anytype, result_ty: ir.TypeId, inst: u32) !u32 {
-    if (call.args.len != 1) return error.InvalidIr;
-    try validate_glsl_ext_operand(self, result_ty);
-
-    const arg_expr = self.function.expr_args.items[call.args.start];
-    const arg_ty = self.function.exprs.items[arg_expr].ty;
-    if (arg_ty != result_ty) return error.UnsupportedConstruct;
-    try validate_glsl_ext_operand(self, arg_ty);
-
-    const result_type = try self.emitter.lower_type(result_ty);
-    const result_id = self.emitter.builder.reserve_id();
-    const import_id = try self.emitter.builder.glsl450_import_id();
-    const operand_id = try self.emit_value_expr(arg_expr);
-
-    try self.emitter.builder.append_function_inst(
-        spirv.Opcode.ExtInst,
-        &.{ result_type, result_id, import_id, inst, operand_id },
-    );
-    return result_id;
-}
-
-fn validate_glsl_ext_operand(self: anytype, ty: ir.TypeId) !void {
-    switch (self.emitter.module.types.get(ty)) {
-        .scalar => |scalar| switch (scalar) {
-            .f16, .f32, .abstract_float => return,
-            else => return error.UnsupportedConstruct,
-        },
-        .vector => |vec| {
-            if (vec.len < 2 or vec.len > 4) return error.UnsupportedConstruct;
-            return switch (self.emitter.module.types.get(vec.elem)) {
-                .scalar => |scalar| switch (scalar) {
-                    .f16, .f32, .abstract_float => {},
-                    else => error.UnsupportedConstruct,
-                },
-                else => error.UnsupportedConstruct,
-            };
-        },
-        else => return error.UnsupportedConstruct,
-    }
-}
-
 fn atomic_memory_operands(self: anytype, ref_expr_id: ir.ExprId) !AtomicMemoryOperands {
     const storage_class = try self.ref_storage_class(ref_expr_id);
     const scope = switch (storage_class) {

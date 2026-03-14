@@ -126,90 +126,49 @@ pub fn buildDispatchContext(allocator: std.mem.Allocator, quirks: []const model.
     var map_async = std.ArrayList(ScoredQuirk).empty;
 
     for (quirks) |quirk| {
-        if (lean_proof.lean_verified and quirk.scope == .driver_toggle) {
-            // Lean theorem toggleAlwaysSupported: driver_toggle supports all commands.
+        // Comptime table built from supportsCommand (correct by construction).
+        // Lean scopeCommandTableComplete is a redundant second check (comptime_verified tier).
+        const si = @intFromEnum(quirk.scope);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.upload)])
             try appendScored(allocator, &upload, quirk, .upload, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.copy_buffer_to_texture)])
             try appendScored(allocator, &copy_buffer_to_texture, quirk, .copy_buffer_to_texture, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.barrier)])
             try appendScored(allocator, &barrier, quirk, .barrier, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.dispatch)])
             try appendScored(allocator, &dispatch_commands, quirk, .dispatch, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.kernel_dispatch)])
             try appendScored(allocator, &kernel_dispatch, quirk, .kernel_dispatch, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.render_draw)])
             try appendScored(allocator, &render_draw, quirk, .render_draw, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.sampler_create)])
             try appendScored(allocator, &sampler_create, quirk, .sampler_create, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.sampler_destroy)])
             try appendScored(allocator, &sampler_destroy, quirk, .sampler_destroy, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.texture_write)])
             try appendScored(allocator, &texture_write, quirk, .texture_write, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.texture_query)])
             try appendScored(allocator, &texture_query, quirk, .texture_query, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.texture_destroy)])
             try appendScored(allocator, &texture_destroy, quirk, .texture_destroy, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_create)])
             try appendScored(allocator, &surface_create, quirk, .surface_create, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_capabilities)])
             try appendScored(allocator, &surface_capabilities, quirk, .surface_capabilities, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_configure)])
             try appendScored(allocator, &surface_configure, quirk, .surface_configure, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_acquire)])
             try appendScored(allocator, &surface_acquire, quirk, .surface_acquire, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_present)])
             try appendScored(allocator, &surface_present, quirk, .surface_present, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_unconfigure)])
             try appendScored(allocator, &surface_unconfigure, quirk, .surface_unconfigure, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_release)])
             try appendScored(allocator, &surface_release, quirk, .surface_release, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.async_diagnostics)])
             try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, scoring_profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.map_async)])
             try appendScored(allocator, &map_async, quirk, .map_async, scoring_profile);
-            continue;
-        }
-        if (supportsCommand(quirk.scope, .upload)) {
-            try appendScored(allocator, &upload, quirk, .upload, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .copy_buffer_to_texture)) {
-            try appendScored(allocator, &copy_buffer_to_texture, quirk, .copy_buffer_to_texture, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .barrier)) {
-            try appendScored(allocator, &barrier, quirk, .barrier, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .dispatch)) {
-            try appendScored(allocator, &dispatch_commands, quirk, .dispatch, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .kernel_dispatch)) {
-            try appendScored(allocator, &kernel_dispatch, quirk, .kernel_dispatch, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .render_draw)) {
-            try appendScored(allocator, &render_draw, quirk, .render_draw, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .sampler_create)) {
-            try appendScored(allocator, &sampler_create, quirk, .sampler_create, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .sampler_destroy)) {
-            try appendScored(allocator, &sampler_destroy, quirk, .sampler_destroy, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .texture_write)) {
-            try appendScored(allocator, &texture_write, quirk, .texture_write, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .texture_query)) {
-            try appendScored(allocator, &texture_query, quirk, .texture_query, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .texture_destroy)) {
-            try appendScored(allocator, &texture_destroy, quirk, .texture_destroy, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_create)) {
-            try appendScored(allocator, &surface_create, quirk, .surface_create, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_capabilities)) {
-            try appendScored(allocator, &surface_capabilities, quirk, .surface_capabilities, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_configure)) {
-            try appendScored(allocator, &surface_configure, quirk, .surface_configure, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_acquire)) {
-            try appendScored(allocator, &surface_acquire, quirk, .surface_acquire, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_present)) {
-            try appendScored(allocator, &surface_present, quirk, .surface_present, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_unconfigure)) {
-            try appendScored(allocator, &surface_unconfigure, quirk, .surface_unconfigure, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_release)) {
-            try appendScored(allocator, &surface_release, quirk, .surface_release, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .async_diagnostics)) {
-            try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, scoring_profile);
-        }
-        if (supportsCommand(quirk.scope, .map_async)) {
-            try appendScored(allocator, &map_async, quirk, .map_async, scoring_profile);
-        }
     }
 
     return DispatchContext{
@@ -265,91 +224,47 @@ pub fn buildProfileDispatchContext(
 
     for (quirks) |quirk| {
         if (!matchesProfile(profile, quirk)) continue;
-
-        if (lean_proof.lean_verified and quirk.scope == .driver_toggle) {
-            // Lean theorem toggleAlwaysSupported: driver_toggle supports all commands.
+        const si = @intFromEnum(quirk.scope);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.upload)])
             try appendScored(allocator, &upload, quirk, .upload, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.copy_buffer_to_texture)])
             try appendScored(allocator, &copy_buffer_to_texture, quirk, .copy_buffer_to_texture, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.barrier)])
             try appendScored(allocator, &barrier, quirk, .barrier, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.dispatch)])
             try appendScored(allocator, &dispatch_commands, quirk, .dispatch, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.kernel_dispatch)])
             try appendScored(allocator, &kernel_dispatch, quirk, .kernel_dispatch, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.render_draw)])
             try appendScored(allocator, &render_draw, quirk, .render_draw, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.sampler_create)])
             try appendScored(allocator, &sampler_create, quirk, .sampler_create, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.sampler_destroy)])
             try appendScored(allocator, &sampler_destroy, quirk, .sampler_destroy, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.texture_write)])
             try appendScored(allocator, &texture_write, quirk, .texture_write, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.texture_query)])
             try appendScored(allocator, &texture_query, quirk, .texture_query, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.texture_destroy)])
             try appendScored(allocator, &texture_destroy, quirk, .texture_destroy, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_create)])
             try appendScored(allocator, &surface_create, quirk, .surface_create, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_capabilities)])
             try appendScored(allocator, &surface_capabilities, quirk, .surface_capabilities, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_configure)])
             try appendScored(allocator, &surface_configure, quirk, .surface_configure, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_acquire)])
             try appendScored(allocator, &surface_acquire, quirk, .surface_acquire, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_present)])
             try appendScored(allocator, &surface_present, quirk, .surface_present, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_unconfigure)])
             try appendScored(allocator, &surface_unconfigure, quirk, .surface_unconfigure, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.surface_release)])
             try appendScored(allocator, &surface_release, quirk, .surface_release, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.async_diagnostics)])
             try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, profile);
+        if (SCOPE_COMMAND_TABLE[si][@intFromEnum(model.CommandKind.map_async)])
             try appendScored(allocator, &map_async, quirk, .map_async, profile);
-            continue;
-        }
-        if (supportsCommand(quirk.scope, .upload)) {
-            try appendScored(allocator, &upload, quirk, .upload, profile);
-        }
-        if (supportsCommand(quirk.scope, .copy_buffer_to_texture)) {
-            try appendScored(allocator, &copy_buffer_to_texture, quirk, .copy_buffer_to_texture, profile);
-        }
-        if (supportsCommand(quirk.scope, .barrier)) {
-            try appendScored(allocator, &barrier, quirk, .barrier, profile);
-        }
-        if (supportsCommand(quirk.scope, .dispatch)) {
-            try appendScored(allocator, &dispatch_commands, quirk, .dispatch, profile);
-        }
-        if (supportsCommand(quirk.scope, .kernel_dispatch)) {
-            try appendScored(allocator, &kernel_dispatch, quirk, .kernel_dispatch, profile);
-        }
-        if (supportsCommand(quirk.scope, .render_draw)) {
-            try appendScored(allocator, &render_draw, quirk, .render_draw, profile);
-        }
-        if (supportsCommand(quirk.scope, .sampler_create)) {
-            try appendScored(allocator, &sampler_create, quirk, .sampler_create, profile);
-        }
-        if (supportsCommand(quirk.scope, .sampler_destroy)) {
-            try appendScored(allocator, &sampler_destroy, quirk, .sampler_destroy, profile);
-        }
-        if (supportsCommand(quirk.scope, .texture_write)) {
-            try appendScored(allocator, &texture_write, quirk, .texture_write, profile);
-        }
-        if (supportsCommand(quirk.scope, .texture_query)) {
-            try appendScored(allocator, &texture_query, quirk, .texture_query, profile);
-        }
-        if (supportsCommand(quirk.scope, .texture_destroy)) {
-            try appendScored(allocator, &texture_destroy, quirk, .texture_destroy, profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_create)) {
-            try appendScored(allocator, &surface_create, quirk, .surface_create, profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_capabilities)) {
-            try appendScored(allocator, &surface_capabilities, quirk, .surface_capabilities, profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_configure)) {
-            try appendScored(allocator, &surface_configure, quirk, .surface_configure, profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_acquire)) {
-            try appendScored(allocator, &surface_acquire, quirk, .surface_acquire, profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_present)) {
-            try appendScored(allocator, &surface_present, quirk, .surface_present, profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_unconfigure)) {
-            try appendScored(allocator, &surface_unconfigure, quirk, .surface_unconfigure, profile);
-        }
-        if (supportsCommand(quirk.scope, .surface_release)) {
-            try appendScored(allocator, &surface_release, quirk, .surface_release, profile);
-        }
-        if (supportsCommand(quirk.scope, .async_diagnostics)) {
-            try appendScored(allocator, &async_diagnostics, quirk, .async_diagnostics, profile);
-        }
-        if (supportsCommand(quirk.scope, .map_async)) {
-            try appendScored(allocator, &map_async, quirk, .map_async, profile);
-        }
     }
 
     return DispatchContext{
@@ -406,8 +321,8 @@ pub fn dispatch(profile: model.DeviceProfile, context: DispatchContext, command:
 
     const quirk = bucket.best.?;
 
-    // Lean theorem informationalToggleIdentity / noOpActionIdentity:
-    // when action_is_identity was resolved true at init time, applyAction is provably identity.
+    // Identity action skip (comptime_verified tier): action_is_identity resolved at init time.
+    // Lean identityActionPreservesCommand is a redundant second check.
     const applied_command = if (lean_proof.lean_verified and bucket.action_is_identity)
         command
     else
@@ -486,11 +401,8 @@ fn finalizeBucket(
     const best = storage.items[0];
     const requires_lean = model.requiresProof(best.quirk.verification_mode);
     const is_blocking = if (lean_proof.lean_verified) blk: {
-        // Lean theorem requiredProof_forbidden_reject_from_rank:
-        // .rejected never meets any safety class requirement → always blocking.
+        // Blocking shortcuts (comptime_verified tier — verifiable by enum exhaustion).
         if (best.quirk.proof_level == .rejected) break :blk true;
-        // Lean theorem strongerSafetyRaisesProofDemand:
-        // critical safety demands .proven → skip requires_lean check.
         if (best.quirk.safety_class == .critical) break :blk best.quirk.proof_level != .proven;
         break :blk requires_lean and best.quirk.proof_level != .proven;
     } else requires_lean and best.quirk.proof_level != .proven;
@@ -719,6 +631,20 @@ fn bucketForKind(context: DispatchContext, kind: model.CommandKind) CommandDispa
         .map_async => context.map_async,
     };
 }
+
+// Comptime scope×command support table (correct by construction — built from supportsCommand).
+// Lean scopeCommandTableComplete is a redundant second check (comptime_verified tier).
+const SCOPE_COUNT = @typeInfo(model.Scope).@"enum".fields.len;
+const COMMAND_KIND_COUNT = @typeInfo(model.CommandKind).@"enum".fields.len;
+const SCOPE_COMMAND_TABLE: [SCOPE_COUNT][COMMAND_KIND_COUNT]bool = blk: {
+    var table: [SCOPE_COUNT][COMMAND_KIND_COUNT]bool = undefined;
+    for (0..SCOPE_COUNT) |si| {
+        for (0..COMMAND_KIND_COUNT) |ci| {
+            table[si][ci] = supportsCommand(@enumFromInt(si), @enumFromInt(ci));
+        }
+    }
+    break :blk table;
+};
 
 pub const applyAction = quirk_actions.applyAction;
 

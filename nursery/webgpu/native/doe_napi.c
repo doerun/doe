@@ -62,6 +62,7 @@ typedef uint32_t WGPUBool;
 #define WGPU_WAIT_STATUS_SUCCESS 1
 #define WGPU_WAIT_STATUS_TIMED_OUT 2
 #define WGPU_WAIT_STATUS_ERROR 3
+#define WGPU_STATUS_SUCCESS 1
 #define WGPU_MAP_ASYNC_STATUS_SUCCESS 1
 #define WGPU_REQUEST_STATUS_SUCCESS 1
 #define WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS 2
@@ -263,6 +264,19 @@ typedef struct {
 
 typedef struct {
     void* nextInChain;
+    WGPUTextureView view;
+    uint32_t depthLoadOp;
+    uint32_t depthStoreOp;
+    float depthClearValue;
+    WGPUBool depthReadOnly;
+    uint32_t stencilLoadOp;
+    uint32_t stencilStoreOp;
+    uint32_t stencilClearValue;
+    WGPUBool stencilReadOnly;
+} WGPURenderPassDepthStencilAttachment;
+
+typedef struct {
+    void* nextInChain;
     WGPUStringView label;
     size_t colorAttachmentCount;
     const WGPURenderPassColorAttachment* colorAttachments;
@@ -270,6 +284,102 @@ typedef struct {
     WGPUQuerySet occlusionQuerySet;
     void* timestampWrites;
 } WGPURenderPassDescriptor;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView key;
+    double value;
+} WGPUConstantEntry;
+
+typedef struct {
+    void* nextInChain;
+    WGPUShaderModule module;
+    WGPUStringView entryPoint;
+    size_t constantCount;
+    const WGPUConstantEntry* constants;
+    size_t bufferCount;
+    const void* buffers;
+} WGPURenderVertexState;
+
+typedef struct {
+    void* nextInChain;
+    uint32_t format;
+    uint64_t offset;
+    uint32_t shaderLocation;
+} WGPURenderVertexAttribute;
+
+typedef struct {
+    void* nextInChain;
+    uint32_t stepMode;
+    uint64_t arrayStride;
+    size_t attributeCount;
+    const WGPURenderVertexAttribute* attributes;
+} WGPURenderVertexBufferLayout;
+
+typedef struct {
+    void* nextInChain;
+    uint32_t format;
+    const void* blend;
+    uint64_t writeMask;
+} WGPURenderColorTargetState;
+
+typedef struct {
+    void* nextInChain;
+    WGPUShaderModule module;
+    WGPUStringView entryPoint;
+    size_t constantCount;
+    const WGPUConstantEntry* constants;
+    size_t targetCount;
+    const WGPURenderColorTargetState* targets;
+} WGPURenderFragmentState;
+
+typedef struct {
+    void* nextInChain;
+    uint32_t topology;
+    uint32_t stripIndexFormat;
+    uint32_t frontFace;
+    uint32_t cullMode;
+    WGPUBool unclippedDepth;
+} WGPURenderPrimitiveState;
+
+typedef struct {
+    void* nextInChain;
+    uint32_t count;
+    uint32_t mask;
+    WGPUBool alphaToCoverageEnabled;
+} WGPURenderMultisampleState;
+
+typedef struct {
+    uint32_t compare;
+    uint32_t failOp;
+    uint32_t depthFailOp;
+    uint32_t passOp;
+} WGPURenderStencilFaceState;
+
+typedef struct {
+    void* nextInChain;
+    uint32_t format;
+    uint32_t depthWriteEnabled;
+    uint32_t depthCompare;
+    WGPURenderStencilFaceState stencilFront;
+    WGPURenderStencilFaceState stencilBack;
+    uint32_t stencilReadMask;
+    uint32_t stencilWriteMask;
+    int32_t depthBias;
+    float depthBiasSlopeScale;
+    float depthBiasClamp;
+} WGPURenderDepthStencilState;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView label;
+    WGPUPipelineLayout layout;
+    WGPURenderVertexState vertex;
+    WGPURenderPrimitiveState primitive;
+    const WGPURenderDepthStencilState* depthStencil;
+    WGPURenderMultisampleState multisample;
+    const WGPURenderFragmentState* fragment;
+} WGPURenderPipelineDescriptor;
 
 typedef struct {
     void*    nextInChain;
@@ -413,7 +523,11 @@ DECL_PFN(WGPURenderPipeline, wgpuDeviceCreateRenderPipeline, (WGPUDevice, const 
 DECL_PFN(void, wgpuRenderPipelineRelease, (WGPURenderPipeline));
 DECL_PFN(WGPURenderPassEncoder, wgpuCommandEncoderBeginRenderPass, (WGPUCommandEncoder, const WGPURenderPassDescriptor*));
 DECL_PFN(void, wgpuRenderPassEncoderSetPipeline, (WGPURenderPassEncoder, WGPURenderPipeline));
+DECL_PFN(void, wgpuRenderPassEncoderSetBindGroup, (WGPURenderPassEncoder, uint32_t, WGPUBindGroup, size_t, const uint32_t*));
+DECL_PFN(void, wgpuRenderPassEncoderSetVertexBuffer, (WGPURenderPassEncoder, uint32_t, WGPUBuffer, uint64_t, uint64_t));
+DECL_PFN(void, wgpuRenderPassEncoderSetIndexBuffer, (WGPURenderPassEncoder, WGPUBuffer, uint32_t, uint64_t, uint64_t));
 DECL_PFN(void, wgpuRenderPassEncoderDraw, (WGPURenderPassEncoder, uint32_t, uint32_t, uint32_t, uint32_t));
+DECL_PFN(void, wgpuRenderPassEncoderDrawIndexed, (WGPURenderPassEncoder, uint32_t, uint32_t, uint32_t, int32_t, uint32_t));
 DECL_PFN(void, wgpuRenderPassEncoderEnd, (WGPURenderPassEncoder));
 DECL_PFN(void, wgpuRenderPassEncoderRelease, (WGPURenderPassEncoder));
 DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
@@ -569,6 +683,20 @@ static int64_t get_int64_prop(napi_env env, napi_value obj, const char* key) {
     return out;
 }
 
+static int64_t get_int64_value(napi_env env, napi_value value) {
+    int64_t out = 0;
+    napi_get_value_int64(env, value, &out);
+    return out;
+}
+
+static double get_double_prop(napi_env env, napi_value obj, const char* key) {
+    napi_value val;
+    napi_get_named_property(env, obj, key, &val);
+    double out = 0.0;
+    napi_get_value_double(env, val, &out);
+    return out;
+}
+
 static bool get_bool_prop(napi_env env, napi_value obj, const char* key) {
     napi_value val;
     napi_get_named_property(env, obj, key, &val);
@@ -590,6 +718,16 @@ static napi_value get_prop(napi_env env, napi_value obj, const char* key) {
     napi_value val;
     napi_get_named_property(env, obj, key, &val);
     return val;
+}
+
+static char* dup_string_value(napi_env env, napi_value value, size_t* out_len) {
+    size_t len = 0;
+    napi_get_value_string_utf8(env, value, NULL, 0, &len);
+    char* out = (char*)malloc(len + 1);
+    if (!out) return NULL;
+    napi_get_value_string_utf8(env, value, out, len + 1, &len);
+    if (out_len) *out_len = len;
+    return out;
 }
 
 static napi_valuetype prop_type(napi_env env, napi_value obj, const char* key) {
@@ -681,7 +819,11 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuRenderPipelineRelease);
     LOAD_SYM(wgpuCommandEncoderBeginRenderPass);
     LOAD_SYM(wgpuRenderPassEncoderSetPipeline);
+    LOAD_SYM(wgpuRenderPassEncoderSetBindGroup);
+    LOAD_SYM(wgpuRenderPassEncoderSetVertexBuffer);
+    LOAD_SYM(wgpuRenderPassEncoderSetIndexBuffer);
     LOAD_SYM(wgpuRenderPassEncoderDraw);
+    LOAD_SYM(wgpuRenderPassEncoderDrawIndexed);
     LOAD_SYM(wgpuRenderPassEncoderEnd);
     LOAD_SYM(wgpuRenderPassEncoderRelease);
     LOAD_SYM(wgpuDeviceGetLimits);
@@ -1338,6 +1480,9 @@ static uint32_t storage_texture_access_from_string(napi_env env, napi_value val)
 }
 
 static uint32_t texture_format_from_string(napi_env env, napi_value val);
+static uint32_t primitive_topology_from_string(napi_env env, napi_value val);
+static uint32_t front_face_from_string(napi_env env, napi_value val);
+static uint32_t cull_mode_from_string(napi_env env, napi_value val);
 
 static napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
@@ -2060,6 +2205,145 @@ static uint32_t texture_format_from_string(napi_env env, napi_value val) {
     return 0x00000016;
 }
 
+static uint32_t primitive_topology_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    char buf[32] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "point-list") == 0) return 0x00000001;
+    if (strcmp(buf, "line-list") == 0) return 0x00000002;
+    if (strcmp(buf, "line-strip") == 0) return 0x00000003;
+    if (strcmp(buf, "triangle-list") == 0) return 0x00000004;
+    if (strcmp(buf, "triangle-strip") == 0) return 0x00000005;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported primitive topology");
+    return 0;
+}
+
+static uint32_t front_face_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    char buf[16] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "ccw") == 0) return 0x00000001;
+    if (strcmp(buf, "cw") == 0) return 0x00000002;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported frontFace");
+    return 0;
+}
+
+static uint32_t cull_mode_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    char buf[16] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "none") == 0) return 0x00000001;
+    if (strcmp(buf, "front") == 0) return 0x00000002;
+    if (strcmp(buf, "back") == 0) return 0x00000003;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported cullMode");
+    return 0;
+}
+
+static uint32_t compare_func_from_value(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    char buf[24] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "never") == 0) return 0x00000001;
+    if (strcmp(buf, "less") == 0) return 0x00000002;
+    if (strcmp(buf, "equal") == 0) return 0x00000003;
+    if (strcmp(buf, "less-equal") == 0) return 0x00000004;
+    if (strcmp(buf, "greater") == 0) return 0x00000005;
+    if (strcmp(buf, "not-equal") == 0) return 0x00000006;
+    if (strcmp(buf, "greater-equal") == 0) return 0x00000007;
+    if (strcmp(buf, "always") == 0) return 0x00000008;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported compare function");
+    return 0;
+}
+
+static uint32_t vertex_step_mode_from_value(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    char buf[24] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "vertex") == 0) return 0x00000001;
+    if (strcmp(buf, "instance") == 0) return 0x00000002;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported vertex stepMode");
+    return 0;
+}
+
+static uint32_t vertex_format_from_value(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    char buf[32] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "float32") == 0) return 0x00000019;
+    if (strcmp(buf, "float32x2") == 0) return 0x0000001A;
+    if (strcmp(buf, "float32x3") == 0) return 0x0000001B;
+    if (strcmp(buf, "float32x4") == 0) return 0x0000001C;
+    if (strcmp(buf, "uint32") == 0) return 0x00000021;
+    if (strcmp(buf, "uint32x2") == 0) return 0x00000022;
+    if (strcmp(buf, "uint32x3") == 0) return 0x00000023;
+    if (strcmp(buf, "uint32x4") == 0) return 0x00000024;
+    if (strcmp(buf, "sint32") == 0) return 0x00000025;
+    if (strcmp(buf, "sint32x2") == 0) return 0x00000026;
+    if (strcmp(buf, "sint32x3") == 0) return 0x00000027;
+    if (strcmp(buf, "sint32x4") == 0) return 0x00000028;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported vertex format");
+    return 0;
+}
+
+static uint32_t index_format_from_value(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt == napi_number) {
+        uint32_t out = 0;
+        napi_get_value_uint32(env, val, &out);
+        return out;
+    }
+    char buf[16] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "uint16") == 0) return 0x00000001;
+    if (strcmp(buf, "uint32") == 0) return 0x00000002;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported index format");
+    return 0;
+}
+
 static napi_value doe_create_texture(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
@@ -2183,16 +2467,246 @@ static napi_value doe_sampler_release(napi_env env, napi_callback_info info) {
 }
 
 /* ================================================================
- * Render Pipeline (noop stub — uses built-in Metal shaders)
- * createRenderPipeline(device)
+ * Render Pipeline
+ * createRenderPipeline(device, descriptor)
  * ================================================================ */
 
 static napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
+    NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
-    WGPURenderPipeline rp = pfn_wgpuDeviceCreateRenderPipeline(device, NULL);
+    napi_valuetype descriptor_type;
+    napi_typeof(env, _args[1], &descriptor_type);
+    if (descriptor_type != napi_object) NAPI_THROW(env, "createRenderPipeline requires a descriptor object");
+
+    if (prop_type(env, _args[1], "vertex") != napi_object) {
+        NAPI_THROW(env, "createRenderPipeline requires descriptor.vertex");
+    }
+    if (prop_type(env, _args[1], "fragment") != napi_object) {
+        NAPI_THROW(env, "createRenderPipeline requires descriptor.fragment");
+    }
+
+    napi_value vertex = get_prop(env, _args[1], "vertex");
+    napi_value fragment = get_prop(env, _args[1], "fragment");
+
+    napi_value targets = get_prop(env, fragment, "targets");
+    bool is_targets_array = false;
+    napi_is_array(env, targets, &is_targets_array);
+    if (!is_targets_array) NAPI_THROW(env, "createRenderPipeline requires descriptor.fragment.targets");
+    uint32_t target_count = 0;
+    napi_get_array_length(env, targets, &target_count);
+    if (target_count == 0) NAPI_THROW(env, "createRenderPipeline requires at least one fragment target");
+    if (target_count > 1) NAPI_THROW(env, "createRenderPipeline currently supports one color target on this package surface");
+
+    napi_value vertex_module_value = get_prop(env, vertex, "module");
+    WGPUShaderModule vertex_module = unwrap_ptr(env, vertex_module_value);
+    if (!vertex_module) NAPI_THROW(env, "createRenderPipeline: descriptor.vertex.module must be a shader module");
+    napi_value fragment_module_value = get_prop(env, fragment, "module");
+    WGPUShaderModule fragment_module = unwrap_ptr(env, fragment_module_value);
+    if (!fragment_module) NAPI_THROW(env, "createRenderPipeline: descriptor.fragment.module must be a shader module");
+
+    size_t vertex_entry_len = 0;
+    size_t fragment_entry_len = 0;
+    char* vertex_entry = has_prop(env, vertex, "entryPoint")
+        ? dup_string_value(env, get_prop(env, vertex, "entryPoint"), &vertex_entry_len)
+        : strdup("main");
+    if (!has_prop(env, vertex, "entryPoint")) vertex_entry_len = 4;
+    char* fragment_entry = has_prop(env, fragment, "entryPoint")
+        ? dup_string_value(env, get_prop(env, fragment, "entryPoint"), &fragment_entry_len)
+        : strdup("main");
+    if (!has_prop(env, fragment, "entryPoint")) fragment_entry_len = 4;
+    if (!vertex_entry || !fragment_entry) {
+        free(vertex_entry);
+        free(fragment_entry);
+        NAPI_THROW(env, "createRenderPipeline: out of memory");
+    }
+
+    WGPURenderVertexBufferLayout* vertex_buffers = NULL;
+    WGPURenderVertexAttribute* vertex_attributes = NULL;
+    WGPURenderDepthStencilState* depth_stencil = NULL;
+    uint32_t vertex_buffer_count = 0;
+
+    if (has_prop(env, vertex, "buffers")) {
+        napi_value buffers = get_prop(env, vertex, "buffers");
+        bool is_array = false;
+        napi_is_array(env, buffers, &is_array);
+        if (!is_array) {
+            free(vertex_entry);
+            free(fragment_entry);
+            NAPI_THROW(env, "createRenderPipeline: descriptor.vertex.buffers must be an array");
+        }
+        napi_get_array_length(env, buffers, &vertex_buffer_count);
+        if (vertex_buffer_count > 0) {
+            size_t total_attributes = 0;
+            for (uint32_t i = 0; i < vertex_buffer_count; i++) {
+                napi_value buffer_desc;
+                napi_get_element(env, buffers, i, &buffer_desc);
+                if (prop_type(env, buffer_desc, "attributes") == napi_object) {
+                    napi_value attrs = get_prop(env, buffer_desc, "attributes");
+                    bool attrs_is_array = false;
+                    napi_is_array(env, attrs, &attrs_is_array);
+                    if (!attrs_is_array) {
+                        free(vertex_entry);
+                        free(fragment_entry);
+                        NAPI_THROW(env, "createRenderPipeline: descriptor.vertex.buffers[*].attributes must be an array");
+                    }
+                    uint32_t attr_count = 0;
+                    napi_get_array_length(env, attrs, &attr_count);
+                    total_attributes += attr_count;
+                }
+            }
+
+            vertex_buffers = (WGPURenderVertexBufferLayout*)calloc(vertex_buffer_count, sizeof(WGPURenderVertexBufferLayout));
+            if (!vertex_buffers) {
+                free(vertex_entry);
+                free(fragment_entry);
+                NAPI_THROW(env, "createRenderPipeline: out of memory");
+            }
+            if (total_attributes > 0) {
+                vertex_attributes = (WGPURenderVertexAttribute*)calloc(total_attributes, sizeof(WGPURenderVertexAttribute));
+                if (!vertex_attributes) {
+                    free(vertex_buffers);
+                    free(vertex_entry);
+                    free(fragment_entry);
+                    NAPI_THROW(env, "createRenderPipeline: out of memory");
+                }
+            }
+
+            size_t attr_index = 0;
+            for (uint32_t i = 0; i < vertex_buffer_count; i++) {
+                napi_value buffer_desc;
+                napi_get_element(env, buffers, i, &buffer_desc);
+                vertex_buffers[i].nextInChain = NULL;
+                vertex_buffers[i].stepMode = has_prop(env, buffer_desc, "stepMode")
+                    ? vertex_step_mode_from_value(env, get_prop(env, buffer_desc, "stepMode"))
+                    : 0x00000001;
+                vertex_buffers[i].arrayStride = has_prop(env, buffer_desc, "arrayStride")
+                    ? (uint64_t)get_int64_prop(env, buffer_desc, "arrayStride")
+                    : 0;
+                vertex_buffers[i].attributeCount = 0;
+                vertex_buffers[i].attributes = NULL;
+
+                if (prop_type(env, buffer_desc, "attributes") == napi_object) {
+                    napi_value attrs = get_prop(env, buffer_desc, "attributes");
+                    uint32_t attr_count = 0;
+                    napi_get_array_length(env, attrs, &attr_count);
+                    vertex_buffers[i].attributeCount = attr_count;
+                    vertex_buffers[i].attributes = attr_count > 0 ? &vertex_attributes[attr_index] : NULL;
+                    for (uint32_t j = 0; j < attr_count; j++) {
+                        napi_value attr;
+                        napi_get_element(env, attrs, j, &attr);
+                        vertex_attributes[attr_index].nextInChain = NULL;
+                        vertex_attributes[attr_index].format = vertex_format_from_value(env, get_prop(env, attr, "format"));
+                        vertex_attributes[attr_index].offset = has_prop(env, attr, "offset")
+                            ? (uint64_t)get_int64_prop(env, attr, "offset")
+                            : 0;
+                        vertex_attributes[attr_index].shaderLocation = get_uint32_prop(env, attr, "shaderLocation");
+                        attr_index += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    napi_value target0;
+    napi_get_element(env, targets, 0, &target0);
+
+    WGPURenderColorTargetState color_target;
+    memset(&color_target, 0, sizeof(color_target));
+    color_target.nextInChain = NULL;
+    color_target.format = texture_format_from_string(env, get_prop(env, target0, "format"));
+    color_target.blend = NULL;
+    color_target.writeMask = 0xF;
+
+    WGPURenderFragmentState fragment_state;
+    memset(&fragment_state, 0, sizeof(fragment_state));
+    fragment_state.nextInChain = NULL;
+    fragment_state.module = fragment_module;
+    fragment_state.entryPoint.data = fragment_entry;
+    fragment_state.entryPoint.length = fragment_entry_len;
+    fragment_state.constantCount = 0;
+    fragment_state.constants = NULL;
+    fragment_state.targetCount = 1;
+    fragment_state.targets = &color_target;
+
+    WGPURenderPipelineDescriptor desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.nextInChain = NULL;
+    desc.label.data = NULL;
+    desc.label.length = 0;
+    desc.layout = has_prop(env, _args[1], "layout") && prop_type(env, _args[1], "layout") == napi_external
+        ? unwrap_ptr(env, get_prop(env, _args[1], "layout"))
+        : NULL;
+    desc.vertex.nextInChain = NULL;
+    desc.vertex.module = vertex_module;
+    desc.vertex.entryPoint.data = vertex_entry;
+    desc.vertex.entryPoint.length = vertex_entry_len;
+    desc.vertex.constantCount = 0;
+    desc.vertex.constants = NULL;
+    desc.vertex.bufferCount = vertex_buffer_count;
+    desc.vertex.buffers = vertex_buffers;
+    desc.primitive.nextInChain = NULL;
+    desc.primitive.topology = 0x00000004;
+    desc.primitive.stripIndexFormat = 0;
+    desc.primitive.frontFace = 0x00000001;
+    desc.primitive.cullMode = 0x00000001;
+    desc.primitive.unclippedDepth = 0;
+    if (has_prop(env, _args[1], "primitive") && prop_type(env, _args[1], "primitive") == napi_object) {
+        napi_value primitive = get_prop(env, _args[1], "primitive");
+        if (has_prop(env, primitive, "topology"))
+            desc.primitive.topology = primitive_topology_from_string(env, get_prop(env, primitive, "topology"));
+        if (has_prop(env, primitive, "frontFace"))
+            desc.primitive.frontFace = front_face_from_string(env, get_prop(env, primitive, "frontFace"));
+        if (has_prop(env, primitive, "cullMode"))
+            desc.primitive.cullMode = cull_mode_from_string(env, get_prop(env, primitive, "cullMode"));
+        if (has_prop(env, primitive, "unclippedDepth"))
+            desc.primitive.unclippedDepth = get_bool_prop(env, primitive, "unclippedDepth") ? 1 : 0;
+    }
+    desc.depthStencil = NULL;
+    if (has_prop(env, _args[1], "depthStencil") && prop_type(env, _args[1], "depthStencil") == napi_object) {
+        napi_value depth_obj = get_prop(env, _args[1], "depthStencil");
+        depth_stencil = (WGPURenderDepthStencilState*)calloc(1, sizeof(WGPURenderDepthStencilState));
+        if (!depth_stencil) {
+            free(vertex_buffers);
+            free(vertex_attributes);
+            free(vertex_entry);
+            free(fragment_entry);
+            NAPI_THROW(env, "createRenderPipeline: out of memory");
+        }
+        depth_stencil->nextInChain = NULL;
+        depth_stencil->format = texture_format_from_string(env, get_prop(env, depth_obj, "format"));
+        depth_stencil->depthWriteEnabled = has_prop(env, depth_obj, "depthWriteEnabled")
+            ? (get_bool_prop(env, depth_obj, "depthWriteEnabled") ? 1 : 0)
+            : 0;
+        depth_stencil->depthCompare = has_prop(env, depth_obj, "depthCompare")
+            ? compare_func_from_value(env, get_prop(env, depth_obj, "depthCompare"))
+            : 0x00000008;
+        depth_stencil->stencilReadMask = 0xFFFFFFFFu;
+        depth_stencil->stencilWriteMask = 0xFFFFFFFFu;
+        desc.depthStencil = depth_stencil;
+    }
+    desc.multisample.nextInChain = NULL;
+    desc.multisample.count = 1;
+    desc.multisample.mask = 0xFFFFffffu;
+    desc.multisample.alphaToCoverageEnabled = 0;
+    if (has_prop(env, _args[1], "multisample") && prop_type(env, _args[1], "multisample") == napi_object) {
+        napi_value multisample = get_prop(env, _args[1], "multisample");
+        if (has_prop(env, multisample, "count"))
+            desc.multisample.count = get_uint32_prop(env, multisample, "count");
+        if (has_prop(env, multisample, "mask"))
+            desc.multisample.mask = get_uint32_prop(env, multisample, "mask");
+        if (has_prop(env, multisample, "alphaToCoverageEnabled"))
+            desc.multisample.alphaToCoverageEnabled = get_bool_prop(env, multisample, "alphaToCoverageEnabled") ? 1 : 0;
+    }
+    desc.fragment = &fragment_state;
+
+    WGPURenderPipeline rp = pfn_wgpuDeviceCreateRenderPipeline(device, &desc);
+    free(depth_stencil);
+    free(vertex_attributes);
+    free(vertex_buffers);
+    free(vertex_entry);
+    free(fragment_entry);
     if (!rp) NAPI_THROW(env, "createRenderPipeline failed");
     return wrap_ptr(env, rp);
 }
@@ -2206,7 +2720,7 @@ static napi_value doe_render_pipeline_release(napi_env env, napi_callback_info i
 
 /* ================================================================
  * Render Pass
- * beginRenderPass(encoder, colorAttachments[])
+ * beginRenderPass(encoder, descriptor)
  * ================================================================ */
 
 static napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
@@ -2215,16 +2729,23 @@ static napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
     WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
     if (!enc) NAPI_THROW(env, "Invalid encoder");
 
-    /* _args[1] is array of color attachments */
+    if (prop_type(env, _args[1], "colorAttachments") != napi_object) {
+        NAPI_THROW(env, "beginRenderPass requires descriptor.colorAttachments");
+    }
+
+    napi_value color_attachments = get_prop(env, _args[1], "colorAttachments");
     uint32_t att_count = 0;
-    napi_get_array_length(env, _args[1], &att_count);
+    napi_get_array_length(env, color_attachments, &att_count);
     if (att_count == 0) NAPI_THROW(env, "beginRenderPass: need at least one color attachment");
 
     WGPURenderPassColorAttachment* atts = (WGPURenderPassColorAttachment*)calloc(
         att_count, sizeof(WGPURenderPassColorAttachment));
+    WGPURenderPassDepthStencilAttachment depth_att;
+    memset(&depth_att, 0, sizeof(depth_att));
+    bool has_depth_att = false;
     for (uint32_t i = 0; i < att_count; i++) {
         napi_value elem;
-        napi_get_element(env, _args[1], i, &elem);
+        napi_get_element(env, color_attachments, i, &elem);
         atts[i].view = unwrap_ptr(env, get_prop(env, elem, "view"));
         atts[i].loadOp = 1; /* clear */
         atts[i].storeOp = 1; /* store */
@@ -2244,10 +2765,34 @@ static napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
         }
     }
 
+    if (has_prop(env, _args[1], "depthStencilAttachment") && prop_type(env, _args[1], "depthStencilAttachment") == napi_object) {
+        napi_value depth_obj = get_prop(env, _args[1], "depthStencilAttachment");
+        depth_att.nextInChain = NULL;
+        depth_att.view = unwrap_ptr(env, get_prop(env, depth_obj, "view"));
+        depth_att.depthLoadOp = 1;
+        depth_att.depthStoreOp = 1;
+        depth_att.depthClearValue = has_prop(env, depth_obj, "depthClearValue")
+            ? (float)get_double_prop(env, depth_obj, "depthClearValue")
+            : 1.0f;
+        depth_att.depthReadOnly = has_prop(env, depth_obj, "depthReadOnly")
+            ? (get_bool_prop(env, depth_obj, "depthReadOnly") ? 1 : 0)
+            : 0;
+        depth_att.stencilLoadOp = 1;
+        depth_att.stencilStoreOp = 1;
+        depth_att.stencilClearValue = has_prop(env, depth_obj, "stencilClearValue")
+            ? get_uint32_prop(env, depth_obj, "stencilClearValue")
+            : 0;
+        depth_att.stencilReadOnly = has_prop(env, depth_obj, "stencilReadOnly")
+            ? (get_bool_prop(env, depth_obj, "stencilReadOnly") ? 1 : 0)
+            : 0;
+        has_depth_att = true;
+    }
+
     WGPURenderPassDescriptor desc;
     memset(&desc, 0, sizeof(desc));
     desc.colorAttachmentCount = att_count;
     desc.colorAttachments = atts;
+    desc.depthStencilAttachment = has_depth_att ? &depth_att : NULL;
 
     WGPURenderPassEncoder pass = pfn_wgpuCommandEncoderBeginRenderPass(enc, &desc);
     free(atts);
@@ -2262,6 +2807,43 @@ static napi_value doe_render_pass_set_pipeline(napi_env env, napi_callback_info 
     return NULL;
 }
 
+static napi_value doe_render_pass_set_bind_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+    uint32_t index = 0;
+    napi_get_value_uint32(env, _args[1], &index);
+    WGPUBindGroup bg = unwrap_ptr(env, _args[2]);
+    pfn_wgpuRenderPassEncoderSetBindGroup(pass, index, bg, 0, NULL);
+    return NULL;
+}
+
+static napi_value doe_render_pass_set_vertex_buffer(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+    uint32_t slot = 0;
+    uint64_t offset = 0;
+    uint64_t size = 0;
+    napi_get_value_uint32(env, _args[1], &slot);
+    WGPUBuffer buffer = unwrap_ptr(env, _args[2]);
+    offset = (uint64_t)get_int64_value(env, _args[3]);
+    size = (uint64_t)get_int64_value(env, _args[4]);
+    pfn_wgpuRenderPassEncoderSetVertexBuffer(pass, slot, buffer, offset, size);
+    return NULL;
+}
+
+static napi_value doe_render_pass_set_index_buffer(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+    uint32_t format = index_format_from_value(env, _args[2]);
+    uint64_t offset = 0;
+    uint64_t size = 0;
+    offset = (uint64_t)get_int64_value(env, _args[3]);
+    size = (uint64_t)get_int64_value(env, _args[4]);
+    pfn_wgpuRenderPassEncoderSetIndexBuffer(pass, buffer, format, offset, size);
+    return NULL;
+}
+
 /* renderPassDraw(pass, vertexCount, instanceCount, firstVertex, firstInstance) */
 static napi_value doe_render_pass_draw(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 5);
@@ -2272,6 +2854,23 @@ static napi_value doe_render_pass_draw(napi_env env, napi_callback_info info) {
     napi_get_value_uint32(env, _args[3], &fv);
     napi_get_value_uint32(env, _args[4], &fi);
     pfn_wgpuRenderPassEncoderDraw(pass, vc, ic, fv, fi);
+    return NULL;
+}
+
+static napi_value doe_render_pass_draw_indexed(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 6);
+    WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+    uint32_t index_count = 0;
+    uint32_t instance_count = 0;
+    uint32_t first_index = 0;
+    int32_t base_vertex = 0;
+    uint32_t first_instance = 0;
+    napi_get_value_uint32(env, _args[1], &index_count);
+    napi_get_value_uint32(env, _args[2], &instance_count);
+    napi_get_value_uint32(env, _args[3], &first_index);
+    napi_get_value_int32(env, _args[4], &base_vertex);
+    napi_get_value_uint32(env, _args[5], &first_instance);
+    pfn_wgpuRenderPassEncoderDrawIndexed(pass, index_count, instance_count, first_index, base_vertex, first_instance);
     return NULL;
 }
 
@@ -2292,21 +2891,12 @@ static napi_value doe_render_pass_release(napi_env env, napi_callback_info info)
  * Device capabilities: limits, features
  * ================================================================ */
 
-static napi_value doe_device_get_limits(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
-    CHECK_LIB_LOADED(env);
-    WGPUDevice device = unwrap_ptr(env, _args[0]);
-    if (!device) NAPI_THROW(env, "deviceGetLimits: null device");
-
-    WGPULimits limits;
-    memset(&limits, 0, sizeof(limits));
-    pfn_wgpuDeviceGetLimits(device, &limits);
-
+static napi_value create_limits_object(napi_env env, const WGPULimits* limits) {
     napi_value obj;
     napi_create_object(env, &obj);
 
-#define SET_U32(name) do { napi_value v; napi_create_uint32(env, limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
-#define SET_U64(name) do { napi_value v; napi_create_double(env, (double)limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
+#define SET_U32(name) do { napi_value v; napi_create_uint32(env, limits->name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
+#define SET_U64(name) do { napi_value v; napi_create_double(env, (double)limits->name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
 
     SET_U32(maxTextureDimension1D);
     SET_U32(maxTextureDimension2D);
@@ -2346,6 +2936,24 @@ static napi_value doe_device_get_limits(napi_env env, napi_callback_info info) {
     return obj;
 }
 
+static napi_value doe_device_get_limits(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "deviceGetLimits: null device");
+
+    WGPULimits limits;
+    memset(&limits, 0, sizeof(limits));
+    uint32_t status = pfn_wgpuDeviceGetLimits(device, &limits);
+    if (status != WGPU_STATUS_SUCCESS) {
+        napi_value ret;
+        napi_get_null(env, &ret);
+        return ret;
+    }
+
+    return create_limits_object(env, &limits);
+}
+
 static napi_value doe_adapter_get_limits(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     CHECK_LIB_LOADED(env);
@@ -2354,50 +2962,14 @@ static napi_value doe_adapter_get_limits(napi_env env, napi_callback_info info) 
 
     WGPULimits limits;
     memset(&limits, 0, sizeof(limits));
-    pfn_wgpuAdapterGetLimits(adapter, &limits);
+    uint32_t status = pfn_wgpuAdapterGetLimits(adapter, &limits);
+    if (status != WGPU_STATUS_SUCCESS) {
+        napi_value ret;
+        napi_get_null(env, &ret);
+        return ret;
+    }
 
-    napi_value obj;
-    napi_create_object(env, &obj);
-
-#define SET_U32(name) do { napi_value v; napi_create_uint32(env, limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
-#define SET_U64(name) do { napi_value v; napi_create_double(env, (double)limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
-
-    SET_U32(maxTextureDimension1D);
-    SET_U32(maxTextureDimension2D);
-    SET_U32(maxTextureDimension3D);
-    SET_U32(maxTextureArrayLayers);
-    SET_U32(maxBindGroups);
-    SET_U32(maxBindGroupsPlusVertexBuffers);
-    SET_U32(maxBindingsPerBindGroup);
-    SET_U32(maxDynamicUniformBuffersPerPipelineLayout);
-    SET_U32(maxDynamicStorageBuffersPerPipelineLayout);
-    SET_U32(maxSampledTexturesPerShaderStage);
-    SET_U32(maxSamplersPerShaderStage);
-    SET_U32(maxStorageBuffersPerShaderStage);
-    SET_U32(maxStorageTexturesPerShaderStage);
-    SET_U32(maxUniformBuffersPerShaderStage);
-    SET_U64(maxUniformBufferBindingSize);
-    SET_U64(maxStorageBufferBindingSize);
-    SET_U32(minUniformBufferOffsetAlignment);
-    SET_U32(minStorageBufferOffsetAlignment);
-    SET_U32(maxVertexBuffers);
-    SET_U64(maxBufferSize);
-    SET_U32(maxVertexAttributes);
-    SET_U32(maxVertexBufferArrayStride);
-    SET_U32(maxInterStageShaderVariables);
-    SET_U32(maxColorAttachments);
-    SET_U32(maxColorAttachmentBytesPerSample);
-    SET_U32(maxComputeWorkgroupStorageSize);
-    SET_U32(maxComputeInvocationsPerWorkgroup);
-    SET_U32(maxComputeWorkgroupSizeX);
-    SET_U32(maxComputeWorkgroupSizeY);
-    SET_U32(maxComputeWorkgroupSizeZ);
-    SET_U32(maxComputeWorkgroupsPerDimension);
-
-#undef SET_U32
-#undef SET_U64
-
-    return obj;
+    return create_limits_object(env, &limits);
 }
 
 static napi_value doe_adapter_has_feature(napi_env env, napi_callback_info info) {
@@ -2496,7 +3068,11 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderPipelineRelease", doe_render_pipeline_release),
         EXPORT_FN("beginRenderPass", doe_begin_render_pass),
         EXPORT_FN("renderPassSetPipeline", doe_render_pass_set_pipeline),
+        EXPORT_FN("renderPassSetBindGroup", doe_render_pass_set_bind_group),
+        EXPORT_FN("renderPassSetVertexBuffer", doe_render_pass_set_vertex_buffer),
+        EXPORT_FN("renderPassSetIndexBuffer", doe_render_pass_set_index_buffer),
         EXPORT_FN("renderPassDraw", doe_render_pass_draw),
+        EXPORT_FN("renderPassDrawIndexed", doe_render_pass_draw_indexed),
         EXPORT_FN("renderPassEnd", doe_render_pass_end),
         EXPORT_FN("renderPassRelease", doe_render_pass_release),
         EXPORT_FN("adapterGetLimits", doe_adapter_get_limits),

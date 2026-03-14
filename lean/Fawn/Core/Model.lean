@@ -34,10 +34,29 @@ inductive ProofLevel where
 
 inductive CommandKind where
   | upload
-  | copyBuffer
+  | copyBufferToTexture
   | barrier
   | dispatch
+  | dispatchIndirect
   | kernelDispatch
+  | renderDraw
+  | drawIndirect
+  | drawIndexedIndirect
+  | renderPass
+  | samplerCreate
+  | samplerDestroy
+  | textureWrite
+  | textureQuery
+  | textureDestroy
+  | surfaceCreate
+  | surfaceCapabilities
+  | surfaceConfigure
+  | surfaceAcquire
+  | surfacePresent
+  | surfaceUnconfigure
+  | surfaceRelease
+  | asyncDiagnostics
+  | mapAsync
   deriving Repr, DecidableEq
 
 structure SemVer where

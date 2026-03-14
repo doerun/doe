@@ -32,8 +32,8 @@
           },
           "category": {
             "type": "string",
-            "enum": ["dispatch", "comparability"],
-            "description": "Functional category for the theorem."
+            "enum": ["tautological", "comptime_verified", "lean_verified", "lean_fixture"],
+            "description": "Verification tier. tautological: correct by construction or definitional (nothing to verify). comptime_verified: finite-enum property verifiable by Zig comptime exhaustion. lean_verified: quantified over unbounded domains (Lean is necessary). lean_fixture: specific test case exercising a lean_verified theorem."
           }
         }
       }

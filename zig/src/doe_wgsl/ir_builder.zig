@@ -16,7 +16,23 @@ pub const BuildError = error{
     UnsupportedConstruct,
 };
 
+pub const FailureContext = struct {
+    node_idx: u32 = NULL_NODE,
+    token_idx: ?u32 = null,
+};
+
+var last_failure_context = FailureContext{};
+
+pub fn resetLastFailureContext() void {
+    last_failure_context = .{};
+}
+
+pub fn lastFailureContext() FailureContext {
+    return last_failure_context;
+}
+
 pub fn build(allocator: std.mem.Allocator, tree: *const Ast, semantic: *const sema.SemanticModule) BuildError!ir.Module {
+    resetLastFailureContext();
     var module = ir.Module.init(allocator);
     errdefer module.deinit();
 
@@ -44,6 +60,7 @@ fn copy_structs(allocator: std.mem.Allocator, module: *ir.Module, semantic: *con
 
 fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Module, semantic: *const sema.SemanticModule) BuildError!void {
     for (semantic.globals.items) |global_info| {
+        captureFailureNode(tree, global_info.node_idx);
         const node = tree.nodes.items[global_info.node_idx];
         var initializer: ?ir.ConstantValue = null;
         switch (node.tag) {
@@ -71,9 +88,11 @@ fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Modu
 
 fn copy_functions(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Module, semantic: *const sema.SemanticModule) BuildError!void {
     for (semantic.functions.items, 0..) |function_info, function_index| {
+        captureFailureNode(tree, function_info.node_idx);
         var function = ir.Function{
             .name = try ir.dup_string(allocator, function_info.name),
             .return_type = function_info.return_type,
+            .return_io = function_info.return_io,
             .stage = function_info.stage,
             .workgroup_size = function_info.workgroup_size,
         };
@@ -124,6 +143,7 @@ const FunctionBuilder = struct {
     next_local_index: u32 = 0,
 
     fn lower_stmt(self: *FunctionBuilder, node_idx: u32) BuildError!ir.StmtId {
+        captureFailureNode(self.tree, node_idx);
         const node = self.tree.nodes.items[node_idx];
         return switch (node.tag) {
             .block => try self.lower_block(node),
@@ -284,6 +304,7 @@ const FunctionBuilder = struct {
     }
 
     fn lower_expr(self: *FunctionBuilder, node_idx: u32) BuildError!ir.ExprId {
+        captureFailureNode(self.tree, node_idx);
         const node = self.tree.nodes.items[node_idx];
         const ty = self.semantic.nodeType(node_idx);
         const category = self.semantic.nodeCategory(node_idx);
@@ -478,6 +499,7 @@ fn map_assign_op(tag: Tag) ir.AssignOp {
 }
 
 fn scalar_constant_from_node(tree: *const Ast, node_idx: u32) BuildError!?ir.ConstantValue {
+    captureFailureNode(tree, node_idx);
     const node = tree.nodes.items[node_idx];
     return switch (node.tag) {
         .bool_literal => ir.ConstantValue{ .bool = std.mem.eql(u8, tree.tokenSlice(node.main_token), "true") },
@@ -554,5 +576,14 @@ fn fold_scalar_binary(op: ir.BinaryOp, lhs: ir.ConstantValue, rhs: ir.ConstantVa
             },
             else => error.UnsupportedConstruct,
         },
+    };
+}
+
+fn captureFailureNode(tree: *const Ast, node_idx: u32) void {
+    if (node_idx == NULL_NODE or node_idx >= tree.nodes.items.len) return;
+    const node = tree.nodes.items[node_idx];
+    last_failure_context = .{
+        .node_idx = node_idx,
+        .token_idx = if (node.main_token < tree.tokens.items.len) node.main_token else null,
     };
 }

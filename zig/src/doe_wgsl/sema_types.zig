@@ -103,6 +103,7 @@ pub const FunctionInfo = struct {
     name: []const u8,
     node_idx: u32,
     return_type: ir.TypeId,
+    return_io: ?ir.IoAttr = null,
     stage: ?ir.ShaderStage = null,
     workgroup_size: [3]u32 = .{ 1, 1, 1 },
     params: std.ArrayListUnmanaged(ParamInfo) = .{},

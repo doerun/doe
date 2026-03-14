@@ -2,15 +2,20 @@ const std = @import("std");
 const mod = @import("mod.zig");
 const translateToMsl = mod.translateToMsl;
 const translateToHlsl = mod.translateToHlsl;
+const translateToDxil = mod.translateToDxil;
 const translateToSpirv = mod.translateToSpirv;
 const analyzeToIr = mod.analyzeToIr;
 const TranslateError = mod.TranslateError;
 const CompilationStage = mod.CompilationStage;
 const lastErrorStage = mod.lastErrorStage;
+const lastErrorKind = mod.lastErrorKind;
+const lastErrorContext = mod.lastErrorContext;
+const lastErrorInfo = mod.lastErrorInfo;
 const lastErrorMessage = mod.lastErrorMessage;
 const MAX_OUTPUT = mod.MAX_OUTPUT;
 const MAX_HLSL_OUTPUT = mod.MAX_HLSL_OUTPUT;
 const MAX_SPIRV_OUTPUT = mod.MAX_SPIRV_OUTPUT;
+const MAX_DXIL_OUTPUT = mod.MAX_DXIL_OUTPUT;
 const ir = mod.ir;
 
 test "translate simple compute shader with builtin vector member access to MSL" {
@@ -107,6 +112,58 @@ test "translate simple fragment shader to MSL" {
     const msl = out[0..len];
     try std.testing.expect(std.mem.indexOf(u8, msl, "fragment") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "[[color(0)]]") != null);
+}
+
+test "translate fragment shader with uniform binding to MSL" {
+    const source =
+        \\@group(0) @binding(0) var<uniform> tint: vec4f;
+        \\
+        \\@fragment
+        \\fn main() -> @location(0) vec4f {
+        \\    return tint;
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "constant float4& tint [[buffer(0)]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "main_impl(tint)") != null);
+}
+
+test "translate simple vertex shader to HLSL" {
+    const source =
+        \\@vertex
+        \\fn main(@location(0) uv: vec2f) -> @builtin(position) vec4f {
+        \\    return vec4f(uv, 0.0, 1.0);
+        \\}
+    ;
+
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const hlsl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "_stage_out") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "SV_Position") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "TEXCOORD0") != null);
+}
+
+test "translate simple fragment shader to HLSL" {
+    const source =
+        \\@fragment
+        \\fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+        \\    return vec4f(uv, 0.0, 1.0);
+        \\}
+    ;
+
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const hlsl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "_stage_out") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "SV_Target0") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "TEXCOORD0") != null);
 }
 
 test "translate vec4f constructor to SPIR-V" {
@@ -502,9 +559,10 @@ test "translate storage struct with matrix to SPIR-V" {
     try std.testing.expect(len > 0);
 }
 
-test "compiler exposes structured last error stage" {
+test "semantic type mismatch preserves stage kind and source context" {
     try std.testing.expectError(TranslateError.UnexpectedToken, analyzeToIr(std.testing.allocator, "fn main("));
     try std.testing.expectEqual(CompilationStage.parser, lastErrorStage());
+    try std.testing.expectEqual(TranslateError.UnexpectedToken, lastErrorKind().?);
     try std.testing.expect(std.mem.startsWith(u8, lastErrorMessage(), "parser:"));
 
     const source =
@@ -514,8 +572,41 @@ test "compiler exposes structured last error stage" {
         \\}
     ;
     try std.testing.expectError(TranslateError.TypeMismatch, analyzeToIr(std.testing.allocator, source));
+    const info = lastErrorInfo();
+    try std.testing.expectEqual(CompilationStage.sema, info.stage);
+    try std.testing.expectEqual(TranslateError.TypeMismatch, info.kind.?);
+    try std.testing.expect(info.location != null);
+    try std.testing.expect(std.mem.indexOf(u8, info.context, "let value: bool = 1u;") != null);
+    try std.testing.expect(std.mem.startsWith(u8, lastErrorMessage(), "sema: TypeMismatch"));
+}
+
+test "semantic unsupported builtin preserves specific error contract" {
+    const source =
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\    let value = transpose(1.0);
+        \\}
+    ;
+
+    try std.testing.expectError(TranslateError.UnsupportedBuiltin, analyzeToIr(std.testing.allocator, source));
     try std.testing.expectEqual(CompilationStage.sema, lastErrorStage());
-    try std.testing.expect(std.mem.startsWith(u8, lastErrorMessage(), "sema:"));
+    try std.testing.expectEqual(TranslateError.UnsupportedBuiltin, lastErrorKind().?);
+    try std.testing.expect(std.mem.indexOf(u8, lastErrorContext(), "transpose(1.0)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, lastErrorMessage(), "UnsupportedBuiltin") != null);
+}
+
+test "ir builder unsupported construct preserves specific error contract" {
+    const source =
+        \\const FLAG: bool = !true;
+        \\@compute @workgroup_size(1)
+        \\fn main() {}
+    ;
+
+    try std.testing.expectError(TranslateError.UnsupportedConstruct, analyzeToIr(std.testing.allocator, source));
+    try std.testing.expectEqual(CompilationStage.ir_builder, lastErrorStage());
+    try std.testing.expectEqual(TranslateError.UnsupportedConstruct, lastErrorKind().?);
+    try std.testing.expect(std.mem.indexOf(u8, lastErrorContext(), "const FLAG: bool = !true;") != null);
+    try std.testing.expect(std.mem.startsWith(u8, lastErrorMessage(), "ir_builder: UnsupportedConstruct"));
 }
 
 test "analyze WGSL folds scalar const binary expressions" {
@@ -904,5 +995,39 @@ test "translate arrayLength to SPIR-V" {
 
     var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
     const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "translate compute shader to DXIL or report missing toolchain" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = 1.0;
+        \\}
+    ;
+
+    var out: [MAX_DXIL_OUTPUT]u8 = undefined;
+    const len = translateToDxil(std.testing.allocator, source, &out) catch |err| switch (err) {
+        TranslateError.ShaderToolchainUnavailable => return,
+        else => return err,
+    };
+    try std.testing.expect(len > 0);
+}
+
+test "translate vertex shader to DXIL or report missing toolchain" {
+    const source =
+        \\@vertex
+        \\fn main(@location(0) uv: vec2f) -> @builtin(position) vec4f {
+        \\    return vec4f(uv, 0.0, 1.0);
+        \\}
+    ;
+
+    var out: [MAX_DXIL_OUTPUT]u8 = undefined;
+    const len = translateToDxil(std.testing.allocator, source, &out) catch |err| switch (err) {
+        TranslateError.ShaderToolchainUnavailable => return,
+        else => return err,
+    };
     try std.testing.expect(len > 0);
 }

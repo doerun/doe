@@ -10,7 +10,13 @@ pub fn unary_op_text(op: ir.UnaryOp) []const u8 {
 }
 
 pub fn msl_function_name(name: []const u8, stage: ?ir.ShaderStage) []const u8 {
-    if (stage != null and std.mem.eql(u8, name, "main")) return "main_kernel";
+    if (stage) |active_stage| {
+        if (std.mem.eql(u8, name, "main")) return switch (active_stage) {
+            .compute => "main_kernel",
+            .vertex => "main_vertex",
+            .fragment => "main_fragment",
+        };
+    }
     return name;
 }
 
@@ -98,10 +104,17 @@ pub fn assign_op_text(op: ir.AssignOp) []const u8 {
 
 pub fn msl_builtin_name(builtin: ir.Builtin) []const u8 {
     return switch (builtin) {
+        .position => "position",
+        .frag_depth => "depth(any)",
+        .front_facing => "front_facing",
         .global_invocation_id => "thread_position_in_grid",
         .local_invocation_id => "thread_position_in_threadgroup",
         .local_invocation_index => "thread_index_in_threadgroup",
         .workgroup_id => "threadgroup_position_in_grid",
+        .sample_index => "sample_id",
+        .sample_mask => "sample_mask",
+        .vertex_index => "vertex_id",
+        .instance_index => "instance_id",
         else => "unsupported_builtin",
     };
 }

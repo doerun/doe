@@ -195,15 +195,13 @@ function main() {
 
       const fullDevice = await full.requestDevice();
       assert.ok(fullDevice.limits.maxComputeInvocationsPerWorkgroup > 0);
-      const preflightRejected = full.preflightShaderSource(\`
+      const preflightAccepted = full.preflightShaderSource(\`
         @fragment
         fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
           return vec4f(uv, 0.0, 1.0);
         }
       \`);
-      assert.equal(preflightRejected.ok, false);
-      assert.equal(preflightRejected.stage, "package_surface");
-      assert.ok(preflightRejected.message.includes("package_surface"));
+      assert.equal(preflightAccepted.ok, true);
 
       const subgroupShader = fullDevice.createShaderModule({
         code: \`

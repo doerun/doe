@@ -520,9 +520,12 @@ pub const NativeMetalRuntime = struct {
         } else {
             metal_bridge_render_encoder_draw(
                 self.streaming_render_encoder,
+                0x00000004,
                 cmd.draw_count,
                 cmd.vertex_count,
                 cmd.instance_count,
+                0,
+                0,
                 red_pl,
                 self.render_pipeline,
             );

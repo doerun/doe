@@ -39,5 +39,11 @@ comptime {
 
         if (!comptimeContains(json, "\"identityActionComplete\""))
             @compileError("lean proof artifact: missing required theorem identityActionComplete");
+
+        if (!comptimeContains(json, "\"scopeCommandTableComplete\""))
+            @compileError("lean proof artifact: missing required theorem scopeCommandTableComplete");
+
+        if (!comptimeContains(json, "\"identityActionPreservesCommand\""))
+            @compileError("lean proof artifact: missing required theorem identityActionPreservesCommand");
     }
 }

@@ -48,11 +48,18 @@ pub fn assign_op_text(op: ir.AssignOp) []const u8 {
 
 pub fn hlsl_builtin_name(builtin: ir.Builtin) []const u8 {
     return switch (builtin) {
+        .position => "SV_Position",
+        .frag_depth => "SV_Depth",
+        .front_facing => "SV_IsFrontFace",
         .global_invocation_id => "SV_DispatchThreadID",
         .local_invocation_id => "SV_GroupThreadID",
         .local_invocation_index => "SV_GroupIndex",
         .workgroup_id => "SV_GroupID",
         .num_workgroups => "SV_GroupID",
+        .sample_index => "SV_SampleIndex",
+        .sample_mask => "SV_Coverage",
+        .vertex_index => "SV_VertexID",
+        .instance_index => "SV_InstanceID",
         else => "UNSUPPORTED_BUILTIN",
     };
 }

@@ -408,6 +408,7 @@ pub const Stmt = union(enum) {
 pub const Function = struct {
     name: []const u8,
     return_type: TypeId,
+    return_io: ?IoAttr = null,
     stage: ?ShaderStage = null,
     workgroup_size: [3]u32 = .{ 1, 1, 1 },
     params: std.ArrayListUnmanaged(Param) = .{},

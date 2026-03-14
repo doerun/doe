@@ -21,8 +21,17 @@ const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buf
 const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
 const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
 const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_render_encoder_set_bind_buffer = bridge.metal_bridge_render_encoder_set_bind_buffer;
+const metal_bridge_render_encoder_set_bind_sampler = bridge.metal_bridge_render_encoder_set_bind_sampler;
+const metal_bridge_render_encoder_set_bind_texture = bridge.metal_bridge_render_encoder_set_bind_texture;
+const metal_bridge_render_encoder_set_cull_mode = bridge.metal_bridge_render_encoder_set_cull_mode;
+const metal_bridge_render_encoder_set_depth_stencil_state = bridge.metal_bridge_render_encoder_set_depth_stencil_state;
+const metal_bridge_render_encoder_set_depth_stencil_values = bridge.metal_bridge_render_encoder_set_depth_stencil_values;
+const metal_bridge_render_encoder_set_front_facing = bridge.metal_bridge_render_encoder_set_front_facing;
 const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw;
+const metal_bridge_render_encoder_draw_indexed = bridge.metal_bridge_render_encoder_draw_indexed;
 const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
+const metal_bridge_render_encoder_set_vertex_buffer = bridge.metal_bridge_render_encoder_set_vertex_buffer;
 const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
 
 // GPA for handle allocations — page_allocator wastes 16KB per 24-byte struct.
@@ -53,6 +62,9 @@ const MAGIC_RENDER_PIPE: u32 = 0xD0E1_0011;
 const MAGIC_RENDER_PASS: u32 = 0xD0E1_0012;
 
 pub const MAX_BIND: usize = 16;
+pub const MAX_RENDER_BIND_GROUPS: usize = 4;
+pub const MAX_VERTEX_BUFFERS: usize = 8;
+pub const VERTEX_BUFFER_SLOT_BASE: u32 = 8;
 pub const ERR_CAP: usize = 512;
 
 // WebGPU status constants — must match doe_napi.c definitions.
@@ -179,6 +191,8 @@ pub const DoeBindGroup = struct {
     pub const TYPE_MAGIC = MAGIC_BIND_GROUP;
     magic: u32 = TYPE_MAGIC,
     buffers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
+    textures: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
+    samplers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
     offsets: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
     count: u32 = 0,
 };
@@ -188,7 +202,34 @@ pub const RecordedCmd = union(CmdTag) {
     dispatch: struct { pso: ?*anyopaque, bufs: [MAX_BIND]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32 },
     dispatch_indirect: struct { pso: ?*anyopaque, bufs: [MAX_BIND]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, offset: u64, wg_x: u32 = 0, wg_y: u32 = 0, wg_z: u32 = 0 },
     copy_buf: struct { src: ?*anyopaque, src_off: u64, dst: ?*anyopaque, dst_off: u64, size: u64 },
-    render_pass: struct { pso: ?*anyopaque, target: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32 },
+    render_pass: struct {
+        pso: ?*anyopaque,
+        depth_state: ?*anyopaque,
+        target: ?*anyopaque,
+        depth_target: ?*anyopaque,
+        topology: u32,
+        front_face: u32,
+        cull_mode: u32,
+        draw_count: u32,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+        indexed: bool = false,
+        index_buffer: ?*anyopaque = null,
+        index_offset: u64 = 0,
+        index_format: u32 = 0,
+        index_count: u32 = 0,
+        base_vertex: i32 = 0,
+        bind_buffers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
+        bind_buffer_offsets: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
+        bind_textures: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
+        bind_samplers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
+        vertex_buffers: [MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** MAX_VERTEX_BUFFERS,
+        vertex_buffer_offsets: [MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** MAX_VERTEX_BUFFERS,
+        depth_compare: u32 = 0,
+        depth_write_enabled: bool = false,
+    },
 };
 
 pub const DoeCommandEncoder = struct {
@@ -238,6 +279,12 @@ pub const DoeRenderPipeline = struct {
     const TYPE_MAGIC = MAGIC_RENDER_PIPE;
     magic: u32 = TYPE_MAGIC,
     mtl_pso: ?*anyopaque = null,
+    depth_state: ?*anyopaque = null,
+    topology: u32 = 0x00000004,
+    front_face: u32 = 0x00000001,
+    cull_mode: u32 = 0x00000001,
+    depth_compare: u32 = 0,
+    depth_write_enabled: bool = false,
 };
 
 pub const DoeRenderPass = struct {
@@ -246,6 +293,15 @@ pub const DoeRenderPass = struct {
     enc: *DoeCommandEncoder,
     pipeline: ?*DoeRenderPipeline = null,
     target: ?*anyopaque = null, // MTLTexture for the render target
+    depth_target: ?*anyopaque = null,
+    depth_compare: u32 = 0,
+    depth_write_enabled: bool = false,
+    bind_groups: [MAX_RENDER_BIND_GROUPS]?*DoeBindGroup = [_]?*DoeBindGroup{null} ** MAX_RENDER_BIND_GROUPS,
+    vertex_buffers: [MAX_VERTEX_BUFFERS]?*DoeBuffer = [_]?*DoeBuffer{null} ** MAX_VERTEX_BUFFERS,
+    vertex_buffer_offsets: [MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** MAX_VERTEX_BUFFERS,
+    index_buffer: ?*DoeBuffer = null,
+    index_offset: u64 = 0,
+    index_format: u32 = 0,
 };
 
 pub fn make(comptime T: type) ?*T {
@@ -645,9 +701,66 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                     has_gpu_work = true;
                 },
                 .render_pass => |r| {
-                    const renc = metal_bridge_cmd_buf_render_encoder(mtl_cmd, r.pso, r.target);
+                    const renc = metal_bridge_cmd_buf_render_encoder(
+                        mtl_cmd,
+                        r.pso,
+                        r.target,
+                        r.depth_target,
+                        if (r.depth_write_enabled) 1 else 0,
+                    );
                     if (renc) |e| {
-                        metal_bridge_render_encoder_draw(e, r.draw_count, r.vertex_count, r.instance_count, 0, r.pso);
+                        metal_bridge_render_encoder_set_front_facing(e, r.front_face);
+                        metal_bridge_render_encoder_set_cull_mode(e, r.cull_mode);
+                        if (r.depth_state) |depth_state| {
+                            metal_bridge_render_encoder_set_depth_stencil_state(e, depth_state);
+                            metal_bridge_render_encoder_set_depth_stencil_values(e, r.depth_compare, if (r.depth_write_enabled) 1 else 0);
+                        }
+                        for (r.bind_buffers, r.bind_buffer_offsets, 0..) |maybe_buf, offset, slot| {
+                            if (maybe_buf) |buf| {
+                                metal_bridge_render_encoder_set_bind_buffer(e, @intCast(slot), buf, offset);
+                            }
+                        }
+                        for (r.bind_textures, 0..) |maybe_tex, slot| {
+                            if (maybe_tex) |tex| {
+                                metal_bridge_render_encoder_set_bind_texture(e, @intCast(slot), tex);
+                            }
+                        }
+                        for (r.bind_samplers, 0..) |maybe_sampler, slot| {
+                            if (maybe_sampler) |sampler| {
+                                metal_bridge_render_encoder_set_bind_sampler(e, @intCast(slot), sampler);
+                            }
+                        }
+                        for (r.vertex_buffers, r.vertex_buffer_offsets, 0..) |maybe_buf, offset, slot| {
+                            if (maybe_buf) |buf| {
+                                metal_bridge_render_encoder_set_vertex_buffer(e, VERTEX_BUFFER_SLOT_BASE + @as(u32, @intCast(slot)), buf, offset);
+                            }
+                        }
+                        if (r.indexed) {
+                            metal_bridge_render_encoder_draw_indexed(
+                                e,
+                                r.topology,
+                                r.draw_count,
+                                r.index_count,
+                                r.instance_count,
+                                r.index_buffer,
+                                r.index_offset,
+                                r.index_format,
+                                r.base_vertex,
+                                r.first_instance,
+                            );
+                        } else {
+                            metal_bridge_render_encoder_draw(
+                                e,
+                                r.topology,
+                                r.draw_count,
+                                r.vertex_count,
+                                r.instance_count,
+                                r.first_vertex,
+                                r.first_instance,
+                                0,
+                                r.pso,
+                            );
+                        }
                         metal_bridge_render_encoder_end(e);
                         metal_bridge_release(e);
                     }
@@ -705,7 +818,11 @@ pub const doeNativeDeviceCreateRenderPipeline = render.doeNativeDeviceCreateRend
 pub const doeNativeRenderPipelineRelease = render.doeNativeRenderPipelineRelease;
 pub const doeNativeCommandEncoderBeginRenderPass = render.doeNativeCommandEncoderBeginRenderPass;
 pub const doeNativeRenderPassSetPipeline = render.doeNativeRenderPassSetPipeline;
+pub const doeNativeRenderPassSetBindGroup = render.doeNativeRenderPassSetBindGroup;
+pub const doeNativeRenderPassSetVertexBuffer = render.doeNativeRenderPassSetVertexBuffer;
+pub const doeNativeRenderPassSetIndexBuffer = render.doeNativeRenderPassSetIndexBuffer;
 pub const doeNativeRenderPassDraw = render.doeNativeRenderPassDraw;
+pub const doeNativeRenderPassDrawIndexed = render.doeNativeRenderPassDrawIndexed;
 pub const doeNativeRenderPassEnd = render.doeNativeRenderPassEnd;
 pub const doeNativeRenderPassRelease = render.doeNativeRenderPassRelease;
 

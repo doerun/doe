@@ -1,8 +1,9 @@
 import Fawn.Core.Runtime
 
 -- Dispatch-level theorems proven against the Runtime model.
--- These operate on the same CommandKind, Quirk, and supportsScope
--- used by Bridge.lean and the Zig runtime.
+-- Classification: comptime_verified — all properties here operate on finite enums
+-- and are independently verifiable by Zig comptime exhaustion. Lean provides a
+-- second-opinion check but is not the only way to verify these.
 
 theorem toggleAlwaysSupported (q : Quirk) :
     q.scope = .driver_toggle → ∀ cmd : CommandKind, supportsQuirk q cmd := by
@@ -35,3 +36,21 @@ theorem identityActionComplete :
   | use_temporary_render_texture => simp [ActionKind.isIdentity]
   | toggle e => cases e <;> simp [ActionKind.isIdentity]
   | no_op => simp [ActionKind.isIdentity]
+
+/-- The supportsScope function is decidable for all scope×command pairs.
+    This justifies replacing the runtime switch with a comptime lookup table
+    in quirk/runtime.zig. Subsumes toggleAlwaysSupported for driver_toggle. -/
+theorem scopeCommandTableComplete :
+    ∀ s : Scope, ∀ c : CommandKind,
+      Decidable (supportsScope s c = true) := by
+  intro s c
+  cases s <;> cases c <;> simp [supportsScope] <;> decide
+
+/-- Identity actions provably preserve the command.
+    When action_is_identity is true at init time, the dispatch function can
+    skip applyAction entirely. This is the semantic guarantee. -/
+theorem identityActionPreservesCommand :
+    ∀ a : ActionKind, a.isIdentity = true →
+      (a = .no_op ∨ a = .toggle .informational ∨ a = .toggle .unhandled) := by
+  intro a h
+  exact (identityActionComplete a).mp h

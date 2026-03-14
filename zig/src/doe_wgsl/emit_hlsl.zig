@@ -1,6 +1,7 @@
 const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_hlsl_maps.zig");
+const stage_render = @import("emit_hlsl_stage.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -226,7 +227,7 @@ const Emitter = struct {
         const function = self.module.functions.items[function_index];
         try self.write("\n");
         if (function.stage) |stage| {
-            if (stage != .compute) return error.InvalidIr;
+            if (stage != .compute) return stage_render.emit_stage_function(self, function_index);
             try self.write("[numthreads(");
             try self.write_u32(function.workgroup_size[0]);
             try self.write(", ");
@@ -262,7 +263,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_stmt(self: *Emitter, function: ir.Function, stmt_id: ir.StmtId) EmitError!void {
+    pub fn emit_stmt(self: *Emitter, function: ir.Function, stmt_id: ir.StmtId) EmitError!void {
         const stmt = function.stmts.items[stmt_id];
         switch (stmt) {
             .block => |range| {
@@ -565,7 +566,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_typed_name(self: *Emitter, ty: ir.TypeId, name: []const u8) EmitError!void {
+    pub fn emit_typed_name(self: *Emitter, ty: ir.TypeId, name: []const u8) EmitError!void {
         switch (self.module.types.get(ty)) {
             .array => |arr| {
                 try self.emit_type_only(arr.elem);
@@ -587,7 +588,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_type_only(self: *Emitter, ty: ir.TypeId) EmitError!void {
+    pub fn emit_type_only(self: *Emitter, ty: ir.TypeId) EmitError!void {
         switch (self.module.types.get(ty)) {
             .scalar => |scalar| try self.write(switch (scalar) {
                 .void => "void",
@@ -653,18 +654,18 @@ const Emitter = struct {
         }
     }
 
-    fn write(self: *Emitter, text: []const u8) EmitError!void {
+    pub fn write(self: *Emitter, text: []const u8) EmitError!void {
         if (self.pos + text.len > self.buf.len) return error.OutputTooLarge;
         @memcpy(self.buf[self.pos .. self.pos + text.len], text);
         self.pos += text.len;
     }
 
-    fn write_indent(self: *Emitter) EmitError!void {
+    pub fn write_indent(self: *Emitter) EmitError!void {
         var i: usize = 0;
         while (i < self.indent) : (i += 1) try self.write(" ");
     }
 
-    fn write_u32(self: *Emitter, value: u32) EmitError!void {
+    pub fn write_u32(self: *Emitter, value: u32) EmitError!void {
         var buf: [32]u8 = undefined;
         const text = std.fmt.bufPrint(&buf, "{}", .{value}) catch return error.OutputTooLarge;
         try self.write(text);

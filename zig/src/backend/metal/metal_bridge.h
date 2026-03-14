@@ -6,6 +6,19 @@
 // Call metal_bridge_release() to decrement when done.
 typedef void* MetalHandle;
 
+typedef struct {
+    uint64_t array_stride;
+    uint32_t step_mode;
+    uint32_t buffer_index;
+} MetalVertexBufferLayout;
+
+typedef struct {
+    uint32_t format;
+    uint64_t offset;
+    uint32_t shader_location;
+    uint32_t buffer_index;
+} MetalVertexAttributeDesc;
+
 MetalHandle metal_bridge_create_default_device(void);
 MetalHandle metal_bridge_create_surface_host(MetalHandle* layer_out);
 void        metal_bridge_configure_surface_host(MetalHandle host, uint32_t width, uint32_t height);
@@ -128,15 +141,62 @@ void metal_bridge_cmd_buf_encode_icb_render_pass(
 MetalHandle metal_bridge_cmd_buf_render_encoder(
     MetalHandle cmd_buf,
     MetalHandle pipeline,
-    MetalHandle target);
+    MetalHandle target,
+    MetalHandle depth_target,
+    int         use_depth_store);
+void metal_bridge_render_encoder_set_bind_buffer(
+    MetalHandle encoder,
+    uint32_t    slot,
+    MetalHandle buffer,
+    uint64_t    offset);
+void metal_bridge_render_encoder_set_bind_texture(
+    MetalHandle encoder,
+    uint32_t    slot,
+    MetalHandle texture);
+void metal_bridge_render_encoder_set_bind_sampler(
+    MetalHandle encoder,
+    uint32_t    slot,
+    MetalHandle sampler);
+void metal_bridge_render_encoder_set_vertex_buffer(
+    MetalHandle encoder,
+    uint32_t    slot,
+    MetalHandle buffer,
+    uint64_t    offset);
+void metal_bridge_render_encoder_set_depth_stencil_state(
+    MetalHandle encoder,
+    MetalHandle depth_state);
+void metal_bridge_render_encoder_set_depth_stencil_values(
+    MetalHandle encoder,
+    uint32_t    compare_fn,
+    int         write_enabled);
+void metal_bridge_render_encoder_set_front_facing(
+    MetalHandle encoder,
+    uint32_t    front_face);
+void metal_bridge_render_encoder_set_cull_mode(
+    MetalHandle encoder,
+    uint32_t    cull_mode);
 // Draw loop on an open render encoder.
 void metal_bridge_render_encoder_draw(
     MetalHandle encoder,
+    uint32_t    topology,
     uint32_t    draw_count,
     uint32_t    vertex_count,
     uint32_t    instance_count,
+    uint32_t    first_vertex,
+    uint32_t    first_instance,
     int         redundant_pipeline,
     MetalHandle pipeline);
+void metal_bridge_render_encoder_draw_indexed(
+    MetalHandle encoder,
+    uint32_t    topology,
+    uint32_t    draw_count,
+    uint32_t    index_count,
+    uint32_t    instance_count,
+    MetalHandle index_buffer,
+    uint64_t    index_offset,
+    uint32_t    index_format,
+    int32_t     base_vertex,
+    uint32_t    first_instance);
 // Execute ICB on an open render encoder.
 void metal_bridge_render_encoder_execute_icb(
     MetalHandle encoder,
@@ -269,6 +329,31 @@ MetalHandle metal_bridge_device_new_render_pipeline(
     MetalHandle device,
     uint32_t    pixel_format,
     int         support_icb,
+    char*       error_buf,
+    size_t      error_cap);
+MetalHandle metal_bridge_device_new_render_pipeline_functions(
+    MetalHandle device,
+    MetalHandle vertex_function,
+    MetalHandle fragment_function,
+    uint32_t    pixel_format,
+    char*       error_buf,
+    size_t      error_cap);
+MetalHandle metal_bridge_device_new_render_pipeline_full(
+    MetalHandle                     device,
+    MetalHandle                     vertex_function,
+    MetalHandle                     fragment_function,
+    uint32_t                        pixel_format,
+    uint32_t                        depth_format,
+    const MetalVertexBufferLayout*  vertex_layouts,
+    uint32_t                        vertex_layout_count,
+    const MetalVertexAttributeDesc* vertex_attributes,
+    uint32_t                        vertex_attribute_count,
+    char*                           error_buf,
+    size_t                          error_cap);
+MetalHandle metal_bridge_device_new_depth_stencil_state(
+    MetalHandle device,
+    uint32_t    compare_fn,
+    int         write_enabled,
     char*       error_buf,
     size_t      error_cap);
 

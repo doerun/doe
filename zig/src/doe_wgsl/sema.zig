@@ -25,7 +25,23 @@ pub const LocalInfo = sema_types.LocalInfo;
 pub const FunctionInfo = sema_types.FunctionInfo;
 pub const SemanticModule = sema_types.SemanticModule;
 
+pub const FailureContext = struct {
+    node_idx: u32 = NULL_NODE,
+    token_idx: ?u32 = null,
+};
+
+var last_failure_context = FailureContext{};
+
+pub fn resetLastFailureContext() void {
+    last_failure_context = .{};
+}
+
+pub fn lastFailureContext() FailureContext {
+    return last_failure_context;
+}
+
 pub fn analyze(allocator: std.mem.Allocator, tree: *const Ast) !SemanticModule {
+    resetLastFailureContext();
     var module = SemanticModule{
         .allocator = allocator,
         .tree = tree,
@@ -126,6 +142,7 @@ const Analyzer = struct {
     }
 
     fn register_top_level(self: *Analyzer, node_idx: u32) !void {
+        captureFailureNode(self.module.tree, node_idx);
         const node = self.module.tree.nodes.items[node_idx];
         switch (node.tag) {
             .struct_decl => try self.register_struct(node),
@@ -137,6 +154,7 @@ const Analyzer = struct {
     }
 
     fn resolve_top_level(self: *Analyzer, node_idx: u32) !void {
+        captureFailureNode(self.module.tree, node_idx);
         const node = self.module.tree.nodes.items[node_idx];
         switch (node.tag) {
             .struct_decl => try self.resolve_struct(node),
@@ -281,10 +299,13 @@ const Analyzer = struct {
         const params_start = extra[extra_start + 1];
         const params_len = extra[extra_start + 2];
         const return_type_node = extra[extra_start + 3];
-        const attrs_start = extra[extra_start + 4];
-        const attrs_len = extra[extra_start + 5];
+        const return_attrs_start = extra[extra_start + 4];
+        const return_attrs_len = extra[extra_start + 5];
+        const attrs_start = extra[extra_start + 6];
+        const attrs_len = extra[extra_start + 7];
 
         function_info.return_type = if (return_type_node != NULL_NODE) try self.resolve_type_node(return_type_node) else self.module.void_type;
+        function_info.return_io = try sema_attrs.parse_io_attr(self, return_attrs_start, return_attrs_len);
         function_info.stage = try sema_attrs.parse_stage(self, attrs_start, attrs_len);
         function_info.workgroup_size = try sema_attrs.parse_workgroup_size(self, attrs_start, attrs_len);
 
@@ -316,6 +337,7 @@ const Analyzer = struct {
     }
 
     fn analyze_stmt(self: *Analyzer, node_idx: u32, body: *BodyAnalyzer) !void {
+        captureFailureNode(self.module.tree, node_idx);
         const node = self.module.tree.nodes.items[node_idx];
         switch (node.tag) {
             .block => {
@@ -328,7 +350,7 @@ const Analyzer = struct {
                 }
                 body.pop_scope();
             },
-            .var_stmt, .let_stmt, .const_stmt => try self.analyze_local_decl(node, body),
+            .var_stmt, .let_stmt, .const_stmt => try self.analyze_local_decl(node_idx, node, body),
             .return_stmt => {
                 const expr_node = node.data.lhs;
                 if (expr_node != NULL_NODE) {
@@ -416,7 +438,8 @@ const Analyzer = struct {
         }
     }
 
-    fn analyze_local_decl(self: *Analyzer, node: Node, body: *BodyAnalyzer) !void {
+    fn analyze_local_decl(self: *Analyzer, node_idx: u32, node: Node, body: *BodyAnalyzer) !void {
+        captureFailureNode(self.module.tree, node_idx);
         const name = self.module.tree.tokenSlice(node.main_token + 1);
         const explicit_type = if (node.data.lhs != NULL_NODE) try self.resolve_type_node(node.data.lhs) else ir.INVALID_TYPE;
         const init_ty = if (node.data.rhs != NULL_NODE) try self.analyze_expr(node.data.rhs, body) else ir.INVALID_TYPE;
@@ -438,6 +461,7 @@ const Analyzer = struct {
     }
 
     fn analyze_expr(self: *Analyzer, node_idx: u32, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
+        captureFailureNode(self.module.tree, node_idx);
         const existing = self.module.node_info.items[node_idx];
         if (existing.ty != ir.INVALID_TYPE) return existing.ty;
 
@@ -446,17 +470,17 @@ const Analyzer = struct {
         info.ty = switch (node.tag) {
             .int_literal => try self.analyze_int_literal(node),
             .float_literal => try self.analyze_float_literal(node),
-        .bool_literal => self.module.bool_type,
-        .ident_expr => try self.resolve_ident_expr(node, body, &info),
-        .unary_expr => try self.analyze_unary(node, body),
-        .binary_expr => try self.analyze_binary(node, body),
-        .call_expr => try self.analyze_call(node, body),
-        .generic_call_expr => try self.analyze_generic_call(node, body),
-        .construct_expr => try self.analyze_construct(node, body),
-        .member_expr => try self.analyze_member(node, body, &info),
-        .index_expr => try self.analyze_index(node, body, &info),
-        else => return error.UnsupportedConstruct,
-    };
+            .bool_literal => self.module.bool_type,
+            .ident_expr => try self.resolve_ident_expr(node, body, &info),
+            .unary_expr => try self.analyze_unary(node, body),
+            .binary_expr => try self.analyze_binary(node, body),
+            .call_expr => try self.analyze_call(node, body),
+            .generic_call_expr => try self.analyze_generic_call(node, body),
+            .construct_expr => try self.analyze_construct(node, body),
+            .member_expr => try self.analyze_member(node, body, &info),
+            .index_expr => try self.analyze_index(node, body, &info),
+            else => return error.UnsupportedConstruct,
+        };
         if (node.tag != .ident_expr and node.tag != .member_expr and node.tag != .index_expr) {
             info.category = .value;
         }
@@ -638,6 +662,7 @@ const Analyzer = struct {
     }
 
     pub fn resolve_type_node(self: *Analyzer, node_idx: u32) AnalyzeError!ir.TypeId {
+        captureFailureNode(self.module.tree, node_idx);
         const node = self.module.tree.nodes.items[node_idx];
         return switch (node.tag) {
             .type_name => try self.resolve_type_name(self.module.tree.tokenSlice(node.main_token)),
@@ -738,6 +763,15 @@ fn is_handle_type(ty: ir.Type) bool {
     return switch (ty) {
         .sampler, .texture_2d, .storage_texture_2d => true,
         else => false,
+    };
+}
+
+fn captureFailureNode(tree: *const Ast, node_idx: u32) void {
+    if (node_idx == NULL_NODE or node_idx >= tree.nodes.items.len) return;
+    const node = tree.nodes.items[node_idx];
+    last_failure_context = .{
+        .node_idx = node_idx,
+        .token_idx = if (node.main_token < tree.tokens.items.len) node.main_token else null,
     };
 }
 
