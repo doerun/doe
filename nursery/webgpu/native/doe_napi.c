@@ -67,6 +67,7 @@ typedef uint32_t WGPUBool;
 #define WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS 2
 #define DOE_DEFAULT_TIMEOUT_NS 2000000000ULL
 #define DOE_WAIT_SLICE_NS 1000ULL
+#define DOE_ERROR_BUF_CAP 512
 
 typedef struct { uint64_t id; } WGPUFuture;
 typedef struct { const char* data; size_t length; } WGPUStringView;
@@ -186,6 +187,14 @@ typedef struct {
     const WGPUBindGroupLayout* bindGroupLayouts;
     uint32_t immediateSize;
 } WGPUPipelineLayoutDescriptor;
+
+typedef struct {
+    uint32_t group;
+    uint32_t binding;
+    uint32_t kind;
+    uint32_t addr_space;
+    uint32_t access;
+} DoeShaderBindingInfo;
 
 typedef struct {
     void* nextInChain;
@@ -357,6 +366,7 @@ DECL_PFN(uint32_t, wgpuInstanceWaitAny, (WGPUInstance, size_t, WGPUFutureWaitInf
 DECL_PFN(void, wgpuInstanceProcessEvents, (WGPUInstance));
 DECL_PFN(void, wgpuAdapterRelease, (WGPUAdapter));
 DECL_PFN(WGPUBool, wgpuAdapterHasFeature, (WGPUAdapter, uint32_t));
+DECL_PFN(uint32_t, wgpuAdapterGetLimits, (WGPUAdapter, void*));
 DECL_PFN(WGPUFuture, wgpuAdapterRequestDevice, (WGPUAdapter, const void*, WGPURequestDeviceCallbackInfo));
 DECL_PFN(void, wgpuDeviceRelease, (WGPUDevice));
 DECL_PFN(WGPUBool, wgpuDeviceHasFeature, (WGPUDevice, uint32_t));
@@ -407,6 +417,11 @@ DECL_PFN(void, wgpuRenderPassEncoderDraw, (WGPURenderPassEncoder, uint32_t, uint
 DECL_PFN(void, wgpuRenderPassEncoderEnd, (WGPURenderPassEncoder));
 DECL_PFN(void, wgpuRenderPassEncoderRelease, (WGPURenderPassEncoder));
 DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
+DECL_PFN(size_t, doeNativeCopyLastErrorMessage, (char*, size_t));
+DECL_PFN(size_t, doeNativeCopyLastErrorStage, (char*, size_t));
+DECL_PFN(size_t, doeNativeCopyLastErrorKind, (char*, size_t));
+DECL_PFN(uint32_t, doeNativeCheckShaderSource, (const char*, size_t));
+DECL_PFN(size_t, doeNativeShaderModuleGetBindings, (WGPUShaderModule, DoeShaderBindingInfo*, size_t));
 
 /* Flat helpers are optional. When absent, the addon assembles the callback-info
  * structs directly and calls the standard WebGPU request entrypoints. */
@@ -426,6 +441,25 @@ typedef WGPUFuture (*PFN_wgpuBufferMapAsync2)(WGPUBuffer, uint64_t, size_t, size
 static PFN_wgpuBufferMapAsync2 pfn_wgpuBufferMapAsync2 = NULL;
 
 static void* g_lib = NULL;
+static uint64_t g_timeout_ns = DOE_DEFAULT_TIMEOUT_NS;
+
+static uint64_t current_timeout_ns(void) {
+    return g_timeout_ns;
+}
+
+static void copy_library_error_message(char* out, size_t out_len) {
+    if (!out || out_len == 0) return;
+    out[0] = '\0';
+    if (!pfn_doeNativeCopyLastErrorMessage) return;
+    pfn_doeNativeCopyLastErrorMessage(out, out_len);
+}
+
+static void copy_library_error_meta(PFN_doeNativeCopyLastErrorMessage fn, char* out, size_t out_len) {
+    if (!out || out_len == 0) return;
+    out[0] = '\0';
+    if (!fn) return;
+    fn(out, out_len);
+}
 
 static uint64_t monotonic_now_ns(void) {
 #ifdef _WIN32
@@ -463,11 +497,32 @@ static int process_events_until(WGPUInstance inst, volatile uint32_t* done, uint
     return 1;
 }
 
+static void copy_string_view_message(WGPUStringView message, char* out, size_t out_len) {
+    if (!out || out_len == 0) return;
+    out[0] = '\0';
+    if (!message.data || message.length == 0) return;
+    size_t copy_len = message.length;
+    if (copy_len >= out_len) copy_len = out_len - 1;
+    memcpy(out, message.data, copy_len);
+    out[copy_len] = '\0';
+}
+
+static napi_value throw_status_error(napi_env env, const char* code, const char* prefix, uint32_t status, const char* detail) {
+    char msg[DOE_ERROR_BUF_CAP];
+    if (detail && detail[0] != '\0') {
+        snprintf(msg, sizeof(msg), "%s (status=%u, detail=%s)", prefix, status, detail);
+    } else {
+        snprintf(msg, sizeof(msg), "%s (status=%u)", prefix, status);
+    }
+    napi_throw_error(env, code, msg);
+    return NULL;
+}
+
 /* ================================================================
  * N-API utility helpers
  * ================================================================ */
 
-#define NAPI_THROW(env, msg) do { napi_throw_error(env, NULL, msg); return NULL; } while(0)
+#define NAPI_THROW(env, msg) do { napi_throw_error(env, "DOE_ERROR", msg); return NULL; } while(0)
 #define MAX_NAPI_ARGS 8
 #define NAPI_ASSERT_ARGC(env, info, n) \
     size_t _argc = (n); napi_value _args[MAX_NAPI_ARGS]; \
@@ -563,6 +618,15 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     free(path);
     if (!g_lib) NAPI_THROW(env, "Failed to load libwebgpu_doe");
 
+    const char* timeout_env = getenv("DOE_TIMEOUT_MS");
+    if (timeout_env && timeout_env[0] != '\0') {
+        char* end = NULL;
+        unsigned long parsed = strtoul(timeout_env, &end, 10);
+        if (end && *end == '\0') {
+            g_timeout_ns = (uint64_t)parsed * 1000000ULL;
+        }
+    }
+
     LOAD_SYM(wgpuCreateInstance);
     LOAD_SYM(wgpuInstanceRelease);
     LOAD_SYM(wgpuInstanceRequestAdapter);
@@ -570,6 +634,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuInstanceProcessEvents);
     LOAD_SYM(wgpuAdapterRelease);
     LOAD_SYM(wgpuAdapterHasFeature);
+    LOAD_SYM(wgpuAdapterGetLimits);
     LOAD_SYM(wgpuAdapterRequestDevice);
     LOAD_SYM(wgpuDeviceRelease);
     LOAD_SYM(wgpuDeviceHasFeature);
@@ -620,6 +685,11 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuRenderPassEncoderEnd);
     LOAD_SYM(wgpuRenderPassEncoderRelease);
     LOAD_SYM(wgpuDeviceGetLimits);
+    pfn_doeNativeCopyLastErrorMessage = (PFN_doeNativeCopyLastErrorMessage)LIB_SYM(g_lib, "doeNativeCopyLastErrorMessage");
+    pfn_doeNativeCopyLastErrorStage = (PFN_doeNativeCopyLastErrorStage)LIB_SYM(g_lib, "doeNativeCopyLastErrorStage");
+    pfn_doeNativeCopyLastErrorKind = (PFN_doeNativeCopyLastErrorKind)LIB_SYM(g_lib, "doeNativeCopyLastErrorKind");
+    pfn_doeNativeCheckShaderSource = (PFN_doeNativeCheckShaderSource)LIB_SYM(g_lib, "doeNativeCheckShaderSource");
+    pfn_doeNativeShaderModuleGetBindings = (PFN_doeNativeShaderModuleGetBindings)LIB_SYM(g_lib, "doeNativeShaderModuleGetBindings");
     pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeRequestAdapterFlat");
     pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
@@ -674,14 +744,16 @@ typedef struct {
     uint32_t status;
     WGPUAdapter adapter;
     uint32_t done;
+    char message[DOE_ERROR_BUF_CAP];
 } AdapterRequestResult;
 
 static void adapter_callback(uint32_t status, WGPUAdapter adapter,
     WGPUStringView message, void* userdata1, void* userdata2) {
-    (void)message; (void)userdata2;
+    (void)userdata2;
     AdapterRequestResult* r = (AdapterRequestResult*)userdata1;
     r->status = status;
     r->adapter = adapter;
+    copy_string_view_message(message, r->message, sizeof(r->message));
     r->done = 1;
 }
 
@@ -691,7 +763,7 @@ static napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
     WGPUInstance inst = unwrap_ptr(env, _args[0]);
     if (!inst) NAPI_THROW(env, "Invalid instance");
 
-    AdapterRequestResult result = {0, NULL, 0};
+    AdapterRequestResult result = {0};
     WGPUFuture future;
     if (pfn_doeRequestAdapterFlat) {
         future = pfn_doeRequestAdapterFlat(
@@ -707,9 +779,10 @@ static napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
         future = pfn_wgpuInstanceRequestAdapter(inst, NULL, callback_info);
     }
     if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
-    if (!process_events_until(inst, &result.done, DOE_DEFAULT_TIMEOUT_NS) ||
-        result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.adapter)
-        NAPI_THROW(env, "requestAdapter failed");
+    if (!process_events_until(inst, &result.done, current_timeout_ns()))
+        return throw_status_error(env, "DOE_REQUEST_ADAPTER_TIMEOUT", "requestAdapter timed out", result.status, result.message);
+    if (result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.adapter)
+        return throw_status_error(env, "DOE_REQUEST_ADAPTER_ERROR", "requestAdapter failed", result.status, result.message);
 
     return wrap_ptr(env, result.adapter);
 }
@@ -729,14 +802,16 @@ typedef struct {
     uint32_t status;
     WGPUDevice device;
     uint32_t done;
+    char message[DOE_ERROR_BUF_CAP];
 } DeviceRequestResult;
 
 static void device_callback(uint32_t status, WGPUDevice device,
     WGPUStringView message, void* userdata1, void* userdata2) {
-    (void)message; (void)userdata2;
+    (void)userdata2;
     DeviceRequestResult* r = (DeviceRequestResult*)userdata1;
     r->status = status;
     r->device = device;
+    copy_string_view_message(message, r->message, sizeof(r->message));
     r->done = 1;
 }
 
@@ -747,7 +822,7 @@ static napi_value doe_request_device(napi_env env, napi_callback_info info) {
     WGPUAdapter adapter = unwrap_ptr(env, _args[1]);
     if (!inst || !adapter) NAPI_THROW(env, "Invalid instance or adapter");
 
-    DeviceRequestResult result = {0, NULL, 0};
+    DeviceRequestResult result = {0};
     WGPUFuture future;
     if (pfn_doeRequestDeviceFlat) {
         future = pfn_doeRequestDeviceFlat(
@@ -763,9 +838,10 @@ static napi_value doe_request_device(napi_env env, napi_callback_info info) {
         future = pfn_wgpuAdapterRequestDevice(adapter, NULL, callback_info);
     }
     if (future.id == 0) NAPI_THROW(env, "requestDevice future unavailable");
-    if (!process_events_until(inst, &result.done, DOE_DEFAULT_TIMEOUT_NS) ||
-        result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.device)
-        NAPI_THROW(env, "requestDevice failed");
+    if (!process_events_until(inst, &result.done, current_timeout_ns()))
+        return throw_status_error(env, "DOE_REQUEST_DEVICE_TIMEOUT", "requestDevice timed out", result.status, result.message);
+    if (result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.device)
+        return throw_status_error(env, "DOE_REQUEST_DEVICE_ERROR", "requestDevice failed", result.status, result.message);
 
     return wrap_ptr(env, result.device);
 }
@@ -824,26 +900,30 @@ static napi_value doe_buffer_unmap(napi_env env, napi_callback_info info) {
 typedef struct {
     uint32_t status;
     uint32_t done;
+    char message[DOE_ERROR_BUF_CAP];
 } BufferMapResult;
 
 typedef struct {
     uint32_t status;
     uint32_t done;
+    char message[DOE_ERROR_BUF_CAP];
 } QueueWorkDoneResult;
 
 static void buffer_map_callback(uint32_t status, WGPUStringView message,
     void* userdata1, void* userdata2) {
-    (void)message; (void)userdata2;
+    (void)userdata2;
     BufferMapResult* r = (BufferMapResult*)userdata1;
     r->status = status;
+    copy_string_view_message(message, r->message, sizeof(r->message));
     r->done = 1;
 }
 
 static void queue_work_done_callback(uint32_t status, WGPUStringView message,
     void* userdata1, void* userdata2) {
-    (void)message; (void)userdata2;
+    (void)userdata2;
     QueueWorkDoneResult* r = (QueueWorkDoneResult*)userdata1;
     r->status = status;
+    copy_string_view_message(message, r->message, sizeof(r->message));
     r->done = 1;
 }
 
@@ -853,13 +933,14 @@ static napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
     CHECK_LIB_LOADED(env);
     WGPUInstance inst = unwrap_ptr(env, _args[0]);
     WGPUBuffer buf = unwrap_ptr(env, _args[1]);
+    if (!inst || !buf) NAPI_THROW(env, "bufferMapSync requires instance and buffer");
     uint32_t mode;
     napi_get_value_uint32(env, _args[2], &mode);
     int64_t offset_i, size_i;
     napi_get_value_int64(env, _args[3], &offset_i);
     napi_get_value_int64(env, _args[4], &size_i);
 
-    BufferMapResult result = {0, 0};
+    BufferMapResult result = {0};
     WGPUBufferMapCallbackInfo cb_info = {
         .nextInChain = NULL,
         .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
@@ -871,9 +952,10 @@ static napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
     WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
         (size_t)offset_i, (size_t)size_i, cb_info);
     if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
-    if (!process_events_until(inst, &result.done, DOE_DEFAULT_TIMEOUT_NS) ||
-        result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-        NAPI_THROW(env, "bufferMapAsync failed");
+    if (!process_events_until(inst, &result.done, current_timeout_ns()))
+        return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
+    if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+        return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
 
     napi_value ok;
     napi_get_boolean(env, true, &ok);
@@ -951,8 +1033,82 @@ static napi_value doe_create_shader_module(napi_env env, napi_callback_info info
 
     WGPUShaderModule mod = pfn_wgpuDeviceCreateShaderModule(device, &desc);
     free(code);
-    if (!mod) NAPI_THROW(env, "createShaderModule failed (WGSL translation or compilation error — check stderr for details)");
+    if (!mod) {
+        char msg[DOE_ERROR_BUF_CAP];
+        char stage[64];
+        char kind[64];
+        copy_library_error_message(msg, sizeof(msg));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorStage, stage, sizeof(stage));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorKind, kind, sizeof(kind));
+        if (msg[0] != '\0') {
+            char full_msg[DOE_ERROR_BUF_CAP];
+            if (stage[0] != '\0' && kind[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s/%s] %s", stage, kind, msg);
+            } else if (stage[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s] %s", stage, msg);
+            } else {
+                snprintf(full_msg, sizeof(full_msg), "%s", msg);
+            }
+            napi_throw_error(env, "DOE_SHADER_MODULE_ERROR", full_msg);
+        } else {
+            napi_throw_error(env, "DOE_SHADER_MODULE_ERROR", "createShaderModule failed (WGSL translation or compilation error)");
+        }
+        return NULL;
+    }
     return wrap_ptr(env, mod);
+}
+
+static napi_value doe_check_shader_source(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    napi_valuetype value_type;
+    if (napi_typeof(env, _args[0], &value_type) != napi_ok || value_type != napi_string) {
+        NAPI_THROW(env, "checkShaderSource requires a WGSL source string");
+    }
+    napi_value result;
+    napi_create_object(env, &result);
+    if (!pfn_doeNativeCheckShaderSource) {
+        napi_value ok;
+        napi_get_boolean(env, true, &ok);
+        napi_set_named_property(env, result, "ok", ok);
+        return result;
+    }
+
+    size_t code_len = 0;
+    napi_get_value_string_utf8(env, _args[0], NULL, 0, &code_len);
+    char* code = (char*)malloc(code_len + 1);
+    if (!code) NAPI_THROW(env, "checkShaderSource: out of memory");
+    napi_get_value_string_utf8(env, _args[0], code, code_len + 1, &code_len);
+
+    const uint32_t ok_status = pfn_doeNativeCheckShaderSource(code, code_len);
+    free(code);
+
+    napi_value ok;
+    napi_get_boolean(env, ok_status != 0, &ok);
+    napi_set_named_property(env, result, "ok", ok);
+    if (ok_status != 0) return result;
+
+    char message[DOE_ERROR_BUF_CAP];
+    char stage[64];
+    char kind[64];
+    copy_library_error_message(message, sizeof(message));
+    copy_library_error_meta(pfn_doeNativeCopyLastErrorStage, stage, sizeof(stage));
+    copy_library_error_meta(pfn_doeNativeCopyLastErrorKind, kind, sizeof(kind));
+
+    napi_value message_val;
+    napi_create_string_utf8(env, message, NAPI_AUTO_LENGTH, &message_val);
+    napi_set_named_property(env, result, "message", message_val);
+    if (stage[0] != '\0') {
+        napi_value stage_val;
+        napi_create_string_utf8(env, stage, NAPI_AUTO_LENGTH, &stage_val);
+        napi_set_named_property(env, result, "stage", stage_val);
+    }
+    if (kind[0] != '\0') {
+        napi_value kind_val;
+        napi_create_string_utf8(env, kind, NAPI_AUTO_LENGTH, &kind_val);
+        napi_set_named_property(env, result, "kind", kind_val);
+    }
+    return result;
 }
 
 static napi_value doe_shader_module_release(napi_env env, napi_callback_info info) {
@@ -960,6 +1116,70 @@ static napi_value doe_shader_module_release(napi_env env, napi_callback_info inf
     void* mod = unwrap_ptr(env, _args[0]);
     if (mod) pfn_wgpuShaderModuleRelease(mod);
     return NULL;
+}
+
+static const char* doe_binding_kind_name(uint32_t kind) {
+    switch (kind) {
+        case 0: return "buffer";
+        case 1: return "sampler";
+        case 2: return "texture";
+        case 3: return "storage_texture";
+        default: return "unknown";
+    }
+}
+
+static const char* doe_binding_space_name(uint32_t addr_space) {
+    switch (addr_space) {
+        case 0: return "function";
+        case 1: return "private";
+        case 2: return "workgroup";
+        case 3: return "uniform";
+        case 4: return "storage";
+        case 5: return "handle";
+        default: return "unknown";
+    }
+}
+
+static const char* doe_binding_access_name(uint32_t access) {
+    switch (access) {
+        case 0: return "read";
+        case 1: return "write";
+        case 2: return "read_write";
+        default: return "unknown";
+    }
+}
+
+static napi_value doe_shader_module_get_bindings(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    WGPUShaderModule shader_module = unwrap_ptr(env, _args[0]);
+    if (!shader_module) NAPI_THROW(env, "shaderModuleGetBindings: null shader module");
+    if (!pfn_doeNativeShaderModuleGetBindings) NAPI_THROW(env, "shaderModuleGetBindings: native binding metadata not available");
+
+    DoeShaderBindingInfo bindings[16];
+    size_t count = pfn_doeNativeShaderModuleGetBindings(shader_module, bindings, 16);
+
+    napi_value array;
+    napi_create_array_with_length(env, count, &array);
+    for (size_t i = 0; i < count; i++) {
+        napi_value entry;
+        napi_create_object(env, &entry);
+
+        napi_value group, binding, kind, space, access;
+        napi_create_uint32(env, bindings[i].group, &group);
+        napi_create_uint32(env, bindings[i].binding, &binding);
+        napi_create_string_utf8(env, doe_binding_kind_name(bindings[i].kind), NAPI_AUTO_LENGTH, &kind);
+        napi_create_string_utf8(env, doe_binding_space_name(bindings[i].addr_space), NAPI_AUTO_LENGTH, &space);
+        napi_create_string_utf8(env, doe_binding_access_name(bindings[i].access), NAPI_AUTO_LENGTH, &access);
+
+        napi_set_named_property(env, entry, "group", group);
+        napi_set_named_property(env, entry, "binding", binding);
+        napi_set_named_property(env, entry, "type", kind);
+        napi_set_named_property(env, entry, "space", space);
+        napi_set_named_property(env, entry, "access", access);
+        napi_set_element(env, array, i, entry);
+    }
+
+    return array;
 }
 
 /* ================================================================
@@ -994,7 +1214,28 @@ static napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info i
 
     WGPUComputePipeline pipeline = pfn_wgpuDeviceCreateComputePipeline(device, &desc);
     free(ep);
-    if (!pipeline) NAPI_THROW(env, "createComputePipeline failed (shader module invalid or entry point not found — check stderr for details)");
+    if (!pipeline) {
+        char msg[DOE_ERROR_BUF_CAP];
+        char stage[64];
+        char kind[64];
+        copy_library_error_message(msg, sizeof(msg));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorStage, stage, sizeof(stage));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorKind, kind, sizeof(kind));
+        if (msg[0] != '\0') {
+            char full_msg[DOE_ERROR_BUF_CAP];
+            if (stage[0] != '\0' && kind[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s/%s] %s", stage, kind, msg);
+            } else if (stage[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s] %s", stage, msg);
+            } else {
+                snprintf(full_msg, sizeof(full_msg), "%s", msg);
+            }
+            napi_throw_error(env, "DOE_COMPUTE_PIPELINE_ERROR", full_msg);
+        } else {
+            napi_throw_error(env, "DOE_COMPUTE_PIPELINE_ERROR", "createComputePipeline failed");
+        }
+        return NULL;
+    }
     return wrap_ptr(env, pipeline);
 }
 
@@ -1021,7 +1262,9 @@ static napi_value doe_compute_pipeline_get_bind_group_layout(napi_env env, napi_
 /* ================================================================
  * Bind Group Layout
  * createBindGroupLayout(device, entries[])
- * Each entry: { binding, visibility, buffer?: { type }, storageTexture?: { ... } }
+ * Each entry: { binding, visibility, buffer?: { type }, sampler?: { type },
+ *               texture?: { sampleType, viewDimension, multisampled },
+ *               storageTexture?: { access, format, viewDimension } }
  * ================================================================ */
 
 static uint32_t buffer_binding_type_from_string(napi_env env, napi_value val) {
@@ -1036,6 +1279,65 @@ static uint32_t buffer_binding_type_from_string(napi_env env, napi_value val) {
     if (strcmp(buf, "read-only-storage") == 0) return 0x00000004;
     return 0x00000001;
 }
+
+static uint32_t sampler_binding_type_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt != napi_string) return 0x00000001; /* Undefined */
+    char buf[32] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "filtering") == 0) return 0x00000002;
+    if (strcmp(buf, "non-filtering") == 0 || strcmp(buf, "non_filtering") == 0) return 0x00000003;
+    if (strcmp(buf, "comparison") == 0) return 0x00000004;
+    return 0x00000001;
+}
+
+static uint32_t texture_sample_type_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt != napi_string) return 0x00000001; /* Undefined */
+    char buf[64] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "float") == 0) return 0x00000002;
+    if (strcmp(buf, "unfilterable-float") == 0 || strcmp(buf, "unfilterable_float") == 0) return 0x00000003;
+    if (strcmp(buf, "depth") == 0) return 0x00000004;
+    if (strcmp(buf, "sint") == 0) return 0x00000005;
+    if (strcmp(buf, "uint") == 0) return 0x00000006;
+    return 0x00000001;
+}
+
+static uint32_t texture_view_dimension_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt != napi_string) return 0x00000000; /* Undefined */
+    char buf[32] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "1d") == 0) return 0x00000001;
+    if (strcmp(buf, "2d") == 0) return 0x00000002;
+    if (strcmp(buf, "2d-array") == 0 || strcmp(buf, "2d_array") == 0) return 0x00000003;
+    if (strcmp(buf, "cube") == 0) return 0x00000004;
+    if (strcmp(buf, "cube-array") == 0 || strcmp(buf, "cube_array") == 0) return 0x00000005;
+    if (strcmp(buf, "3d") == 0) return 0x00000006;
+    return 0x00000000;
+}
+
+static uint32_t storage_texture_access_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt;
+    napi_typeof(env, val, &vt);
+    if (vt != napi_string) return 0x00000001; /* Undefined */
+    char buf[32] = {0};
+    size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "write-only") == 0 || strcmp(buf, "write_only") == 0) return 0x00000002;
+    if (strcmp(buf, "read-only") == 0 || strcmp(buf, "read_only") == 0) return 0x00000003;
+    if (strcmp(buf, "read-write") == 0 || strcmp(buf, "read_write") == 0) return 0x00000004;
+    return 0x00000001;
+}
+
+static uint32_t texture_format_from_string(napi_env env, napi_value val);
 
 static napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
@@ -1066,11 +1368,27 @@ static napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info 
                 entries[i].buffer.minBindingSize = (uint64_t)get_int64_prop(env, buf_obj, "minBindingSize");
         }
 
+        if (has_prop(env, elem, "sampler") && prop_type(env, elem, "sampler") == napi_object) {
+            napi_value sampler_obj = get_prop(env, elem, "sampler");
+            entries[i].sampler.type = sampler_binding_type_from_string(
+                env, get_prop(env, sampler_obj, "type"));
+        }
+
+        if (has_prop(env, elem, "texture") && prop_type(env, elem, "texture") == napi_object) {
+            napi_value tex_obj = get_prop(env, elem, "texture");
+            entries[i].texture.sampleType = texture_sample_type_from_string(
+                env, get_prop(env, tex_obj, "sampleType"));
+            entries[i].texture.viewDimension = texture_view_dimension_from_string(
+                env, get_prop(env, tex_obj, "viewDimension"));
+            if (has_prop(env, tex_obj, "multisampled"))
+                entries[i].texture.multisampled = get_bool_prop(env, tex_obj, "multisampled") ? 1 : 0;
+        }
+
         if (has_prop(env, elem, "storageTexture") && prop_type(env, elem, "storageTexture") == napi_object) {
             napi_value st_obj = get_prop(env, elem, "storageTexture");
-            entries[i].storageTexture.access = get_uint32_prop(env, st_obj, "access");
-            entries[i].storageTexture.format = get_uint32_prop(env, st_obj, "format");
-            entries[i].storageTexture.viewDimension = get_uint32_prop(env, st_obj, "viewDimension");
+            entries[i].storageTexture.access = storage_texture_access_from_string(env, get_prop(env, st_obj, "access"));
+            entries[i].storageTexture.format = texture_format_from_string(env, get_prop(env, st_obj, "format"));
+            entries[i].storageTexture.viewDimension = texture_view_dimension_from_string(env, get_prop(env, st_obj, "viewDimension"));
         }
     }
 
@@ -1097,7 +1415,7 @@ static napi_value doe_bind_group_layout_release(napi_env env, napi_callback_info
 /* ================================================================
  * Bind Group
  * createBindGroup(device, layout, entries[])
- * Each entry: { binding, buffer, offset?, size? }
+ * Each entry: { binding, buffer?, offset?, size?, sampler?, textureView? }
  * ================================================================ */
 
 static napi_value doe_create_bind_group(napi_env env, napi_callback_info info) {
@@ -1121,6 +1439,12 @@ static napi_value doe_create_bind_group(napi_env env, napi_callback_info info) {
 
         if (has_prop(env, elem, "buffer") && prop_type(env, elem, "buffer") == napi_external)
             entries[i].buffer = unwrap_ptr(env, get_prop(env, elem, "buffer"));
+
+        if (has_prop(env, elem, "sampler") && prop_type(env, elem, "sampler") == napi_external)
+            entries[i].sampler = unwrap_ptr(env, get_prop(env, elem, "sampler"));
+
+        if (has_prop(env, elem, "textureView") && prop_type(env, elem, "textureView") == napi_external)
+            entries[i].textureView = unwrap_ptr(env, get_prop(env, elem, "textureView"));
 
         if (has_prop(env, elem, "offset"))
             entries[i].offset = (uint64_t)get_int64_prop(env, elem, "offset");
@@ -1360,6 +1684,7 @@ static napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info) 
     CHECK_LIB_LOADED(env);
     WGPUQueue queue = unwrap_ptr(env, _args[0]);
     WGPUBuffer buf = unwrap_ptr(env, _args[1]);
+    if (!queue || !buf) NAPI_THROW(env, "queueWriteBuffer requires queue and buffer");
     int64_t offset; napi_get_value_int64(env, _args[2], &offset);
 
     void* data = NULL;
@@ -1415,9 +1740,12 @@ static napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
         pfn_doeNativeQueueFlush(queue);
         return NULL;
     }
-    if (!inst) NAPI_THROW(env, "queueFlush requires instance when doeNativeQueueFlush is unavailable");
+    if (!inst) {
+        napi_throw_error(env, "DOE_QUEUE_UNAVAILABLE", "queueFlush requires instance when doeNativeQueueFlush is unavailable");
+        return NULL;
+    }
 
-    QueueWorkDoneResult result = {0, 0};
+    QueueWorkDoneResult result = {0};
     WGPUQueueWorkDoneCallbackInfo cb_info = {
         .nextInChain = NULL,
         .mode = WGPU_CALLBACK_MODE_WAIT_ANY_ONLY,
@@ -1441,19 +1769,20 @@ static napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
             }
         } else if (wait_status == WGPU_WAIT_STATUS_TIMED_OUT) {
             pfn_wgpuInstanceProcessEvents(inst);
-            if (monotonic_now_ns() - start_ns >= DOE_DEFAULT_TIMEOUT_NS) {
-                NAPI_THROW(env, "queueFlush: queue wait timed out");
+            if (monotonic_now_ns() - start_ns >= current_timeout_ns()) {
+                napi_throw_error(env, "DOE_QUEUE_TIMEOUT", "queueFlush: queue wait timed out");
+                return NULL;
             }
             wait_slice();
         } else if (wait_status == WGPU_WAIT_STATUS_ERROR) {
-            NAPI_THROW(env, "queueFlush: wgpuInstanceWaitAny failed");
+            napi_throw_error(env, "DOE_QUEUE_UNAVAILABLE", "queueFlush: wgpuInstanceWaitAny failed");
+            return NULL;
         } else {
             NAPI_THROW(env, "queueFlush: unsupported wait status");
         }
     }
-    if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS) {
-        NAPI_THROW(env, "queueFlush: queue work did not complete");
-    }
+    if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS)
+        return throw_status_error(env, "DOE_QUEUE_FLUSH_ERROR", "queueFlush: queue work did not complete", result.status, result.message);
     return NULL;
 }
 
@@ -1677,7 +2006,7 @@ static napi_value doe_flush_and_map_sync(napi_env env, napi_callback_info info) 
     }
 
     /* Map the buffer synchronously via processEvents polling. */
-    BufferMapResult result = {0, 0};
+    BufferMapResult result = {0};
     WGPUBufferMapCallbackInfo cb_info = {
         .nextInChain = NULL,
         .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
@@ -1688,9 +2017,10 @@ static napi_value doe_flush_and_map_sync(napi_env env, napi_callback_info info) 
     WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
         (size_t)offset_i, (size_t)size_i, cb_info);
     if (future.id == 0) NAPI_THROW(env, "flushAndMapSync: bufferMapAsync future unavailable");
-    if (!process_events_until(inst, &result.done, DOE_DEFAULT_TIMEOUT_NS) ||
-        result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-        NAPI_THROW(env, "flushAndMapSync: bufferMapAsync failed");
+    if (!process_events_until(inst, &result.done, current_timeout_ns()))
+        return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "flushAndMapSync: bufferMapAsync timed out", result.status, result.message);
+    if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+        return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: bufferMapAsync failed", result.status, result.message);
 
     napi_value ok;
     napi_get_boolean(env, true, &ok);
@@ -2016,6 +2346,72 @@ static napi_value doe_device_get_limits(napi_env env, napi_callback_info info) {
     return obj;
 }
 
+static napi_value doe_adapter_get_limits(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUAdapter adapter = unwrap_ptr(env, _args[0]);
+    if (!adapter) NAPI_THROW(env, "adapterGetLimits: null adapter");
+
+    WGPULimits limits;
+    memset(&limits, 0, sizeof(limits));
+    pfn_wgpuAdapterGetLimits(adapter, &limits);
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+#define SET_U32(name) do { napi_value v; napi_create_uint32(env, limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
+#define SET_U64(name) do { napi_value v; napi_create_double(env, (double)limits.name, &v); napi_set_named_property(env, obj, #name, v); } while(0)
+
+    SET_U32(maxTextureDimension1D);
+    SET_U32(maxTextureDimension2D);
+    SET_U32(maxTextureDimension3D);
+    SET_U32(maxTextureArrayLayers);
+    SET_U32(maxBindGroups);
+    SET_U32(maxBindGroupsPlusVertexBuffers);
+    SET_U32(maxBindingsPerBindGroup);
+    SET_U32(maxDynamicUniformBuffersPerPipelineLayout);
+    SET_U32(maxDynamicStorageBuffersPerPipelineLayout);
+    SET_U32(maxSampledTexturesPerShaderStage);
+    SET_U32(maxSamplersPerShaderStage);
+    SET_U32(maxStorageBuffersPerShaderStage);
+    SET_U32(maxStorageTexturesPerShaderStage);
+    SET_U32(maxUniformBuffersPerShaderStage);
+    SET_U64(maxUniformBufferBindingSize);
+    SET_U64(maxStorageBufferBindingSize);
+    SET_U32(minUniformBufferOffsetAlignment);
+    SET_U32(minStorageBufferOffsetAlignment);
+    SET_U32(maxVertexBuffers);
+    SET_U64(maxBufferSize);
+    SET_U32(maxVertexAttributes);
+    SET_U32(maxVertexBufferArrayStride);
+    SET_U32(maxInterStageShaderVariables);
+    SET_U32(maxColorAttachments);
+    SET_U32(maxColorAttachmentBytesPerSample);
+    SET_U32(maxComputeWorkgroupStorageSize);
+    SET_U32(maxComputeInvocationsPerWorkgroup);
+    SET_U32(maxComputeWorkgroupSizeX);
+    SET_U32(maxComputeWorkgroupSizeY);
+    SET_U32(maxComputeWorkgroupSizeZ);
+    SET_U32(maxComputeWorkgroupsPerDimension);
+
+#undef SET_U32
+#undef SET_U64
+
+    return obj;
+}
+
+static napi_value doe_adapter_has_feature(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUAdapter adapter = unwrap_ptr(env, _args[0]);
+    uint32_t feature;
+    napi_get_value_uint32(env, _args[1], &feature);
+    uint32_t result = pfn_wgpuAdapterHasFeature(adapter, feature);
+    napi_value ret;
+    napi_get_boolean(env, result != 0, &ret);
+    return ret;
+}
+
 static napi_value doe_device_has_feature(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
@@ -2026,6 +2422,14 @@ static napi_value doe_device_has_feature(napi_env env, napi_callback_info info) 
     napi_value ret;
     napi_get_boolean(env, result != 0, &ret);
     return ret;
+}
+
+static napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    uint32_t timeout_ms = 0;
+    napi_get_value_uint32(env, _args[0], &timeout_ms);
+    g_timeout_ns = (uint64_t)timeout_ms * 1000000ULL;
+    return NULL;
 }
 
 /* ================================================================
@@ -2050,8 +2454,10 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("bufferMapSync", doe_buffer_map_sync),
         EXPORT_FN("bufferGetMappedRange", doe_buffer_get_mapped_range),
         EXPORT_FN("bufferAssertMappedPrefixF32", doe_buffer_assert_mapped_prefix_f32),
+        EXPORT_FN("checkShaderSource", doe_check_shader_source),
         EXPORT_FN("createShaderModule", doe_create_shader_module),
         EXPORT_FN("shaderModuleRelease", doe_shader_module_release),
+        EXPORT_FN("shaderModuleGetBindings", doe_shader_module_get_bindings),
         EXPORT_FN("createComputePipeline", doe_create_compute_pipeline),
         EXPORT_FN("computePipelineRelease", doe_compute_pipeline_release),
         EXPORT_FN("computePipelineGetBindGroupLayout", doe_compute_pipeline_get_bind_group_layout),
@@ -2093,8 +2499,11 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderPassDraw", doe_render_pass_draw),
         EXPORT_FN("renderPassEnd", doe_render_pass_end),
         EXPORT_FN("renderPassRelease", doe_render_pass_release),
+        EXPORT_FN("adapterGetLimits", doe_adapter_get_limits),
+        EXPORT_FN("adapterHasFeature", doe_adapter_has_feature),
         EXPORT_FN("deviceGetLimits", doe_device_get_limits),
         EXPORT_FN("deviceHasFeature", doe_device_has_feature),
+        EXPORT_FN("setTimeoutMs", doe_set_timeout_ms),
     };
 
     size_t count = sizeof(descriptors) / sizeof(descriptors[0]);

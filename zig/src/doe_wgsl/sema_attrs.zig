@@ -7,6 +7,7 @@ const Ast = ast_mod.Ast;
 const decode_packed_span = sema_helpers.decode_packed_span;
 const parse_single_int_attr = sema_helpers.parse_single_int_attr;
 const parse_builtin_attr = sema_helpers.parse_builtin_attr;
+const parse_wgsl_int_literal = sema_helpers.parse_wgsl_int_literal;
 
 pub fn parse_stage(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.ShaderStage {
     var stage: ?ir.ShaderStage = null;
@@ -30,7 +31,7 @@ pub fn parse_workgroup_size(self: anytype, attrs_start: u32, attrs_len: u32) ![3
         while (i < span.len and i < result.len) : (i += 1) {
             const arg_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[span.start + i]];
             if (arg_node.tag != .int_literal) return error.InvalidAttribute;
-            result[i] = try std.fmt.parseInt(u32, self.module.tree.tokenSlice(arg_node.main_token), 10);
+            result[i] = try parse_wgsl_int_literal(u32, self.module.tree.tokenSlice(arg_node.main_token));
         }
     }
     return result;
@@ -100,6 +101,39 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => error.UnsupportedBuiltin,
         };
     }
+    if (std.mem.eql(u8, name, "unpack2x16float")) {
+        if (arg_types.len != 1 or arg_types[0] != self.module.u32_type) return error.UnsupportedBuiltin;
+        return try self.module.types.intern(.{ .vector = .{ .elem = self.module.f32_type, .len = 2 } });
+    }
+    if (std.mem.eql(u8, name, "pack2x16float")) {
+        if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .vector => |vec| if (vec.len == 2 and vec.elem == self.module.f32_type) self.module.u32_type else error.UnsupportedBuiltin,
+            else => error.UnsupportedBuiltin,
+        };
+    }
+    if (std.mem.eql(u8, name, "unpack4x8snorm") or std.mem.eql(u8, name, "unpack4x8unorm")) {
+        if (arg_types.len != 1 or arg_types[0] != self.module.u32_type) return error.UnsupportedBuiltin;
+        return try self.module.types.intern(.{ .vector = .{ .elem = self.module.f32_type, .len = 4 } });
+    }
+    if (std.mem.eql(u8, name, "pack4x8snorm") or std.mem.eql(u8, name, "pack4x8unorm")) {
+        if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .vector => |vec| if (vec.len == 4 and vec.elem == self.module.f32_type) self.module.u32_type else error.UnsupportedBuiltin,
+            else => error.UnsupportedBuiltin,
+        };
+    }
+    if (std.mem.eql(u8, name, "subgroupAdd") or std.mem.eql(u8, name, "subgroupMin") or std.mem.eql(u8, name, "subgroupMax") or std.mem.eql(u8, name, "subgroupExclusiveAdd")) {
+        if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        if (!is_subgroup_numeric_type(self, arg_types[0])) return error.UnsupportedBuiltin;
+        return arg_types[0];
+    }
+    if (std.mem.eql(u8, name, "subgroupBroadcast") or std.mem.eql(u8, name, "subgroupShuffle") or std.mem.eql(u8, name, "subgroupShuffleXor")) {
+        if (arg_types.len != 2) return error.UnsupportedBuiltin;
+        if (!is_subgroup_numeric_type(self, arg_types[0])) return error.UnsupportedBuiltin;
+        if (arg_types[1] != self.module.u32_type) return error.UnsupportedBuiltin;
+        return arg_types[0];
+    }
     if (std.mem.eql(u8, name, "atomicLoad") or std.mem.eql(u8, name, "atomicStore") or std.mem.eql(u8, name, "atomicAdd") or std.mem.eql(u8, name, "atomicSub") or std.mem.eql(u8, name, "atomicMax") or std.mem.eql(u8, name, "atomicMin") or std.mem.eql(u8, name, "atomicAnd") or std.mem.eql(u8, name, "atomicOr") or std.mem.eql(u8, name, "atomicXor") or std.mem.eql(u8, name, "atomicExchange")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return switch (self.module.types.get(arg_types[0])) {
@@ -107,11 +141,52 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => arg_types[0],
         };
     }
-    if (std.mem.eql(u8, name, "min") or std.mem.eql(u8, name, "max") or std.mem.eql(u8, name, "clamp") or std.mem.eql(u8, name, "select") or std.mem.eql(u8, name, "abs") or std.mem.eql(u8, name, "sqrt") or std.mem.eql(u8, name, "sin") or std.mem.eql(u8, name, "cos") or std.mem.eql(u8, name, "normalize") or std.mem.eql(u8, name, "length") or std.mem.eql(u8, name, "distance")) {
+    if (std.mem.eql(u8, name, "min") or std.mem.eql(u8, name, "max") or std.mem.eql(u8, name, "clamp") or std.mem.eql(u8, name, "select") or std.mem.eql(u8, name, "abs") or std.mem.eql(u8, name, "sqrt") or std.mem.eql(u8, name, "sin") or std.mem.eql(u8, name, "cos") or std.mem.eql(u8, name, "tan") or std.mem.eql(u8, name, "acos") or std.mem.eql(u8, name, "asin") or std.mem.eql(u8, name, "atan") or std.mem.eql(u8, name, "cosh") or std.mem.eql(u8, name, "sinh") or std.mem.eql(u8, name, "sign") or std.mem.eql(u8, name, "fract") or std.mem.eql(u8, name, "floor") or std.mem.eql(u8, name, "ceil") or std.mem.eql(u8, name, "round") or std.mem.eql(u8, name, "trunc") or std.mem.eql(u8, name, "exp") or std.mem.eql(u8, name, "log") or std.mem.eql(u8, name, "exp2") or std.mem.eql(u8, name, "log2") or std.mem.eql(u8, name, "inverseSqrt") or std.mem.eql(u8, name, "tanh") or std.mem.eql(u8, name, "normalize") or std.mem.eql(u8, name, "degrees") or std.mem.eql(u8, name, "radians")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return arg_types[0];
     }
+    if (std.mem.eql(u8, name, "pow") or std.mem.eql(u8, name, "step") or std.mem.eql(u8, name, "atan2") or std.mem.eql(u8, name, "ldexp")) {
+        if (arg_types.len != 2) return error.UnsupportedBuiltin;
+        return arg_types[0];
+    }
+    if (std.mem.eql(u8, name, "mix") or std.mem.eql(u8, name, "smoothstep") or std.mem.eql(u8, name, "fma")) {
+        if (arg_types.len != 3) return error.UnsupportedBuiltin;
+        return arg_types[0];
+    }
+    if (std.mem.eql(u8, name, "length") or std.mem.eql(u8, name, "distance")) {
+        if (arg_types.len == 0) return error.UnsupportedBuiltin;
+        return scalar_result_type(self, arg_types[0]);
+    }
+    if (std.mem.eql(u8, name, "cross")) {
+        if (arg_types.len != 2) return error.UnsupportedBuiltin;
+        return arg_types[0];
+    }
     return error.UnsupportedBuiltin;
+}
+
+fn scalar_result_type(self: anytype, ty: ir.TypeId) !ir.TypeId {
+    return switch (self.module.types.get(ty)) {
+        .vector => |vec| vec.elem,
+        .scalar => ty,
+        else => error.UnsupportedBuiltin,
+    };
+}
+
+fn is_subgroup_numeric_type(self: anytype, ty: ir.TypeId) bool {
+    return switch (self.module.types.get(ty)) {
+        .scalar => |scalar| switch (scalar) {
+            .u32, .i32, .f16, .f32, .abstract_int, .abstract_float => true,
+            else => false,
+        },
+        .vector => |vec| switch (self.module.types.get(vec.elem)) {
+            .scalar => |scalar| switch (scalar) {
+                .u32, .i32, .f16, .f32, .abstract_int, .abstract_float => true,
+                else => false,
+            },
+            else => false,
+        },
+        else => false,
+    };
 }
 
 pub fn parse_address_space(name: []const u8) !ir.AddressSpace {

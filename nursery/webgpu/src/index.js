@@ -8,7 +8,47 @@ import {
   runDawnVsDoeCompare as runDawnVsDoeCompareCli,
 } from './runtime_cli.js';
 import { loadDoeBuildMetadata } from './build_metadata.js';
-import { inferAutoBindGroupLayouts } from './auto_bind_group_layout.js';
+import {
+  UINT32_MAX,
+  failValidation,
+  describeResourceLabel,
+  initResource,
+  assertObject,
+  assertArray,
+  assertBoolean,
+  assertNonEmptyString,
+  assertIntegerInRange,
+  assertOptionalIntegerInRange,
+  validatePositiveInteger,
+  assertLiveResource,
+  destroyResource,
+} from './shared/resource-lifecycle.js';
+import {
+  DOE_LIMITS,
+  DOE_FEATURES,
+  featureSet,
+} from './shared/capabilities.js';
+import {
+  assertBufferDescriptor,
+  assertTextureSize,
+  assertBindGroupResource,
+  normalizeSamplerLayout,
+  normalizeTextureLayout,
+  normalizeStorageTextureLayout,
+  autoLayoutEntriesFromNativeBindings,
+} from './shared/validation.js';
+import {
+  setupGlobalsOnTarget,
+  requestAdapterFromCreate,
+  requestDeviceFromRequestAdapter,
+  buildProviderInfo,
+  libraryFlavor,
+} from './shared/public-surface.js';
+import {
+  shaderCheckFailure,
+  enrichNativeCompilerError,
+  compilerErrorFromMessage,
+} from './shared/compiler-errors.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -21,7 +61,8 @@ const DOE_BUILD_METADATA = loadDoeBuildMetadata({
 });
 let libraryLoaded = false;
 
-export { globals };
+export { globals, preflightShaderSource };
+
 
 function loadAddon() {
   const prebuildPath = resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, 'doe_napi.node');
@@ -85,6 +126,83 @@ function ensureLibrary() {
   libraryLoaded = true;
 }
 
+function validateBufferDescriptor(descriptor) {
+  return assertBufferDescriptor(descriptor, 'GPUDevice.createBuffer');
+}
+
+function adapterLimits(native) {
+  if (typeof addon?.adapterGetLimits === 'function') {
+    const queried = addon.adapterGetLimits(native);
+    if (queried && typeof queried === 'object' && queried.maxBindGroups) {
+      return Object.freeze({ ...DOE_LIMITS, ...queried });
+    }
+  }
+  return DOE_LIMITS;
+}
+
+function deviceLimits(native) {
+  void native;
+  return DOE_LIMITS;
+}
+
+function adapterFeatures(native) {
+  if (typeof addon?.adapterHasFeature === 'function') {
+    return featureSet((feature) => addon.adapterHasFeature(native, feature));
+  }
+  return DOE_FEATURES;
+}
+
+function deviceFeatures(native) {
+  if (typeof addon?.deviceHasFeature === 'function') {
+    return featureSet((feature) => addon.deviceHasFeature(native, feature));
+  }
+  return DOE_FEATURES;
+}
+
+function preflightShaderSource(code) {
+  ensureLibrary();
+  if (typeof addon?.checkShaderSource === 'function') {
+    const result = addon.checkShaderSource(code);
+    if (result && typeof result === 'object') {
+      if (result.ok !== false && /@(?:vertex|fragment)\b/.test(code)) {
+        return {
+          ok: false,
+          stage: 'package_surface',
+          kind: 'UnsupportedSurface',
+          message: 'package_surface: vertex and fragment shaders are not fully supported on this package surface yet',
+          reasons: ['package_surface: vertex and fragment shaders are not fully supported on this package surface yet'],
+        };
+      }
+      return {
+        ok: result.ok !== false,
+        stage: result.stage ?? '',
+        kind: result.kind ?? '',
+        message: result.message ?? '',
+        reasons: result.ok === false && result.message ? [result.message] : [],
+      };
+    }
+  }
+  return { ok: true, stage: '', kind: '', message: '', reasons: [] };
+}
+
+function requireAutoLayoutEntriesFromNative(shaderNative, visibility, path) {
+  if (typeof addon?.shaderModuleGetBindings !== 'function') {
+    failValidation(
+      path,
+      'layout: "auto" requires native shader binding metadata on this package surface'
+    );
+  }
+  const bindings = addon.shaderModuleGetBindings(shaderNative);
+  if (!Array.isArray(bindings)) {
+    failValidation(
+      path,
+      'layout: "auto" could not read native shader binding metadata'
+    );
+  }
+  return autoLayoutEntriesFromNativeBindings(bindings, visibility);
+}
+
+
 /**
  * Standard WebGPU enum objects exposed by the Doe package runtime.
  *
@@ -122,12 +240,13 @@ function ensureLibrary() {
  * - Destroying the buffer releases the native handle but does not remove the JS object itself.
  */
 class DoeGPUBuffer {
-  constructor(native, instance, size, usage, queue) {
+  constructor(native, instance, size, usage, queue, owner) {
     this._native = native;
     this._instance = instance;
     this._queue = queue;
     this.size = size;
     this.usage = usage;
+    initResource(this, 'GPUBuffer', owner);
   }
 
   /**
@@ -146,15 +265,29 @@ class DoeGPUBuffer {
    * - When the queue still has pending submissions, Doe flushes them before mapping.
    */
   async mapAsync(mode, offset = 0, size = Math.max(0, this.size - offset)) {
+    const native = assertLiveResource(this, 'GPUBuffer.mapAsync', 'GPUBuffer');
+    assertIntegerInRange(mode, 'GPUBuffer.mapAsync', 'mode', { min: 0, max: UINT32_MAX });
+    assertIntegerInRange(offset, 'GPUBuffer.mapAsync', 'offset', { min: 0 });
+    assertIntegerInRange(size, 'GPUBuffer.mapAsync', 'size', { min: 0 });
+    if (offset + size > this.size) {
+      failValidation('GPUBuffer.mapAsync', `mapped range ${offset}+${size} exceeds buffer size ${this.size}`);
+    }
     if (this._queue) {
       if (this._queue.hasPendingSubmissions()) {
-        addon.flushAndMapSync(this._instance, this._queue._native, this._native, mode, offset, size);
+        addon.flushAndMapSync(
+          this._instance,
+          assertLiveResource(this._queue, 'GPUBuffer.mapAsync', 'GPUQueue'),
+          native,
+          mode,
+          offset,
+          size
+        );
         this._queue.markSubmittedWorkDone();
       } else {
-        addon.bufferMapSync(this._instance, this._native, mode, offset, size);
+        addon.bufferMapSync(this._instance, native, mode, offset, size);
       }
     } else {
-      addon.bufferMapSync(this._instance, this._native, mode, offset, size);
+      addon.bufferMapSync(this._instance, native, mode, offset, size);
     }
   }
 
@@ -174,7 +307,13 @@ class DoeGPUBuffer {
    * - When `size` is omitted, Doe returns the remaining bytes from `offset` to the end of the buffer.
    */
   getMappedRange(offset = 0, size = Math.max(0, this.size - offset)) {
-    return addon.bufferGetMappedRange(this._native, offset, size);
+    const native = assertLiveResource(this, 'GPUBuffer.getMappedRange', 'GPUBuffer');
+    assertIntegerInRange(offset, 'GPUBuffer.getMappedRange', 'offset', { min: 0 });
+    assertIntegerInRange(size, 'GPUBuffer.getMappedRange', 'size', { min: 0 });
+    if (offset + size > this.size) {
+      failValidation('GPUBuffer.getMappedRange', `mapped range ${offset}+${size} exceeds buffer size ${this.size}`);
+    }
+    return addon.bufferGetMappedRange(native, offset, size);
   }
 
   /**
@@ -193,7 +332,27 @@ class DoeGPUBuffer {
    * - This checks only the requested prefix rather than the whole buffer.
    */
   assertMappedPrefixF32(expected, count) {
-    return addon.bufferAssertMappedPrefixF32(this._native, expected, count);
+    const native = assertLiveResource(this, 'GPUBuffer.assertMappedPrefixF32', 'GPUBuffer');
+    assertIntegerInRange(count, 'GPUBuffer.assertMappedPrefixF32', 'count', { min: 0, max: UINT32_MAX });
+    if (Array.isArray(expected)) {
+      if (expected.length < count) {
+        failValidation('GPUBuffer.assertMappedPrefixF32', `expected array must contain at least ${count} values`);
+      }
+      const actual = new Float32Array(this.getMappedRange(0, count * Float32Array.BYTES_PER_ELEMENT));
+      for (let index = 0; index < count; index += 1) {
+        if (actual[index] !== expected[index]) {
+          failValidation(
+            'GPUBuffer.assertMappedPrefixF32',
+            `expected readback[${index}] === ${expected[index]}, got ${actual[index]}`
+          );
+        }
+      }
+      return;
+    }
+    if (typeof expected !== 'number') {
+      failValidation('GPUBuffer.assertMappedPrefixF32', 'expected must be a number or array of numbers');
+    }
+    return addon.bufferAssertMappedPrefixF32(native, expected, count);
   }
 
   /**
@@ -211,7 +370,7 @@ class DoeGPUBuffer {
    * - `getMappedRange(...)` is not valid again until the buffer is remapped.
    */
   unmap() {
-    addon.bufferUnmap(this._native);
+    addon.bufferUnmap(assertLiveResource(this, 'GPUBuffer.unmap', 'GPUBuffer'));
   }
 
   /**
@@ -230,8 +389,7 @@ class DoeGPUBuffer {
    * - The wrapper remains reachable in JS but no longer owns a live native handle.
    */
   destroy() {
-    addon.bufferRelease(this._native);
-    this._native = null;
+    destroyResource(this, (native) => addon.bufferRelease(native));
   }
 }
 
@@ -255,6 +413,17 @@ class DoeGPUComputePassEncoder {
     this._encoder = encoder;
     this._pipeline = null;
     this._bindGroups = [];
+    this._ended = false;
+    initResource(this, 'GPUComputePassEncoder', encoder);
+  }
+
+  _assertOpen(path) {
+    if (this._ended) {
+      failValidation(path, 'compute pass is already ended');
+    }
+    if (this._encoder._finished) {
+      failValidation(path, 'command encoder is already finished');
+    }
   }
 
   /**
@@ -272,7 +441,10 @@ class DoeGPUComputePassEncoder {
    * - Call this before dispatching workgroups.
    * - The pipeline object must come from the same device.
    */
-  setPipeline(pipeline) { this._pipeline = pipeline._native; }
+  setPipeline(pipeline) {
+    this._assertOpen('GPUComputePassEncoder.setPipeline');
+    this._pipeline = assertLiveResource(pipeline, 'GPUComputePassEncoder.setPipeline', 'GPUComputePipeline');
+  }
 
   /**
    * Bind a bind group for the compute pass.
@@ -288,7 +460,11 @@ class DoeGPUComputePassEncoder {
    * - Later calls for the same index replace the previous bind group.
    * - Sparse indices are allowed, but the shader layout still has to match.
    */
-  setBindGroup(index, bindGroup) { this._bindGroups[index] = bindGroup._native; }
+  setBindGroup(index, bindGroup) {
+    this._assertOpen('GPUComputePassEncoder.setBindGroup');
+    assertIntegerInRange(index, 'GPUComputePassEncoder.setBindGroup', 'index', { min: 0, max: UINT32_MAX });
+    this._bindGroups[index] = assertLiveResource(bindGroup, 'GPUComputePassEncoder.setBindGroup', 'GPUBindGroup');
+  }
 
   /**
    * Record a direct compute dispatch.
@@ -305,6 +481,13 @@ class DoeGPUComputePassEncoder {
    * - The pipeline and required bind groups should already be set.
    */
   dispatchWorkgroups(x, y = 1, z = 1) {
+    this._assertOpen('GPUComputePassEncoder.dispatchWorkgroups');
+    if (this._pipeline == null) {
+      failValidation('GPUComputePassEncoder.dispatchWorkgroups', 'setPipeline() must be called before dispatch');
+    }
+    assertIntegerInRange(x, 'GPUComputePassEncoder.dispatchWorkgroups', 'x', { min: 0, max: UINT32_MAX });
+    assertIntegerInRange(y, 'GPUComputePassEncoder.dispatchWorkgroups', 'y', { min: 0, max: UINT32_MAX });
+    assertIntegerInRange(z, 'GPUComputePassEncoder.dispatchWorkgroups', 'z', { min: 0, max: UINT32_MAX });
     this._encoder._commands.push({
       t: 0, p: this._pipeline, bg: [...this._bindGroups], x, y, z,
     });
@@ -326,13 +509,27 @@ class DoeGPUComputePassEncoder {
    * - The indirect buffer must contain the expected dispatch layout.
    */
   dispatchWorkgroupsIndirect(indirectBuffer, indirectOffset = 0) {
+    this._assertOpen('GPUComputePassEncoder.dispatchWorkgroupsIndirect');
+    if (this._pipeline == null) {
+      failValidation('GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'setPipeline() must be called before dispatch');
+    }
+    assertIntegerInRange(
+      indirectOffset,
+      'GPUComputePassEncoder.dispatchWorkgroupsIndirect',
+      'indirectOffset',
+      { min: 0 }
+    );
     this._encoder._ensureNative();
     const pass = addon.beginComputePass(this._encoder._native);
     addon.computePassSetPipeline(pass, this._pipeline);
     for (let i = 0; i < this._bindGroups.length; i++) {
       if (this._bindGroups[i]) addon.computePassSetBindGroup(pass, i, this._bindGroups[i]);
     }
-    addon.computePassDispatchWorkgroupsIndirect(pass, indirectBuffer._native, indirectOffset);
+    addon.computePassDispatchWorkgroupsIndirect(
+      pass,
+      assertLiveResource(indirectBuffer, 'GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'GPUBuffer'),
+      indirectOffset
+    );
     addon.computePassEnd(pass);
     addon.computePassRelease(pass);
   }
@@ -352,7 +549,10 @@ class DoeGPUComputePassEncoder {
    * - Doe records most work on the surrounding command encoder, so this is lightweight.
    * - Finishing the pass does not submit it; submit the finished command buffer on the queue.
    */
-  end() {}
+  end() {
+    this._assertOpen('GPUComputePassEncoder.end');
+    this._ended = true;
+  }
 }
 
 /**
@@ -375,11 +575,21 @@ class DoeGPUCommandEncoder {
     this._device = device;
     this._commands = [];
     this._native = null;
+    this._finished = false;
+    initResource(this, 'GPUCommandEncoder', device);
+  }
+
+  _assertOpen(path) {
+    assertLiveResource(this._device, path, 'GPUDevice');
+    if (this._finished) {
+      failValidation(path, 'command encoder is already finished');
+    }
   }
 
   _ensureNative() {
+    this._assertOpen('GPUCommandEncoder');
     if (this._native) return;
-    this._native = addon.createCommandEncoder(this._device);
+    this._native = addon.createCommandEncoder(assertLiveResource(this._device, 'GPUCommandEncoder', 'GPUDevice'));
     for (const cmd of this._commands) {
       if (cmd.t === 0) {
         const pass = addon.beginComputePass(this._native);
@@ -413,6 +623,7 @@ class DoeGPUCommandEncoder {
    * - The returned pass is valid until `pass.end()`.
    */
   beginComputePass(descriptor) {
+    this._assertOpen('GPUCommandEncoder.beginComputePass');
     return new DoeGPUComputePassEncoder(this);
   }
 
@@ -434,13 +645,22 @@ class DoeGPUCommandEncoder {
    * - Color attachments default their clear color when one is not provided.
    */
   beginRenderPass(descriptor) {
+    this._assertOpen('GPUCommandEncoder.beginRenderPass');
+    const passDescriptor = assertObject(descriptor, 'GPUCommandEncoder.beginRenderPass', 'descriptor');
+    const attachments = assertArray(passDescriptor.colorAttachments ?? [], 'GPUCommandEncoder.beginRenderPass', 'descriptor.colorAttachments');
+    if (attachments.length === 0) {
+      failValidation('GPUCommandEncoder.beginRenderPass', 'descriptor.colorAttachments must contain at least one attachment');
+    }
     this._ensureNative();
-    const colorAttachments = (descriptor.colorAttachments || []).map((a) => ({
-      view: a.view._native,
-      clearValue: a.clearValue || { r: 0, g: 0, b: 0, a: 1 },
-    }));
+    const colorAttachments = attachments.map((attachment, index) => {
+      const entry = assertObject(attachment, 'GPUCommandEncoder.beginRenderPass', `descriptor.colorAttachments[${index}]`);
+      return {
+        view: assertLiveResource(entry.view, 'GPUCommandEncoder.beginRenderPass', 'GPUTextureView'),
+        clearValue: entry.clearValue || { r: 0, g: 0, b: 0, a: 1 },
+      };
+    });
     const pass = addon.beginRenderPass(this._native, colorAttachments);
-    return new DoeGPURenderPassEncoder(pass);
+    return new DoeGPURenderPassEncoder(pass, this);
   }
 
   /**
@@ -459,10 +679,16 @@ class DoeGPUCommandEncoder {
    * - Buffer ranges still need to be valid for the underlying WebGPU rules.
    */
   copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) {
+    this._assertOpen('GPUCommandEncoder.copyBufferToBuffer');
+    const srcNative = assertLiveResource(src, 'GPUCommandEncoder.copyBufferToBuffer', 'GPUBuffer');
+    const dstNative = assertLiveResource(dst, 'GPUCommandEncoder.copyBufferToBuffer', 'GPUBuffer');
+    assertIntegerInRange(srcOffset, 'GPUCommandEncoder.copyBufferToBuffer', 'srcOffset', { min: 0 });
+    assertIntegerInRange(dstOffset, 'GPUCommandEncoder.copyBufferToBuffer', 'dstOffset', { min: 0 });
+    assertIntegerInRange(size, 'GPUCommandEncoder.copyBufferToBuffer', 'size', { min: 1 });
     if (this._native) {
-      addon.commandEncoderCopyBufferToBuffer(this._native, src._native, srcOffset, dst._native, dstOffset, size);
+      addon.commandEncoderCopyBufferToBuffer(this._native, srcNative, srcOffset, dstNative, dstOffset, size);
     } else {
-      this._commands.push({ t: 1, s: src._native, so: srcOffset, d: dst._native, do: dstOffset, sz: size });
+      this._commands.push({ t: 1, s: srcNative, so: srcOffset, d: dstNative, do: dstOffset, sz: size });
     }
   }
 
@@ -482,8 +708,11 @@ class DoeGPUCommandEncoder {
    * - The returned object is meant for queue submission, not direct inspection.
    */
   finish() {
+    this._assertOpen('GPUCommandEncoder.finish');
+    this._finished = true;
     if (this._native) {
       const cmd = addon.commandEncoderFinish(this._native);
+      this._native = null;
       return { _native: cmd, _batched: false };
     }
     return { _commands: this._commands, _batched: true };
@@ -512,6 +741,7 @@ class DoeGPUQueue {
     this._device = device;
     this._submittedSerial = 0;
     this._completedSerial = 0;
+    initResource(this, 'GPUQueue', device);
   }
 
   /**
@@ -530,6 +760,7 @@ class DoeGPUQueue {
    * - It reflects Doe's tracked submission serials, not a browser event model.
    */
   hasPendingSubmissions() {
+    assertLiveResource(this, 'GPUQueue.hasPendingSubmissions', 'GPUQueue');
     return this._completedSerial < this._submittedSerial;
   }
 
@@ -549,6 +780,7 @@ class DoeGPUQueue {
    * - Most callers should prefer `await queue.onSubmittedWorkDone()`.
    */
   markSubmittedWorkDone() {
+    assertLiveResource(this, 'GPUQueue.markSubmittedWorkDone', 'GPUQueue');
     this._completedSerial = this._submittedSerial;
   }
 
@@ -568,10 +800,13 @@ class DoeGPUQueue {
    * - Simple batched compute-copy sequences may take a Doe fast path.
    */
   submit(commandBuffers) {
-    if (commandBuffers.length === 0) return;
+    const queueNative = assertLiveResource(this, 'GPUQueue.submit', 'GPUQueue');
+    const deviceNative = assertLiveResource(this._device, 'GPUQueue.submit', 'GPUDevice');
+    const buffers = assertArray(commandBuffers, 'GPUQueue.submit', 'commandBuffers');
+    if (buffers.length === 0) return;
     this._submittedSerial += 1;
-    if (commandBuffers.length === 1 && commandBuffers[0]?._batched) {
-      const cmds = commandBuffers[0]._commands;
+    if (buffers.length === 1 && buffers[0]?._batched) {
+      const cmds = buffers[0]._commands;
       if (
         cmds.length === 2
         && cmds[0]?.t === 0
@@ -579,8 +814,8 @@ class DoeGPUQueue {
         && typeof addon.submitComputeDispatchCopy === 'function'
       ) {
         addon.submitComputeDispatchCopy(
-          this._device,
-          this._native,
+          deviceNative,
+          queueNative,
           cmds[0].p,
           cmds[0].bg,
           cmds[0].x,
@@ -595,10 +830,10 @@ class DoeGPUQueue {
         return;
       }
     }
-    if (commandBuffers.length > 0 && commandBuffers.every((c) => c._batched)) {
+    if (buffers.length > 0 && buffers.every((commandBuffer) => commandBuffer?._batched && Array.isArray(commandBuffer._commands))) {
       const allCommands = [];
-      for (const cb of commandBuffers) allCommands.push(...cb._commands);
-      addon.submitBatched(this._device, this._native, allCommands);
+      for (const cb of buffers) allCommands.push(...cb._commands);
+      addon.submitBatched(deviceNative, queueNative, allCommands);
       if (
         allCommands.length === 2
         && allCommands[0]?.t === 0
@@ -607,8 +842,13 @@ class DoeGPUQueue {
         this.markSubmittedWorkDone();
       }
     } else {
-      const natives = commandBuffers.map((c) => c._native);
-      addon.queueSubmit(this._native, natives);
+      const natives = buffers.map((commandBuffer, index) => {
+        if (!commandBuffer || typeof commandBuffer !== 'object' || commandBuffer._native == null) {
+          failValidation('GPUQueue.submit', `commandBuffers[${index}] must be a finished command buffer`);
+        }
+        return commandBuffer._native;
+      });
+      addon.queueSubmit(queueNative, natives);
     }
   }
 
@@ -628,15 +868,32 @@ class DoeGPUQueue {
    * - Doe converts the requested range into bytes before writing it.
    */
   writeBuffer(buffer, bufferOffset, data, dataOffset = 0, size) {
+    const queueNative = assertLiveResource(this, 'GPUQueue.writeBuffer', 'GPUQueue');
+    const bufferNative = assertLiveResource(buffer, 'GPUQueue.writeBuffer', 'GPUBuffer');
+    assertIntegerInRange(bufferOffset, 'GPUQueue.writeBuffer', 'bufferOffset', { min: 0 });
+    assertIntegerInRange(dataOffset, 'GPUQueue.writeBuffer', 'dataOffset', { min: 0 });
+    if (
+      !ArrayBuffer.isView(data)
+      && !(data instanceof ArrayBuffer)
+      && !Buffer.isBuffer(data)
+    ) {
+      failValidation('GPUQueue.writeBuffer', 'data must be a TypedArray, DataView, ArrayBuffer, or Buffer');
+    }
     let view = data;
     if (dataOffset > 0 || size !== undefined) {
+      if (!ArrayBuffer.isView(data)) {
+        failValidation('GPUQueue.writeBuffer', 'dataOffset and size slicing require a TypedArray or DataView input');
+      }
+      if (size !== undefined) {
+        assertIntegerInRange(size, 'GPUQueue.writeBuffer', 'size', { min: 0 });
+      }
       const byteOffset = data.byteOffset + dataOffset * (data.BYTES_PER_ELEMENT || 1);
       const byteLength = size !== undefined
         ? size * (data.BYTES_PER_ELEMENT || 1)
         : data.byteLength - dataOffset * (data.BYTES_PER_ELEMENT || 1);
       view = new Uint8Array(data.buffer, byteOffset, byteLength);
     }
-    addon.queueWriteBuffer(this._native, buffer._native, bufferOffset, view);
+    addon.queueWriteBuffer(queueNative, bufferNative, bufferOffset, view);
   }
 
   /**
@@ -655,11 +912,12 @@ class DoeGPUQueue {
    * - Doe flushes the native queue before marking the tracked work complete.
    */
   async onSubmittedWorkDone() {
+    const queueNative = assertLiveResource(this, 'GPUQueue.onSubmittedWorkDone', 'GPUQueue');
     if (!this.hasPendingSubmissions()) return;
     try {
-      addon.queueFlush(this._instance, this._native);
+      addon.queueFlush(this._instance, queueNative);
     } catch (error) {
-      if (/queueFlush: wgpuInstanceWaitAny failed|queueFlush: doeNativeQueueFlush not available/.test(String(error?.message ?? error))) {
+      if (error?.code === 'DOE_QUEUE_UNAVAILABLE') {
         return;
       }
       throw error;
@@ -684,7 +942,21 @@ class DoeGPUQueue {
  * - Submission still happens through the command encoder and queue.
  */
 class DoeGPURenderPassEncoder {
-  constructor(native) { this._native = native; }
+  constructor(native, encoder) {
+    this._native = native;
+    this._encoder = encoder;
+    this._ended = false;
+    initResource(this, 'GPURenderPassEncoder', encoder);
+  }
+
+  _assertOpen(path) {
+    if (this._ended) {
+      failValidation(path, 'render pass is already ended');
+    }
+    if (this._encoder._finished) {
+      failValidation(path, 'command encoder is already finished');
+    }
+  }
 
   /**
    * Set the render pipeline used by later draw calls.
@@ -702,7 +974,11 @@ class DoeGPURenderPassEncoder {
    * - Call this before `draw(...)`.
    */
   setPipeline(pipeline) {
-    addon.renderPassSetPipeline(this._native, pipeline._native);
+    this._assertOpen('GPURenderPassEncoder.setPipeline');
+    addon.renderPassSetPipeline(
+      assertLiveResource(this, 'GPURenderPassEncoder.setPipeline', 'GPURenderPassEncoder'),
+      assertLiveResource(pipeline, 'GPURenderPassEncoder.setPipeline', 'GPURenderPipeline')
+    );
   }
 
   /**
@@ -721,6 +997,11 @@ class DoeGPURenderPassEncoder {
    * - Draw calls only become visible after the command buffer is submitted.
    */
   draw(vertexCount, instanceCount = 1, firstVertex = 0, firstInstance = 0) {
+    this._assertOpen('GPURenderPassEncoder.draw');
+    assertIntegerInRange(vertexCount, 'GPURenderPassEncoder.draw', 'vertexCount', { min: 0, max: UINT32_MAX });
+    assertIntegerInRange(instanceCount, 'GPURenderPassEncoder.draw', 'instanceCount', { min: 0, max: UINT32_MAX });
+    assertIntegerInRange(firstVertex, 'GPURenderPassEncoder.draw', 'firstVertex', { min: 0, max: UINT32_MAX });
+    assertIntegerInRange(firstInstance, 'GPURenderPassEncoder.draw', 'firstInstance', { min: 0, max: UINT32_MAX });
     addon.renderPassDraw(this._native, vertexCount, instanceCount, firstVertex, firstInstance);
   }
 
@@ -740,7 +1021,9 @@ class DoeGPURenderPassEncoder {
    * - It does not submit work by itself.
    */
   end() {
+    this._assertOpen('GPURenderPassEncoder.end');
     addon.renderPassEnd(this._native);
+    this._ended = true;
   }
 }
 
@@ -764,7 +1047,10 @@ class DoeGPURenderPassEncoder {
  * - Texture views are created through `createView(...)`.
  */
 class DoeGPUTexture {
-  constructor(native) { this._native = native; }
+  constructor(native, owner) {
+    this._native = native;
+    initResource(this, 'GPUTexture', owner);
+  }
 
   /**
    * Create a texture view.
@@ -782,8 +1068,8 @@ class DoeGPUTexture {
    * - The returned view is suitable for the package's headless render paths.
    */
   createView(descriptor) {
-    const view = addon.textureCreateView(this._native);
-    return new DoeGPUTextureView(view);
+    const view = addon.textureCreateView(assertLiveResource(this, 'GPUTexture.createView', 'GPUTexture'));
+    return new DoeGPUTextureView(view, this);
   }
 
   /**
@@ -802,8 +1088,7 @@ class DoeGPUTexture {
    * - Views already created are plain JS wrappers and do not keep the texture alive.
    */
   destroy() {
-    addon.textureRelease(this._native);
-    this._native = null;
+    destroyResource(this, (native) => addon.textureRelease(native));
   }
 }
 
@@ -819,7 +1104,10 @@ class DoeGPUTexture {
  * - This package currently treats the view as a lightweight opaque handle.
  */
 class DoeGPUTextureView {
-  constructor(native) { this._native = native; }
+  constructor(native, owner) {
+    this._native = native;
+    initResource(this, 'GPUTextureView', owner);
+  }
 }
 
 /**
@@ -834,7 +1122,10 @@ class DoeGPUTextureView {
  * - The sampler is currently an opaque handle on the JS side.
  */
 class DoeGPUSampler {
-  constructor(native) { this._native = native; }
+  constructor(native, owner) {
+    this._native = native;
+    initResource(this, 'GPUSampler', owner);
+  }
 }
 
 /**
@@ -849,7 +1140,10 @@ class DoeGPUSampler {
  * - The JS wrapper is currently an opaque handle used by render passes.
  */
 class DoeGPURenderPipeline {
-  constructor(native) { this._native = native; }
+  constructor(native, owner) {
+    this._native = native;
+    initResource(this, 'GPURenderPipeline', owner);
+  }
 }
 
 /**
@@ -864,9 +1158,14 @@ class DoeGPURenderPipeline {
  * - Doe keeps the WGSL source on the wrapper for pipeline creation and auto-layout work.
  */
 class DoeGPUShaderModule {
-  constructor(native, code) {
+  constructor(native, code, owner) {
     this._native = native;
     this._code = code;
+    initResource(this, 'GPUShaderModule', owner);
+  }
+
+  destroy() {
+    destroyResource(this, (native) => addon.shaderModuleRelease(native));
   }
 }
 
@@ -895,6 +1194,7 @@ class DoeGPUComputePipeline {
     this._explicitLayout = explicitLayout;
     this._autoLayoutEntriesByGroup = autoLayoutEntriesByGroup;
     this._cachedLayouts = new Map();
+    initResource(this, 'GPUComputePipeline', device);
   }
 
   /**
@@ -913,6 +1213,8 @@ class DoeGPUComputePipeline {
    * - Explicit-layout pipelines return their original layout for any requested index.
    */
   getBindGroupLayout(index) {
+    assertLiveResource(this, 'GPUComputePipeline.getBindGroupLayout', 'GPUComputePipeline');
+    assertIntegerInRange(index, 'GPUComputePipeline.getBindGroupLayout', 'index', { min: 0, max: UINT32_MAX });
     if (this._explicitLayout) return this._explicitLayout;
     if (this._cachedLayouts.has(index)) return this._cachedLayouts.get(index);
     let layout;
@@ -922,6 +1224,7 @@ class DoeGPUComputePipeline {
     } else if (typeof addon.computePipelineGetBindGroupLayout === 'function') {
       layout = new DoeGPUBindGroupLayout(
         addon.computePipelineGetBindGroupLayout(this._native, index),
+        this._device,
       );
     } else if (this._autoLayoutEntriesByGroup) {
       const entries = this._autoLayoutEntriesByGroup.get(index) ?? [];
@@ -946,7 +1249,10 @@ class DoeGPUComputePipeline {
  * - The JS wrapper is an opaque handle used when creating bind groups and pipelines.
  */
 class DoeGPUBindGroupLayout {
-  constructor(native) { this._native = native; }
+  constructor(native, owner) {
+    this._native = native;
+    initResource(this, 'GPUBindGroupLayout', owner);
+  }
 }
 
 /**
@@ -961,7 +1267,10 @@ class DoeGPUBindGroupLayout {
  * - The JS wrapper is an opaque handle consumed by pass encoders.
  */
 class DoeGPUBindGroup {
-  constructor(native) { this._native = native; }
+  constructor(native, owner) {
+    this._native = native;
+    initResource(this, 'GPUBindGroup', owner);
+  }
 }
 
 /**
@@ -976,7 +1285,10 @@ class DoeGPUBindGroup {
  * - The JS wrapper is an opaque handle passed into pipeline creation.
  */
 class DoeGPUPipelineLayout {
-  constructor(native) { this._native = native; }
+  constructor(native, owner) {
+    this._native = native;
+    initResource(this, 'GPUPipelineLayout', owner);
+  }
 }
 
 const DOE_LIMITS = Object.freeze({
@@ -1013,7 +1325,7 @@ const DOE_LIMITS = Object.freeze({
   maxComputeWorkgroupsPerDimension: 65535,
 });
 
-const DOE_FEATURES = Object.freeze(new Set(['shader-f16']));
+const DOE_FEATURES = Object.freeze(new Set());
 
 /**
  * Device returned by `adapter.requestDevice()`.
@@ -1030,13 +1342,14 @@ const DOE_FEATURES = Object.freeze(new Set(['shader-f16']));
  * - The full package keeps render, texture, sampler, and command APIs on this object.
  */
 class DoeGPUDevice {
-  constructor(native, instance) {
+  constructor(native, instance, inheritedLimits = null) {
     this._native = native;
     this._instance = instance;
+    initResource(this, 'GPUDevice');
     const q = addon.deviceGetQueue(native);
-    this.queue = new DoeGPUQueue(q, instance, native);
-    this.limits = DOE_LIMITS;
-    this.features = DOE_FEATURES;
+    this.queue = new DoeGPUQueue(q, instance, this);
+    this.limits = inheritedLimits ?? deviceLimits(native);
+    this.features = deviceFeatures(native);
   }
 
   /**
@@ -1058,8 +1371,9 @@ class DoeGPUDevice {
    * - The returned wrapper exposes `size`, `usage`, mapping, and destruction helpers.
    */
   createBuffer(descriptor) {
-    const buf = addon.createBuffer(this._native, descriptor);
-    return new DoeGPUBuffer(buf, this._instance, descriptor.size, descriptor.usage, this.queue);
+    const validated = validateBufferDescriptor(descriptor);
+    const buf = addon.createBuffer(assertLiveResource(this, 'GPUDevice.createBuffer', 'GPUDevice'), validated);
+    return new DoeGPUBuffer(buf, this._instance, validated.size, validated.usage, this.queue, this);
   }
 
   /**
@@ -1078,10 +1392,20 @@ class DoeGPUDevice {
    * - The package also accepts `descriptor.source` as a convenience alias.
    */
   createShaderModule(descriptor) {
-    const code = descriptor.code || descriptor.source;
-    if (!code) throw new Error('createShaderModule: descriptor.code is required');
-    const mod = addon.createShaderModule(this._native, code);
-    return new DoeGPUShaderModule(mod, code);
+    const objectDescriptor = assertObject(descriptor, 'GPUDevice.createShaderModule', 'descriptor');
+    const code = objectDescriptor.code ?? objectDescriptor.source;
+    assertNonEmptyString(code, 'GPUDevice.createShaderModule', 'descriptor.code');
+    const preflight = preflightShaderSource(code);
+    if (!preflight.ok) {
+      shaderCheckFailure('GPUDevice.createShaderModule', preflight);
+    }
+    let mod;
+    try {
+      mod = addon.createShaderModule(assertLiveResource(this, 'GPUDevice.createShaderModule', 'GPUDevice'), code);
+    } catch (error) {
+      throw enrichNativeCompilerError(error, 'GPUDevice.createShaderModule');
+    }
+    return new DoeGPUShaderModule(mod, code, this);
   }
 
   /**
@@ -1103,16 +1427,36 @@ class DoeGPUDevice {
    * - Explicit pipeline layouts are passed through directly.
    */
   createComputePipeline(descriptor) {
-    const shader = descriptor.compute?.module;
-    const entryPoint = descriptor.compute?.entryPoint || 'main';
-    const layout = descriptor.layout === 'auto' ? null : descriptor.layout;
-    const autoLayoutEntriesByGroup = layout ? null : inferAutoBindGroupLayouts(
-      shader?._code || '',
-      globals.GPUShaderStage.COMPUTE,
-    );
-    const native = addon.createComputePipeline(
-      this._native, shader._native, entryPoint,
-      layout?._native ?? null);
+    const pipelineDescriptor = assertObject(descriptor, 'GPUDevice.createComputePipeline', 'descriptor');
+    const compute = assertObject(pipelineDescriptor.compute, 'GPUDevice.createComputePipeline', 'descriptor.compute');
+    const shader = compute.module;
+    const shaderNative = assertLiveResource(shader, 'GPUDevice.createComputePipeline', 'GPUShaderModule');
+    const entryPoint = compute.entryPoint ?? 'main';
+    assertNonEmptyString(entryPoint, 'GPUDevice.createComputePipeline', 'descriptor.compute.entryPoint');
+    const layout = pipelineDescriptor.layout === 'auto' || pipelineDescriptor.layout === undefined
+      ? null
+      : pipelineDescriptor.layout;
+    if (layout !== null) {
+      assertLiveResource(layout, 'GPUDevice.createComputePipeline', 'GPUPipelineLayout');
+    }
+    const autoLayoutEntriesByGroup = layout
+      ? null
+      : requireAutoLayoutEntriesFromNative(
+        shaderNative,
+        globals.GPUShaderStage.COMPUTE,
+        'GPUDevice.createComputePipeline'
+      );
+    let native;
+    try {
+      native = addon.createComputePipeline(
+        assertLiveResource(this, 'GPUDevice.createComputePipeline', 'GPUDevice'),
+        shaderNative,
+        entryPoint,
+        layout?._native ?? null
+      );
+    } catch (error) {
+      throw enrichNativeCompilerError(error, 'GPUDevice.createComputePipeline');
+    }
     return new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
   }
 
@@ -1148,21 +1492,33 @@ class DoeGPUDevice {
    * ```
    *
    * - Missing buffer entry fields are normalized to WebGPU-style defaults.
-   * - Storage-texture entries are forwarded when present.
+   * - Sampler, texture, and storage-texture entries are forwarded when present.
    */
   createBindGroupLayout(descriptor) {
-    const entries = (descriptor.entries || []).map((e) => ({
-      binding: e.binding,
-      visibility: e.visibility,
-      buffer: e.buffer ? {
-        type: e.buffer.type || 'uniform',
-        hasDynamicOffset: e.buffer.hasDynamicOffset || false,
-        minBindingSize: e.buffer.minBindingSize || 0,
-      } : undefined,
-      storageTexture: e.storageTexture,
-    }));
-    const native = addon.createBindGroupLayout(this._native, entries);
-    return new DoeGPUBindGroupLayout(native);
+    const layoutDescriptor = assertObject(descriptor, 'GPUDevice.createBindGroupLayout', 'descriptor');
+    const entries = assertArray(layoutDescriptor.entries ?? [], 'GPUDevice.createBindGroupLayout', 'descriptor.entries').map((entry, index) => {
+      const binding = assertObject(entry, 'GPUDevice.createBindGroupLayout', `descriptor.entries[${index}]`);
+      return {
+        binding: assertIntegerInRange(binding.binding, 'GPUDevice.createBindGroupLayout', `descriptor.entries[${index}].binding`, { min: 0, max: UINT32_MAX }),
+        visibility: assertIntegerInRange(binding.visibility, 'GPUDevice.createBindGroupLayout', `descriptor.entries[${index}].visibility`, { min: 0 }),
+        buffer: binding.buffer ? {
+          type: binding.buffer.type || 'uniform',
+          hasDynamicOffset: binding.buffer.hasDynamicOffset || false,
+          minBindingSize: binding.buffer.minBindingSize || 0,
+        } : undefined,
+        sampler: binding.sampler
+          ? normalizeSamplerLayout(binding.sampler, 'GPUDevice.createBindGroupLayout', `descriptor.entries[${index}].sampler`)
+          : undefined,
+        texture: binding.texture
+          ? normalizeTextureLayout(binding.texture, 'GPUDevice.createBindGroupLayout', `descriptor.entries[${index}].texture`)
+          : undefined,
+        storageTexture: binding.storageTexture
+          ? normalizeStorageTextureLayout(binding.storageTexture, 'GPUDevice.createBindGroupLayout', `descriptor.entries[${index}].storageTexture`)
+          : undefined,
+      };
+    });
+    const native = addon.createBindGroupLayout(assertLiveResource(this, 'GPUDevice.createBindGroupLayout', 'GPUDevice'), entries);
+    return new DoeGPUBindGroupLayout(native, this);
   }
 
   /**
@@ -1181,18 +1537,27 @@ class DoeGPUDevice {
    * - Layout and buffer wrappers must come from the same device.
    */
   createBindGroup(descriptor) {
-    const entries = (descriptor.entries || []).map((e) => {
-      const entry = {
-        binding: e.binding,
-        buffer: e.resource?.buffer?._native ?? e.resource?._native ?? null,
-        offset: e.resource?.offset ?? 0,
+    const bindGroupDescriptor = assertObject(descriptor, 'GPUDevice.createBindGroup', 'descriptor');
+    const layoutNative = assertLiveResource(bindGroupDescriptor.layout, 'GPUDevice.createBindGroup', 'GPUBindGroupLayout');
+    const entries = assertArray(bindGroupDescriptor.entries ?? [], 'GPUDevice.createBindGroup', 'descriptor.entries').map((entry, index) => {
+      const binding = assertObject(entry, 'GPUDevice.createBindGroup', `descriptor.entries[${index}]`);
+      const resource = assertBindGroupResource(binding.resource, 'GPUDevice.createBindGroup');
+      const normalized = {
+        binding: assertIntegerInRange(binding.binding, 'GPUDevice.createBindGroup', `descriptor.entries[${index}].binding`, { min: 0, max: UINT32_MAX }),
+        buffer: resource.buffer,
+        sampler: resource.sampler,
+        textureView: resource.textureView,
+        offset: resource.offset ?? 0,
       };
-      if (e.resource?.size !== undefined) entry.size = e.resource.size;
-      return entry;
+      if (resource.size !== undefined) normalized.size = resource.size;
+      return normalized;
     });
     const native = addon.createBindGroup(
-      this._native, descriptor.layout._native, entries);
-    return new DoeGPUBindGroup(native);
+      assertLiveResource(this, 'GPUDevice.createBindGroup', 'GPUDevice'),
+      layoutNative,
+      entries
+    );
+    return new DoeGPUBindGroup(native, this);
   }
 
   /**
@@ -1211,9 +1576,11 @@ class DoeGPUDevice {
    * - The returned wrapper is opaque on the JS side.
    */
   createPipelineLayout(descriptor) {
-    const layouts = (descriptor.bindGroupLayouts || []).map((l) => l._native);
-    const native = addon.createPipelineLayout(this._native, layouts);
-    return new DoeGPUPipelineLayout(native);
+    const layoutDescriptor = assertObject(descriptor, 'GPUDevice.createPipelineLayout', 'descriptor');
+    const layouts = assertArray(layoutDescriptor.bindGroupLayouts ?? [], 'GPUDevice.createPipelineLayout', 'descriptor.bindGroupLayouts')
+      .map((layout, index) => assertLiveResource(layout, 'GPUDevice.createPipelineLayout', `descriptor.bindGroupLayouts[${index}]`));
+    const native = addon.createPipelineLayout(assertLiveResource(this, 'GPUDevice.createPipelineLayout', 'GPUDevice'), layouts);
+    return new DoeGPUPipelineLayout(native, this);
   }
 
   /**
@@ -1236,15 +1603,18 @@ class DoeGPUDevice {
    * - Omitted format and mip-count fields fall back to package defaults.
    */
   createTexture(descriptor) {
-    const native = addon.createTexture(this._native, {
-      format: descriptor.format || 'rgba8unorm',
-      width: descriptor.size?.[0] ?? descriptor.size?.width ?? descriptor.size ?? 1,
-      height: descriptor.size?.[1] ?? descriptor.size?.height ?? 1,
-      depthOrArrayLayers: descriptor.size?.[2] ?? descriptor.size?.depthOrArrayLayers ?? 1,
-      usage: descriptor.usage || 0,
-      mipLevelCount: descriptor.mipLevelCount || 1,
+    const textureDescriptor = assertObject(descriptor, 'GPUDevice.createTexture', 'descriptor');
+    const size = assertTextureSize(textureDescriptor.size, 'GPUDevice.createTexture');
+    const usage = assertIntegerInRange(textureDescriptor.usage, 'GPUDevice.createTexture', 'descriptor.usage', { min: 1 });
+    const native = addon.createTexture(assertLiveResource(this, 'GPUDevice.createTexture', 'GPUDevice'), {
+      format: textureDescriptor.format || 'rgba8unorm',
+      width: size.width,
+      height: size.height,
+      depthOrArrayLayers: size.depthOrArrayLayers,
+      usage,
+      mipLevelCount: assertIntegerInRange(textureDescriptor.mipLevelCount ?? 1, 'GPUDevice.createTexture', 'descriptor.mipLevelCount', { min: 1, max: UINT32_MAX }),
     });
-    return new DoeGPUTexture(native);
+    return new DoeGPUTexture(native, this);
   }
 
   /**
@@ -1263,8 +1633,9 @@ class DoeGPUDevice {
    * - The returned wrapper is currently an opaque handle on the JS side.
    */
   createSampler(descriptor = {}) {
-    const native = addon.createSampler(this._native, descriptor);
-    return new DoeGPUSampler(native);
+    assertObject(descriptor, 'GPUDevice.createSampler', 'descriptor');
+    const native = addon.createSampler(assertLiveResource(this, 'GPUDevice.createSampler', 'GPUDevice'), descriptor);
+    return new DoeGPUSampler(native, this);
   }
 
   /**
@@ -1283,8 +1654,16 @@ class DoeGPUDevice {
    * - Descriptor handling on this package surface is intentionally narrower than browser engines.
    */
   createRenderPipeline(descriptor) {
-    const native = addon.createRenderPipeline(this._native);
-    return new DoeGPURenderPipeline(native);
+    if (descriptor !== undefined) {
+      assertObject(descriptor, 'GPUDevice.createRenderPipeline', 'descriptor');
+    }
+    assertLiveResource(this, 'GPUDevice.createRenderPipeline', 'GPUDevice');
+    const error = new Error(
+      'GPUDevice.createRenderPipeline: render pipelines are not supported on this package surface yet; use the lower-level Doe runtime or browser surface for render work'
+    );
+    error.code = 'UnsupportedSurface';
+    error.stage = 'package_surface';
+    throw error;
   }
 
   /**
@@ -1303,7 +1682,11 @@ class DoeGPUDevice {
    * - The returned encoder records work until `finish()` is called.
    */
   createCommandEncoder(descriptor) {
-    return new DoeGPUCommandEncoder(this._native);
+    if (descriptor !== undefined) {
+      assertObject(descriptor, 'GPUDevice.createCommandEncoder', 'descriptor');
+    }
+    assertLiveResource(this, 'GPUDevice.createCommandEncoder', 'GPUDevice');
+    return new DoeGPUCommandEncoder(this);
   }
 
   /**
@@ -1321,8 +1704,7 @@ class DoeGPUDevice {
    * - Existing wrappers created from the device do not regain validity afterward.
    */
   destroy() {
-    addon.deviceRelease(this._native);
-    this._native = null;
+    destroyResource(this, (native) => addon.deviceRelease(native));
   }
 }
 
@@ -1342,8 +1724,9 @@ class DoeGPUAdapter {
   constructor(native, instance) {
     this._native = native;
     this._instance = instance;
-    this.features = DOE_FEATURES;
-    this.limits = DOE_LIMITS;
+    this.features = adapterFeatures(native);
+    this.limits = adapterLimits(native);
+    initResource(this, 'GPUAdapter');
   }
 
   /**
@@ -1361,8 +1744,9 @@ class DoeGPUAdapter {
    * - The returned device includes the full package surface.
    */
   async requestDevice(descriptor) {
+    assertLiveResource(this, 'GPUAdapter.requestDevice', 'GPUAdapter');
     const device = addon.requestDevice(this._instance, this._native);
-    return new DoeGPUDevice(device, this._instance);
+    return new DoeGPUDevice(device, this._instance, this.limits);
   }
 
   /**
@@ -1379,8 +1763,7 @@ class DoeGPUAdapter {
    * - Reusing the adapter after destruction is unsupported.
    */
   destroy() {
-    addon.adapterRelease(this._native);
-    this._native = null;
+    destroyResource(this, (native) => addon.adapterRelease(native));
   }
 }
 
@@ -1443,6 +1826,15 @@ export function create(createArgs = null) {
   ensureLibrary();
   const instance = addon.createInstance();
   return new DoeGPU(instance);
+}
+
+export function setNativeTimeoutMs(timeoutMs) {
+  ensureLibrary();
+  validatePositiveInteger(timeoutMs, 'native timeout');
+  if (typeof addon.setTimeoutMs !== 'function') {
+    throw new Error('setNativeTimeoutMs is not supported by the loaded addon.');
+  }
+  addon.setTimeoutMs(timeoutMs);
 }
 
 /**

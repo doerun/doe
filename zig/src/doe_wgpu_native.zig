@@ -135,6 +135,9 @@ pub fn extractWorkgroupSize(wgsl: []const u8) struct { x: u32, y: u32, z: u32 } 
 pub const BindingInfo = struct {
     group: u32,
     binding: u32,
+    kind: u32 = @intFromEnum(wgsl_compiler.BindingKind.buffer),
+    addr_space: u32 = 0,
+    access: u32 = 0,
 };
 
 pub const MAX_SHADER_BINDINGS: usize = wgsl_compiler.MAX_BINDINGS;

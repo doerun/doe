@@ -20,6 +20,29 @@ Each tier is additive: doe-runtime includes all doe-core commitments; fawn-brows
 
 ---
 
+## Compatibility matrix snapshot (2026-03-10)
+
+This is the current evidence-backed compatibility read for Fawn's active lanes.
+Use it as the fast answer to "what is actually covered today?" and then follow
+the tier contracts below for promotion requirements.
+
+| Layer | Evidence source | Current scope | Current read | Immediate blocker |
+|------|-----------------|---------------|--------------|-------------------|
+| `doe-core` | `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json` | 7 release workloads backed by 7 command examples on `amd|vulkan|gfx11|24.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1kb_commands.json` is still a real tiny-upload loss in the latest release artifact |
+| `doe-core` | `bench/out/apple-metal/extended-comparable/20260310T171918Z/dawn-vs-doe.local.metal.extended.comparable.json` | 31 comparable workloads backed by 30 unique command examples on `apple|metal|m3|1.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1mb_commands.json` is diagnostic in the latest artifact because selected-timing `p95` is negative |
+| `doe-runtime` | `bench/workloads.local.d3d12.extended.json` | 11 contract rows / 11 command examples for the first governed D3D12 scope | contract only; no fresh Windows artifact in the current inventory | first Windows evidence run, then drop-in gate, CTS subset publication, and runtime-tier gates |
+| `fawn-browser` | `nursery/fawn-browser/` lane docs only | browser integration lane exists in-repo | no fresh browser compatibility artifact in the current inventory | browser smoke evidence, rebase cadence, security-patch SLA, and operational commitments |
+
+Current command-example coverage from active matrix artifacts/contracts:
+
+- 30 unique command examples have fresh evidence in the latest AMD/Metal artifacts.
+- 17 more command examples are wired into active workload contracts but absent from the latest published artifacts.
+- 36 command examples are not referenced by any current smoke, extended, or release matrix.
+
+The detailed file-level breakdown lives in `examples/README.md`.
+
+---
+
 ## Tier 1: doe-core
 
 ### Scope
@@ -330,6 +353,45 @@ doe-core ──────────► doe-runtime ────────�
 
 ---
 
+## Layer escalation guidance
+
+Use the lowest layer that can honestly describe the current evidence. Do not
+escalate a command stream, package surface, or marketing claim just because the
+code path exists.
+
+1. Keep an item at example-only status when it is merely schema-valid or locally useful.
+   It is not yet a supported compatibility claim if it lacks a workload
+   contract and a fresh artifact.
+
+2. Escalate an example into `doe-core` only when all of the following are true:
+   it is wired into a versioned workload contract, the latest artifact records
+   successful execution with blocking obligations passing, and the example's
+   status is documented as fresh evidence or diagnostic in `examples/README.md`.
+
+3. Treat `diagnostic` examples as evidence-bearing but non-promotable.
+   They are valid for debugging and regression tracking, but they do not justify
+   "faster", "supported", or broader replacement language for that lane.
+
+4. Escalate from `doe-core` to `doe-runtime` only after the runtime-visible
+   surface is proven outside the package/CLI layer: `webgpu.h` ABI coverage,
+   `dropin_gate.py`, CTS subset publication, callback/device creation, and the
+   backend-specific blocking gates required by this document.
+
+5. Escalate from `doe-runtime` to `fawn-browser` only after the browser lane
+   has its own evidence: Chromium boot with Doe selected, browser smoke tests,
+   rebase cadence, security-patch cadence, and rollback validation. Native
+   runtime evidence does not automatically transfer to the browser tier.
+
+6. Demote quickly when the latest artifact regresses.
+   If a lane flips from claimable to diagnostic, or from fresh evidence to
+   contract-only, the docs must immediately stop using the higher-status label.
+
+This guidance is intentionally conservative: fresh artifacts outrank older
+claimable runs, and explicit lane evidence outranks assumptions from nearby
+layers.
+
+---
+
 ## Claim discipline by tier
 
 The claim discipline rules from the positioning report apply universally, but the *scope* of allowed claims differs by tier:
@@ -362,10 +424,10 @@ AI workload stacks can ship value today on stock WebGPU (no Doe dependency). The
 
 ---
 
-## Current status (2026-03-01)
+## Current status (2026-03-10)
 
 | Tier | Status | Blocking Gaps |
 |------|--------|--------------|
-| doe-core | **Operational (CLI/process-bridge)** | CLI/process orchestration works; provider-module in-process path depends on provider callbacks; Doe-native Bun FFI adapter trampoline remains incomplete |
-| doe-runtime | **Not yet shippable** | No CTS publication, no binary size measurements, `dropin_gate.py` needs validation on full symbol set |
+| doe-core | **Operational (CLI/process-bridge)** | Fresh strict evidence exists on AMD Vulkan and Apple Metal, but the latest artifacts are still overall diagnostic (`upload_1kb` on AMD release, `upload_1mb` on Apple Metal comparable). Provider-module in-process path still depends on provider callbacks; Doe-native Bun FFI adapter trampoline remains incomplete. |
+| doe-runtime | **Not yet shippable** | No CTS publication, no binary size measurements, `dropin_gate.py` still needs full-symbol validation, and the first governed D3D12 lane has contract coverage but no fresh Windows artifact in the current inventory. |
 | fawn-browser | **Not yet shippable** | No rebase cadence demonstrated, no security patch SLA, no browser smoke tests, operational commitments undocumented |

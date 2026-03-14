@@ -180,8 +180,7 @@ pub const Lexer = struct {
                     self.pos += 1;
                 }
             }
-            // Suffix.
-            self.skipNumericSuffix();
+            self.consumeNumericSuffix(&is_float, false);
             return .{ .tag = if (is_float) .float_literal else .int_literal, .loc = .{ .start = start, .end = self.pos } };
         }
 
@@ -213,14 +212,17 @@ pub const Lexer = struct {
                 self.pos += 1;
             }
         }
-        self.skipNumericSuffix();
+        self.consumeNumericSuffix(&is_float, true);
         return .{ .tag = if (is_float) .float_literal else .int_literal, .loc = .{ .start = start, .end = self.pos } };
     }
 
-    fn skipNumericSuffix(self: *Lexer) void {
+    fn consumeNumericSuffix(self: *Lexer, is_float: *bool, allow_float_promotion: bool) void {
         // WGSL allows i, u, f, h suffixes on numeric literals.
         if (self.pos < self.source.len) {
             const c = self.source[self.pos];
+            if ((c == 'f' or c == 'h') and (allow_float_promotion or is_float.*)) {
+                is_float.* = true;
+            }
             if (c == 'i' or c == 'u' or c == 'f' or c == 'h') {
                 self.pos += 1;
             }
@@ -281,11 +283,14 @@ test "lex simple compute shader" {
 }
 
 test "lex number literals" {
-    var lex = Lexer.init("42 3.14 0xFF 1u 2.0f 0x1p10");
+    var lex = Lexer.init("42 3.14 0xFF 0xffu 1u 2.0f 42h 7f 0x1p10");
     try std.testing.expectEqual(Tag.int_literal, lex.next().tag);
     try std.testing.expectEqual(Tag.float_literal, lex.next().tag);
     try std.testing.expectEqual(Tag.int_literal, lex.next().tag);
     try std.testing.expectEqual(Tag.int_literal, lex.next().tag);
+    try std.testing.expectEqual(Tag.int_literal, lex.next().tag);
+    try std.testing.expectEqual(Tag.float_literal, lex.next().tag);
+    try std.testing.expectEqual(Tag.float_literal, lex.next().tag);
     try std.testing.expectEqual(Tag.float_literal, lex.next().tag);
     try std.testing.expectEqual(Tag.float_literal, lex.next().tag);
     try std.testing.expectEqual(Tag.eof, lex.next().tag);
@@ -294,10 +299,10 @@ test "lex number literals" {
 test "lex compound operators" {
     var lex = Lexer.init("-> += -= *= /= %= &= |= ^= << >> <= >= == != && ||");
     const expected = [_]Tag{
-        .arrow, .plus_eq, .minus_eq, .star_eq, .slash_eq,
-        .percent_eq, .amp_eq, .pipe_eq, .caret_eq,
-        .shift_left, .shift_right, .lte, .gte, .eq_eq, .not_eq,
-        .and_and, .or_or, .eof,
+        .arrow,       .plus_eq, .minus_eq, .star_eq,  .slash_eq,
+        .percent_eq,  .amp_eq,  .pipe_eq,  .caret_eq, .shift_left,
+        .shift_right, .lte,     .gte,      .eq_eq,    .not_eq,
+        .and_and,     .or_or,   .eof,
     };
     for (expected) |exp| {
         try std.testing.expectEqual(exp, lex.next().tag);
@@ -316,8 +321,8 @@ test "lex comments" {
 test "lex keywords" {
     var lex = Lexer.init("fn var let const override struct return if else for while");
     const expected = [_]Tag{
-        .kw_fn, .kw_var, .kw_let, .kw_const, .kw_override, .kw_struct,
-        .kw_return, .kw_if, .kw_else, .kw_for, .kw_while, .eof,
+        .kw_fn,     .kw_var, .kw_let,  .kw_const, .kw_override, .kw_struct,
+        .kw_return, .kw_if,  .kw_else, .kw_for,   .kw_while,    .eof,
     };
     for (expected) |exp| {
         try std.testing.expectEqual(exp, lex.next().tag);

@@ -1,5 +1,6 @@
 const std = @import("std");
 const ir = @import("ir.zig");
+const maps = @import("emit_msl_maps.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -96,7 +97,7 @@ const Emitter = struct {
         if (stage != null) try self.write("[[kernel]]\n");
         try self.emit_type(function.return_type);
         try self.write(" ");
-        try self.write(msl_function_name(function.name, stage));
+        try self.write(maps.msl_function_name(function.name, stage));
         try self.write("(");
         var need_comma = false;
         if (stage != null) {
@@ -153,6 +154,16 @@ const Emitter = struct {
                 try self.write(" [[buffer(");
                 try self.write_u32(binding.binding);
                 try self.write(")]]");
+                switch (self.module.types.get(global.ty)) {
+                    .array => |arr| if (arr.len == null) {
+                        try self.write(", uint ");
+                        try self.write(global.name);
+                        try self.write("_size [[buffer_size(");
+                        try self.write_u32(binding.binding);
+                        try self.write(")]]");
+                    },
+                    else => {},
+                }
                 return;
             },
             else => {},
@@ -165,7 +176,7 @@ const Emitter = struct {
                 try self.write_u32(binding.binding);
                 try self.write(")]]");
             },
-            .texture_2d => {
+            .texture_2d, .storage_texture_2d => {
                 try self.emit_type(global.ty);
                 try self.write(" ");
                 try self.write(global.name);
@@ -184,7 +195,7 @@ const Emitter = struct {
         if (param.io) |io_attr| {
             if (io_attr.builtin != .none) {
                 try self.write(" [[");
-                try self.write(msl_builtin_name(io_attr.builtin));
+                try self.write(maps.msl_builtin_name(io_attr.builtin));
                 try self.write("]]" );
             } else if (io_attr.location != null) {
                 return error.InvalidIr;
@@ -225,7 +236,7 @@ const Emitter = struct {
                 try self.write_indent();
                 try self.emit_expr(function, assign.lhs);
                 try self.write(" ");
-                try self.write(assign_op_text(assign.op));
+                try self.write(maps.assign_op_text(assign.op));
                 try self.write(" ");
                 try self.emit_expr(function, assign.rhs);
                 try self.write(";\n");
@@ -340,7 +351,7 @@ const Emitter = struct {
             .load => |inner| try self.emit_expr(function, inner),
             .unary => |unary| {
                 try self.write("(");
-                try self.write(unary_op_text(unary.op));
+                try self.write(maps.unary_op_text(unary.op));
                 try self.emit_expr(function, unary.operand);
                 try self.write(")");
             },
@@ -348,12 +359,12 @@ const Emitter = struct {
                 try self.write("(");
                 try self.emit_expr(function, binary.lhs);
                 try self.write(" ");
-                try self.write(binary_op_text(binary.op));
+                try self.write(maps.binary_op_text(binary.op));
                 try self.write(" ");
                 try self.emit_expr(function, binary.rhs);
                 try self.write(")");
             },
-            .call => |call| try self.emit_call(function, call),
+            .call => |call| try self.emit_call(function, expr.ty, call),
             .construct => |construct| {
                 try self.emit_type(construct.ty);
                 try self.write("(");
@@ -374,7 +385,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_call(self: *Emitter, function: ir.Function, call: @FieldType(ir.Expr, "call")) EmitError!void {
+    fn emit_call(self: *Emitter, function: ir.Function, result_ty: ir.TypeId, call: @FieldType(ir.Expr, "call")) EmitError!void {
         if (call.kind == .builtin) {
             if (std.mem.eql(u8, call.name, "workgroupBarrier")) {
                 try self.write("threadgroup_barrier(mem_flags::mem_threadgroup)");
@@ -384,11 +395,257 @@ const Emitter = struct {
                 try self.write("threadgroup_barrier(mem_flags::mem_device)");
                 return;
             }
+            if (std.mem.eql(u8, call.name, "bitcast")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("as_type<");
+                try self.emit_type(result_ty);
+                try self.write(">(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "unpack2x16float")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("float2(as_type<half2>(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write("))");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "pack2x16float")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("as_type<uint>(half2(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write("))");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "unpack4x8unorm")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("(float4(as_type<uchar4>(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")) / 255.0)");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "unpack4x8snorm")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("clamp(float4(as_type<char4>(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")) / 127.0, -1.0, 1.0)");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "pack4x8unorm")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("as_type<uint>(uchar4(round(clamp(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(", 0.0, 1.0) * 255.0)))");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "pack4x8snorm")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("as_type<uint>(char4(round(clamp(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(", -1.0, 1.0) * 127.0)))");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureLoad")) {
+                if (call.args.len != 3) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".read(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureStore")) {
+                if (call.args.len != 3) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".write(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicLoad")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("atomic_load_explicit(&(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write("), memory_order_relaxed)");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicStore")) {
+                if (call.args.len != 2) return error.InvalidIr;
+                try self.write("atomic_store_explicit(&(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write("), ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", memory_order_relaxed)");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicAdd")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_add_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicSub")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_sub_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicMax")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_max_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicMin")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_min_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicAnd")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_and_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicOr")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_or_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicXor")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_xor_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "atomicExchange")) {
+                try self.emit_atomic_fetch_explicit(function, call, "atomic_exchange_explicit");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "subgroupAdd")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("simd_sum(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "subgroupExclusiveAdd")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("simd_prefix_exclusive_sum(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "subgroupMin")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("simd_min(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "subgroupMax")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("simd_max(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "subgroupBroadcast")) {
+                if (call.args.len != 2) return error.InvalidIr;
+                try self.write("simd_broadcast(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "subgroupShuffle")) {
+                if (call.args.len != 2) return error.InvalidIr;
+                try self.write("simd_shuffle(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "subgroupShuffleXor")) {
+                if (call.args.len != 2) return error.InvalidIr;
+                try self.write("simd_shuffle_xor(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "inverseSqrt")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("rsqrt(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "degrees")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(" * 57.29577951308232)");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "radians")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                try self.write("(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(" * 0.017453292519943295)");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "arrayLength")) {
+                if (call.args.len != 1) return error.InvalidIr;
+                const target_expr = function.expr_args.items[call.args.start];
+                switch (function.exprs.items[target_expr].data) {
+                    .global_ref => |index| {
+                        const global = self.module.globals.items[index];
+                        switch (self.module.types.get(global.ty)) {
+                            .array => |arr| {
+                                if (arr.len != null) return error.InvalidIr;
+                                try self.write("uint(");
+                                try self.write(global.name);
+                                try self.write("_size / sizeof(");
+                                try self.emit_type(arr.elem);
+                                try self.write("))");
+                                return;
+                            },
+                            else => return error.InvalidIr,
+                        }
+                    },
+                    else => return error.InvalidIr,
+                }
+            }
+            if (std.mem.eql(u8, call.name, "select")) {
+                if (call.args.len != 3) return error.InvalidIr;
+                try self.write("((");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(") ? (");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(") : (");
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write("))");
+                return;
+            }
+            if (maps.msl_builtin_passthrough_name(call.name)) |mapped_name| {
+                try self.write(mapped_name);
+                try self.write("(");
+                try self.emit_expr_list(function, call.args);
+                try self.write(")");
+                return;
+            }
+            return error.InvalidIr;
         }
         try self.write(call.name);
         try self.write("(");
         try self.emit_expr_list(function, call.args);
         try self.write(")");
+    }
+
+    fn emit_atomic_fetch_explicit(self: *Emitter, function: ir.Function, call: @FieldType(ir.Expr, "call"), name: []const u8) EmitError!void {
+        if (call.args.len != 2) return error.InvalidIr;
+        try self.write(name);
+        try self.write("(&(");
+        try self.emit_expr(function, function.expr_args.items[call.args.start]);
+        try self.write("), ");
+        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+        try self.write(", memory_order_relaxed)");
     }
 
     fn emit_expr_list(self: *Emitter, function: ir.Function, range: ir.Range) EmitError!void {
@@ -470,7 +727,15 @@ const Emitter = struct {
                 try self.emit_type(sample_ty);
                 try self.write(">");
             },
-            .storage_texture_2d => return error.InvalidIr,
+            .storage_texture_2d => |storage_tex| {
+                try self.write("texture2d<float, access::");
+                try self.write(switch (storage_tex.access) {
+                    .read => "read",
+                    .write => "write",
+                    .read_write => "read_write",
+                });
+                try self.write(">");
+            },
             .ref => |ref_ty| try self.emit_type(ref_ty.elem),
         }
     }
@@ -502,65 +767,8 @@ const Emitter = struct {
         var buf: [64]u8 = undefined;
         const text = std.fmt.bufPrint(&buf, "{d}", .{value}) catch return error.OutputTooLarge;
         try self.write(text);
+        if (std.mem.indexOfScalar(u8, text, '.') == null and std.mem.indexOfAny(u8, text, "eE") == null) {
+            try self.write(".0");
+        }
     }
 };
-
-fn unary_op_text(op: ir.UnaryOp) []const u8 {
-    return switch (op) {
-        .neg => "-",
-        .not => "!",
-        .bit_not => "~",
-    };
-}
-
-fn msl_function_name(name: []const u8, stage: ?ir.ShaderStage) []const u8 {
-    if (stage != null and std.mem.eql(u8, name, "main")) return "main_kernel";
-    return name;
-}
-
-fn binary_op_text(op: ir.BinaryOp) []const u8 {
-    return switch (op) {
-        .add => "+",
-        .sub => "-",
-        .mul => "*",
-        .div => "/",
-        .rem => "%",
-        .bit_and => "&",
-        .bit_or => "|",
-        .bit_xor => "^",
-        .shift_left => "<<",
-        .shift_right => ">>",
-        .equal => "==",
-        .not_equal => "!=",
-        .less => "<",
-        .less_equal => "<=",
-        .greater => ">",
-        .greater_equal => ">=",
-        .logical_and => "&&",
-        .logical_or => "||",
-    };
-}
-
-fn assign_op_text(op: ir.AssignOp) []const u8 {
-    return switch (op) {
-        .assign => "=",
-        .add => "+=",
-        .sub => "-=",
-        .mul => "*=",
-        .div => "/=",
-        .rem => "%=",
-        .bit_and => "&=",
-        .bit_or => "|=",
-        .bit_xor => "^=",
-    };
-}
-
-fn msl_builtin_name(builtin: ir.Builtin) []const u8 {
-    return switch (builtin) {
-        .global_invocation_id => "thread_position_in_grid",
-        .local_invocation_id => "thread_position_in_threadgroup",
-        .local_invocation_index => "thread_index_in_threadgroup",
-        .workgroup_id => "threadgroup_position_in_grid",
-        else => "unsupported_builtin",
-    };
-}

@@ -408,16 +408,11 @@ fn parseTypeConstructor(self: anytype) @TypeOf(self.*).Error!u32 {
 
 fn parseGenericCall(self: anytype, name_token: u32) @TypeOf(self.*).Error!u32 {
     _ = try self.expect(.@"<");
-    var depth: u32 = 1;
-    while (depth > 0 and self.peekTag() != .eof) {
-        if (self.peekTag() == .@"<") depth += 1;
-        if (self.peekTag() == .@">") depth -= 1;
-        if (depth > 0) self.advance();
-    }
-    if (self.peekTag() == .@">") self.advance();
+    const target_type = try parseTypeExpr(self);
+    _ = try self.expect(.@">");
 
     if (self.peekTag() == .@"(") {
-        return parseCallArgs(self, name_token);
+        return parseGenericCallArgs(self, name_token, target_type);
     }
 
     return self.tree.addNode(.{
@@ -448,6 +443,30 @@ pub fn parseCallArgs(self: anytype, name_token: u32) @TypeOf(self.*).Error!u32 {
         .tag = .call_expr,
         .main_token = name_token,
         .data = .{ .lhs = extra_start, .rhs = count },
+    });
+}
+
+fn parseGenericCallArgs(self: anytype, name_token: u32, target_type: u32) @TypeOf(self.*).Error!u32 {
+    _ = try self.expect(.@"(");
+
+    const scratch_top = self.scratch.items.len;
+    defer self.scratch.shrinkRetainingCapacity(scratch_top);
+
+    while (self.peekTag() != .@")" and self.peekTag() != .eof) {
+        const arg = try parseExpr(self);
+        try self.scratch.append(self.allocator, arg);
+        if (self.peekTag() == .@",") self.advance();
+    }
+    _ = try self.expect(.@")");
+
+    const args = self.scratch.items[scratch_top..];
+    const extra_start = try self.tree.addExtraSlice(args);
+    const count: u32 = @intCast(args.len);
+
+    return self.tree.addNode(.{
+        .tag = .generic_call_expr,
+        .main_token = name_token,
+        .data = .{ .lhs = target_type, .rhs = extra_start | (count << 16) },
     });
 }
 

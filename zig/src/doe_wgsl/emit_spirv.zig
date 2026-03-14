@@ -288,10 +288,14 @@ pub const Emitter = struct {
                 .bool => try self.builder.type_bool(),
                 .i32, .abstract_int => try self.builder.type_i32(),
                 .u32 => try self.builder.type_u32(),
+                .f16 => try self.builder.type_f16(),
                 .f32, .abstract_float => try self.builder.type_f32(),
-                else => return error.UnsupportedConstruct,
             },
             .vector => |vec| try self.builder.type_vector(try self.lower_type(vec.elem), vec.len),
+            .matrix => |mat| try self.builder.type_matrix(
+                try self.builder.type_vector(try self.lower_type(mat.elem), mat.rows),
+                mat.columns,
+            ),
             .array => |arr| if (arr.len) |len|
                 try self.builder.type_array(try self.lower_type(arr.elem), try self.builder.const_u32(len))
             else
@@ -356,6 +360,7 @@ pub const Emitter = struct {
             },
             .float => |value| switch (self.module.types.get(ty)) {
                 .scalar => |scalar| switch (scalar) {
+                    .f16 => return try self.builder.const_f16_bits(@as(u16, @bitCast(@as(f16, @floatCast(value))))),
                     .f32, .abstract_float => return try self.builder.const_f32_bits(@bitCast(@as(f32, @floatCast(value)))),
                     else => return error.InvalidIr,
                 },
@@ -412,13 +417,17 @@ pub const Emitter = struct {
             },
             .vector => |vec| blk: {
                 const elem_layout = try self.decorate_memory_type(vec.elem, addr_space);
-                const layout = switch (vec.len) {
-                    2 => Layout{ .alignment = elem_layout.alignment * 2, .size = elem_layout.size * 2 },
-                    3 => Layout{ .alignment = elem_layout.alignment * 4, .size = elem_layout.size * 3 },
-                    4 => Layout{ .alignment = elem_layout.alignment * 4, .size = elem_layout.size * 4 },
-                    else => return error.UnsupportedConstruct,
+                break :blk try vector_layout_from_elem(elem_layout, vec.len);
+            },
+            .matrix => |mat| blk: {
+                const elem_layout = try self.decorate_memory_type(mat.elem, addr_space);
+                const column_layout = try vector_layout_from_elem(elem_layout, mat.rows);
+                const column_alignment = adjusted_memory_align(addr_space, .{ .vector = .{ .elem = mat.elem, .len = mat.rows } }, column_layout.alignment);
+                const stride = round_up(column_alignment, column_layout.size);
+                break :blk .{
+                    .alignment = column_alignment,
+                    .size = stride * mat.columns,
                 };
-                break :blk layout;
             },
             .array => |arr| blk: {
                 const elem_layout = try self.decorate_memory_type(arr.elem, addr_space);
@@ -454,6 +463,17 @@ pub const Emitter = struct {
                     offset = round_up(field_alignment, offset);
                     if (!gop.found_existing) {
                         try self.builder.emit_member_offset_decoration(struct_type, @intCast(field_index), offset);
+                        switch (self.module.types.get(field.ty)) {
+                            .matrix => |mat| {
+                                const elem_layout = try self.decorate_memory_type(mat.elem, addr_space);
+                                const column_layout = try vector_layout_from_elem(elem_layout, mat.rows);
+                                const column_alignment = adjusted_memory_align(addr_space, .{ .vector = .{ .elem = mat.elem, .len = mat.rows } }, column_layout.alignment);
+                                const stride = round_up(column_alignment, column_layout.size);
+                                try self.builder.emit_member_col_major_decoration(struct_type, @intCast(field_index));
+                                try self.builder.emit_member_matrix_stride_decoration(struct_type, @intCast(field_index), stride);
+                            },
+                            else => {},
+                        }
                     }
                     max_align = @max(max_align, field_alignment);
                     offset += field_layout.size;
@@ -465,7 +485,7 @@ pub const Emitter = struct {
                 };
             },
             .atomic => |inner| try self.decorate_memory_type(inner, addr_space),
-            .matrix, .sampler, .texture_2d, .storage_texture_2d, .ref => return error.UnsupportedConstruct,
+            .sampler, .texture_2d, .storage_texture_2d, .ref => return error.UnsupportedConstruct,
         };
     }
 
@@ -506,6 +526,15 @@ fn adjusted_memory_align(addr_space: ir.AddressSpace, ty: ir.Type, base_align: u
             else => base_align,
         },
         else => base_align,
+    };
+}
+
+fn vector_layout_from_elem(elem_layout: Emitter.Layout, len: u8) EmitError!Emitter.Layout {
+    return switch (len) {
+        2 => .{ .alignment = elem_layout.alignment * 2, .size = elem_layout.size * 2 },
+        3 => .{ .alignment = elem_layout.alignment * 4, .size = elem_layout.size * 3 },
+        4 => .{ .alignment = elem_layout.alignment * 4, .size = elem_layout.size * 4 },
+        else => error.UnsupportedConstruct,
     };
 }
 

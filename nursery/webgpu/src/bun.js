@@ -14,10 +14,14 @@ export const setupGlobals = runtime.setupGlobals;
 export const requestAdapter = runtime.requestAdapter;
 export const requestDevice = runtime.requestDevice;
 export const providerInfo = runtime.providerInfo;
+export const preflightShaderSource = runtime.preflightShaderSource ?? full.preflightShaderSource;
+export const setNativeTimeoutMs = runtime.setNativeTimeoutMs ?? full.setNativeTimeoutMs;
 export const createDoeRuntime = runtime.createDoeRuntime;
 export const runDawnVsDoeCompare = runtime.runDawnVsDoeCompare;
 
 export default {
   ...runtime,
+  preflightShaderSource,
+  setNativeTimeoutMs,
   doe,
 };

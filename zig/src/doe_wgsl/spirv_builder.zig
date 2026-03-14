@@ -14,6 +14,10 @@ const SCHEMA: u32 = 0;
 
 pub const Capability = struct {
     pub const Shader: u32 = 1;
+    pub const Float16: u32 = 9;
+    pub const GroupNonUniform: u32 = 61;
+    pub const GroupNonUniformArithmetic: u32 = 63;
+    pub const GroupNonUniformShuffle: u32 = 65;
 };
 
 pub const AddressingModel = struct {
@@ -57,6 +61,12 @@ pub const Scope = struct {
     pub const Invocation: u32 = 4;
 };
 
+pub const GroupOperation = struct {
+    pub const Reduce: u32 = 0;
+    pub const InclusiveScan: u32 = 1;
+    pub const ExclusiveScan: u32 = 2;
+};
+
 pub const MemorySemantics = struct {
     pub const None: u32 = 0x00000000;
     pub const AcquireRelease: u32 = 0x00000008;
@@ -80,7 +90,9 @@ pub const StorageClass = struct {
 pub const Decoration = struct {
     pub const Invariant: u32 = 0;
     pub const Block: u32 = 2;
+    pub const ColMajor: u32 = 5;
     pub const ArrayStride: u32 = 6;
+    pub const MatrixStride: u32 = 7;
     pub const BuiltIn: u32 = 11;
     pub const NoPerspective: u32 = 13;
     pub const Flat: u32 = 14;
@@ -158,6 +170,7 @@ pub const Opcode = struct {
     pub const ImageFetch: u16 = 95;
     pub const ImageWrite: u16 = 99;
     pub const SNegate: u16 = 126;
+    pub const Bitcast: u16 = 124;
     pub const FNegate: u16 = 127;
     pub const IAdd: u16 = 128;
     pub const FAdd: u16 = 129;
@@ -172,6 +185,7 @@ pub const Opcode = struct {
     pub const SRem: u16 = 138;
     pub const FRem: u16 = 140;
     pub const Dot: u16 = 148;
+    pub const ArrayLength: u16 = 68;
     pub const LogicalEqual: u16 = 164;
     pub const LogicalNotEqual: u16 = 165;
     pub const LogicalOr: u16 = 166;
@@ -215,6 +229,17 @@ pub const Opcode = struct {
     pub const AtomicAnd: u16 = 240;
     pub const AtomicOr: u16 = 241;
     pub const AtomicXor: u16 = 242;
+    pub const GroupNonUniformBroadcast: u16 = 337;
+    pub const GroupNonUniformShuffle: u16 = 345;
+    pub const GroupNonUniformShuffleXor: u16 = 346;
+    pub const GroupNonUniformIAdd: u16 = 349;
+    pub const GroupNonUniformFAdd: u16 = 350;
+    pub const GroupNonUniformSMin: u16 = 353;
+    pub const GroupNonUniformUMin: u16 = 354;
+    pub const GroupNonUniformFMin: u16 = 355;
+    pub const GroupNonUniformSMax: u16 = 356;
+    pub const GroupNonUniformUMax: u16 = 357;
+    pub const GroupNonUniformFMax: u16 = 358;
     pub const Label: u16 = 248;
     pub const Branch: u16 = 249;
     pub const BranchConditional: u16 = 250;
@@ -229,6 +254,7 @@ pub const Opcode = struct {
 };
 
 const VecKey = struct { elem: u32, len: u32 };
+const MatrixKey = struct { column_type: u32, columns: u32 };
 const ArrayKey = struct { elem: u32, len_const: u32 };
 const RuntimeArrayKey = struct { elem: u32 };
 const ImageKey = struct {
@@ -266,6 +292,7 @@ pub const Builder = struct {
     functions: std.ArrayListUnmanaged(u32) = .{},
 
     vector_types: std.AutoHashMapUnmanaged(VecKey, u32) = .{},
+    matrix_types: std.AutoHashMapUnmanaged(MatrixKey, u32) = .{},
     array_types: std.AutoHashMapUnmanaged(ArrayKey, u32) = .{},
     runtime_array_types: std.AutoHashMapUnmanaged(RuntimeArrayKey, u32) = .{},
     image_types: std.AutoHashMapUnmanaged(ImageKey, u32) = .{},
@@ -278,6 +305,7 @@ pub const Builder = struct {
     bool_type: u32 = 0,
     u32_type: u32 = 0,
     i32_type: u32 = 0,
+    f16_type: u32 = 0,
     f32_type: u32 = 0,
 
     pub fn init(allocator: std.mem.Allocator) Builder {
@@ -300,6 +328,7 @@ pub const Builder = struct {
         self.types_globals.deinit(self.allocator);
         self.functions.deinit(self.allocator);
         self.vector_types.deinit(self.allocator);
+        self.matrix_types.deinit(self.allocator);
         self.array_types.deinit(self.allocator);
         self.runtime_array_types.deinit(self.allocator);
         self.image_types.deinit(self.allocator);
@@ -326,6 +355,10 @@ pub const Builder = struct {
     }
 
     pub fn emit_capability(self: *Builder, capability: u32) EmitError!void {
+        var i: usize = 0;
+        while (i < self.capabilities.items.len) : (i += 2) {
+            if (self.capabilities.items[i + 1] == capability) return;
+        }
         try self.append_inst(&self.capabilities, Opcode.Capability, &.{capability});
     }
 
@@ -406,6 +439,15 @@ pub const Builder = struct {
         return id;
     }
 
+    pub fn type_f16(self: *Builder) EmitError!u32 {
+        if (self.f16_type != 0) return self.f16_type;
+        try self.emit_capability(Capability.Float16);
+        const id = self.reserve_id();
+        try self.append_inst(&self.types_globals, Opcode.TypeFloat, &.{ id, 16 });
+        self.f16_type = id;
+        return id;
+    }
+
     pub fn type_f32(self: *Builder) EmitError!u32 {
         if (self.f32_type != 0) return self.f32_type;
         const id = self.reserve_id();
@@ -420,6 +462,15 @@ pub const Builder = struct {
         const id = self.reserve_id();
         try self.append_inst(&self.types_globals, Opcode.TypeVector, &.{ id, elem_type, len });
         try self.vector_types.put(self.allocator, key, id);
+        return id;
+    }
+
+    pub fn type_matrix(self: *Builder, column_type: u32, columns: u32) EmitError!u32 {
+        const key = MatrixKey{ .column_type = column_type, .columns = columns };
+        if (self.matrix_types.get(key)) |id| return id;
+        const id = self.reserve_id();
+        try self.append_inst(&self.types_globals, Opcode.TypeMatrix, &.{ id, column_type, columns });
+        try self.matrix_types.put(self.allocator, key, id);
         return id;
     }
 
@@ -554,6 +605,11 @@ pub const Builder = struct {
         return try self.scalar_constant(ty, bits);
     }
 
+    pub fn const_f16_bits(self: *Builder, bits: u16) EmitError!u32 {
+        const ty = try self.type_f16();
+        return try self.scalar_constant(ty, bits);
+    }
+
     fn scalar_constant(self: *Builder, ty: u32, bits: u32) EmitError!u32 {
         const key = ScalarConstKey{ .ty = ty, .bits = bits };
         if (self.scalar_constants.get(key)) |id| return id;
@@ -627,6 +683,14 @@ pub const Builder = struct {
 
     pub fn emit_member_offset_decoration(self: *Builder, target_id: u32, member_index: u32, offset: u32) EmitError!void {
         try self.append_inst(&self.annotations, Opcode.MemberDecorate, &.{ target_id, member_index, Decoration.Offset, offset });
+    }
+
+    pub fn emit_member_col_major_decoration(self: *Builder, target_id: u32, member_index: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.MemberDecorate, &.{ target_id, member_index, Decoration.ColMajor });
+    }
+
+    pub fn emit_member_matrix_stride_decoration(self: *Builder, target_id: u32, member_index: u32, stride: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.MemberDecorate, &.{ target_id, member_index, Decoration.MatrixStride, stride });
     }
 
     pub fn begin_function(self: *Builder, result_type: u32, fn_id: u32, function_type: u32) EmitError!void {

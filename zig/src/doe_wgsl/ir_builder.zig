@@ -289,8 +289,8 @@ const FunctionBuilder = struct {
         const category = self.semantic.nodeCategory(node_idx);
         const expr = switch (node.tag) {
             .bool_literal => ir.Expr{ .bool_lit = std.mem.eql(u8, self.tree.tokenSlice(node.main_token), "true") },
-            .int_literal => ir.Expr{ .int_lit = std.fmt.parseInt(u64, self.tree.tokenSlice(node.main_token), 10) catch return error.InvalidIr },
-            .float_literal => ir.Expr{ .float_lit = std.fmt.parseFloat(f64, self.tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
+            .int_literal => ir.Expr{ .int_lit = sema_helpers.parse_wgsl_int_literal(u64, self.tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
+            .float_literal => ir.Expr{ .float_lit = sema_helpers.parse_wgsl_float_literal(self.tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
             .ident_expr => try self.lower_ident(node_idx),
             .unary_expr => ir.Expr{ .unary = .{
                 .op = map_unary_op(self.tree.tokens.items[node.main_token].tag),
@@ -302,6 +302,7 @@ const FunctionBuilder = struct {
                 .rhs = try self.lower_value_expr(node.data.rhs),
             } },
             .call_expr => try self.lower_call(node_idx, node),
+            .generic_call_expr => try self.lower_generic_call(node_idx, node),
             .construct_expr => try self.lower_construct(node_idx, node),
             .member_expr => ir.Expr{ .member = .{
                 .base = if (category == .ref) try self.lower_ref_expr(node.data.lhs) else try self.lower_value_expr(node.data.lhs),
@@ -354,6 +355,24 @@ const FunctionBuilder = struct {
         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
     }
 
+    fn lower_generic_call(self: *FunctionBuilder, _: u32, node: Node) !ir.Expr {
+        const name = self.tree.tokenSlice(node.main_token);
+        const span = sema_helpers.decode_packed_span(node.data.rhs);
+        var args = std.ArrayListUnmanaged(ir.ExprId){};
+        defer args.deinit(self.allocator);
+
+        var i: u32 = 0;
+        while (i < span.len) : (i += 1) {
+            try args.append(self.allocator, try self.lower_value_expr(self.tree.extra_data.items[span.start + i]));
+        }
+
+        return .{ .call = .{
+            .name = try ir.dup_string(self.allocator, name),
+            .kind = .builtin,
+            .args = try self.function.append_expr_args(self.allocator, args.items),
+        } };
+    }
+
     fn lower_construct(self: *FunctionBuilder, node_idx: u32, node: Node) !ir.Expr {
         var args = std.ArrayListUnmanaged(ir.ExprId){};
         defer args.deinit(self.allocator);
@@ -378,15 +397,8 @@ const FunctionBuilder = struct {
         while (true) {
             switch (self.semantic.types.get(ty)) {
                 .ref => |ref_ty| ty = ref_ty.elem,
-                .vector => {
-                    if (field_name.len != 1) return error.InvalidIr;
-                    return switch (field_name[0]) {
-                        'x', 'r' => 0,
-                        'y', 'g' => 1,
-                        'z', 'b' => 2,
-                        'w', 'a' => 3,
-                        else => error.InvalidIr,
-                    };
+                .vector => |vec| {
+                    return (sema_helpers.parse_vector_swizzle(field_name, vec.len) catch return error.InvalidIr).indices[0];
                 },
                 .struct_ => |struct_id| {
                     const struct_info = self.semantic.structs.items[struct_id];
@@ -469,8 +481,8 @@ fn scalar_constant_from_node(tree: *const Ast, node_idx: u32) BuildError!?ir.Con
     const node = tree.nodes.items[node_idx];
     return switch (node.tag) {
         .bool_literal => ir.ConstantValue{ .bool = std.mem.eql(u8, tree.tokenSlice(node.main_token), "true") },
-        .int_literal => ir.ConstantValue{ .int = std.fmt.parseInt(u64, tree.tokenSlice(node.main_token), 10) catch return error.InvalidIr },
-        .float_literal => ir.ConstantValue{ .float = std.fmt.parseFloat(f64, tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
+        .int_literal => ir.ConstantValue{ .int = sema_helpers.parse_wgsl_int_literal(u64, tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
+        .float_literal => ir.ConstantValue{ .float = sema_helpers.parse_wgsl_float_literal(tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
         .unary_expr => switch (tree.tokens.items[node.main_token].tag) {
             .@"-" => blk: {
                 const inner = try scalar_constant_from_node(tree, node.data.lhs) orelse return error.UnsupportedConstruct;
@@ -482,6 +494,65 @@ fn scalar_constant_from_node(tree: *const Ast, node_idx: u32) BuildError!?ir.Con
             },
             else => error.UnsupportedConstruct,
         },
+        .binary_expr => blk: {
+            const lhs = try scalar_constant_from_node(tree, node.data.lhs) orelse return error.UnsupportedConstruct;
+            const rhs = try scalar_constant_from_node(tree, node.data.rhs) orelse return error.UnsupportedConstruct;
+            break :blk try fold_scalar_binary(map_binary_op(tree.tokens.items[node.main_token].tag), lhs, rhs);
+        },
         else => null,
+    };
+}
+
+fn fold_scalar_binary(op: ir.BinaryOp, lhs: ir.ConstantValue, rhs: ir.ConstantValue) BuildError!ir.ConstantValue {
+    return switch (lhs) {
+        .bool => |lhs_bool| switch (rhs) {
+            .bool => |rhs_bool| switch (op) {
+                .equal => ir.ConstantValue{ .bool = lhs_bool == rhs_bool },
+                .not_equal => ir.ConstantValue{ .bool = lhs_bool != rhs_bool },
+                .logical_and => ir.ConstantValue{ .bool = lhs_bool and rhs_bool },
+                .logical_or => ir.ConstantValue{ .bool = lhs_bool or rhs_bool },
+                else => error.UnsupportedConstruct,
+            },
+            else => error.UnsupportedConstruct,
+        },
+        .int => |lhs_int| switch (rhs) {
+            .int => |rhs_int| switch (op) {
+                .add => ir.ConstantValue{ .int = lhs_int +% rhs_int },
+                .sub => ir.ConstantValue{ .int = lhs_int -% rhs_int },
+                .mul => ir.ConstantValue{ .int = lhs_int *% rhs_int },
+                .div => if (rhs_int == 0) error.UnsupportedConstruct else ir.ConstantValue{ .int = @divTrunc(lhs_int, rhs_int) },
+                .rem => if (rhs_int == 0) error.UnsupportedConstruct else ir.ConstantValue{ .int = @mod(lhs_int, rhs_int) },
+                .bit_and => ir.ConstantValue{ .int = lhs_int & rhs_int },
+                .bit_or => ir.ConstantValue{ .int = lhs_int | rhs_int },
+                .bit_xor => ir.ConstantValue{ .int = lhs_int ^ rhs_int },
+                .shift_left => if (rhs_int >= 64) error.UnsupportedConstruct else ir.ConstantValue{ .int = lhs_int << @as(std.math.Log2Int(u64), @intCast(rhs_int)) },
+                .shift_right => if (rhs_int >= 64) error.UnsupportedConstruct else ir.ConstantValue{ .int = lhs_int >> @as(std.math.Log2Int(u64), @intCast(rhs_int)) },
+                .equal => ir.ConstantValue{ .bool = lhs_int == rhs_int },
+                .not_equal => ir.ConstantValue{ .bool = lhs_int != rhs_int },
+                .less => ir.ConstantValue{ .bool = lhs_int < rhs_int },
+                .less_equal => ir.ConstantValue{ .bool = lhs_int <= rhs_int },
+                .greater => ir.ConstantValue{ .bool = lhs_int > rhs_int },
+                .greater_equal => ir.ConstantValue{ .bool = lhs_int >= rhs_int },
+                else => error.UnsupportedConstruct,
+            },
+            else => error.UnsupportedConstruct,
+        },
+        .float => |lhs_float| switch (rhs) {
+            .float => |rhs_float| switch (op) {
+                .add => ir.ConstantValue{ .float = lhs_float + rhs_float },
+                .sub => ir.ConstantValue{ .float = lhs_float - rhs_float },
+                .mul => ir.ConstantValue{ .float = lhs_float * rhs_float },
+                .div => ir.ConstantValue{ .float = lhs_float / rhs_float },
+                .rem => ir.ConstantValue{ .float = @mod(lhs_float, rhs_float) },
+                .equal => ir.ConstantValue{ .bool = lhs_float == rhs_float },
+                .not_equal => ir.ConstantValue{ .bool = lhs_float != rhs_float },
+                .less => ir.ConstantValue{ .bool = lhs_float < rhs_float },
+                .less_equal => ir.ConstantValue{ .bool = lhs_float <= rhs_float },
+                .greater => ir.ConstantValue{ .bool = lhs_float > rhs_float },
+                .greater_equal => ir.ConstantValue{ .bool = lhs_float >= rhs_float },
+                else => error.UnsupportedConstruct,
+            },
+            else => error.UnsupportedConstruct,
+        },
     };
 }

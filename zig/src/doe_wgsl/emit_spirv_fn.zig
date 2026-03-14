@@ -1,7 +1,9 @@
 const std = @import("std");
 const ir = @import("ir.zig");
+const sema_helpers = @import("sema_helpers.zig");
 const spirv = @import("spirv_builder.zig");
 const emit_spirv = @import("emit_spirv.zig");
+const emit_spirv_builtins = @import("emit_spirv_builtins.zig");
 
 const Emitter = emit_spirv.Emitter;
 const EmitError = emit_spirv.EmitError;
@@ -220,7 +222,13 @@ pub const FunctionState = struct {
                 },
                 else => return error.InvalidIr,
             },
-            .float_lit => |value| try self.emitter.builder.const_f32_bits(@bitCast(@as(f32, @floatCast(value)))),
+            .float_lit => |value| switch (self.emitter.module.types.get(expr.ty)) {
+                .scalar => |scalar| switch (scalar) {
+                    .f16 => try self.emitter.builder.const_f16_bits(@as(u16, @bitCast(@as(f16, @floatCast(value))))),
+                    else => try self.emitter.builder.const_f32_bits(@bitCast(@as(f32, @floatCast(value)))),
+                },
+                else => try self.emitter.builder.const_f32_bits(@bitCast(@as(f32, @floatCast(value)))),
+            },
             .param_ref, .local_ref => return error.InvalidIr,
             .global_ref => |index| blk: {
                 const global = self.emitter.module.globals.items[index];
@@ -248,7 +256,7 @@ pub const FunctionState = struct {
             .member => |member| if (expr.category == .ref)
                 return error.InvalidIr
             else
-                try self.emit_composite_extract(try self.emit_value_expr(member.base), expr.ty, member.field_index),
+                try self.emit_member_value(member, expr.ty),
             .index => |index| if (expr.category == .ref)
                 return error.InvalidIr
             else
@@ -256,7 +264,7 @@ pub const FunctionState = struct {
         };
     }
 
-    fn emit_ref_expr(self: *FunctionState, expr_id: ir.ExprId) EmitError!u32 {
+    pub fn emit_ref_expr(self: *FunctionState, expr_id: ir.ExprId) EmitError!u32 {
         const expr = self.function.exprs.items[expr_id];
         return switch (expr.data) {
             .param_ref => |index| self.param_ptr_ids[index],
@@ -304,6 +312,28 @@ pub const FunctionState = struct {
         return try self.emitter.emit_function_load(try self.emitter.lower_type(ref_expr.ty), try self.emit_ref_expr(ref_expr_id));
     }
 
+    fn emit_member_value(self: *FunctionState, member: @FieldType(ir.Expr, "member"), result_ty: ir.TypeId) EmitError!u32 {
+        if (member.field_name.len == 1) {
+            return try self.emit_composite_extract(try self.emit_value_expr(member.base), result_ty, member.field_index);
+        }
+
+        const base_id = try self.emit_value_expr(member.base);
+        const base_ty = self.function.exprs.items[member.base].ty;
+        const vec = switch (self.emitter.module.types.get(base_ty)) {
+            .vector => |vector| vector,
+            else => return error.InvalidIr,
+        };
+        const swizzle = sema_helpers.parse_vector_swizzle(member.field_name, vec.len) catch return error.InvalidIr;
+
+        var operands = std.ArrayListUnmanaged(u32){};
+        defer operands.deinit(self.emitter.alloc);
+        var i: usize = 0;
+        while (i < swizzle.len) : (i += 1) {
+            try operands.append(self.emitter.alloc, try self.emit_composite_extract(base_id, vec.elem, swizzle.indices[i]));
+        }
+        return try self.emit_construct_from_operands(result_ty, operands.items);
+    }
+
     fn emit_unary(self: *FunctionState, op: ir.UnaryOp, operand_id: u32, result_ty: ir.TypeId) EmitError!u32 {
         const opcode: u16 = switch (op) {
             .neg => switch (self.scalar_kind(result_ty)) {
@@ -319,9 +349,18 @@ pub const FunctionState = struct {
 
     fn emit_binary(self: *FunctionState, op: ir.BinaryOp, lhs_id: u32, rhs_id: u32, operand_ty: ir.TypeId, result_ty: ir.TypeId) EmitError!u32 {
         const opcode: u16 = switch (op) {
-            .add => switch (self.scalar_kind(operand_ty)) { .float => spirv.Opcode.FAdd, else => spirv.Opcode.IAdd },
-            .sub => switch (self.scalar_kind(operand_ty)) { .float => spirv.Opcode.FSub, else => spirv.Opcode.ISub },
-            .mul => switch (self.scalar_kind(operand_ty)) { .float => spirv.Opcode.FMul, else => spirv.Opcode.IMul },
+            .add => switch (self.scalar_kind(operand_ty)) {
+                .float => spirv.Opcode.FAdd,
+                else => spirv.Opcode.IAdd,
+            },
+            .sub => switch (self.scalar_kind(operand_ty)) {
+                .float => spirv.Opcode.FSub,
+                else => spirv.Opcode.ISub,
+            },
+            .mul => switch (self.scalar_kind(operand_ty)) {
+                .float => spirv.Opcode.FMul,
+                else => spirv.Opcode.IMul,
+            },
             .div => switch (self.scalar_kind(operand_ty)) {
                 .float => spirv.Opcode.FDiv,
                 .unsigned => spirv.Opcode.UDiv,
@@ -405,277 +444,36 @@ pub const FunctionState = struct {
     }
 
     fn emit_builtin_call(self: *FunctionState, call: anytype, result_ty: ir.TypeId) EmitError!u32 {
-        if (std.mem.eql(u8, call.name, "workgroupBarrier")) {
-            try self.emit_control_barrier(
-                spirv.MemorySemantics.AcquireRelease |
-                    spirv.MemorySemantics.WorkgroupMemory,
-            );
-            return 0;
-        }
-        if (std.mem.eql(u8, call.name, "storageBarrier")) {
-            try self.emit_control_barrier(
-                spirv.MemorySemantics.AcquireRelease |
-                    spirv.MemorySemantics.UniformMemory |
-                    spirv.MemorySemantics.ImageMemory,
-            );
-            return 0;
-        }
-        if (std.mem.startsWith(u8, call.name, "atomic")) {
-            return try self.emit_atomic_call(call, result_ty);
-        }
-        if (std.mem.eql(u8, call.name, "textureLoad")) {
-            return try self.emit_texture_load(call, result_ty);
-        }
-        if (std.mem.eql(u8, call.name, "textureStore")) {
-            try self.emit_texture_store(call);
-            return 0;
-        }
-        if (std.mem.eql(u8, call.name, "dot")) {
-            return try self.emit_dot(call, result_ty);
-        }
-        if (std.mem.eql(u8, call.name, "sin")) {
-            return try self.emit_glsl_ext_inst(call, result_ty, 13);
-        }
-        if (std.mem.eql(u8, call.name, "fract")) {
-            return try self.emit_glsl_ext_inst(call, result_ty, 10);
-        }
-        return error.UnsupportedConstruct;
-    }
-
-    fn emit_control_barrier(self: *FunctionState, memory_semantics: u32) EmitError!void {
-        const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Workgroup);
-        const semantics_id = try self.emitter.builder.const_u32(memory_semantics);
-        try self.emitter.builder.append_function_inst(
-            spirv.Opcode.ControlBarrier,
-            &.{ scope_id, scope_id, semantics_id },
-        );
-    }
-
-    const AtomicMemoryOperands = struct {
-        scope_id: u32,
-        semantics_id: u32,
-    };
-
-    fn emit_atomic_call(self: *FunctionState, call: anytype, result_ty: ir.TypeId) EmitError!u32 {
-        if (call.args.len == 0) return error.InvalidIr;
-        const ptr_expr = self.function.expr_args.items[call.args.start];
-        const ptr_id = try self.emit_ref_expr(ptr_expr);
-        const memory = try self.atomic_memory_operands(ptr_expr);
-
-        if (std.mem.eql(u8, call.name, "atomicLoad")) {
-            return try self.emit_result_inst(
-                spirv.Opcode.AtomicLoad,
-                try self.emitter.lower_type(result_ty),
-                &.{ ptr_id, memory.scope_id, memory.semantics_id },
-            );
-        }
-
-        if (call.args.len < 2) return error.InvalidIr;
-        const value_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 1]);
-
-        if (std.mem.eql(u8, call.name, "atomicStore")) {
-            try self.emitter.builder.append_function_inst(
-                spirv.Opcode.AtomicStore,
-                &.{ ptr_id, memory.scope_id, memory.semantics_id, value_id },
-            );
-            return 0;
-        }
-
-        const opcode: u16 = if (std.mem.eql(u8, call.name, "atomicAdd"))
-            spirv.Opcode.AtomicIAdd
-        else if (std.mem.eql(u8, call.name, "atomicSub"))
-            spirv.Opcode.AtomicISub
-        else if (std.mem.eql(u8, call.name, "atomicMax")) switch (self.scalar_kind(result_ty)) {
-            .signed => spirv.Opcode.AtomicSMax,
-            .unsigned => spirv.Opcode.AtomicUMax,
-            else => return error.UnsupportedConstruct,
-        } else if (std.mem.eql(u8, call.name, "atomicMin")) switch (self.scalar_kind(result_ty)) {
-            .signed => spirv.Opcode.AtomicSMin,
-            .unsigned => spirv.Opcode.AtomicUMin,
-            else => return error.UnsupportedConstruct,
-        } else if (std.mem.eql(u8, call.name, "atomicAnd"))
-            spirv.Opcode.AtomicAnd
-        else if (std.mem.eql(u8, call.name, "atomicOr"))
-            spirv.Opcode.AtomicOr
-        else if (std.mem.eql(u8, call.name, "atomicXor"))
-            spirv.Opcode.AtomicXor
-        else if (std.mem.eql(u8, call.name, "atomicExchange"))
-            spirv.Opcode.AtomicExchange
-        else
-            return error.UnsupportedConstruct;
-
-        return try self.emit_result_inst(
-            opcode,
-            try self.emitter.lower_type(result_ty),
-            &.{ ptr_id, memory.scope_id, memory.semantics_id, value_id },
-        );
-    }
-
-    fn emit_texture_load(self: *FunctionState, call: anytype, result_ty: ir.TypeId) EmitError!u32 {
-        if (call.args.len != 3) return error.InvalidIr;
-
-        const texture_expr = self.function.expr_args.items[call.args.start];
-        const coords_expr = self.function.expr_args.items[call.args.start + 1];
-        const level_expr = self.function.expr_args.items[call.args.start + 2];
-
-        switch (self.emitter.module.types.get(self.function.exprs.items[texture_expr].ty)) {
-            .texture_2d => |sample_ty| switch (self.emitter.module.types.get(sample_ty)) {
-                .scalar => |scalar| {
-                    if (scalar != .f32) return error.UnsupportedConstruct;
-                },
-                else => return error.UnsupportedConstruct,
-            },
-            else => return error.UnsupportedConstruct,
-        }
-
-        return try self.emit_result_inst(
-            spirv.Opcode.ImageFetch,
-            try self.emitter.lower_type(result_ty),
-            &.{
-                try self.emit_value_expr(texture_expr),
-                try self.emit_value_expr(coords_expr),
-                spirv.ImageOperandsMask.Lod,
-                try self.emit_value_expr(level_expr),
-            },
-        );
-    }
-
-    fn emit_texture_store(self: *FunctionState, call: anytype) EmitError!void {
-        if (call.args.len != 3) return error.InvalidIr;
-
-        const texture_expr = self.function.expr_args.items[call.args.start];
-        switch (self.emitter.module.types.get(self.function.exprs.items[texture_expr].ty)) {
-            .storage_texture_2d => |storage_tex| {
-                if (storage_tex.format != .rgba8unorm or storage_tex.access == .read) {
-                    return error.UnsupportedConstruct;
-                }
-            },
-            else => return error.UnsupportedConstruct,
-        }
-
-        try self.emitter.builder.append_function_inst(
-            spirv.Opcode.ImageWrite,
-            &.{
-                try self.emit_value_expr(texture_expr),
-                try self.emit_value_expr(self.function.expr_args.items[call.args.start + 1]),
-                try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]),
-            },
-        );
-    }
-
-    fn emit_dot(self: *FunctionState, call: anytype, result_ty: ir.TypeId) EmitError!u32 {
-        if (call.args.len != 2) return error.InvalidIr;
-
-        const lhs_expr = self.function.expr_args.items[call.args.start];
-        const rhs_expr = self.function.expr_args.items[call.args.start + 1];
-        const lhs_ty = self.function.exprs.items[lhs_expr].ty;
-        const rhs_ty = self.function.exprs.items[rhs_expr].ty;
-
-        switch (self.emitter.module.types.get(lhs_ty)) {
-            .vector => |lhs_vec| {
-                const rhs_vec = switch (self.emitter.module.types.get(rhs_ty)) {
-                    .vector => |vec| vec,
-                    else => return error.UnsupportedConstruct,
-                };
-                if (lhs_vec.len != rhs_vec.len) return error.UnsupportedConstruct;
-                if (lhs_vec.elem != rhs_vec.elem) return error.UnsupportedConstruct;
-                switch (self.emitter.module.types.get(lhs_vec.elem)) {
-                    .scalar => |scalar| if (scalar != .f32 and scalar != .abstract_float) return error.UnsupportedConstruct,
-                    else => return error.UnsupportedConstruct,
-                }
-            },
-            else => return error.UnsupportedConstruct,
-        }
-
-        return try self.emit_result_inst(
-            spirv.Opcode.Dot,
-            try self.emitter.lower_type(result_ty),
-            &.{
-                try self.emit_value_expr(lhs_expr),
-                try self.emit_value_expr(rhs_expr),
-            },
-        );
-    }
-
-    fn emit_glsl_ext_inst(self: *FunctionState, call: anytype, result_ty: ir.TypeId, inst: u32) EmitError!u32 {
-        if (call.args.len != 1) return error.InvalidIr;
-        try self.validate_glsl_ext_operand(result_ty);
-
-        const arg_expr = self.function.expr_args.items[call.args.start];
-        const arg_ty = self.function.exprs.items[arg_expr].ty;
-        if (arg_ty != result_ty) return error.UnsupportedConstruct;
-        try self.validate_glsl_ext_operand(arg_ty);
-
-        const result_type = try self.emitter.lower_type(result_ty);
-        const result_id = self.emitter.builder.reserve_id();
-        const import_id = try self.emitter.builder.glsl450_import_id();
-        const operand_id = try self.emit_value_expr(arg_expr);
-
-        try self.emitter.builder.append_function_inst(
-            spirv.Opcode.ExtInst,
-            &.{ result_type, result_id, import_id, inst, operand_id },
-        );
-        return result_id;
-    }
-
-    fn validate_glsl_ext_operand(self: *FunctionState, ty: ir.TypeId) EmitError!void {
-        switch (self.emitter.module.types.get(ty)) {
-            .scalar => |scalar| switch (scalar) {
-                .f32, .abstract_float => return,
-                else => return error.UnsupportedConstruct,
-            },
-            .vector => |vec| {
-                if (vec.len < 2 or vec.len > 4) return error.UnsupportedConstruct;
-                return switch (self.emitter.module.types.get(vec.elem)) {
-                    .scalar => |scalar| switch (scalar) {
-                        .f32, .abstract_float => {},
-                        else => error.UnsupportedConstruct,
-                    },
-                    else => error.UnsupportedConstruct,
-                };
-            },
-            else => return error.UnsupportedConstruct,
-        }
-    }
-
-    fn atomic_memory_operands(self: *FunctionState, ref_expr_id: ir.ExprId) EmitError!AtomicMemoryOperands {
-        const storage_class = try self.ref_storage_class(ref_expr_id);
-        const scope = switch (storage_class) {
-            spirv.StorageClass.Workgroup => spirv.Scope.Workgroup,
-            spirv.StorageClass.StorageBuffer => spirv.Scope.Device,
-            else => return error.UnsupportedConstruct,
-        };
-        const semantics = switch (storage_class) {
-            spirv.StorageClass.Workgroup => spirv.MemorySemantics.SequentiallyConsistent | spirv.MemorySemantics.WorkgroupMemory,
-            spirv.StorageClass.StorageBuffer => spirv.MemorySemantics.SequentiallyConsistent | spirv.MemorySemantics.UniformMemory,
-            else => return error.UnsupportedConstruct,
-        };
-        return .{
-            .scope_id = try self.emitter.builder.const_u32(scope),
-            .semantics_id = try self.emitter.builder.const_u32(semantics),
-        };
+        return (try emit_spirv_builtins.emit_builtin(self, call, result_ty)) orelse return error.UnsupportedConstruct;
     }
 
     fn emit_construct(self: *FunctionState, ty: ir.TypeId, range: ir.Range) EmitError!u32 {
         var operands = std.ArrayListUnmanaged(u32){};
         defer operands.deinit(self.emitter.alloc);
-        const result_ty = try self.emitter.lower_type(ty);
-        const result_id = self.emitter.builder.reserve_id();
-        try operands.append(self.emitter.alloc, result_ty);
-        try operands.append(self.emitter.alloc, result_id);
         var i: u32 = 0;
         while (i < range.len) : (i += 1) {
             try operands.append(self.emitter.alloc, try self.emit_value_expr(self.function.expr_args.items[range.start + i]));
         }
-        try self.emitter.builder.append_function_inst(spirv.Opcode.CompositeConstruct, operands.items);
+        return try self.emit_construct_from_operands(ty, operands.items);
+    }
+
+    pub fn emit_construct_from_operands(self: *FunctionState, ty: ir.TypeId, operands: []const u32) EmitError!u32 {
+        var full = std.ArrayListUnmanaged(u32){};
+        defer full.deinit(self.emitter.alloc);
+        const result_ty = try self.emitter.lower_type(ty);
+        const result_id = self.emitter.builder.reserve_id();
+        try full.append(self.emitter.alloc, result_ty);
+        try full.append(self.emitter.alloc, result_id);
+        try full.appendSlice(self.emitter.alloc, operands);
+        try self.emitter.builder.append_function_inst(spirv.Opcode.CompositeConstruct, full.items);
         return result_id;
     }
 
-    fn emit_composite_extract(self: *FunctionState, composite_id: u32, result_ty: ir.TypeId, index: u32) EmitError!u32 {
+    pub fn emit_composite_extract(self: *FunctionState, composite_id: u32, result_ty: ir.TypeId, index: u32) EmitError!u32 {
         return try self.emit_result_inst(spirv.Opcode.CompositeExtract, try self.emitter.lower_type(result_ty), &.{ composite_id, index });
     }
 
-    fn emit_result_inst(self: *FunctionState, opcode: u16, result_type: u32, operands: []const u32) EmitError!u32 {
+    pub fn emit_result_inst(self: *FunctionState, opcode: u16, result_type: u32, operands: []const u32) EmitError!u32 {
         var full = std.ArrayListUnmanaged(u32){};
         defer full.deinit(self.emitter.alloc);
         const result_id = self.emitter.builder.reserve_id();
@@ -686,7 +484,7 @@ pub const FunctionState = struct {
         return result_id;
     }
 
-    fn ref_storage_class(self: *FunctionState, expr_id: ir.ExprId) EmitError!u32 {
+    pub fn ref_storage_class(self: *FunctionState, expr_id: ir.ExprId) EmitError!u32 {
         const expr = self.function.exprs.items[expr_id];
         return switch (expr.data) {
             .param_ref, .local_ref => spirv.StorageClass.Function,
@@ -723,19 +521,19 @@ pub const FunctionState = struct {
 
     const ScalarKind = enum { bool, signed, unsigned, float };
 
-    fn scalar_kind(self: *FunctionState, ty: ir.TypeId) ScalarKind {
+    pub fn scalar_kind(self: *FunctionState, ty: ir.TypeId) ScalarKind {
         return switch (self.emitter.module.types.get(ty)) {
             .scalar => |scalar| switch (scalar) {
                 .bool => .bool,
                 .u32 => .unsigned,
-                .f32, .abstract_float => .float,
+                .f16, .f32, .abstract_float => .float,
                 else => .signed,
             },
             .vector => |vec| switch (self.emitter.module.types.get(vec.elem)) {
                 .scalar => |scalar| switch (scalar) {
                     .bool => .bool,
                     .u32 => .unsigned,
-                    .f32, .abstract_float => .float,
+                    .f16, .f32, .abstract_float => .float,
                     else => .signed,
                 },
                 else => .signed,

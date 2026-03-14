@@ -1,6 +1,7 @@
 // doe_device_caps.zig — Device capability queries: feature reporting and limits.
 // Sharded from doe_wgpu_native.zig to stay under 777-line limit.
 
+const builtin = @import("builtin");
 const types = @import("core/abi/wgpu_types.zig");
 
 const METAL_MAX_TEXTURE_DIMENSION_1D: u32 = 16_384;
@@ -17,15 +18,17 @@ const METAL_MAX_COMPUTE_WORKGROUP_SIZE_X: u32 = 1_024;
 const METAL_MAX_COMPUTE_WORKGROUP_SIZE_Y: u32 = 1_024;
 const METAL_MAX_COMPUTE_WORKGROUPS_PER_DIMENSION: u32 = 65_535;
 
+const SUPPORTS_SHADER_F16: bool = builtin.os.tag == .macos;
+
 pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
     _ = raw;
-    if (feature == types.WGPUFeatureName_ShaderF16) return 1;
+    if (feature == types.WGPUFeatureName_ShaderF16 and SUPPORTS_SHADER_F16) return 1;
     return 0;
 }
 
 pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
     _ = raw;
-    if (feature == types.WGPUFeatureName_ShaderF16) return 1;
+    if (feature == types.WGPUFeatureName_ShaderF16 and SUPPORTS_SHADER_F16) return 1;
     return 0;
 }
 
@@ -130,9 +133,10 @@ test "METAL_LIMITS named constants match struct fields" {
     try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUPS_PER_DIMENSION, METAL_LIMITS.maxComputeWorkgroupsPerDimension);
 }
 
-test "adapter and device feature query returns true for ShaderF16" {
-    try testing.expectEqual(@as(u32, 1), doeNativeAdapterHasFeature(null, types.WGPUFeatureName_ShaderF16));
-    try testing.expectEqual(@as(u32, 1), doeNativeDeviceHasFeature(null, types.WGPUFeatureName_ShaderF16));
+test "adapter and device feature query reports ShaderF16 only on supported backends" {
+    const expected: u32 = if (SUPPORTS_SHADER_F16) 1 else 0;
+    try testing.expectEqual(expected, doeNativeAdapterHasFeature(null, types.WGPUFeatureName_ShaderF16));
+    try testing.expectEqual(expected, doeNativeDeviceHasFeature(null, types.WGPUFeatureName_ShaderF16));
 }
 
 test "adapter and device feature query returns false for unsupported features" {

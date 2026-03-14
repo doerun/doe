@@ -1,40 +1,32 @@
-name: webgpu-package-surface
+name: WebGPU package surface
 
 on:
   pull_request:
     paths:
-      - 'nursery/webgpu/**'
-      - '.github/workflows/webgpu-package-surface.yml'
+      - ".github/workflows/webgpu-package-surface.yml"
+      - "nursery/webgpu/**"
   push:
-    branches:
-      - main
-      - master
     paths:
-      - 'nursery/webgpu/**'
-      - '.github/workflows/webgpu-package-surface.yml'
-  workflow_dispatch:
+      - ".github/workflows/webgpu-package-surface.yml"
+      - "nursery/webgpu/**"
 
 jobs:
-  node-and-bun:
-    name: Node + Bun package-surface tests
+  package-surface:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nursery/webgpu
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
-      - name: Node test (package exports only)
-        working-directory: nursery/webgpu
+      - name: Run Node package export tests
         run: node ./test-package-exports.js
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: 'latest'
+      - uses: oven-sh/setup-bun@v2
 
-      - name: Bun test (provider + compute smoke)
-        working-directory: nursery/webgpu
+      - name: Run Bun package tests
         run: bun ./test-bun.js

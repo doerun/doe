@@ -48,6 +48,10 @@ const EXAMPLE_EXPECTATIONS = [
     relativePath: join("examples", "doe-routines", "compute-once-multiple-inputs.js"),
     expected: [11, 22, 33, 44],
   },
+  {
+    relativePath: join("examples", "doe-routines", "compute-once-matmul.js"),
+    expected: [110.8959, 110.7738, 110.5339, 111.1176, 110.7602, 110.3439, 110.8099, 111.1584],
+  },
 ];
 
 function npm_json(args, cwd) {
@@ -131,6 +135,7 @@ function main() {
 
       assert.equal(typeof full.requestDevice, "function");
       assert.equal(typeof full.providerInfo, "function");
+      assert.equal(typeof full.preflightShaderSource, "function");
       assert.equal(typeof full.doe.requestDevice, "function");
       assert.equal(typeof full.doe.bind, "function");
       assert.equal(typeof full.doe.buffers.fromData, "function");
@@ -145,6 +150,7 @@ function main() {
       assert.equal(typeof explicitFull.doe.compute.compile, "function");
 
       const gpu = await compute.doe.requestDevice();
+      assert.ok(gpu.device.limits.maxComputeInvocationsPerWorkgroup > 0);
       const input = gpu.buffers.fromData(new Float32Array([1, 2, 3, 4]));
       const output = gpu.buffers.like(input, {
         usage: "storageReadWrite",
@@ -187,6 +193,40 @@ function main() {
       });
       assert.deepEqual(Array.from(oneShot), [3, 6, 9, 12]);
 
+      const fullDevice = await full.requestDevice();
+      assert.ok(fullDevice.limits.maxComputeInvocationsPerWorkgroup > 0);
+      const preflightRejected = full.preflightShaderSource(\`
+        @fragment
+        fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+          return vec4f(uv, 0.0, 1.0);
+        }
+      \`);
+      assert.equal(preflightRejected.ok, false);
+      assert.equal(preflightRejected.stage, "package_surface");
+      assert.ok(preflightRejected.message.includes("package_surface"));
+
+      const subgroupShader = fullDevice.createShaderModule({
+        code: \`
+          @group(0) @binding(0) var<storage, read_write> data: array<f32>;
+
+          @compute @workgroup_size(32)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            let base = data[gid.x];
+            let reduced = subgroupAdd(base);
+            let prefix = subgroupExclusiveAdd(base);
+            let lane = subgroupBroadcast(base, 0u);
+            let shuffled = subgroupShuffle(base, 1u);
+            let mixed = subgroupShuffleXor(base, 1u);
+            data[gid.x] = reduced + prefix + lane + shuffled + mixed;
+          }
+        \`,
+      });
+      const subgroupPipeline = fullDevice.createComputePipeline({
+        layout: "auto",
+        compute: { module: subgroupShader, entryPoint: "main" },
+      });
+      assert.ok(subgroupPipeline);
+
       const raw = gpu.device.createBuffer({
         size: input.size,
         usage: compute.globals.GPUBufferUsage.STORAGE | compute.globals.GPUBufferUsage.COPY_DST,
@@ -206,6 +246,30 @@ function main() {
         }),
         /Doe binding access is required/
       );
+
+      const oneShotRawUsage = await gpu.compute.once({
+        code: \`
+          @group(0) @binding(0) var<storage, read> src: array<f32>;
+          @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+          @compute @workgroup_size(1)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            dst[gid.x] = src[gid.x];
+          }
+        \`,
+        inputs: [{
+          data: new Float32Array([1]),
+          usage: /** @type {any} */ (compute.globals.GPUBufferUsage.STORAGE | compute.globals.GPUBufferUsage.COPY_DST),
+          access: "storageRead",
+        }],
+        output: {
+          type: Float32Array,
+          usage: /** @type {any} */ (compute.globals.GPUBufferUsage.STORAGE | compute.globals.GPUBufferUsage.COPY_SRC),
+          access: "storageReadWrite",
+        },
+        workgroups: [1, 1],
+      });
+      assert.deepEqual(Array.from(oneShotRawUsage), [1]);
 
       await assert.rejects(
         gpu.compute.once({
@@ -227,8 +291,53 @@ function main() {
           },
           workgroups: [1, 1],
         }),
-        /does not accept raw numeric usage flags/
+        /accepts raw numeric usage flags only when explicit access is also provided/
       );
+
+      const destroyedBuffer = gpu.buffers.create({
+        size: 16,
+        usage: "storageReadWrite",
+      });
+      destroyedBuffer.destroy();
+      await assert.rejects(
+        destroyedBuffer.mapAsync(compute.globals.GPUMapMode.READ),
+        /GPUBuffer\\.mapAsync: GPUBuffer was destroyed/
+      );
+      assert.throws(
+        () => gpu.device.queue.writeBuffer(destroyedBuffer, 0, new Uint8Array([1, 2, 3, 4])),
+        /GPUQueue\\.writeBuffer: GPUBuffer was destroyed/
+      );
+
+      const sampledTexture = fullDevice.createTexture({
+        size: [4, 4, 1],
+        format: 'rgba8unorm',
+        usage: full.globals.GPUTextureUsage.TEXTURE_BINDING,
+      });
+      const sampledView = sampledTexture.createView();
+      const sampledSampler = fullDevice.createSampler();
+      const sampledLayout = fullDevice.createBindGroupLayout({
+        entries: [
+          {
+            binding: 0,
+            visibility: full.globals.GPUShaderStage.COMPUTE,
+            sampler: { type: 'filtering' },
+          },
+          {
+            binding: 1,
+            visibility: full.globals.GPUShaderStage.COMPUTE,
+            texture: { sampleType: 'float', viewDimension: '2d', multisampled: false },
+          },
+        ],
+      });
+      const sampledGroup = fullDevice.createBindGroup({
+        layout: sampledLayout,
+        entries: [
+          { binding: 0, resource: sampledSampler },
+          { binding: 1, resource: sampledView },
+        ],
+      });
+      assert.ok(sampledLayout);
+      assert.ok(sampledGroup);
     `;
 
     execFileSync("node", ["--input-type=module", "-e", import_check], {

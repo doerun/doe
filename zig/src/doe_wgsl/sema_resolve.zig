@@ -7,6 +7,7 @@ const Node = ast_mod.Node;
 
 const parse_access = sema_helpers.parse_access;
 const parse_address_space = sema_helpers.parse_address_space;
+const parse_wgsl_int_literal = sema_helpers.parse_wgsl_int_literal;
 const parse_storage_texture_format = sema_helpers.parse_storage_texture_format;
 
 pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
@@ -32,7 +33,7 @@ pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
         if (params_len == 2) {
             const len_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 1]];
             if (len_node.tag != .int_literal) return error.InvalidType;
-            len = std.fmt.parseInt(u32, self.module.tree.tokenSlice(len_node.main_token), 10) catch return error.InvalidType;
+            len = parse_wgsl_int_literal(u32, self.module.tree.tokenSlice(len_node.main_token)) catch return error.InvalidType;
         }
         return try self.module.types.intern(.{ .array = .{ .elem = elem, .len = len } });
     }

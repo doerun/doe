@@ -50,4 +50,4 @@ const result = await gpu.compute.once({
   workgroups: [Math.ceil(N / 8), Math.ceil(M / 8)],
 });
 
-console.log(result.subarray(0, 8));
+console.log(JSON.stringify(Array.from(result.subarray(0, 8), (value) => Number(value.toFixed(4)))));

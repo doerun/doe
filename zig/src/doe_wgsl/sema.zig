@@ -422,7 +422,7 @@ const Analyzer = struct {
         const init_ty = if (node.data.rhs != NULL_NODE) try self.analyze_expr(node.data.rhs, body) else ir.INVALID_TYPE;
         const resolved_type = blk: {
             if (explicit_type != ir.INVALID_TYPE) break :blk explicit_type;
-            if (init_ty != ir.INVALID_TYPE) break :blk init_ty;
+            if (init_ty != ir.INVALID_TYPE) break :blk materialize_inferred_local_type(self.module, init_ty);
             return error.InvalidType;
         };
         if (explicit_type != ir.INVALID_TYPE and init_ty != ir.INVALID_TYPE and !self.type_compatible(explicit_type, init_ty)) {
@@ -444,23 +444,44 @@ const Analyzer = struct {
         const node = self.module.tree.nodes.items[node_idx];
         var info = NodeInfo{};
         info.ty = switch (node.tag) {
-            .int_literal => self.module.abstract_int_type,
-            .float_literal => self.module.abstract_float_type,
-            .bool_literal => self.module.bool_type,
-            .ident_expr => try self.resolve_ident_expr(node, body, &info),
-            .unary_expr => try self.analyze_unary(node, body),
-            .binary_expr => try self.analyze_binary(node, body),
-            .call_expr => try self.analyze_call(node, body),
-            .construct_expr => try self.analyze_construct(node, body),
-            .member_expr => try self.analyze_member(node, body, &info),
-            .index_expr => try self.analyze_index(node, body, &info),
-            else => return error.UnsupportedConstruct,
-        };
+            .int_literal => try self.analyze_int_literal(node),
+            .float_literal => try self.analyze_float_literal(node),
+        .bool_literal => self.module.bool_type,
+        .ident_expr => try self.resolve_ident_expr(node, body, &info),
+        .unary_expr => try self.analyze_unary(node, body),
+        .binary_expr => try self.analyze_binary(node, body),
+        .call_expr => try self.analyze_call(node, body),
+        .generic_call_expr => try self.analyze_generic_call(node, body),
+        .construct_expr => try self.analyze_construct(node, body),
+        .member_expr => try self.analyze_member(node, body, &info),
+        .index_expr => try self.analyze_index(node, body, &info),
+        else => return error.UnsupportedConstruct,
+    };
         if (node.tag != .ident_expr and node.tag != .member_expr and node.tag != .index_expr) {
             info.category = .value;
         }
         self.module.node_info.items[node_idx] = info;
         return info.ty;
+    }
+
+    fn analyze_int_literal(self: *Analyzer, node: Node) AnalyzeError!ir.TypeId {
+        const literal = self.module.tree.tokenSlice(node.main_token);
+        _ = parse_wgsl_int_literal(u64, literal) catch return error.InvalidWgsl;
+        return switch (int_literal_suffix(literal)) {
+            .i => self.module.i32_type,
+            .u => self.module.u32_type,
+            .none => self.module.abstract_int_type,
+        };
+    }
+
+    fn analyze_float_literal(self: *Analyzer, node: Node) AnalyzeError!ir.TypeId {
+        const literal = self.module.tree.tokenSlice(node.main_token);
+        _ = parse_wgsl_float_literal(literal) catch return error.InvalidWgsl;
+        return switch (float_literal_suffix(literal)) {
+            .f => self.module.f32_type,
+            .h => self.module.f16_type,
+            .none => self.module.abstract_float_type,
+        };
     }
 
     fn resolve_ident_expr(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) !ir.TypeId {
@@ -531,6 +552,26 @@ const Analyzer = struct {
         return try sema_attrs.infer_builtin_call(self, name, arg_types_buf[0..args_len]);
     }
 
+    fn analyze_generic_call(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
+        const name = self.module.tree.tokenSlice(node.main_token);
+        const target_ty = try self.resolve_type_node(node.data.lhs);
+        const span = decode_packed_span(node.data.rhs);
+
+        var arg_types_buf: [16]ir.TypeId = undefined;
+        if (span.len > arg_types_buf.len) return error.UnsupportedConstruct;
+        var i: u32 = 0;
+        while (i < span.len) : (i += 1) {
+            arg_types_buf[i] = try self.analyze_expr(self.module.tree.extra_data.items[span.start + i], body);
+        }
+
+        if (std.mem.eql(u8, name, "bitcast")) {
+            if (span.len != 1) return error.TypeMismatch;
+            if (!bitcast_types_compatible(self.module, target_ty, arg_types_buf[0])) return error.TypeMismatch;
+            return target_ty;
+        }
+        return error.UnsupportedBuiltin;
+    }
+
     fn analyze_construct(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
         const target_ty = try self.resolve_type_node(node.data.lhs);
         const span = decode_packed_span(node.data.rhs);
@@ -572,10 +613,13 @@ const Analyzer = struct {
                 return error.UnknownIdentifier;
             },
             .vector => |vec| {
-                const swizzle_len = field_name.len;
-                if (swizzle_len == 0 or swizzle_len > 4) return error.InvalidWgsl;
-                if (swizzle_len == 1) return vec.elem;
-                return try self.module.types.intern(.{ .vector = .{ .elem = vec.elem, .len = @intCast(swizzle_len) } });
+                const swizzle = parse_vector_swizzle(field_name, vec.len) catch return error.InvalidWgsl;
+                if (swizzle.len == 1) {
+                    out.category = self.module.node_info.items[node.data.lhs].category;
+                    return vec.elem;
+                }
+                out.category = .value;
+                return try self.module.types.intern(.{ .vector = .{ .elem = vec.elem, .len = swizzle.len } });
             },
             else => return error.InvalidWgsl,
         }
@@ -653,16 +697,42 @@ const Analyzer = struct {
     fn type_compatible(self: *Analyzer, expected: ir.TypeId, actual: ir.TypeId) bool {
         if (expected == actual) return true;
         if (expected == ir.INVALID_TYPE or actual == ir.INVALID_TYPE) return false;
-        return switch (self.module.types.get(actual)) {
-            .scalar => |actual_scalar| switch (self.module.types.get(expected)) {
-                .scalar => |expected_scalar| (actual_scalar == .abstract_int and (expected_scalar == .i32 or expected_scalar == .u32)) or
-                    (actual_scalar == .abstract_float and (expected_scalar == .f32 or expected_scalar == .f16)),
+        return switch (self.module.types.get(expected)) {
+            .scalar => |expected_scalar| switch (self.module.types.get(actual)) {
+                .scalar => |actual_scalar| switch (expected_scalar) {
+                    .abstract_int => actual_scalar == .i32 or actual_scalar == .u32 or actual_scalar == .abstract_int,
+                    .abstract_float => actual_scalar == .f32 or actual_scalar == .f16 or actual_scalar == .abstract_float,
+                    .i32, .u32 => actual_scalar == .abstract_int,
+                    .f32, .f16 => actual_scalar == .abstract_float,
+                    else => false,
+                },
                 else => false,
             },
             else => false,
         };
     }
 };
+
+fn bitcast_types_compatible(module: *SemanticModule, target_ty: ir.TypeId, source_ty: ir.TypeId) bool {
+    const target_bits = bitcast_type_bits(module, target_ty) orelse return false;
+    const source_bits = bitcast_type_bits(module, source_ty) orelse return false;
+    return target_bits == source_bits;
+}
+
+fn bitcast_type_bits(module: *SemanticModule, ty: ir.TypeId) ?u32 {
+    return switch (module.types.get(ty)) {
+        .scalar => |scalar| switch (scalar) {
+            .i32, .u32, .f32 => 32,
+            .f16 => 16,
+            else => null,
+        },
+        .vector => |vec| blk: {
+            const elem_bits = bitcast_type_bits(module, vec.elem) orelse return null;
+            break :blk elem_bits * vec.len;
+        },
+        else => null,
+    };
+}
 
 fn is_handle_type(ty: ir.Type) bool {
     return switch (ty) {
@@ -671,11 +741,27 @@ fn is_handle_type(ty: ir.Type) bool {
     };
 }
 
+fn materialize_inferred_local_type(module: *SemanticModule, ty: ir.TypeId) ir.TypeId {
+    return switch (module.types.get(ty)) {
+        .scalar => |scalar| switch (scalar) {
+            .abstract_int => module.i32_type,
+            .abstract_float => module.f32_type,
+            else => ty,
+        },
+        else => ty,
+    };
+}
+
 const init_builtin_types = sema_helpers.init_builtin_types;
 const concrete_numeric_type = sema_helpers.concrete_numeric_type;
 const decode_packed_span = sema_helpers.decode_packed_span;
+const int_literal_suffix = sema_helpers.int_literal_suffix;
+const float_literal_suffix = sema_helpers.float_literal_suffix;
 const parse_single_int_attr = sema_helpers.parse_single_int_attr;
 const parse_builtin_attr = sema_helpers.parse_builtin_attr;
 const parse_address_space = sema_helpers.parse_address_space;
 const parse_access = sema_helpers.parse_access;
 const parse_storage_texture_format = sema_helpers.parse_storage_texture_format;
+const parse_vector_swizzle = sema_helpers.parse_vector_swizzle;
+const parse_wgsl_int_literal = sema_helpers.parse_wgsl_int_literal;
+const parse_wgsl_float_literal = sema_helpers.parse_wgsl_float_literal;

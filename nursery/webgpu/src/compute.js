@@ -503,7 +503,15 @@ function wrapDevice(raw) {
      * - The returned pipeline is wrapped back into the compute facade.
      */
     async createComputePipelineAsync(descriptor) {
-      return wrapComputePipeline(await raw.createComputePipelineAsync(descriptor));
+      const compute = descriptor.compute ?? {};
+      return wrapComputePipeline(await raw.createComputePipelineAsync({
+        ...descriptor,
+        layout: descriptor.layout === 'auto' ? 'auto' : unwrap(descriptor.layout),
+        compute: {
+          ...compute,
+          module: unwrap(compute.module),
+        },
+      }));
     },
     /**
      * Create a bind-group layout.

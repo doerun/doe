@@ -22,6 +22,7 @@ Use this together with:
 
 - `support-contracts.md` for product/support scope
 - `api-contract.md` for the current package contract (`full` default, `compute` subpath)
+- `webgpu-doe-package-plan.md` for the proposed extraction of the shared Doe API / Doe routines layer
 - `compat-scope.md` for current package non-goals
 - `zig-source-inventory.md` for the current `zig/src` file map
 

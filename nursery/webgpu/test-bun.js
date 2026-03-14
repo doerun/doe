@@ -1,4 +1,4 @@
-import { create, globals, setupGlobals, requestAdapter, requestDevice, providerInfo } from "./src/bun.js";
+import { create, globals, setupGlobals, requestAdapter, requestDevice, providerInfo, preflightShaderSource } from "./src/bun.js";
 
 let passed = 0;
 let failed = 0;
@@ -66,6 +66,7 @@ if (!info.loaded) {
     assert(typeof adapter.requestDevice === "function", "adapter.requestDevice is function");
     assert(adapter.features instanceof Set, "adapter.features is Set");
     assert(typeof adapter.limits === "object", "adapter.limits is object");
+    assert(adapter.limits.maxComputeInvocationsPerWorkgroup > 0, "adapter dynamic limits are available");
 
     // Contract: requestDevice returns device with queue and limits
     section("requestDevice");
@@ -76,6 +77,17 @@ if (!info.loaded) {
     assert(typeof device.queue.writeBuffer === "function", "device.queue.writeBuffer is function");
     assert(typeof device.limits === "object", "device.limits is object");
     assert(device.features instanceof Set, "device.features is Set");
+    assert(device.limits.maxComputeInvocationsPerWorkgroup > 0, "device dynamic limits are available");
+
+    section("compiler-backed preflight");
+    const preflight = preflightShaderSource(`
+@fragment
+fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+    return vec4f(uv, 0.0, 1.0);
+}`);
+    assert(preflight.ok === false, "preflight rejects unsupported fragment stage");
+    assert(preflight.stage === "package_surface", "preflight reports package surface stage");
+    assert(typeof preflight.message === "string" && preflight.message.includes("package_surface"), "preflight reports package surface message");
 
     // Contract: createBuffer
     section("createBuffer");
@@ -123,6 +135,26 @@ if (!info.loaded) {
     assert(pipeline != null, "createComputePipeline returns non-null");
     const bgl = pipeline.getBindGroupLayout(0);
     assert(bgl != null, "getBindGroupLayout returns non-null");
+
+    section("subgroup createShaderModule + createComputePipeline");
+    const subgroupShaderModule = device.createShaderModule({
+        code: `@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+@compute @workgroup_size(32) fn main(@builtin(global_invocation_id) id: vec3u) {
+    let base = data[id.x];
+    let reduced = subgroupAdd(base);
+    let prefix = subgroupExclusiveAdd(base);
+    let lane = subgroupBroadcast(base, 0u);
+    let shuffled = subgroupShuffle(base, 1u);
+    let mixed = subgroupShuffleXor(base, 1u);
+    data[id.x] = reduced + prefix + lane + shuffled + mixed;
+}`,
+    });
+    assert(subgroupShaderModule != null, "subgroup createShaderModule returns non-null");
+    const subgroupPipeline = device.createComputePipeline({
+        layout: "auto",
+        compute: { module: subgroupShaderModule, entryPoint: "main" },
+    });
+    assert(subgroupPipeline != null, "subgroup createComputePipeline returns non-null");
 
     // Contract: compute dispatch with readback via copy
     section("compute dispatch + readback");
@@ -210,6 +242,31 @@ if (!info.loaded) {
     const sampler = device.createSampler();
     assert(sampler != null, "createSampler returns non-null");
 
+    section("sampler + texture bind group layout");
+    const sampledLayout = device.createBindGroupLayout({
+        entries: [
+            {
+                binding: 0,
+                visibility: globals.GPUShaderStage.COMPUTE,
+                sampler: { type: "filtering" },
+            },
+            {
+                binding: 1,
+                visibility: globals.GPUShaderStage.COMPUTE,
+                texture: { sampleType: "float", viewDimension: "2d", multisampled: false },
+            },
+        ],
+    });
+    assert(sampledLayout != null, "createBindGroupLayout(sampler+texture) returns non-null");
+    const sampledBindGroup = device.createBindGroup({
+        layout: sampledLayout,
+        entries: [
+            { binding: 0, resource: sampler },
+            { binding: 1, resource: texView },
+        ],
+    });
+    assert(sampledBindGroup != null, "createBindGroup(sampler+texture) returns non-null");
+
     // Contract: explicit bind group layout with typed buffer bindings
     section("explicit bind group layout + pipeline");
     const explicitBgl = device.createBindGroupLayout({
@@ -279,6 +336,55 @@ if (!info.loaded) {
         ],
     });
     assert(multiBgl != null, "createBindGroupLayout(uniform+read-only-storage+storage) returns non-null");
+
+    section("validation parity");
+    let sawInvalidEntries = false;
+    try {
+        device.createBindGroupLayout({ entries: {} });
+    } catch (error) {
+        sawInvalidEntries = /descriptor\.entries must be an array/.test(String(error?.message));
+    }
+    assert(sawInvalidEntries, "createBindGroupLayout rejects non-array entries");
+
+    let sawEmptyShader = false;
+    try {
+        device.createShaderModule({ code: "" });
+    } catch (error) {
+        sawEmptyShader = /descriptor\.code must not be empty/.test(String(error?.message));
+    }
+    assert(sawEmptyShader, "createShaderModule rejects empty code");
+
+    let sawBadTexture = false;
+    try {
+        device.createTexture({ size: [0, 4, 1], format: "rgba8unorm", usage: globals.GPUTextureUsage.RENDER_ATTACHMENT });
+    } catch (error) {
+        sawBadTexture = /descriptor\.size\[0\] must be an integer/.test(String(error?.message));
+    }
+    assert(sawBadTexture, "createTexture rejects invalid texture extents");
+
+    section("owner destroy parity");
+    const doomedDevice = await requestDevice();
+    const doomedBuffer = doomedDevice.createBuffer({
+        size: 16,
+        usage: globals.GPUBufferUsage.MAP_READ | globals.GPUBufferUsage.COPY_DST,
+    });
+    doomedDevice.destroy();
+
+    let sawOwnerDestroyedBuffer = false;
+    try {
+        await doomedBuffer.mapAsync(globals.GPUMapMode.READ, 0, 4);
+    } catch (error) {
+        sawOwnerDestroyedBuffer = /cannot be used after GPUDevice was destroyed/.test(String(error?.message));
+    }
+    assert(sawOwnerDestroyedBuffer, "buffer rejects use after owning device destroy");
+
+    let sawOwnerDestroyedQueue = false;
+    try {
+        doomedDevice.queue.submit([]);
+    } catch (error) {
+        sawOwnerDestroyedQueue = /GPUQueue cannot be used after GPUDevice was destroyed/.test(String(error?.message));
+    }
+    assert(sawOwnerDestroyedQueue, "queue rejects use after owning device destroy");
 
     console.log(`\nResults: ${passed} passed, ${failed} failed`);
     process.exitCode = failed > 0 ? 1 : 0;

@@ -40,7 +40,11 @@ function resolveBufferUsage(usage) {
   if (typeof usage === 'string') return resolveBufferUsageToken(usage);
   if (Array.isArray(usage)) {
     const combined = usage.length > 1;
-    return usage.reduce((mask, token) => mask | resolveBufferUsageToken(token, combined), 0);
+    return usage.reduce((mask, token) => mask | (
+      typeof token === 'number'
+        ? token
+        : resolveBufferUsageToken(token, combined)
+    ), 0);
   }
   throw new Error('Doe buffer usage must be a number, string, or string array.');
 }
@@ -63,7 +67,7 @@ function inferBindingAccess(usage) {
   const tokens = typeof usage === 'string'
     ? [usage]
     : Array.isArray(usage)
-      ? usage
+      ? usage.filter((token) => typeof token !== 'number')
       : null;
   if (!tokens) {
     throw new Error('Doe buffer usage must be a number, string, or string array.');
@@ -97,6 +101,57 @@ function normalizeWorkgroups(workgroups) {
     return workgroups;
   }
   throw new Error('Doe workgroups must be a number, [x, y], or [x, y, z].');
+}
+
+function validatePositiveInteger(value, label) {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${label} must be a positive integer.`);
+  }
+}
+
+function validateWorkgroups(device, workgroups) {
+  const normalized = normalizeWorkgroups(workgroups);
+  const limits = device?.limits ?? {};
+  const [x, y, z] = normalized;
+
+  validatePositiveInteger(x, 'Doe workgroups.x');
+  validatePositiveInteger(y, 'Doe workgroups.y');
+  validatePositiveInteger(z, 'Doe workgroups.z');
+
+  if (limits.maxComputeWorkgroupsPerDimension) {
+    if (x > limits.maxComputeWorkgroupsPerDimension ||
+        y > limits.maxComputeWorkgroupsPerDimension ||
+        z > limits.maxComputeWorkgroupsPerDimension) {
+      throw new Error(
+        `Doe workgroups exceed maxComputeWorkgroupsPerDimension (${limits.maxComputeWorkgroupsPerDimension}).`
+      );
+    }
+  }
+  if (limits.maxComputeWorkgroupSizeX && x > limits.maxComputeWorkgroupSizeX) {
+    throw new Error(
+      `Doe workgroups.x (${x}) exceeds maxComputeWorkgroupSizeX (${limits.maxComputeWorkgroupSizeX}).`
+    );
+  }
+  if (limits.maxComputeWorkgroupSizeY && y > limits.maxComputeWorkgroupSizeY) {
+    throw new Error(
+      `Doe workgroups.y (${y}) exceeds maxComputeWorkgroupSizeY (${limits.maxComputeWorkgroupSizeY}).`
+    );
+  }
+  if (limits.maxComputeWorkgroupSizeZ && z > limits.maxComputeWorkgroupSizeZ) {
+    throw new Error(
+      `Doe workgroups.z (${z}) exceeds maxComputeWorkgroupSizeZ (${limits.maxComputeWorkgroupSizeZ}).`
+    );
+  }
+  if (limits.maxComputeInvocationsPerWorkgroup) {
+    const invocations = x * y * z;
+    if (invocations > limits.maxComputeInvocationsPerWorkgroup) {
+      throw new Error(
+        `Doe workgroups (${invocations} invocations) exceed maxComputeInvocationsPerWorkgroup (${limits.maxComputeInvocationsPerWorkgroup}).`
+      );
+    }
+  }
+
+  return normalized;
 }
 
 function normalizeDataView(data) {
@@ -185,7 +240,7 @@ class DoeKernel {
    */
   async dispatch(options) {
     const bindings = (options.bindings ?? []).map(normalizeBinding);
-    const workgroups = normalizeWorkgroups(options.workgroups);
+    const workgroups = validateWorkgroups(this.device, options.workgroups);
     const bindGroup = this.device.createBindGroup({
       label: options.label ?? undefined,
       layout: this.layout,
@@ -226,6 +281,10 @@ function compileCompute(device, options) {
 }
 
 function createBuffer(device, options) {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Doe buffer options must be an object.');
+  }
+  validatePositiveInteger(options.size, 'Doe buffer size');
   return rememberBufferUsage(device.createBuffer({
     label: options.label ?? undefined,
     size: options.size,
@@ -254,8 +313,17 @@ function createBufferLike(device, source, options = {}) {
 }
 
 async function readBuffer(device, buffer, type, options = {}) {
+  if (typeof type !== 'function') {
+    throw new Error('Doe readBuffer type must be a typed-array constructor.');
+  }
   const offset = options.offset ?? 0;
   const size = options.size ?? Math.max(0, (buffer.size ?? 0) - offset);
+  if (!Number.isInteger(offset) || offset < 0) {
+    throw new Error('Doe readBuffer offset must be a non-negative integer.');
+  }
+  if (!Number.isInteger(size) || size < 0) {
+    throw new Error('Doe readBuffer size must be a non-negative integer.');
+  }
   if (((buffer.usage ?? 0) & DOE_GPU_BUFFER_USAGE.MAP_READ) !== 0) {
     await buffer.mapAsync(DOE_GPU_MAP_MODE.READ, offset, size);
     const copy = buffer.getMappedRange(offset, size).slice(0);
@@ -288,12 +356,13 @@ async function runCompute(device, options) {
   });
 }
 
-function assertLayer3Usage(usage, path) {
-  if (typeof usage === 'number') {
-    throw new Error(`Doe ${path} does not accept raw numeric usage flags. Use Doe usage tokens on compute.once(...) or drop to gpu.buffers.*.`);
-  }
-  if (Array.isArray(usage) && usage.some((token) => typeof token === 'number')) {
-    throw new Error(`Doe ${path} does not accept raw numeric usage flags. Use Doe usage tokens on compute.once(...) or drop to gpu.buffers.*.`);
+function usesRawNumericFlags(usage) {
+  return typeof usage === 'number' || (Array.isArray(usage) && usage.some((token) => typeof token === 'number'));
+}
+
+function assertLayer3Usage(usage, access, path) {
+  if (usesRawNumericFlags(usage) && !access) {
+    throw new Error(`Doe ${path} accepts raw numeric usage flags only when explicit access is also provided.`);
   }
 }
 
@@ -309,7 +378,7 @@ function normalizeOnceInput(device, input, index) {
   }
 
   if (input && typeof input === 'object' && 'data' in input) {
-    assertLayer3Usage(input.usage, `compute.once input ${index} usage`);
+    assertLayer3Usage(input.usage, input.access, `compute.once input ${index} usage`);
     const buffer = createBufferFromData(device, input.data, {
       usage: input.usage ?? 'storageRead',
       label: input.label,
@@ -353,6 +422,9 @@ function normalizeOnceOutput(device, output, inputs) {
 
   const fallbackInputIndex = inputs.length > 0 ? 0 : null;
   const likeInputIndex = output.likeInput ?? fallbackInputIndex;
+  if (likeInputIndex != null && (!Number.isInteger(likeInputIndex) || likeInputIndex < 0 || likeInputIndex >= inputs.length)) {
+    throw new Error(`Doe compute.once output.likeInput must reference an input index in [0, ${Math.max(inputs.length - 1, 0)}].`);
+  }
   const size = output.size ?? (
     likeInputIndex != null && inputs[likeInputIndex]
       ? inputs[likeInputIndex].byte_length
@@ -363,7 +435,7 @@ function normalizeOnceOutput(device, output, inputs) {
     throw new Error('Doe compute.once output size must be provided or derived from likeInput.');
   }
 
-  assertLayer3Usage(output.usage, 'compute.once output usage');
+  assertLayer3Usage(output.usage, output.access, 'compute.once output usage');
   const buffer = createBuffer(device, {
     size,
     usage: output.usage ?? 'storageReadWrite',
@@ -380,6 +452,7 @@ function normalizeOnceOutput(device, output, inputs) {
 async function computeOnce(device, options) {
   const inputs = (options.inputs ?? []).map((input, index) => normalizeOnceInput(device, input, index));
   const output = normalizeOnceOutput(device, options.output, inputs);
+  validateWorkgroups(device, options.workgroups);
   try {
     await runCompute(device, {
       code: options.code,
@@ -490,7 +563,7 @@ function createBoundDoe(device) {
        * buffers, dispatches the compute job once, reads the output back, and
        * returns the requested typed array result.
        *
-       * - This is intentionally opinionated: it rejects raw numeric WebGPU usage flags and expects Doe usage tokens when usage is specified.
+       * - Raw numeric WebGPU usage flags are accepted here when explicit Doe access is also provided.
        * - Output size defaults from `likeInput` or the first input when possible; if no size can be derived, it throws instead of guessing.
        * - Temporary buffers created internally are destroyed before the call returns.
        */

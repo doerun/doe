@@ -61,6 +61,9 @@ from reproducible artifacts with explicit workload contracts, explicit
 comparison modes, and enough timing evidence to satisfy the claim gates in
 `process.md` and the Dawn-vs-Doe methodology in `performance-strategy.md`.
 
+For tier compatibility and escalation rules, see `doe-support-matrix.md`.
+For command-stream example coverage and status, see `examples/README.md`.
+
 Backend-native strict lanes and package-surface comparison lanes are tracked
 separately. The evolving ground truth lives in `status.md` and `bench/out/`;
 the summary below is only the current top-line read.
@@ -74,7 +77,8 @@ Latest local strict release artifact:
 - current strict release lane workload count: 7
 - current claimables in the release lane:
   - uploads: `64 KB`, `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`
-- current non-claimable workload: `upload_write_buffer_1kb`
+- current non-claimable workload/example:
+  `upload_write_buffer_1kb` / `examples/upload_1kb_commands.json`
 - current release read: strict upload comparability is fixed; the remaining
   blocker is a real tiny-upload gap, not a structural mismatch
 
@@ -86,16 +90,26 @@ lane. It is not a broad "Doe Vulkan is faster than Dawn" claim.
 Current Apple Metal comparable contract:
 `bench/workloads.apple.metal.extended.json`
 
-- comparable workloads in contract: 31
+- workload entries in contract: 50
+- unique command examples in contract: 47
 - latest full artifact:
-  `bench/out/apple-metal/extended-comparable/20260310T121546Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v7.json`
-- important caveat: that v7 artifact predates the all-domain repeat-symmetry
-  fix; 6 reported claimable rows need a clean Metal rerun before they can be
-  treated as trusted claims
-- conservative pre-rerun trusted subset: 25 workloads
+  `bench/out/apple-metal/extended-comparable/20260310T171918Z/dawn-vs-doe.local.metal.extended.comparable.json`
+- workloads in latest comparable artifact: 31
+- claimable workloads in latest comparable artifact: 30
+- current non-claimable workload/example:
+  `upload_write_buffer_1mb` / `examples/upload_1mb_commands.json`
+- current diagnostic reason in the latest artifact: selected-timing
+  `p95Percent` is negative for the 1 MB upload row, so the lane stays
+  diagnostic until that row is rerun or fixed
+
+An earlier March 10, 2026 run at
+`bench/out/apple-metal/extended-comparable/20260310T165649Z/dawn-vs-doe.local.metal.extended.comparable.json`
+was fully claimable, but the latest inventory read is the conservative one:
+31 comparable workloads with a single diagnostic upload row.
 
 This lane is not currently a broad "Doe Metal is faster than Dawn" claim. A
-fresh Metal rerun is still required to cite the full 31-workload matrix.
+fresh rerun is still required before treating the full 31-workload matrix as
+clean claim evidence again.
 
 ### Package surfaces
 
@@ -157,10 +171,10 @@ Build without the flag produces identical code to before.
 ## Current status
 
 Working, with one narrow AMD Vulkan release lane still short of claimability,
-one broader Metal comparable lane awaiting a clean rerun, and one separate
-package-surface evidence lane:
-- AMD Vulkan: `comparisonStatus=comparable`, `claimStatus=diagnostic` for the local 7-workload release matrix. Only remaining blocker in the latest full artifact is `upload_write_buffer_1kb`. This is a narrow workload set, not a broad WebGPU replacement claim.
-- Apple Metal M3: the local extended comparable contract currently covers 31 workloads, but the last full artifact predates the all-domain repeat-symmetry fix; a clean Metal rerun is still required before citing all 31 as trusted claims.
+one broader Metal comparable lane carrying a single diagnostic upload row in
+the latest artifact, and one separate package-surface evidence lane:
+- AMD Vulkan: `comparisonStatus=comparable`, `claimStatus=diagnostic` for the local 7-workload release matrix. Only remaining blocker in the latest full artifact is `upload_write_buffer_1kb` / `examples/upload_1kb_commands.json`. This is a narrow workload set, not a broad WebGPU replacement claim.
+- Apple Metal M3: the latest local extended comparable artifact covers 31 workloads and stays `comparisonStatus=comparable`, but `upload_write_buffer_1mb` / `examples/upload_1mb_commands.json` is currently diagnostic on selected-timing `p95`, so the overall lane remains diagnostic pending rerun or fix.
 - Node package surface: host-local package/runtime evidence lives in the package README and package compare artifacts, not in the strict backend claim lane.
 
 Still in progress:
