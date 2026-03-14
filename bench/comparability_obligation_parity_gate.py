@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--lean-ids-source",
-        default="lean/Fawn/Comparability.lean",
+        default="lean/Fawn/Generated/ComparabilityContract.lean",
         help="Lean source file containing ComparabilityObligationId constructors.",
     )
     return parser.parse_args()

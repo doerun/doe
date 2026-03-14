@@ -276,13 +276,13 @@ function createFullSurfaceClasses({
   }
 
   class DoeGPUDevice {
-    constructor(native, instance, inheritedLimits = null) {
+    constructor(native, instance, inheritedLimits = null, inheritedFeatures = null) {
       this._native = native;
       this._instance = instance;
       initResource(this, 'GPUDevice');
       this.queue = new DoeGPUQueue(backend.deviceGetQueue(native), instance, this);
       this.limits = inheritedLimits ?? backend.deviceLimits(native);
-      this.features = backend.deviceFeatures(native);
+      this.features = inheritedFeatures ?? backend.deviceFeatures(native);
     }
 
     createBuffer(descriptor) {

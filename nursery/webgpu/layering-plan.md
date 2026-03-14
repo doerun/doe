@@ -22,7 +22,8 @@ Use this together with:
 
 - `support-contracts.md` for product/support scope
 - `api-contract.md` for the current package contract (`full` default, `compute` subpath)
-- `webgpu-doe-package-plan.md` for the proposed extraction of the shared Doe API / Doe routines layer
+- `doe-api-design.md` for the proposed future helper naming and layering (`buffer` / `kernel` / `compute`)
+- `webgpu-doe-package-plan.md` for the proposed extraction of the shared Doe API layer
 - `compat-scope.md` for current package non-goals
 - `zig-source-inventory.md` for the current `zig/src` file map
 
@@ -38,7 +39,7 @@ Current reality:
 4. Canonical texture command handling now lives in `zig/src/core/resource/wgpu_texture_commands.zig`; canonical sampler and surface command handling now lives in `zig/src/full/render/wgpu_sampler_commands.zig` and `zig/src/full/surface/wgpu_surface_commands.zig`.
 5. `zig/src/wgpu_commands.zig`, `zig/src/wgpu_resources.zig`, and `zig/src/wgpu_extended_commands.zig` are now compatibility façades over the canonical subtrees, while `zig/src/webgpu_ffi.zig` remains the public façade and owner of `WebGPUBackend`.
 6. Dedicated Zig test lanes now exist as `zig build test-core` and `zig build test-full`, but split coverage remains thin and capability tracking is still represented by one shared coverage ledger.
-7. The JS package now exposes a default `full` surface plus an explicit `compute` subpath, while the underlying JS implementation is still shared and presented through `Direct WebGPU`, `Doe API`, and `Doe routines` styles.
+7. The JS package now exposes a default `full` surface plus an explicit `compute` subpath, while the underlying JS implementation is still shared and presented through `Direct WebGPU` and `Doe API` styles.
 
 That means this plan is now materially physicalized in the tree, and the remaining semantic split is concentrated in the public façade files and backend roots.
 

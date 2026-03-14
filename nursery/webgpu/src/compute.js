@@ -811,8 +811,12 @@ export async function requestAdapter(adapterOptions = undefined, createArgs = nu
 /**
  * Request a compute-only device facade from the Doe runtime.
  *
- * This requests an adapter, then wraps the resulting device so only the
- * compute-side JS surface is exposed.
+ * Surface: Direct WebGPU compute package surface.
+ * Input: Optional adapter, device, and package creation options.
+ * Returns: A promise for a compute-only device facade.
+ *
+ * This requests an adapter and then wraps the resulting raw device so the
+ * package exposes only the compute-side JS surface.
  *
  * This example shows the API in its basic form.
  *
@@ -820,11 +824,12 @@ export async function requestAdapter(adapterOptions = undefined, createArgs = nu
  * import { requestDevice } from "@simulatte/webgpu/compute";
  *
  * const device = await requestDevice();
- * console.log(typeof device.createRenderPipeline); // "undefined"
+ * console.log(typeof device.createRenderPipeline);
  * ```
  *
- * - The facade hides render, sampler, and surface methods even if the underlying runtime has them.
- * - Buffer and queue operations remain available for upload, dispatch, copy, and readback workflows.
+ * - The facade hides render, sampler, and surface methods even if the runtime has them.
+ * - Buffer and queue operations remain available for upload, dispatch, copy, and readback.
+ * - See `doe.requestDevice(...)` for the bound Doe API entrypoint over this same device.
  */
 export async function requestDevice(options = {}) {
   const adapter = await requestAdapter(options?.adapterOptions, options?.createArgs ?? null);
@@ -832,15 +837,15 @@ export async function requestDevice(options = {}) {
 }
 
 /**
- * Shared Doe API / Doe routines namespace for the compute package surface.
+ * Shared Doe API namespace for the compute package surface.
  *
- * This exposes `await doe.requestDevice()` for the one-line Doe API entry,
- * `doe.bind(device)` when you already have a device, `doe.buffers.*` and
- * `doe.compute.run(...)` / `doe.compute.compile(...)` for the `Doe API`
- * surface, and `doe.compute.once(...)` for `Doe routines`.
+ * Surface: Doe API on `@simulatte/webgpu/compute`.
+ * Input: Called through `doe.requestDevice(...)` or `doe.bind(device)`.
+ * Returns: A bound `gpu` helper object over a compute-only device facade.
  *
- * The exported `doe` object here is the JS convenience surface over the Doe
- * runtime, not a separate runtime.
+ * This is the JS convenience surface over the compute package. Both entry
+ * points return the same bound `gpu` object, with `gpu.buffer.*`,
+ * `gpu.kernel.*`, and `gpu.compute.once(...)`.
  *
  * This example shows the API in its basic form.
  *
@@ -848,21 +853,27 @@ export async function requestDevice(options = {}) {
  * import { doe } from "@simulatte/webgpu/compute";
  *
  * const gpu = await doe.requestDevice();
- * const src = gpu.buffers.fromData(new Float32Array([1, 2, 3, 4]));
- * const dst = gpu.buffers.like(src, { usage: "storageReadWrite" });
+ * const src = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
+ * const dst = gpu.buffer.like(src, { usage: "storageReadWrite" });
  * ```
  *
- * - This Doe API and Doe routines shape is shared with the full package surface; the difference is the raw device returned underneath.
- * - `gpu.compute.once(...)` is intentionally narrow and rejects raw numeric usage flags; drop to `gpu.buffers.*` if you need explicit raw control.
+ * - This helper shape matches the full package `doe`; only the raw device underneath differs.
+ * - `gpu.compute.once(...)` is the narrowest helper; drop to `gpu.kernel.*` for explicit control.
+ * - See `requestDevice(...)` when you want the compute-only raw facade without Doe helpers.
  */
 export const doe = createDoeNamespace({
   requestDevice,
 });
 
 /**
- * Report how the compute package surface resolved the Doe runtime.
+ * Report how the compute package resolved the Doe runtime.
  *
- * This re-exports the same provenance report as the full package.
+ * Surface: Package runtime metadata.
+ * Input: None.
+ * Returns: A provenance object describing the loaded Doe provider.
+ *
+ * This re-exports the same runtime provenance report as the full package so
+ * callers can inspect which native library and package path were selected.
  *
  * This example shows the API in its basic form.
  *
@@ -872,14 +883,19 @@ export const doe = createDoeNamespace({
  * console.log(providerInfo().loaded);
  * ```
  *
- * - The report describes the shared package/runtime load path, not the compute facade wrapper itself.
+ * - The report describes runtime loading, not the compute facade wrapper itself.
+ * - The shape is shared with `@simulatte/webgpu`.
  */
 export const providerInfo = full.providerInfo;
 /**
- * Create a Node/Bun runtime wrapper for Doe CLI execution from the compute package.
+ * Create a Doe CLI/runtime wrapper from the compute package.
  *
- * This re-exports the same runtime CLI helper as the full package for
- * benchmark and command-stream execution workflows.
+ * Surface: Package tooling and runtime orchestration.
+ * Input: Optional runtime configuration accepted by the shared runtime helper.
+ * Returns: A Doe runtime wrapper for CLI-style execution paths.
+ *
+ * This re-exports the same runtime wrapper as the full package for benchmark,
+ * trace, and command-stream execution workflows.
  *
  * This example shows the API in its basic form.
  *
@@ -889,13 +905,19 @@ export const providerInfo = full.providerInfo;
  * const runtime = createDoeRuntime();
  * ```
  *
- * - This is package/runtime orchestration, not the in-process compute facade.
+ * - This is package/runtime orchestration, not the in-process `gpu.*` helper surface.
+ * - See `runDawnVsDoeCompare(...)` for the packaged compare entrypoint.
  */
 export const createDoeRuntime = full.createDoeRuntime;
 /**
- * Run the Dawn-vs-Doe compare harness from the compute package surface.
+ * Run the Dawn-vs-Doe compare harness from the compute package.
  *
- * This re-exports the compare wrapper used for artifact-backed benchmark runs.
+ * Surface: Package benchmarking and artifact tooling.
+ * Input: Compare options or forwarded CLI arguments.
+ * Returns: The compare harness result from the shared tooling layer.
+ *
+ * This re-exports the benchmark compare wrapper used for artifact-backed
+ * Dawn-vs-Doe performance runs.
  *
  * This example shows the API in its basic form.
  *
@@ -906,7 +928,8 @@ export const createDoeRuntime = full.createDoeRuntime;
  * ```
  *
  * - Requires an explicit compare config path either in options or forwarded CLI args.
- * - This is a tooling entrypoint, not the in-process `doe.compute.*` helper path.
+ * - This is a tooling entrypoint, not the in-process `gpu.compute.*` helper path.
+ * - See `createDoeRuntime()` for lower-level runtime orchestration.
  */
 export const runDawnVsDoeCompare = full.runDawnVsDoeCompare;
 

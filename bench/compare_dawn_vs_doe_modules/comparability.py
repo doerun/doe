@@ -31,7 +31,7 @@ DAWN_OPERATION_TIMING_SOURCES = {
     "dawn-perf-gpu-time",
     "dawn-perf-wall-ns",
 }
-OBLIGATION_SCHEMA_VERSION = 1
+OBLIGATION_SCHEMA_VERSION = 2
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _COMPARABILITY_OBLIGATIONS_PATH = _REPO_ROOT / "config/comparability-obligations.json"
 RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
@@ -236,7 +236,26 @@ def _timing_selection_policy_match_with_runtime_compatibility(
     return True
 
 
-def _load_canonical_obligation_ids() -> tuple[str, ...]:
+def _validate_fact_names(payload: dict[str, Any]) -> tuple[str, ...]:
+    raw_facts = payload.get("facts")
+    if not isinstance(raw_facts, list) or not raw_facts:
+        raise ValueError(
+            "invalid comparability obligation contract: facts must be a non-empty list"
+        )
+    facts: list[str] = []
+    for index, raw in enumerate(raw_facts):
+        if not isinstance(raw, str) or not raw:
+            raise ValueError(
+                "invalid comparability obligation contract: "
+                f"facts[{index}] must be a non-empty string"
+            )
+        facts.append(raw)
+    if len(facts) != len(set(facts)):
+        raise ValueError("invalid comparability obligation contract: duplicate facts")
+    return tuple(facts)
+
+
+def _load_comparability_contract() -> tuple[int, tuple[str, ...], tuple[dict[str, Any], ...]]:
     payload = json.loads(_COMPARABILITY_OBLIGATIONS_PATH.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError(
@@ -249,25 +268,92 @@ def _load_canonical_obligation_ids() -> tuple[str, ...]:
             "comparability obligation contract schemaVersion mismatch: "
             f"expected {OBLIGATION_SCHEMA_VERSION}, got {schema_version!r}"
         )
-    raw_ids = payload.get("obligationIds")
-    if not isinstance(raw_ids, list) or not raw_ids:
+    fact_names = _validate_fact_names(payload)
+    known_facts = set(fact_names)
+    raw_obligations = payload.get("obligations")
+    if not isinstance(raw_obligations, list) or not raw_obligations:
         raise ValueError(
-            "invalid comparability obligation contract: obligationIds must be a non-empty list"
+            "invalid comparability obligation contract: obligations must be a non-empty list"
         )
+
+    def validate_expr(expr: Any, *, label: str) -> None:
+        if not isinstance(expr, dict):
+            raise ValueError(f"{label} must be an object")
+        keys = set(expr)
+        if keys == {"const"}:
+            if not isinstance(expr["const"], bool):
+                raise ValueError(f"{label}.const must be bool")
+            return
+        if keys == {"fact"}:
+            fact_name = expr["fact"]
+            if not isinstance(fact_name, str) or fact_name not in known_facts:
+                raise ValueError(f"{label}.fact must reference a known fact")
+            return
+        if keys == {"not"}:
+            validate_expr(expr["not"], label=f"{label}.not")
+            return
+        if keys in ({"allOf"}, {"anyOf"}):
+            values = expr[next(iter(keys))]
+            if not isinstance(values, list) or not values:
+                raise ValueError(f"{label} must contain a non-empty list")
+            for index, value in enumerate(values):
+                validate_expr(value, label=f"{label}[{index}]")
+            return
+        raise ValueError(f"{label} uses unsupported expression shape")
+
     ids: list[str] = []
-    for index, raw_id in enumerate(raw_ids):
+    obligations: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for index, raw in enumerate(raw_obligations):
+        if not isinstance(raw, dict):
+            raise ValueError(
+                "invalid comparability obligation contract: "
+                f"obligations[{index}] must be an object"
+            )
+        raw_id = raw.get("id")
         if not isinstance(raw_id, str) or not raw_id:
             raise ValueError(
                 "invalid comparability obligation contract: "
-                f"obligationIds[{index}] must be a non-empty string"
+                f"obligations[{index}].id must be a non-empty string"
             )
+        if raw_id in seen_ids:
+            raise ValueError("invalid comparability obligation contract: duplicate obligation ids")
+        seen_ids.add(raw_id)
+        if not isinstance(raw.get("blocking"), bool):
+            raise ValueError(
+                "invalid comparability obligation contract: "
+                f"obligations[{index}].blocking must be bool"
+            )
+        validate_expr(raw.get("applicableWhen"), label=f"obligations[{index}].applicableWhen")
+        validate_expr(raw.get("passesWhen"), label=f"obligations[{index}].passesWhen")
         ids.append(raw_id)
-    if len(ids) != len(set(ids)):
-        raise ValueError("invalid comparability obligation contract: duplicate obligationIds")
-    return tuple(ids)
+        obligations.append(raw)
+    return schema_version, tuple(ids), tuple(obligations)
 
 
-CANONICAL_COMPARABILITY_OBLIGATION_IDS = _load_canonical_obligation_ids()
+(
+    OBLIGATION_SCHEMA_VERSION,
+    CANONICAL_COMPARABILITY_OBLIGATION_IDS,
+    COMPARABILITY_OBLIGATION_RULES,
+) = _load_comparability_contract()
+
+
+def _evaluate_rule_expr(expr: dict[str, Any], facts: dict[str, Any]) -> bool:
+    keys = set(expr)
+    if keys == {"const"}:
+        return bool(expr["const"])
+    if keys == {"fact"}:
+        value = facts.get(str(expr["fact"]))
+        if not isinstance(value, bool):
+            raise ValueError(f"comparability facts field {expr['fact']!r} must be bool")
+        return value
+    if keys == {"not"}:
+        return not _evaluate_rule_expr(expr["not"], facts)
+    if keys == {"allOf"}:
+        return all(_evaluate_rule_expr(item, facts) for item in expr["allOf"])
+    if keys == {"anyOf"}:
+        return any(_evaluate_rule_expr(item, facts) for item in expr["anyOf"])
+    raise ValueError(f"unsupported comparability expression {expr!r}")
 
 
 def evaluate_comparability_from_facts(
@@ -276,212 +362,22 @@ def evaluate_comparability_from_facts(
     if not isinstance(facts, dict):
         raise ValueError("comparability facts must be an object")
 
-    def fact_bool(name: str) -> bool:
-        value = facts.get(name)
-        if not isinstance(value, bool):
-            raise ValueError(f"comparability facts field {name!r} must be bool")
-        return value
-
-    result_by_id: dict[str, tuple[bool, bool, bool]] = {
-        "workload_marked_comparable": (
-            True,
-            True,
-            fact_bool("workload_marked_comparable"),
-        ),
-        "left_samples_present": (
-            True,
-            True,
-            fact_bool("left_samples_present"),
-        ),
-        "right_samples_present": (
-            True,
-            True,
-            fact_bool("right_samples_present"),
-        ),
-        "left_single_timing_class": (
-            True,
-            True,
-            fact_bool("left_single_timing_class"),
-        ),
-        "right_single_timing_class": (
-            True,
-            True,
-            fact_bool("right_single_timing_class"),
-        ),
-        "left_required_timing_class": (
-            True,
-            fact_bool("required_timing_class_applies"),
-            fact_bool("left_required_timing_class"),
-        ),
-        "right_required_timing_class": (
-            True,
-            fact_bool("required_timing_class_applies"),
-            fact_bool("right_required_timing_class"),
-        ),
-        "left_right_timing_class_match": (
-            True,
-            fact_bool("timing_class_match_applies"),
-            fact_bool("left_right_timing_class_match"),
-        ),
-        "left_right_trace_meta_source_match": (
-            True,
-            fact_bool("trace_meta_source_match_applies"),
-            fact_bool("left_right_trace_meta_source_match"),
-        ),
-        "left_right_timing_selection_policy_match": (
-            True,
-            fact_bool("timing_selection_policy_match_applies"),
-            fact_bool("left_right_timing_selection_policy_match"),
-        ),
-        "left_right_queue_sync_mode_match": (
-            True,
-            fact_bool("queue_sync_mode_match_applies"),
-            fact_bool("left_right_queue_sync_mode_match"),
-        ),
-        "left_right_timing_phase_match": (
-            True,
-            fact_bool("timing_phase_match_applies"),
-            fact_bool("left_right_timing_phase_match"),
-        ),
-        "left_right_execution_shape_match": (
-            True,
-            fact_bool("execution_shape_match_applies"),
-            fact_bool("left_right_execution_shape_match"),
-        ),
-        "left_right_hardware_path_match": (
-            True,
-            fact_bool("hardware_path_match_applies"),
-            fact_bool("left_right_hardware_path_match"),
-        ),
-        "left_native_operation_timing_for_webgpu_ffi": (
-            True,
-            fact_bool("operation_timing_class_required"),
-            fact_bool("left_native_operation_timing_for_webgpu_ffi"),
-        ),
-        "left_upload_ignore_first_scope_consistent": (
-            True,
-            fact_bool("upload_domain"),
-            fact_bool("left_upload_ignore_first_scope_consistent"),
-        ),
-        "right_upload_ignore_first_scope_consistent": (
-            True,
-            fact_bool("upload_domain"),
-            fact_bool("right_upload_ignore_first_scope_consistent"),
-        ),
-        "left_right_upload_buffer_usage_match": (
-            True,
-            fact_bool("upload_domain"),
-            fact_bool("left_right_upload_buffer_usage_match"),
-        ),
-        "left_right_upload_submit_cadence_match": (
-            True,
-            fact_bool("upload_domain"),
-            fact_bool("left_right_upload_submit_cadence_match"),
-        ),
-        "left_execution_evidence_present": (
-            True,
-            not fact_bool("allow_left_no_execution"),
-            fact_bool("left_execution_evidence_present"),
-        ),
-        "left_successful_execution_present": (
-            True,
-            not fact_bool("allow_left_no_execution"),
-            fact_bool("left_successful_execution_present"),
-        ),
-        "left_success_or_unsupported_or_skipped": (
-            True,
-            fact_bool("allow_left_no_execution"),
-            fact_bool("left_success_or_unsupported_or_skipped"),
-        ),
-        "left_execution_errors_absent": (
-            True,
-            True,
-            fact_bool("left_execution_errors_absent"),
-        ),
-        "right_execution_errors_absent": (
-            True,
-            True,
-            fact_bool("right_execution_errors_absent"),
-        ),
-        "left_resource_probe_available": (
-            True,
-            fact_bool("resource_probe_enabled"),
-            fact_bool("left_resource_probe_available"),
-        ),
-        "right_resource_probe_available": (
-            True,
-            fact_bool("resource_probe_enabled"),
-            fact_bool("right_resource_probe_available"),
-        ),
-        "strict_resource_sample_target_positive": (
-            True,
-            fact_bool("resource_probe_enabled") and fact_bool("strict_comparability"),
-            fact_bool("resource_sample_target_positive"),
-        ),
-        "left_resource_sample_target_match": (
-            True,
-            fact_bool("resource_probe_enabled")
-            and fact_bool("strict_comparability")
-            and fact_bool("resource_sample_target_positive"),
-            fact_bool("left_resource_sample_target_match"),
-        ),
-        "right_resource_sample_target_match": (
-            True,
-            fact_bool("resource_probe_enabled")
-            and fact_bool("strict_comparability")
-            and fact_bool("resource_sample_target_positive"),
-            fact_bool("right_resource_sample_target_match"),
-        ),
-        "left_resource_sampling_not_truncated": (
-            True,
-            fact_bool("resource_probe_enabled")
-            and fact_bool("strict_comparability")
-            and fact_bool("resource_sample_target_positive"),
-            fact_bool("left_resource_sampling_not_truncated"),
-        ),
-        "right_resource_sampling_not_truncated": (
-            True,
-            fact_bool("resource_probe_enabled")
-            and fact_bool("strict_comparability")
-            and fact_bool("resource_sample_target_positive"),
-            fact_bool("right_resource_sampling_not_truncated"),
-        ),
-        "left_resource_sample_density_sufficient": (
-            True,
-            fact_bool("resource_probe_enabled") and (not fact_bool("strict_comparability")),
-            fact_bool("left_resource_sample_density_sufficient"),
-        ),
-        "right_resource_sample_density_sufficient": (
-            True,
-            fact_bool("resource_probe_enabled") and (not fact_bool("strict_comparability")),
-            fact_bool("right_resource_sample_density_sufficient"),
-        ),
-    }
-
     obligations: list[dict[str, Any]] = []
-    for obligation_id in CANONICAL_COMPARABILITY_OBLIGATION_IDS:
-        rule = result_by_id.get(obligation_id)
-        if rule is None:
-            raise ValueError(
-                "missing comparability fact mapping for obligation id: "
-                f"{obligation_id}"
-            )
-        blocking, applicable, passes = rule
+    for obligation_id, rule in zip(
+        CANONICAL_COMPARABILITY_OBLIGATION_IDS,
+        COMPARABILITY_OBLIGATION_RULES,
+        strict=True,
+    ):
+        applicable = _evaluate_rule_expr(rule["applicableWhen"], facts)
+        passes = _evaluate_rule_expr(rule["passesWhen"], facts)
         obligations.append(
             _obligation(
                 obligation_id=obligation_id,
-                blocking=blocking,
+                blocking=bool(rule["blocking"]),
                 applicable=applicable,
                 passes=passes,
                 details={},
             )
-        )
-
-    extra_rule_ids = sorted(set(result_by_id.keys()) - set(CANONICAL_COMPARABILITY_OBLIGATION_IDS))
-    if extra_rule_ids:
-        raise ValueError(
-            "comparability fact mapping has ids missing from canonical contract: "
-            + ", ".join(extra_rule_ids)
         )
 
     generated_obligation_ids = [str(item.get("id", "")) for item in obligations]

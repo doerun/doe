@@ -1,12 +1,16 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const mod = @import("mod.zig");
 const translateToMsl = mod.translateToMsl;
 const translateToHlsl = mod.translateToHlsl;
 const translateToDxil = mod.translateToDxil;
+const translateToDxilWithToolchainConfig = mod.translateToDxilWithToolchainConfig;
 const translateToSpirv = mod.translateToSpirv;
 const analyzeToIr = mod.analyzeToIr;
 const TranslateError = mod.TranslateError;
 const CompilationStage = mod.CompilationStage;
+const DxilToolchainConfig = mod.DxilToolchainConfig;
+const DXIL_DXC_ENV_VAR = mod.DXIL_DXC_ENV_VAR;
 const lastErrorStage = mod.lastErrorStage;
 const lastErrorKind = mod.lastErrorKind;
 const lastErrorContext = mod.lastErrorContext;
@@ -998,6 +1002,86 @@ test "translate arrayLength to SPIR-V" {
     try std.testing.expect(len > 0);
 }
 
+fn writeFakeDxcScript(dir: std.fs.Dir, sub_path: []const u8) !void {
+    var file = try dir.createFile(sub_path, .{ .read = true, .truncate = true });
+    defer file.close();
+    try file.writeAll(
+        \\#!/bin/sh
+        \\out=""
+        \\while [ "$#" -gt 0 ]; do
+        \\  if [ "$1" = "-Fo" ]; then
+        \\    shift
+        \\    out="$1"
+        \\  fi
+        \\  shift
+        \\done
+        \\if [ -z "$out" ]; then
+        \\  echo "missing -Fo output path" >&2
+        \\  exit 91
+        \\fi
+        \\printf 'FAKE-DXIL' > "$out"
+        \\
+    );
+    try file.chmod(0o755);
+}
+
+test "translate DXIL with explicit fake toolchain config" {
+    if (builtin.os.tag == .windows) return error.SkipZigTest;
+
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = 1.0;
+        \\}
+    ;
+
+    var tmp_dir = std.testing.tmpDir(.{});
+    defer tmp_dir.cleanup();
+    try writeFakeDxcScript(tmp_dir.dir, "fake_dxc.sh");
+
+    const script_path = try std.fs.path.join(std.testing.allocator, &.{
+        ".zig-cache",
+        "tmp",
+        tmp_dir.sub_path[0..],
+        "fake_dxc.sh",
+    });
+    defer std.testing.allocator.free(script_path);
+
+    var out: [MAX_DXIL_OUTPUT]u8 = undefined;
+    const len = try translateToDxilWithToolchainConfig(std.testing.allocator, source, &out, DxilToolchainConfig{
+        .executable = script_path,
+        .discovery = .explicit_config,
+    });
+    try std.testing.expectEqualStrings("FAKE-DXIL", out[0..len]);
+}
+
+test "translate DXIL reports explicit missing toolchain config path" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = 1.0;
+        \\}
+    ;
+
+    var out: [MAX_DXIL_OUTPUT]u8 = undefined;
+    try std.testing.expectError(TranslateError.ShaderToolchainUnavailable, translateToDxilWithToolchainConfig(
+        std.testing.allocator,
+        source,
+        &out,
+        DxilToolchainConfig{
+            .executable = "zig-out/does-not-exist/dxc",
+            .discovery = .explicit_config,
+        },
+    ));
+    try std.testing.expectEqual(CompilationStage.dxil_emit, lastErrorStage());
+    try std.testing.expect(std.mem.indexOf(u8, lastErrorMessage(), "zig-out/does-not-exist/dxc") != null);
+    try std.testing.expect(std.mem.indexOf(u8, lastErrorMessage(), DXIL_DXC_ENV_VAR) != null);
+}
+
 test "translate compute shader to DXIL or report missing toolchain" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
@@ -1010,7 +1094,11 @@ test "translate compute shader to DXIL or report missing toolchain" {
 
     var out: [MAX_DXIL_OUTPUT]u8 = undefined;
     const len = translateToDxil(std.testing.allocator, source, &out) catch |err| switch (err) {
-        TranslateError.ShaderToolchainUnavailable => return,
+        TranslateError.ShaderToolchainUnavailable => {
+            try std.testing.expectEqual(CompilationStage.dxil_emit, lastErrorStage());
+            try std.testing.expect(std.mem.indexOf(u8, lastErrorMessage(), DXIL_DXC_ENV_VAR) != null);
+            return;
+        },
         else => return err,
     };
     try std.testing.expect(len > 0);
@@ -1026,8 +1114,180 @@ test "translate vertex shader to DXIL or report missing toolchain" {
 
     var out: [MAX_DXIL_OUTPUT]u8 = undefined;
     const len = translateToDxil(std.testing.allocator, source, &out) catch |err| switch (err) {
-        TranslateError.ShaderToolchainUnavailable => return,
+        TranslateError.ShaderToolchainUnavailable => {
+            try std.testing.expectEqual(CompilationStage.dxil_emit, lastErrorStage());
+            try std.testing.expect(std.mem.indexOf(u8, lastErrorMessage(), DXIL_DXC_ENV_VAR) != null);
+            return;
+        },
         else => return err,
     };
     try std.testing.expect(len > 0);
+}
+
+test "translate workgroupBarrier builtin to MSL SPIR-V and HLSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = 1.0;
+        \\    workgroupBarrier();
+        \\    data[id.x] = data[id.x] + 1.0;
+        \\}
+    ;
+
+    var msl_out: [MAX_OUTPUT]u8 = undefined;
+    const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
+    try std.testing.expect(msl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "threadgroup_barrier(mem_flags::mem_threadgroup)") != null);
+
+    var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+    try std.testing.expect(spirv_len > 0);
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "GroupMemoryBarrierWithGroupSync()") != null);
+}
+
+test "translate storageBarrier builtin to MSL SPIR-V and HLSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = 1.0;
+        \\    storageBarrier();
+        \\    data[id.x] = data[id.x] + 1.0;
+        \\}
+    ;
+
+    var msl_out: [MAX_OUTPUT]u8 = undefined;
+    const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
+    try std.testing.expect(msl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "threadgroup_barrier(mem_flags::mem_device)") != null);
+
+    var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+    try std.testing.expect(spirv_len > 0);
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "AllMemoryBarrierWithGroupSync()") != null);
+}
+
+test "translate fma builtin to MSL SPIR-V and HLSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let a = data[id.x];
+        \\    let b = data[id.x + 1u];
+        \\    let c = data[id.x + 2u];
+        \\    data[id.x] = fma(a, b, c);
+        \\}
+    ;
+
+    var msl_out: [MAX_OUTPUT]u8 = undefined;
+    const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
+    try std.testing.expect(msl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "fma(") != null);
+
+    var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+    try std.testing.expect(spirv_len > 0);
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "fma(") != null);
+}
+
+test "translate smoothstep builtin to MSL SPIR-V and HLSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = smoothstep(0.0, 1.0, data[id.x]);
+        \\}
+    ;
+
+    var msl_out: [MAX_OUTPUT]u8 = undefined;
+    const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
+    try std.testing.expect(msl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "smoothstep(") != null);
+
+    var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+    try std.testing.expect(spirv_len > 0);
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "smoothstep(") != null);
+}
+
+test "ptr parameter codegen is unsupported" {
+    const source =
+        \\fn helper(p: ptr<function, f32>) {
+        \\    *p = 1.0;
+        \\}
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\    var x: f32 = 0.0;
+        \\    helper(&x);
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const result = translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(result == error.InvalidWgsl or result == error.UnsupportedConstruct or result == error.InvalidIr or result == error.UnexpectedToken);
+}
+
+test "texture_3d type is unsupported" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_3d<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const result = translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(result == error.UnknownType or result == error.InvalidType or result == error.UnsupportedConstruct);
+}
+
+test "textureSample builtin is unsupported" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\
+        \\@fragment
+        \\fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+        \\    return textureSample(tex, samp, uv);
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const result = translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(result == error.UnsupportedBuiltin or result == error.UnsupportedConstruct);
+}
+
+test "texture_depth_2d type is unsupported" {
+    const source =
+        \\@group(0) @binding(0) var depth: texture_depth_2d;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const result = translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(result == error.UnknownType or result == error.InvalidType or result == error.UnsupportedConstruct);
 }

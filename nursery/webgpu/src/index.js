@@ -124,6 +124,28 @@ function validateBufferDescriptor(descriptor) {
   return assertBufferDescriptor(descriptor, 'GPUDevice.createBuffer');
 }
 
+/**
+ * Read structured error fields from the native N-API addon's last-error ABI.
+ * Uses `addon.getLastErrorLine` / `addon.getLastErrorColumn` when available
+ * (requires native build that exports `doeNativeGetLastErrorLine/Column`).
+ * Returns null when the addon does not expose these functions.
+ */
+function readLastErrorFields() {
+  if (typeof addon?.getLastErrorStage !== 'function' && typeof addon?.getLastErrorKind !== 'function') {
+    return null;
+  }
+  const stage = typeof addon?.getLastErrorStage === 'function' ? (addon.getLastErrorStage() ?? '') : '';
+  const kind = typeof addon?.getLastErrorKind === 'function' ? (addon.getLastErrorKind() ?? '') : '';
+  const line = typeof addon?.getLastErrorLine === 'function' ? Number(addon.getLastErrorLine()) : 0;
+  const column = typeof addon?.getLastErrorColumn === 'function' ? Number(addon.getLastErrorColumn()) : 0;
+  return {
+    stage: stage || undefined,
+    kind: kind || undefined,
+    line: line > 0 ? line : undefined,
+    column: column > 0 ? column : undefined,
+  };
+}
+
 function adapterLimits(native) {
   if (typeof addon?.adapterGetLimits !== 'function') {
     return publishLimits(null);
@@ -159,13 +181,16 @@ function preflightShaderSource(code) {
   if (typeof addon?.checkShaderSource === 'function') {
     const result = addon.checkShaderSource(code);
     if (result && typeof result === 'object') {
-      return {
+      const out = {
         ok: result.ok !== false,
         stage: result.stage ?? '',
         kind: result.kind ?? '',
         message: result.message ?? '',
         reasons: result.ok === false && result.message ? [result.message] : [],
       };
+      if (typeof result.line === 'number' && result.line > 0) out.line = result.line;
+      if (typeof result.column === 'number' && result.column > 0) out.column = result.column;
+      return out;
     }
   }
   return { ok: true, stage: '', kind: '', message: '', reasons: [] };
@@ -586,7 +611,7 @@ const fullSurfaceBackend = {
     try {
       return addon.createShaderModule(assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'), code);
     } catch (error) {
-      throw enrichNativeCompilerError(error, 'GPUDevice.createShaderModule');
+      throw enrichNativeCompilerError(error, 'GPUDevice.createShaderModule', readLastErrorFields());
     }
   },
   deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative) {
@@ -598,7 +623,7 @@ const fullSurfaceBackend = {
         layoutNative,
       );
     } catch (error) {
-      throw enrichNativeCompilerError(error, 'GPUDevice.createComputePipeline');
+      throw enrichNativeCompilerError(error, 'GPUDevice.createComputePipeline', readLastErrorFields());
     }
   },
   deviceCreateBindGroupLayout(device, entries) {
@@ -669,8 +694,44 @@ const fullSurfaceBackend = {
   },
   adapterRequestDevice(adapter, _descriptor, classes) {
     assertLiveResource(adapter, 'GPUAdapter.requestDevice', 'GPUAdapter');
-    const device = addon.requestDevice(adapter._instance, adapter._native);
-    return new classes.DoeGPUDevice(device, adapter._instance, deviceLimits(device));
+    const native = addon.requestDevice(adapter._instance, adapter._native);
+    const device = {
+      _destroyed: false,
+      _resourceLabel: 'GPUDevice',
+      _resourceOwner: null,
+      createBuffer: classes.DoeGPUDevice.prototype.createBuffer,
+      createShaderModule: classes.DoeGPUDevice.prototype.createShaderModule,
+      createComputePipeline: classes.DoeGPUDevice.prototype.createComputePipeline,
+      createComputePipelineAsync: classes.DoeGPUDevice.prototype.createComputePipelineAsync,
+      createBindGroupLayout: classes.DoeGPUDevice.prototype.createBindGroupLayout,
+      createBindGroup: classes.DoeGPUDevice.prototype.createBindGroup,
+      createPipelineLayout: classes.DoeGPUDevice.prototype.createPipelineLayout,
+      createTexture: classes.DoeGPUDevice.prototype.createTexture,
+      createSampler: classes.DoeGPUDevice.prototype.createSampler,
+      createRenderPipeline: classes.DoeGPUDevice.prototype.createRenderPipeline,
+      createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
+      destroy: classes.DoeGPUDevice.prototype.destroy,
+    };
+    device._native = native;
+    device._instance = adapter._instance;
+    device.limits = deviceLimits(native);
+    device.features = deviceFeatures(native);
+    const queue = {
+      _destroyed: false,
+      _resourceLabel: 'GPUQueue',
+      _resourceOwner: device,
+      hasPendingSubmissions: classes.DoeGPUQueue.prototype.hasPendingSubmissions,
+      markSubmittedWorkDone: classes.DoeGPUQueue.prototype.markSubmittedWorkDone,
+      submit: classes.DoeGPUQueue.prototype.submit,
+      writeBuffer: classes.DoeGPUQueue.prototype.writeBuffer,
+      onSubmittedWorkDone: classes.DoeGPUQueue.prototype.onSubmittedWorkDone,
+    };
+    queue._native = addon.deviceGetQueue(native);
+    queue._instance = adapter._instance;
+    queue._device = device;
+    this.initQueueState(queue);
+    device.queue = queue;
+    return device;
   },
   adapterDestroy(native) {
     addon.adapterRelease(native);

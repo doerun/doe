@@ -2,15 +2,16 @@ import * as full from './index.js';
 import { createDoeNamespace } from './doe.js';
 
 /**
- * Shared Doe API / Doe routines namespace for the full package surface.
+ * Shared Doe API namespace for the full package surface.
  *
- * This exposes `await doe.requestDevice()` for the one-line Doe API entry,
- * `doe.bind(device)` when you already have a full device, `doe.buffers.*` and
- * `doe.compute.run(...)` / `doe.compute.compile(...)` for the `Doe API`
- * surface, and `doe.compute.once(...)` for `Doe routines`.
+ * Surface: Doe API on `@simulatte/webgpu`.
+ * Input: Called through `doe.requestDevice(...)` or `doe.bind(device)`.
+ * Returns: A bound `gpu` helper object over a full raw device.
  *
- * The exported `doe` object here is the JS convenience surface over the Doe
- * runtime, not a separate runtime.
+ * This is the JS convenience surface over the full package. Both entry points
+ * return the same bound `gpu` object, with `gpu.buffer.*`, `gpu.kernel.*`,
+ * and `gpu.compute.once(...)`, while still leaving the underlying raw device
+ * reachable as `gpu.device`.
  *
  * This example shows the API in its basic form.
  *
@@ -20,8 +21,9 @@ import { createDoeNamespace } from './doe.js';
  * const gpu = await doe.requestDevice();
  * ```
  *
- * - The Doe API and Doe routines shape is the same as `@simulatte/webgpu/compute`; the difference is that the underlying device here stays full-surface rather than compute-only.
- * - If you need explicit render, sampler, or surface APIs, keep the raw device from `requestDevice()` or access `gpu.device` after `doe.requestDevice()`.
+ * - The Doe helper shape matches `@simulatte/webgpu/compute`; the difference is the raw device underneath.
+ * - If you need explicit render, sampler, or surface APIs, use `gpu.device`.
+ * - See the package `requestDevice()` export when you want the raw full device without Doe helpers.
  */
 export const doe = createDoeNamespace({
   requestDevice: full.requestDevice,

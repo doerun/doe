@@ -2,36 +2,44 @@
 
 ## Verification tier classification
 
-Every theorem in this module is classified into one of three tiers based on whether Lean is actually necessary to verify it:
+Every theorem is classified into one of four tiers based on whether Lean is actually necessary to verify it:
 
-- **`comptime_verified`** — property operates on finite enums and is independently verifiable by Zig `comptime` exhaustion or unit tests. Lean provides a second-opinion check but is not the only way to verify these. All dispatch-layer theorems (Model, Runtime, Dispatch) fall here.
-- **`lean_verified`** — property is quantified over unbounded domains (arbitrary lists, parametric structures) that `comptime` cannot enumerate. Lean is necessary. The comparability obligation theorems fall here.
-- **`lean_fixture`** — specific test case verified against a `lean_verified` theorem. Could be an integration test, but exercises the genuine proofs and catches regressions in the obligation model. The comparability fixture theorems fall here.
+- **`tautological`** — correct by construction or definitional. There is nothing to verify: the property follows directly from how the code is written. Lean is restating the definition. Examples: a table built from a function trivially matches that function; `rfl` proofs that just unfold a definition; a one-liner that follows from another theorem.
+- **`comptime_verified`** — property over a finite domain that requires checking all cases but is independently verifiable by Zig `comptime` exhaustion or unit tests. Lean is redundant — a `comptime` inline-for or exhaustive test does the same thing.
+- **`lean_verified`** — property quantified over unbounded domains (arbitrary lists, parametric structures) that `comptime` cannot enumerate. Lean is necessary.
+- **`lean_fixture`** — specific test case verified against a `lean_verified` theorem. Could be an integration test, but exercises the genuine proofs and catches regressions in the obligation model.
 
 The tier is recorded in the `category` field of the proof artifact (`config/proof-artifact.schema.json`).
 
 ## Theorem inventory by tier
 
-### `comptime_verified` (12 theorems, ~46 lines)
+### `tautological` (8 theorems, ~27 lines)
 
-All finite-enum properties. Zig `comptime` inline-for or exhaustive tests would verify the same thing.
+Nothing to verify. These restate definitions or are correct by construction.
 
-| Theorem | What it says | Why comptime suffices |
+| Theorem | What it says | Why it's tautological |
 |---------|-------------|----------------------|
-| `critical_is_max_rank` | Critical has the highest safety rank | 4 enum values |
-| `requiredProof_forbidden_reject_from_rank` | No safety class maps to `.rejected` | 3 × 3 enum pairs |
-| `toggleAlwaysSupported` | `driver_toggle` scope supports all commands | Subsumed by `scopeCommandTableComplete` |
-| `strongerSafetyRaisesProofDemand` | Critical safety demands `.proven` proof | 3 enum values |
-| `betterMatch_prefers_higher_score` | Higher score wins tie-breaking | Obvious from `if a < b then b` |
-| `noOpActionIdentity` | `no_op.isIdentity = true` | Definitional (`rfl`) |
+| `scopeCommandTableComplete` | Comptime table matches `supportsScope` | Table is built from the function — `X == X` |
+| `toggleAlwaysSupported` | `driver_toggle` supports all commands | Subsumed by above; `driver_toggle => True` is the definition |
+| `noOpActionIdentity` | `no_op.isIdentity = true` | Definitional (`rfl` — just unfolds the definition) |
 | `informationalToggleIdentity` | `(toggle .informational).isIdentity = true` | Definitional (`rfl`) |
 | `unhandledToggleIdentity` | `(toggle .unhandled).isIdentity = true` | Definitional (`rfl`) |
 | `behavioralToggleNotIdentity` | `(toggle .behavioral).isIdentity = false` | Definitional (`rfl`) |
-| `identityActionComplete` | Exactly which actions are identity | 4 action variants |
-| `scopeCommandTableComplete` | `supportsScope` is decidable for all 120 scope×command pairs | Table is built from the function at comptime |
-| `identityActionPreservesCommand` | Identity actions preserve commands | Follows from `identityActionComplete` |
+| `betterMatch_prefers_higher_score` | Higher score wins | `if a < b then b` returns `b` — obvious from definition |
+| `identityActionPreservesCommand` | Identity actions preserve commands | One-liner: calls `identityActionComplete` |
 
-### `lean_verified` (6 theorems, ~42 lines)
+### `comptime_verified` (4 theorems, ~19 lines)
+
+Finite-enum properties that require checking all cases. Zig `comptime` inline-for or exhaustive tests would verify the same thing.
+
+| Theorem | What it says | Domain size |
+|---------|-------------|-------------|
+| `critical_is_max_rank` | Critical has the highest safety rank | 4 enum values |
+| `requiredProof_forbidden_reject_from_rank` | No safety class maps to `.rejected` | 3 × 3 enum pairs |
+| `strongerSafetyRaisesProofDemand` | Critical safety demands `.proven` proof | 3 enum values |
+| `identityActionComplete` | Exactly which actions are identity (iff) | 4 action variants × sub-cases |
+
+### `lean_verified` (9 theorems, ~65 lines)
 
 Quantified over arbitrary `List Obligation` — unbounded domain, cannot enumerate.
 
@@ -43,6 +51,9 @@ Quantified over arbitrary `List Obligation` — unbounded domain, cannot enumera
 | `comparableFromObligations_false_iff_failedBlockingNonEmpty` | Not comparable ↔ at least one failed blocking obligation |
 | `comparableFromFacts_true_iff_failedBlockingNil` | Same, from facts |
 | `comparableFromFacts_false_iff_failedBlockingNonEmpty` | Same, from facts |
+| `structurallyEquivalentGeometry_refl` | Any workload geometry is structurally equivalent to itself |
+| `structurallyEquivalentGeometry_forall_components` | Arbitrary Nat-valued buffer/dispatch components remain structurally equivalent when mirrored |
+| `equalGeometrySetsExecutionShapeFacts` | Equal Nat-valued geometry forces execution-shape comparability facts true |
 
 ### `lean_fixture` (10 theorems, ~35 lines)
 
@@ -83,12 +94,16 @@ Specific obligation sets verified against the `lean_verified` theorems.
 Core theorem pack (`Fawn/Core/`, maps to `zig/src/core/`):
 - `Fawn/Core/Model.lean` — foundational enums, precedence lattice, requirement predicates
 - `Fawn/Core/Runtime.lean` — deterministic matching, scoring, selector, driver-range matching
-- `Fawn/Core/Dispatch.lean` — dispatch-level theorems (all `comptime_verified`)
+- `Fawn/Core/Dispatch.lean` — dispatch-level theorems (`tautological` and `comptime_verified`)
 - `Fawn/Core/Bridge.lean` — obligation gate evaluation from dispatch decisions
 
 Full theorem pack (`Fawn/Full/`, maps to `zig/src/full/`):
 - `Fawn/Full/Comparability.lean` — comparability obligation model (`lean_verified`)
 - `Fawn/Full/ComparabilityFixtures.lean` — parity fixtures (`lean_fixture`)
+- `Fawn/Full/WorkloadGeometry.lean` — arbitrary-`Nat` workload-geometry theorems feeding execution-shape comparability
+
+Generated theorem contract:
+- `Fawn/Generated/ComparabilityContract.lean` — generated from `config/comparability-obligations.json`; provides the canonical obligation IDs, fact record, and `obligationsFromFacts`
 
 Re-export shims (backward compatibility):
 - `Fawn/Model.lean`, `Fawn/Runtime.lean`, `Fawn/Dispatch.lean`, `Fawn/Bridge.lean`, `Fawn/Comparability.lean`, `Fawn/ComparabilityFixtures.lean` re-export from `Fawn.Core.*` / `Fawn.Full.*`.
@@ -114,8 +129,9 @@ Extraction:
 
 ## Proof artifact extraction
 
+- `./lean/generate_comparability_contract.py` regenerates `Fawn/Generated/ComparabilityContract.lean` from `config/comparability-obligations.json` before typecheck/extraction.
 - `./lean/extract.sh` compiles all Lean modules and runs `Fawn/Extract.lean` to produce `lean/artifacts/proven-conditions.json`.
-- The artifact lists all verified theorems with their tier classification, evaluates decidable propositions, and maps theorems to Zig runtime elimination targets.
+- The artifact lists all verified theorems with their tier classification, records the active comparability contract hash, evaluates decidable propositions, and maps theorems to Zig runtime elimination targets.
 - Artifact schema: `config/proof-artifact.schema.json`.
 - CI runs extraction after typecheck and uploads the artifact (see `.github/workflows/lean-check.yml`).
 - The artifact is generated (not committed); `lean/artifacts/` is gitignored.
@@ -125,8 +141,8 @@ Extraction:
 
 When built with `-Dlean-verified=true`, `lean_proof.zig` validates the proof artifact at comptime and sets `lean_proof.lean_verified = true`. The Zig compiler dead-code-eliminates branches gated on this flag.
 
-The `comptime_verified` theorems gate init-time and per-command branch elimination in `quirk/runtime.zig`. These same branches could equivalently be gated by Zig `comptime` assertions — the Lean proof is a redundant second check, not the sole authority.
+The `tautological` and `comptime_verified` theorems gate init-time and per-command branch elimination in `quirk/runtime.zig`. These properties are independently verifiable by Zig `comptime` — the Lean proof is a redundant second check, not the sole authority.
 
-The `lean_verified` theorems validate the comparability obligation model used by benchmark methodology gates. These cannot be replicated by `comptime` exhaustion because they quantify over arbitrary obligation lists.
+The `lean_verified` theorems validate the comparability obligation model used by benchmark methodology gates. These cannot be replicated by `comptime` exhaustion because they quantify over arbitrary obligation lists and arbitrary Nat-valued workload geometry. This is where Lean earns its keep.
 
 Build chain: Lean typecheck → `extract.sh` emits `proven-conditions.json` → `build.zig` reads artifact → `lean_proof.zig` validates at comptime → `runtime.zig` uses `lean_proof.lean_verified` as comptime gate → compiler eliminates unreachable branches.

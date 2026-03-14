@@ -14,8 +14,8 @@ and process documents.
 - Tightened the published package README wording, section names, and layering
   narrative after the `0.3.0` release.
 - Clarified the terminology split between the `Doe runtime` underneath the
-  package and the `Doe API` / `Doe routines` JS convenience surface exposed by
-  the package.
+  package and the `Doe API` JS convenience surface exposed by the package,
+  including the more opinionated `gpu.compute.once(...)` helper within it.
 - Fixed the layered README SVG asset so it renders correctly on package
   surfaces.
 
@@ -24,21 +24,24 @@ and process documents.
 ### Changed
 
 - Breaking: redesigned the shared `doe` surface around `await
-  doe.requestDevice()`, grouped `gpu.buffers.*`, and grouped
-  `gpu.compute.*` instead of the earlier flat bound-helper methods.
-- Added `gpu.buffers.like(...)` for buffer-allocation boilerplate reduction and
-  `gpu.compute.once(...)` for the first `Doe routines` workflow.
+  doe.requestDevice()`, grouped `gpu.buffer.*`, grouped `gpu.kernel.*`, and
+  `gpu.compute.once(...)` instead of the earlier flat bound-helper methods.
+- Added `gpu.buffer.like(...)` for buffer-allocation boilerplate reduction and
+  `gpu.compute.once(...)` as the first more opinionated one-shot helper inside
+  the Doe API.
 - Doe helper token values now use camelCase (`storageRead`,
   `storageReadWrite`) and Doe workgroups now accept `[x, y]` in addition to
   `number` and `[x, y, z]`.
 - `gpu.compute.once(...)` now rejects raw numeric WebGPU usage flags; use Doe
-  usage tokens there or drop to `gpu.buffers.*` for explicit raw-flag control.
+  usage tokens there or drop to `gpu.buffer.*` / `gpu.kernel.*` for explicit
+  raw control.
 - Kept the same `doe` shape on `@simulatte/webgpu` and
   `@simulatte/webgpu/compute`; the package split remains the underlying raw
   device surface (`full` vs compute-only facade), not separate helper dialects.
 - Updated the package README, API contract, and JSDoc guide to standardize the
-  `Direct WebGPU`, `Doe API`, and `Doe routines` model and the boundary between the headless package lane and
-  `nursery/fawn-browser`.
+  `Direct WebGPU` and `Doe API` model, including the more opinionated
+  `gpu.compute.once(...)` helper within the Doe API, and the boundary between
+  the headless package lane and `nursery/fawn-browser`.
 
 ## [0.2.4] - 2026-03-11
 
@@ -66,8 +69,8 @@ and process documents.
 - Added explicit package export surfaces for `@simulatte/webgpu` (default
   full) and `@simulatte/webgpu/compute`, plus the first `doe` ergonomic
   namespace for buffer/readback/compute helpers.
-- Added `doe.bind(device)` so the ergonomic helper surface supports device-bound
-  workflows in addition to static helper calls.
+- Added `doe.bind(device)` so the ergonomic helper surface can wrap an existing
+  device into the same bound helper object returned by `doe.requestDevice()`.
 
 ### Changed
 

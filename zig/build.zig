@@ -28,6 +28,15 @@ pub fn build(b: *std.Build) void {
     const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
     const build_options = b.addOptions();
     build_options.addOption(bool, "lean_verified", lean_verified);
+    {
+        const f = std.fs.cwd().openFile("../config/comparability-obligations.json", .{}) catch
+            @panic("config/comparability-obligations.json not found");
+        defer f.close();
+        const json = f.readToEndAlloc(b.allocator, 128 * 1024) catch
+            @panic("failed to read comparability-obligations.json");
+        build_options.addOption([]const u8, "comparability_obligations_json", json);
+        build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
+    }
 
     var proof_artifact_sha256: ?[]const u8 = null;
     if (lean_verified) {

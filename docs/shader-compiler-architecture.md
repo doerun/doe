@@ -186,6 +186,19 @@ For the npm package, DXC is conditionally downloaded on Windows only:
 - Windows with SDK: ~2MB (DXC already on system)
 - Windows without SDK: ~2MB + ~20MB DXC download
 
+Current Doe DXC contract:
+
+- explicit pin: `DOE_WGSL_DXC=/absolute/or/workspace-relative/path/to/dxc(.exe)`
+- explicit PATH opt-in: `DOE_WGSL_DXC=PATH`
+- explicit code path: `doe_wgsl.translateToDxilWithToolchainConfig(..., .{
+  .executable = ...,
+  .discovery = .explicit_config,
+})`
+- unset `DOE_WGSL_DXC` still falls back to PATH for backward compatibility, but
+  that mode is not the reproducible contract Doe wants for governed runs
+- native DXIL emission is still not implemented; the final DXIL container still
+  comes from an external DXC process
+
 ### Future options (not blocking, neither foreclosed)
 
 **Option A: Native DXIL emission.** Write an LLVM 3.7 bitcode encoder + DXIL container builder in Zig. Eliminates DXC dependency entirely. Same pattern as native SPIR-V for Vulkan.

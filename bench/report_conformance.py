@@ -67,19 +67,46 @@ def load_obligation_contract(path: Path) -> tuple[int, set[str]]:
         raise ValueError(
             f"invalid comparability obligation contract: schemaVersion missing/invalid in {path}"
         )
-    raw_ids = payload.get("obligationIds")
-    if not isinstance(raw_ids, list) or not raw_ids:
-        raise ValueError(
-            f"invalid comparability obligation contract: obligationIds missing/invalid in {path}"
-        )
     obligation_ids: set[str] = set()
-    for index, raw in enumerate(raw_ids):
-        if not isinstance(raw, str) or not raw:
+    if schema_version == 1:
+        raw_ids = payload.get("obligationIds")
+        if not isinstance(raw_ids, list) or not raw_ids:
+            raise ValueError(
+                f"invalid comparability obligation contract: obligationIds missing/invalid in {path}"
+            )
+        for index, raw in enumerate(raw_ids):
+            if not isinstance(raw, str) or not raw:
+                raise ValueError(
+                    "invalid comparability obligation contract: "
+                    f"obligationIds[{index}] must be non-empty string in {path}"
+                )
+            obligation_ids.add(raw)
+        return schema_version, obligation_ids
+
+    if schema_version != 2:
+        raise ValueError(
+            "invalid comparability obligation contract: "
+            f"unsupported schemaVersion {schema_version} in {path}"
+        )
+
+    raw_obligations = payload.get("obligations")
+    if not isinstance(raw_obligations, list) or not raw_obligations:
+        raise ValueError(
+            f"invalid comparability obligation contract: obligations missing/invalid in {path}"
+        )
+    for index, raw in enumerate(raw_obligations):
+        if not isinstance(raw, dict):
             raise ValueError(
                 "invalid comparability obligation contract: "
-                f"obligationIds[{index}] must be non-empty string in {path}"
+                f"obligations[{index}] must be object in {path}"
             )
-        obligation_ids.add(raw)
+        obligation_id = raw.get("id")
+        if not isinstance(obligation_id, str) or not obligation_id:
+            raise ValueError(
+                "invalid comparability obligation contract: "
+                f"obligations[{index}].id must be non-empty string in {path}"
+            )
+        obligation_ids.add(obligation_id)
     return schema_version, obligation_ids
 
 

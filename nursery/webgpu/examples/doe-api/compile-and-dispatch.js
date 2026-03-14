@@ -1,12 +1,12 @@
 import { doe } from "@simulatte/webgpu/compute";
 
 const gpu = await doe.requestDevice();
-const src = gpu.buffers.fromData(new Float32Array([1, 2, 3, 4]));
-const dst = gpu.buffers.like(src, {
+const src = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
+const dst = gpu.buffer.like(src, {
   usage: "storageReadWrite",
 });
 
-const kernel = gpu.compute.compile({
+const kernel = gpu.kernel.create({
   code: `
     @group(0) @binding(0) var<storage, read> src: array<f32>;
     @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
@@ -26,5 +26,5 @@ await kernel.dispatch({
   workgroups: 1,
 });
 
-const result = await gpu.buffers.read(dst, Float32Array);
+const result = await gpu.buffer.read(dst, Float32Array);
 console.log(JSON.stringify(Array.from(result)));

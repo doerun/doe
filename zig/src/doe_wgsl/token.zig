@@ -94,6 +94,7 @@ pub const Tag = enum(u8) {
     kw_continuing,
     kw_diagnostic,
     kw_alias,
+    kw_const_assert,
 
     // Type keywords.
     kw_bool,
@@ -157,6 +158,7 @@ const KW = struct { []const u8, Tag };
 const KEYWORDS = [_]KW{
     .{ "alias", .kw_alias },
     .{ "array", .kw_array },
+    .{ "const_assert", .kw_const_assert },
     .{ "atomic", .kw_atomic },
     .{ "bool", .kw_bool },
     .{ "break", .kw_break },

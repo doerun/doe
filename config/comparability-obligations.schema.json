@@ -3,10 +3,10 @@
   "title": "Fawn Comparability Obligation Contract",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "obligationIds"],
+  "required": ["schemaVersion", "facts", "obligations"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "obligationIds": {
+    "schemaVersion": { "type": "integer", "const": 2 },
+    "facts": {
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
@@ -14,6 +14,81 @@
         "type": "string",
         "pattern": "^[a-z][a-z0-9_]*$"
       }
+    },
+    "obligations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "blocking", "applicableWhen", "passesWhen"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "blocking": { "type": "boolean" },
+          "applicableWhen": { "$ref": "#/$defs/expr" },
+          "passesWhen": { "$ref": "#/$defs/expr" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "expr": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["const"],
+          "properties": {
+            "const": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fact"],
+          "properties": {
+            "fact": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["not"],
+          "properties": {
+            "not": { "$ref": "#/$defs/expr" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allOf"],
+          "properties": {
+            "allOf": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/expr" }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["anyOf"],
+          "properties": {
+            "anyOf": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/expr" }
+            }
+          }
+        }
+      ]
     }
   }
 }

@@ -1,8 +1,8 @@
 import type {
   BoundDoeNamespace,
   DoeKernelDispatchOptions,
+  DoeKernelCreateOptions,
   DoeNamespace,
-  DoeRunComputeOptions,
 } from "./doe.js";
 
 export interface ProviderInfo {
@@ -64,7 +64,7 @@ export interface RequestDeviceOptions {
   createArgs?: string[] | null;
 }
 
-export interface FullDoeRunComputeOptions extends DoeRunComputeOptions<GPUBuffer> {}
+export interface FullDoeKernelCreateOptions extends DoeKernelCreateOptions<GPUBuffer> {}
 
 export interface FullDoeKernelDispatchOptions extends DoeKernelDispatchOptions<GPUBuffer> {}
 
@@ -75,15 +75,12 @@ export interface FullDoeKernel {
 }
 
 export interface FullBoundDoeNamespace
-  extends BoundDoeNamespace<GPUDevice, GPUBuffer, FullDoeKernel, FullDoeRunComputeOptions> {}
+  extends BoundDoeNamespace<GPUDevice, GPUBuffer, FullDoeKernel, FullDoeKernelCreateOptions> {}
 
 export interface FullDoeNamespace
   extends DoeNamespace<
     GPUDevice,
-    GPUBuffer,
-    FullDoeKernel,
     FullBoundDoeNamespace,
-    FullDoeRunComputeOptions,
     RequestDeviceOptions
   > {}
 

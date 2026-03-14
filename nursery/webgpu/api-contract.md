@@ -3,20 +3,16 @@
 Contract version: `v1`
 
 Scope: current headless WebGPU package contract for Node.js and Bun, with a
-default `full` surface, an explicit `compute` subpath, and the Doe API / Doe
-routines surface used by benchmarking, CI, and artifact-backed comparison
-workflows.
+default `full` surface, an explicit `compute` subpath, and the Doe API surface
+used by benchmarking, CI, and artifact-backed comparison workflows.
 
 Terminology in this contract is explicit:
 
 - `Doe runtime`
   the Zig/native WebGPU runtime underneath the package
 - `Doe API`
-  the explicit JS convenience surface under `doe.bind(...)`, `gpu.buffers.*`,
-  `gpu.compute.run(...)`, and `gpu.compute.compile(...)`
-- `Doe routines`
-  the narrower, more opinionated JS flows layered on that same runtime;
-  currently `gpu.compute.once(...)`
+  the explicit JS convenience surface under `doe.bind(...)`, `gpu.buffer.*`,
+  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute.once(...)`
 
 For the current `compute` vs `full` support split, see
 [`./support-contracts.md`](./support-contracts.md).
@@ -27,21 +23,26 @@ Exact type and method shapes live in:
 - [`./src/compute.d.ts`](./src/compute.d.ts)
 - [`./src/doe.d.ts`](./src/doe.d.ts)
 
+Planned naming cleanup for the Doe helper surface is documented separately in:
+
+- [`./doe-api-design.md`](./doe-api-design.md)
+
 This contract covers package-surface GPU access, provider metadata, and helper
 entrypoints. It does not promise DOM/canvas ownership or browser-process
 parity.
 
+This is the contract for the current implemented API. It intentionally may
+differ from the future helper naming proposed in `doe-api-design.md`.
+
 ## API styles
 
-The current package surface is organized around three API styles:
+The current package surface is organized around two API styles:
 
 - `Direct WebGPU`
   raw `requestAdapter(...)`, `requestDevice(...)`, and direct `device.*` usage
 - `Doe API`
   the package's explicit JS convenience surface under `doe.bind(...)`,
-  `gpu.buffers.*`, `gpu.compute.run(...)`, and `gpu.compute.compile(...)`
-- `Doe routines`
-  the package's more opinionated precomposed flows; currently
+  `gpu.buffer.*`, `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and
   `gpu.compute.once(...)`
 
 ## Export surfaces
@@ -54,7 +55,7 @@ Contract:
 
 - headless `full` surface
 - includes compute plus render/sampler/surface APIs already exposed by the Doe runtime package surface
-- also exports the shared `doe` namespace for the Doe API and Doe routines surface
+- also exports the shared `doe` namespace for the Doe API surface
 
 ### `@simulatte/webgpu/compute`
 
@@ -64,7 +65,7 @@ Contract:
 
 - sized for AI workloads and other buffer/dispatch-heavy headless execution
 - excludes render/sampler/surface methods from the public JS facade
-- also exports the same `doe` namespace for the Doe API and Doe routines surface
+- also exports the same `doe` namespace for the Doe API surface
 
 ## Shared runtime API
 
@@ -105,20 +106,21 @@ Behavior:
 
 Behavior:
 
-- provides the `Doe API` and `Doe routines` surface for common headless
-  compute tasks
+- provides the `Doe API` surface for common headless compute tasks
 - the exported `doe` namespace is the JS convenience surface, distinct from
   the underlying Doe runtime
 - `requestDevice(options?)` resolves the package-local `requestDevice(...)` and returns
   the bound helper object directly
-- supports both static helper calls and `doe.bind(device)` for device-bound workflows
-- helper methods are grouped under `buffers.*` and `compute.*`
-- `buffers.*`, `compute.run(...)`, and `compute.compile(...)` are the main
+- `doe.bind(device)` wraps an existing raw device into the same bound helper object
+- helper methods are grouped under the bound helper object's `buffer.*`,
+  `kernel.*`, and `compute.*`
+- `buffer.*`, `kernel.run(...)`, and `kernel.create(...)` are the main
   `Doe API` surface
-- `compute.once(...)` is the first `Doe routines` path and stays intentionally
+- `compute.once(...)` is the more opinionated one-shot helper inside the same
+  `Doe API` surface and stays intentionally
   narrow: typed-array/headless one-call execution, not a replacement for
   explicit reusable resource ownership
-- infers `compute.run(...).bindings` access from Doe helper-created buffer usage when that
+- infers `kernel.run(...).bindings` access from Doe helper-created buffer usage when that
   usage maps to one bindable access mode (`uniform`, `storageRead`, `storageReadWrite`)
 - `compute.once(...)` accepts Doe usage tokens only; raw numeric WebGPU usage flags stay on
   the more explicit `Doe API` surface

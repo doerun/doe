@@ -37,9 +37,13 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
 
 # Full layer (canonical sources).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Generated/ComparabilityContract.olean" "${ROOT_DIR}/lean/Fawn/Generated/ComparabilityContract.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/Comparability.olean" "${ROOT_DIR}/lean/Fawn/Full/Comparability.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/ComparabilityFixtures.olean" "${ROOT_DIR}/lean/Fawn/Full/ComparabilityFixtures.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/WorkloadGeometry.olean" "${ROOT_DIR}/lean/Fawn/Full/WorkloadGeometry.lean"
 
 # Re-export shims (backward compatibility).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \

@@ -1257,6 +1257,17 @@ Contract updates in this change:
   - `doe-advantage` (directional optimized lanes)
   while keeping the same timing basis rule for fairness.
 
+### Comparability obligation contract externalization (2026-03-14)
+
+- `config/comparability-obligations.json` moved from `schemaVersion=1` ID-only format to `schemaVersion=2` semantic contract format.
+- The new contract now contains:
+  - `facts`
+  - ordered `obligations`
+  - per-obligation `blocking`, `applicableWhen`, and `passesWhen` fields
+- Python comparability fixture evaluation now interprets the v2 contract directly.
+- Lean comparability IDs/facts/rule application are now generated from the same contract via `lean/generate_comparability_contract.py`.
+- Downstream report/gate conformance loaders accept both v1 and v2 obligation contracts so historical reports remain auditable while new runs use the semantic contract.
+
 ### Doe-vs-Doe timing-source parity stabilization for strict comparable runs (2026-02-26)
 
 - Updated timing selection to prefer `doe-execution-total-ns` when execution evidence is present and GPU timestamp timing is unavailable.

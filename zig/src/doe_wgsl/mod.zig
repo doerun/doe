@@ -43,6 +43,10 @@ pub const MAX_OUTPUT: usize = emit_msl.MAX_OUTPUT;
 pub const MAX_HLSL_OUTPUT: usize = emit_hlsl.MAX_OUTPUT;
 pub const MAX_SPIRV_OUTPUT: usize = emit_spirv.MAX_OUTPUT;
 pub const MAX_DXIL_OUTPUT: usize = emit_dxil.MAX_OUTPUT;
+pub const DXIL_DXC_ENV_VAR: []const u8 = emit_dxil.DXC_ENV_VAR;
+pub const DXIL_DXC_PATH_SENTINEL: []const u8 = emit_dxil.DXC_PATH_SENTINEL;
+pub const DxilToolchainConfig = emit_dxil.ToolchainConfig;
+pub const DxilToolchainDiscovery = emit_dxil.ToolchainDiscovery;
 pub const MAX_BINDINGS: usize = 16;
 
 pub const BindingKind = enum(u32) {
@@ -127,6 +131,23 @@ fn setLastError(stage: CompilationStage, kind: TranslateError, source: ?[]const 
     last_error_len = text.len;
 }
 
+fn setLastErrorDetail(stage: CompilationStage, kind: TranslateError, detail: []const u8) void {
+    last_error_stage = stage;
+    last_error_kind = kind;
+    last_error_line = 0;
+    last_error_column = 0;
+    last_error_context_len = 0;
+    const text = std.fmt.bufPrint(&last_error_buf, "{s}: {s}: {s}", .{
+        @tagName(stage),
+        @errorName(kind),
+        detail,
+    }) catch {
+        last_error_len = 0;
+        return;
+    };
+    last_error_len = text.len;
+}
+
 fn recordSourceContext(source: ?[]const u8, loc: ?token.Token.Loc) void {
     last_error_line = 0;
     last_error_column = 0;
@@ -203,6 +224,14 @@ pub fn lastErrorMessage() []const u8 {
     return last_error_buf[0..last_error_len];
 }
 
+pub fn lastErrorLine() u32 {
+    return last_error_line;
+}
+
+pub fn lastErrorColumn() u32 {
+    return last_error_column;
+}
+
 pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateError!ir.Module {
     clearLastError();
     var tree = parser.parseSource(allocator, wgsl) catch |err| {
@@ -210,7 +239,9 @@ pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateErro
             error.OutOfMemory => TranslateError.OutOfMemory,
             error.UnexpectedToken => TranslateError.UnexpectedToken,
         };
-        setLastError(.parser, kind, null, null);
+        // Recover the byte-offset span saved by the parser before the Ast was freed.
+        const fail_loc = parser.lastFailureContext().loc;
+        setLastError(.parser, kind, wgsl, fail_loc);
         return kind;
     };
     defer tree.deinit();
@@ -314,6 +345,7 @@ pub fn translateToDxil(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8
     defer module_ir.deinit();
 
     return emit_dxil.emit(&module_ir, out) catch |err| {
+        const detail = emit_dxil.lastErrorMessage();
         const kind = switch (err) {
             error.OutputTooLarge => TranslateError.OutputTooLarge,
             error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
@@ -321,7 +353,36 @@ pub fn translateToDxil(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8
             error.OutOfMemory => TranslateError.OutOfMemory,
             error.ShaderToolchainUnavailable => TranslateError.ShaderToolchainUnavailable,
         };
-        setLastError(.dxil_emit, kind, null, null);
+        if (detail.len != 0)
+            setLastErrorDetail(.dxil_emit, kind, detail)
+        else
+            setLastError(.dxil_emit, kind, null, null);
+        return kind;
+    };
+}
+
+pub fn translateToDxilWithToolchainConfig(
+    allocator: std.mem.Allocator,
+    wgsl: []const u8,
+    out: []u8,
+    config: emit_dxil.ToolchainConfig,
+) TranslateError!usize {
+    var module_ir = try analyzeToIr(allocator, wgsl);
+    defer module_ir.deinit();
+
+    return emit_dxil.emitWithToolchainConfig(&module_ir, out, config) catch |err| {
+        const detail = emit_dxil.lastErrorMessage();
+        const kind = switch (err) {
+            error.OutputTooLarge => TranslateError.OutputTooLarge,
+            error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
+            error.InvalidIr => TranslateError.InvalidIr,
+            error.OutOfMemory => TranslateError.OutOfMemory,
+            error.ShaderToolchainUnavailable => TranslateError.ShaderToolchainUnavailable,
+        };
+        if (detail.len != 0)
+            setLastErrorDetail(.dxil_emit, kind, detail)
+        else
+            setLastError(.dxil_emit, kind, null, null);
         return kind;
     };
 }

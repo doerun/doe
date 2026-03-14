@@ -29,6 +29,27 @@ const Token = token_mod.Token;
 const Tag = token_mod.Tag;
 const Lexer = lexer_mod.Lexer;
 
+// ============================================================
+// Parse-error location side-channel
+// ============================================================
+
+pub const FailureContext = struct {
+    /// Token index in the Ast where parsing failed, or null if unknown.
+    token_idx: ?u32 = null,
+    /// Byte-offset span of the failing token, valid even after the Ast is freed.
+    loc: ?Token.Loc = null,
+};
+
+var last_failure_context = FailureContext{};
+
+pub fn resetLastFailureContext() void {
+    last_failure_context = .{};
+}
+
+pub fn lastFailureContext() FailureContext {
+    return last_failure_context;
+}
+
 pub const ParseError = error{
     UnexpectedToken,
     OutOfMemory,
@@ -117,6 +138,17 @@ pub const Parser = struct {
             .kw_const => parser_decl.parseConstDecl(self, attrs),
             .kw_let => parser_decl.parseConstDecl(self, attrs),
             .kw_alias => parser_decl.parseAliasDecl(self),
+            // const_assert is recognised but not yet implemented; reject explicitly.
+            .kw_const_assert => {
+                last_failure_context = .{
+                    .token_idx = self.token_idx,
+                    .loc = if (self.token_idx < self.tree.tokens.items.len)
+                        self.tree.tokens.items[self.token_idx].loc
+                    else
+                        null,
+                };
+                return ParseError.UnexpectedToken;
+            },
             else => {
                 // Skip unknown token to avoid infinite loop.
                 self.advance();
@@ -194,6 +226,11 @@ pub const Parser = struct {
             self.advance();
             return tok;
         }
+        const fail_loc: ?Token.Loc = if (self.token_idx < self.tree.tokens.items.len)
+            self.tree.tokens.items[self.token_idx].loc
+        else
+            null;
+        last_failure_context = .{ .token_idx = self.token_idx, .loc = fail_loc };
         return ParseError.UnexpectedToken;
     }
 
@@ -207,6 +244,7 @@ pub const Parser = struct {
 // ============================================================
 
 pub fn parseSource(allocator: std.mem.Allocator, source: []const u8) !Ast {
+    resetLastFailureContext();
     var tree = Ast.init(allocator);
     errdefer tree.deinit();
 

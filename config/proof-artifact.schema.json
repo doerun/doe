@@ -3,7 +3,7 @@
   "title": "Fawn Proof Artifact",
   "description": "Machine-readable artifact emitted by Lean proof extraction. Compilation of the extraction module verifies all listed theorems. Decidable propositions are additionally evaluated at runtime.",
   "type": "object",
-  "required": ["schemaVersion", "status", "theorems", "evaluatedConditions", "eliminationTargets"],
+  "required": ["schemaVersion", "status", "contractHashes", "theorems", "evaluatedConditions", "eliminationTargets"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": {
@@ -14,6 +14,18 @@
       "type": "string",
       "enum": ["verified", "failed"],
       "description": "verified means all theorems typechecked and all evaluations completed."
+    },
+    "contractHashes": {
+      "type": "object",
+      "required": ["comparabilityObligationsSha256"],
+      "additionalProperties": false,
+      "properties": {
+        "comparabilityObligationsSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of config/comparability-obligations.json that generated the Lean comparability contract."
+        }
+      }
     },
     "theorems": {
       "type": "array",

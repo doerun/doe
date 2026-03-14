@@ -10,6 +10,10 @@ const Backend = ffi.WebGPUBackend;
 const BUFFER_ZERO_INIT_CHUNK_BYTES: usize = 64 * 1024;
 const BUFFER_MIN_ALIGNMENT: u64 = 4;
 
+pub fn normalizeTextureFormat(value: u32) types.WGPUTextureFormat {
+    return normalizers.normalizeTextureFormat(value);
+}
+
 pub fn getOrCreateBuffer(
     self: *Backend,
     handle: u64,

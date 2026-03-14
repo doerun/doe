@@ -2,6 +2,7 @@ const std = @import("std");
 const build_options = @import("build_options");
 
 pub const lean_verified: bool = build_options.lean_verified;
+pub const comparability_obligations_sha256: []const u8 = build_options.comparability_obligations_sha256;
 
 const proof_json: ?[]const u8 = if (build_options.lean_verified)
     build_options.lean_proof_json
@@ -27,6 +28,9 @@ comptime {
 
         if (!comptimeContains(json, "\"status\": \"verified\""))
             @compileError("lean proof artifact: status is not 'verified'");
+
+        if (!comptimeContains(json, "\"comparabilityObligationsSha256\": \"" ++ comparability_obligations_sha256 ++ "\""))
+            @compileError("lean proof artifact: comparability obligation contract hash mismatch");
 
         if (!comptimeContains(json, "\"toggleAlwaysSupported\""))
             @compileError("lean proof artifact: missing required theorem toggleAlwaysSupported");

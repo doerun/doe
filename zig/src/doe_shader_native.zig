@@ -28,11 +28,15 @@ var last_error_stage_buf: [LAST_ERROR_META_CAP]u8 = undefined;
 var last_error_stage_len: usize = 0;
 var last_error_kind_buf: [LAST_ERROR_META_CAP]u8 = undefined;
 var last_error_kind_len: usize = 0;
+var last_error_line: u32 = 0;
+var last_error_col: u32 = 0;
 
 fn clear_last_error() void {
     last_error_len = 0;
     last_error_stage_len = 0;
     last_error_kind_len = 0;
+    last_error_line = 0;
+    last_error_col = 0;
 }
 
 fn set_last_error(message: []const u8) void {
@@ -73,6 +77,11 @@ fn set_last_error_kind(kind: []const u8) void {
     set_last_error_meta(&last_error_kind_buf, &last_error_kind_len, kind);
 }
 
+fn capture_wgsl_error_location() void {
+    last_error_line = wgsl_compiler.lastErrorLine();
+    last_error_col = wgsl_compiler.lastErrorColumn();
+}
+
 pub export fn doeNativeCopyLastErrorMessage(out_ptr: ?[*]u8, out_len: usize) callconv(.c) usize {
     if (out_ptr == null or out_len == 0 or last_error_len == 0) return last_error_len;
     const dst = out_ptr.?[0..out_len];
@@ -100,6 +109,14 @@ pub export fn doeNativeCopyLastErrorKind(out_ptr: ?[*]u8, out_len: usize) callco
     return last_error_kind_len;
 }
 
+pub export fn doeNativeGetLastErrorLine() callconv(.c) u32 {
+    return last_error_line;
+}
+
+pub export fn doeNativeGetLastErrorColumn() callconv(.c) u32 {
+    return last_error_col;
+}
+
 pub export fn doeNativeCheckShaderSource(code_ptr: ?[*]const u8, code_len: usize) callconv(.c) u32 {
     clear_last_error();
     const ptr = code_ptr orelse {
@@ -113,6 +130,7 @@ pub export fn doeNativeCheckShaderSource(code_ptr: ?[*]const u8, code_len: usize
     _ = wgsl_compiler.translateToMsl(alloc, wgsl, &msl_buf) catch |err| {
         set_last_error_stage(wgsl_compiler.lastErrorStage());
         set_last_error_kind(@errorName(err));
+        capture_wgsl_error_location();
         const detail = wgsl_compiler.lastErrorMessage();
         if (detail.len > 0) {
             set_last_error(detail);
@@ -158,6 +176,7 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
     const msl_len = wgsl_compiler.translateToMsl(alloc, wgsl, &msl_buf) catch |err| {
         set_last_error_stage(wgsl_compiler.lastErrorStage());
         set_last_error_kind(@errorName(err));
+        capture_wgsl_error_location();
         const detail = wgsl_compiler.lastErrorMessage();
         if (detail.len > 0) {
             set_last_error_fmt("WGSL→MSL translation failed: {s}", .{detail});
@@ -201,8 +220,22 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
     sm.wg_y = wg.y;
     sm.wg_z = wg.z;
     // Extract binding metadata from WGSL for getBindGroupLayout support.
+    // Failure here is non-fatal: the shader compiled successfully, so we proceed with
+    // zero bindings as degraded behavior and record the error for caller inspection.
     var bind_meta: [native.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
-    const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch 0;
+    const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch |bind_err| blk: {
+        set_last_error_stage(wgsl_compiler.lastErrorStage());
+        set_last_error_kind(@errorName(bind_err));
+        capture_wgsl_error_location();
+        const detail = wgsl_compiler.lastErrorMessage();
+        if (detail.len > 0) {
+            set_last_error_fmt("binding extraction failed (shader compiled): {s}", .{detail});
+        } else {
+            set_last_error_fmt("binding extraction failed (shader compiled): {s}", .{@errorName(bind_err)});
+        }
+        std.log.warn("doe: createShaderModule: binding extraction failed ({s}); proceeding with 0 bindings", .{@errorName(bind_err)});
+        break :blk 0;
+    };
     for (0..bind_count) |i| {
         sm.bindings[i] = .{
             .group = bind_meta[i].group,

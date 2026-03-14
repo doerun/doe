@@ -1,38 +1,290 @@
 {
-  "schemaVersion": 1,
-  "obligationIds": [
+  "schemaVersion": 2,
+  "facts": [
     "workload_marked_comparable",
     "left_samples_present",
     "right_samples_present",
     "left_single_timing_class",
     "right_single_timing_class",
+    "required_timing_class_applies",
     "left_required_timing_class",
     "right_required_timing_class",
+    "timing_class_match_applies",
     "left_right_timing_class_match",
+    "trace_meta_source_match_applies",
     "left_right_trace_meta_source_match",
+    "timing_selection_policy_match_applies",
     "left_right_timing_selection_policy_match",
+    "queue_sync_mode_match_applies",
     "left_right_queue_sync_mode_match",
+    "timing_phase_match_applies",
     "left_right_timing_phase_match",
+    "execution_shape_match_applies",
     "left_right_execution_shape_match",
+    "hardware_path_match_applies",
     "left_right_hardware_path_match",
+    "operation_timing_class_required",
     "left_native_operation_timing_for_webgpu_ffi",
+    "upload_domain",
     "left_upload_ignore_first_scope_consistent",
     "right_upload_ignore_first_scope_consistent",
     "left_right_upload_buffer_usage_match",
     "left_right_upload_submit_cadence_match",
+    "allow_left_no_execution",
     "left_execution_evidence_present",
     "left_successful_execution_present",
     "left_success_or_unsupported_or_skipped",
     "left_execution_errors_absent",
     "right_execution_errors_absent",
+    "resource_probe_enabled",
     "left_resource_probe_available",
     "right_resource_probe_available",
-    "strict_resource_sample_target_positive",
+    "strict_comparability",
+    "resource_sample_target_positive",
     "left_resource_sample_target_match",
     "right_resource_sample_target_match",
     "left_resource_sampling_not_truncated",
     "right_resource_sampling_not_truncated",
     "left_resource_sample_density_sufficient",
     "right_resource_sample_density_sufficient"
+  ],
+  "obligations": [
+    {
+      "id": "workload_marked_comparable",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "workload_marked_comparable" }
+    },
+    {
+      "id": "left_samples_present",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "left_samples_present" }
+    },
+    {
+      "id": "right_samples_present",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "right_samples_present" }
+    },
+    {
+      "id": "left_single_timing_class",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "left_single_timing_class" }
+    },
+    {
+      "id": "right_single_timing_class",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "right_single_timing_class" }
+    },
+    {
+      "id": "left_required_timing_class",
+      "blocking": true,
+      "applicableWhen": { "fact": "required_timing_class_applies" },
+      "passesWhen": { "fact": "left_required_timing_class" }
+    },
+    {
+      "id": "right_required_timing_class",
+      "blocking": true,
+      "applicableWhen": { "fact": "required_timing_class_applies" },
+      "passesWhen": { "fact": "right_required_timing_class" }
+    },
+    {
+      "id": "left_right_timing_class_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "timing_class_match_applies" },
+      "passesWhen": { "fact": "left_right_timing_class_match" }
+    },
+    {
+      "id": "left_right_trace_meta_source_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "trace_meta_source_match_applies" },
+      "passesWhen": { "fact": "left_right_trace_meta_source_match" }
+    },
+    {
+      "id": "left_right_timing_selection_policy_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "timing_selection_policy_match_applies" },
+      "passesWhen": { "fact": "left_right_timing_selection_policy_match" }
+    },
+    {
+      "id": "left_right_queue_sync_mode_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "queue_sync_mode_match_applies" },
+      "passesWhen": { "fact": "left_right_queue_sync_mode_match" }
+    },
+    {
+      "id": "left_right_timing_phase_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "timing_phase_match_applies" },
+      "passesWhen": { "fact": "left_right_timing_phase_match" }
+    },
+    {
+      "id": "left_right_execution_shape_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "execution_shape_match_applies" },
+      "passesWhen": { "fact": "left_right_execution_shape_match" }
+    },
+    {
+      "id": "left_right_hardware_path_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "hardware_path_match_applies" },
+      "passesWhen": { "fact": "left_right_hardware_path_match" }
+    },
+    {
+      "id": "left_native_operation_timing_for_webgpu_ffi",
+      "blocking": true,
+      "applicableWhen": { "fact": "operation_timing_class_required" },
+      "passesWhen": { "fact": "left_native_operation_timing_for_webgpu_ffi" }
+    },
+    {
+      "id": "left_upload_ignore_first_scope_consistent",
+      "blocking": true,
+      "applicableWhen": { "fact": "upload_domain" },
+      "passesWhen": { "fact": "left_upload_ignore_first_scope_consistent" }
+    },
+    {
+      "id": "right_upload_ignore_first_scope_consistent",
+      "blocking": true,
+      "applicableWhen": { "fact": "upload_domain" },
+      "passesWhen": { "fact": "right_upload_ignore_first_scope_consistent" }
+    },
+    {
+      "id": "left_right_upload_buffer_usage_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "upload_domain" },
+      "passesWhen": { "fact": "left_right_upload_buffer_usage_match" }
+    },
+    {
+      "id": "left_right_upload_submit_cadence_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "upload_domain" },
+      "passesWhen": { "fact": "left_right_upload_submit_cadence_match" }
+    },
+    {
+      "id": "left_execution_evidence_present",
+      "blocking": true,
+      "applicableWhen": { "not": { "fact": "allow_left_no_execution" } },
+      "passesWhen": { "fact": "left_execution_evidence_present" }
+    },
+    {
+      "id": "left_successful_execution_present",
+      "blocking": true,
+      "applicableWhen": { "not": { "fact": "allow_left_no_execution" } },
+      "passesWhen": { "fact": "left_successful_execution_present" }
+    },
+    {
+      "id": "left_success_or_unsupported_or_skipped",
+      "blocking": true,
+      "applicableWhen": { "fact": "allow_left_no_execution" },
+      "passesWhen": { "fact": "left_success_or_unsupported_or_skipped" }
+    },
+    {
+      "id": "left_execution_errors_absent",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "left_execution_errors_absent" }
+    },
+    {
+      "id": "right_execution_errors_absent",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "right_execution_errors_absent" }
+    },
+    {
+      "id": "left_resource_probe_available",
+      "blocking": true,
+      "applicableWhen": { "fact": "resource_probe_enabled" },
+      "passesWhen": { "fact": "left_resource_probe_available" }
+    },
+    {
+      "id": "right_resource_probe_available",
+      "blocking": true,
+      "applicableWhen": { "fact": "resource_probe_enabled" },
+      "passesWhen": { "fact": "right_resource_probe_available" }
+    },
+    {
+      "id": "strict_resource_sample_target_positive",
+      "blocking": true,
+      "applicableWhen": {
+        "allOf": [
+          { "fact": "resource_probe_enabled" },
+          { "fact": "strict_comparability" }
+        ]
+      },
+      "passesWhen": { "fact": "resource_sample_target_positive" }
+    },
+    {
+      "id": "left_resource_sample_target_match",
+      "blocking": true,
+      "applicableWhen": {
+        "allOf": [
+          { "fact": "resource_probe_enabled" },
+          { "fact": "strict_comparability" },
+          { "fact": "resource_sample_target_positive" }
+        ]
+      },
+      "passesWhen": { "fact": "left_resource_sample_target_match" }
+    },
+    {
+      "id": "right_resource_sample_target_match",
+      "blocking": true,
+      "applicableWhen": {
+        "allOf": [
+          { "fact": "resource_probe_enabled" },
+          { "fact": "strict_comparability" },
+          { "fact": "resource_sample_target_positive" }
+        ]
+      },
+      "passesWhen": { "fact": "right_resource_sample_target_match" }
+    },
+    {
+      "id": "left_resource_sampling_not_truncated",
+      "blocking": true,
+      "applicableWhen": {
+        "allOf": [
+          { "fact": "resource_probe_enabled" },
+          { "fact": "strict_comparability" },
+          { "fact": "resource_sample_target_positive" }
+        ]
+      },
+      "passesWhen": { "fact": "left_resource_sampling_not_truncated" }
+    },
+    {
+      "id": "right_resource_sampling_not_truncated",
+      "blocking": true,
+      "applicableWhen": {
+        "allOf": [
+          { "fact": "resource_probe_enabled" },
+          { "fact": "strict_comparability" },
+          { "fact": "resource_sample_target_positive" }
+        ]
+      },
+      "passesWhen": { "fact": "right_resource_sampling_not_truncated" }
+    },
+    {
+      "id": "left_resource_sample_density_sufficient",
+      "blocking": true,
+      "applicableWhen": {
+        "allOf": [
+          { "fact": "resource_probe_enabled" },
+          { "not": { "fact": "strict_comparability" } }
+        ]
+      },
+      "passesWhen": { "fact": "left_resource_sample_density_sufficient" }
+    },
+    {
+      "id": "right_resource_sample_density_sufficient",
+      "blocking": true,
+      "applicableWhen": {
+        "allOf": [
+          { "fact": "resource_probe_enabled" },
+          { "not": { "fact": "strict_comparability" } }
+        ]
+      },
+      "passesWhen": { "fact": "right_resource_sample_density_sufficient" }
+    }
   ]
 }

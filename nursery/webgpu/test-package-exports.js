@@ -138,25 +138,33 @@ function main() {
       assert.equal(typeof full.preflightShaderSource, "function");
       assert.equal(typeof full.doe.requestDevice, "function");
       assert.equal(typeof full.doe.bind, "function");
-      assert.equal(typeof full.doe.buffers.fromData, "function");
-      assert.equal(typeof full.doe.compute.run, "function");
+      assert.equal("buffers" in full.doe, false);
+      assert.equal("buffer" in full.doe, false);
+      assert.equal("kernel" in full.doe, false);
+      assert.equal("compute" in full.doe, false);
 
       assert.equal(typeof compute.requestDevice, "function");
       assert.equal(typeof compute.doe.requestDevice, "function");
-      assert.equal(typeof compute.doe.buffers.read, "function");
-      assert.equal(typeof compute.doe.compute.once, "function");
+      assert.equal("buffers" in compute.doe, false);
+      assert.equal("buffer" in compute.doe, false);
+      assert.equal("kernel" in compute.doe, false);
+      assert.equal("compute" in compute.doe, false);
 
       assert.equal(typeof explicitFull.requestDevice, "function");
-      assert.equal(typeof explicitFull.doe.compute.compile, "function");
+      assert.equal(typeof explicitFull.doe.bind, "function");
 
       const gpu = await compute.doe.requestDevice();
       assert.ok(gpu.device.limits.maxComputeInvocationsPerWorkgroup > 0);
-      const input = gpu.buffers.fromData(new Float32Array([1, 2, 3, 4]));
-      const output = gpu.buffers.like(input, {
+      assert.equal(typeof gpu.buffer.create, "function");
+      assert.equal(typeof gpu.kernel.run, "function");
+      assert.equal(typeof gpu.kernel.create, "function");
+      assert.equal(typeof gpu.compute.once, "function");
+      const input = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
+      const output = gpu.buffer.like(input, {
         usage: "storageReadWrite",
       });
 
-      await gpu.compute.run({
+      await gpu.kernel.run({
         code: \`
           @group(0) @binding(0) var<storage, read> src: array<f32>;
           @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
@@ -171,7 +179,7 @@ function main() {
         workgroups: 1,
       });
 
-      const result = await gpu.buffers.read(output, Float32Array);
+      const result = await gpu.buffer.read(output, Float32Array);
       assert.deepEqual(Array.from(result), [2, 4, 6, 8]);
 
       const oneShot = await gpu.compute.once({
@@ -203,6 +211,38 @@ function main() {
       \`);
       assert.equal(preflightAccepted.ok, true);
 
+      // --- structured error fields: preflight rejection ---
+      const preflightRejected = full.preflightShaderSource(\`
+        fn main() { let x = !!!; }
+      \`);
+      assert.equal(preflightRejected.ok, false);
+      assert.ok(preflightRejected.message.length > 0, "preflight rejection should have a message");
+      assert.equal(typeof preflightRejected.stage, "string");
+      assert.ok(preflightRejected.stage.length > 0, "preflight rejection should have stage");
+      assert.equal(typeof preflightRejected.kind, "string");
+      assert.ok(preflightRejected.kind.length > 0, "preflight rejection should have kind");
+      assert.equal(typeof preflightRejected.line, "number");
+      assert.ok(preflightRejected.line > 0, "preflight rejection should have line");
+      assert.equal(typeof preflightRejected.column, "number");
+      assert.ok(preflightRejected.column > 0, "preflight rejection should have column");
+
+      // --- structured error fields: createShaderModule failure ---
+      try {
+        fullDevice.createShaderModule({
+          code: \`fn main() -> @location(0) vec4f { let x = !!!; return vec4f(0); }\`,
+        });
+        assert.fail("createShaderModule should throw on invalid WGSL");
+      } catch (shaderError) {
+        assert.ok(shaderError instanceof Error, "shader error should be an Error");
+        assert.ok(shaderError.message.length > 0, "shader error should have a message");
+        assert.equal(typeof shaderError.stage, "string");
+        assert.ok(shaderError.stage.length > 0, "shader error should have stage");
+        assert.equal(typeof shaderError.line, "number");
+        assert.ok(shaderError.line > 0, "error.line should be positive");
+        assert.equal(typeof shaderError.column, "number");
+        assert.ok(shaderError.column > 0, "error.column should be positive");
+      }
+
       const subgroupShader = fullDevice.createShaderModule({
         code: \`
           @group(0) @binding(0) var<storage, read_write> data: array<f32>;
@@ -230,7 +270,7 @@ function main() {
         usage: compute.globals.GPUBufferUsage.STORAGE | compute.globals.GPUBufferUsage.COPY_DST,
       });
       await assert.rejects(
-        gpu.compute.run({
+        gpu.kernel.run({
           code: \`
             @group(0) @binding(0) var<storage, read> src: array<f32>;
 
@@ -292,7 +332,7 @@ function main() {
         /accepts raw numeric usage flags only when explicit access is also provided/
       );
 
-      const destroyedBuffer = gpu.buffers.create({
+      const destroyedBuffer = gpu.buffer.create({
         size: 16,
         usage: "storageReadWrite",
       });
@@ -336,6 +376,110 @@ function main() {
       });
       assert.ok(sampledLayout);
       assert.ok(sampledGroup);
+
+      // --- doe.bind(device) ---
+      const bound = compute.doe.bind(gpu.device);
+      assert.ok(bound.device === gpu.device);
+      const boundInput = bound.buffer.fromData(new Float32Array([10, 20]));
+      await bound.kernel.run({
+        code: \`
+          @group(0) @binding(0) var<storage, read> src: array<f32>;
+          @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+          @compute @workgroup_size(2)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            dst[gid.x] = src[gid.x] + 1.0;
+          }
+        \`,
+        bindings: [boundInput, bound.buffer.like(boundInput, { usage: "storageReadWrite" })],
+        workgroups: 1,
+      });
+
+      // --- kernel.create() + kernel.dispatch() reuse ---
+      const kernelInput = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
+      const kernelOutput = gpu.buffer.like(kernelInput, { usage: "storageReadWrite" });
+      const kernel = gpu.kernel.create({
+        code: \`
+          @group(0) @binding(0) var<storage, read> src: array<f32>;
+          @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+          @compute @workgroup_size(4)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            dst[gid.x] = src[gid.x] * 5.0;
+          }
+        \`,
+        bindings: [kernelInput, kernelOutput],
+      });
+      await kernel.dispatch({ bindings: [kernelInput, kernelOutput], workgroups: 1 });
+      const kernelResult = await gpu.buffer.read(kernelOutput, Float32Array);
+      assert.deepEqual(Array.from(kernelResult), [5, 10, 15, 20]);
+
+      // dispatch again with different data
+      const kernelInput2 = gpu.buffer.fromData(new Float32Array([10, 20, 30, 40]));
+      const kernelOutput2 = gpu.buffer.like(kernelInput2, { usage: "storageReadWrite" });
+      await kernel.dispatch({ bindings: [kernelInput2, kernelOutput2], workgroups: 1 });
+      const kernelResult2 = await gpu.buffer.read(kernelOutput2, Float32Array);
+      assert.deepEqual(Array.from(kernelResult2), [50, 100, 150, 200]);
+
+      // --- readBuffer direct MAP_READ path ---
+      const mappableBuf = gpu.buffer.create({
+        size: 16,
+        usage: ["readback"],
+      });
+      gpu.device.queue.writeBuffer(mappableBuf, 0, new Float32Array([5, 6, 7, 8]));
+      const mappableResult = await gpu.buffer.read(mappableBuf, Float32Array);
+      assert.deepEqual(Array.from(mappableResult), [5, 6, 7, 8]);
+
+      // --- 3-binding dispatch ---
+      const triOnce = await gpu.compute.once({
+        code: \`
+          @group(0) @binding(0) var<storage, read> a: array<f32>;
+          @group(0) @binding(1) var<storage, read> b: array<f32>;
+          @group(0) @binding(2) var<storage, read> c: array<f32>;
+          @group(0) @binding(3) var<storage, read_write> dst: array<f32>;
+          @compute @workgroup_size(2)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            let i = gid.x;
+            dst[i] = a[i] + b[i] + c[i];
+          }
+        \`,
+        inputs: [
+          new Float32Array([1, 2]),
+          new Float32Array([10, 20]),
+          new Float32Array([100, 200]),
+        ],
+        output: { type: Float32Array },
+        workgroups: 1,
+      });
+      assert.deepEqual(Array.from(triOnce), [111, 222]);
+
+      // --- validateWorkgroups error: invalid type ---
+      await assert.rejects(
+        gpu.kernel.run({
+          code: \`@compute @workgroup_size(1) fn main() {}\`,
+          bindings: [],
+          workgroups: "bad",
+        }),
+        /Doe workgroups must be/
+      );
+
+      // --- validateWorkgroups error: zero workgroup ---
+      await assert.rejects(
+        gpu.kernel.run({
+          code: \`@compute @workgroup_size(1) fn main() {}\`,
+          bindings: [],
+          workgroups: 0,
+        }),
+        /must be a positive integer/
+      );
+
+      // --- validateWorkgroups error: negative workgroup ---
+      await assert.rejects(
+        gpu.kernel.run({
+          code: \`@compute @workgroup_size(1) fn main() {}\`,
+          bindings: [],
+          workgroups: -1,
+        }),
+        /must be a positive integer/
+      );
     `;
 
     execFileSync("node", ["--input-type=module", "-e", import_check], {

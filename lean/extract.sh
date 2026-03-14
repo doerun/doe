@@ -5,8 +5,10 @@ BUILD_DIR="$(mktemp -d /tmp/fawn-lean-extract.XXXXXX)"
 trap 'rm -rf "${BUILD_DIR}"' EXIT
 mkdir -p "${BUILD_DIR}/Fawn/Core"
 mkdir -p "${BUILD_DIR}/Fawn/Full"
+mkdir -p "${BUILD_DIR}/Fawn/Generated"
 
 # shellcheck source=lean_build_common.sh
+python3 "$(dirname "${BASH_SOURCE[0]}")/generate_comparability_contract.py"
 . "$(dirname "${BASH_SOURCE[0]}")/lean_build_common.sh"
 
 ARTIFACT_DIR="${ROOT_DIR}/lean/artifacts"

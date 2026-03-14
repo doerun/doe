@@ -18,6 +18,7 @@ import {
   assertOptionalIntegerInRange,
   assertLiveResource,
   destroyResource,
+  validatePositiveInteger,
 } from "./shared/resource-lifecycle.js";
 import {
   publishLimits,
@@ -153,6 +154,10 @@ function openLibrary(path) {
         // Adapter/Device (flat helpers)
         doeRequestAdapterFlat:    { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
         doeRequestDeviceFlat:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
+        doeNativeAdapterHasFeature: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.u32 },
+        doeNativeAdapterGetLimits:  { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
+        doeNativeDeviceHasFeature:  { args: [FFIType.ptr, FFIType.u32], returns: FFIType.u32 },
+        doeNativeDeviceGetLimits:   { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
         wgpuAdapterRelease:       { args: [FFIType.ptr], returns: FFIType.void },
         wgpuAdapterHasFeature:    { args: [FFIType.ptr, FFIType.u32], returns: FFIType.u32 },
         wgpuAdapterGetLimits:     { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
@@ -255,6 +260,14 @@ function openLibrary(path) {
         symbols.doeNativeCopyLastErrorKind = {
             args: [FFIType.ptr, FFIType.u64],
             returns: FFIType.u64,
+        };
+        symbols.doeNativeGetLastErrorLine = {
+            args: [],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeGetLastErrorColumn = {
+            args: [],
+            returns: FFIType.u32,
         };
     }
     return dlopen(path, symbols);
@@ -359,16 +372,28 @@ function queryLimits(handle, fnName) {
     return publishLimits(decodeLimits(raw));
 }
 
+function queryLimitsByPreference(handle, fnNames) {
+    for (const fnName of fnNames) {
+        const fn = wgpu?.symbols?.[fnName];
+        if (typeof fn !== "function" || !handle) continue;
+        const raw = new ArrayBuffer(WGPU_LIMITS_SIZE);
+        const status = Number(fn(handle, new Uint8Array(raw)));
+        if (status !== WGPU_STATUS_SUCCESS) continue;
+        return publishLimits(decodeLimits(raw));
+    }
+    return publishLimits(null);
+}
+
 function adapterLimits(handle) {
-    return queryLimits(handle, "wgpuAdapterGetLimits");
+    return queryLimitsByPreference(handle, ["doeNativeAdapterGetLimits", "wgpuAdapterGetLimits"]);
 }
 
 function deviceLimits(handle) {
-    return queryLimits(handle, "wgpuDeviceGetLimits");
+    return queryLimitsByPreference(handle, ["doeNativeDeviceGetLimits", "wgpuDeviceGetLimits"]);
 }
 
 function adapterFeatures(handle) {
-    const fn = wgpu?.symbols?.wgpuAdapterHasFeature;
+    const fn = wgpu?.symbols?.doeNativeAdapterHasFeature ?? wgpu?.symbols?.wgpuAdapterHasFeature;
     return publishFeatures(
         typeof fn === "function" && handle
             ? (feature) => Number(fn(handle, feature)) !== 0
@@ -377,7 +402,7 @@ function adapterFeatures(handle) {
 }
 
 function deviceFeatures(handle) {
-    const fn = wgpu?.symbols?.wgpuDeviceHasFeature;
+    const fn = wgpu?.symbols?.doeNativeDeviceHasFeature ?? wgpu?.symbols?.wgpuDeviceHasFeature;
     return publishFeatures(
         typeof fn === "function" && handle
             ? (feature) => Number(fn(handle, feature)) !== 0
@@ -392,6 +417,30 @@ function copyNativeErrorMeta(symbolName) {
     const len = Number(fn(scratch, scratch.length));
     if (!len) return "";
     return decoder.decode(scratch.subarray(0, Math.min(len, scratch.length - 1)));
+}
+
+/**
+ * Read structured error fields (stage, kind, line, column) from the native
+ * last-error ABI. Uses `doeNativeGetLastErrorLine` / `doeNativeGetLastErrorColumn`
+ * when available; falls back to string copy functions for stage/kind.
+ * Returns null when the native symbols are absent (pre-structured-error builds).
+ */
+function readLastErrorFields() {
+    const stageFn = wgpu?.symbols?.doeNativeCopyLastErrorStage;
+    const kindFn = wgpu?.symbols?.doeNativeCopyLastErrorKind;
+    if (typeof stageFn !== "function" && typeof kindFn !== "function") return null;
+    const stage = copyNativeErrorMeta("doeNativeCopyLastErrorStage");
+    const kind = copyNativeErrorMeta("doeNativeCopyLastErrorKind");
+    const lineFn = wgpu?.symbols?.doeNativeGetLastErrorLine;
+    const colFn = wgpu?.symbols?.doeNativeGetLastErrorColumn;
+    const line = typeof lineFn === "function" ? Number(lineFn()) : 0;
+    const column = typeof colFn === "function" ? Number(colFn()) : 0;
+    return {
+        stage: stage || undefined,
+        kind: kind || undefined,
+        line: line > 0 ? line : undefined,
+        column: column > 0 ? column : undefined,
+    };
 }
 
 function preflightShaderSource(code) {
@@ -1316,11 +1365,11 @@ const fullSurfaceBackend = {
         try {
             mod = wgpu.symbols.wgpuDeviceCreateShaderModule(assertLiveResource(device, "GPUDevice.createShaderModule", "GPUDevice"), desc);
         } catch (error) {
-            throw enrichNativeCompilerError(error, "GPUDevice.createShaderModule");
+            throw enrichNativeCompilerError(error, "GPUDevice.createShaderModule", readLastErrorFields());
         }
         void _refs;
         if (!mod) {
-            throw compilerErrorFromMessage("GPUDevice.createShaderModule", nativeFailureMessage("createShaderModule failed"));
+            throw compilerErrorFromMessage("GPUDevice.createShaderModule", nativeFailureMessage("createShaderModule failed"), readLastErrorFields());
         }
         return mod;
     },
@@ -1330,11 +1379,11 @@ const fullSurfaceBackend = {
         try {
             native = wgpu.symbols.wgpuDeviceCreateComputePipeline(assertLiveResource(device, "GPUDevice.createComputePipeline", "GPUDevice"), desc);
         } catch (error) {
-            throw enrichNativeCompilerError(error, "GPUDevice.createComputePipeline");
+            throw enrichNativeCompilerError(error, "GPUDevice.createComputePipeline", readLastErrorFields());
         }
         void _refs;
         if (!native) {
-            throw compilerErrorFromMessage("GPUDevice.createComputePipeline", nativeFailureMessage("createComputePipeline failed"));
+            throw compilerErrorFromMessage("GPUDevice.createComputePipeline", nativeFailureMessage("createComputePipeline failed"), readLastErrorFields());
         }
         return native;
     },
@@ -1408,8 +1457,44 @@ const fullSurfaceBackend = {
         wgpu.symbols.wgpuDeviceRelease(native);
     },
     adapterRequestDevice(adapter, _descriptor, classes) {
-        const device = requestDeviceSync(adapter._instance, assertLiveResource(adapter, "GPUAdapter.requestDevice", "GPUAdapter"));
-        return new classes.DoeGPUDevice(device, adapter._instance, deviceLimits(device));
+        const native = requestDeviceSync(adapter._instance, assertLiveResource(adapter, "GPUAdapter.requestDevice", "GPUAdapter"));
+        const device = {
+            _destroyed: false,
+            _resourceLabel: "GPUDevice",
+            _resourceOwner: null,
+            createBuffer: classes.DoeGPUDevice.prototype.createBuffer,
+            createShaderModule: classes.DoeGPUDevice.prototype.createShaderModule,
+            createComputePipeline: classes.DoeGPUDevice.prototype.createComputePipeline,
+            createComputePipelineAsync: classes.DoeGPUDevice.prototype.createComputePipelineAsync,
+            createBindGroupLayout: classes.DoeGPUDevice.prototype.createBindGroupLayout,
+            createBindGroup: classes.DoeGPUDevice.prototype.createBindGroup,
+            createPipelineLayout: classes.DoeGPUDevice.prototype.createPipelineLayout,
+            createTexture: classes.DoeGPUDevice.prototype.createTexture,
+            createSampler: classes.DoeGPUDevice.prototype.createSampler,
+            createRenderPipeline: classes.DoeGPUDevice.prototype.createRenderPipeline,
+            createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
+            destroy: classes.DoeGPUDevice.prototype.destroy,
+        };
+        device._native = native;
+        device._instance = adapter._instance;
+        device.limits = deviceLimits(native);
+        device.features = deviceFeatures(native);
+        const queue = {
+            _destroyed: false,
+            _resourceLabel: "GPUQueue",
+            _resourceOwner: device,
+            hasPendingSubmissions: classes.DoeGPUQueue.prototype.hasPendingSubmissions,
+            markSubmittedWorkDone: classes.DoeGPUQueue.prototype.markSubmittedWorkDone,
+            submit: classes.DoeGPUQueue.prototype.submit,
+            writeBuffer: classes.DoeGPUQueue.prototype.writeBuffer,
+            onSubmittedWorkDone: classes.DoeGPUQueue.prototype.onSubmittedWorkDone,
+        };
+        queue._native = this.deviceGetQueue(native);
+        queue._instance = adapter._instance;
+        queue._device = device;
+        this.initQueueState(queue);
+        device.queue = queue;
+        return device;
     },
     adapterDestroy(native) {
         wgpu.symbols.wgpuAdapterRelease(native);
@@ -1500,9 +1585,7 @@ export { createDoeRuntime, runDawnVsDoeCompare };
 export { preflightShaderSource };
 
 export function setNativeTimeoutMs(timeoutMs) {
-    if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
-        throw new Error("setNativeTimeoutMs: timeoutMs must be a positive integer.");
-    }
+    validatePositiveInteger(timeoutMs, 'native timeout');
     processEventsTimeoutNs = timeoutMs * 1_000_000;
 }
 

@@ -1,6 +1,7 @@
 import Fawn.Core.Bridge
 import Fawn.Core.Dispatch
 import Fawn.Full.ComparabilityFixtures
+import Fawn.Full.WorkloadGeometry
 
 private def jsonBool (b : Bool) : String := if b then "true" else "false"
 
@@ -18,6 +19,9 @@ def main : IO Unit := do
   IO.println "{"
   IO.println "  \"schemaVersion\": 1,"
   IO.println "  \"status\": \"verified\","
+  IO.println "  \"contractHashes\": {"
+  IO.println ("    \"comparabilityObligationsSha256\": \"" ++ comparabilityContractSha256 ++ "\"")
+  IO.println "  },"
   IO.println "  \"theorems\": ["
   IO.println "    { \"name\": \"critical_is_max_rank\", \"module\": \"Fawn.Core.Model\", \"category\": \"comptime_verified\" },"
   IO.println "    { \"name\": \"requiredProof_forbidden_reject_from_rank\", \"module\": \"Fawn.Core.Model\", \"category\": \"comptime_verified\" },"
@@ -30,6 +34,9 @@ def main : IO Unit := do
   IO.println "    { \"name\": \"comparableFromObligations_false_iff_failedBlockingNonEmpty\", \"module\": \"Fawn.Full.Comparability\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromFacts_true_iff_failedBlockingNil\", \"module\": \"Fawn.Full.Comparability\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromFacts_false_iff_failedBlockingNonEmpty\", \"module\": \"Fawn.Full.Comparability\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"structurallyEquivalentGeometry_refl\", \"module\": \"Fawn.Full.WorkloadGeometry\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"structurallyEquivalentGeometry_forall_components\", \"module\": \"Fawn.Full.WorkloadGeometry\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"equalGeometrySetsExecutionShapeFacts\", \"module\": \"Fawn.Full.WorkloadGeometry\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"strictHappyPathExpectedBlocking_exact\", \"module\": \"Fawn.Full.ComparabilityFixtures\", \"category\": \"lean_fixture\" },"
   IO.println "    { \"name\": \"strictHappyPathComparable\", \"module\": \"Fawn.Full.ComparabilityFixtures\", \"category\": \"lean_fixture\" },"
   IO.println "    { \"name\": \"strictMissingLeftSamplesExpectedBlocking_exact\", \"module\": \"Fawn.Full.ComparabilityFixtures\", \"category\": \"lean_fixture\" },"
@@ -91,6 +98,11 @@ def main : IO Unit := do
   IO.println "      \"theorem\": \"identityActionPreservesCommand\","
   IO.println "      \"condition\": \"identity actions preserve the command unchanged; dispatch can skip applyAction\","
   IO.println "      \"runtimePath\": \"quirk/runtime.zig:dispatch\""
+  IO.println "    },"
+  IO.println "    {"
+  IO.println "      \"theorem\": \"equalGeometrySetsExecutionShapeFacts\","
+  IO.println "      \"condition\": \"matching buffer size and dispatch geometry force execution-shape comparability facts true for arbitrary Nat-valued workloads\","
+  IO.println "      \"runtimePath\": \"bench/compare_dawn_vs_doe_modules/comparability.py:evaluate_comparability_from_facts\""
   IO.println "    }"
   IO.println "  ]"
   IO.println "}"

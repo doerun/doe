@@ -91,6 +91,22 @@ Quirk records now use schemaVersion `2` with strict action payloads:
 - `toggle` requires `params.toggle`
 - `no_op` does not accept params
 
+### DXIL toolchain contract
+
+WGSL-to-DXIL currently remains `IR -> HLSL -> DXC`. Native DXIL emission is
+still deferred.
+
+- `zig/src/doe_wgsl/mod.zig` exports `translateToDxilWithToolchainConfig(...)`
+  plus `DxilToolchainConfig` for explicit callers.
+- `zig/src/doe_wgsl/emit_dxil.zig` resolves DXC from `DOE_WGSL_DXC`.
+- Set `DOE_WGSL_DXC=/absolute/or/workspace-relative/path/to/dxc(.exe)` to pin
+  the exact compiler binary.
+- Set `DOE_WGSL_DXC=PATH` to opt into PATH lookup explicitly.
+- If `DOE_WGSL_DXC` is unset, Doe keeps a legacy PATH fallback for now, but
+  governed runs should pin `DOE_WGSL_DXC` so the toolchain is reproducible.
+- DXIL emission still depends on an external DXC executable; Doe does not emit
+  native DXIL bitcode/container output yet.
+
 ### Quirk pipeline (automated)
 
 Generate quirk records from Dawn source (no manual authoring required):
@@ -198,12 +214,12 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 
 ### Active eliminations (`-Dlean-verified=true`)
 
-Six theorems gate runtime branch elimination. All are classified `comptime_verified` — they operate on finite enums and could equivalently be verified by Zig `comptime` exhaustion. Lean provides a redundant second check, not the sole authority. See `lean/README.md` for the full tier classification.
+Six theorems gate runtime branch elimination. All are `tautological` or `comptime_verified` — none require Lean. See `lean/README.md` for the four-tier classification.
 
-- Init time: `scopeCommandTableComplete` — comptime `[5×24]bool` table replaces `supportsCommand` switch. Subsumes `toggleAlwaysSupported`. `requiredProof_forbidden_reject_from_rank` and `strongerSafetyRaisesProofDemand` narrow `is_blocking` in `finalizeBucket`.
-- Per command: `identityActionComplete` + `identityActionPreservesCommand` — identity actions (no_op, informational/unhandled toggle) skip `applyAction` entirely. Toggle effect resolved at init time.
+- Init time: `scopeCommandTableComplete` (tautological — table built from function) replaces `supportsCommand` switch. `requiredProof_forbidden_reject_from_rank` and `strongerSafetyRaisesProofDemand` (comptime_verified — finite enums) narrow `is_blocking` in `finalizeBucket`.
+- Per command: `identityActionComplete` (comptime_verified — 4 variants) + `identityActionPreservesCommand` (tautological — follows from above) skip `applyAction` for identity actions.
 
-Build without `-Dlean-verified=true` produces identical logic to before (the non-lean code paths are equivalent). The payoff is simpler runtime code (662 lines, down from 796) with less duplication.
+Build without `-Dlean-verified=true` produces identical logic (the non-lean code paths are equivalent). The payoff is simpler runtime code (657 lines, down from 796) with less duplication.
 
 ## Native execution status
 

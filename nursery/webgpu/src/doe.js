@@ -185,7 +185,7 @@ function normalizeBinding(binding, index) {
   if (!access) {
     throw new Error(
       'Doe binding access is required for buffers without Doe helper usage metadata. ' +
-      'Pass { buffer, access } or create the buffer through doe.buffers.* with a bindable usage token.'
+      'Pass { buffer, access } or create the buffer through gpu.buffer.* with a bindable usage token.'
     );
   }
   return {
@@ -216,13 +216,33 @@ function bindGroupEntry(binding) {
 }
 
 /**
- * Reusable compute kernel returned by `doe.compute.compile(...)`.
+ * Reusable compute kernel compiled by `gpu.kernel.create(...)`.
  *
- * This keeps the compiled pipeline and bind-group layout needed for repeated
- * dispatches of the same WGSL shape.
+ * Surface: Doe API `gpu.kernel`.
+ * Input: Created from WGSL source, an entry point, and an initial binding shape.
+ * Returns: A reusable kernel object with `dispatch(...)`.
  *
- * - Instances are returned through the `Doe API` surface rather than exported directly.
- * - Dispatches still require bindings and workgroup counts for each run.
+ * This object keeps the compiled pipeline and bind-group layout for a repeated
+ * WGSL compute shape. Use it when you will dispatch the same shader more than
+ * once and want to avoid recompiling on every call.
+ *
+ * This example shows the API in its basic form.
+ *
+ * ```js
+ * const kernel = gpu.kernel.create({
+ *   code,
+ *   bindings: [src, dst],
+ * });
+ *
+ * await kernel.dispatch({
+ *   bindings: [src, dst],
+ *   workgroups: 1,
+ * });
+ * ```
+ *
+ * - See `gpu.kernel.run(...)` for the one-shot explicit path.
+ * - See `gpu.compute.once(...)` for the narrower typed-array workflow.
+ * - Instances are returned through the bound Doe API and are not exported directly.
  */
 class DoeKernel {
   constructor(device, pipeline, layout, entryPoint) {
@@ -233,10 +253,28 @@ class DoeKernel {
   }
 
   /**
-   * Dispatch the compiled kernel once.
+   * Dispatch this compiled kernel once.
+   *
+   * Surface: Doe API `gpu.kernel`.
+   * Input: A binding list, workgroup counts, and an optional label.
+   * Returns: A promise that resolves after submission completes.
+   *
+   * This records one compute pass for the compiled pipeline, submits it, and
+   * waits for completion when the underlying queue exposes
+   * `onSubmittedWorkDone()`.
+   *
+   * This example shows the API in its basic form.
+   *
+   * ```js
+   * await kernel.dispatch({
+   *   bindings: [src, dst],
+   *   workgroups: [4, 1, 1],
+   * });
+   * ```
    *
    * - `workgroups` may be `number`, `[x, y]`, or `[x, y, z]`.
-   * - Bare buffers without Doe helper metadata still require `{ buffer, access }`.
+   * - Bare buffers without Doe helper metadata require `{ buffer, access }`.
+   * - See `gpu.kernel.run(...)` when you do not need reuse.
    */
   async dispatch(options) {
     const bindings = (options.bindings ?? []).map(normalizeBinding);
@@ -261,7 +299,7 @@ class DoeKernel {
   }
 }
 
-function compileCompute(device, options) {
+function createKernel(device, options) {
   const bindings = (options.bindings ?? []).map(normalizeBinding);
   const shader = device.createShaderModule({ code: options.code });
   const bindGroupLayout = device.createBindGroupLayout({
@@ -347,8 +385,8 @@ async function readBuffer(device, buffer, type, options = {}) {
   return new type(copy);
 }
 
-async function runCompute(device, options) {
-  const kernel = compileCompute(device, options);
+async function runKernel(device, options) {
+  const kernel = createKernel(device, options);
   await kernel.dispatch({
     bindings: options.bindings ?? [],
     workgroups: options.workgroups,
@@ -454,7 +492,7 @@ async function computeOnce(device, options) {
   const output = normalizeOnceOutput(device, options.output, inputs);
   validateWorkgroups(device, options.workgroups);
   try {
-    await runCompute(device, {
+    await runKernel(device, {
       code: options.code,
       entryPoint: options.entryPoint,
       bindings: [...inputs.map((input) => input.binding), output.binding],
@@ -477,41 +515,77 @@ async function computeOnce(device, options) {
 function createBoundDoe(device) {
   return {
     device,
-    buffers: {
+    buffer: {
       /**
        * Create a buffer with explicit size and Doe usage tokens.
        *
-       * This is part of the `Doe API` surface over `device.createBuffer(...)`.
-       * It accepts Doe usage tokens and remembers bindability metadata for
-       * later Doe API calls.
+       * Surface: Doe API `gpu.buffer`.
+       * Input: A buffer size, usage, and optional label or mapping flag.
+       * Returns: A GPU buffer with Doe usage metadata attached when possible.
+       *
+       * This is the explicit Doe helper over `device.createBuffer(...)`. It
+       * accepts Doe usage tokens such as `storageReadWrite` and remembers the
+       * resulting binding access so later Doe API calls can infer how the
+       * buffer should be bound.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * const dst = gpu.buffer.create({
+       *   size: 1024,
+       *   usage: "storageReadWrite",
+       * });
+       * ```
        *
        * - Raw numeric usage flags are allowed here for explicit control.
-       * - If you later pass a raw-usage buffer to `compute.run(...)`, you may still need `{ buffer, access }` because Doe can only infer access from Doe usage tokens, not arbitrary bitmasks.
+       * - Buffers created with raw numeric flags may later require `{ buffer, access }`.
+       * - See `gpu.buffer.fromData(...)` to create and upload in one step.
        */
       create(options) {
         return createBuffer(device, options);
       },
       /**
-       * Create a buffer from typed-array or ArrayBuffer data and upload it immediately.
+       * Create a buffer from host data and upload it immediately.
        *
-       * This allocates a buffer, writes the provided data into it, and
-       * remembers Doe usage metadata for later helper inference.
+       * Surface: Doe API `gpu.buffer`.
+       * Input: An `ArrayBuffer` or typed-array view plus optional usage and label.
+       * Returns: A GPU buffer initialized with the provided bytes.
+       *
+       * This helper allocates a buffer, writes the provided host data into it,
+       * and records Doe usage metadata for later binding inference.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * const src = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
+       * ```
        *
        * - Defaults to `storageRead` usage when none is provided.
-       * - Raw numeric usage flags are allowed, but that may disable later access inference if the bitmask does not map cleanly to one Doe access mode.
+       * - Raw numeric usage flags are allowed, but they may disable Doe access inference.
+       * - See `gpu.buffer.create(...)` when you need an uninitialized buffer.
        */
       fromData(data, options = {}) {
         return createBufferFromData(device, data, options);
       },
       /**
-       * Create a buffer whose size is derived from another buffer or typed-array source.
+       * Create a buffer sized from another buffer or host-data source.
        *
-       * This copies the byte size from `source` unless an explicit
-       * `options.size` is provided, which removes common `size: src.size`
-       * boilerplate.
+       * Surface: Doe API `gpu.buffer`.
+       * Input: A buffer-like source and optional overrides such as `usage` or `size`.
+       * Returns: A new GPU buffer whose size defaults from the source.
        *
-       * - `source` may be a Doe buffer, a raw buffer exposing `.size`, a typed array, or an `ArrayBuffer`.
+       * This removes common `size: src.size` boilerplate when you need an
+       * output or scratch buffer that matches an existing source.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * const dst = gpu.buffer.like(src, { usage: "storageReadWrite" });
+       * ```
+       *
+       * - `source` may be a GPU buffer, a typed array, or an `ArrayBuffer`.
        * - If the source has no byte size, this throws instead of guessing.
+       * - See `gpu.buffer.create(...)` for fully explicit allocation.
        */
       like(source, options = {}) {
         return createBufferLike(device, source, options);
@@ -519,53 +593,111 @@ function createBoundDoe(device) {
       /**
        * Read a buffer back into a typed array.
        *
-       * This copies the source buffer into a staging buffer, maps it for read,
-       * and returns a new typed array instance created from the copied bytes.
+       * Surface: Doe API `gpu.buffer`.
+       * Input: A source buffer, a typed-array constructor, and optional offset or size.
+       * Returns: A promise for a newly allocated typed array.
+       *
+       * This reads GPU buffer contents back to JS. If the buffer is already
+       * mappable for read, Doe maps it directly; otherwise Doe stages the copy
+       * through a temporary readback buffer.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * const out = await gpu.buffer.read(dst, Float32Array);
+       * ```
        *
        * - `options.offset` and `options.size` let you read a subrange.
-       * - The returned typed array constructor must accept a plain `ArrayBuffer`.
+       * - The typed-array constructor must accept a plain `ArrayBuffer`.
+       * - See raw `buffer.mapAsync(...)` when you need manual readback control.
        */
       read(buffer, type, options = {}) {
         return readBuffer(device, buffer, type, options);
       },
     },
-    compute: {
+    kernel: {
       /**
        * Compile and dispatch a one-off compute job.
        *
-       * This builds a compute pipeline for the provided WGSL, dispatches it
-       * once with the supplied bindings and workgroups, and waits for submitted
-       * work to finish as part of the explicit `Doe API` surface.
+       * Surface: Doe API `gpu.kernel`.
+       * Input: WGSL source, bindings, workgroups, and an optional entry point or label.
+       * Returns: A promise that resolves after submission completes.
+       *
+       * This is the explicit one-shot compute path. It builds the pipeline for
+       * the provided shader, dispatches once, and waits for completion.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * await gpu.kernel.run({
+       *   code,
+       *   bindings: [src, dst],
+       *   workgroups: 1,
+       * });
+       * ```
        *
        * - `workgroups` may be `number`, `[x, y]`, or `[x, y, z]`.
        * - Bare buffers without Doe helper metadata require `{ buffer, access }`.
-       * - This recompiles per call; use `compute.compile(...)` when reusing the kernel.
+       * - See `gpu.kernel.create(...)` when you will reuse the shader shape.
+       * - See `gpu.compute.once(...)` for the narrower typed-array workflow.
        */
       run(options) {
-        return runCompute(device, options);
+        return runKernel(device, options);
       },
       /**
        * Compile a reusable compute kernel.
        *
-       * This creates the shader, bind-group layout, and compute pipeline once
-       * and returns a kernel object with `.dispatch(...)`.
+       * Surface: Doe API `gpu.kernel`.
+       * Input: WGSL source, an optional entry point, and an initial binding shape.
+       * Returns: A `DoeKernel` object with `dispatch(...)`.
+       *
+       * This creates the shader module, bind-group layout, and compute
+       * pipeline once so the same WGSL shape can be dispatched repeatedly.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * const kernel = gpu.kernel.create({
+       *   code,
+       *   bindings: [src, dst],
+       * });
+       * ```
        *
        * - Binding access is inferred from the bindings passed at compile time.
-       * - Reuse this path when you are dispatching the same WGSL shape repeatedly.
+       * - See `kernel.dispatch(...)` to run the compiled kernel.
+       * - See `gpu.kernel.run(...)` when reuse does not matter.
        */
-      compile(options) {
-        return compileCompute(device, options);
+      create(options) {
+        return createKernel(device, options);
       },
+    },
+    compute: {
       /**
-       * Run a narrow Doe routines typed-array workflow.
+       * Run a one-shot typed-array compute workflow.
        *
-       * This is the first `Doe routines` path. It accepts typed-array or Doe input specs, allocates temporary
-       * buffers, dispatches the compute job once, reads the output back, and
-       * returns the requested typed array result.
+       * Surface: Doe API `gpu.compute`.
+       * Input: WGSL source, typed-array or buffer inputs, an output spec, and workgroups.
+       * Returns: A promise for the requested typed-array output.
        *
-       * - Raw numeric WebGPU usage flags are accepted here when explicit Doe access is also provided.
-       * - Output size defaults from `likeInput` or the first input when possible; if no size can be derived, it throws instead of guessing.
-       * - Temporary buffers created internally are destroyed before the call returns.
+       * This is the most opinionated Doe helper. It creates temporary buffers
+       * as needed, uploads host data, dispatches the compute shader once,
+       * reads back the requested output, and destroys temporary resources
+       * before returning.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * const out = await gpu.compute.once({
+       *   code,
+       *   inputs: [new Float32Array([1, 2, 3, 4])],
+       *   output: { type: Float32Array },
+       *   workgroups: 1,
+       * });
+       * ```
+       *
+       * - Raw numeric usage flags are accepted only when explicit Doe access is also provided.
+       * - Output size defaults from `likeInput` or the first input when possible.
+       * - See `gpu.kernel.run(...)` or `gpu.kernel.create(...)` when you need explicit resource ownership.
        */
       once(options) {
         return computeOnce(device, options);
@@ -574,26 +706,27 @@ function createBoundDoe(device) {
   };
 }
 
-/**
- * Build the shared Doe API / Doe routines namespace for a package surface.
- *
- * This creates the public `doe` object used by both `@simulatte/webgpu` and
- * `@simulatte/webgpu/compute` for the JS convenience surface layered over the
- * Doe runtime.
- *
- * - If no `requestDevice` implementation is supplied, `doe.requestDevice()` throws, but `doe.bind(device)` and the static helper groups still work.
- * - Both package surfaces share this helper shape; only the underlying raw device contract differs.
- */
 export function createDoeNamespace({ requestDevice } = {}) {
   return {
     /**
-     * Request a device and return the bound Doe API helper object in one step.
+     * Request a device and return the bound Doe API in one step.
      *
-     * This calls the package-local `requestDevice(...)` implementation, then
-     * wraps the resulting device into the `Doe API` surface.
+     * Surface: Doe API namespace.
+     * Input: Optional package-local request options.
+     * Returns: A promise for the bound `gpu` helper object.
      *
-     * - Throws if this Doe namespace was created without a `requestDevice` implementation.
-     * - The returned `gpu.device` is full-surface or compute-only depending on which package created the namespace.
+     * This calls the package-local `requestDevice(...)` implementation and
+     * then wraps the resulting raw device in the bound Doe API.
+     *
+     * This example shows the API in its basic form.
+     *
+     * ```js
+     * const gpu = await doe.requestDevice();
+     * ```
+     *
+     * - Throws if this namespace was created without a `requestDevice` implementation.
+     * - `gpu.device` exposes the underlying raw device when you need lower-level control.
+     * - See `doe.bind(device)` when you already have a raw device.
      */
     async requestDevice(options = {}) {
       if (typeof requestDevice !== 'function') {
@@ -603,112 +736,31 @@ export function createDoeNamespace({ requestDevice } = {}) {
     },
 
     /**
-     * Wrap an existing device in the Doe API surface.
+     * Wrap an existing device in the bound Doe API.
      *
-     * This turns a previously requested device into the same bound helper
-     * object returned by `await doe.requestDevice()`.
+     * Surface: Doe API namespace.
+     * Input: A raw device returned by the package surface.
+     * Returns: The bound `gpu` helper object for that device.
      *
-     * - Use this when you need the raw device first for non-helper setup.
+     * Use this when you need the raw device first, but still want to opt into
+     * Doe helpers afterward.
+     *
+     * This example shows the API in its basic form.
+     *
+     * ```js
+     * const device = await requestDevice();
+     * const gpu = doe.bind(device);
+     * ```
+     *
      * - No async work happens here; it only wraps the device you already have.
+     * - See `doe.requestDevice(...)` for the one-step helper entrypoint.
      */
     bind(device) {
       return createBoundDoe(device);
     },
-
-    buffers: {
-      /**
-       * Static Doe API buffer creation call for an explicit device.
-       *
-       * This lets callers use the Doe API buffer surface without first binding
-       * a device into a `gpu` helper object.
-       *
-       * - This is the unbound form of `gpu.buffers.create(...)`.
-       */
-      create(device, options) {
-        return createBuffer(device, options);
-      },
-      /**
-       * Static data-upload helper for an explicit device.
-       *
-       * This provides the unbound form of the same upload flow exposed on
-       * `gpu.buffers.fromData(...)`.
-       *
-       * - This is the unbound form of `gpu.buffers.fromData(...)`.
-       */
-      fromData(device, data, options = {}) {
-        return createBufferFromData(device, data, options);
-      },
-      /**
-       * Static size-copy helper for an explicit device.
-       *
-       * This keeps the `createBufferLike` convenience available when callers
-       * are working with a raw device rather than a bound helper object.
-       *
-       * - This is the unbound form of `gpu.buffers.like(...)`.
-       */
-      like(device, source, options = {}) {
-        return createBufferLike(device, source, options);
-      },
-      /**
-       * Static readback helper for an explicit device.
-       *
-       * This exposes the same staging-copy readback path as
-       * `gpu.buffers.read(...)` without requiring a bound helper.
-       *
-       * - This is the unbound form of `gpu.buffers.read(...)`.
-       */
-      read(device, buffer, type, options = {}) {
-        return readBuffer(device, buffer, type, options);
-      },
-    },
-
-    compute: {
-      /**
-       * Static compute dispatch helper for an explicit device.
-       *
-       * This gives raw-device callers the same one-off compute dispatch helper
-       * that bound helpers expose on `gpu.compute.run(...)`.
-       *
-       * - This is the unbound form of `gpu.compute.run(...)`.
-       */
-      run(device, options) {
-        return runCompute(device, options);
-      },
-      /**
-       * Static reusable-kernel compiler for an explicit device.
-       *
-       * This exposes the reusable kernel path without requiring a previously
-       * bound `gpu` helper object.
-       *
-       * - This is the unbound form of `gpu.compute.compile(...)`.
-       */
-      compile(device, options) {
-        return compileCompute(device, options);
-      },
-      /**
-       * Static Doe routines typed-array compute call for an explicit device.
-       *
-       * This keeps the narrow `Doe routines` `compute.once(...)` workflow available to
-       * callers that are still holding a raw device.
-       *
-       * - This is the unbound form of `gpu.compute.once(...)`.
-       */
-      once(device, options) {
-        return computeOnce(device, options);
-      },
-    },
   };
 }
 
-/**
- * Unbound Doe API / Doe routines namespace without a package-local `requestDevice(...)`.
- *
- * This export is primarily for internal composition and advanced consumers who
- * want the shared Doe API and Doe routines groups without choosing the full or compute package entry.
- *
- * - `doe.requestDevice()` throws here because no package-local request function is attached.
- * - Most package consumers should prefer the `doe` export from `@simulatte/webgpu` or `@simulatte/webgpu/compute`.
- */
 export const doe = createDoeNamespace();
 
 export default doe;

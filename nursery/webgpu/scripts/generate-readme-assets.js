@@ -260,7 +260,7 @@ ${renderSurfaceCard(SURFACE_SPECS[1], bunCells, 640)}
 function renderLayersSvg() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470" role="img" aria-labelledby="layers-title layers-desc">
   <title id="layers-title">@simulatte/webgpu layered package graph</title>
-  <desc id="layers-desc">Layered package graph showing direct WebGPU, Doe API, and Doe routines over the same package surfaces.</desc>
+  <desc id="layers-desc">Layered package graph showing direct WebGPU and Doe API over the same package surfaces.</desc>
   <defs>
     <linearGradient id="layers-bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#050816"/>
@@ -305,7 +305,7 @@ function renderLayersSvg() {
   <rect width="1200" height="470" fill="url(#layers-bg)"/>
   <rect width="1200" height="470" fill="url(#layers-glow-top)"/>
   <rect width="1200" height="470" fill="url(#layers-glow-bottom)"/>
-  <text x="64" y="62" class="title">Same package, four layers</text>
+  <text x="64" y="62" class="title">Same package, three layers</text>
   <text x="64" y="94" class="subtitle">The package surface stays the same while the API gets progressively higher-level.</text>
 
   <rect x="170" y="122" width="860" height="64" rx="20" fill="url(#layers-root)" stroke="#c4b5fd" class="box"/>
@@ -318,7 +318,7 @@ function renderLayersSvg() {
   <text x="600" y="343" text-anchor="middle" class="nodeTitle">Doe API</text>
 
   <rect x="360" y="398" width="480" height="52" rx="18" fill="url(#layers-routines)" stroke="#fde68a" class="box"/>
-  <text x="600" y="431" text-anchor="middle" class="nodeTitle">Doe routines</text>
+  <text x="600" y="431" text-anchor="middle" class="nodeTitle">Doe API (`gpu.compute.once(...))</text>
 </svg>
 `;
 }

@@ -1012,6 +1012,22 @@ Config and CI:
 - Commands without native implementation return explicit `.unsupported` taxonomy; no silent Dawn fallback.
 - `metal_zig` lane benchmarks now measure genuine Doe-native vs Dawn for upload/barrier workloads.
 
+93. Comparability semantics are now externalized through a config-driven contract:
+- `config/comparability-obligations.json` is now the semantic source of truth, not just an ID list; it carries ordered obligation rules, fact names, and applicability/pass expressions.
+- `lean/generate_comparability_contract.py` now regenerates `lean/Fawn/Generated/ComparabilityContract.lean` from that contract before `lean/check.sh` and `lean/extract.sh`.
+- Python comparability fixture evaluation in `bench/compare_dawn_vs_doe_modules/comparability.py` now interprets the same config contract instead of a hardcoded `result_by_id` mirror.
+- report/gate conformance loaders now accept the richer v2 obligation contract while preserving v1 compatibility for historical artifacts.
+
+94. Lean audit trust chain now carries the comparability contract hash end-to-end:
+- `lean/Fawn/Extract.lean` now emits `contractHashes.comparabilityObligationsSha256` into `lean/artifacts/proven-conditions.json`.
+- `config/proof-artifact.schema.json` now requires that hash field.
+- `zig/build.zig` now embeds the live `config/comparability-obligations.json` SHA-256 into build options, and `zig/src/lean_proof.zig` validates that the proof artifact hash matches at comptime.
+
+95. Unbounded proof coverage now extends from arbitrary obligation lists to workload geometry:
+- added `lean/Fawn/Full/WorkloadGeometry.lean`
+- new `lean_verified` theorems prove execution-shape comparability facts for arbitrary `Nat`-valued buffer size and dispatch geometry, not just finite fixtures
+- proof extraction now includes those geometry theorems and their elimination target metadata
+
 ### Missing in progress
 
 1. ~~Expand upstream quirk mining beyond toggle-style heuristics~~ DONE (2026-03-05): miner now captures toggle context-aware patterns (`Default`/`ForceSet`/`ForceEnable`/`ForceDisable`) and non-toggle workaround patterns (vendor-conditional limit overrides, alignment assigns, feature guards). Vendor detection via `gpu_info::IsVendor()` and `IsVendorMesa()` patterns with 20-line context window. Manifest v2 includes `workaroundHitCount`, `workaroundCategoryCounts`, and `workaroundHits`. Tested: 702 toggle + 24 workaround candidates from Dawn native source (5 feature guards across Intel/Nvidia, 19 limit overrides across Qualcomm/Apple/Nvidia). `--toggle-only` flag preserves backward compatibility.

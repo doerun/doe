@@ -480,6 +480,7 @@ DECL_PFN(uint32_t, wgpuAdapterGetLimits, (WGPUAdapter, void*));
 DECL_PFN(WGPUFuture, wgpuAdapterRequestDevice, (WGPUAdapter, const void*, WGPURequestDeviceCallbackInfo));
 DECL_PFN(void, wgpuDeviceRelease, (WGPUDevice));
 DECL_PFN(WGPUBool, wgpuDeviceHasFeature, (WGPUDevice, uint32_t));
+DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
 DECL_PFN(WGPUQueue, wgpuDeviceGetQueue, (WGPUDevice));
 DECL_PFN(WGPUBuffer, wgpuDeviceCreateBuffer, (WGPUDevice, const WGPUBufferDescriptor*));
 DECL_PFN(WGPUShaderModule, wgpuDeviceCreateShaderModule, (WGPUDevice, const WGPUShaderModuleDescriptor*));
@@ -530,12 +531,18 @@ DECL_PFN(void, wgpuRenderPassEncoderDraw, (WGPURenderPassEncoder, uint32_t, uint
 DECL_PFN(void, wgpuRenderPassEncoderDrawIndexed, (WGPURenderPassEncoder, uint32_t, uint32_t, uint32_t, int32_t, uint32_t));
 DECL_PFN(void, wgpuRenderPassEncoderEnd, (WGPURenderPassEncoder));
 DECL_PFN(void, wgpuRenderPassEncoderRelease, (WGPURenderPassEncoder));
-DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
+DECL_PFN(uint32_t, doeNativeAdapterGetLimits, (WGPUAdapter, void*));
+DECL_PFN(uint32_t, doeNativeDeviceGetLimits, (WGPUDevice, void*));
+DECL_PFN(uint32_t, doeNativeAdapterHasFeature, (WGPUAdapter, uint32_t));
+DECL_PFN(uint32_t, doeNativeDeviceHasFeature, (WGPUDevice, uint32_t));
 DECL_PFN(size_t, doeNativeCopyLastErrorMessage, (char*, size_t));
 DECL_PFN(size_t, doeNativeCopyLastErrorStage, (char*, size_t));
 DECL_PFN(size_t, doeNativeCopyLastErrorKind, (char*, size_t));
+DECL_PFN(uint32_t, doeNativeGetLastErrorLine, (void));
+DECL_PFN(uint32_t, doeNativeGetLastErrorColumn, (void));
 DECL_PFN(uint32_t, doeNativeCheckShaderSource, (const char*, size_t));
 DECL_PFN(size_t, doeNativeShaderModuleGetBindings, (WGPUShaderModule, DoeShaderBindingInfo*, size_t));
+DECL_PFN(WGPUFuture, doeNativeAdapterRequestDevice, (WGPUAdapter, const void*, WGPURequestDeviceCallbackInfo));
 
 /* Flat helpers are optional. When absent, the addon assembles the callback-info
  * structs directly and calls the standard WebGPU request entrypoints. */
@@ -826,12 +833,22 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuRenderPassEncoderDrawIndexed);
     LOAD_SYM(wgpuRenderPassEncoderEnd);
     LOAD_SYM(wgpuRenderPassEncoderRelease);
+    LOAD_SYM(wgpuAdapterGetLimits);
+    LOAD_SYM(wgpuAdapterHasFeature);
+    LOAD_SYM(wgpuDeviceHasFeature);
     LOAD_SYM(wgpuDeviceGetLimits);
+    pfn_doeNativeAdapterGetLimits = (PFN_doeNativeAdapterGetLimits)LIB_SYM(g_lib, "doeNativeAdapterGetLimits");
+    pfn_doeNativeDeviceGetLimits = (PFN_doeNativeDeviceGetLimits)LIB_SYM(g_lib, "doeNativeDeviceGetLimits");
+    pfn_doeNativeAdapterHasFeature = (PFN_doeNativeAdapterHasFeature)LIB_SYM(g_lib, "doeNativeAdapterHasFeature");
+    pfn_doeNativeDeviceHasFeature = (PFN_doeNativeDeviceHasFeature)LIB_SYM(g_lib, "doeNativeDeviceHasFeature");
     pfn_doeNativeCopyLastErrorMessage = (PFN_doeNativeCopyLastErrorMessage)LIB_SYM(g_lib, "doeNativeCopyLastErrorMessage");
     pfn_doeNativeCopyLastErrorStage = (PFN_doeNativeCopyLastErrorStage)LIB_SYM(g_lib, "doeNativeCopyLastErrorStage");
     pfn_doeNativeCopyLastErrorKind = (PFN_doeNativeCopyLastErrorKind)LIB_SYM(g_lib, "doeNativeCopyLastErrorKind");
+    pfn_doeNativeGetLastErrorLine = (PFN_doeNativeGetLastErrorLine)LIB_SYM(g_lib, "doeNativeGetLastErrorLine");
+    pfn_doeNativeGetLastErrorColumn = (PFN_doeNativeGetLastErrorColumn)LIB_SYM(g_lib, "doeNativeGetLastErrorColumn");
     pfn_doeNativeCheckShaderSource = (PFN_doeNativeCheckShaderSource)LIB_SYM(g_lib, "doeNativeCheckShaderSource");
     pfn_doeNativeShaderModuleGetBindings = (PFN_doeNativeShaderModuleGetBindings)LIB_SYM(g_lib, "doeNativeShaderModuleGetBindings");
+    pfn_doeNativeAdapterRequestDevice = (PFN_doeNativeAdapterRequestDevice)LIB_SYM(g_lib, "doeNativeAdapterRequestDevice");
     pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeRequestAdapterFlat");
     pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
@@ -965,20 +982,16 @@ static napi_value doe_request_device(napi_env env, napi_callback_info info) {
     if (!inst || !adapter) NAPI_THROW(env, "Invalid instance or adapter");
 
     DeviceRequestResult result = {0};
-    WGPUFuture future;
-    if (pfn_doeRequestDeviceFlat) {
-        future = pfn_doeRequestDeviceFlat(
-            adapter, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, device_callback, &result, NULL);
-    } else {
-        const WGPURequestDeviceCallbackInfo callback_info = {
-            .nextInChain = NULL,
-            .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
-            .callback = device_callback,
-            .userdata1 = &result,
-            .userdata2 = NULL,
-        };
-        future = pfn_wgpuAdapterRequestDevice(adapter, NULL, callback_info);
-    }
+    const WGPURequestDeviceCallbackInfo callback_info = {
+        .nextInChain = NULL,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = device_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
+    WGPUFuture future = pfn_doeNativeAdapterRequestDevice
+        ? pfn_doeNativeAdapterRequestDevice(adapter, NULL, callback_info)
+        : pfn_wgpuAdapterRequestDevice(adapter, NULL, callback_info);
     if (future.id == 0) NAPI_THROW(env, "requestDevice future unavailable");
     if (!process_events_until(inst, &result.done, current_timeout_ns()))
         return throw_status_error(env, "DOE_REQUEST_DEVICE_TIMEOUT", "requestDevice timed out", result.status, result.message);
@@ -1249,6 +1262,22 @@ static napi_value doe_check_shader_source(napi_env env, napi_callback_info info)
         napi_value kind_val;
         napi_create_string_utf8(env, kind, NAPI_AUTO_LENGTH, &kind_val);
         napi_set_named_property(env, result, "kind", kind_val);
+    }
+    if (pfn_doeNativeGetLastErrorLine) {
+        uint32_t line = pfn_doeNativeGetLastErrorLine();
+        if (line > 0) {
+            napi_value line_val;
+            napi_create_uint32(env, line, &line_val);
+            napi_set_named_property(env, result, "line", line_val);
+        }
+    }
+    if (pfn_doeNativeGetLastErrorColumn) {
+        uint32_t col = pfn_doeNativeGetLastErrorColumn();
+        if (col > 0) {
+            napi_value col_val;
+            napi_create_uint32(env, col, &col_val);
+            napi_set_named_property(env, result, "column", col_val);
+        }
     }
     return result;
 }
@@ -2941,10 +2970,16 @@ static napi_value doe_device_get_limits(napi_env env, napi_callback_info info) {
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "deviceGetLimits: null device");
+    uint32_t (*fn)(WGPUDevice, void*) = pfn_doeNativeDeviceGetLimits ? pfn_doeNativeDeviceGetLimits : pfn_wgpuDeviceGetLimits;
+    if (!fn) {
+        napi_value ret;
+        napi_get_null(env, &ret);
+        return ret;
+    }
 
     WGPULimits limits;
     memset(&limits, 0, sizeof(limits));
-    uint32_t status = pfn_wgpuDeviceGetLimits(device, &limits);
+    uint32_t status = fn(device, &limits);
     if (status != WGPU_STATUS_SUCCESS) {
         napi_value ret;
         napi_get_null(env, &ret);
@@ -2959,10 +2994,16 @@ static napi_value doe_adapter_get_limits(napi_env env, napi_callback_info info) 
     CHECK_LIB_LOADED(env);
     WGPUAdapter adapter = unwrap_ptr(env, _args[0]);
     if (!adapter) NAPI_THROW(env, "adapterGetLimits: null adapter");
+    uint32_t (*fn)(WGPUAdapter, void*) = pfn_doeNativeAdapterGetLimits ? pfn_doeNativeAdapterGetLimits : pfn_wgpuAdapterGetLimits;
+    if (!fn) {
+        napi_value ret;
+        napi_get_null(env, &ret);
+        return ret;
+    }
 
     WGPULimits limits;
     memset(&limits, 0, sizeof(limits));
-    uint32_t status = pfn_wgpuAdapterGetLimits(adapter, &limits);
+    uint32_t status = fn(adapter, &limits);
     if (status != WGPU_STATUS_SUCCESS) {
         napi_value ret;
         napi_get_null(env, &ret);
@@ -2976,9 +3017,15 @@ static napi_value doe_adapter_has_feature(napi_env env, napi_callback_info info)
     NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
     WGPUAdapter adapter = unwrap_ptr(env, _args[0]);
+    uint32_t (*fn)(WGPUAdapter, uint32_t) = pfn_doeNativeAdapterHasFeature ? pfn_doeNativeAdapterHasFeature : pfn_wgpuAdapterHasFeature;
+    if (!fn) {
+        napi_value ret;
+        napi_get_boolean(env, false, &ret);
+        return ret;
+    }
     uint32_t feature;
     napi_get_value_uint32(env, _args[1], &feature);
-    uint32_t result = pfn_wgpuAdapterHasFeature(adapter, feature);
+    uint32_t result = fn(adapter, feature);
     napi_value ret;
     napi_get_boolean(env, result != 0, &ret);
     return ret;
@@ -2988,12 +3035,56 @@ static napi_value doe_device_has_feature(napi_env env, napi_callback_info info) 
     NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
+    uint32_t (*fn)(WGPUDevice, uint32_t) = pfn_doeNativeDeviceHasFeature ? pfn_doeNativeDeviceHasFeature : pfn_wgpuDeviceHasFeature;
+    if (!fn) {
+        napi_value ret;
+        napi_get_boolean(env, false, &ret);
+        return ret;
+    }
     uint32_t feature;
     napi_get_value_uint32(env, _args[1], &feature);
-    uint32_t result = pfn_wgpuDeviceHasFeature(device, feature);
+    uint32_t result = fn(device, feature);
     napi_value ret;
     napi_get_boolean(env, result != 0, &ret);
     return ret;
+}
+
+static napi_value doe_get_last_error_stage(napi_env env, napi_callback_info info) {
+    (void)info;
+    char buf[64];
+    copy_library_error_meta(pfn_doeNativeCopyLastErrorStage, buf, sizeof(buf));
+    if (buf[0] == '\0') return NULL;
+    napi_value result;
+    napi_create_string_utf8(env, buf, NAPI_AUTO_LENGTH, &result);
+    return result;
+}
+
+static napi_value doe_get_last_error_kind(napi_env env, napi_callback_info info) {
+    (void)info;
+    char buf[64];
+    copy_library_error_meta(pfn_doeNativeCopyLastErrorKind, buf, sizeof(buf));
+    if (buf[0] == '\0') return NULL;
+    napi_value result;
+    napi_create_string_utf8(env, buf, NAPI_AUTO_LENGTH, &result);
+    return result;
+}
+
+static napi_value doe_get_last_error_line(napi_env env, napi_callback_info info) {
+    (void)info;
+    if (!pfn_doeNativeGetLastErrorLine) return NULL;
+    uint32_t line = pfn_doeNativeGetLastErrorLine();
+    napi_value result;
+    napi_create_uint32(env, line, &result);
+    return result;
+}
+
+static napi_value doe_get_last_error_column(napi_env env, napi_callback_info info) {
+    (void)info;
+    if (!pfn_doeNativeGetLastErrorColumn) return NULL;
+    uint32_t col = pfn_doeNativeGetLastErrorColumn();
+    napi_value result;
+    napi_create_uint32(env, col, &result);
+    return result;
 }
 
 static napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
@@ -3080,6 +3171,10 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("deviceGetLimits", doe_device_get_limits),
         EXPORT_FN("deviceHasFeature", doe_device_has_feature),
         EXPORT_FN("setTimeoutMs", doe_set_timeout_ms),
+        EXPORT_FN("getLastErrorStage", doe_get_last_error_stage),
+        EXPORT_FN("getLastErrorKind", doe_get_last_error_kind),
+        EXPORT_FN("getLastErrorLine", doe_get_last_error_line),
+        EXPORT_FN("getLastErrorColumn", doe_get_last_error_column),
     };
 
     size_t count = sizeof(descriptors) / sizeof(descriptors[0]);

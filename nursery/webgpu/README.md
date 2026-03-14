@@ -13,20 +13,22 @@
 
 `@simulatte/webgpu` is Fawn's headless WebGPU package for Node.js and Bun: use
 the raw WebGPU API through `requestDevice()` and `device.*`, or move up to the
-Doe API + routines when you want the same runtime with less setup. Browser
-DOM/canvas ownership lives in the separate `nursery/fawn-browser` lane.
+Doe API when you want the same runtime with less setup. Browser DOM/canvas
+ownership lives in the separate `nursery/fawn-browser` lane.
 
 Terminology in this README is deliberate:
 
 - `Doe runtime` means the Zig/native WebGPU runtime underneath the package
-- `Doe API` means the explicit JS convenience surface under `doe`, `gpu.buffers.*`,
-  `gpu.compute.run(...)`, and `gpu.compute.compile(...)`
-- `Doe routines` means the narrower, more opinionated JS flows such as
-  `gpu.compute.once(...)`
+- `Doe API` means the explicit JS convenience surface under `doe`, `gpu.buffer.*`,
+  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute.once(...)`
+
+The current implemented helper contract is documented in
+[api-contract.md](./api-contract.md). The proposed naming cleanup for the Doe
+helper surface is documented in [doe-api-design.md](./doe-api-design.md).
 
 ## Start here
 
-### From direct WebGPU to Doe
+### From direct WebGPU to Doe API
 
 The same simple compute pass, shown first at the raw WebGPU layer and then at
 the explicit Doe API layer.
@@ -110,12 +112,12 @@ to manage the resources yourself.
 import { doe } from "@simulatte/webgpu/compute";
 
 const gpu = await doe.requestDevice();
-const src = gpu.buffers.fromData(Float32Array.of(1, 2, 3, 4));
-const dst = gpu.buffers.like(src, {
+const src = gpu.buffer.fromData(Float32Array.of(1, 2, 3, 4));
+const dst = gpu.buffer.like(src, {
   usage: "storageReadWrite",
 });
 
-await gpu.compute.run({
+await gpu.kernel.run({
   code: `
     @group(0) @binding(0) var<storage, read> src: array<f32>;
     @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
@@ -131,18 +133,18 @@ await gpu.compute.run({
   workgroups: 1,
 });
 
-console.log(await gpu.buffers.read(dst, Float32Array)); // Float32Array(4) [ 2, 4, 6, 8 ]
+console.log(await gpu.buffer.read(dst, Float32Array)); // Float32Array(4) [ 2, 4, 6, 8 ]
 ```
 
 What this package gives you:
 
 - `requestDevice()` gives you real headless WebGPU
 - `doe` gives you the same runtime with less boilerplate and explicit resource control
-- `compute.once(...)` is the more opinionated routines layer when you do not want to manage buffers and readback yourself
+- `compute.once(...)` is the more opinionated one-shot Doe API helper when you do not want to manage buffers and readback yourself
 
-#### 3. Doe routines: one-shot tensor matmul
+#### 3. Doe API: one-shot tensor matmul
 
-This is where the routines layer starts to separate itself: you pass typed
+This is the more opinionated one-shot end of the Doe API: you pass typed
 arrays and an output spec, and the package handles upload, output allocation,
 dispatch, and readback while the shader and tensor shapes stay explicit.
 
@@ -185,11 +187,7 @@ const result = await gpu.compute.once({
       out[row * dims.n + col] = acc;
     }
   `,
-  inputs: [
-    { data: dims, usage: "uniform", access: "uniform" },
-    lhs,
-    rhs,
-  ],
+  inputs: [{ data: dims, usage: "uniform", access: "uniform" }, lhs, rhs],
   output: {
     type: Float32Array,
     size: M * N * Float32Array.BYTES_PER_ELEMENT,
@@ -229,11 +227,11 @@ platforms, use a local Fawn workspace build for those runtime libraries.
 
 ## Choose a surface
 
-| Import                      | Surface               | Includes                                                  |
-| --------------------------- | --------------------- | --------------------------------------------------------- |
-| `@simulatte/webgpu`         | Default full surface  | Buffers, compute, textures, samplers, render, Doe API + routines |
-| `@simulatte/webgpu/compute` | Compute-first surface | Buffers, compute, copy/upload/readback, Doe API + routines |
-| `@simulatte/webgpu/full`    | Explicit full surface | Same contract as the default package surface              |
+| Import                      | Surface               | Includes                                                         |
+| --------------------------- | --------------------- | ---------------------------------------------------------------- |
+| `@simulatte/webgpu`         | Default full surface  | Buffers, compute, textures, samplers, render, Doe API            |
+| `@simulatte/webgpu/compute` | Compute-first surface | Buffers, compute, copy/upload/readback, Doe API                  |
+| `@simulatte/webgpu/full`    | Explicit full surface | Same contract as the default package surface                     |
 
 Use `@simulatte/webgpu/compute` when you want the constrained package contract
 for AI workloads and other buffer/dispatch-heavy headless execution. The
@@ -271,18 +269,16 @@ console.log(typeof device.createRenderPipeline); // "undefined"
 
 ## API layers
 
-The package gives you three API styles over the same Doe runtime:
+The package gives you two API styles over the same Doe runtime:
 
 <p align="center">
-  <img src="assets/package-layers.svg" alt="Layered package graph showing direct WebGPU, Doe API, and Doe routines over the same package surfaces." width="920" />
+  <img src="assets/package-layers.svg" alt="Layered package graph showing direct WebGPU and Doe API over the same package surfaces." width="920" />
 </p>
 
 - `Direct WebGPU`
   raw `requestDevice()` plus direct `device.*`
 - `Doe API`
-  explicit Doe surface for lower-boilerplate buffer and compute flows
-- `Doe routines`
-  more opinionated Doe flows where the JS surface carries more of the operation
+  explicit Doe surface for lower-boilerplate buffer, kernel, and one-shot compute flows
 
 Examples for each style ship in:
 
@@ -295,12 +291,14 @@ from both `@simulatte/webgpu` and `@simulatte/webgpu/compute`.
 
 - `await doe.requestDevice()` gets a bound helper object in one step; use
   `doe.bind(device)` when you already have a device.
-- `gpu.buffers.*`, `gpu.compute.run(...)`, and `gpu.compute.compile(...)` are
+- `gpu.buffer.*`, `gpu.kernel.run(...)`, and `gpu.kernel.create(...)` are
   the main `Doe API` surface.
-- `gpu.compute.once(...)` is currently the first `Doe routines` path.
+- `gpu.compute.once(...)` is the more opinionated one-shot helper inside the same Doe API surface.
+- `doe` itself is just the binding entrypoint; the actual helper methods live
+  on the returned `gpu` object.
 
-The Doe API and Doe routines surface is the same on both package surfaces.
-The difference is the raw device beneath it:
+The Doe API surface is the same on both package surfaces. The difference is the
+raw device beneath it:
 
 - `@simulatte/webgpu/compute` returns a compute-only facade
 - `@simulatte/webgpu` keeps the full headless device surface
@@ -350,6 +348,7 @@ covers the Node package contract and a packed-tarball export/import check.
 ## Further reading
 
 - [API contract](./api-contract.md)
+- [Doe API design](./doe-api-design.md)
 - [Support contracts](./support-contracts.md)
 - [Compatibility scope](./compat-scope.md)
 - [Layering plan](./layering-plan.md)

@@ -4,7 +4,7 @@ Plan status: `draft`
 
 Scope:
 
-- JS package boundary for the existing Doe API / Doe routines layer
+- JS package boundary for the existing Doe API layer
 - package/export/refactor sequencing only
 - no immediate runtime behavior change required
 
@@ -13,7 +13,7 @@ real logical split:
 
 1. raw full WebGPU surface
 2. raw compute-first WebGPU surface
-3. shared Doe API / Doe routines JS layer on top
+3. shared Doe API JS layer on top
 
 The missing piece is packaging. We already own the package name
 `@simulatte/webgpu-doe`, and the code is already structured close to that
@@ -41,11 +41,11 @@ The intended package family is:
 ```text
 @simulatte/webgpu
   raw full headless surface
-  + re-exported Doe API / Doe routines layer
+  + re-exported Doe API layer
 
 @simulatte/webgpu/compute
   raw compute-first headless surface
-  + re-exported Doe API / Doe routines layer
+  + re-exported Doe API layer
 
 @simulatte/webgpu-doe
   shared JS helper layer only
@@ -106,7 +106,7 @@ User story:
 
 - install this only when you explicitly want the helper layer as its own dependency
 - use it when you are composing your own host package or advanced runtime wiring
-- use it when you want the Doe API / Doe routines abstraction without tying documentation or ownership to the raw package directly
+- use it when you want the Doe API abstraction without tying documentation or ownership to the raw package directly
 
 ## What gets installed
 
@@ -123,7 +123,7 @@ What they get:
 - native addon / prebuild handling
 - runtime library discovery
 - full raw device surface
-- re-exported Doe API / Doe routines surface
+- re-exported Doe API surface
 
 What they do not need to install separately:
 
@@ -151,7 +151,7 @@ What they get:
 
 - same runtime package install
 - compute-only raw facade
-- same Doe API / Doe routines layer
+- same Doe API layer
 
 What they do not need to install separately:
 
@@ -207,7 +207,7 @@ Includes:
 - prebuilds
 - full raw JS surface
 - runtime metadata helpers
-- Doe API / Doe routines re-export
+- Doe API re-export
 - CLI/runtime wrapper helpers
 
 Does not include:
@@ -221,7 +221,7 @@ Includes:
 
 - compute-only raw JS facade
 - the same underlying runtime package
-- Doe API / Doe routines re-export
+- Doe API re-export
 
 Does not include:
 
@@ -335,7 +335,7 @@ Example:
 {
   "name": "@simulatte/webgpu-doe",
   "version": "0.1.0",
-  "description": "Shared Doe API and Doe routines layer for Simulatte WebGPU packages",
+  "description": "Shared Doe API layer for Simulatte WebGPU packages",
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",

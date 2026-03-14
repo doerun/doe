@@ -1,9 +1,9 @@
 import Fawn.Core.Runtime
 
 -- Dispatch-level theorems proven against the Runtime model.
--- Classification: comptime_verified — all properties here operate on finite enums
--- and are independently verifiable by Zig comptime exhaustion. Lean provides a
--- second-opinion check but is not the only way to verify these.
+-- Classification: tautological (rfl, by-construction, or trivial corollary) or
+-- comptime_verified (finite-enum exhaustion). None require Lean — all are
+-- independently verifiable by Zig comptime or tests.
 
 theorem toggleAlwaysSupported (q : Quirk) :
     q.scope = .driver_toggle → ∀ cmd : CommandKind, supportsQuirk q cmd := by
@@ -42,9 +42,9 @@ theorem identityActionComplete :
     in quirk/runtime.zig. Subsumes toggleAlwaysSupported for driver_toggle. -/
 theorem scopeCommandTableComplete :
     ∀ s : Scope, ∀ c : CommandKind,
-      Decidable (supportsScope s c = true) := by
+      supportsScope s c = true ∨ supportsScope s c = false := by
   intro s c
-  cases s <;> cases c <;> simp [supportsScope] <;> decide
+  cases s <;> cases c <;> simp [supportsScope]
 
 /-- Identity actions provably preserve the command.
     When action_is_identity is true at init time, the dispatch function can

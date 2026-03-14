@@ -72,7 +72,7 @@ export interface DoeComputeOnceOptions<TBuffer, T extends ArrayBufferView> {
   label?: string;
 }
 
-export interface DoeRunComputeOptions<TBuffer> {
+export interface DoeKernelCreateOptions<TBuffer> {
   code: string;
   entryPoint?: string;
   bindings?: Array<TBuffer | DoeBindingBuffer<TBuffer>>;
@@ -86,7 +86,7 @@ export interface DoeKernelDispatchOptions<TBuffer> {
   label?: string;
 }
 
-export interface BoundDoeBuffersNamespace<TBuffer> {
+export interface BoundDoeBufferNamespace<TBuffer> {
   create(options: DoeCreateBufferOptions): TBuffer;
   fromData<T extends ArrayBufferView>(
     data: T | ArrayBuffer,
@@ -103,48 +103,19 @@ export interface BoundDoeBuffersNamespace<TBuffer> {
   ): Promise<T>;
 }
 
-export interface DoeBuffersNamespace<TDevice, TBuffer> {
-  create(device: TDevice, options: DoeCreateBufferOptions): TBuffer;
-  fromData<T extends ArrayBufferView>(
-    device: TDevice,
-    data: T | ArrayBuffer,
-    options?: DoeCreateBufferFromDataOptions,
-  ): TBuffer;
-  like(
-    device: TDevice,
-    source: TBuffer | ArrayBufferView | ArrayBuffer,
-    options?: DoeCreateBufferLikeOptions,
-  ): TBuffer;
-  read<T extends ArrayBufferView>(
-    device: TDevice,
-    buffer: TBuffer,
-    type: { new (buffer: ArrayBuffer): T },
-    options?: DoeReadBufferOptions,
-  ): Promise<T>;
+export interface BoundDoeKernelNamespace<
+  TBuffer,
+  TKernel,
+  TKernelOptions,
+> {
+  run(options: TKernelOptions): Promise<void>;
+  create(options: TKernelOptions): TKernel;
 }
 
 export interface BoundDoeComputeNamespace<
   TBuffer,
-  TKernel,
-  TRunComputeOptions,
 > {
-  run(options: TRunComputeOptions): Promise<void>;
-  compile(options: TRunComputeOptions): TKernel;
   once<T extends ArrayBufferView>(
-    options: DoeComputeOnceOptions<TBuffer, T>,
-  ): Promise<T>;
-}
-
-export interface DoeComputeNamespace<
-  TDevice,
-  TBuffer,
-  TKernel,
-  TRunComputeOptions,
-> {
-  run(device: TDevice, options: TRunComputeOptions): Promise<void>;
-  compile(device: TDevice, options: TRunComputeOptions): TKernel;
-  once<T extends ArrayBufferView>(
-    device: TDevice,
     options: DoeComputeOnceOptions<TBuffer, T>,
   ): Promise<T>;
 }
@@ -153,32 +124,25 @@ export interface BoundDoeNamespace<
   TDevice,
   TBuffer,
   TKernel,
-  TRunComputeOptions,
+  TKernelOptions,
 > {
   readonly device: TDevice;
-  readonly buffers: BoundDoeBuffersNamespace<TBuffer>;
-  readonly compute: BoundDoeComputeNamespace<
+  readonly buffer: BoundDoeBufferNamespace<TBuffer>;
+  readonly kernel: BoundDoeKernelNamespace<
     TBuffer,
     TKernel,
-    TRunComputeOptions
+    TKernelOptions
+  >;
+  readonly compute: BoundDoeComputeNamespace<
+    TBuffer
   >;
 }
 
 export interface DoeNamespace<
   TDevice,
-  TBuffer,
-  TKernel,
   TBoundDoe,
-  TRunComputeOptions,
   TRequestDeviceOptions = unknown,
 > {
   requestDevice(options?: TRequestDeviceOptions): Promise<TBoundDoe>;
   bind(device: TDevice): TBoundDoe;
-  readonly buffers: DoeBuffersNamespace<TDevice, TBuffer>;
-  readonly compute: DoeComputeNamespace<
-    TDevice,
-    TBuffer,
-    TKernel,
-    TRunComputeOptions
-  >;
 }

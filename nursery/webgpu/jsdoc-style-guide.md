@@ -21,6 +21,11 @@ Primary references:
 - [FutureBuilder class - Flutter API](https://api.flutter.dev/flutter/widgets/FutureBuilder-class.html)
 - [Effective Dart: Documentation](https://dart.dev/effective-dart/documentation)
 
+Related design references:
+
+- [doe-api-design.md](./doe-api-design.md)
+- [api-contract.md](./api-contract.md)
+
 ## Scope
 
 This guide applies to:
@@ -56,53 +61,67 @@ Both packages expose the same `doe` helper shape:
 
 - `await doe.requestDevice()`
 - `doe.bind(device)`
-- `doe.buffers.*`
-- `doe.compute.*`
+- bound helper methods under `gpu.*`
 
 If package behavior differs, the difference should normally be in the returned
 device or runtime object, not in helper naming.
 
-### 3. Preserve the API style model
+### 3. Prefer the target Doe helper taxonomy for new APIs
+
+The current implemented helper contract is documented in `api-contract.md`.
+New API design work should follow the target hierarchy documented in
+`doe-api-design.md`:
+
+- `gpu.buffer.*`
+  resource helpers
+- `gpu.kernel.*`
+  explicit reusable kernel primitives
+- `gpu.compute.*`
+  higher-level routines
+
+Do not add new public helper namespaces unless they represent a stable,
+user-visible abstraction layer.
+
+### 4. Preserve the API style model
 
 The public model is:
 
 - `Direct WebGPU`
   raw WebGPU-shaped API
 - `Doe API`
-  explicit Doe convenience surface
-- `Doe routines`
-  narrower, more opinionated precomposed flows
+  explicit Doe convenience surface, including the more opinionated one-shot
+  helpers under `gpu.compute.*`
 
 Current examples:
 
 - `Direct WebGPU`
   `requestDevice()`, `device.createBuffer(...)`, `device.createComputePipeline(...)`
 - `Doe API`
-  `gpu.buffers.create(...)`, `gpu.buffers.fromData(...)`, `gpu.buffers.like(...)`, `gpu.compute.run(...)`, `gpu.compute.compile(...)`
-- `Doe routines`
+  `gpu.buffer.create(...)`, `gpu.buffer.fromData(...)`, `gpu.buffer.like(...)`, `gpu.kernel.run(...)`, `gpu.kernel.create(...)`
   `gpu.compute.once(...)`
 
-`Doe routines` must stay narrower and more opinionated than `Doe API`. If
-callers need raw control, explicit reuse, or unusual binding behavior, they
-should drop to `Doe API` or `Direct WebGPU` rather than expanding `Doe
-routines` into a catch-all surface.
+More opinionated one-shot helpers such as `gpu.compute.once(...)` should stay
+narrower than the explicit primitive parts of `Doe API`. If callers need raw
+control, explicit reuse, or unusual binding behavior, they should drop to the
+rest of `Doe API` or `Direct WebGPU` rather than expanding those helpers into a
+catch-all surface.
 
-### 4. Prefer explicit resource ownership
+### 5. Prefer explicit resource ownership
 
 `Doe API` may reduce boilerplate, but it should still make resource ownership
 and execution shape understandable.
 
 Good:
 
-- `gpu.buffers.like(src, { usage: "storageReadWrite" })`
-- `gpu.compute.run({ code, bindings, workgroups })`
+- `gpu.buffer.like(src, { usage: "storageReadWrite" })`
+- `gpu.kernel.run({ code, bindings, workgroups })`
 
 Risky:
 
 - giant option bags that hide allocations, binding rules, and reuse behavior
 - convenience APIs that make it hard to tell when buffers are created or destroyed
 
-### 5. Keep JS naming coherent
+### 6. Keep JS naming coherent
 
 For JavaScript APIs:
 
@@ -117,7 +136,17 @@ For example:
 - `createBufferLike`
 - `requestDevice`
 
-### 6. Fail clearly on unsupported states
+### 7. Prefer singular helper namespaces
+
+When a namespace represents one object domain, prefer the singular form:
+
+- `gpu.buffer.*`
+- `gpu.kernel.*`
+
+Treat plural namespaces in the current API as compatibility debt rather than
+the naming target for future design work.
+
+### 8. Fail clearly on unsupported states
 
 Unsupported or out-of-scope behavior should fail explicitly with actionable
 messages. Public docs should state those boundaries when they are easy to miss.
@@ -170,6 +199,10 @@ Use this order for public APIs:
 /**
  * One-sentence summary in plain English.
  *
+ * Surface: package layer or namespace.
+ * Input: short plain-English summary of the main inputs.
+ * Returns: short plain-English summary of the main result.
+ *
  * Short prose paragraph explaining what the API does, how it behaves, and
  * why a caller would use it.
  *
@@ -185,13 +218,19 @@ Use this order for public APIs:
  */
 ```
 
-The section labels themselves are not used. Do not write:
+Do not add narrative section labels like:
 
 - `What this does:`
 - `Example:`
 - `Edge cases:`
 
-The ordering and content should make those sections obvious without headings.
+For future Doe helper docs, the following short contract lines are required:
+
+- `Surface:`
+- `Input:`
+- `Returns:`
+
+These are machine-scannable anchors, not prose section headings.
 
 ## JSDoc content rules
 
@@ -223,6 +262,28 @@ Bad:
 - `Convenience method.`
 - `Used for device workflows.`
 
+### Contract lines
+
+Immediately after the summary line, add:
+
+- `Surface:`
+- `Input:`
+- `Returns:`
+
+Keep them short and concrete.
+
+Good:
+
+- `Surface: Doe API (\`gpu.kernel.*\`).`
+- `Input: WGSL source, entry point, and representative bindings.`
+- `Returns: A reusable kernel object with \`.dispatch(...)\`.`
+
+Bad:
+
+- `Surface: API`
+- `Input: options`
+- repeating full type declarations from `.d.ts`
+
 ### Prose paragraph before the example
 
 After the summary line, include a short prose paragraph explaining:
@@ -237,7 +298,7 @@ Good:
 
 - explain whether the API allocates buffers, submits work, waits, or reads back
 - explain whether an object is full-surface or compute-only
-- explain whether the API belongs to `Direct WebGPU`, `Doe API`, or `Doe routines` when that matters
+- explain whether the API belongs to `Direct WebGPU` or `Doe API`, and whether it is an explicit primitive or a more opinionated one-shot helper when that matters
 
 Do not:
 
@@ -276,8 +337,8 @@ Requirements:
 Do:
 
 - use `await doe.requestDevice()` for the direct Doe API entry path
-- use `gpu.buffers.like(...)` when showing size-copy allocation
-- use `gpu.compute.once(...)` only for true Doe routines examples
+- use `gpu.buffer.like(...)` when showing size-copy allocation
+- use `gpu.compute.once(...)` only for true one-shot Doe API examples
 
 Do not:
 
@@ -333,7 +394,7 @@ For `doe` and nested namespaces:
 - explain the API style split
 - explain when to use `requestDevice()` versus `bind(device)`
 - explain bound versus unbound Doe forms
-- explain where `Doe routines` is intentionally narrower than `Doe API`
+- explain where a more opinionated one-shot Doe API helper is intentionally narrower than the rest of `Doe API`
 
 ## Style rules
 
@@ -387,7 +448,7 @@ important constraints.
  * dispatches the compute job once, reads the output back, and returns the
  * requested typed array result.
  *
- * This example shows a basic Doe routines path with a typed-array input.
+ * This example shows a basic one-shot Doe API path with a typed-array input.
  *
  * ```js
  * const out = await gpu.compute.once({
@@ -416,6 +477,6 @@ Before merging a public API doc change, verify:
 - the example uses the real package API
 - the bullets cover defaults, throws, and boundary conditions
 - the docs reflect the current full-vs-compute split
-- the docs reflect the current `Direct WebGPU` / `Doe API` / `Doe routines` model
+- the docs reflect the current `Direct WebGPU` / `Doe API` model
 - no private helpers were documented
 - no `//` doc comments were added

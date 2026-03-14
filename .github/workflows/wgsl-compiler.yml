@@ -1,0 +1,87 @@
+name: wgsl-compiler
+
+# Runs the doe_wgsl unit tests on all supported platforms.
+# The DXIL lane additionally verifies DXC toolchain discovery and, on
+# windows-latest, exercises end-to-end DXIL emission via the bundled DXC.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  # ── Core compiler tests (lexer / parser / emitter / IR) ─────────────────────
+  # These tests have no external toolchain dependencies and run everywhere.
+  wgsl-core-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: "0.15.0"
+      - name: Run WGSL compiler unit tests
+        run: |
+          cd zig
+          zig build test-core
+
+  # ── DXIL toolchain-config tests (no DXC binary required) ───────────────────
+  # Validates DXC discovery parsing and error messages in isolation.
+  # Runs on all platforms because the discovery logic is platform-neutral.
+  dxil-toolchain-config:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: "0.15.0"
+      - name: Run DXIL toolchain-config unit tests
+        # DOE_WGSL_DXC is deliberately unset so tests exercise the
+        # ShaderToolchainUnavailable path and env-parsing logic.
+        run: |
+          cd zig
+          zig test src/doe_wgsl/emit_dxil.zig
+
+  # ── DXIL end-to-end emission (requires DXC) ─────────────────────────────────
+  # Compiles a minimal compute shader to DXIL using the DXC that ships with
+  # Visual Studio on windows-latest.  This job is the canonical DXIL smoke test.
+  # On non-Windows CI the emitter returns ShaderToolchainUnavailable by design;
+  # that behaviour is verified by the dxil-toolchain-config job above instead.
+  dxil-emit-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: "0.15.0"
+      - name: Locate DXC from Windows SDK
+        # Visual Studio ships DXC under the Windows SDK binary directory.
+        # Expose it via DOE_WGSL_DXC so the emitter uses the exact path.
+        shell: pwsh
+        run: |
+          $dxc = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" `
+            -Recurse -Filter "dxc.exe" -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $dxc) {
+            Write-Error "DXC not found under Windows Kits — update runner image or install Windows SDK"
+            exit 1
+          }
+          echo "DOE_WGSL_DXC=$dxc" >> $env:GITHUB_ENV
+          echo "Found DXC: $dxc"
+      - name: Run DXIL end-to-end tests
+        run: |
+          cd zig
+          zig build test-d3d12
