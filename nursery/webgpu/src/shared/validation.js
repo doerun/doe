@@ -34,6 +34,12 @@ const TEXTURE_VIEW_DIMENSIONS = Object.freeze({
   '3d': '3d',
 });
 
+const TEXTURE_DIMENSIONS = Object.freeze({
+  '1d': '1d',
+  '2d': '2d',
+  '3d': '3d',
+});
+
 const STORAGE_TEXTURE_ACCESS = Object.freeze({
   'write-only': 'write-only',
   'read-only': 'read-only',
@@ -42,6 +48,183 @@ const STORAGE_TEXTURE_ACCESS = Object.freeze({
 
 const ALL_BUFFER_USAGE_BITS = Object.values(globals.GPUBufferUsage)
   .reduce((mask, bit) => mask | bit, 0);
+
+// ============================================================
+// Texture format capability tables
+// ============================================================
+
+// Depth/stencil formats recognized without any feature gate
+const DEPTH_STENCIL_FORMATS_BASE = Object.freeze(new Set([
+  'stencil8',
+  'depth16unorm',
+  'depth24plus',
+  'depth24plus-stencil8',
+  'depth32float',
+]));
+
+// depth32float-stencil8 requires the depth32float-stencil8 feature
+const DEPTH_STENCIL_FORMAT_DEPTH32FLOAT_STENCIL8 = 'depth32float-stencil8';
+
+function isDepthStencilFormat(format, features) {
+  if (DEPTH_STENCIL_FORMATS_BASE.has(format)) return true;
+  if (format === DEPTH_STENCIL_FORMAT_DEPTH32FLOAT_STENCIL8) {
+    return features != null && features.has('depth32float-stencil8');
+  }
+  return false;
+}
+
+// Formats that can have stencil aspect (stencilLoadOp / stencilStoreOp)
+const STENCIL_FORMATS = Object.freeze(new Set([
+  'stencil8',
+  'depth24plus-stencil8',
+  'depth32float-stencil8',
+]));
+
+function hasStencilAspect(format) {
+  return STENCIL_FORMATS.has(format);
+}
+
+// Formats valid for STORAGE_BINDING usage (without any feature)
+const STORAGE_TEXTURE_FORMATS_BASE = Object.freeze(new Set([
+  'rgba8unorm',
+  'rgba8snorm',
+  'rgba8uint',
+  'rgba8sint',
+  'rgba16uint',
+  'rgba16sint',
+  'rgba16float',
+  'r32float',
+  'r32uint',
+  'r32sint',
+  'rg32float',
+  'rg32uint',
+  'rg32sint',
+  'rgba32float',
+  'rgba32uint',
+  'rgba32sint',
+]));
+
+// bgra8unorm is valid for storage only with bgra8unorm-storage feature
+function isStorageTextureFormat(format, features) {
+  if (STORAGE_TEXTURE_FORMATS_BASE.has(format)) return true;
+  if (format === 'bgra8unorm') {
+    return features != null && features.has('bgra8unorm-storage');
+  }
+  return false;
+}
+
+// Float32 formats: default sample type is unfilterable-float.
+// With float32-filterable feature, they become filterable (sample type = float).
+const FLOAT32_FORMATS = Object.freeze(new Set([
+  'r32float',
+  'rg32float',
+  'rgba32float',
+]));
+
+function float32SampleType(format, features) {
+  if (!FLOAT32_FORMATS.has(format)) return null;
+  if (features != null && features.has('float32-filterable')) {
+    return 'float';
+  }
+  return 'unfilterable-float';
+}
+
+function isFloat32Filterable(format, features) {
+  return FLOAT32_FORMATS.has(format) && features != null && features.has('float32-filterable');
+}
+
+// Float32 formats: default is not blendable as render target.
+// With float32-blendable feature, blend state is allowed on float32 color targets.
+function isFloat32Blendable(format, features) {
+  return FLOAT32_FORMATS.has(format) && features != null && features.has('float32-blendable');
+}
+
+// Formats that are always blendable (non-integer, non-depth, non-float32)
+const ALWAYS_BLENDABLE_FORMATS = Object.freeze(new Set([
+  'r8unorm', 'r8snorm',
+  'r16float',
+  'rg8unorm', 'rg8snorm',
+  'rg16float',
+  'rgba8unorm', 'rgba8unorm-srgb', 'rgba8snorm',
+  'bgra8unorm', 'bgra8unorm-srgb',
+  'rgb10a2unorm',
+  'rgba16float',
+]));
+
+function isBlendableFormat(format, features) {
+  if (ALWAYS_BLENDABLE_FORMATS.has(format)) return true;
+  return isFloat32Blendable(format, features);
+}
+
+// BC (S3TC/DXT) compressed formats — require texture-compression-bc feature.
+// Read-only compressed: valid for TEXTURE_BINDING and CopySrc/CopyDst,
+// not valid for RENDER_ATTACHMENT or STORAGE_BINDING.
+const BC_FORMATS = Object.freeze(new Set([
+  'bc1-rgba-unorm', 'bc1-rgba-unorm-srgb',
+  'bc2-rgba-unorm', 'bc2-rgba-unorm-srgb',
+  'bc3-rgba-unorm', 'bc3-rgba-unorm-srgb',
+  'bc4-r-unorm', 'bc4-r-snorm',
+  'bc5-rg-unorm', 'bc5-rg-snorm',
+  'bc6h-rgb-ufloat', 'bc6h-rgb-float',
+  'bc7-rgba-unorm', 'bc7-rgba-unorm-srgb',
+]));
+
+function isBCFormat(format) {
+  return BC_FORMATS.has(format);
+}
+
+// ASTC compressed formats — require texture-compression-astc feature.
+// Read-only compressed: valid for TEXTURE_BINDING and CopySrc/CopyDst,
+// not valid for RENDER_ATTACHMENT or STORAGE_BINDING.
+const ASTC_FORMATS = Object.freeze(new Set([
+  'astc-4x4-unorm', 'astc-4x4-unorm-srgb',
+  'astc-5x4-unorm', 'astc-5x4-unorm-srgb',
+  'astc-5x5-unorm', 'astc-5x5-unorm-srgb',
+  'astc-6x5-unorm', 'astc-6x5-unorm-srgb',
+  'astc-6x6-unorm', 'astc-6x6-unorm-srgb',
+  'astc-8x5-unorm', 'astc-8x5-unorm-srgb',
+  'astc-8x6-unorm', 'astc-8x6-unorm-srgb',
+  'astc-8x8-unorm', 'astc-8x8-unorm-srgb',
+  'astc-10x5-unorm', 'astc-10x5-unorm-srgb',
+  'astc-10x6-unorm', 'astc-10x6-unorm-srgb',
+  'astc-10x8-unorm', 'astc-10x8-unorm-srgb',
+  'astc-10x10-unorm', 'astc-10x10-unorm-srgb',
+  'astc-12x10-unorm', 'astc-12x10-unorm-srgb',
+  'astc-12x12-unorm', 'astc-12x12-unorm-srgb',
+]));
+
+function isASTCFormat(format) {
+  return ASTC_FORMATS.has(format);
+}
+
+// ETC2/EAC compressed formats — require texture-compression-etc2 feature.
+// Read-only compressed: valid for TEXTURE_BINDING and CopySrc/CopyDst,
+// not valid for RENDER_ATTACHMENT or STORAGE_BINDING.
+const ETC2_FORMATS = Object.freeze(new Set([
+  'etc2-rgb8unorm', 'etc2-rgb8unorm-srgb',
+  'etc2-rgb8a1unorm', 'etc2-rgb8a1unorm-srgb',
+  'etc2-rgba8unorm', 'etc2-rgba8unorm-srgb',
+  'eac-r11unorm', 'eac-r11snorm',
+  'eac-rg11unorm', 'eac-rg11snorm',
+]));
+
+function isETC2Format(format) {
+  return ETC2_FORMATS.has(format);
+}
+
+// ASTC block sizes for validation (width, height) keyed by format prefix
+const ASTC_BLOCK_SIZES = Object.freeze({
+  'astc-4x4': [4, 4], 'astc-5x4': [5, 4], 'astc-5x5': [5, 5],
+  'astc-6x5': [6, 5], 'astc-6x6': [6, 6], 'astc-8x5': [8, 5],
+  'astc-8x6': [8, 6], 'astc-8x8': [8, 8], 'astc-10x5': [10, 5],
+  'astc-10x6': [10, 6], 'astc-10x8': [10, 8], 'astc-10x10': [10, 10],
+  'astc-12x10': [12, 10], 'astc-12x12': [12, 12],
+});
+
+function astcBlockSize(format) {
+  const prefix = format.replace(/-unorm(-srgb)?$/, '');
+  return ASTC_BLOCK_SIZES[prefix] ?? null;
+}
 
 function assertBufferDescriptor(descriptor, path) {
   assertObject(descriptor, path, 'descriptor');
@@ -106,6 +289,14 @@ function normalizeStorageTextureLayout(binding, path, label) {
     format: assertNonEmptyString(storageTexture.format, path, `${label}.format`),
     viewDimension,
   };
+}
+
+function normalizeTextureDimension(value, path, label = 'descriptor.dimension') {
+  const dimension = normalizeEnumKey(value ?? '2d', path, label);
+  if (!(dimension in TEXTURE_DIMENSIONS)) {
+    failValidation(path, `${label} must be one of: ${Object.keys(TEXTURE_DIMENSIONS).join(', ')}`);
+  }
+  return dimension;
 }
 
 function assertTextureSize(size, path) {
@@ -269,10 +460,31 @@ export {
   ALL_BUFFER_USAGE_BITS,
   SAMPLER_BINDING_TYPES,
   TEXTURE_SAMPLE_TYPES,
+  TEXTURE_DIMENSIONS,
   TEXTURE_VIEW_DIMENSIONS,
   STORAGE_TEXTURE_ACCESS,
+  DEPTH_STENCIL_FORMATS_BASE,
+  STORAGE_TEXTURE_FORMATS_BASE,
+  FLOAT32_FORMATS,
+  ALWAYS_BLENDABLE_FORMATS,
+  BC_FORMATS,
+  ASTC_FORMATS,
+  ASTC_BLOCK_SIZES,
+  ETC2_FORMATS,
+  isBCFormat,
+  isETC2Format,
+  isDepthStencilFormat,
+  hasStencilAspect,
+  isStorageTextureFormat,
+  float32SampleType,
+  isFloat32Filterable,
+  isFloat32Blendable,
+  isBlendableFormat,
+  isASTCFormat,
+  astcBlockSize,
   assertBufferDescriptor,
   normalizeEnumKey,
+  normalizeTextureDimension,
   normalizeSamplerLayout,
   normalizeTextureLayout,
   normalizeStorageTextureLayout,

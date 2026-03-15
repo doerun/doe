@@ -123,18 +123,18 @@ Dawn is Google's WebGPU implementation. Tint is Dawn's shader compiler.
 | Dimension | Dawn/Tint | Doe |
 |-----------|-----------|-----|
 | Language | C++ | Zig |
-| Compiler size | ~200K LOC (Tint) | ~7.7K LOC |
+| Compiler size | ~200K LOC (Tint) | ~13.7K LOC |
 | IR | Mature SSA with transforms and optimization | Minimal typed IR, no optimization passes |
 | Metal target | MSL text (same) | MSL text (same) |
 | Vulkan target | Native SPIR-V writer (mature) | Native SPIR-V writer (new, compute-only) |
 | D3D12 target | HLSL text → DXC (permanent) | HLSL text → DXC (default; native DXIL as future option) |
 | GLSL | Has a GLSL writer for compat | Not a target |
-| Shader stages | Compute + vertex + fragment + full graphics | Compute only |
+| Shader stages | Compute + vertex + fragment + full graphics | Compute + vertex + fragment |
 | Optimization | Dead code elimination, constant folding, binding remapping, robustness injection | None yet |
 | Robustness | Bounds checks, null guards per spec | Not implemented |
 | Polyfills | Emulates missing features per driver | Explicit unsupported errors |
 
-Structural similarity: both follow WGSL → AST → semantic analysis → typed IR → per-backend emission. Doe is 25x smaller and does not yet have optimization, robustness, or graphics pipeline support.
+Structural similarity: both follow WGSL → AST → semantic analysis → typed IR → per-backend emission. Doe is ~15x smaller and does not yet have optimization or robustness injection.
 
 ## Why custom Zig IR (not SPIR-V as universal IR)
 
@@ -238,15 +238,16 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 
 | Layer | Files | Lines | Status |
 |-------|-------|-------|--------|
-| Lexer/Parser/AST | token, lexer, ast, parser | 2,332 | Production |
-| Semantic analysis | sema, sema_helpers, sema_types | 1,060 | Production, sharded |
-| IR + validation | ir, ir_builder, ir_validate | 1,040 | Production |
-| IR → MSL | emit_msl, emit_msl_ir | 576 | Production, compute |
-| IR → HLSL | emit_hlsl | 574 | Production, compute |
-| IR → SPIR-V | emit_spirv, spirv_builder | 1,591 | Working, compute-first native path with storage/runtime arrays, barriers, atomics, `dot`, `sin`, `fract`, and narrow texture/image support; samplers/graphics incomplete |
-| IR → DXIL | emit_dxil | 41 | Stub |
-| Public API | mod.zig | 168 | All four translateTo* wired |
-| **Total** | **17 files** | **7,382** | |
+| Lexer/Parser/AST | token, lexer, ast, parser, parser_decl, parser_expr, parser_stmt | 2,575 | Production, sharded |
+| Semantic analysis | sema, sema_attrs, sema_body, sema_helpers, sema_resolve, sema_types | 1,821 | Production, sharded |
+| IR + validation | ir, ir_builder, ir_validate | 1,263 | Production |
+| IR → MSL | emit_msl, emit_msl_ir, emit_msl_maps, emit_msl_stage, emit_msl_texture | 1,206 | Production, compute + vertex/fragment |
+| IR → HLSL | emit_hlsl, emit_hlsl_maps, emit_hlsl_stage | 1,059 | Production, compute + vertex/fragment |
+| IR → SPIR-V | emit_spirv, emit_spirv_builtins, emit_spirv_fn, emit_spirv_stages, spirv_builder | 2,843 | Working, compute-first with vertex/fragment stage support; samplers/graphics incomplete |
+| IR → DXIL | emit_dxil | 383 | Stub |
+| Legacy MSL | doe_wgsl_msl | 641 | Legacy regex-based path |
+| Public API + tests | mod.zig, mod_test.zig | 1,920 | All four translateTo* wired |
+| **Total** | **33 files** | **13,711** | |
 
 ## Remaining work (current reality)
 
@@ -257,9 +258,9 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
      - broader texture/storage-texture format coverage
      - graphics-stage IO and render-pipeline integration
 
-2. **Graphics stages are still not implemented.**
-   - All native emitters are still compute-first.
-   - Vertex/fragment IO, locations/interpolation, render pipeline lowering, and graphics-stage runtime integration remain open.
+2. **Graphics pipeline integration is still not implemented.**
+   - Vertex/fragment builtins and stage IO are parsed, lowered to IR, and emitted by all backends.
+   - Render pipeline lowering, location/interpolation assignment, and graphics-stage runtime integration remain open.
 
 3. **SPIR-V validation/build proof is still outstanding.**
    - The native SPIR-V path has moved well beyond the original stub state, but it still needs an actual build/validation pass (`zig build`, `spirv-val`) to prove the current emitter/runtime integration.

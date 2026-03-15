@@ -13,6 +13,7 @@ import {
   assertBufferDescriptor,
   assertTextureSize,
   assertBindGroupResource,
+  normalizeTextureDimension,
   normalizeBindGroupLayoutEntry,
 } from './validation.js';
 import {
@@ -275,6 +276,19 @@ function createFullSurfaceClasses({
     }
   }
 
+  class DoeGPUQuerySet {
+    constructor(native, type, count, owner) {
+      this._native = native;
+      this.type = type;
+      this.count = count;
+      initResource(this, 'GPUQuerySet', owner);
+    }
+
+    destroy() {
+      destroyResource(this, (native) => backend.querySetDestroy(native));
+    }
+  }
+
   class DoeGPUDevice {
     constructor(native, instance, inheritedLimits = null, inheritedFeatures = null) {
       this._native = native;
@@ -288,7 +302,11 @@ function createFullSurfaceClasses({
     createBuffer(descriptor) {
       const validated = assertBufferDescriptor(descriptor, 'GPUDevice.createBuffer');
       const native = backend.deviceCreateBuffer(this, validated);
-      return new DoeGPUBuffer(native, this._instance, validated.size, validated.usage, this.queue, this);
+      const buffer = new DoeGPUBuffer(native, this._instance, validated.size, validated.usage, this.queue, this);
+      if (validated.mappedAtCreation && typeof backend.bufferMarkMappedAtCreation === 'function') {
+        backend.bufferMarkMappedAtCreation(buffer);
+      }
+      return buffer;
     }
 
     createShaderModule(descriptor) {
@@ -374,7 +392,11 @@ function createFullSurfaceClasses({
       const textureDescriptor = assertObject(descriptor, 'GPUDevice.createTexture', 'descriptor');
       const size = assertTextureSize(textureDescriptor.size, 'GPUDevice.createTexture');
       const usage = assertIntegerInRange(textureDescriptor.usage, 'GPUDevice.createTexture', 'descriptor.usage', { min: 1 });
-      const native = backend.deviceCreateTexture(this, textureDescriptor, size, usage);
+      const dimension = normalizeTextureDimension(textureDescriptor.dimension, 'GPUDevice.createTexture');
+      const native = backend.deviceCreateTexture(this, {
+        ...textureDescriptor,
+        dimension,
+      }, size, usage);
       return new DoeGPUTexture(native, this);
     }
 
@@ -413,6 +435,17 @@ function createFullSurfaceClasses({
         multisample: renderDescriptor.multisample ?? null,
       });
       return new DoeGPURenderPipeline(native, this);
+    }
+
+    createQuerySet(descriptor) {
+      assertLiveResource(this, 'GPUDevice.createQuerySet', 'GPUDevice');
+      const queryDescriptor = assertObject(descriptor, 'GPUDevice.createQuerySet', 'descriptor');
+      if (queryDescriptor.type !== 'timestamp') {
+        failValidation('GPUDevice.createQuerySet', `unsupported query type "${queryDescriptor.type}"; only "timestamp" is supported`);
+      }
+      assertIntegerInRange(queryDescriptor.count, 'GPUDevice.createQuerySet', 'descriptor.count', { min: 1, max: UINT32_MAX });
+      const native = backend.deviceCreateQuerySet(this, queryDescriptor);
+      return new DoeGPUQuerySet(native, queryDescriptor.type, queryDescriptor.count, this);
     }
 
     createCommandEncoder(descriptor) {
@@ -468,6 +501,7 @@ function createFullSurfaceClasses({
     DoeGPUBindGroupLayout,
     DoeGPUBindGroup,
     DoeGPUPipelineLayout,
+    DoeGPUQuerySet,
     DoeGPUDevice,
     DoeGPUAdapter,
     DoeGPU,

@@ -1,0 +1,1842 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Doe API reference</title>
+  <style>
+    :root {
+      --bg: #06111a;
+      --bg-2: #0d1b2a;
+      --panel: rgba(8, 15, 26, 0.76);
+      --panel-2: rgba(12, 24, 38, 0.92);
+      --line: rgba(160, 196, 255, 0.16);
+      --text: #eef6ff;
+      --muted: #93a8bf;
+      --hot: #fb7185;
+      --cold: #22d3ee;
+      --gold: #facc15;
+      --success: #34d399;
+      --paper: rgba(255, 255, 255, 0.03);
+      --shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      --radius: 28px;
+      --radius-sm: 18px;
+      --mono: "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Instrument Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.22), transparent 32%),
+        radial-gradient(circle at top right, rgba(251, 113, 133, 0.18), transparent 28%),
+        linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+      min-height: 100vh;
+    }
+    a { color: inherit; }
+    code, pre, textarea { font-family: var(--mono); }
+    .shell {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      gap: 20px;
+      width: min(1380px, calc(100vw - 40px));
+      margin: 20px auto 56px;
+    }
+    .rail {
+      position: sticky;
+      top: 24px;
+      height: calc(100vh - 48px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(7, 13, 23, 0.92), rgba(10, 19, 32, 0.84));
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      backdrop-filter: blur(20px);
+    }
+    .brand {
+      display: grid;
+      gap: 8px;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: -0.03em;
+    }
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+    .search {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+    }
+    .navGroup {
+      display: grid;
+      gap: 8px;
+    }
+    .navGroup h2 {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+    .navGroup a {
+      text-decoration: none;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid transparent;
+      transition: 160ms ease;
+    }
+    .navGroup a:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      transform: translateX(3px);
+    }
+    .navMeta {
+      margin-top: auto;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    main {
+      display: grid;
+      gap: 24px;
+    }
+    .hero,
+    .panel,
+    .supportPanel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(10, 18, 30, 0.86), rgba(13, 23, 37, 0.78));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+    .hero {
+      padding: 36px;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -60px -60px auto;
+      width: 240px;
+      height: 240px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(250, 204, 21, 0.3), transparent 68%);
+      pointer-events: none;
+    }
+    .eyebrow {
+      color: var(--gold);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 10px;
+    }
+    .hero h2 {
+      margin: 0;
+      max-width: 12ch;
+      font-size: clamp(2.3rem, 4.8vw, 4.6rem);
+      letter-spacing: -0.06em;
+      line-height: 0.98;
+    }
+    .hero p {
+      max-width: 680px;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 1rem;
+      margin: 18px 0 0;
+      white-space: pre-line;
+    }
+    .heroGrid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+      gap: 24px;
+      align-items: end;
+    }
+    .heroStats {
+      display: grid;
+      gap: 14px;
+    }
+    .heroStat {
+      border-radius: 18px;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .heroStat strong {
+      display: block;
+      font-size: 1.65rem;
+      letter-spacing: -0.04em;
+    }
+    .heroStat span {
+      color: var(--muted);
+      display: block;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .sectionHeader {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+    .sectionHeader h2 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: -0.04em;
+    }
+    .sectionHeader p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.6;
+    }
+    .panel {
+      padding: 28px;
+    }
+    .statusGrid,
+    .apiGrid,
+    .examplesGrid {
+      display: grid;
+      gap: 18px;
+    }
+    .statusGrid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .statusCard,
+    .apiCard,
+    .exampleCard {
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .statusCard {
+      padding: 18px;
+    }
+    .statusCard dt {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+    .statusCard dd {
+      margin: 12px 0 0;
+      font-size: 1.2rem;
+      letter-spacing: -0.03em;
+    }
+    .apiGrid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .apiCard {
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+    }
+    .apiHeader {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+    }
+    .apiHeader h3,
+    .exampleTop h3 {
+      margin: 4px 0 0;
+      font-size: 1.3rem;
+      letter-spacing: -0.03em;
+    }
+    .signature,
+    .filename {
+      white-space: nowrap;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(34, 211, 238, 0.1);
+      border: 1px solid rgba(34, 211, 238, 0.24);
+      color: #baf7ff;
+      font-size: 0.84rem;
+    }
+    .summary,
+    .detailsBody p,
+    .outputMeta {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .contractGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 0;
+    }
+    .contractGrid div {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .contractGrid dt {
+      color: var(--gold);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 8px;
+    }
+    .contractGrid dd {
+      margin: 0;
+      line-height: 1.55;
+    }
+    .notes {
+      margin: 0;
+      padding-left: 18px;
+      color: #d6e7fb;
+      display: grid;
+      gap: 8px;
+    }
+    .apiExample summary {
+      cursor: pointer;
+      color: #d6e7fb;
+    }
+    .apiExample pre,
+    .outputBlock,
+    .editor {
+      margin: 0;
+      background: rgba(3, 7, 13, 0.92);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #dbebff;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    .apiExample pre,
+    .outputBlock {
+      padding: 16px;
+      overflow: auto;
+    }
+    .linkRow,
+    .exampleLinks,
+    .buttonRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .linkRow a,
+    .exampleLinks a,
+    .ghostLink {
+      text-decoration: none;
+      color: #c7dbf7;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .examplesGrid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .exampleCard {
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+    .exampleTop {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+    }
+    .editor {
+      width: 100%;
+      min-height: 240px;
+      resize: vertical;
+      padding: 18px;
+      white-space: pre;
+    }
+    .runButton,
+    .ghostButton {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 11px 15px;
+      font: inherit;
+      color: var(--text);
+    }
+    .runButton {
+      background: linear-gradient(135deg, var(--cold), #60a5fa);
+      color: #041521;
+      font-weight: 700;
+    }
+    .ghostButton {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .outputShell {
+      display: grid;
+      gap: 12px;
+    }
+    .metricChips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .metricChip,
+    .valuePill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--paper);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #d6e7fb;
+      font-size: 0.85rem;
+    }
+    .chartCanvas {
+      width: 100%;
+      height: 220px;
+      display: block;
+      border-radius: 18px;
+      background: rgba(3, 7, 13, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .valueGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .editorDetails {
+      border-radius: 18px;
+      background: var(--paper);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+    .editorDetails summary {
+      cursor: pointer;
+      padding: 14px 16px;
+      color: #d6e7fb;
+      font-weight: 600;
+    }
+    .editorShell {
+      padding: 0 16px 16px;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .footerNote {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    @media (max-width: 1180px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+      .rail {
+        position: static;
+        height: auto;
+      }
+      .apiGrid,
+      .examplesGrid,
+      .statusGrid,
+      .heroGrid,
+      .contractGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <div class="brand">
+        <div class="eyebrow">Doe API</div>
+        <h1>Interactive reference</h1>
+        <p>Generated from the real Doe source docs, type surface, and shipped examples.</p>
+      </div>
+      <input class="search" id="search" type="search" placeholder="Search API and examples" />
+      <nav class="navGroup">
+        <h2>Jump to</h2>
+        <a href="#overview">Overview</a>
+        <a href="#runtime">Runtime check</a>
+        <a href="#api">API reference</a>
+        <a href="#examples">Live examples</a>
+      </nav>
+      <div class="navGroup">
+        <h2>Primary APIs</h2>
+        <a href="#doe.requestDevice">doe.requestDevice</a><a href="#doe.bind">doe.bind</a><a href="#gpu.buffer.create">gpu.buffer.create</a><a href="#gpu.buffer.read">gpu.buffer.read</a><a href="#gpu.kernel.run">gpu.kernel.run</a><a href="#gpu.kernel.create">gpu.kernel.create</a><a href="#DoeKernel">DoeKernel</a><a href="#DoeKernel.dispatch">kernel.dispatch</a><a href="#gpu.compute">gpu.compute</a>
+      </div>
+      <div class="navMeta">
+        <div>Output: <code>docs/doe-api-reference.html</code></div>
+        <div>Source docs: <code>@simulatte/webgpu-doe/src/index.js</code></div>
+        <div>Type surface: <code>@simulatte/webgpu-doe/src/index.d.ts</code></div>
+        <div>Examples: <code>examples/doe-api/</code></div>
+      </div>
+    </aside>
+    <main>
+      <section class="hero" id="overview">
+        <div class="heroGrid">
+          <div>
+            <div class="eyebrow">2026 package docs</div>
+            <h2>Doe API, as code and as contract.</h2>
+            <p>`@simulatte/webgpu` is Fawn's headless WebGPU package for Node.js and Bun: use
+the raw WebGPU API through `requestDevice()` and `device.*`, or move up to the
+Doe API when you want the same runtime with less setup. Browser DOM/canvas
+ownership lives in the separate `nursery/fawn-browser` lane.
+
+Terminology in this README is deliberate:
+
+- `Doe runtime` means the Zig/native WebGPU runtime underneath the package
+- `Doe API` means the explicit JS convenience surface under `doe`, `gpu.buffer.*`,
+  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute(...)`
+
+The current implemented helper contract is documented in
+[api-contract.md](./api-contract.md). The proposed naming cleanup for the Doe
+helper surface is documented in [doe-api-design.md](./doe-api-design.md).
+The generated interactive Doe API reference lives at
+[docs/doe-api-reference.html](./docs/doe-api-reference.html).
+
+The same helper layer is now also published separately as
+`@simulatte/webgpu-doe` when you want the Doe API as an independent package
+boundary.</p>
+          </div>
+          <div class="heroStats">
+            <div class="heroStat">
+              <strong>9</strong>
+              <span>public Doe API entries documented from current JSDoc and type shape</span>
+            </div>
+            <div class="heroStat">
+              <strong>7</strong>
+              <span>shipped Doe examples, live-editable and runnable in a browser with WebGPU</span>
+            </div>
+            <div class="heroStat">
+              <strong>1 page</strong>
+              <span>API reference, live examples, and runtime status in one self-contained artifact</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="runtime">
+        <div class="sectionHeader">
+          <div>
+            <div class="eyebrow">Runtime check</div>
+            <h2>Can this browser run the examples?</h2>
+          </div>
+          <p>The page executes the shipped Doe examples through a browser-side Doe demo adapter over WebGPU. It runs real WGSL and real GPU work when WebGPU is available.</p>
+        </div>
+        <div class="statusGrid">
+          <dl class="statusCard">
+            <dt>WebGPU</dt>
+            <dd id="status-webgpu">Checking…</dd>
+          </dl>
+          <dl class="statusCard">
+            <dt>Adapter</dt>
+            <dd id="status-adapter">Pending</dd>
+          </dl>
+          <dl class="statusCard">
+            <dt>Device</dt>
+            <dd id="status-device">Pending</dd>
+          </dl>
+        </div>
+      </section>
+
+      <section class="panel" id="api">
+        <div class="sectionHeader">
+          <div>
+            <div class="eyebrow">API reference</div>
+            <h2>Current shipped Doe surface</h2>
+          </div>
+          <p>Each card is generated from the public JSDoc in <code>@simulatte/webgpu-doe/src/index.js</code> and linked back to the implementation and type surface.</p>
+        </div>
+        <div class="apiGrid">
+          
+    <article class="apiCard searchTarget" data-search="doe.requestdevice doe.requestdevice(options?) -&gt; promise&lt;gpu&gt; request a device and return the bound doe api in one step. doe api namespace. optional package-local request options. a promise for the bound gpu helper object. this calls the package-local requestdevice(...) implementation and then wraps the resulting raw device in the bound doe api. throws if this namespace was created without a requestdevice implementation. gpu.device exposes the underlying raw device when you need lower-level control. see doe.bind(device) when you already have a raw device." id="doe.requestDevice">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API namespace.</div>
+          <h3>doe.requestDevice</h3>
+        </div>
+        <code class="signature">doe.requestDevice(options?) -&gt; Promise&lt;gpu&gt;</code>
+      </div>
+      <p class="summary">Request a device and return the bound Doe API in one step.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>Optional package-local request options.</dd></div>
+        <div><dt>Returns</dt><dd>A promise for the bound gpu helper object.</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This calls the package-local requestDevice(...) implementation and</p><p>then wraps the resulting raw device in the bound Doe API.</p></div>
+      <ul class="notes"><li>Throws if this namespace was created without a requestDevice implementation.</li><li>gpu.device exposes the underlying raw device when you need lower-level control.</li><li>See doe.bind(device) when you already have a raw device.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>const gpu = await doe.requestDevice();</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="doe.bind doe.bind(device) -&gt; gpu wrap an existing device in the bound doe api. doe api namespace. a raw device returned by the package surface. the bound gpu helper object for that device. use this when you need the raw device first, but still want to opt into doe helpers afterward. no async work happens here; it only wraps the device you already have. see doe.requestdevice(...) for the one-step helper entrypoint." id="doe.bind">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API namespace.</div>
+          <h3>doe.bind</h3>
+        </div>
+        <code class="signature">doe.bind(device) -&gt; gpu</code>
+      </div>
+      <p class="summary">Wrap an existing device in the bound Doe API.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>A raw device returned by the package surface.</dd></div>
+        <div><dt>Returns</dt><dd>The bound gpu helper object for that device.</dd></div>
+      </dl>
+      <div class="detailsBody"><p>Use this when you need the raw device first, but still want to opt into</p><p>Doe helpers afterward.</p></div>
+      <ul class="notes"><li>No async work happens here; it only wraps the device you already have.</li><li>See doe.requestDevice(...) for the one-step helper entrypoint.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>const device = await requestDevice();
+const gpu = doe.bind(device);</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="gpu.buffer.create gpu.buffer.create(options) -&gt; gpubuffer create a buffer with explicit size and doe usage tokens. doe api gpu.buffer. a buffer size, usage, and optional label or mapping flag. a gpu buffer with doe usage metadata attached when possible. this is the explicit doe helper over device.createbuffer(...). it accepts doe usage tokens such as storagereadwrite, and when data is provided it allocates and uploads in one step. doe remembers the resulting binding access so later helper calls can infer how the buffer should be bound. when data is provided, usage defaults to storageread. raw numeric usage flags are allowed here for explicit control. buffers created with raw numeric flags may later require { buffer, access }." id="gpu.buffer.create">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API gpu.buffer.</div>
+          <h3>gpu.buffer.create</h3>
+        </div>
+        <code class="signature">gpu.buffer.create(options) -&gt; GPUBuffer</code>
+      </div>
+      <p class="summary">Create a buffer with explicit size and Doe usage tokens.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>A buffer size, usage, and optional label or mapping flag.</dd></div>
+        <div><dt>Returns</dt><dd>A GPU buffer with Doe usage metadata attached when possible.</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This is the explicit Doe helper over device.createBuffer(...). It</p><p>accepts Doe usage tokens such as storageReadWrite, and when data</p><p>is provided it allocates and uploads in one step. Doe remembers the</p><p>resulting binding access so later helper calls can infer how the</p><p>buffer should be bound.</p></div>
+      <ul class="notes"><li>When data is provided, usage defaults to storageRead.</li><li>Raw numeric usage flags are allowed here for explicit control.</li><li>Buffers created with raw numeric flags may later require { buffer, access }.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>const src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+const dst = gpu.buffer.create({ size: src.size, usage: &quot;storageReadWrite&quot; });</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="gpu.buffer.read gpu.buffer.read(options) -&gt; promise&lt;typedarray&gt; read a buffer back into a typed array. doe api gpu.buffer. a source buffer, a typed-array constructor, and optional offset or size. a promise for a newly allocated typed array. this reads gpu buffer contents back to js. if the buffer is already mappable for read, doe maps it directly; otherwise doe stages the copy through a temporary readback buffer. options.offset and options.size let you read a subrange. the typed-array constructor must accept a plain arraybuffer. see raw buffer.mapasync(...) when you need manual readback control." id="gpu.buffer.read">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API gpu.buffer.</div>
+          <h3>gpu.buffer.read</h3>
+        </div>
+        <code class="signature">gpu.buffer.read(options) -&gt; Promise&lt;TypedArray&gt;</code>
+      </div>
+      <p class="summary">Read a buffer back into a typed array.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>A source buffer, a typed-array constructor, and optional offset or size.</dd></div>
+        <div><dt>Returns</dt><dd>A promise for a newly allocated typed array.</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This reads GPU buffer contents back to JS. If the buffer is already</p><p>mappable for read, Doe maps it directly; otherwise Doe stages the copy</p><p>through a temporary readback buffer.</p></div>
+      <ul class="notes"><li>options.offset and options.size let you read a subrange.</li><li>The typed-array constructor must accept a plain ArrayBuffer.</li><li>See raw buffer.mapAsync(...) when you need manual readback control.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>const out = await gpu.buffer.read(dst, Float32Array);</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="gpu.kernel.run gpu.kernel.run(options) -&gt; promise&lt;void&gt; compile and dispatch a one-off compute job. doe api gpu.kernel. wgsl source, bindings, workgroups, and an optional entry point or label. a promise that resolves after submission completes. this is the explicit one-shot compute path. it builds the pipeline for the provided shader, dispatches once, and waits for completion. workgroups may be number, [x, y], or [x, y, z]. bare buffers without doe helper metadata require { buffer, access }. see gpu.kernel.create(...) when you will reuse the shader shape. see gpu.compute(...) for the narrower typed-array workflow." id="gpu.kernel.run">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API gpu.kernel.</div>
+          <h3>gpu.kernel.run</h3>
+        </div>
+        <code class="signature">gpu.kernel.run(options) -&gt; Promise&lt;void&gt;</code>
+      </div>
+      <p class="summary">Compile and dispatch a one-off compute job.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>WGSL source, bindings, workgroups, and an optional entry point or label.</dd></div>
+        <div><dt>Returns</dt><dd>A promise that resolves after submission completes.</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This is the explicit one-shot compute path. It builds the pipeline for</p><p>the provided shader, dispatches once, and waits for completion.</p></div>
+      <ul class="notes"><li>workgroups may be number, [x, y], or [x, y, z].</li><li>Bare buffers without Doe helper metadata require { buffer, access }.</li><li>See gpu.kernel.create(...) when you will reuse the shader shape.</li><li>See gpu.compute(...) for the narrower typed-array workflow.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>await gpu.kernel.run({
+  code,
+  bindings: [src, dst],
+  workgroups: 1,
+});</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="gpu.kernel.create gpu.kernel.create(options) -&gt; doekernel compile a reusable compute kernel. doe api gpu.kernel. wgsl source, an optional entry point, and an initial binding shape. a doekernel object with dispatch(...). this creates the shader module, bind-group layout, and compute pipeline once so the same wgsl shape can be dispatched repeatedly. binding access is inferred from the bindings passed at compile time. see kernel.dispatch(...) to run the compiled kernel. see gpu.kernel.run(...) when reuse does not matter." id="gpu.kernel.create">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API gpu.kernel.</div>
+          <h3>gpu.kernel.create</h3>
+        </div>
+        <code class="signature">gpu.kernel.create(options) -&gt; DoeKernel</code>
+      </div>
+      <p class="summary">Compile a reusable compute kernel.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>WGSL source, an optional entry point, and an initial binding shape.</dd></div>
+        <div><dt>Returns</dt><dd>A DoeKernel object with dispatch(...).</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This creates the shader module, bind-group layout, and compute</p><p>pipeline once so the same WGSL shape can be dispatched repeatedly.</p></div>
+      <ul class="notes"><li>Binding access is inferred from the bindings passed at compile time.</li><li>See kernel.dispatch(...) to run the compiled kernel.</li><li>See gpu.kernel.run(...) when reuse does not matter.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>const kernel = gpu.kernel.create({
+  code,
+  bindings: [src, dst],
+});</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="doekernel class doekernel reusable compute kernel compiled by gpu.kernel.create(...). doe api gpu.kernel. created from wgsl source, an entry point, and an initial binding shape. a reusable kernel object with dispatch(...). this object keeps the compiled pipeline and bind-group layout for a repeated wgsl compute shape. use it when you will dispatch the same shader more than once and want to avoid recompiling on every call. see gpu.kernel.run(...) for the one-shot explicit path. see gpu.compute(...) for the narrower typed-array workflow. instances are returned through the bound doe api and are not exported directly." id="DoeKernel">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API gpu.kernel.</div>
+          <h3>DoeKernel</h3>
+        </div>
+        <code class="signature">class DoeKernel</code>
+      </div>
+      <p class="summary">Reusable compute kernel compiled by gpu.kernel.create(...).</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>Created from WGSL source, an entry point, and an initial binding shape.</dd></div>
+        <div><dt>Returns</dt><dd>A reusable kernel object with dispatch(...).</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This object keeps the compiled pipeline and bind-group layout for a repeated</p><p>WGSL compute shape. Use it when you will dispatch the same shader more than</p><p>once and want to avoid recompiling on every call.</p></div>
+      <ul class="notes"><li>See gpu.kernel.run(...) for the one-shot explicit path.</li><li>See gpu.compute(...) for the narrower typed-array workflow.</li><li>Instances are returned through the bound Doe API and are not exported directly.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>const kernel = gpu.kernel.create({
+  code,
+  bindings: [src, dst],
+});
+
+await kernel.dispatch({
+  bindings: [src, dst],
+  workgroups: 1,
+});</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="kernel.dispatch kernel.dispatch(options) -&gt; promise&lt;void&gt; dispatch this compiled kernel once. doe api gpu.kernel. a binding list, workgroup counts, and an optional label. a promise that resolves after submission completes. this records one compute pass for the compiled pipeline, submits it, and waits for completion when the underlying queue exposes onsubmittedworkdone(). workgroups may be number, [x, y], or [x, y, z]. bare buffers without doe helper metadata require { buffer, access }. see gpu.kernel.run(...) when you do not need reuse." id="DoeKernel.dispatch">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API gpu.kernel.</div>
+          <h3>kernel.dispatch</h3>
+        </div>
+        <code class="signature">kernel.dispatch(options) -&gt; Promise&lt;void&gt;</code>
+      </div>
+      <p class="summary">Dispatch this compiled kernel once.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>A binding list, workgroup counts, and an optional label.</dd></div>
+        <div><dt>Returns</dt><dd>A promise that resolves after submission completes.</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This records one compute pass for the compiled pipeline, submits it, and</p><p>waits for completion when the underlying queue exposes</p><p>onSubmittedWorkDone().</p></div>
+      <ul class="notes"><li>workgroups may be number, [x, y], or [x, y, z].</li><li>Bare buffers without Doe helper metadata require { buffer, access }.</li><li>See gpu.kernel.run(...) when you do not need reuse.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>await kernel.dispatch({
+  bindings: [src, dst],
+  workgroups: [4, 1, 1],
+});</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+
+    <article class="apiCard searchTarget" data-search="gpu.compute gpu.compute(options) -&gt; promise&lt;typedarray&gt; run a one-shot typed-array compute workflow. doe api gpu.compute. wgsl source, typed-array or buffer inputs, an output spec, and workgroups. a promise for the requested typed-array output. this is the most opinionated doe helper. it creates temporary buffers as needed, uploads host data, dispatches the compute shader once, reads back the requested output, and destroys temporary resources before returning. raw numeric usage flags are accepted only when explicit doe access is also provided. output size defaults from likeinput or the first input when possible. see gpu.kernel.run(...) or gpu.kernel.create(...) when you need explicit resource ownership." id="gpu.compute">
+      <div class="apiHeader">
+        <div>
+          <div class="eyebrow">Doe API gpu.compute.</div>
+          <h3>gpu.compute</h3>
+        </div>
+        <code class="signature">gpu.compute(options) -&gt; Promise&lt;TypedArray&gt;</code>
+      </div>
+      <p class="summary">Run a one-shot typed-array compute workflow.</p>
+      <dl class="contractGrid">
+        <div><dt>Input</dt><dd>WGSL source, typed-array or buffer inputs, an output spec, and workgroups.</dd></div>
+        <div><dt>Returns</dt><dd>A promise for the requested typed-array output.</dd></div>
+      </dl>
+      <div class="detailsBody"><p>This is the most opinionated Doe helper. It creates temporary buffers</p><p>as needed, uploads host data, dispatches the compute shader once,</p><p>reads back the requested output, and destroys temporary resources</p><p>before returning.</p></div>
+      <ul class="notes"><li>Raw numeric usage flags are accepted only when explicit Doe access is also provided.</li><li>Output size defaults from likeInput or the first input when possible.</li><li>See gpu.kernel.run(...) or gpu.kernel.create(...) when you need explicit resource ownership.</li></ul>
+      <details class="apiExample"><summary>JSDoc example</summary><pre><code>const out = await gpu.compute({
+  code,
+  inputs: [new Float32Array([1, 2, 3, 4])],
+  output: { type: Float32Array },
+  workgroups: 1,
+});</code></pre></details>
+      <div class="linkRow">
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.js">Source</a>
+        <a href="https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe/src/index.d.ts">Types</a>
+      </div>
+    </article>
+        </div>
+      </section>
+
+      <section class="panel" id="examples">
+        <div class="sectionHeader">
+          <div>
+            <div class="eyebrow">Live examples</div>
+            <h2>Shipped examples that actually run</h2>
+          </div>
+          <p>These editors start from the real files in <code>examples/doe-api/</code>. Run them as-is, tweak them inline, or use them to compare the explicit kernel path against the one-shot <code>gpu.compute(...)</code> helper.</p>
+        </div>
+        <div class="examplesGrid">
+          
+    <article class="exampleCard searchTarget" data-search="buffer create + readback create a doe-managed buffer from host data, then read it back through gpu.buffer.read(...). buffers-readback.js gpu.buffer.create gpu.buffer.read" data-accent="buffer" id="example-buffers-readback.js">
+      <div class="exampleTop">
+        <div>
+          <div class="eyebrow">Example</div>
+          <h3>Buffer create + readback</h3>
+        </div>
+        <code class="filename">buffers-readback.js</code>
+      </div>
+      <p class="summary">Create a Doe-managed buffer from host data, then read it back through gpu.buffer.read(...).</p>
+      <div class="exampleLinks">
+        <a href="#gpu.buffer.create">gpu.buffer.create</a><a href="#gpu.buffer.read">gpu.buffer.read</a>
+      </div>
+      <div class="buttonRow">
+        <button type="button" class="runButton" data-run-example="buffers-readback.js">Run example</button>
+        <button type="button" class="ghostButton" data-reset-example="buffers-readback.js">Reset</button>
+        <button type="button" class="ghostButton" data-copy-example="buffers-readback.js">Copy</button>
+        <a class="ghostLink" href="../examples/doe-api/buffers-readback.js">Open source</a>
+      </div>
+      <div class="outputShell">
+        <div class="outputMeta" data-output-meta="buffers-readback.js">Ready to run in a browser with WebGPU.</div>
+        <div class="metricChips" data-output-stats="buffers-readback.js"></div>
+        <canvas class="chartCanvas" data-output-chart="buffers-readback.js" width="960" height="220"></canvas>
+        <div class="valueGrid" data-output-values="buffers-readback.js"></div>
+        <pre class="outputBlock" data-output-text="buffers-readback.js"></pre>
+      </div>
+      <details class="editorDetails">
+        <summary>View or edit source</summary>
+        <div class="editorShell">
+          <textarea class="editor" data-example-editor="buffers-readback.js" spellcheck="false">import { doe } from &quot;@simulatte/webgpu/compute&quot;;
+
+const gpu = await doe.requestDevice();
+const src = gpu.buffer.create({
+  data: new Float32Array([1, 2, 3, 4]),
+  usage: [&quot;storageRead&quot;, &quot;readback&quot;],
+});
+
+const result = await gpu.buffer.read({ buffer: src, type: Float32Array });
+console.log(JSON.stringify(Array.from(result)));</textarea>
+        </div>
+      </details>
+    </article>
+
+    <article class="exampleCard searchTarget" data-search="one-off kernel run use gpu.kernel.run(...) when you want explicit buffers but do not need to keep compiled kernel state. kernel-run.js gpu.kernel.run gpu.buffer.create gpu.buffer.read" data-accent="kernel" id="example-kernel-run.js">
+      <div class="exampleTop">
+        <div>
+          <div class="eyebrow">Example</div>
+          <h3>One-off kernel run</h3>
+        </div>
+        <code class="filename">kernel-run.js</code>
+      </div>
+      <p class="summary">Use gpu.kernel.run(...) when you want explicit buffers but do not need to keep compiled kernel state.</p>
+      <div class="exampleLinks">
+        <a href="#gpu.kernel.run">gpu.kernel.run</a><a href="#gpu.buffer.create">gpu.buffer.create</a><a href="#gpu.buffer.read">gpu.buffer.read</a>
+      </div>
+      <div class="buttonRow">
+        <button type="button" class="runButton" data-run-example="kernel-run.js">Run example</button>
+        <button type="button" class="ghostButton" data-reset-example="kernel-run.js">Reset</button>
+        <button type="button" class="ghostButton" data-copy-example="kernel-run.js">Copy</button>
+        <a class="ghostLink" href="../examples/doe-api/kernel-run.js">Open source</a>
+      </div>
+      <div class="outputShell">
+        <div class="outputMeta" data-output-meta="kernel-run.js">Ready to run in a browser with WebGPU.</div>
+        <div class="metricChips" data-output-stats="kernel-run.js"></div>
+        <canvas class="chartCanvas" data-output-chart="kernel-run.js" width="960" height="220"></canvas>
+        <div class="valueGrid" data-output-values="kernel-run.js"></div>
+        <pre class="outputBlock" data-output-text="kernel-run.js"></pre>
+      </div>
+      <details class="editorDetails">
+        <summary>View or edit source</summary>
+        <div class="editorShell">
+          <textarea class="editor" data-example-editor="kernel-run.js" spellcheck="false">import { doe } from &quot;@simulatte/webgpu/compute&quot;;
+
+const gpu = await doe.requestDevice();
+const src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+const dst = gpu.buffer.create({ size: src.size, usage: &quot;storageReadWrite&quot; });
+
+await gpu.kernel.run({
+  code: `
+    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;
+    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;
+
+    @compute @workgroup_size(4)
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      let i = gid.x;
+      dst[i] = src[i] * 2.0;
+    }
+  `,
+  bindings: [src, dst],
+  workgroups: 1,
+});
+
+const result = await gpu.buffer.read({ buffer: dst, type: Float32Array });
+console.log(JSON.stringify(Array.from(result)));</textarea>
+        </div>
+      </details>
+    </article>
+
+    <article class="exampleCard searchTarget" data-search="reusable kernel dispatch compile a doekernel once with gpu.kernel.create(...), then dispatch it explicitly. kernel-create-and-dispatch.js gpu.kernel.create doekernel doekernel.dispatch" data-accent="kernel" id="example-kernel-create-and-dispatch.js">
+      <div class="exampleTop">
+        <div>
+          <div class="eyebrow">Example</div>
+          <h3>Reusable kernel dispatch</h3>
+        </div>
+        <code class="filename">kernel-create-and-dispatch.js</code>
+      </div>
+      <p class="summary">Compile a DoeKernel once with gpu.kernel.create(...), then dispatch it explicitly.</p>
+      <div class="exampleLinks">
+        <a href="#gpu.kernel.create">gpu.kernel.create</a><a href="#DoeKernel">DoeKernel</a><a href="#DoeKernel.dispatch">DoeKernel.dispatch</a>
+      </div>
+      <div class="buttonRow">
+        <button type="button" class="runButton" data-run-example="kernel-create-and-dispatch.js">Run example</button>
+        <button type="button" class="ghostButton" data-reset-example="kernel-create-and-dispatch.js">Reset</button>
+        <button type="button" class="ghostButton" data-copy-example="kernel-create-and-dispatch.js">Copy</button>
+        <a class="ghostLink" href="../examples/doe-api/kernel-create-and-dispatch.js">Open source</a>
+      </div>
+      <div class="outputShell">
+        <div class="outputMeta" data-output-meta="kernel-create-and-dispatch.js">Ready to run in a browser with WebGPU.</div>
+        <div class="metricChips" data-output-stats="kernel-create-and-dispatch.js"></div>
+        <canvas class="chartCanvas" data-output-chart="kernel-create-and-dispatch.js" width="960" height="220"></canvas>
+        <div class="valueGrid" data-output-values="kernel-create-and-dispatch.js"></div>
+        <pre class="outputBlock" data-output-text="kernel-create-and-dispatch.js"></pre>
+      </div>
+      <details class="editorDetails">
+        <summary>View or edit source</summary>
+        <div class="editorShell">
+          <textarea class="editor" data-example-editor="kernel-create-and-dispatch.js" spellcheck="false">import { doe } from &quot;@simulatte/webgpu/compute&quot;;
+
+const gpu = await doe.requestDevice();
+const src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+const dst = gpu.buffer.create({ size: src.size, usage: &quot;storageReadWrite&quot; });
+
+const kernel = gpu.kernel.create({
+  code: `
+    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;
+    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;
+
+    @compute @workgroup_size(4)
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      let i = gid.x;
+      dst[i] = src[i] * 5.0;
+    }
+  `,
+  bindings: [src, dst],
+  workgroups: 1,
+});
+
+await kernel.dispatch({
+  bindings: [src, dst],
+  workgroups: 1,
+});
+
+const result = await gpu.buffer.read({ buffer: dst, type: Float32Array });
+console.log(JSON.stringify(Array.from(result)));</textarea>
+        </div>
+      </details>
+    </article>
+
+    <article class="exampleCard searchTarget" data-search="one-shot compute run the opinionated gpu.compute(...) helper with one typed-array input and inferred output sizing. compute-one-shot.js gpu.compute" data-accent="compute" id="example-compute-one-shot.js">
+      <div class="exampleTop">
+        <div>
+          <div class="eyebrow">Example</div>
+          <h3>One-shot compute</h3>
+        </div>
+        <code class="filename">compute-one-shot.js</code>
+      </div>
+      <p class="summary">Run the opinionated gpu.compute(...) helper with one typed-array input and inferred output sizing.</p>
+      <div class="exampleLinks">
+        <a href="#gpu.compute">gpu.compute</a>
+      </div>
+      <div class="buttonRow">
+        <button type="button" class="runButton" data-run-example="compute-one-shot.js">Run example</button>
+        <button type="button" class="ghostButton" data-reset-example="compute-one-shot.js">Reset</button>
+        <button type="button" class="ghostButton" data-copy-example="compute-one-shot.js">Copy</button>
+        <a class="ghostLink" href="../examples/doe-api/compute-one-shot.js">Open source</a>
+      </div>
+      <div class="outputShell">
+        <div class="outputMeta" data-output-meta="compute-one-shot.js">Ready to run in a browser with WebGPU.</div>
+        <div class="metricChips" data-output-stats="compute-one-shot.js"></div>
+        <canvas class="chartCanvas" data-output-chart="compute-one-shot.js" width="960" height="220"></canvas>
+        <div class="valueGrid" data-output-values="compute-one-shot.js"></div>
+        <pre class="outputBlock" data-output-text="compute-one-shot.js"></pre>
+      </div>
+      <details class="editorDetails">
+        <summary>View or edit source</summary>
+        <div class="editorShell">
+          <textarea class="editor" data-example-editor="compute-one-shot.js" spellcheck="false">import { doe } from &quot;@simulatte/webgpu/compute&quot;;
+
+const gpu = await doe.requestDevice();
+
+const result = await gpu.compute({
+  code: `
+    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;
+    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;
+
+    @compute @workgroup_size(4)
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      let i = gid.x;
+      dst[i] = src[i] * 3.0;
+    }
+  `,
+  inputs: [new Float32Array([1, 2, 3, 4])],
+  output: {
+    type: Float32Array,
+  },
+  workgroups: 1,
+});
+
+console.log(JSON.stringify(Array.from(result)));</textarea>
+        </div>
+      </details>
+    </article>
+
+    <article class="exampleCard searchTarget" data-search="one-shot compute with likeinput use gpu.compute(...) with a uniform input and likeinput sizing to keep output shape explicit. compute-one-shot-like-input.js gpu.compute" data-accent="compute" id="example-compute-one-shot-like-input.js">
+      <div class="exampleTop">
+        <div>
+          <div class="eyebrow">Example</div>
+          <h3>One-shot compute with likeInput</h3>
+        </div>
+        <code class="filename">compute-one-shot-like-input.js</code>
+      </div>
+      <p class="summary">Use gpu.compute(...) with a uniform input and likeInput sizing to keep output shape explicit.</p>
+      <div class="exampleLinks">
+        <a href="#gpu.compute">gpu.compute</a>
+      </div>
+      <div class="buttonRow">
+        <button type="button" class="runButton" data-run-example="compute-one-shot-like-input.js">Run example</button>
+        <button type="button" class="ghostButton" data-reset-example="compute-one-shot-like-input.js">Reset</button>
+        <button type="button" class="ghostButton" data-copy-example="compute-one-shot-like-input.js">Copy</button>
+        <a class="ghostLink" href="../examples/doe-api/compute-one-shot-like-input.js">Open source</a>
+      </div>
+      <div class="outputShell">
+        <div class="outputMeta" data-output-meta="compute-one-shot-like-input.js">Ready to run in a browser with WebGPU.</div>
+        <div class="metricChips" data-output-stats="compute-one-shot-like-input.js"></div>
+        <canvas class="chartCanvas" data-output-chart="compute-one-shot-like-input.js" width="960" height="220"></canvas>
+        <div class="valueGrid" data-output-values="compute-one-shot-like-input.js"></div>
+        <pre class="outputBlock" data-output-text="compute-one-shot-like-input.js"></pre>
+      </div>
+      <details class="editorDetails">
+        <summary>View or edit source</summary>
+        <div class="editorShell">
+          <textarea class="editor" data-example-editor="compute-one-shot-like-input.js" spellcheck="false">import { doe } from &quot;@simulatte/webgpu/compute&quot;;
+
+const gpu = await doe.requestDevice();
+
+const result = await gpu.compute({
+  code: `
+    struct Scale {
+      value: f32,
+    };
+
+    @group(0) @binding(0) var&lt;uniform&gt; scale: Scale;
+    @group(0) @binding(1) var&lt;storage, read&gt; src: array&lt;f32&gt;;
+    @group(0) @binding(2) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;
+
+    @compute @workgroup_size(4)
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      let i = gid.x;
+      dst[i] = src[i] * scale.value;
+    }
+  `,
+  inputs: [
+    {
+      data: new Float32Array([2]),
+      usage: &quot;uniform&quot;,
+      access: &quot;uniform&quot;,
+    },
+    new Float32Array([1, 2, 3, 4]),
+  ],
+  output: {
+    type: Float32Array,
+    likeInput: 1,
+  },
+  workgroups: [1, 1],
+});
+
+console.log(JSON.stringify(Array.from(result)));</textarea>
+        </div>
+      </details>
+    </article>
+
+    <article class="exampleCard searchTarget" data-search="one-shot compute with multiple inputs feed multiple typed-array inputs through gpu.compute(...) while keeping the shader and result explicit. compute-one-shot-multiple-inputs.js gpu.compute" data-accent="compute" id="example-compute-one-shot-multiple-inputs.js">
+      <div class="exampleTop">
+        <div>
+          <div class="eyebrow">Example</div>
+          <h3>One-shot compute with multiple inputs</h3>
+        </div>
+        <code class="filename">compute-one-shot-multiple-inputs.js</code>
+      </div>
+      <p class="summary">Feed multiple typed-array inputs through gpu.compute(...) while keeping the shader and result explicit.</p>
+      <div class="exampleLinks">
+        <a href="#gpu.compute">gpu.compute</a>
+      </div>
+      <div class="buttonRow">
+        <button type="button" class="runButton" data-run-example="compute-one-shot-multiple-inputs.js">Run example</button>
+        <button type="button" class="ghostButton" data-reset-example="compute-one-shot-multiple-inputs.js">Reset</button>
+        <button type="button" class="ghostButton" data-copy-example="compute-one-shot-multiple-inputs.js">Copy</button>
+        <a class="ghostLink" href="../examples/doe-api/compute-one-shot-multiple-inputs.js">Open source</a>
+      </div>
+      <div class="outputShell">
+        <div class="outputMeta" data-output-meta="compute-one-shot-multiple-inputs.js">Ready to run in a browser with WebGPU.</div>
+        <div class="metricChips" data-output-stats="compute-one-shot-multiple-inputs.js"></div>
+        <canvas class="chartCanvas" data-output-chart="compute-one-shot-multiple-inputs.js" width="960" height="220"></canvas>
+        <div class="valueGrid" data-output-values="compute-one-shot-multiple-inputs.js"></div>
+        <pre class="outputBlock" data-output-text="compute-one-shot-multiple-inputs.js"></pre>
+      </div>
+      <details class="editorDetails">
+        <summary>View or edit source</summary>
+        <div class="editorShell">
+          <textarea class="editor" data-example-editor="compute-one-shot-multiple-inputs.js" spellcheck="false">import { doe } from &quot;@simulatte/webgpu/compute&quot;;
+
+const gpu = await doe.requestDevice();
+
+const result = await gpu.compute({
+  code: `
+    @group(0) @binding(0) var&lt;storage, read&gt; lhs: array&lt;f32&gt;;
+    @group(0) @binding(1) var&lt;storage, read&gt; rhs: array&lt;f32&gt;;
+    @group(0) @binding(2) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;
+
+    @compute @workgroup_size(4)
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      let i = gid.x;
+      dst[i] = lhs[i] + rhs[i];
+    }
+  `,
+  inputs: [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([10, 20, 30, 40]),
+  ],
+  output: {
+    type: Float32Array,
+  },
+  workgroups: 1,
+});
+
+console.log(JSON.stringify(Array.from(result)));</textarea>
+        </div>
+      </details>
+    </article>
+
+    <article class="exampleCard searchTarget" data-search="one-shot compute matmul run a larger matrix multiply through gpu.compute(...) with explicit tensor dimensions and output size. compute-one-shot-matmul.js gpu.compute" data-accent="compute" id="example-compute-one-shot-matmul.js">
+      <div class="exampleTop">
+        <div>
+          <div class="eyebrow">Example</div>
+          <h3>One-shot compute matmul</h3>
+        </div>
+        <code class="filename">compute-one-shot-matmul.js</code>
+      </div>
+      <p class="summary">Run a larger matrix multiply through gpu.compute(...) with explicit tensor dimensions and output size.</p>
+      <div class="exampleLinks">
+        <a href="#gpu.compute">gpu.compute</a>
+      </div>
+      <div class="buttonRow">
+        <button type="button" class="runButton" data-run-example="compute-one-shot-matmul.js">Run example</button>
+        <button type="button" class="ghostButton" data-reset-example="compute-one-shot-matmul.js">Reset</button>
+        <button type="button" class="ghostButton" data-copy-example="compute-one-shot-matmul.js">Copy</button>
+        <a class="ghostLink" href="../examples/doe-api/compute-one-shot-matmul.js">Open source</a>
+      </div>
+      <div class="outputShell">
+        <div class="outputMeta" data-output-meta="compute-one-shot-matmul.js">Ready to run in a browser with WebGPU.</div>
+        <div class="metricChips" data-output-stats="compute-one-shot-matmul.js"></div>
+        <canvas class="chartCanvas" data-output-chart="compute-one-shot-matmul.js" width="960" height="220"></canvas>
+        <div class="valueGrid" data-output-values="compute-one-shot-matmul.js"></div>
+        <pre class="outputBlock" data-output-text="compute-one-shot-matmul.js"></pre>
+      </div>
+      <details class="editorDetails">
+        <summary>View or edit source</summary>
+        <div class="editorShell">
+          <textarea class="editor" data-example-editor="compute-one-shot-matmul.js" spellcheck="false">import { doe } from &quot;@simulatte/webgpu/compute&quot;;
+
+const gpu = await doe.requestDevice();
+const M = 256;
+const K = 512;
+const N = 256;
+
+const lhs = Float32Array.from({ length: M * K }, (_, i) =&gt; (i % 17) / 17);
+const rhs = Float32Array.from({ length: K * N }, (_, i) =&gt; (i % 13) / 13);
+const dims = new Uint32Array([M, K, N, 0]);
+
+const result = await gpu.compute({
+  code: `
+    struct Dims {
+      m: u32,
+      k: u32,
+      n: u32,
+      _pad: u32,
+    };
+
+    @group(0) @binding(0) var&lt;uniform&gt; dims: Dims;
+    @group(0) @binding(1) var&lt;storage, read&gt; lhs: array&lt;f32&gt;;
+    @group(0) @binding(2) var&lt;storage, read&gt; rhs: array&lt;f32&gt;;
+    @group(0) @binding(3) var&lt;storage, read_write&gt; out: array&lt;f32&gt;;
+
+    @compute @workgroup_size(8, 8)
+    fn main(@builtin(global_invocation_id) gid: vec3u) {
+      let row = gid.y;
+      let col = gid.x;
+      if (row &gt;= dims.m || col &gt;= dims.n) {
+        return;
+      }
+
+      var acc = 0.0;
+      for (var i = 0u; i &lt; dims.k; i = i + 1u) {
+        acc += lhs[row * dims.k + i] * rhs[i * dims.n + col];
+      }
+      out[row * dims.n + col] = acc;
+    }
+  `,
+  inputs: [
+    { data: dims, usage: &quot;uniform&quot;, access: &quot;uniform&quot; },
+    lhs,
+    rhs,
+  ],
+  output: {
+    type: Float32Array,
+    size: M * N * Float32Array.BYTES_PER_ELEMENT,
+  },
+  workgroups: [Math.ceil(N / 8), Math.ceil(M / 8)],
+});
+
+console.log(JSON.stringify(Array.from(result.subarray(0, 8), (value) =&gt; Number(value.toFixed(4)))));</textarea>
+        </div>
+      </details>
+    </article>
+        </div>
+      </section>
+
+      <section class="supportPanel panel">
+        <div class="sectionHeader">
+          <div>
+            <div class="eyebrow">Generated from</div>
+            <h2>Source-of-truth inputs</h2>
+          </div>
+          <p>The page is generated, not hand-maintained. When the Doe API changes, regenerate this artifact from the current source, types, examples, and README contract language.</p>
+        </div>
+        <p class="footerNote">
+          Inputs: <code>README.md</code>, <code>@simulatte/webgpu-doe/src/index.js</code>, <code>@simulatte/webgpu-doe/src/index.d.ts</code>, and
+          the shipped Doe example files in <code>examples/doe-api/</code>. Generated by
+          <code>scripts/generate-doe-api-docs.js</code>.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script id="doe-api-data" type="application/json">{&quot;intro&quot;:&quot;`@simulatte/webgpu` is Fawn's headless WebGPU package for Node.js and Bun: use\nthe raw WebGPU API through `requestDevice()` and `device.*`, or move up to the\nDoe API when you want the same runtime with less setup. Browser DOM/canvas\nownership lives in the separate `nursery/fawn-browser` lane.\n\nTerminology in this README is deliberate:\n\n- `Doe runtime` means the Zig/native WebGPU runtime underneath the package\n- `Doe API` means the explicit JS convenience surface under `doe`, `gpu.buffer.*`,\n  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute(...)`\n\nThe current implemented helper contract is documented in\n[api-contract.md](./api-contract.md). The proposed naming cleanup for the Doe\nhelper surface is documented in [doe-api-design.md](./doe-api-design.md).\nThe generated interactive Doe API reference lives at\n[docs/doe-api-reference.html](./docs/doe-api-reference.html).\n\nThe same helper layer is now also published separately as\n`@simulatte/webgpu-doe` when you want the Doe API as an independent package\nboundary.&quot;,&quot;apiEntries&quot;:[{&quot;id&quot;:&quot;doe.requestDevice&quot;,&quot;title&quot;:&quot;doe.requestDevice&quot;,&quot;signature&quot;:&quot;doe.requestDevice(options?) -&gt; Promise&lt;gpu&gt;&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Request a device and return the bound Doe API in one step.&quot;,&quot;surface&quot;:&quot;Doe API namespace.&quot;,&quot;input&quot;:&quot;Optional package-local request options.&quot;,&quot;returns&quot;:&quot;A promise for the bound gpu helper object.&quot;,&quot;details&quot;:[&quot;This calls the package-local requestDevice(...) implementation and&quot;,&quot;then wraps the resulting raw device in the bound Doe API.&quot;],&quot;notes&quot;:[&quot;Throws if this namespace was created without a requestDevice implementation.&quot;,&quot;gpu.device exposes the underlying raw device when you need lower-level control.&quot;,&quot;See doe.bind(device) when you already have a raw device.&quot;],&quot;example&quot;:&quot;const gpu = await doe.requestDevice();&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;doe.requestdevice doe.requestdevice(options?) -&gt; promise&lt;gpu&gt; request a device and return the bound doe api in one step. doe api namespace. optional package-local request options. a promise for the bound gpu helper object. this calls the package-local requestdevice(...) implementation and then wraps the resulting raw device in the bound doe api. throws if this namespace was created without a requestdevice implementation. gpu.device exposes the underlying raw device when you need lower-level control. see doe.bind(device) when you already have a raw device.&quot;},{&quot;id&quot;:&quot;doe.bind&quot;,&quot;title&quot;:&quot;doe.bind&quot;,&quot;signature&quot;:&quot;doe.bind(device) -&gt; gpu&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Wrap an existing device in the bound Doe API.&quot;,&quot;surface&quot;:&quot;Doe API namespace.&quot;,&quot;input&quot;:&quot;A raw device returned by the package surface.&quot;,&quot;returns&quot;:&quot;The bound gpu helper object for that device.&quot;,&quot;details&quot;:[&quot;Use this when you need the raw device first, but still want to opt into&quot;,&quot;Doe helpers afterward.&quot;],&quot;notes&quot;:[&quot;No async work happens here; it only wraps the device you already have.&quot;,&quot;See doe.requestDevice(...) for the one-step helper entrypoint.&quot;],&quot;example&quot;:&quot;const device = await requestDevice();\nconst gpu = doe.bind(device);&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;doe.bind doe.bind(device) -&gt; gpu wrap an existing device in the bound doe api. doe api namespace. a raw device returned by the package surface. the bound gpu helper object for that device. use this when you need the raw device first, but still want to opt into doe helpers afterward. no async work happens here; it only wraps the device you already have. see doe.requestdevice(...) for the one-step helper entrypoint.&quot;},{&quot;id&quot;:&quot;gpu.buffer.create&quot;,&quot;title&quot;:&quot;gpu.buffer.create&quot;,&quot;signature&quot;:&quot;gpu.buffer.create(options) -&gt; GPUBuffer&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Create a buffer with explicit size and Doe usage tokens.&quot;,&quot;surface&quot;:&quot;Doe API gpu.buffer.&quot;,&quot;input&quot;:&quot;A buffer size, usage, and optional label or mapping flag.&quot;,&quot;returns&quot;:&quot;A GPU buffer with Doe usage metadata attached when possible.&quot;,&quot;details&quot;:[&quot;This is the explicit Doe helper over device.createBuffer(...). It&quot;,&quot;accepts Doe usage tokens such as storageReadWrite, and when data&quot;,&quot;is provided it allocates and uploads in one step. Doe remembers the&quot;,&quot;resulting binding access so later helper calls can infer how the&quot;,&quot;buffer should be bound.&quot;],&quot;notes&quot;:[&quot;When data is provided, usage defaults to storageRead.&quot;,&quot;Raw numeric usage flags are allowed here for explicit control.&quot;,&quot;Buffers created with raw numeric flags may later require { buffer, access }.&quot;],&quot;example&quot;:&quot;const src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });\nconst dst = gpu.buffer.create({ size: src.size, usage: \&quot;storageReadWrite\&quot; });&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;gpu.buffer.create gpu.buffer.create(options) -&gt; gpubuffer create a buffer with explicit size and doe usage tokens. doe api gpu.buffer. a buffer size, usage, and optional label or mapping flag. a gpu buffer with doe usage metadata attached when possible. this is the explicit doe helper over device.createbuffer(...). it accepts doe usage tokens such as storagereadwrite, and when data is provided it allocates and uploads in one step. doe remembers the resulting binding access so later helper calls can infer how the buffer should be bound. when data is provided, usage defaults to storageread. raw numeric usage flags are allowed here for explicit control. buffers created with raw numeric flags may later require { buffer, access }.&quot;},{&quot;id&quot;:&quot;gpu.buffer.read&quot;,&quot;title&quot;:&quot;gpu.buffer.read&quot;,&quot;signature&quot;:&quot;gpu.buffer.read(options) -&gt; Promise&lt;TypedArray&gt;&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Read a buffer back into a typed array.&quot;,&quot;surface&quot;:&quot;Doe API gpu.buffer.&quot;,&quot;input&quot;:&quot;A source buffer, a typed-array constructor, and optional offset or size.&quot;,&quot;returns&quot;:&quot;A promise for a newly allocated typed array.&quot;,&quot;details&quot;:[&quot;This reads GPU buffer contents back to JS. If the buffer is already&quot;,&quot;mappable for read, Doe maps it directly; otherwise Doe stages the copy&quot;,&quot;through a temporary readback buffer.&quot;],&quot;notes&quot;:[&quot;options.offset and options.size let you read a subrange.&quot;,&quot;The typed-array constructor must accept a plain ArrayBuffer.&quot;,&quot;See raw buffer.mapAsync(...) when you need manual readback control.&quot;],&quot;example&quot;:&quot;const out = await gpu.buffer.read(dst, Float32Array);&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;gpu.buffer.read gpu.buffer.read(options) -&gt; promise&lt;typedarray&gt; read a buffer back into a typed array. doe api gpu.buffer. a source buffer, a typed-array constructor, and optional offset or size. a promise for a newly allocated typed array. this reads gpu buffer contents back to js. if the buffer is already mappable for read, doe maps it directly; otherwise doe stages the copy through a temporary readback buffer. options.offset and options.size let you read a subrange. the typed-array constructor must accept a plain arraybuffer. see raw buffer.mapasync(...) when you need manual readback control.&quot;},{&quot;id&quot;:&quot;gpu.kernel.run&quot;,&quot;title&quot;:&quot;gpu.kernel.run&quot;,&quot;signature&quot;:&quot;gpu.kernel.run(options) -&gt; Promise&lt;void&gt;&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Compile and dispatch a one-off compute job.&quot;,&quot;surface&quot;:&quot;Doe API gpu.kernel.&quot;,&quot;input&quot;:&quot;WGSL source, bindings, workgroups, and an optional entry point or label.&quot;,&quot;returns&quot;:&quot;A promise that resolves after submission completes.&quot;,&quot;details&quot;:[&quot;This is the explicit one-shot compute path. It builds the pipeline for&quot;,&quot;the provided shader, dispatches once, and waits for completion.&quot;],&quot;notes&quot;:[&quot;workgroups may be number, [x, y], or [x, y, z].&quot;,&quot;Bare buffers without Doe helper metadata require { buffer, access }.&quot;,&quot;See gpu.kernel.create(...) when you will reuse the shader shape.&quot;,&quot;See gpu.compute(...) for the narrower typed-array workflow.&quot;],&quot;example&quot;:&quot;await gpu.kernel.run({\n  code,\n  bindings: [src, dst],\n  workgroups: 1,\n});&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;gpu.kernel.run gpu.kernel.run(options) -&gt; promise&lt;void&gt; compile and dispatch a one-off compute job. doe api gpu.kernel. wgsl source, bindings, workgroups, and an optional entry point or label. a promise that resolves after submission completes. this is the explicit one-shot compute path. it builds the pipeline for the provided shader, dispatches once, and waits for completion. workgroups may be number, [x, y], or [x, y, z]. bare buffers without doe helper metadata require { buffer, access }. see gpu.kernel.create(...) when you will reuse the shader shape. see gpu.compute(...) for the narrower typed-array workflow.&quot;},{&quot;id&quot;:&quot;gpu.kernel.create&quot;,&quot;title&quot;:&quot;gpu.kernel.create&quot;,&quot;signature&quot;:&quot;gpu.kernel.create(options) -&gt; DoeKernel&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Compile a reusable compute kernel.&quot;,&quot;surface&quot;:&quot;Doe API gpu.kernel.&quot;,&quot;input&quot;:&quot;WGSL source, an optional entry point, and an initial binding shape.&quot;,&quot;returns&quot;:&quot;A DoeKernel object with dispatch(...).&quot;,&quot;details&quot;:[&quot;This creates the shader module, bind-group layout, and compute&quot;,&quot;pipeline once so the same WGSL shape can be dispatched repeatedly.&quot;],&quot;notes&quot;:[&quot;Binding access is inferred from the bindings passed at compile time.&quot;,&quot;See kernel.dispatch(...) to run the compiled kernel.&quot;,&quot;See gpu.kernel.run(...) when reuse does not matter.&quot;],&quot;example&quot;:&quot;const kernel = gpu.kernel.create({\n  code,\n  bindings: [src, dst],\n});&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;gpu.kernel.create gpu.kernel.create(options) -&gt; doekernel compile a reusable compute kernel. doe api gpu.kernel. wgsl source, an optional entry point, and an initial binding shape. a doekernel object with dispatch(...). this creates the shader module, bind-group layout, and compute pipeline once so the same wgsl shape can be dispatched repeatedly. binding access is inferred from the bindings passed at compile time. see kernel.dispatch(...) to run the compiled kernel. see gpu.kernel.run(...) when reuse does not matter.&quot;},{&quot;id&quot;:&quot;DoeKernel&quot;,&quot;title&quot;:&quot;DoeKernel&quot;,&quot;signature&quot;:&quot;class DoeKernel&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Reusable compute kernel compiled by gpu.kernel.create(...).&quot;,&quot;surface&quot;:&quot;Doe API gpu.kernel.&quot;,&quot;input&quot;:&quot;Created from WGSL source, an entry point, and an initial binding shape.&quot;,&quot;returns&quot;:&quot;A reusable kernel object with dispatch(...).&quot;,&quot;details&quot;:[&quot;This object keeps the compiled pipeline and bind-group layout for a repeated&quot;,&quot;WGSL compute shape. Use it when you will dispatch the same shader more than&quot;,&quot;once and want to avoid recompiling on every call.&quot;],&quot;notes&quot;:[&quot;See gpu.kernel.run(...) for the one-shot explicit path.&quot;,&quot;See gpu.compute(...) for the narrower typed-array workflow.&quot;,&quot;Instances are returned through the bound Doe API and are not exported directly.&quot;],&quot;example&quot;:&quot;const kernel = gpu.kernel.create({\n  code,\n  bindings: [src, dst],\n});\n\nawait kernel.dispatch({\n  bindings: [src, dst],\n  workgroups: 1,\n});&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;doekernel class doekernel reusable compute kernel compiled by gpu.kernel.create(...). doe api gpu.kernel. created from wgsl source, an entry point, and an initial binding shape. a reusable kernel object with dispatch(...). this object keeps the compiled pipeline and bind-group layout for a repeated wgsl compute shape. use it when you will dispatch the same shader more than once and want to avoid recompiling on every call. see gpu.kernel.run(...) for the one-shot explicit path. see gpu.compute(...) for the narrower typed-array workflow. instances are returned through the bound doe api and are not exported directly.&quot;},{&quot;id&quot;:&quot;DoeKernel.dispatch&quot;,&quot;title&quot;:&quot;kernel.dispatch&quot;,&quot;signature&quot;:&quot;kernel.dispatch(options) -&gt; Promise&lt;void&gt;&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Dispatch this compiled kernel once.&quot;,&quot;surface&quot;:&quot;Doe API gpu.kernel.&quot;,&quot;input&quot;:&quot;A binding list, workgroup counts, and an optional label.&quot;,&quot;returns&quot;:&quot;A promise that resolves after submission completes.&quot;,&quot;details&quot;:[&quot;This records one compute pass for the compiled pipeline, submits it, and&quot;,&quot;waits for completion when the underlying queue exposes&quot;,&quot;onSubmittedWorkDone().&quot;],&quot;notes&quot;:[&quot;workgroups may be number, [x, y], or [x, y, z].&quot;,&quot;Bare buffers without Doe helper metadata require { buffer, access }.&quot;,&quot;See gpu.kernel.run(...) when you do not need reuse.&quot;],&quot;example&quot;:&quot;await kernel.dispatch({\n  bindings: [src, dst],\n  workgroups: [4, 1, 1],\n});&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;kernel.dispatch kernel.dispatch(options) -&gt; promise&lt;void&gt; dispatch this compiled kernel once. doe api gpu.kernel. a binding list, workgroup counts, and an optional label. a promise that resolves after submission completes. this records one compute pass for the compiled pipeline, submits it, and waits for completion when the underlying queue exposes onsubmittedworkdone(). workgroups may be number, [x, y], or [x, y, z]. bare buffers without doe helper metadata require { buffer, access }. see gpu.kernel.run(...) when you do not need reuse.&quot;},{&quot;id&quot;:&quot;gpu.compute&quot;,&quot;title&quot;:&quot;gpu.compute&quot;,&quot;signature&quot;:&quot;gpu.compute(options) -&gt; Promise&lt;TypedArray&gt;&quot;,&quot;doc&quot;:{&quot;summary&quot;:&quot;Run a one-shot typed-array compute workflow.&quot;,&quot;surface&quot;:&quot;Doe API gpu.compute.&quot;,&quot;input&quot;:&quot;WGSL source, typed-array or buffer inputs, an output spec, and workgroups.&quot;,&quot;returns&quot;:&quot;A promise for the requested typed-array output.&quot;,&quot;details&quot;:[&quot;This is the most opinionated Doe helper. It creates temporary buffers&quot;,&quot;as needed, uploads host data, dispatches the compute shader once,&quot;,&quot;reads back the requested output, and destroys temporary resources&quot;,&quot;before returning.&quot;],&quot;notes&quot;:[&quot;Raw numeric usage flags are accepted only when explicit Doe access is also provided.&quot;,&quot;Output size defaults from likeInput or the first input when possible.&quot;,&quot;See gpu.kernel.run(...) or gpu.kernel.create(...) when you need explicit resource ownership.&quot;],&quot;example&quot;:&quot;const out = await gpu.compute({\n  code,\n  inputs: [new Float32Array([1, 2, 3, 4])],\n  output: { type: Float32Array },\n  workgroups: 1,\n});&quot;},&quot;sourcePath&quot;:&quot;@simulatte/webgpu-doe/src/index.js&quot;,&quot;typePath&quot;:&quot;@simulatte/webgpu-doe/src/index.d.ts&quot;,&quot;sourceLabel&quot;:&quot;Source&quot;,&quot;typeLabel&quot;:&quot;Types&quot;,&quot;hasTypeHint&quot;:true,&quot;tokens&quot;:&quot;gpu.compute gpu.compute(options) -&gt; promise&lt;typedarray&gt; run a one-shot typed-array compute workflow. doe api gpu.compute. wgsl source, typed-array or buffer inputs, an output spec, and workgroups. a promise for the requested typed-array output. this is the most opinionated doe helper. it creates temporary buffers as needed, uploads host data, dispatches the compute shader once, reads back the requested output, and destroys temporary resources before returning. raw numeric usage flags are accepted only when explicit doe access is also provided. output size defaults from likeinput or the first input when possible. see gpu.kernel.run(...) or gpu.kernel.create(...) when you need explicit resource ownership.&quot;}],&quot;examples&quot;:[{&quot;filename&quot;:&quot;buffers-readback.js&quot;,&quot;title&quot;:&quot;Buffer create + readback&quot;,&quot;summary&quot;:&quot;Create a Doe-managed buffer from host data, then read it back through gpu.buffer.read(...).&quot;,&quot;apiIds&quot;:[&quot;gpu.buffer.create&quot;,&quot;gpu.buffer.read&quot;],&quot;accent&quot;:&quot;buffer&quot;,&quot;source&quot;:&quot;import { doe } from \&quot;@simulatte/webgpu/compute\&quot;;\n\nconst gpu = await doe.requestDevice();\nconst src = gpu.buffer.create({\n  data: new Float32Array([1, 2, 3, 4]),\n  usage: [\&quot;storageRead\&quot;, \&quot;readback\&quot;],\n});\n\nconst result = await gpu.buffer.read({ buffer: src, type: Float32Array });\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;runnableSource&quot;:&quot;const gpu = await doe.requestDevice();\nconst src = gpu.buffer.create({\n  data: new Float32Array([1, 2, 3, 4]),\n  usage: [\&quot;storageRead\&quot;, \&quot;readback\&quot;],\n});\n\nconst result = await gpu.buffer.read({ buffer: src, type: Float32Array });\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;tokens&quot;:&quot;buffer create + readback create a doe-managed buffer from host data, then read it back through gpu.buffer.read(...). buffers-readback.js gpu.buffer.create gpu.buffer.read&quot;},{&quot;filename&quot;:&quot;kernel-run.js&quot;,&quot;title&quot;:&quot;One-off kernel run&quot;,&quot;summary&quot;:&quot;Use gpu.kernel.run(...) when you want explicit buffers but do not need to keep compiled kernel state.&quot;,&quot;apiIds&quot;:[&quot;gpu.kernel.run&quot;,&quot;gpu.buffer.create&quot;,&quot;gpu.buffer.read&quot;],&quot;accent&quot;:&quot;kernel&quot;,&quot;source&quot;:&quot;import { doe } from \&quot;@simulatte/webgpu/compute\&quot;;\n\nconst gpu = await doe.requestDevice();\nconst src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });\nconst dst = gpu.buffer.create({ size: src.size, usage: \&quot;storageReadWrite\&quot; });\n\nawait gpu.kernel.run({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * 2.0;\n    }\n  `,\n  bindings: [src, dst],\n  workgroups: 1,\n});\n\nconst result = await gpu.buffer.read({ buffer: dst, type: Float32Array });\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;runnableSource&quot;:&quot;const gpu = await doe.requestDevice();\nconst src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });\nconst dst = gpu.buffer.create({ size: src.size, usage: \&quot;storageReadWrite\&quot; });\n\nawait gpu.kernel.run({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * 2.0;\n    }\n  `,\n  bindings: [src, dst],\n  workgroups: 1,\n});\n\nconst result = await gpu.buffer.read({ buffer: dst, type: Float32Array });\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;tokens&quot;:&quot;one-off kernel run use gpu.kernel.run(...) when you want explicit buffers but do not need to keep compiled kernel state. kernel-run.js gpu.kernel.run gpu.buffer.create gpu.buffer.read&quot;},{&quot;filename&quot;:&quot;kernel-create-and-dispatch.js&quot;,&quot;title&quot;:&quot;Reusable kernel dispatch&quot;,&quot;summary&quot;:&quot;Compile a DoeKernel once with gpu.kernel.create(...), then dispatch it explicitly.&quot;,&quot;apiIds&quot;:[&quot;gpu.kernel.create&quot;,&quot;DoeKernel&quot;,&quot;DoeKernel.dispatch&quot;],&quot;accent&quot;:&quot;kernel&quot;,&quot;source&quot;:&quot;import { doe } from \&quot;@simulatte/webgpu/compute\&quot;;\n\nconst gpu = await doe.requestDevice();\nconst src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });\nconst dst = gpu.buffer.create({ size: src.size, usage: \&quot;storageReadWrite\&quot; });\n\nconst kernel = gpu.kernel.create({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * 5.0;\n    }\n  `,\n  bindings: [src, dst],\n  workgroups: 1,\n});\n\nawait kernel.dispatch({\n  bindings: [src, dst],\n  workgroups: 1,\n});\n\nconst result = await gpu.buffer.read({ buffer: dst, type: Float32Array });\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;runnableSource&quot;:&quot;const gpu = await doe.requestDevice();\nconst src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });\nconst dst = gpu.buffer.create({ size: src.size, usage: \&quot;storageReadWrite\&quot; });\n\nconst kernel = gpu.kernel.create({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * 5.0;\n    }\n  `,\n  bindings: [src, dst],\n  workgroups: 1,\n});\n\nawait kernel.dispatch({\n  bindings: [src, dst],\n  workgroups: 1,\n});\n\nconst result = await gpu.buffer.read({ buffer: dst, type: Float32Array });\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;tokens&quot;:&quot;reusable kernel dispatch compile a doekernel once with gpu.kernel.create(...), then dispatch it explicitly. kernel-create-and-dispatch.js gpu.kernel.create doekernel doekernel.dispatch&quot;},{&quot;filename&quot;:&quot;compute-one-shot.js&quot;,&quot;title&quot;:&quot;One-shot compute&quot;,&quot;summary&quot;:&quot;Run the opinionated gpu.compute(...) helper with one typed-array input and inferred output sizing.&quot;,&quot;apiIds&quot;:[&quot;gpu.compute&quot;],&quot;accent&quot;:&quot;compute&quot;,&quot;source&quot;:&quot;import { doe } from \&quot;@simulatte/webgpu/compute\&quot;;\n\nconst gpu = await doe.requestDevice();\n\nconst result = await gpu.compute({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * 3.0;\n    }\n  `,\n  inputs: [new Float32Array([1, 2, 3, 4])],\n  output: {\n    type: Float32Array,\n  },\n  workgroups: 1,\n});\n\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;runnableSource&quot;:&quot;const gpu = await doe.requestDevice();\n\nconst result = await gpu.compute({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * 3.0;\n    }\n  `,\n  inputs: [new Float32Array([1, 2, 3, 4])],\n  output: {\n    type: Float32Array,\n  },\n  workgroups: 1,\n});\n\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;tokens&quot;:&quot;one-shot compute run the opinionated gpu.compute(...) helper with one typed-array input and inferred output sizing. compute-one-shot.js gpu.compute&quot;},{&quot;filename&quot;:&quot;compute-one-shot-like-input.js&quot;,&quot;title&quot;:&quot;One-shot compute with likeInput&quot;,&quot;summary&quot;:&quot;Use gpu.compute(...) with a uniform input and likeInput sizing to keep output shape explicit.&quot;,&quot;apiIds&quot;:[&quot;gpu.compute&quot;],&quot;accent&quot;:&quot;compute&quot;,&quot;source&quot;:&quot;import { doe } from \&quot;@simulatte/webgpu/compute\&quot;;\n\nconst gpu = await doe.requestDevice();\n\nconst result = await gpu.compute({\n  code: `\n    struct Scale {\n      value: f32,\n    };\n\n    @group(0) @binding(0) var&lt;uniform&gt; scale: Scale;\n    @group(0) @binding(1) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(2) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * scale.value;\n    }\n  `,\n  inputs: [\n    {\n      data: new Float32Array([2]),\n      usage: \&quot;uniform\&quot;,\n      access: \&quot;uniform\&quot;,\n    },\n    new Float32Array([1, 2, 3, 4]),\n  ],\n  output: {\n    type: Float32Array,\n    likeInput: 1,\n  },\n  workgroups: [1, 1],\n});\n\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;runnableSource&quot;:&quot;const gpu = await doe.requestDevice();\n\nconst result = await gpu.compute({\n  code: `\n    struct Scale {\n      value: f32,\n    };\n\n    @group(0) @binding(0) var&lt;uniform&gt; scale: Scale;\n    @group(0) @binding(1) var&lt;storage, read&gt; src: array&lt;f32&gt;;\n    @group(0) @binding(2) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = src[i] * scale.value;\n    }\n  `,\n  inputs: [\n    {\n      data: new Float32Array([2]),\n      usage: \&quot;uniform\&quot;,\n      access: \&quot;uniform\&quot;,\n    },\n    new Float32Array([1, 2, 3, 4]),\n  ],\n  output: {\n    type: Float32Array,\n    likeInput: 1,\n  },\n  workgroups: [1, 1],\n});\n\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;tokens&quot;:&quot;one-shot compute with likeinput use gpu.compute(...) with a uniform input and likeinput sizing to keep output shape explicit. compute-one-shot-like-input.js gpu.compute&quot;},{&quot;filename&quot;:&quot;compute-one-shot-multiple-inputs.js&quot;,&quot;title&quot;:&quot;One-shot compute with multiple inputs&quot;,&quot;summary&quot;:&quot;Feed multiple typed-array inputs through gpu.compute(...) while keeping the shader and result explicit.&quot;,&quot;apiIds&quot;:[&quot;gpu.compute&quot;],&quot;accent&quot;:&quot;compute&quot;,&quot;source&quot;:&quot;import { doe } from \&quot;@simulatte/webgpu/compute\&quot;;\n\nconst gpu = await doe.requestDevice();\n\nconst result = await gpu.compute({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; lhs: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read&gt; rhs: array&lt;f32&gt;;\n    @group(0) @binding(2) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = lhs[i] + rhs[i];\n    }\n  `,\n  inputs: [\n    new Float32Array([1, 2, 3, 4]),\n    new Float32Array([10, 20, 30, 40]),\n  ],\n  output: {\n    type: Float32Array,\n  },\n  workgroups: 1,\n});\n\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;runnableSource&quot;:&quot;const gpu = await doe.requestDevice();\n\nconst result = await gpu.compute({\n  code: `\n    @group(0) @binding(0) var&lt;storage, read&gt; lhs: array&lt;f32&gt;;\n    @group(0) @binding(1) var&lt;storage, read&gt; rhs: array&lt;f32&gt;;\n    @group(0) @binding(2) var&lt;storage, read_write&gt; dst: array&lt;f32&gt;;\n\n    @compute @workgroup_size(4)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let i = gid.x;\n      dst[i] = lhs[i] + rhs[i];\n    }\n  `,\n  inputs: [\n    new Float32Array([1, 2, 3, 4]),\n    new Float32Array([10, 20, 30, 40]),\n  ],\n  output: {\n    type: Float32Array,\n  },\n  workgroups: 1,\n});\n\nconsole.log(JSON.stringify(Array.from(result)));&quot;,&quot;tokens&quot;:&quot;one-shot compute with multiple inputs feed multiple typed-array inputs through gpu.compute(...) while keeping the shader and result explicit. compute-one-shot-multiple-inputs.js gpu.compute&quot;},{&quot;filename&quot;:&quot;compute-one-shot-matmul.js&quot;,&quot;title&quot;:&quot;One-shot compute matmul&quot;,&quot;summary&quot;:&quot;Run a larger matrix multiply through gpu.compute(...) with explicit tensor dimensions and output size.&quot;,&quot;apiIds&quot;:[&quot;gpu.compute&quot;],&quot;accent&quot;:&quot;compute&quot;,&quot;source&quot;:&quot;import { doe } from \&quot;@simulatte/webgpu/compute\&quot;;\n\nconst gpu = await doe.requestDevice();\nconst M = 256;\nconst K = 512;\nconst N = 256;\n\nconst lhs = Float32Array.from({ length: M * K }, (_, i) =&gt; (i % 17) / 17);\nconst rhs = Float32Array.from({ length: K * N }, (_, i) =&gt; (i % 13) / 13);\nconst dims = new Uint32Array([M, K, N, 0]);\n\nconst result = await gpu.compute({\n  code: `\n    struct Dims {\n      m: u32,\n      k: u32,\n      n: u32,\n      _pad: u32,\n    };\n\n    @group(0) @binding(0) var&lt;uniform&gt; dims: Dims;\n    @group(0) @binding(1) var&lt;storage, read&gt; lhs: array&lt;f32&gt;;\n    @group(0) @binding(2) var&lt;storage, read&gt; rhs: array&lt;f32&gt;;\n    @group(0) @binding(3) var&lt;storage, read_write&gt; out: array&lt;f32&gt;;\n\n    @compute @workgroup_size(8, 8)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let row = gid.y;\n      let col = gid.x;\n      if (row &gt;= dims.m || col &gt;= dims.n) {\n        return;\n      }\n\n      var acc = 0.0;\n      for (var i = 0u; i &lt; dims.k; i = i + 1u) {\n        acc += lhs[row * dims.k + i] * rhs[i * dims.n + col];\n      }\n      out[row * dims.n + col] = acc;\n    }\n  `,\n  inputs: [\n    { data: dims, usage: \&quot;uniform\&quot;, access: \&quot;uniform\&quot; },\n    lhs,\n    rhs,\n  ],\n  output: {\n    type: Float32Array,\n    size: M * N * Float32Array.BYTES_PER_ELEMENT,\n  },\n  workgroups: [Math.ceil(N / 8), Math.ceil(M / 8)],\n});\n\nconsole.log(JSON.stringify(Array.from(result.subarray(0, 8), (value) =&gt; Number(value.toFixed(4)))));&quot;,&quot;runnableSource&quot;:&quot;const gpu = await doe.requestDevice();\nconst M = 256;\nconst K = 512;\nconst N = 256;\n\nconst lhs = Float32Array.from({ length: M * K }, (_, i) =&gt; (i % 17) / 17);\nconst rhs = Float32Array.from({ length: K * N }, (_, i) =&gt; (i % 13) / 13);\nconst dims = new Uint32Array([M, K, N, 0]);\n\nconst result = await gpu.compute({\n  code: `\n    struct Dims {\n      m: u32,\n      k: u32,\n      n: u32,\n      _pad: u32,\n    };\n\n    @group(0) @binding(0) var&lt;uniform&gt; dims: Dims;\n    @group(0) @binding(1) var&lt;storage, read&gt; lhs: array&lt;f32&gt;;\n    @group(0) @binding(2) var&lt;storage, read&gt; rhs: array&lt;f32&gt;;\n    @group(0) @binding(3) var&lt;storage, read_write&gt; out: array&lt;f32&gt;;\n\n    @compute @workgroup_size(8, 8)\n    fn main(@builtin(global_invocation_id) gid: vec3u) {\n      let row = gid.y;\n      let col = gid.x;\n      if (row &gt;= dims.m || col &gt;= dims.n) {\n        return;\n      }\n\n      var acc = 0.0;\n      for (var i = 0u; i &lt; dims.k; i = i + 1u) {\n        acc += lhs[row * dims.k + i] * rhs[i * dims.n + col];\n      }\n      out[row * dims.n + col] = acc;\n    }\n  `,\n  inputs: [\n    { data: dims, usage: \&quot;uniform\&quot;, access: \&quot;uniform\&quot; },\n    lhs,\n    rhs,\n  ],\n  output: {\n    type: Float32Array,\n    size: M * N * Float32Array.BYTES_PER_ELEMENT,\n  },\n  workgroups: [Math.ceil(N / 8), Math.ceil(M / 8)],\n});\n\nconsole.log(JSON.stringify(Array.from(result.subarray(0, 8), (value) =&gt; Number(value.toFixed(4)))));&quot;,&quot;tokens&quot;:&quot;one-shot compute matmul run a larger matrix multiply through gpu.compute(...) with explicit tensor dimensions and output size. compute-one-shot-matmul.js gpu.compute&quot;}]}</script>
+  <script type="module">
+    const DOC_DATA = JSON.parse(document.getElementById("doe-api-data").textContent);
+    const outputState = new Map();
+    let doePromise = null;
+
+    function setStatus(id, text) {
+      document.getElementById(id).textContent = text;
+    }
+
+    function resolveBufferUsageToken(token, combined = false) {
+      switch (token) {
+        case "upload":
+          return GPUBufferUsage.COPY_DST;
+        case "readback":
+          return combined
+            ? GPUBufferUsage.COPY_SRC
+            : GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ;
+        case "uniform":
+          return GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST;
+        case "storageRead":
+          return GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST;
+        case "storageReadWrite":
+          return GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC;
+        default:
+          throw new Error(`Unknown Doe buffer usage token: ${token}`);
+      }
+    }
+
+    function resolveBufferUsage(usage) {
+      if (typeof usage === "number") return usage;
+      if (typeof usage === "string") return resolveBufferUsageToken(usage);
+      if (Array.isArray(usage)) {
+        const combined = usage.length > 1;
+        return usage.reduce((mask, token) => mask | (
+          typeof token === "number"
+            ? token
+            : resolveBufferUsageToken(token, combined)
+        ), 0);
+      }
+      throw new Error("Doe buffer usage must be a number, string, or string array.");
+    }
+
+    function inferBindingAccessToken(token) {
+      switch (token) {
+        case "uniform":
+          return "uniform";
+        case "storageRead":
+          return "storageRead";
+        case "storageReadWrite":
+          return "storageReadWrite";
+        default:
+          return null;
+      }
+    }
+
+    function inferBindingAccess(usage) {
+      if (typeof usage === "number" || usage == null) return null;
+      const tokens = typeof usage === "string"
+        ? [usage]
+        : Array.isArray(usage)
+          ? usage.filter((token) => typeof token !== "number")
+          : null;
+      if (!tokens) return null;
+      const inferred = [...new Set(tokens.map(inferBindingAccessToken).filter(Boolean))];
+      if (inferred.length > 1) {
+        throw new Error(`Doe buffer usage cannot imply multiple binding access modes: ${inferred.join(", ")}`);
+      }
+      return inferred[0] ?? null;
+    }
+
+    function normalizeDataView(data) {
+      if (ArrayBuffer.isView(data)) {
+        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+      }
+      if (data instanceof ArrayBuffer) {
+        return new Uint8Array(data);
+      }
+      throw new Error("Doe buffer data must be an ArrayBuffer or ArrayBufferView.");
+    }
+
+    function resolveBufferSize(source, meta) {
+      if (source && typeof source === "object" && typeof source.size === "number") {
+        return source.size;
+      }
+      if (meta.has(source)) {
+        return meta.get(source).size;
+      }
+      if (ArrayBuffer.isView(source)) {
+        return source.byteLength;
+      }
+      if (source instanceof ArrayBuffer) {
+        return source.byteLength;
+      }
+      throw new Error("Doe buffer-like source must expose a byte size or be ArrayBuffer-backed data.");
+    }
+
+    function normalizeWorkgroups(workgroups) {
+      if (typeof workgroups === "number") return [workgroups, 1, 1];
+      if (Array.isArray(workgroups) && workgroups.length === 2) return [workgroups[0], workgroups[1], 1];
+      if (Array.isArray(workgroups) && workgroups.length === 3) return workgroups;
+      throw new Error("Doe workgroups must be a number, [x, y], or [x, y, z].");
+    }
+
+    function validatePositiveInteger(value, label) {
+      if (!Number.isInteger(value) || value < 1) {
+        throw new Error(`${label} must be a positive integer.`);
+      }
+    }
+
+    function createBrowserDoe(device) {
+      const bufferMeta = new WeakMap();
+
+      function rememberBuffer(buffer, usage, size) {
+        bufferMeta.set(buffer, {
+          bindingAccess: inferBindingAccess(usage),
+          size,
+        });
+        return buffer;
+      }
+
+      function inferredBindingAccessForBuffer(buffer) {
+        return bufferMeta.get(buffer)?.bindingAccess ?? null;
+      }
+
+      function validateWorkgroups(workgroups) {
+        const normalized = normalizeWorkgroups(workgroups);
+        const [x, y, z] = normalized;
+        validatePositiveInteger(x, "Doe workgroups.x");
+        validatePositiveInteger(y, "Doe workgroups.y");
+        validatePositiveInteger(z, "Doe workgroups.z");
+        return normalized;
+      }
+
+      function normalizeBinding(binding, index) {
+        const entry = binding && typeof binding === "object" && "buffer" in binding
+          ? binding
+          : { buffer: binding };
+        const access = entry.access ?? inferredBindingAccessForBuffer(entry.buffer);
+        if (!access) {
+          throw new Error(
+            "Doe binding access is required for buffers without Doe helper usage metadata. " +
+            "Pass { buffer, access } or create the buffer through gpu.buffer.create(...) with a bindable usage token."
+          );
+        }
+        return {
+          binding: index,
+          buffer: entry.buffer,
+          access,
+        };
+      }
+
+      function bindGroupLayoutEntry(binding) {
+        const bufferType = binding.access === "uniform"
+          ? "uniform"
+          : binding.access === "storageRead"
+            ? "read-only-storage"
+            : "storage";
+        return {
+          binding: binding.binding,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: bufferType },
+        };
+      }
+
+      function bindGroupEntry(binding) {
+        return {
+          binding: binding.binding,
+          resource: { buffer: binding.buffer },
+        };
+      }
+
+      class BrowserDoeKernel {
+        constructor(pipeline, layout) {
+          this.pipeline = pipeline;
+          this.layout = layout;
+        }
+
+        async dispatch(options) {
+          const bindings = (options.bindings ?? []).map(normalizeBinding);
+          const workgroups = validateWorkgroups(options.workgroups);
+          const bindGroup = device.createBindGroup({
+            layout: this.layout,
+            entries: bindings.map(bindGroupEntry),
+          });
+          const encoder = device.createCommandEncoder({ label: options.label ?? undefined });
+          const pass = encoder.beginComputePass({ label: options.label ?? undefined });
+          pass.setPipeline(this.pipeline);
+          if (bindings.length > 0) {
+            pass.setBindGroup(0, bindGroup);
+          }
+          pass.dispatchWorkgroups(workgroups[0], workgroups[1], workgroups[2]);
+          pass.end();
+          device.queue.submit([encoder.finish()]);
+          await device.queue.onSubmittedWorkDone();
+        }
+      }
+
+      function createBuffer(options) {
+        if (!options || typeof options !== "object") {
+          throw new Error("Doe buffer options must be an object.");
+        }
+        if (options.data != null) {
+          const view = normalizeDataView(options.data);
+          const usage = options.usage ?? "storageRead";
+          const size = options.size ?? view.byteLength;
+          const buffer = rememberBuffer(device.createBuffer({
+            label: options.label ?? undefined,
+            size,
+            usage: resolveBufferUsage(usage),
+            mappedAtCreation: false,
+          }), usage, size);
+          device.queue.writeBuffer(buffer, 0, view);
+          return buffer;
+        }
+        validatePositiveInteger(options.size, "Doe buffer size");
+        return rememberBuffer(device.createBuffer({
+          label: options.label ?? undefined,
+          size: options.size,
+          usage: resolveBufferUsage(options.usage),
+          mappedAtCreation: options.mappedAtCreation ?? false,
+        }), options.usage, options.size);
+      }
+
+      async function readBuffer(options) {
+        if (!options || typeof options !== "object") {
+          throw new Error("Doe buffer.read options must be an object.");
+        }
+        const buffer = options.buffer;
+        const type = options.type;
+        if (!buffer || typeof buffer !== "object") {
+          throw new Error("Doe buffer.read requires a buffer.");
+        }
+        if (typeof type !== "function") {
+          throw new Error("Doe buffer.read type must be a typed-array constructor.");
+        }
+        const fullSize = resolveBufferSize(buffer, bufferMeta);
+        const offset = options.offset ?? 0;
+        const size = options.size ?? Math.max(0, fullSize - offset);
+        const staging = device.createBuffer({
+          label: options.label ?? undefined,
+          size,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        const encoder = device.createCommandEncoder({ label: options.label ?? undefined });
+        encoder.copyBufferToBuffer(buffer, offset, staging, 0, size);
+        device.queue.submit([encoder.finish()]);
+        await device.queue.onSubmittedWorkDone();
+        await staging.mapAsync(GPUMapMode.READ);
+        const copy = staging.getMappedRange().slice(0);
+        staging.unmap();
+        staging.destroy();
+        return new type(copy);
+      }
+
+      function createKernel(options) {
+        const bindings = (options.bindings ?? []).map(normalizeBinding);
+        const shader = device.createShaderModule({ code: options.code });
+        const bindGroupLayout = device.createBindGroupLayout({
+          entries: bindings.map(bindGroupLayoutEntry),
+        });
+        const pipelineLayout = device.createPipelineLayout({
+          bindGroupLayouts: [bindGroupLayout],
+        });
+        const pipeline = device.createComputePipeline({
+          layout: pipelineLayout,
+          compute: {
+            module: shader,
+            entryPoint: options.entryPoint ?? "main",
+          },
+        });
+        return new BrowserDoeKernel(pipeline, bindGroupLayout);
+      }
+
+      async function runKernel(options) {
+        const kernel = createKernel(options);
+        await kernel.dispatch({
+          bindings: options.bindings ?? [],
+          workgroups: options.workgroups,
+          label: options.label,
+        });
+      }
+
+      function usesRawNumericFlags(usage) {
+        return typeof usage === "number" || (Array.isArray(usage) && usage.some((token) => typeof token === "number"));
+      }
+
+      function assertLayer3Usage(usage, access, path) {
+        if (usesRawNumericFlags(usage) && !access) {
+          throw new Error(`Doe ${path} accepts raw numeric usage flags only when explicit access is also provided.`);
+        }
+      }
+
+      function normalizeOnceInput(input, index) {
+        if (ArrayBuffer.isView(input) || input instanceof ArrayBuffer) {
+          const buffer = createBuffer({ data: input });
+          return {
+            binding: buffer,
+            buffer,
+            byteLength: resolveBufferSize(input, bufferMeta),
+            owned: true,
+          };
+        }
+        if (input && typeof input === "object" && "data" in input) {
+          assertLayer3Usage(input.usage, input.access, `compute input ${index} usage`);
+          const buffer = createBuffer({
+            data: input.data,
+            usage: input.usage ?? "storageRead",
+            label: input.label,
+          });
+          return {
+            binding: input.access ? { buffer, access: input.access } : buffer,
+            buffer,
+            byteLength: resolveBufferSize(input.data, bufferMeta),
+            owned: true,
+          };
+        }
+        if (input && typeof input === "object" && "buffer" in input) {
+          return {
+            binding: input,
+            buffer: input.buffer,
+            byteLength: resolveBufferSize(input.buffer, bufferMeta),
+            owned: false,
+          };
+        }
+        if (input && typeof input === "object") {
+          return {
+            binding: input,
+            buffer: input,
+            byteLength: resolveBufferSize(input, bufferMeta),
+            owned: false,
+          };
+        }
+        throw new Error(`Doe compute input ${index} must be data, a Doe input spec, or a buffer.`);
+      }
+
+      function normalizeOnceOutput(output, inputs) {
+        if (!output || typeof output !== "object") {
+          throw new Error("Doe compute output is required.");
+        }
+        if (typeof output.type !== "function") {
+          throw new Error("Doe compute output.type must be a typed-array constructor.");
+        }
+        const fallbackInputIndex = inputs.length > 0 ? 0 : null;
+        const likeInputIndex = output.likeInput ?? fallbackInputIndex;
+        const size = output.size ?? (
+          likeInputIndex != null && inputs[likeInputIndex]
+            ? inputs[likeInputIndex].byteLength
+            : null
+        );
+        if (!(size > 0)) {
+          throw new Error("Doe compute output size must be provided or derived from likeInput.");
+        }
+        assertLayer3Usage(output.usage, output.access, "compute output usage");
+        const buffer = createBuffer({
+          size,
+          usage: output.usage ?? "storageReadWrite",
+          label: output.label,
+        });
+        return {
+          binding: output.access ? { buffer, access: output.access } : buffer,
+          buffer,
+          type: output.type,
+          readOptions: output.read ?? {},
+        };
+      }
+
+      async function compute(options) {
+        const inputs = (options.inputs ?? []).map((input, index) => normalizeOnceInput(input, index));
+        const output = normalizeOnceOutput(options.output, inputs);
+        validateWorkgroups(options.workgroups);
+        try {
+          await runKernel({
+            code: options.code,
+            entryPoint: options.entryPoint,
+            bindings: [...inputs.map((input) => input.binding), output.binding],
+            workgroups: options.workgroups,
+            label: options.label,
+          });
+          return await readBuffer({ buffer: output.buffer, type: output.type, ...output.readOptions });
+        } finally {
+          output.buffer.destroy?.();
+          for (const input of inputs) {
+            if (input.owned) {
+              input.buffer.destroy?.();
+            }
+          }
+        }
+      }
+
+      return {
+        device,
+        buffer: {
+          create: createBuffer,
+          read: readBuffer,
+        },
+        kernel: {
+          run: runKernel,
+          create: createKernel,
+        },
+        compute,
+      };
+    }
+
+    async function ensureDoe() {
+      if (doePromise) return doePromise;
+      if (!("gpu" in navigator)) {
+        throw new Error("WebGPU is unavailable in this browser.");
+      }
+      setStatus("status-webgpu", "WebGPU available");
+      doePromise = (async () => {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) {
+          throw new Error("No WebGPU adapter was returned.");
+        }
+        setStatus("status-adapter", adapter.name || "Adapter ready");
+        const device = await adapter.requestDevice();
+        setStatus("status-device", "Device ready");
+        return {
+          requestDevice: async () => createBrowserDoe(device),
+          bind: (rawDevice) => createBrowserDoe(rawDevice),
+        };
+      })();
+      return doePromise;
+    }
+
+    function parseConsoleOutput(lines) {
+      const trimmed = lines.join("\n").trim();
+      if (!trimmed) return { text: "No console output.", data: null };
+      try {
+        return {
+          text: trimmed,
+          data: JSON.parse(trimmed),
+        };
+      } catch {
+        return { text: trimmed, data: null };
+      }
+    }
+
+    function clearChart(canvas) {
+      const context = canvas.getContext("2d");
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function renderViz(statsTarget, canvas, valuesTarget, data) {
+      statsTarget.innerHTML = "";
+      valuesTarget.innerHTML = "";
+      clearChart(canvas);
+      if (!Array.isArray(data) || data.length === 0 || !data.every((value) => typeof value === "number")) {
+        return;
+      }
+
+      const count = data.length;
+      const min = Math.min(...data);
+      const max = Math.max(...data);
+      const mean = data.reduce((sum, value) => sum + value, 0) / count;
+      const stats = [
+        `count ${count}`,
+        `min ${Number(min.toFixed(4))}`,
+        `max ${Number(max.toFixed(4))}`,
+        `mean ${Number(mean.toFixed(4))}`,
+      ];
+      for (const stat of stats) {
+        const chip = document.createElement("div");
+        chip.className = "metricChip";
+        chip.textContent = stat;
+        statsTarget.appendChild(chip);
+      }
+
+      for (const value of data.slice(0, 16)) {
+        const pill = document.createElement("div");
+        pill.className = "valuePill";
+        pill.textContent = Number(value.toFixed(4)).toString();
+        valuesTarget.appendChild(pill);
+      }
+
+      const context = canvas.getContext("2d");
+      const { width, height } = canvas;
+      const padX = 26;
+      const padY = 24;
+      const range = max - min || 1;
+      const stepX = count > 1 ? (width - padX * 2) / (count - 1) : 0;
+
+      context.clearRect(0, 0, width, height);
+      context.strokeStyle = "rgba(255,255,255,0.12)";
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(padX, height - padY);
+      context.lineTo(width - padX, height - padY);
+      context.moveTo(padX, padY);
+      context.lineTo(padX, height - padY);
+      context.stroke();
+
+      context.beginPath();
+      data.forEach((value, index) => {
+        const x = padX + index * stepX;
+        const y = height - padY - ((value - min) / range) * (height - padY * 2);
+        if (index === 0) {
+          context.moveTo(x, y);
+        } else {
+          context.lineTo(x, y);
+        }
+      });
+      context.strokeStyle = "rgba(34, 211, 238, 0.95)";
+      context.lineWidth = 3;
+      context.stroke();
+
+      context.lineTo(width - padX, height - padY);
+      context.lineTo(padX, height - padY);
+      context.closePath();
+      context.fillStyle = "rgba(34, 211, 238, 0.12)";
+      context.fill();
+    }
+
+    function attachSearch() {
+      const input = document.getElementById("search");
+      const targets = [...document.querySelectorAll(".searchTarget")];
+      input.addEventListener("input", () => {
+        const query = input.value.trim().toLowerCase();
+        for (const target of targets) {
+          const haystack = target.dataset.search || "";
+          target.classList.toggle("hidden", query !== "" && !haystack.includes(query));
+        }
+      });
+    }
+
+    function attachExampleControls() {
+      for (const example of DOC_DATA.examples) {
+        const editor = document.querySelector(`[data-example-editor="${CSS.escape(example.filename)}"]`);
+        const meta = document.querySelector(`[data-output-meta="${CSS.escape(example.filename)}"]`);
+        const text = document.querySelector(`[data-output-text="${CSS.escape(example.filename)}"]`);
+        const stats = document.querySelector(`[data-output-stats="${CSS.escape(example.filename)}"]`);
+        const chart = document.querySelector(`[data-output-chart="${CSS.escape(example.filename)}"]`);
+        const values = document.querySelector(`[data-output-values="${CSS.escape(example.filename)}"]`);
+
+        document.querySelector(`[data-reset-example="${CSS.escape(example.filename)}"]`).addEventListener("click", () => {
+          editor.value = example.source;
+          meta.textContent = "Reset to shipped example.";
+          text.textContent = "";
+          stats.innerHTML = "";
+          values.innerHTML = "";
+          clearChart(chart);
+        });
+
+        document.querySelector(`[data-copy-example="${CSS.escape(example.filename)}"]`).addEventListener("click", async () => {
+          await navigator.clipboard.writeText(editor.value);
+          meta.textContent = "Copied example source.";
+        });
+
+        document.querySelector(`[data-run-example="${CSS.escape(example.filename)}"]`).addEventListener("click", async () => {
+          meta.textContent = "Running…";
+          text.textContent = "";
+          stats.innerHTML = "";
+          values.innerHTML = "";
+          clearChart(chart);
+          try {
+            const doe = await ensureDoe();
+            const logs = [];
+            const scopedConsole = {
+              log(...args) {
+                logs.push(args.map((value) => typeof value === "string" ? value : JSON.stringify(value)).join(" "));
+              },
+            };
+            const runnable = editor.value.replace(/^import\s+\{\s*doe\s*\}\s+from\s+"@simulatte\/webgpu\/compute";\n\n?/, "");
+            const fn = new Function("doe", "console", `return (async () => {\n${runnable}\n})();`);
+            await fn(doe, scopedConsole);
+            const parsed = parseConsoleOutput(logs);
+            meta.textContent = "Ran successfully.";
+            text.textContent = parsed.text;
+            renderViz(stats, chart, values, parsed.data);
+          } catch (error) {
+            meta.textContent = "Run failed.";
+            text.textContent = error && error.stack ? error.stack : String(error);
+          }
+        });
+      }
+    }
+
+    async function initRuntimeStatus() {
+      if (!("gpu" in navigator)) {
+        setStatus("status-webgpu", "Unavailable");
+        setStatus("status-adapter", "No WebGPU");
+        setStatus("status-device", "No WebGPU");
+        return;
+      }
+      setStatus("status-webgpu", "Available");
+      try {
+        await ensureDoe();
+      } catch (error) {
+        setStatus("status-adapter", "Failed");
+        setStatus("status-device", error?.message || "Unavailable");
+      }
+    }
+
+    attachSearch();
+    attachExampleControls();
+    initRuntimeStatus();
+  </script>
+</body>
+</html>

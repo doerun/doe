@@ -57,6 +57,11 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
+const TEXTURE_DIMENSION_MAP = Object.freeze({
+  '1d': 1,
+  '2d': 2,
+  '3d': 3,
+});
 
 const addon = loadAddon();
 const DOE_LIB_PATH = resolveDoeLibraryPath();
@@ -93,8 +98,8 @@ function resolveDoeLibraryPath() {
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
     process.env.FAWN_DOE_LIB,
-    resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
+    resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
     resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
   ];
 
@@ -302,6 +307,18 @@ const nodeEncoderBackend = {
     if (pass._pipeline == null) {
       failValidation('GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'setPipeline() must be called before dispatch');
     }
+    if (typeof addon.bufferReadIndirectCounts === 'function') {
+      const counts = addon.bufferReadIndirectCounts(indirectBufferNative, indirectOffset);
+      pass._encoder._commands.push({
+        t: 0,
+        p: pass._pipeline,
+        bg: [...pass._bindGroups],
+        x: counts.x,
+        y: counts.y,
+        z: counts.z,
+      });
+      return;
+    }
     ensureNodeCommandEncoderNative(pass._encoder);
     const nativePass = addon.beginComputePass(pass._encoder._native);
     addon.computePassSetPipeline(nativePass, pass._pipeline);
@@ -420,14 +437,39 @@ const nodeEncoderBackend = {
     }
     encoder._commands.push({ t: 1, s: srcNative, so: srcOffset, d: dstNative, do: dstOffset, sz: size });
   },
+  commandEncoderWriteTimestamp(encoder, querySetNative, queryIndex) {
+    ensureNodeCommandEncoderNative(encoder);
+    addon.commandEncoderWriteTimestamp(encoder._native, querySetNative, queryIndex);
+  },
+  commandEncoderResolveQuerySet(encoder, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset) {
+    ensureNodeCommandEncoderNative(encoder);
+    addon.commandEncoderResolveQuerySet(encoder._native, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
+  },
+  commandEncoderCopyTextureToBuffer(encoder, source, destination, copySize) {
+    ensureNodeCommandEncoderNative(encoder);
+    addon.commandEncoderCopyTextureToBuffer(
+      encoder._native,
+      source.texture,
+      source.mipLevel ?? 0,
+      source.origin?.x ?? 0,
+      source.origin?.y ?? 0,
+      source.origin?.z ?? 0,
+      source.aspect ?? 1,
+      destination.buffer,
+      destination.offset ?? 0,
+      destination.bytesPerRow ?? 0,
+      destination.rowsPerImage ?? 0,
+      copySize.width,
+      copySize.height,
+      copySize.depthOrArrayLayers ?? 1,
+    );
+  },
   commandEncoderFinish(encoder) {
+    ensureNodeCommandEncoderNative(encoder);
     encoder._finished = true;
-    if (encoder._native) {
-      const cmd = addon.commandEncoderFinish(encoder._native);
-      encoder._native = null;
-      return { _native: cmd, _batched: false };
-    }
-    return { _commands: encoder._commands, _batched: true };
+    const cmd = addon.commandEncoderFinish(encoder._native);
+    encoder._native = null;
+    return { _native: cmd, _batched: false };
   },
 };
 
@@ -457,7 +499,12 @@ const {
  * - Texture views are created through `createView(...)`.
  */
 const fullSurfaceBackend = {
-  initBufferState() {},
+  initBufferState(buffer) {
+    buffer._mapMode = 0;
+  },
+  bufferMarkMappedAtCreation(buffer) {
+    buffer._mapMode = globals.GPUMapMode.WRITE;
+  },
   bufferMapAsync(wrapper, native, mode, offset, size) {
     if (wrapper._queue) {
       if (wrapper._queue.hasPendingSubmissions()) {
@@ -476,14 +523,16 @@ const fullSurfaceBackend = {
     } else {
       addon.bufferMapSync(wrapper._instance, native, mode, offset, size);
     }
+    wrapper._mapMode = mode;
   },
-  bufferGetMappedRange(_wrapper, native, offset, size) {
+  bufferGetMappedRange(wrapper, native, offset, size) {
     return addon.bufferGetMappedRange(native, offset, size);
   },
   bufferAssertMappedPrefixF32(_wrapper, native, expected, count) {
     return addon.bufferAssertMappedPrefixF32(native, expected, count);
   },
-  bufferUnmap(native) {
+  bufferUnmap(native, wrapper) {
+    wrapper._mapMode = 0;
     addon.bufferUnmap(native);
   },
   bufferDestroy(native) {
@@ -645,6 +694,7 @@ const fullSurfaceBackend = {
       width: size.width,
       height: size.height,
       depthOrArrayLayers: size.depthOrArrayLayers,
+      dimension: TEXTURE_DIMENSION_MAP[textureDescriptor.dimension ?? '2d'] ?? 2,
       usage,
       mipLevelCount: assertIntegerInRange(textureDescriptor.mipLevelCount ?? 1, 'GPUDevice.createTexture', 'descriptor.mipLevelCount', { min: 1, max: UINT32_MAX }),
     });
@@ -686,6 +736,17 @@ const fullSurfaceBackend = {
       },
     );
   },
+  deviceCreateQuerySet(device, descriptor) {
+    const QUERY_TYPE_TIMESTAMP = 2;
+    return addon.createQuerySet(
+      assertLiveResource(device, 'GPUDevice.createQuerySet', 'GPUDevice'),
+      QUERY_TYPE_TIMESTAMP,
+      descriptor.count,
+    );
+  },
+  querySetDestroy(native) {
+    addon.querySetDestroy(native);
+  },
   deviceCreateCommandEncoder(device) {
     return new DoeGPUCommandEncoder(null, device);
   },
@@ -709,6 +770,7 @@ const fullSurfaceBackend = {
       createTexture: classes.DoeGPUDevice.prototype.createTexture,
       createSampler: classes.DoeGPUDevice.prototype.createSampler,
       createRenderPipeline: classes.DoeGPUDevice.prototype.createRenderPipeline,
+      createQuerySet: classes.DoeGPUDevice.prototype.createQuerySet,
       createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
       destroy: classes.DoeGPUDevice.prototype.destroy,
     };

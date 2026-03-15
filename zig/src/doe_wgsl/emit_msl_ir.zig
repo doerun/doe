@@ -2,6 +2,7 @@ const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_msl_maps.zig");
 const stage_render = @import("emit_msl_stage.zig");
+const texture_builtins = @import("emit_msl_texture.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -9,6 +10,7 @@ pub const EmitError = error{
 };
 
 pub const MAX_OUTPUT: usize = 128 * 1024;
+const BINDINGS_PER_GROUP: u32 = 16;
 
 pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
     var emitter = Emitter{ .module = module, .buf = out };
@@ -21,6 +23,10 @@ const Emitter = struct {
     buf: []u8,
     pos: usize = 0,
     indent: usize = 0,
+
+    fn msl_binding_slot(_: *Emitter, binding: ir.BindingPoint) u32 {
+        return binding.group * BINDINGS_PER_GROUP + binding.binding;
+    }
 
     fn emit_root(self: *Emitter) EmitError!void {
         try self.write("#include <metal_stdlib>\nusing namespace metal;\n");
@@ -130,7 +136,7 @@ const Emitter = struct {
                 try self.write("& ");
                 try self.write(global.name);
                 try self.write(" [[buffer(");
-                try self.write_u32(binding.binding);
+                try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
                 return;
             },
@@ -153,14 +159,14 @@ const Emitter = struct {
                 }
                 try self.write(global.name);
                 try self.write(" [[buffer(");
-                try self.write_u32(binding.binding);
+                try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
                 switch (self.module.types.get(global.ty)) {
                     .array => |arr| if (arr.len == null and stage_render.runtime_array_needs_size_param(self, global.name)) {
                         try self.write(", uint ");
                         try self.write(global.name);
                         try self.write("_size [[buffer_size(");
-                        try self.write_u32(binding.binding);
+                        try self.write_u32(self.msl_binding_slot(binding));
                         try self.write(")]]");
                     },
                     else => {},
@@ -174,7 +180,7 @@ const Emitter = struct {
                 try self.write("sampler ");
                 try self.write(global.name);
                 try self.write(" [[sampler(");
-                try self.write_u32(binding.binding);
+                try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
             },
             .texture_2d, .storage_texture_2d => {
@@ -182,7 +188,7 @@ const Emitter = struct {
                 try self.write(" ");
                 try self.write(global.name);
                 try self.write(" [[texture(");
-                try self.write_u32(binding.binding);
+                try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
             },
             else => return error.InvalidIr,
@@ -340,7 +346,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_expr(self: *Emitter, function: ir.Function, expr_id: ir.ExprId) EmitError!void {
+    pub fn emit_expr(self: *Emitter, function: ir.Function, expr_id: ir.ExprId) EmitError!void {
         const expr = function.exprs.items[expr_id];
         switch (expr.data) {
             .bool_lit => |value| try self.write(if (value) "true" else "false"),
@@ -447,26 +453,7 @@ const Emitter = struct {
                 try self.write(", -1.0, 1.0) * 127.0)))");
                 return;
             }
-            if (std.mem.eql(u8, call.name, "textureLoad")) {
-                if (call.args.len != 3) return error.InvalidIr;
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(".read(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(", ");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "textureStore")) {
-                if (call.args.len != 3) return error.InvalidIr;
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(".write(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
-                try self.write(", ");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(")");
-                return;
-            }
+            if (try texture_builtins.emit_builtin(self, function, call)) return;
             if (std.mem.eql(u8, call.name, "atomicLoad")) {
                 if (call.args.len != 1) return error.InvalidIr;
                 try self.write("atomic_load_explicit(&(");

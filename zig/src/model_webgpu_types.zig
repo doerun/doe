@@ -59,11 +59,63 @@ pub const WGPUTextureFormat_RGBA8Uint: WGPUTextureFormat = 0x00000019;
 pub const WGPUTextureFormat_RGBA8Sint: WGPUTextureFormat = 0x0000001A;
 pub const WGPUTextureFormat_BGRA8Unorm: WGPUTextureFormat = 0x0000001B;
 pub const WGPUTextureFormat_BGRA8UnormSrgb: WGPUTextureFormat = 0x0000001C;
+pub const WGPUTextureFormat_RGB10A2Uint: WGPUTextureFormat = 0x0000001D;
+pub const WGPUTextureFormat_RGB10A2Unorm: WGPUTextureFormat = 0x0000001E;
+pub const WGPUTextureFormat_RG11B10Ufloat: WGPUTextureFormat = 0x0000001F;
+pub const WGPUTextureFormat_RGB9E5Ufloat: WGPUTextureFormat = 0x00000020;
+pub const WGPUTextureFormat_RG32Float: WGPUTextureFormat = 0x00000021;
+pub const WGPUTextureFormat_RG32Uint: WGPUTextureFormat = 0x00000022;
+pub const WGPUTextureFormat_RG32Sint: WGPUTextureFormat = 0x00000023;
+pub const WGPUTextureFormat_RGBA16Uint: WGPUTextureFormat = 0x00000024;
+pub const WGPUTextureFormat_RGBA16Sint: WGPUTextureFormat = 0x00000025;
+pub const WGPUTextureFormat_RGBA16Float: WGPUTextureFormat = 0x00000026;
+pub const WGPUTextureFormat_RGBA32Float: WGPUTextureFormat = 0x00000027;
+pub const WGPUTextureFormat_RGBA32Uint: WGPUTextureFormat = 0x00000028;
+pub const WGPUTextureFormat_RGBA32Sint: WGPUTextureFormat = 0x00000029;
+pub const WGPUTextureFormat_Stencil8: WGPUTextureFormat = 0x0000002C;
 pub const WGPUTextureFormat_Depth16Unorm: WGPUTextureFormat = 0x0000002D;
 pub const WGPUTextureFormat_Depth24Plus: WGPUTextureFormat = 0x0000002E;
 pub const WGPUTextureFormat_Depth24PlusStencil8: WGPUTextureFormat = 0x0000002F;
 pub const WGPUTextureFormat_Depth32Float: WGPUTextureFormat = 0x00000030;
 pub const WGPUTextureFormat_Depth32FloatStencil8: WGPUTextureFormat = 0x00000031;
+
+// ASTC compressed texture formats (texture-compression-astc feature)
+pub const WGPUTextureFormat_ASTC4x4Unorm: WGPUTextureFormat = 0x0000004A;
+pub const WGPUTextureFormat_ASTC4x4UnormSrgb: WGPUTextureFormat = 0x0000004B;
+pub const WGPUTextureFormat_ASTC5x4Unorm: WGPUTextureFormat = 0x0000004C;
+pub const WGPUTextureFormat_ASTC5x4UnormSrgb: WGPUTextureFormat = 0x0000004D;
+pub const WGPUTextureFormat_ASTC5x5Unorm: WGPUTextureFormat = 0x0000004E;
+pub const WGPUTextureFormat_ASTC5x5UnormSrgb: WGPUTextureFormat = 0x0000004F;
+pub const WGPUTextureFormat_ASTC6x5Unorm: WGPUTextureFormat = 0x00000050;
+pub const WGPUTextureFormat_ASTC6x5UnormSrgb: WGPUTextureFormat = 0x00000051;
+pub const WGPUTextureFormat_ASTC6x6Unorm: WGPUTextureFormat = 0x00000052;
+pub const WGPUTextureFormat_ASTC6x6UnormSrgb: WGPUTextureFormat = 0x00000053;
+pub const WGPUTextureFormat_ASTC8x5Unorm: WGPUTextureFormat = 0x00000054;
+pub const WGPUTextureFormat_ASTC8x5UnormSrgb: WGPUTextureFormat = 0x00000055;
+pub const WGPUTextureFormat_ASTC8x6Unorm: WGPUTextureFormat = 0x00000056;
+pub const WGPUTextureFormat_ASTC8x6UnormSrgb: WGPUTextureFormat = 0x00000057;
+pub const WGPUTextureFormat_ASTC8x8Unorm: WGPUTextureFormat = 0x00000058;
+pub const WGPUTextureFormat_ASTC8x8UnormSrgb: WGPUTextureFormat = 0x00000059;
+pub const WGPUTextureFormat_ASTC10x5Unorm: WGPUTextureFormat = 0x0000005A;
+pub const WGPUTextureFormat_ASTC10x5UnormSrgb: WGPUTextureFormat = 0x0000005B;
+pub const WGPUTextureFormat_ASTC10x6Unorm: WGPUTextureFormat = 0x0000005C;
+pub const WGPUTextureFormat_ASTC10x6UnormSrgb: WGPUTextureFormat = 0x0000005D;
+pub const WGPUTextureFormat_ASTC10x8Unorm: WGPUTextureFormat = 0x0000005E;
+pub const WGPUTextureFormat_ASTC10x8UnormSrgb: WGPUTextureFormat = 0x0000005F;
+pub const WGPUTextureFormat_ASTC10x10Unorm: WGPUTextureFormat = 0x00000060;
+pub const WGPUTextureFormat_ASTC10x10UnormSrgb: WGPUTextureFormat = 0x00000061;
+pub const WGPUTextureFormat_ASTC12x10Unorm: WGPUTextureFormat = 0x00000062;
+pub const WGPUTextureFormat_ASTC12x10UnormSrgb: WGPUTextureFormat = 0x00000063;
+pub const WGPUTextureFormat_ASTC12x12Unorm: WGPUTextureFormat = 0x00000064;
+pub const WGPUTextureFormat_ASTC12x12UnormSrgb: WGPUTextureFormat = 0x00000065;
+
+// ASTC format range for validation
+pub const ASTC_FORMAT_FIRST: WGPUTextureFormat = WGPUTextureFormat_ASTC4x4Unorm;
+pub const ASTC_FORMAT_LAST: WGPUTextureFormat = WGPUTextureFormat_ASTC12x12UnormSrgb;
+
+pub fn isASTCFormat(format: WGPUTextureFormat) bool {
+    return format >= ASTC_FORMAT_FIRST and format <= ASTC_FORMAT_LAST;
+}
 
 pub const WGPUShaderStage_None: WGPUFlags = 0x0000000000000000;
 pub const WGPUShaderStage_Vertex: WGPUFlags = 0x0000000000000001;

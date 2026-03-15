@@ -10,10 +10,9 @@ Scope:
 
 Use this together with:
 
-- [README.md](./README.md) for the current user-facing package entrypoints
-- [api-contract.md](./api-contract.md) for the current implemented contract
+- [api-contract.md](./api-contract.md) for current implemented method signatures
+- [architecture.md](./architecture.md) for the full runtime layer stack
 - [jsdoc-style-guide.md](./jsdoc-style-guide.md) for public API documentation rules
-- [layering-plan.md](./layering-plan.md) for broader package/runtime layering work
 
 ## Why this exists
 
@@ -82,101 +81,28 @@ shared mental model and clear boundaries.
 
 Until then, keep those workflows under `gpu.compute.*`.
 
-## Public model
+## Current implemented surface
 
-This document intentionally skips direct WebGPU and starts at the Doe helper
-surface.
+For exact method signatures and behavior, see
+[`api-contract.md`](./api-contract.md) (section `doe`).
 
-### Binding entrypoints
+The three namespaces are:
 
-- `doe.requestDevice(options?) -> Promise<gpu>`
-- `doe.bind(device) -> gpu`
+- `gpu.buffer.*` — resource helpers (create, read)
+- `gpu.kernel.*` — explicit compute primitives (create, run, dispatch)
+- `gpu.compute(...)` — one-shot workflow helper
 
-### Bound helper object
+## Proposed routine family (not yet implemented)
 
-- `gpu.device -> GPUDevice`
-
-## Layer 2: explicit primitives
-
-This layer should stay explicit about buffers, compiled kernels, bindings, and
-dispatch shape.
-
-### `gpu.buffer.*`
-
-- `gpu.buffer.create(options) -> GPUBuffer`
-- `gpu.buffer.fromData(data, options?) -> GPUBuffer`
-- `gpu.buffer.like(source, options?) -> GPUBuffer`
-- `gpu.buffer.read(buffer, TypedArrayCtor, options?) -> Promise<TypedArray>`
-
-Purpose:
-
-- explicit buffer allocation and readback helpers
-- less boilerplate than raw WebGPU
-- resource ownership remains visible
-
-### `gpu.kernel.*`
-
-- `gpu.kernel.create(options) -> kernel`
-- `gpu.kernel.run(options) -> Promise<void>`
-
-Returned object:
-
-- `kernel.dispatch(options) -> Promise<void>`
-
-Purpose:
-
-- explicit reusable kernel compilation
-- explicit dispatch path without the routine layer hiding allocations
-
-Rule:
-
-- if the caller is still thinking in WGSL, bindings, workgroups, and reusable
-  pipelines, they belong in `gpu.kernel.*`, not `gpu.compute.*`
-
-## Layer 3: routines
-
-This layer should represent workflow-shaped compute operations.
-
-Current starting point:
-
-- `gpu.compute.once(options) -> Promise<TypedArray>`
-
-Proposed family:
-
-- `gpu.compute.once(options) -> Promise<TypedArray>`
 - `gpu.compute.map(options) -> Promise<TypedArray>`
 - `gpu.compute.zip(options) -> Promise<TypedArray>`
 - `gpu.compute.reduce(options) -> Promise<number | TypedArray>`
 - `gpu.compute.scan(options) -> Promise<TypedArray>`
 - `gpu.compute.matmul(options) -> Promise<TypedArray>`
 
-Purpose:
-
-- typed-array and shape-oriented workflows
-- helper owns temporary allocations and readback
-- explicit escalation path back to `gpu.kernel.*` when the routine is too narrow
-
-Rule:
-
-- if an API allocates temporary buffers, dispatches for the caller, reads back,
-  and returns typed data, it belongs in `gpu.compute.*`
-
-## Why not `gpu.linalg`
-
-`gpu.linalg` sounds neat, but it introduces a domain namespace before the Doe
-surface has a broad enough domain taxonomy to justify it.
-
-Problems:
-
-- it is too narrow for one or two routines
-- it suggests a larger math library split that Doe does not have yet
-- it makes the helper surface feel academic rather than operational
-
-For now, matmul and similar workflow routines should remain under
-`gpu.compute.*`.
-
-If a future math family becomes large enough to stand on its own, `gpu.math.*`
-would be a better candidate than `gpu.linalg.*`.
+Domain namespaces like `gpu.linalg` or `gpu.math` should not exist until the
+domain has a real family of routines. Keep workflow routines under
+`gpu.compute.*` until then.
 
 ## Naming rules
 
@@ -195,12 +121,9 @@ hard compatibility constraint.
 Use:
 
 - `create`
-- `fromData`
-- `like`
 - `read`
 - `run`
 - `dispatch`
-- `once`
 - `map`
 - `zip`
 - `reduce`
@@ -233,24 +156,18 @@ Do not mix:
 
 inside one namespace.
 
-## Migration direction from the current helper surface
+## Migration history (completed)
 
-Target renames:
+The following renames were applied to reach the current implemented surface:
 
-- `gpu.buffers.create(...)` -> `gpu.buffer.create(...)`
-- `gpu.buffers.fromData(...)` -> `gpu.buffer.fromData(...)`
-- `gpu.buffers.like(...)` -> `gpu.buffer.like(...)`
-- `gpu.buffers.read(...)` -> `gpu.buffer.read(...)`
-- `gpu.compute.run(...)` -> `gpu.kernel.run(...)`
-- `gpu.compute.compile(...)` -> `gpu.kernel.create(...)`
-- `kernel.dispatch(...)` stays `kernel.dispatch(...)`
-- `gpu.compute.once(...)` stays `gpu.compute.once(...)`
-
-Interpretation:
-
-- buffer helpers become a singular resource domain
-- explicit compute primitives move under `kernel`
-- routine workflows remain under `compute`
+- `gpu.buffers.create(...)` → `gpu.buffer.create(...)`
+- `gpu.buffers.fromData(...)` → merged into `gpu.buffer.create({ data: ... })`
+- `gpu.buffers.like(...)` → removed (use `gpu.buffer.create({ size: src.size, ... })`)
+- `gpu.buffers.read(...)` → `gpu.buffer.read({ buffer, type, ... })`
+- `gpu.compute.run(...)` → `gpu.kernel.run(...)`
+- `gpu.compute.compile(...)` → `gpu.kernel.create(...)`
+- `kernel.dispatch(...)` → stayed `kernel.dispatch(...)`
+- `gpu.compute(...)` → stayed `gpu.compute(...)`
 
 ## JSDoc contract for the future helper surface
 

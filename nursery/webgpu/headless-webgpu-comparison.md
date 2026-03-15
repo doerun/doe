@@ -38,6 +38,6 @@ Notes:
 
 ## Scaffolding the Fawn NPM Package
 
-- Doe is exposed through a native C ABI and also ships an experimental Bun FFI implementation, but the package-default Bun entry currently uses the addon-backed runtime for stability.
-- Node N-API support now exists in the canonical `@simulatte/webgpu` package.
-- Browser API parity is not claimed by this draft package; the current focus is headless benchmarking workflows.
+- Doe is exposed through a native C ABI with parallel N-API (Node) and FFI (Bun) transports. Bun uses a platform-dependent bridge: FFI on Linux, addon-backed on macOS for correctness parity.
+- The canonical package is `@simulatte/webgpu` with full Node N-API and Bun support.
+- Browser API parity is not claimed; the current focus is headless compute and benchmarking workflows. Browser ownership lives in `nursery/fawn-browser`.

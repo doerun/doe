@@ -1,5 +1,5 @@
 import * as full from './index.js';
-import { createDoeNamespace } from './doe.js';
+import { createDoeNamespace } from '@simulatte/webgpu-doe';
 
 /**
  * Shared Doe API namespace for the full package surface.
@@ -10,8 +10,8 @@ import { createDoeNamespace } from './doe.js';
  *
  * This is the JS convenience surface over the full package. Both entry points
  * return the same bound `gpu` object, with `gpu.buffer.*`, `gpu.kernel.*`,
- * and `gpu.compute.once(...)`, while still leaving the underlying raw device
- * reachable as `gpu.device`.
+ * and a single `gpu.compute(...)` helper, while still leaving the underlying
+ * raw device reachable as `gpu.device`.
  *
  * This example shows the API in its basic form.
  *

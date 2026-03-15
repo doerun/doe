@@ -62,6 +62,10 @@ pub fn parse_builtin_attr(tree: *const Ast, attr_idx: u32) !ir.Builtin {
     if (std.mem.eql(u8, name, "sample_mask")) return .sample_mask;
     if (std.mem.eql(u8, name, "vertex_index")) return .vertex_index;
     if (std.mem.eql(u8, name, "instance_index")) return .instance_index;
+    if (std.mem.eql(u8, name, "subgroup_size")) return .subgroup_size;
+    if (std.mem.eql(u8, name, "subgroup_invocation_id")) return .subgroup_invocation_id;
+    if (std.mem.eql(u8, name, "clip_distances")) return .clip_distances;
+    if (std.mem.eql(u8, name, "primitive_index")) return .primitive_index;
     return error.InvalidAttribute;
 }
 

@@ -68,17 +68,33 @@ fn emit_stage_out_struct(self: anytype, function: ir.Function, stage: ir.ShaderS
     try self.write("_stage_out {\n");
     self.indent += 4;
     try self.write_indent();
-    try self.emit_type(function.return_type);
-    try self.write(" value [[");
     const io = function.return_io.?;
-    if (io.location) |loc| {
-        try self.write(if (stage == .fragment) "color(" else "user(loc");
-        try self.write_u32(loc);
-        try self.write(")");
+    if (io.builtin == .clip_distances) {
+        // clip_distances: emit as float array with [[clip_distance]] attribute
+        const arr_len = switch (self.module.types.get(function.return_type)) {
+            .array => |arr| arr.len orelse 8,
+            else => 8,
+        };
+        try self.write("float value [[clip_distance]] [");
+        try self.write_u32(arr_len);
+        try self.write("];\n");
     } else {
-        try self.write(maps.msl_builtin_name(io.builtin));
+        try self.emit_type(function.return_type);
+        try self.write(" value [[");
+        if (io.blend_src) |src_index| {
+            // dual-source blending: [[color(0), index(N)]]
+            try self.write("color(0), index(");
+            try self.write_u32(src_index);
+            try self.write(")");
+        } else if (io.location) |loc| {
+            try self.write(if (stage == .fragment) "color(" else "user(loc");
+            try self.write_u32(loc);
+            try self.write(")");
+        } else {
+            try self.write(maps.msl_builtin_name(io.builtin));
+        }
+        try self.write("]];\n");
     }
-    try self.write("]];\n");
     self.indent -= 4;
     try self.write("};\n");
 }

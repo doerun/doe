@@ -1,7 +1,11 @@
 import Fawn.Core.Bridge
+import Fawn.Core.BindGroupSlot
+import Fawn.Core.BufferLifecycle
 import Fawn.Core.Dispatch
 import Fawn.Full.ComparabilityFixtures
 import Fawn.Full.WorkloadGeometry
+
+set_option maxRecDepth 1024
 
 private def jsonBool (b : Bool) : String := if b then "true" else "false"
 
@@ -49,7 +53,20 @@ def main : IO Unit := do
   IO.println "    { \"name\": \"behavioralToggleNotIdentity\", \"module\": \"Fawn.Core.Dispatch\", \"category\": \"tautological\" },"
   IO.println "    { \"name\": \"identityActionComplete\", \"module\": \"Fawn.Core.Dispatch\", \"category\": \"comptime_verified\" },"
   IO.println "    { \"name\": \"scopeCommandTableComplete\", \"module\": \"Fawn.Core.Dispatch\", \"category\": \"tautological\" },"
-  IO.println "    { \"name\": \"identityActionPreservesCommand\", \"module\": \"Fawn.Core.Dispatch\", \"category\": \"tautological\" }"
+  IO.println "    { \"name\": \"identityActionPreservesCommand\", \"module\": \"Fawn.Core.Dispatch\", \"category\": \"tautological\" },"
+  IO.println "    { \"name\": \"mslBindingSlot_injective_within_group\", \"module\": \"Fawn.Core.BindGroupSlot\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"mslBindingSlot_injective_across_groups\", \"module\": \"Fawn.Core.BindGroupSlot\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"mslBindingSlot_in_bounds\", \"module\": \"Fawn.Core.BindGroupSlot\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"mslBindingSlot_distinct_groups\", \"module\": \"Fawn.Core.BindGroupSlot\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"doeRelease_terminal\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"tautological\" },"
+  IO.println "    { \"name\": \"released_absorbs_all\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"tautological\" },"
+  IO.println "    { \"name\": \"doeMapAsync_idempotent\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"doeUnmap_idempotent\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"doeMapUnmap_roundtrip\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"doe_getMappedRange_gap\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"doe_dispatch_gap\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"doe_getMappedRange_superset\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"doe_dispatch_superset\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" }"
   IO.println "  ],"
   IO.println "  \"evaluatedConditions\": {"
   IO.println ("    \"comparability.strictHappyPath.comparable\": " ++ jsonBool happyPath ++ ",")
@@ -66,7 +83,14 @@ def main : IO Unit := do
   IO.println ("    \"dispatch.driverToggleSupportsUpload\": " ++ jsonBool (supportsScope .driver_toggle .upload) ++ ",")
   IO.println ("    \"dispatch.driverToggleSupportsMapAsync\": " ++ jsonBool (supportsScope .driver_toggle .mapAsync) ++ ",")
   IO.println ("    \"dispatch.alignmentSupportsBarrier\": " ++ jsonBool (supportsScope .alignment .barrier) ++ ",")
-  IO.println ("    \"dispatch.layoutSupportsRenderDraw\": " ++ jsonBool (supportsScope .layout .renderDraw))
+  IO.println ("    \"dispatch.layoutSupportsRenderDraw\": " ++ jsonBool (supportsScope .layout .renderDraw) ++ ",")
+  IO.println ("    \"bindGroupSlot.slot_0_0\": " ++ toString (mslBindingSlot 0 0) ++ ",")
+  IO.println ("    \"bindGroupSlot.slot_1_0\": " ++ toString (mslBindingSlot 1 0) ++ ",")
+  IO.println ("    \"bindGroupSlot.slot_3_15\": " ++ toString (mslBindingSlot 3 15) ++ ",")
+  IO.println ("    \"bufferLifecycle.doeAllowsGetMappedRange_unmapped\": " ++ jsonBool (doeAllowsGetMappedRange .unmapped) ++ ",")
+  IO.println ("    \"bufferLifecycle.specAllowsGetMappedRange_unmapped\": " ++ jsonBool (specAllowsGetMappedRange .unmapped) ++ ",")
+  IO.println ("    \"bufferLifecycle.doeAllowsDispatch_mapped\": " ++ jsonBool (doeAllowsDispatch .mapped) ++ ",")
+  IO.println ("    \"bufferLifecycle.specAllowsDispatch_mapped\": " ++ jsonBool (specAllowsDispatch .mapped))
   IO.println "  },"
   IO.println "  \"eliminationTargets\": ["
   IO.println "    {"
@@ -103,6 +127,26 @@ def main : IO Unit := do
   IO.println "      \"theorem\": \"equalGeometrySetsExecutionShapeFacts\","
   IO.println "      \"condition\": \"matching buffer size and dispatch geometry force execution-shape comparability facts true for arbitrary Nat-valued workloads\","
   IO.println "      \"runtimePath\": \"bench/compare_dawn_vs_doe_modules/comparability.py:evaluate_comparability_from_facts\""
+  IO.println "    },"
+  IO.println "    {"
+  IO.println "      \"theorem\": \"mslBindingSlot_injective_across_groups\","
+  IO.println "      \"condition\": \"group*16+binding is injective for binding<16; flat buffer array has no collisions\","
+  IO.println "      \"runtimePath\": \"zig/src/doe_wgsl/emit_msl_ir.zig:msl_binding_slot,doe_compute_ext_native.zig:flattenBindGroups\""
+  IO.println "    },"
+  IO.println "    {"
+  IO.println "      \"theorem\": \"mslBindingSlot_in_bounds\","
+  IO.println "      \"condition\": \"valid group and binding produce slot < 64; bounds check can be elided at comptime\","
+  IO.println "      \"runtimePath\": \"zig/src/doe_compute_ext_native.zig:flattenBindGroups\""
+  IO.println "    },"
+  IO.println "    {"
+  IO.println "      \"theorem\": \"doe_getMappedRange_superset\","
+  IO.println "      \"condition\": \"Doe permits all spec-valid getMappedRange calls; no false rejections\","
+  IO.println "      \"runtimePath\": \"zig/src/doe_wgpu_native.zig:doeBufferGetMappedRange\""
+  IO.println "    },"
+  IO.println "    {"
+  IO.println "      \"theorem\": \"doe_dispatch_superset\","
+  IO.println "      \"condition\": \"Doe permits all spec-valid dispatch calls; no false rejections\","
+  IO.println "      \"runtimePath\": \"zig/src/doe_wgpu_native.zig:doeBufferRelease\""
   IO.println "    }"
   IO.println "  ]"
   IO.println "}"

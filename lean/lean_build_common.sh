@@ -34,6 +34,10 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Dispatch.olean" "${ROOT_DIR}/lean/Fawn/Core/Dispatch.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Bridge.olean" "${ROOT_DIR}/lean/Fawn/Core/Bridge.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BindGroupSlot.olean" "${ROOT_DIR}/lean/Fawn/Core/BindGroupSlot.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BufferLifecycle.olean" "${ROOT_DIR}/lean/Fawn/Core/BufferLifecycle.lean"
 
 # Full layer (canonical sources).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \

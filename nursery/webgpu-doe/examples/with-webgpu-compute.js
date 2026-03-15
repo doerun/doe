@@ -1,10 +1,11 @@
-import { doe } from "@simulatte/webgpu/compute";
+import { requestDevice } from '@simulatte/webgpu/compute';
+import { createDoeNamespace } from '@simulatte/webgpu-doe';
 
+const doe = createDoeNamespace({ requestDevice });
 const gpu = await doe.requestDevice();
-const src = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
-const dst = gpu.buffer.like(src, {
-  usage: "storageReadWrite",
-});
+
+const src = gpu.buffer.create({ data: Float32Array.of(1, 2, 3, 4) });
+const dst = gpu.buffer.create({ size: src.size, usage: 'storageReadWrite' });
 
 await gpu.kernel.run({
   code: `
@@ -21,5 +22,4 @@ await gpu.kernel.run({
   workgroups: 1,
 });
 
-const result = await gpu.buffer.read(dst, Float32Array);
-console.log(JSON.stringify(Array.from(result)));
+console.log(await gpu.buffer.read({ buffer: dst, type: Float32Array }));

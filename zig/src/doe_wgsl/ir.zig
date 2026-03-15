@@ -48,6 +48,10 @@ pub const Builtin = enum {
     sample_mask,
     vertex_index,
     instance_index,
+    subgroup_size,
+    subgroup_invocation_id,
+    clip_distances,
+    primitive_index,
 };
 
 pub const Interpolation = enum {
@@ -61,6 +65,7 @@ pub const IoAttr = struct {
     location: ?u32 = null,
     interpolation: ?Interpolation = null,
     invariant: bool = false,
+    blend_src: ?u32 = null,
 };
 
 pub const BindingPoint = struct {

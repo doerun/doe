@@ -1,5 +1,5 @@
 import * as full from './index.js';
-import { createDoeNamespace } from './doe.js';
+import { createDoeNamespace } from '@simulatte/webgpu-doe';
 
 function unwrap(value) {
   return value && typeof value === 'object' && '_raw' in value ? value._raw : value;
@@ -845,7 +845,7 @@ export async function requestDevice(options = {}) {
  *
  * This is the JS convenience surface over the compute package. Both entry
  * points return the same bound `gpu` object, with `gpu.buffer.*`,
- * `gpu.kernel.*`, and `gpu.compute.once(...)`.
+ * `gpu.kernel.*`, and a single `gpu.compute(...)` helper.
  *
  * This example shows the API in its basic form.
  *
@@ -853,12 +853,12 @@ export async function requestDevice(options = {}) {
  * import { doe } from "@simulatte/webgpu/compute";
  *
  * const gpu = await doe.requestDevice();
- * const src = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
- * const dst = gpu.buffer.like(src, { usage: "storageReadWrite" });
+ * const src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+ * const dst = gpu.buffer.create({ size: src.size, usage: "storageReadWrite" });
  * ```
  *
  * - This helper shape matches the full package `doe`; only the raw device underneath differs.
- * - `gpu.compute.once(...)` is the narrowest helper; drop to `gpu.kernel.*` for explicit control.
+ * - `gpu.compute(...)` is the narrowest helper; drop to `gpu.kernel.*` for explicit control.
  * - See `requestDevice(...)` when you want the compute-only raw facade without Doe helpers.
  */
 export const doe = createDoeNamespace({
@@ -928,7 +928,7 @@ export const createDoeRuntime = full.createDoeRuntime;
  * ```
  *
  * - Requires an explicit compare config path either in options or forwarded CLI args.
- * - This is a tooling entrypoint, not the in-process `gpu.compute.*` helper path.
+ * - This is a tooling entrypoint, not the in-process `gpu.compute(...)` helper path.
  * - See `createDoeRuntime()` for lower-level runtime orchestration.
  */
 export const runDawnVsDoeCompare = full.runDawnVsDoeCompare;

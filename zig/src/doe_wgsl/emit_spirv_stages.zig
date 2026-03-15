@@ -77,7 +77,7 @@ pub fn emit_stage_entry_wrapper(emitter: *Emitter, entry: ir.EntryPoint) EmitErr
     const output_range_start: u32 = @intCast(interface_ids.items.len);
     const has_return = !ir.is_scalar(&emitter.module.types, function.return_type, .void);
     if (has_return) {
-        try emit_return_output_vars(emitter, function.return_type, &interface_ids);
+        try emit_return_output_vars(emitter, function.return_type, function.return_io, &interface_ids);
     }
     const output_range_len: u32 = @as(u32, @intCast(interface_ids.items.len)) - output_range_start;
 
@@ -125,7 +125,7 @@ pub fn emit_stage_entry_wrapper(emitter: *Emitter, entry: ir.EntryPoint) EmitErr
         const return_type = try emitter.lower_type(function.return_type);
         const result = try emitter.emit_function_call(return_type, emitter.function_ids[entry.function], call_args.items);
         const output_vars = interface_ids.items[output_range_start .. output_range_start + output_range_len];
-        try store_return_to_outputs(emitter, function.return_type, result, output_vars);
+        try store_return_to_outputs(emitter, function.return_type, function.return_io, result, output_vars);
     } else {
         _ = try emitter.emit_function_call(void_type, emitter.function_ids[entry.function], call_args.items);
     }
@@ -169,10 +169,11 @@ fn emit_struct_io_vars(
 }
 
 /// Emit Output variables for the return type. For struct returns, one Output
-/// variable per field.
+/// variable per field. For non-struct returns with return_io, a single Output.
 fn emit_return_output_vars(
     emitter: *Emitter,
     return_type: ir.TypeId,
+    return_io: ?ir.IoAttr,
     interface_ids: *std.ArrayListUnmanaged(u32),
 ) EmitError!void {
     switch (emitter.module.types.get(return_type)) {
@@ -188,7 +189,16 @@ fn emit_return_output_vars(
                 try interface_ids.append(emitter.alloc, var_id);
             }
         },
-        else => return error.UnsupportedConstruct,
+        else => {
+            // Non-struct return: single output variable with return_io decorations.
+            const io = return_io orelse return error.UnsupportedConstruct;
+            const value_type = try emitter.lower_type(return_type);
+            const ptr_type = try emitter.builder.type_pointer(spirv.StorageClass.Output, value_type);
+            const var_id = try emitter.builder.variable_global(ptr_type, spirv.StorageClass.Output);
+            try emitter.builder.emit_name(var_id, "return_value");
+            try decorate_io_var(&emitter.builder, var_id, io);
+            try interface_ids.append(emitter.alloc, var_id);
+        },
     }
 }
 
@@ -221,11 +231,13 @@ fn load_and_construct_struct(
     return result_id;
 }
 
-/// Store a function return value (struct composite) into Output variables.
+/// Store a function return value into Output variables. For struct returns,
+/// decompose via CompositeExtract. For non-struct, store directly.
 fn store_return_to_outputs(
     emitter: *Emitter,
     return_type: ir.TypeId,
-    composite_id: u32,
+    return_io: ?ir.IoAttr,
+    value_id: u32,
     output_var_ids: []const u32,
 ) EmitError!void {
     switch (emitter.module.types.get(return_type)) {
@@ -237,22 +249,36 @@ fn store_return_to_outputs(
                 const result_id = emitter.builder.reserve_id();
                 try emitter.builder.append_function_inst(
                     spirv.Opcode.CompositeExtract,
-                    &.{ field_type, result_id, composite_id, @as(u32, @intCast(field_index)) },
+                    &.{ field_type, result_id, value_id, @as(u32, @intCast(field_index)) },
                 );
                 try emitter.emit_store(output_var_ids[field_index], result_id);
             }
         },
-        else => return error.InvalidIr,
+        else => {
+            // Non-struct return: direct store to the single output variable.
+            if (return_io == null) return error.InvalidIr;
+            if (output_var_ids.len != 1) return error.InvalidIr;
+            try emitter.emit_store(output_var_ids[0], value_id);
+        },
     }
 }
 
-/// Apply IO decorations (builtin, location, interpolation, invariant) to a variable.
+/// Apply IO decorations (builtin, location, interpolation, invariant, blend_src) to a variable.
 fn decorate_io_var(builder: *spirv.Builder, var_id: u32, io: ir.IoAttr) EmitError!void {
     if (io.builtin != .none) {
+        if (io.builtin == .subgroup_size or io.builtin == .subgroup_invocation_id) {
+            try builder.emit_capability(spirv.Capability.GroupNonUniform);
+        }
+        if (io.builtin == .clip_distances) {
+            try builder.emit_capability(spirv.Capability.ClipDistance);
+        }
         try builder.emit_builtin_decoration(var_id, try emit_spirv.builtin_to_spirv(io.builtin));
     }
     if (io.location) |loc| {
         try builder.emit_location_decoration(var_id, loc);
+    }
+    if (io.blend_src) |src_index| {
+        try builder.emit_index_decoration(var_id, src_index);
     }
     if (io.interpolation) |interp| {
         switch (interp) {

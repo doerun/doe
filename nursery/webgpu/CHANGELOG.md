@@ -7,6 +7,16 @@ retrofitted from package version history and package-surface commits so the npm
 package has a conventional release history alongside the broader Fawn status
 and process documents.
 
+## [0.3.2] - 2026-03-15
+
+### Changed
+
+- Switched the package Doe helper namespace to depend on the standalone
+  `@simulatte/webgpu-doe` package instead of the previous bundled-only import
+  path.
+- Updated the package README to point package users at the new helper-only
+  package when they want the Doe API as an independent npm boundary.
+
 ## [0.3.1] - 2026-03-11
 
 ### Changed
@@ -15,7 +25,7 @@ and process documents.
   narrative after the `0.3.0` release.
 - Clarified the terminology split between the `Doe runtime` underneath the
   package and the `Doe API` JS convenience surface exposed by the package,
-  including the more opinionated `gpu.compute.once(...)` helper within it.
+  including the more opinionated `gpu.compute(...)` helper within it.
 - Fixed the layered README SVG asset so it renders correctly on package
   surfaces.
 
@@ -25,14 +35,16 @@ and process documents.
 
 - Breaking: redesigned the shared `doe` surface around `await
   doe.requestDevice()`, grouped `gpu.buffer.*`, grouped `gpu.kernel.*`, and
-  `gpu.compute.once(...)` instead of the earlier flat bound-helper methods.
-- Added `gpu.buffer.like(...)` for buffer-allocation boilerplate reduction and
-  `gpu.compute.once(...)` as the first more opinionated one-shot helper inside
+  `gpu.compute(...)` instead of the earlier flat bound-helper methods.
+- Added `gpu.compute(...)` as the first more opinionated one-shot helper inside
   the Doe API.
+- `gpu.buffer.create(...)` now accepts an optional `data` field for combined
+  allocation and upload (replaces `fromData`). `like(...)` removed; use
+  `create({ size: src.size, ... })`. `read(...)` now takes an options bag.
 - Doe helper token values now use camelCase (`storageRead`,
   `storageReadWrite`) and Doe workgroups now accept `[x, y]` in addition to
   `number` and `[x, y, z]`.
-- `gpu.compute.once(...)` now rejects raw numeric WebGPU usage flags; use Doe
+- `gpu.compute(...)` now rejects raw numeric WebGPU usage flags; use Doe
   usage tokens there or drop to `gpu.buffer.*` / `gpu.kernel.*` for explicit
   raw control.
 - Kept the same `doe` shape on `@simulatte/webgpu` and
@@ -40,7 +52,7 @@ and process documents.
   device surface (`full` vs compute-only facade), not separate helper dialects.
 - Updated the package README, API contract, and JSDoc guide to standardize the
   `Direct WebGPU` and `Doe API` model, including the more opinionated
-  `gpu.compute.once(...)` helper within the Doe API, and the boundary between
+  `gpu.compute(...)` helper within the Doe API, and the boundary between
   the headless package lane and `nursery/fawn-browser`.
 
 ## [0.2.4] - 2026-03-11

@@ -28,6 +28,8 @@ pub const Emitter = struct {
     entry_wrapper_ids: []u32,
     decorated_array_types: std.AutoHashMapUnmanaged(u32, void) = .{},
     decorated_struct_types: std.AutoHashMapUnmanaged(u32, void) = .{},
+    sampled_image_types: std.AutoHashMapUnmanaged(u32, u32) = .{},
+    sampler_type: u32 = 0,
 
     fn init(module: *const ir.Module) EmitError!Emitter {
         const alloc = module.allocator;
@@ -64,6 +66,7 @@ pub const Emitter = struct {
     }
 
     fn deinit(self: *Emitter) void {
+        self.sampled_image_types.deinit(self.alloc);
         self.decorated_struct_types.deinit(self.alloc);
         self.decorated_array_types.deinit(self.alloc);
         self.alloc.free(self.entry_wrapper_ids);
@@ -246,6 +249,9 @@ pub const Emitter = struct {
         for (function.params.items) |param| {
             const io_attr = param.io orelse return error.UnsupportedConstruct;
             if (io_attr.builtin == .none) return error.UnsupportedConstruct;
+            if (io_attr.builtin == .subgroup_size or io_attr.builtin == .subgroup_invocation_id) {
+                try self.builder.emit_capability(spirv.Capability.GroupNonUniform);
+            }
             const value_type = try self.lower_type(param.ty);
             const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Input, value_type);
             const var_id = try self.builder.variable_global(ptr_type, spirv.StorageClass.Input);
@@ -329,6 +335,7 @@ pub const Emitter = struct {
                     spirv.ImageFormat.Rgba8,
                 );
             },
+            .sampler => try self.lower_sampler_type(),
             .struct_ => |struct_id| blk: {
                 const struct_def = self.module.structs.items[struct_id];
                 var member_types = std.ArrayListUnmanaged(u32){};
@@ -340,11 +347,26 @@ pub const Emitter = struct {
             },
             .atomic => |inner| try self.lower_type(inner),
             .ref => |ref_ty| try self.lower_type(ref_ty.elem),
-            else => return error.UnsupportedConstruct,
         };
 
         self.type_ids[ty] = lowered;
         return lowered;
+    }
+
+    pub fn lower_sampler_type(self: *Emitter) EmitError!u32 {
+        if (self.sampler_type != 0) return self.sampler_type;
+        const id = self.builder.reserve_id();
+        try append_types_globals_inst(&self.builder, self.alloc, TextureOpcode.TypeSampler, &.{id});
+        self.sampler_type = id;
+        return id;
+    }
+
+    pub fn lower_sampled_image_type(self: *Emitter, image_type: u32) EmitError!u32 {
+        if (self.sampled_image_types.get(image_type)) |id| return id;
+        const id = self.builder.reserve_id();
+        try append_types_globals_inst(&self.builder, self.alloc, TextureOpcode.TypeSampledImage, &.{ id, image_type });
+        try self.sampled_image_types.put(self.alloc, image_type, id);
+        return id;
     }
 
     pub fn lower_constant(self: *Emitter, constant: ir.ConstantValue, ty: ir.TypeId) EmitError!u32 {
@@ -398,7 +420,7 @@ pub const Emitter = struct {
         const addr_space = global.addr_space orelse return false;
         if (addr_space != .handle) return false;
         return switch (self.module.types.get(global.ty)) {
-            .texture_2d, .storage_texture_2d => true,
+            .sampler, .texture_2d, .storage_texture_2d => true,
             else => false,
         };
     }
@@ -519,6 +541,17 @@ pub const Emitter = struct {
     }
 };
 
+const TextureOpcode = struct {
+    const TypeSampler: u16 = 26;
+    const TypeSampledImage: u16 = 27;
+};
+
+fn append_types_globals_inst(builder: *spirv.Builder, alloc: std.mem.Allocator, opcode: u16, operands: []const u32) EmitError!void {
+    const word_count: u32 = @intCast(operands.len + 1);
+    try builder.types_globals.append(alloc, (@as(u32, word_count) << 16) | opcode);
+    try builder.types_globals.appendSlice(alloc, operands);
+}
+
 fn adjusted_memory_align(addr_space: ir.AddressSpace, ty: ir.Type, base_align: u32) u32 {
     return switch (addr_space) {
         .uniform => switch (ty) {
@@ -559,6 +592,10 @@ pub fn builtin_to_spirv(builtin: ir.Builtin) EmitError!u32 {
         .local_invocation_index => spirv.Builtin.LocalInvocationIndex,
         .workgroup_id => spirv.Builtin.WorkgroupId,
         .num_workgroups => spirv.Builtin.NumWorkgroups,
+        .subgroup_size => spirv.Builtin.SubgroupSize,
+        .subgroup_invocation_id => spirv.Builtin.SubgroupLocalInvocationId,
+        .clip_distances => spirv.Builtin.ClipDistance,
+        .primitive_index => spirv.Builtin.PrimitiveId,
         .none => error.InvalidIr,
     };
 }

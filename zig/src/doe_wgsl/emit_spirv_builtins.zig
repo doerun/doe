@@ -20,9 +20,18 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
     if (std.mem.eql(u8, call.name, "textureLoad")) {
         return try emit_texture_load(self, call, result_ty);
     }
+    if (std.mem.eql(u8, call.name, "textureSample")) {
+        return try emit_texture_sample(self, call, result_ty, false);
+    }
+    if (std.mem.eql(u8, call.name, "textureSampleLevel")) {
+        return try emit_texture_sample(self, call, result_ty, true);
+    }
     if (std.mem.eql(u8, call.name, "textureStore")) {
         try emit_texture_store(self, call);
         return 0;
+    }
+    if (std.mem.eql(u8, call.name, "textureDimensions")) {
+        return try emit_texture_dimensions(self, call, result_ty);
     }
     if (std.mem.eql(u8, call.name, "dot")) {
         return try emit_dot(self, call, result_ty);
@@ -115,6 +124,15 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
 
     return null;
 }
+
+const TextureOpcode = struct {
+    const SampledImage: u16 = 86;
+    const ImageSampleImplicitLod: u16 = 87;
+    const ImageSampleExplicitLod: u16 = 88;
+    const ImageGather: u16 = 96;
+    const ImageQuerySizeLod: u16 = 103;
+    const ImageQuerySize: u16 = 104;
+};
 
 const SubgroupArithmeticOp = enum { add, min, max };
 
@@ -223,6 +241,70 @@ fn emit_result_inst(self: anytype, opcode: u16, result_type: u32, operands: []co
     try words.appendSlice(self.emitter.alloc, operands);
     try self.emitter.builder.append_function_inst(opcode, words.items);
     return result_id;
+}
+
+fn emit_texture_sample(self: anytype, call: anytype, result_ty: ir.TypeId, explicit_lod: bool) !u32 {
+    const expected_arg_count: u32 = if (explicit_lod) 4 else 3;
+    if (call.args.len != expected_arg_count) return error.InvalidIr;
+
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const sampler_expr = self.function.expr_args.items[call.args.start + 1];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const sampler_id = try self.emit_value_expr(sampler_expr);
+    const image_type = try self.emitter.lower_type(self.function.exprs.items[texture_expr].ty);
+    const sampled_image_type = try self.emitter.lower_sampled_image_type(image_type);
+    const sampled_image_id = try emit_result_inst(
+        self,
+        TextureOpcode.SampledImage,
+        sampled_image_type,
+        &.{ image_id, sampler_id },
+    );
+
+    const coords_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+    if (!explicit_lod) {
+        return try emit_result_inst(
+            self,
+            TextureOpcode.ImageSampleImplicitLod,
+            try self.emitter.lower_type(result_ty),
+            &.{ sampled_image_id, coords_id },
+        );
+    }
+
+    return try emit_result_inst(
+        self,
+        TextureOpcode.ImageSampleExplicitLod,
+        try self.emitter.lower_type(result_ty),
+        &.{
+            sampled_image_id,
+            coords_id,
+            spirv.ImageOperandsMask.Lod,
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]),
+        },
+    );
+}
+
+fn emit_texture_dimensions(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const opcode: u16 = if (call.args.len == 2) TextureOpcode.ImageQuerySizeLod else TextureOpcode.ImageQuerySize;
+    if (call.args.len == 2) {
+        return try emit_result_inst(
+            self,
+            opcode,
+            try self.emitter.lower_type(result_ty),
+            &.{
+                image_id,
+                try self.emit_value_expr(self.function.expr_args.items[call.args.start + 1]),
+            },
+        );
+    }
+    return try emit_result_inst(
+        self,
+        opcode,
+        try self.emitter.lower_type(result_ty),
+        &.{image_id},
+    );
 }
 
 fn builtin_inst_1(name: []const u8, kind: anytype) ?u32 {

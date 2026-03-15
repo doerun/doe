@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "package": "@simulatte/webgpu",
-  "packageVersion": "0.3.1",
+  "packageVersion": "0.3.2",
   "platform": "darwin",
   "arch": "arm64",
   "nodeNapiVersion": 8,
-  "doeVersion": "331566d0e",
+  "doeVersion": "cf9d655d0",
   "doeBuild": {
     "artifact": "libwebgpu_doe",
-    "leanVerifiedBuild": true,
-    "proofArtifactSha256": "a2ca0461a3cb13fe7cb4b64979730d59965b3d0b6a4eaa72c713d1d816e40465"
+    "leanVerifiedBuild": false,
+    "proofArtifactSha256": null
   },
   "files": {
     "doe_napi.node": {
-      "sha256": "3c6fd5eb6644e994da55818f69b42b2590aa67f78d801abf98e42e507f395b34"
+      "sha256": "58d6b1e615310e72d120942d5187f4101ed8ec8cbae8946c93c5b511262118bc"
     },
     "libwebgpu_doe.dylib": {
-      "sha256": "83cb06f593a3fee3346db9b17d654949cd059d6f87b7a0fa310230a21ff35ba4"
+      "sha256": "eeced734b85a33c21663cad32bb0dac277337d5e2cf52eca28cd8855c49fbdc4"
     },
     "libwebgpu_dawn.dylib": {
       "sha256": "828fb9ef95b08b4192cb9e84392e432e0d0a4ebca90df678e076e2e3c731b82e"
     }
   },
-  "builtAt": "2026-03-14T23:19:22.476Z"
+  "builtAt": "2026-03-15T00:33:51.851Z"
 }

@@ -21,8 +21,9 @@ static id<MTLTexture> _cachedDepthTarget = nil;
 static MTLRenderPassDescriptor* cachedRenderPassDescriptor(id<MTLTexture> target, id<MTLTexture> depth_target, BOOL use_depth_store) {
     if (_cachedRenderPassDesc == nil) {
         _cachedRenderPassDesc = [MTLRenderPassDescriptor new];
-        _cachedRenderPassDesc.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
-        _cachedRenderPassDesc.colorAttachments[0].storeAction = MTLStoreActionDontCare;
+        _cachedRenderPassDesc.colorAttachments[0].loadAction  = MTLLoadActionClear;
+        _cachedRenderPassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
+        _cachedRenderPassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
     }
     if (_cachedRenderPassTarget != target) {
         _cachedRenderPassDesc.colorAttachments[0].texture = target;
@@ -48,13 +49,116 @@ static MTLRenderPassDescriptor* cachedRenderPassDescriptor(id<MTLTexture> target
 
 static MTLPixelFormat wgpu_to_mtl_format(uint32_t wgpu) {
     switch (wgpu) {
+        // 8-bit single channel
+        case 0x00000001: return MTLPixelFormatR8Unorm;
+        case 0x00000002: return MTLPixelFormatR8Snorm;
+        case 0x00000003: return MTLPixelFormatR8Uint;
+        case 0x00000004: return MTLPixelFormatR8Sint;
+        // 16-bit single channel
+        case 0x00000007: return MTLPixelFormatR16Uint;
+        case 0x00000008: return MTLPixelFormatR16Sint;
+        case 0x00000009: return MTLPixelFormatR16Float;
+        // 16-bit dual channel
+        case 0x0000000A: return MTLPixelFormatRG8Unorm;
+        case 0x0000000B: return MTLPixelFormatRG8Snorm;
+        case 0x0000000C: return MTLPixelFormatRG8Uint;
+        case 0x0000000D: return MTLPixelFormatRG8Sint;
+        // 32-bit single channel
+        case 0x0000000E: return MTLPixelFormatR32Float;
+        case 0x0000000F: return MTLPixelFormatR32Uint;
+        case 0x00000010: return MTLPixelFormatR32Sint;
+        // 32-bit dual channel
+        case 0x00000013: return MTLPixelFormatRG16Uint;
+        case 0x00000014: return MTLPixelFormatRG16Sint;
+        case 0x00000015: return MTLPixelFormatRG16Float;
+        // 32-bit quad channel
         case 0x00000016: return MTLPixelFormatRGBA8Unorm;
         case 0x00000017: return MTLPixelFormatRGBA8Unorm_sRGB;
+        case 0x00000018: return MTLPixelFormatRGBA8Snorm;
+        case 0x00000019: return MTLPixelFormatRGBA8Uint;
+        case 0x0000001A: return MTLPixelFormatRGBA8Sint;
         case 0x0000001B: return MTLPixelFormatBGRA8Unorm;
         case 0x0000001C: return MTLPixelFormatBGRA8Unorm_sRGB;
-        case 0x0000002F: return MTLPixelFormatDepth32Float;
+        // packed formats
+        case 0x0000001D: return MTLPixelFormatRGB10A2Uint;
+        case 0x0000001E: return MTLPixelFormatRGB10A2Unorm;
+        case 0x0000001F: return MTLPixelFormatRG11B10Float;
+        case 0x00000020: return MTLPixelFormatRGB9E5Float;
+        // 64-bit dual channel
+        case 0x00000021: return MTLPixelFormatRG32Float;
+        case 0x00000022: return MTLPixelFormatRG32Uint;
+        case 0x00000023: return MTLPixelFormatRG32Sint;
+        // 64-bit quad channel
+        case 0x00000024: return MTLPixelFormatRGBA16Uint;
+        case 0x00000025: return MTLPixelFormatRGBA16Sint;
+        case 0x00000026: return MTLPixelFormatRGBA16Float;
+        // 128-bit quad channel
+        case 0x00000027: return MTLPixelFormatRGBA32Float;
+        case 0x00000028: return MTLPixelFormatRGBA32Uint;
+        case 0x00000029: return MTLPixelFormatRGBA32Sint;
+        // depth/stencil
+        case 0x0000002C: return MTLPixelFormatStencil8;
+        case 0x0000002D: return MTLPixelFormatDepth16Unorm;
+        case 0x0000002E: return MTLPixelFormatDepth32Float;   // depth24plus
+        case 0x0000002F: return MTLPixelFormatDepth32Float;   // depth24plus-stencil8
         case 0x00000030: return MTLPixelFormatDepth32Float;
-        default:         return MTLPixelFormatRGBA8Unorm;
+        case 0x00000031: return MTLPixelFormatDepth32Float_Stencil8;
+        // BC compressed formats (texture-compression-bc feature)
+        case 0x00000032: return MTLPixelFormatBC1_RGBA;
+        case 0x00000033: return MTLPixelFormatBC1_RGBA_sRGB;
+        case 0x00000034: return MTLPixelFormatBC2_RGBA;
+        case 0x00000035: return MTLPixelFormatBC2_RGBA_sRGB;
+        case 0x00000036: return MTLPixelFormatBC3_RGBA;
+        case 0x00000037: return MTLPixelFormatBC3_RGBA_sRGB;
+        case 0x00000038: return MTLPixelFormatBC4_RUnorm;
+        case 0x00000039: return MTLPixelFormatBC4_RSnorm;
+        case 0x0000003A: return MTLPixelFormatBC5_RGUnorm;
+        case 0x0000003B: return MTLPixelFormatBC5_RGSnorm;
+        case 0x0000003C: return MTLPixelFormatBC6H_RGBUfloat;
+        case 0x0000003D: return MTLPixelFormatBC6H_RGBFloat;
+        case 0x0000003E: return MTLPixelFormatBC7_RGBAUnorm;
+        case 0x0000003F: return MTLPixelFormatBC7_RGBAUnorm_sRGB;
+        // ETC2/EAC compressed formats (texture-compression-etc2 feature)
+        case 0x00000040: return MTLPixelFormatETC2_RGB8;
+        case 0x00000041: return MTLPixelFormatETC2_RGB8_sRGB;
+        case 0x00000042: return MTLPixelFormatETC2_RGB8A1;
+        case 0x00000043: return MTLPixelFormatETC2_RGB8A1_sRGB;
+        case 0x00000044: return MTLPixelFormatEAC_RGBA8;
+        case 0x00000045: return MTLPixelFormatEAC_RGBA8_sRGB;
+        case 0x00000046: return MTLPixelFormatEAC_R11Unorm;
+        case 0x00000047: return MTLPixelFormatEAC_R11Snorm;
+        case 0x00000048: return MTLPixelFormatEAC_RG11Unorm;
+        case 0x00000049: return MTLPixelFormatEAC_RG11Snorm;
+        // ASTC compressed formats (LDR / sRGB)
+        case 0x0000004A: return MTLPixelFormatASTC_4x4_LDR;
+        case 0x0000004B: return MTLPixelFormatASTC_4x4_sRGB;
+        case 0x0000004C: return MTLPixelFormatASTC_5x4_LDR;
+        case 0x0000004D: return MTLPixelFormatASTC_5x4_sRGB;
+        case 0x0000004E: return MTLPixelFormatASTC_5x5_LDR;
+        case 0x0000004F: return MTLPixelFormatASTC_5x5_sRGB;
+        case 0x00000050: return MTLPixelFormatASTC_6x5_LDR;
+        case 0x00000051: return MTLPixelFormatASTC_6x5_sRGB;
+        case 0x00000052: return MTLPixelFormatASTC_6x6_LDR;
+        case 0x00000053: return MTLPixelFormatASTC_6x6_sRGB;
+        case 0x00000054: return MTLPixelFormatASTC_8x5_LDR;
+        case 0x00000055: return MTLPixelFormatASTC_8x5_sRGB;
+        case 0x00000056: return MTLPixelFormatASTC_8x6_LDR;
+        case 0x00000057: return MTLPixelFormatASTC_8x6_sRGB;
+        case 0x00000058: return MTLPixelFormatASTC_8x8_LDR;
+        case 0x00000059: return MTLPixelFormatASTC_8x8_sRGB;
+        case 0x0000005A: return MTLPixelFormatASTC_10x5_LDR;
+        case 0x0000005B: return MTLPixelFormatASTC_10x5_sRGB;
+        case 0x0000005C: return MTLPixelFormatASTC_10x6_LDR;
+        case 0x0000005D: return MTLPixelFormatASTC_10x6_sRGB;
+        case 0x0000005E: return MTLPixelFormatASTC_10x8_LDR;
+        case 0x0000005F: return MTLPixelFormatASTC_10x8_sRGB;
+        case 0x00000060: return MTLPixelFormatASTC_10x10_LDR;
+        case 0x00000061: return MTLPixelFormatASTC_10x10_sRGB;
+        case 0x00000062: return MTLPixelFormatASTC_12x10_LDR;
+        case 0x00000063: return MTLPixelFormatASTC_12x10_sRGB;
+        case 0x00000064: return MTLPixelFormatASTC_12x12_LDR;
+        case 0x00000065: return MTLPixelFormatASTC_12x12_sRGB;
+        default:         return MTLPixelFormatInvalid;
     }
 }
 
@@ -230,8 +334,7 @@ MetalHandle metal_bridge_device_new_command_queue(MetalHandle device_h) {
 MetalHandle metal_bridge_device_new_buffer_shared(MetalHandle device_h, size_t length) {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
     id<MTLBuffer> buf = [device newBufferWithLength:length
-                                           options:MTLResourceStorageModeShared
-                                                   | MTLResourceHazardTrackingModeUntracked];
+                                           options:MTLResourceStorageModeShared];
     if (buf == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(buf);
 }
@@ -239,8 +342,7 @@ MetalHandle metal_bridge_device_new_buffer_shared(MetalHandle device_h, size_t l
 MetalHandle metal_bridge_device_new_buffer_private(MetalHandle device_h, size_t length) {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
     id<MTLBuffer> buf = [device newBufferWithLength:length
-                                           options:MTLResourceStorageModePrivate
-                                                   | MTLResourceHazardTrackingModeUntracked];
+                                           options:MTLResourceStorageModePrivate];
     if (buf == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(buf);
 }
@@ -657,6 +759,14 @@ void metal_bridge_render_encoder_set_depth_stencil_values(
     (void)encoder_h;
     (void)compare_fn;
     (void)write_enabled;
+}
+
+void metal_bridge_render_encoder_set_depth_clip_mode(
+    MetalHandle encoder_h,
+    int         clamp)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    [encoder setDepthClipMode:clamp ? MTLDepthClipModeClamp : MTLDepthClipModeClip];
 }
 
 void metal_bridge_render_encoder_set_front_facing(
@@ -1269,7 +1379,6 @@ MetalHandle metal_bridge_device_new_render_target(
                                                                                 mipmapped:NO];
     desc.usage       = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
     desc.storageMode = MTLStorageModePrivate;
-    desc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
     id<MTLTexture> tex = [device newTextureWithDescriptor:desc];
     if (tex == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(tex);
@@ -1441,6 +1550,101 @@ MetalHandle metal_bridge_compute_dispatch_copy_signal_commit(
 }
 
 // ============================================================
+// GPU Timestamp Query (MTLCounterSampleBuffer)
+// ============================================================
+
+int metal_bridge_supports_timestamp_query(MetalHandle device_h) {
+    if (device_h == NULL) return 0;
+    id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
+    if (![device supportsCounterSampling:MTLCounterSamplingPointAtStageBoundary]) return 0;
+    // Verify the timestamp counter set exists.
+    NSArray<id<MTLCounterSet>>* sets = device.counterSets;
+    for (id<MTLCounterSet> cs in sets) {
+        for (id<MTLCounter> c in cs.counters) {
+            if ([c.name isEqualToString:MTLCommonCounterTimestamp]) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+// Find the counter set containing MTLCommonCounterTimestamp.
+static id<MTLCounterSet> findTimestampCounterSet(id<MTLDevice> device) {
+    NSArray<id<MTLCounterSet>>* sets = device.counterSets;
+    for (id<MTLCounterSet> cs in sets) {
+        for (id<MTLCounter> c in cs.counters) {
+            if ([c.name isEqualToString:MTLCommonCounterTimestamp]) {
+                return cs;
+            }
+        }
+    }
+    return nil;
+}
+
+MetalHandle metal_bridge_create_counter_sample_buffer(MetalHandle device_h, uint32_t count) {
+    if (device_h == NULL || count == 0) return NULL;
+    id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
+
+    if (![device supportsCounterSampling:MTLCounterSamplingPointAtStageBoundary]) return NULL;
+
+    id<MTLCounterSet> cs = findTimestampCounterSet(device);
+    if (cs == nil) return NULL;
+
+    MTLCounterSampleBufferDescriptor* desc = [MTLCounterSampleBufferDescriptor new];
+    desc.counterSet   = cs;
+    desc.sampleCount  = count;
+    desc.storageMode  = MTLStorageModeShared;
+    desc.label        = @"DoeQuerySet";
+
+    NSError* error = nil;
+    id<MTLCounterSampleBuffer> csb = [device newCounterSampleBufferWithDescriptor:desc error:&error];
+    if (csb == nil) return NULL;
+    return (MetalHandle)CFBridgingRetain(csb);
+}
+
+void metal_bridge_sample_timestamp(
+    MetalHandle cmd_buf_h,
+    MetalHandle counter_buffer_h,
+    uint32_t    query_index)
+{
+    if (cmd_buf_h == NULL || counter_buffer_h == NULL) return;
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLCounterSampleBuffer> csb = (__bridge id<MTLCounterSampleBuffer>)counter_buffer_h;
+    id<MTLBlitCommandEncoder> blit = [cmd_buf blitCommandEncoder];
+    if (blit == nil) return;
+    [blit sampleCountersInBuffer:csb atSampleIndex:query_index withBarrier:YES];
+    [blit endEncoding];
+}
+
+int metal_bridge_resolve_timestamps(
+    MetalHandle counter_buffer_h,
+    uint32_t    first_query,
+    uint32_t    query_count,
+    uint64_t*   dest_ptr)
+{
+    if (counter_buffer_h == NULL || dest_ptr == NULL || query_count == 0) return 0;
+    id<MTLCounterSampleBuffer> csb = (__bridge id<MTLCounterSampleBuffer>)counter_buffer_h;
+    @try {
+        NSData* data = [csb resolveCounterRange:NSMakeRange(first_query, query_count)];
+        if (data == nil) return 0;
+        // Each sample is a MTLCounterResultTimestamp struct: { uint64_t timestamp; }
+        const uint64_t* timestamps = (const uint64_t*)[data bytes];
+        NSUInteger available = [data length] / sizeof(uint64_t);
+        if (available < query_count) return 0;
+        memcpy(dest_ptr, timestamps, query_count * sizeof(uint64_t));
+        return 1;
+    } @catch (NSException* exception) {
+        return 0;
+    }
+}
+
+void metal_bridge_destroy_counter_sample_buffer(MetalHandle counter_buffer_h) {
+    if (counter_buffer_h == NULL) return;
+    CFRelease(counter_buffer_h);
+}
+
+// ============================================================
 // Semaphore-based completion (faster than waitUntilCompleted)
 // ============================================================
 
@@ -1488,4 +1692,108 @@ MetalHandle metal_bridge_encode_icb_render_pass(
     [encoder endEncoding];
 
     return (MetalHandle)CFBridgingRetain(cmd_buf);
+}
+
+// ============================================================
+// Device capability queries — runtime feature detection
+// ============================================================
+
+static uint32_t _cached_device_features = 0;
+static BOOL     _device_features_initialized = NO;
+
+uint32_t metal_bridge_query_device_features(void) {
+    if (_device_features_initialized) return _cached_device_features;
+    @autoreleasepool {
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        if (device == nil) {
+            _device_features_initialized = YES;
+            return 0;
+        }
+
+        uint32_t features = 0;
+
+        // shader-f16: Apple family 6+ (A13+) or Apple Silicon Mac
+        if ([device supportsFamily:MTLGPUFamilyApple6]) {
+            features |= METAL_FEATURE_BIT_SHADER_F16;
+        }
+
+        // subgroups: Apple family 4+ (A11+) — simd_group operations
+        if ([device supportsFamily:MTLGPUFamilyApple4]) {
+            features |= METAL_FEATURE_BIT_SUBGROUPS;
+        }
+
+        // timestamp-query remains unpublished until the package surface uses
+        // a supported GPU timestamp path on Apple Silicon end to end.
+
+        // indirect-first-instance: all Metal 2+ devices
+        // Apple family 1+ (all Apple GPUs with Metal support)
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            features |= METAL_FEATURE_BIT_INDIRECT_FIRST_INSTANCE;
+        }
+
+        // depth-clip-control: all Metal devices support setDepthClipMode
+        features |= METAL_FEATURE_BIT_DEPTH_CLIP_CONTROL;
+
+        // depth32float-stencil8: Apple family 1+ supports Depth32Float_Stencil8
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            features |= METAL_FEATURE_BIT_DEPTH32FLOAT_STENCIL8;
+        }
+
+        // bgra8unorm-storage: Apple family 1+ supports BGRA storage textures
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            features |= METAL_FEATURE_BIT_BGRA8UNORM_STORAGE;
+        }
+
+        // float32-filterable: Apple family 1+ supports float32 texture filtering
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            features |= METAL_FEATURE_BIT_FLOAT32_FILTERABLE;
+        }
+
+        // float32-blendable: Apple family 9+ (M1+) supports float32 blending
+        if ([device supportsFamily:MTLGPUFamilyApple9]) {
+            features |= METAL_FEATURE_BIT_FLOAT32_BLENDABLE;
+        }
+
+        // texture-compression-astc: Apple family 2+ supports ASTC LDR
+        if ([device supportsFamily:MTLGPUFamilyApple2]) {
+            features |= METAL_FEATURE_BIT_TEXTURE_COMPRESSION_ASTC;
+        }
+
+        // texture-compression-bc: Mac family 2+ (all Apple Silicon Macs)
+        if ([device supportsFamily:MTLGPUFamilyMac2]) {
+            features |= METAL_FEATURE_BIT_TEXTURE_COMPRESSION_BC;
+        }
+
+        // texture-compression-bc-sliced-3d: Mac family 2+ supports BC on 3D textures
+        if ([device supportsFamily:MTLGPUFamilyMac2]) {
+            features |= METAL_FEATURE_BIT_TEXTURE_COMPRESSION_BC_SLICED_3D;
+        }
+
+        // texture-compression-etc2: Apple family 1+ (all Apple GPUs)
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            features |= METAL_FEATURE_BIT_TEXTURE_COMPRESSION_ETC2;
+        }
+
+        // rg11b10ufloat-renderable: Apple family 1+ supports RG11B10Float as render target
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            features |= METAL_FEATURE_BIT_RG11B10UFLOAT_RENDERABLE;
+        }
+
+        // subgroups-f16: requires Apple family 6+ (f16 support implies subgroup f16 ops)
+        if ([device supportsFamily:MTLGPUFamilyApple6]) {
+            features |= METAL_FEATURE_BIT_SUBGROUPS_F16;
+        }
+
+        // texture-compression-astc-sliced-3d: Apple family 2+ supports ASTC on 3D texture slices
+        if ([device supportsFamily:MTLGPUFamilyApple2]) {
+            features |= METAL_FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D;
+        }
+
+        // clip-distances and dual-source-blending stay unpublished until the
+        // package/compiler surface lowers them successfully end to end.
+
+        _cached_device_features = features;
+        _device_features_initialized = YES;
+    }
+    return _cached_device_features;
 }

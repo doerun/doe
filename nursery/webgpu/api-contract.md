@@ -12,16 +12,17 @@ Terminology in this contract is explicit:
   the Zig/native WebGPU runtime underneath the package
 - `Doe API`
   the explicit JS convenience surface under `doe.bind(...)`, `gpu.buffer.*`,
-  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute.once(...)`
+  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute(...)`
 
 For the current `compute` vs `full` support split, see
-[`./support-contracts.md`](./support-contracts.md).
+[`./support-contracts.md`](./support-contracts.md). For scope and non-goals, see
+the bottom of this document.
 
 Exact type and method shapes live in:
 
 - [`./src/full.d.ts`](./src/full.d.ts)
 - [`./src/compute.d.ts`](./src/compute.d.ts)
-- [`./src/doe.d.ts`](./src/doe.d.ts)
+- `@simulatte/webgpu-doe` in `src/index.d.ts`
 
 Planned naming cleanup for the Doe helper surface is documented separately in:
 
@@ -36,36 +37,23 @@ differ from the future helper naming proposed in `doe-api-design.md`.
 
 ## API styles
 
-The current package surface is organized around two API styles:
+The package surface has two API styles: `Direct WebGPU` (raw
+`requestAdapter`, `requestDevice`, `device.*`) and `Doe API` (convenience
+surface under `doe.bind(...)`, `gpu.buffer.*`, `gpu.kernel.*`, and the
+one-shot `gpu.compute(...)` helper).
 
-- `Direct WebGPU`
-  raw `requestAdapter(...)`, `requestDevice(...)`, and direct `device.*` usage
-- `Doe API`
-  the package's explicit JS convenience surface under `doe.bind(...)`,
-  `gpu.buffer.*`, `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and
-  `gpu.compute.once(...)`
+For the full layer stack from Zig native to package exports, see
+[`./architecture.md`](./architecture.md).
 
 ## Export surfaces
 
-### `@simulatte/webgpu`
+| Import | Surface |
+|--------|---------|
+| `@simulatte/webgpu` | Default full headless surface + `doe` namespace |
+| `@simulatte/webgpu/compute` | Compute-first facade + `doe` namespace |
 
-Default package surface.
-
-Contract:
-
-- headless `full` surface
-- includes compute plus render/sampler/surface APIs already exposed by the Doe runtime package surface
-- also exports the shared `doe` namespace for the Doe API surface
-
-### `@simulatte/webgpu/compute`
-
-Compute-first package surface.
-
-Contract:
-
-- sized for AI workloads and other buffer/dispatch-heavy headless execution
-- excludes render/sampler/surface methods from the public JS facade
-- also exports the same `doe` namespace for the Doe API surface
+Export paths and transport details are documented in
+[`./architecture.md`](./architecture.md).
 
 ## Shared runtime API
 
@@ -86,6 +74,10 @@ level:
 - `setupGlobals(...)` installs globals and `navigator.gpu` when missing.
 - `requestAdapter(...)` and `requestDevice(...)` are the `Direct WebGPU` entry
   points.
+- `preflightShaderSource(code)` validates WGSL source before pipeline creation
+  and returns structured compilation diagnostics.
+- `setNativeTimeoutMs(ms)` sets the native-side timeout for synchronous GPU
+  operations (map, flush).
 
 On `@simulatte/webgpu/compute`, the returned device is intentionally
 compute-only:
@@ -113,16 +105,16 @@ Behavior:
   the bound helper object directly
 - `doe.bind(device)` wraps an existing raw device into the same bound helper object
 - helper methods are grouped under the bound helper object's `buffer.*`,
-  `kernel.*`, and `compute.*`
+  `kernel.*`, and `compute(...)`
 - `buffer.*`, `kernel.run(...)`, and `kernel.create(...)` are the main
   `Doe API` surface
-- `compute.once(...)` is the more opinionated one-shot helper inside the same
+- `gpu.compute(...)` is the more opinionated one-shot helper inside the same
   `Doe API` surface and stays intentionally
   narrow: typed-array/headless one-call execution, not a replacement for
   explicit reusable resource ownership
 - infers `kernel.run(...).bindings` access from Doe helper-created buffer usage when that
   usage maps to one bindable access mode (`uniform`, `storageRead`, `storageReadWrite`)
-- `compute.once(...)` accepts Doe usage tokens only; raw numeric WebGPU usage flags stay on
+- `compute(...)` accepts Doe usage tokens only; raw numeric WebGPU usage flags stay on
   the more explicit `Doe API` surface
 - fails fast for bare bindings that do not carry Doe helper usage metadata or whose
   usage is non-bindable/ambiguous; callers must pass `{ buffer, access }` explicitly
@@ -158,8 +150,32 @@ Purpose:
 
 - one-command Dawn-vs-Doe compare wrapper from Node tooling.
 
-## Non-goals in v1
+## Scope and non-goals
 
-1. Full browser-parity WebGPU JS object model emulation.
-2. Browser presentation parity.
-3. npm `webgpu` drop-in compatibility guarantee.
+This package exists for headless GPU work in Node/Bun: compute, offscreen
+execution, benchmarking, and CI. Compatibility work serves those surfaces first.
+
+### Required now
+
+1. Stable headless Node/Bun provider behavior for real Doe-native execution.
+2. Stable command/trace orchestration for benchmark and CI pipelines.
+3. Reliable wrappers for Doe native bench runs and Dawn-vs-Doe compare runs.
+4. Deterministic artifact paths and non-zero exit-code propagation.
+5. Minimal convenience entrypoints for Node consumers (`create`, `globals`,
+   `requestAdapter`/`requestDevice`, `setupGlobals`).
+
+### Optional later (only when demanded by integrations)
+
+1. Minimal constants compatibility (only constants required by real integrations).
+2. Provider-module swap support for non-default backends beyond `webgpu`.
+
+### Not planned
+
+1. Full `navigator.gpu` browser-parity behavior in Node.
+2. Full object lifetime/event parity (`device lost`, full error scopes, full mapping semantics).
+3. Broad drop-in support for arbitrary npm packages expecting complete `webgpu` behavior.
+4. Browser presentation parity.
+
+Decision rule: add parity features only after a concrete headless integration is
+blocked by a missing capability and cannot be addressed by the existing package,
+bridge, or CLI contract.

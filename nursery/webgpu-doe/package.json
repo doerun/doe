@@ -1,0 +1,51 @@
+{
+  "name": "@simulatte/webgpu-doe",
+  "version": "0.3.2",
+  "description": "Standalone Doe helper namespace for WebGPU-compatible runtimes",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "assets/",
+    "examples/",
+    "src/",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node ./test-node.js",
+    "smoke": "node ./test-node.js"
+  },
+  "keywords": [
+    "webgpu",
+    "doe",
+    "helpers",
+    "compute",
+    "wgsl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clocksmith/fawn.git",
+    "directory": "nursery/webgpu-doe"
+  },
+  "homepage": "https://github.com/clocksmith/fawn/tree/main/nursery/webgpu-doe",
+  "bugs": {
+    "url": "https://github.com/clocksmith/fawn/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Fawn",
+  "license": "Apache-2.0"
+}

@@ -241,7 +241,7 @@ function bindGroupEntry(binding) {
  * ```
  *
  * - See `gpu.kernel.run(...)` for the one-shot explicit path.
- * - See `gpu.compute.once(...)` for the narrower typed-array workflow.
+ * - See `gpu.compute(...)` for the narrower typed-array workflow.
  * - Instances are returned through the bound Doe API and are not exported directly.
  */
 class DoeKernel {
@@ -322,6 +322,17 @@ function createBuffer(device, options) {
   if (!options || typeof options !== 'object') {
     throw new Error('Doe buffer options must be an object.');
   }
+  if (options.data != null) {
+    const view = normalizeDataView(options.data);
+    const usage = options.usage ?? 'storageRead';
+    const buffer = rememberBufferUsage(device.createBuffer({
+      label: options.label ?? undefined,
+      size: options.size ?? view.byteLength,
+      usage: resolveBufferUsage(usage),
+    }), usage);
+    device.queue.writeBuffer(buffer, 0, view);
+    return buffer;
+  }
   validatePositiveInteger(options.size, 'Doe buffer size');
   return rememberBufferUsage(device.createBuffer({
     label: options.label ?? undefined,
@@ -343,24 +354,23 @@ function createBufferFromData(device, data, options = {}) {
   return buffer;
 }
 
-function createBufferLike(device, source, options = {}) {
-  return createBuffer(device, {
-    ...options,
-    size: options.size ?? resolveBufferSize(source),
-  });
-}
-
 async function readBuffer(device, buffer, type, options = {}) {
+  if (arguments.length === 2 && buffer && typeof buffer === 'object') {
+    return readBuffer(device, buffer.buffer, buffer.type, buffer);
+  }
+  if (!buffer || typeof buffer !== 'object') {
+    throw new Error('Doe buffer.read requires a buffer.');
+  }
   if (typeof type !== 'function') {
-    throw new Error('Doe readBuffer type must be a typed-array constructor.');
+    throw new Error('Doe buffer.read type must be a typed-array constructor.');
   }
   const offset = options.offset ?? 0;
   const size = options.size ?? Math.max(0, (buffer.size ?? 0) - offset);
   if (!Number.isInteger(offset) || offset < 0) {
-    throw new Error('Doe readBuffer offset must be a non-negative integer.');
+    throw new Error('Doe buffer.read offset must be a non-negative integer.');
   }
   if (!Number.isInteger(size) || size < 0) {
-    throw new Error('Doe readBuffer size must be a non-negative integer.');
+    throw new Error('Doe buffer.read size must be a non-negative integer.');
   }
   if (((buffer.usage ?? 0) & DOE_GPU_BUFFER_USAGE.MAP_READ) !== 0) {
     await buffer.mapAsync(DOE_GPU_MAP_MODE.READ, offset, size);
@@ -416,7 +426,7 @@ function normalizeOnceInput(device, input, index) {
   }
 
   if (input && typeof input === 'object' && 'data' in input) {
-    assertLayer3Usage(input.usage, input.access, `compute.once input ${index} usage`);
+    assertLayer3Usage(input.usage, input.access, `compute input ${index} usage`);
     const buffer = createBufferFromData(device, input.data, {
       usage: input.usage ?? 'storageRead',
       label: input.label,
@@ -447,21 +457,21 @@ function normalizeOnceInput(device, input, index) {
     };
   }
 
-  throw new Error(`Doe compute.once input ${index} must be data, a Doe input spec, or a buffer.`);
+  throw new Error(`Doe compute input ${index} must be data, a Doe input spec, or a buffer.`);
 }
 
 function normalizeOnceOutput(device, output, inputs) {
   if (!output || typeof output !== 'object') {
-    throw new Error('Doe compute.once output is required.');
+    throw new Error('Doe compute output is required.');
   }
   if (typeof output.type !== 'function') {
-    throw new Error('Doe compute.once output.type must be a typed-array constructor.');
+    throw new Error('Doe compute output.type must be a typed-array constructor.');
   }
 
   const fallbackInputIndex = inputs.length > 0 ? 0 : null;
   const likeInputIndex = output.likeInput ?? fallbackInputIndex;
   if (likeInputIndex != null && (!Number.isInteger(likeInputIndex) || likeInputIndex < 0 || likeInputIndex >= inputs.length)) {
-    throw new Error(`Doe compute.once output.likeInput must reference an input index in [0, ${Math.max(inputs.length - 1, 0)}].`);
+    throw new Error(`Doe compute output.likeInput must reference an input index in [0, ${Math.max(inputs.length - 1, 0)}].`);
   }
   const size = output.size ?? (
     likeInputIndex != null && inputs[likeInputIndex]
@@ -470,10 +480,10 @@ function normalizeOnceOutput(device, output, inputs) {
   );
 
   if (!(size > 0)) {
-    throw new Error('Doe compute.once output size must be provided or derived from likeInput.');
+    throw new Error('Doe compute output size must be provided or derived from likeInput.');
   }
 
-  assertLayer3Usage(output.usage, output.access, 'compute.once output usage');
+  assertLayer3Usage(output.usage, output.access, 'compute output usage');
   const buffer = createBuffer(device, {
     size,
     usage: output.usage ?? 'storageReadWrite',
@@ -513,6 +523,36 @@ async function computeOnce(device, options) {
 }
 
 function createBoundDoe(device) {
+  /**
+   * Run a one-shot typed-array compute workflow.
+   *
+   * Surface: Doe API `gpu.compute`.
+   * Input: WGSL source, typed-array or buffer inputs, an output spec, and workgroups.
+   * Returns: A promise for the requested typed-array output.
+   *
+   * This is the most opinionated Doe helper. It creates temporary buffers
+   * as needed, uploads host data, dispatches the compute shader once,
+   * reads back the requested output, and destroys temporary resources
+   * before returning.
+   *
+   * This example shows the API in its basic form.
+   *
+   * ```js
+   * const out = await gpu.compute({
+   *   code,
+   *   inputs: [new Float32Array([1, 2, 3, 4])],
+   *   output: { type: Float32Array },
+   *   workgroups: 1,
+   * });
+   * ```
+   *
+   * - Raw numeric usage flags are accepted only when explicit Doe access is also provided.
+   * - Output size defaults from `likeInput` or the first input when possible.
+   * - See `gpu.kernel.run(...)` or `gpu.kernel.create(...)` when you need explicit resource ownership.
+   */
+  const compute = function compute(options) {
+    return computeOnce(device, options);
+  };
   return {
     device,
     buffer: {
@@ -524,71 +564,24 @@ function createBoundDoe(device) {
        * Returns: A GPU buffer with Doe usage metadata attached when possible.
        *
        * This is the explicit Doe helper over `device.createBuffer(...)`. It
-       * accepts Doe usage tokens such as `storageReadWrite` and remembers the
-       * resulting binding access so later Doe API calls can infer how the
+       * accepts Doe usage tokens such as `storageReadWrite`, and when `data`
+       * is provided it allocates and uploads in one step. Doe remembers the
+       * resulting binding access so later helper calls can infer how the
        * buffer should be bound.
        *
        * This example shows the API in its basic form.
        *
        * ```js
-       * const dst = gpu.buffer.create({
-       *   size: 1024,
-       *   usage: "storageReadWrite",
-       * });
+       * const src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+       * const dst = gpu.buffer.create({ size: src.size, usage: "storageReadWrite" });
        * ```
        *
+       * - When `data` is provided, usage defaults to `storageRead`.
        * - Raw numeric usage flags are allowed here for explicit control.
        * - Buffers created with raw numeric flags may later require `{ buffer, access }`.
-       * - See `gpu.buffer.fromData(...)` to create and upload in one step.
        */
       create(options) {
         return createBuffer(device, options);
-      },
-      /**
-       * Create a buffer from host data and upload it immediately.
-       *
-       * Surface: Doe API `gpu.buffer`.
-       * Input: An `ArrayBuffer` or typed-array view plus optional usage and label.
-       * Returns: A GPU buffer initialized with the provided bytes.
-       *
-       * This helper allocates a buffer, writes the provided host data into it,
-       * and records Doe usage metadata for later binding inference.
-       *
-       * This example shows the API in its basic form.
-       *
-       * ```js
-       * const src = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
-       * ```
-       *
-       * - Defaults to `storageRead` usage when none is provided.
-       * - Raw numeric usage flags are allowed, but they may disable Doe access inference.
-       * - See `gpu.buffer.create(...)` when you need an uninitialized buffer.
-       */
-      fromData(data, options = {}) {
-        return createBufferFromData(device, data, options);
-      },
-      /**
-       * Create a buffer sized from another buffer or host-data source.
-       *
-       * Surface: Doe API `gpu.buffer`.
-       * Input: A buffer-like source and optional overrides such as `usage` or `size`.
-       * Returns: A new GPU buffer whose size defaults from the source.
-       *
-       * This removes common `size: src.size` boilerplate when you need an
-       * output or scratch buffer that matches an existing source.
-       *
-       * This example shows the API in its basic form.
-       *
-       * ```js
-       * const dst = gpu.buffer.like(src, { usage: "storageReadWrite" });
-       * ```
-       *
-       * - `source` may be a GPU buffer, a typed array, or an `ArrayBuffer`.
-       * - If the source has no byte size, this throws instead of guessing.
-       * - See `gpu.buffer.create(...)` for fully explicit allocation.
-       */
-      like(source, options = {}) {
-        return createBufferLike(device, source, options);
       },
       /**
        * Read a buffer back into a typed array.
@@ -611,8 +604,11 @@ function createBoundDoe(device) {
        * - The typed-array constructor must accept a plain `ArrayBuffer`.
        * - See raw `buffer.mapAsync(...)` when you need manual readback control.
        */
-      read(buffer, type, options = {}) {
-        return readBuffer(device, buffer, type, options);
+      read(options_or_buffer, type, options = {}) {
+        if (arguments.length === 1 && options_or_buffer && typeof options_or_buffer === 'object') {
+          return readBuffer(device, options_or_buffer);
+        }
+        return readBuffer(device, options_or_buffer, type, options);
       },
     },
     kernel: {
@@ -639,7 +635,7 @@ function createBoundDoe(device) {
        * - `workgroups` may be `number`, `[x, y]`, or `[x, y, z]`.
        * - Bare buffers without Doe helper metadata require `{ buffer, access }`.
        * - See `gpu.kernel.create(...)` when you will reuse the shader shape.
-       * - See `gpu.compute.once(...)` for the narrower typed-array workflow.
+       * - See `gpu.compute(...)` for the narrower typed-array workflow.
        */
       run(options) {
         return runKernel(device, options);
@@ -671,38 +667,7 @@ function createBoundDoe(device) {
         return createKernel(device, options);
       },
     },
-    compute: {
-      /**
-       * Run a one-shot typed-array compute workflow.
-       *
-       * Surface: Doe API `gpu.compute`.
-       * Input: WGSL source, typed-array or buffer inputs, an output spec, and workgroups.
-       * Returns: A promise for the requested typed-array output.
-       *
-       * This is the most opinionated Doe helper. It creates temporary buffers
-       * as needed, uploads host data, dispatches the compute shader once,
-       * reads back the requested output, and destroys temporary resources
-       * before returning.
-       *
-       * This example shows the API in its basic form.
-       *
-       * ```js
-       * const out = await gpu.compute.once({
-       *   code,
-       *   inputs: [new Float32Array([1, 2, 3, 4])],
-       *   output: { type: Float32Array },
-       *   workgroups: 1,
-       * });
-       * ```
-       *
-       * - Raw numeric usage flags are accepted only when explicit Doe access is also provided.
-       * - Output size defaults from `likeInput` or the first input when possible.
-       * - See `gpu.kernel.run(...)` or `gpu.kernel.create(...)` when you need explicit resource ownership.
-       */
-      once(options) {
-        return computeOnce(device, options);
-      },
-    },
+    compute,
   };
 }
 

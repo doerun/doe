@@ -1,6 +1,6 @@
 import * as ffi from "./bun-ffi.js";
 import * as full from "./full.js";
-import { createDoeNamespace } from "./doe.js";
+import { createDoeNamespace } from "@simulatte/webgpu-doe";
 
 const runtime = process.platform === "linux" ? ffi : full;
 

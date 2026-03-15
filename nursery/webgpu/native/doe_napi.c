@@ -210,6 +210,30 @@ typedef struct {
 } WGPUExtent3D;
 
 typedef struct {
+    uint32_t x;
+    uint32_t y;
+    uint32_t z;
+} WGPUOrigin3D;
+
+typedef struct {
+    uint64_t offset;
+    uint32_t bytesPerRow;
+    uint32_t rowsPerImage;
+} WGPUTexelCopyBufferLayout;
+
+typedef struct {
+    WGPUTexelCopyBufferLayout layout;
+    WGPUBuffer buffer;
+} WGPUTexelCopyBufferInfo;
+
+typedef struct {
+    WGPUTexture texture;
+    uint32_t mipLevel;
+    WGPUOrigin3D origin;
+    uint32_t aspect;
+} WGPUTexelCopyTextureInfo;
+
+typedef struct {
     void* nextInChain;
     WGPUStringView label;
     uint64_t usage;
@@ -498,6 +522,8 @@ DECL_PFN(WGPUCommandEncoder, wgpuDeviceCreateCommandEncoder, (WGPUDevice, const 
 DECL_PFN(void, wgpuCommandEncoderRelease, (WGPUCommandEncoder));
 DECL_PFN(WGPUComputePassEncoder, wgpuCommandEncoderBeginComputePass, (WGPUCommandEncoder, const WGPUComputePassDescriptor*));
 DECL_PFN(void, wgpuCommandEncoderCopyBufferToBuffer, (WGPUCommandEncoder, WGPUBuffer, uint64_t, WGPUBuffer, uint64_t, uint64_t));
+DECL_PFN(void, wgpuCommandEncoderCopyTextureToBuffer, (WGPUCommandEncoder, const WGPUTexelCopyTextureInfo*, const WGPUTexelCopyBufferInfo*, const WGPUExtent3D*));
+DECL_PFN(void, doeNativeCommandEncoderCopyTextureToBuffer, (WGPUCommandEncoder, WGPUTexture, uint32_t, WGPUBuffer, uint64_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t));
 DECL_PFN(WGPUCommandBuffer, wgpuCommandEncoderFinish, (WGPUCommandEncoder, const WGPUCommandBufferDescriptor*));
 DECL_PFN(void, wgpuComputePassEncoderSetPipeline, (WGPUComputePassEncoder, WGPUComputePipeline));
 DECL_PFN(void, wgpuComputePassEncoderSetBindGroup, (WGPUComputePassEncoder, uint32_t, WGPUBindGroup, size_t, const uint32_t*));
@@ -550,6 +576,10 @@ DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t
 DECL_PFN(WGPUFuture, doeRequestDeviceFlat, (WGPUAdapter, const void*, uint32_t, WGPURequestDeviceCallback, void*, void*));
 DECL_PFN(void, doeNativeQueueFlush, (void*));
 DECL_PFN(void, doeNativeComputeDispatchFlush, (void*, void*, void**, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint64_t, void*, uint64_t, uint64_t));
+DECL_PFN(WGPUQuerySet, doeNativeDeviceCreateQuerySet, (WGPUDevice, uint32_t, uint32_t));
+DECL_PFN(void, doeNativeCommandEncoderWriteTimestamp, (WGPUCommandEncoder, WGPUQuerySet, uint32_t));
+DECL_PFN(void, doeNativeCommandEncoderResolveQuerySet, (WGPUCommandEncoder, WGPUQuerySet, uint32_t, uint32_t, WGPUBuffer, uint64_t));
+DECL_PFN(void, doeNativeQuerySetDestroy, (WGPUQuerySet));
 typedef struct {
     void* nextInChain;
     uint32_t mode;
@@ -644,7 +674,7 @@ static napi_value throw_status_error(napi_env env, const char* code, const char*
  * ================================================================ */
 
 #define NAPI_THROW(env, msg) do { napi_throw_error(env, "DOE_ERROR", msg); return NULL; } while(0)
-#define MAX_NAPI_ARGS 8
+#define MAX_NAPI_ARGS 16
 #define NAPI_ASSERT_ARGC(env, info, n) \
     size_t _argc = (n); napi_value _args[MAX_NAPI_ARGS]; \
     if ((n) > MAX_NAPI_ARGS) NAPI_THROW(env, "too many args"); \
@@ -800,6 +830,8 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuCommandEncoderRelease);
     LOAD_SYM(wgpuCommandEncoderBeginComputePass);
     LOAD_SYM(wgpuCommandEncoderCopyBufferToBuffer);
+    LOAD_SYM(wgpuCommandEncoderCopyTextureToBuffer);
+    LOAD_SYM(doeNativeCommandEncoderCopyTextureToBuffer);
     LOAD_SYM(wgpuCommandEncoderFinish);
     LOAD_SYM(wgpuComputePassEncoderSetPipeline);
     LOAD_SYM(wgpuComputePassEncoderSetBindGroup);
@@ -854,6 +886,10 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
     pfn_doeNativeQueueFlush = (PFN_doeNativeQueueFlush)LIB_SYM(g_lib, "doeNativeQueueFlush");
     pfn_doeNativeComputeDispatchFlush = (PFN_doeNativeComputeDispatchFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchFlush");
+    pfn_doeNativeDeviceCreateQuerySet = (PFN_doeNativeDeviceCreateQuerySet)LIB_SYM(g_lib, "doeNativeDeviceCreateQuerySet");
+    pfn_doeNativeCommandEncoderWriteTimestamp = (PFN_doeNativeCommandEncoderWriteTimestamp)LIB_SYM(g_lib, "doeNativeCommandEncoderWriteTimestamp");
+    pfn_doeNativeCommandEncoderResolveQuerySet = (PFN_doeNativeCommandEncoderResolveQuerySet)LIB_SYM(g_lib, "doeNativeCommandEncoderResolveQuerySet");
+    pfn_doeNativeQuerySetDestroy = (PFN_doeNativeQuerySetDestroy)LIB_SYM(g_lib, "doeNativeQuerySetDestroy");
 
     /* Validate all critical function pointers were resolved. */
     if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceRequestAdapter ||
@@ -1126,15 +1162,88 @@ static napi_value doe_buffer_get_mapped_range(napi_env env, napi_callback_info i
     napi_get_value_int64(env, _args[1], &offset_i);
     napi_get_value_int64(env, _args[2], &size_i);
 
-    const void* data = pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    void* data = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    if (!data) {
+        data = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    }
     if (!data) NAPI_THROW(env, "getMappedRange returned NULL");
 
-    /* Copy native data into a JS ArrayBuffer */
-    void* ab_data = NULL;
     napi_value ab;
-    napi_create_arraybuffer(env, (size_t)size_i, &ab_data, &ab);
-    memcpy(ab_data, data, (size_t)size_i);
+    napi_create_external_arraybuffer(env, data, (size_t)size_i, NULL, NULL, &ab);
     return ab;
+}
+
+static napi_value doe_buffer_write_mapped_range(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
+    WGPUBuffer buf = unwrap_ptr(env, _args[0]);
+    int64_t offset_i = 0;
+    napi_get_value_int64(env, _args[1], &offset_i);
+
+    void* data = NULL;
+    size_t byte_length = 0;
+    bool is_typed_array = false;
+    napi_is_typedarray(env, _args[2], &is_typed_array);
+    if (is_typed_array) {
+        napi_typedarray_type ta_type;
+        size_t ta_length = 0;
+        void* ta_data = NULL;
+        napi_value ta_arraybuffer;
+        size_t ta_byte_offset = 0;
+        napi_get_typedarray_info(env, _args[2], &ta_type, &ta_length, &ta_data, &ta_arraybuffer, &ta_byte_offset);
+        data = ta_data;
+        switch (ta_type) {
+            case napi_uint16_array: case napi_int16_array: byte_length = ta_length * 2; break;
+            case napi_uint32_array: case napi_int32_array: case napi_float32_array: byte_length = ta_length * 4; break;
+            case napi_float64_array: case napi_bigint64_array: case napi_biguint64_array: byte_length = ta_length * 8; break;
+            default: byte_length = ta_length; break;
+        }
+    } else {
+        bool is_ab = false;
+        napi_is_arraybuffer(env, _args[2], &is_ab);
+        if (is_ab) {
+            napi_get_arraybuffer_info(env, _args[2], &data, &byte_length);
+        } else {
+            bool is_buffer = false;
+            napi_is_buffer(env, _args[2], &is_buffer);
+            if (is_buffer) {
+                napi_get_buffer_info(env, _args[2], &data, &byte_length);
+            } else {
+                NAPI_THROW(env, "bufferWriteMappedRange: data must be TypedArray, ArrayBuffer, or Buffer");
+            }
+        }
+    }
+
+    void* mapped = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, byte_length);
+    if (!mapped) NAPI_THROW(env, "bufferWriteMappedRange: mapped range unavailable");
+    memcpy(mapped, data, byte_length);
+    return NULL;
+}
+
+static napi_value doe_buffer_read_indirect_counts(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUBuffer buf = unwrap_ptr(env, _args[0]);
+    int64_t offset_i = 0;
+    napi_get_value_int64(env, _args[1], &offset_i);
+    if (!buf) NAPI_THROW(env, "bufferReadIndirectCounts requires buffer");
+    if (offset_i < 0) NAPI_THROW(env, "bufferReadIndirectCounts offset must be non-negative");
+
+    const uint32_t* counts = (const uint32_t*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, 3 * sizeof(uint32_t));
+    if (!counts) NAPI_THROW(env, "bufferReadIndirectCounts: unable to read indirect data");
+
+    napi_value result;
+    napi_create_object(env, &result);
+    napi_value x;
+    napi_value y;
+    napi_value z;
+    napi_create_uint32(env, counts[0], &x);
+    napi_create_uint32(env, counts[1], &y);
+    napi_create_uint32(env, counts[2], &z);
+    napi_set_named_property(env, result, "x", x);
+    napi_set_named_property(env, result, "y", y);
+    napi_set_named_property(env, result, "z", z);
+    return result;
 }
 
 /* bufferAssertMappedPrefixF32(buffer, expected, count) */
@@ -1733,6 +1842,56 @@ static napi_value doe_command_encoder_copy_buffer_to_buffer(napi_env env, napi_c
     return NULL;
 }
 
+static napi_value doe_command_encoder_copy_texture_to_buffer(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 14);
+    CHECK_LIB_LOADED(env);
+    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
+    WGPUTexture src_texture = unwrap_ptr(env, _args[1]);
+    if (!enc || !src_texture) NAPI_THROW(env, "commandEncoderCopyTextureToBuffer requires encoder and texture");
+
+    WGPUTexelCopyTextureInfo src;
+    memset(&src, 0, sizeof(src));
+    src.texture = src_texture;
+    napi_get_value_uint32(env, _args[2], &src.mipLevel);
+    napi_get_value_uint32(env, _args[3], &src.origin.x);
+    napi_get_value_uint32(env, _args[4], &src.origin.y);
+    napi_get_value_uint32(env, _args[5], &src.origin.z);
+    napi_get_value_uint32(env, _args[6], &src.aspect);
+
+    WGPUTexelCopyBufferInfo dst;
+    memset(&dst, 0, sizeof(dst));
+    dst.buffer = unwrap_ptr(env, _args[7]);
+    if (!dst.buffer) NAPI_THROW(env, "commandEncoderCopyTextureToBuffer requires destination buffer");
+    int64_t dst_offset = 0;
+    napi_get_value_int64(env, _args[8], &dst_offset);
+    dst.layout.offset = (uint64_t)dst_offset;
+    napi_get_value_uint32(env, _args[9], &dst.layout.bytesPerRow);
+    napi_get_value_uint32(env, _args[10], &dst.layout.rowsPerImage);
+
+    WGPUExtent3D size;
+    napi_get_value_uint32(env, _args[11], &size.width);
+    napi_get_value_uint32(env, _args[12], &size.height);
+    napi_get_value_uint32(env, _args[13], &size.depthOrArrayLayers);
+
+    if (pfn_doeNativeCommandEncoderCopyTextureToBuffer) {
+        pfn_doeNativeCommandEncoderCopyTextureToBuffer(
+            enc,
+            src.texture,
+            src.mipLevel,
+            dst.buffer,
+            dst.layout.offset,
+            dst.layout.bytesPerRow,
+            dst.layout.rowsPerImage,
+            size.width,
+            size.height,
+            size.depthOrArrayLayers
+        );
+    } else {
+        pfn_wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &size);
+    }
+    return NULL;
+}
+
 static napi_value doe_command_encoder_finish(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     CHECK_LIB_LOADED(env);
@@ -2226,11 +2385,104 @@ static uint32_t texture_format_from_string(napi_env env, napi_value val) {
     char buf[32] = {0};
     size_t len = 0;
     napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
-    if (strcmp(buf, "rgba8unorm") == 0)      return 0x00000016;
-    if (strcmp(buf, "rgba8unorm-srgb") == 0) return 0x00000017;
-    if (strcmp(buf, "bgra8unorm") == 0)      return 0x0000001B;
-    if (strcmp(buf, "bgra8unorm-srgb") == 0) return 0x0000001C;
-    if (strcmp(buf, "depth32float") == 0)    return 0x00000030;
+    if (strcmp(buf, "r8unorm") == 0)          return 0x00000001;
+    if (strcmp(buf, "r8snorm") == 0)          return 0x00000002;
+    if (strcmp(buf, "r8uint") == 0)           return 0x00000003;
+    if (strcmp(buf, "r8sint") == 0)           return 0x00000004;
+    if (strcmp(buf, "r16uint") == 0)          return 0x00000007;
+    if (strcmp(buf, "r16sint") == 0)          return 0x00000008;
+    if (strcmp(buf, "r16float") == 0)         return 0x00000009;
+    if (strcmp(buf, "rg8unorm") == 0)         return 0x0000000A;
+    if (strcmp(buf, "rg8snorm") == 0)         return 0x0000000B;
+    if (strcmp(buf, "rg8uint") == 0)          return 0x0000000C;
+    if (strcmp(buf, "rg8sint") == 0)          return 0x0000000D;
+    if (strcmp(buf, "r32float") == 0)         return 0x0000000E;
+    if (strcmp(buf, "r32uint") == 0)          return 0x0000000F;
+    if (strcmp(buf, "r32sint") == 0)          return 0x00000010;
+    if (strcmp(buf, "rg16uint") == 0)         return 0x00000013;
+    if (strcmp(buf, "rg16sint") == 0)         return 0x00000014;
+    if (strcmp(buf, "rg16float") == 0)        return 0x00000015;
+    if (strcmp(buf, "rgba8unorm") == 0)       return 0x00000016;
+    if (strcmp(buf, "rgba8unorm-srgb") == 0)  return 0x00000017;
+    if (strcmp(buf, "rgba8snorm") == 0)       return 0x00000018;
+    if (strcmp(buf, "rgba8uint") == 0)        return 0x00000019;
+    if (strcmp(buf, "rgba8sint") == 0)        return 0x0000001A;
+    if (strcmp(buf, "bgra8unorm") == 0)       return 0x0000001B;
+    if (strcmp(buf, "bgra8unorm-srgb") == 0)  return 0x0000001C;
+    if (strcmp(buf, "rgb10a2uint") == 0)      return 0x0000001D;
+    if (strcmp(buf, "rgb10a2unorm") == 0)     return 0x0000001E;
+    if (strcmp(buf, "rg11b10ufloat") == 0)    return 0x0000001F;
+    if (strcmp(buf, "rgb9e5ufloat") == 0)     return 0x00000020;
+    if (strcmp(buf, "rg32float") == 0)        return 0x00000021;
+    if (strcmp(buf, "rg32uint") == 0)         return 0x00000022;
+    if (strcmp(buf, "rg32sint") == 0)         return 0x00000023;
+    if (strcmp(buf, "rgba16uint") == 0)       return 0x00000024;
+    if (strcmp(buf, "rgba16sint") == 0)       return 0x00000025;
+    if (strcmp(buf, "rgba16float") == 0)      return 0x00000026;
+    if (strcmp(buf, "rgba32float") == 0)      return 0x00000027;
+    if (strcmp(buf, "rgba32uint") == 0)       return 0x00000028;
+    if (strcmp(buf, "rgba32sint") == 0)       return 0x00000029;
+    if (strcmp(buf, "stencil8") == 0)         return 0x0000002C;
+    if (strcmp(buf, "depth16unorm") == 0)     return 0x0000002D;
+    if (strcmp(buf, "depth24plus") == 0)      return 0x0000002E;
+    if (strcmp(buf, "depth24plus-stencil8") == 0) return 0x0000002F;
+    if (strcmp(buf, "depth32float") == 0)     return 0x00000030;
+    if (strcmp(buf, "depth32float-stencil8") == 0) return 0x00000031;
+    /* BC compressed formats */
+    if (strcmp(buf, "bc1-rgba-unorm") == 0)      return 0x00000032;
+    if (strcmp(buf, "bc1-rgba-unorm-srgb") == 0) return 0x00000033;
+    if (strcmp(buf, "bc2-rgba-unorm") == 0)      return 0x00000034;
+    if (strcmp(buf, "bc2-rgba-unorm-srgb") == 0) return 0x00000035;
+    if (strcmp(buf, "bc3-rgba-unorm") == 0)      return 0x00000036;
+    if (strcmp(buf, "bc3-rgba-unorm-srgb") == 0) return 0x00000037;
+    if (strcmp(buf, "bc4-r-unorm") == 0)         return 0x00000038;
+    if (strcmp(buf, "bc4-r-snorm") == 0)         return 0x00000039;
+    if (strcmp(buf, "bc5-rg-unorm") == 0)        return 0x0000003A;
+    if (strcmp(buf, "bc5-rg-snorm") == 0)        return 0x0000003B;
+    if (strcmp(buf, "bc6h-rgb-ufloat") == 0)     return 0x0000003C;
+    if (strcmp(buf, "bc6h-rgb-float") == 0)      return 0x0000003D;
+    if (strcmp(buf, "bc7-rgba-unorm") == 0)      return 0x0000003E;
+    if (strcmp(buf, "bc7-rgba-unorm-srgb") == 0) return 0x0000003F;
+    /* ETC2/EAC compressed formats */
+    if (strcmp(buf, "etc2-rgb8unorm") == 0)       return 0x00000040;
+    if (strcmp(buf, "etc2-rgb8unorm-srgb") == 0)  return 0x00000041;
+    if (strcmp(buf, "etc2-rgb8a1unorm") == 0)     return 0x00000042;
+    if (strcmp(buf, "etc2-rgb8a1unorm-srgb") == 0) return 0x00000043;
+    if (strcmp(buf, "etc2-rgba8unorm") == 0)      return 0x00000044;
+    if (strcmp(buf, "etc2-rgba8unorm-srgb") == 0) return 0x00000045;
+    if (strcmp(buf, "eac-r11unorm") == 0)         return 0x00000046;
+    if (strcmp(buf, "eac-r11snorm") == 0)         return 0x00000047;
+    if (strcmp(buf, "eac-rg11unorm") == 0)        return 0x00000048;
+    if (strcmp(buf, "eac-rg11snorm") == 0)        return 0x00000049;
+    /* ASTC compressed formats */
+    if (strcmp(buf, "astc-4x4-unorm") == 0)       return 0x0000004A;
+    if (strcmp(buf, "astc-4x4-unorm-srgb") == 0)  return 0x0000004B;
+    if (strcmp(buf, "astc-5x4-unorm") == 0)       return 0x0000004C;
+    if (strcmp(buf, "astc-5x4-unorm-srgb") == 0)  return 0x0000004D;
+    if (strcmp(buf, "astc-5x5-unorm") == 0)       return 0x0000004E;
+    if (strcmp(buf, "astc-5x5-unorm-srgb") == 0)  return 0x0000004F;
+    if (strcmp(buf, "astc-6x5-unorm") == 0)       return 0x00000050;
+    if (strcmp(buf, "astc-6x5-unorm-srgb") == 0)  return 0x00000051;
+    if (strcmp(buf, "astc-6x6-unorm") == 0)       return 0x00000052;
+    if (strcmp(buf, "astc-6x6-unorm-srgb") == 0)  return 0x00000053;
+    if (strcmp(buf, "astc-8x5-unorm") == 0)       return 0x00000054;
+    if (strcmp(buf, "astc-8x5-unorm-srgb") == 0)  return 0x00000055;
+    if (strcmp(buf, "astc-8x6-unorm") == 0)       return 0x00000056;
+    if (strcmp(buf, "astc-8x6-unorm-srgb") == 0)  return 0x00000057;
+    if (strcmp(buf, "astc-8x8-unorm") == 0)       return 0x00000058;
+    if (strcmp(buf, "astc-8x8-unorm-srgb") == 0)  return 0x00000059;
+    if (strcmp(buf, "astc-10x5-unorm") == 0)      return 0x0000005A;
+    if (strcmp(buf, "astc-10x5-unorm-srgb") == 0) return 0x0000005B;
+    if (strcmp(buf, "astc-10x6-unorm") == 0)      return 0x0000005C;
+    if (strcmp(buf, "astc-10x6-unorm-srgb") == 0) return 0x0000005D;
+    if (strcmp(buf, "astc-10x8-unorm") == 0)      return 0x0000005E;
+    if (strcmp(buf, "astc-10x8-unorm-srgb") == 0) return 0x0000005F;
+    if (strcmp(buf, "astc-10x10-unorm") == 0)     return 0x00000060;
+    if (strcmp(buf, "astc-10x10-unorm-srgb") == 0) return 0x00000061;
+    if (strcmp(buf, "astc-12x10-unorm") == 0)     return 0x00000062;
+    if (strcmp(buf, "astc-12x10-unorm-srgb") == 0) return 0x00000063;
+    if (strcmp(buf, "astc-12x12-unorm") == 0)     return 0x00000064;
+    if (strcmp(buf, "astc-12x12-unorm-srgb") == 0) return 0x00000065;
     return 0x00000016;
 }
 
@@ -2392,7 +2644,9 @@ static napi_value doe_create_texture(napi_env env, napi_callback_info info) {
     if (has_prop(env, _args[1], "mipLevelCount"))
         desc.mipLevelCount = get_uint32_prop(env, _args[1], "mipLevelCount");
     desc.sampleCount = 1;
-    desc.dimension = 1; /* 2D */
+    desc.dimension = 2; /* WGPUTextureDimension_2D */
+    if (has_prop(env, _args[1], "dimension"))
+        desc.dimension = get_uint32_prop(env, _args[1], "dimension");
 
     WGPUTexture tex = pfn_wgpuDeviceCreateTexture(device, &desc);
     if (!tex) NAPI_THROW(env, "createTexture failed");
@@ -3087,6 +3341,62 @@ static napi_value doe_get_last_error_column(napi_env env, napi_callback_info inf
     return result;
 }
 
+/* ================================================================
+ * QuerySet (timestamp query)
+ * ================================================================ */
+
+static napi_value doe_create_query_set(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceCreateQuerySet) NAPI_THROW(env, "doeNativeDeviceCreateQuerySet not available");
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+    uint32_t query_type = 0;
+    napi_get_value_uint32(env, _args[1], &query_type);
+    uint32_t count = 0;
+    napi_get_value_uint32(env, _args[2], &count);
+    WGPUQuerySet qs = pfn_doeNativeDeviceCreateQuerySet(device, query_type, count);
+    if (!qs) NAPI_THROW(env, "createQuerySet failed");
+    return wrap_ptr(env, qs);
+}
+
+static napi_value doe_command_encoder_write_timestamp(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeCommandEncoderWriteTimestamp) NAPI_THROW(env, "doeNativeCommandEncoderWriteTimestamp not available");
+    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
+    WGPUQuerySet qs = unwrap_ptr(env, _args[1]);
+    uint32_t query_index = 0;
+    napi_get_value_uint32(env, _args[2], &query_index);
+    pfn_doeNativeCommandEncoderWriteTimestamp(enc, qs, query_index);
+    return NULL;
+}
+
+static napi_value doe_command_encoder_resolve_query_set(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 6);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeCommandEncoderResolveQuerySet) NAPI_THROW(env, "doeNativeCommandEncoderResolveQuerySet not available");
+    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
+    WGPUQuerySet qs = unwrap_ptr(env, _args[1]);
+    uint32_t first_query = 0;
+    napi_get_value_uint32(env, _args[2], &first_query);
+    uint32_t query_count = 0;
+    napi_get_value_uint32(env, _args[3], &query_count);
+    WGPUBuffer dst = unwrap_ptr(env, _args[4]);
+    int64_t dst_offset = 0;
+    napi_get_value_int64(env, _args[5], &dst_offset);
+    pfn_doeNativeCommandEncoderResolveQuerySet(enc, qs, first_query, query_count, dst, (uint64_t)dst_offset);
+    return NULL;
+}
+
+static napi_value doe_query_set_destroy(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    if (!pfn_doeNativeQuerySetDestroy) return NULL;
+    WGPUQuerySet qs = unwrap_ptr(env, _args[0]);
+    if (qs) pfn_doeNativeQuerySetDestroy(qs);
+    return NULL;
+}
+
 static napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     uint32_t timeout_ms = 0;
@@ -3116,6 +3426,8 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("bufferUnmap", doe_buffer_unmap),
         EXPORT_FN("bufferMapSync", doe_buffer_map_sync),
         EXPORT_FN("bufferGetMappedRange", doe_buffer_get_mapped_range),
+        EXPORT_FN("bufferWriteMappedRange", doe_buffer_write_mapped_range),
+        EXPORT_FN("bufferReadIndirectCounts", doe_buffer_read_indirect_counts),
         EXPORT_FN("bufferAssertMappedPrefixF32", doe_buffer_assert_mapped_prefix_f32),
         EXPORT_FN("checkShaderSource", doe_check_shader_source),
         EXPORT_FN("createShaderModule", doe_create_shader_module),
@@ -3133,6 +3445,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("createCommandEncoder", doe_create_command_encoder),
         EXPORT_FN("commandEncoderRelease", doe_command_encoder_release),
         EXPORT_FN("commandEncoderCopyBufferToBuffer", doe_command_encoder_copy_buffer_to_buffer),
+        EXPORT_FN("commandEncoderCopyTextureToBuffer", doe_command_encoder_copy_texture_to_buffer),
         EXPORT_FN("commandEncoderFinish", doe_command_encoder_finish),
         EXPORT_FN("commandBufferRelease", doe_command_buffer_release),
         EXPORT_FN("beginComputePass", doe_begin_compute_pass),
@@ -3170,6 +3483,10 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("adapterHasFeature", doe_adapter_has_feature),
         EXPORT_FN("deviceGetLimits", doe_device_get_limits),
         EXPORT_FN("deviceHasFeature", doe_device_has_feature),
+        EXPORT_FN("createQuerySet", doe_create_query_set),
+        EXPORT_FN("commandEncoderWriteTimestamp", doe_command_encoder_write_timestamp),
+        EXPORT_FN("commandEncoderResolveQuerySet", doe_command_encoder_resolve_query_set),
+        EXPORT_FN("querySetDestroy", doe_query_set_destroy),
         EXPORT_FN("setTimeoutMs", doe_set_timeout_ms),
         EXPORT_FN("getLastErrorStage", doe_get_last_error_stage),
         EXPORT_FN("getLastErrorKind", doe_get_last_error_kind),

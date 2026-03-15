@@ -6,7 +6,7 @@
       <strong>Run real WebGPU workloads in Node.js and Bun with Doe, the WebGPU runtime from Fawn.</strong>
     </td>
     <td valign="middle">
-      <img src="assets/fawn-icon-main-256.png" alt="Fawn logo" width="88" />
+      <img src="assets/fawn-icon-main.svg" alt="Fawn logo" width="88" />
     </td>
   </tr>
 </table>
@@ -20,11 +20,17 @@ Terminology in this README is deliberate:
 
 - `Doe runtime` means the Zig/native WebGPU runtime underneath the package
 - `Doe API` means the explicit JS convenience surface under `doe`, `gpu.buffer.*`,
-  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute.once(...)`
+  `gpu.kernel.run(...)`, `gpu.kernel.create(...)`, and `gpu.compute(...)`
 
 The current implemented helper contract is documented in
 [api-contract.md](./api-contract.md). The proposed naming cleanup for the Doe
 helper surface is documented in [doe-api-design.md](./doe-api-design.md).
+The generated interactive Doe API reference lives at
+[docs/doe-api-reference.html](./docs/doe-api-reference.html).
+
+The same helper layer is now also published separately as
+`@simulatte/webgpu-doe` when you want the Doe API as an independent package
+boundary.
 
 ## Start here
 
@@ -112,10 +118,8 @@ to manage the resources yourself.
 import { doe } from "@simulatte/webgpu/compute";
 
 const gpu = await doe.requestDevice();
-const src = gpu.buffer.fromData(Float32Array.of(1, 2, 3, 4));
-const dst = gpu.buffer.like(src, {
-  usage: "storageReadWrite",
-});
+const src = gpu.buffer.create({ data: Float32Array.of(1, 2, 3, 4) });
+const dst = gpu.buffer.create({ size: src.size, usage: "storageReadWrite" });
 
 await gpu.kernel.run({
   code: `
@@ -133,14 +137,14 @@ await gpu.kernel.run({
   workgroups: 1,
 });
 
-console.log(await gpu.buffer.read(dst, Float32Array)); // Float32Array(4) [ 2, 4, 6, 8 ]
+console.log(await gpu.buffer.read({ buffer: dst, type: Float32Array })); // Float32Array(4) [ 2, 4, 6, 8 ]
 ```
 
 What this package gives you:
 
 - `requestDevice()` gives you real headless WebGPU
 - `doe` gives you the same runtime with less boilerplate and explicit resource control
-- `compute.once(...)` is the more opinionated one-shot Doe API helper when you do not want to manage buffers and readback yourself
+- `gpu.compute(...)` is the more opinionated Doe API helper when you do not want to manage buffers and readback yourself
 
 #### 3. Doe API: one-shot tensor matmul
 
@@ -158,7 +162,7 @@ const lhs = Float32Array.from({ length: M * K }, (_, i) => (i % 17) / 17);
 const rhs = Float32Array.from({ length: K * N }, (_, i) => (i % 13) / 13);
 const dims = new Uint32Array([M, K, N, 0]);
 
-const result = await gpu.compute.once({
+const result = await gpu.compute({
   code: `
     struct Dims {
       m: u32,
@@ -217,6 +221,12 @@ separate `nursery/fawn-browser` Chromium/browser integration lane.
 
 ```bash
 npm install @simulatte/webgpu
+```
+
+If you want the helper-only extraction explicitly:
+
+```bash
+npm install @simulatte/webgpu @simulatte/webgpu-doe
 ```
 
 The install ships platform-specific prebuilds for macOS arm64 (Metal) and
@@ -284,7 +294,13 @@ Examples for each style ship in:
 
 - `examples/direct-webgpu/`
 - `examples/doe-api/`
-- `examples/doe-routines/`
+
+The Doe example directory is organized by API shape:
+
+- `buffers-readback.js` for `gpu.buffer.*`
+- `kernel-run.js` for `gpu.kernel.run(...)`
+- `kernel-create-and-dispatch.js` for `gpu.kernel.create(...)` plus `kernel.dispatch(...)`
+- `compute-one-shot*.js` for the `gpu.compute(...)` helper family
 
 `doe` is the package's shared JS convenience surface over the Doe runtime. It is available
 from both `@simulatte/webgpu` and `@simulatte/webgpu/compute`.
@@ -293,7 +309,7 @@ from both `@simulatte/webgpu` and `@simulatte/webgpu/compute`.
   `doe.bind(device)` when you already have a device.
 - `gpu.buffer.*`, `gpu.kernel.run(...)`, and `gpu.kernel.create(...)` are
   the main `Doe API` surface.
-- `gpu.compute.once(...)` is the more opinionated one-shot helper inside the same Doe API surface.
+- `gpu.compute(...)` is the single more opinionated one-shot helper inside the same Doe API surface.
 - `doe` itself is just the binding entrypoint; the actual helper methods live
   on the returned `gpu` object.
 
@@ -347,10 +363,9 @@ covers the Node package contract and a packed-tarball export/import check.
 
 ## Further reading
 
+- [Architecture](./architecture.md) — full layer stack from Zig native to package exports
 - [API contract](./api-contract.md)
 - [Doe API design](./doe-api-design.md)
 - [Support contracts](./support-contracts.md)
-- [Compatibility scope](./compat-scope.md)
-- [Layering plan](./layering-plan.md)
+- [Scope and non-goals](./api-contract.md#scope-and-non-goals)
 - [Headless WebGPU comparison](./headless-webgpu-comparison.md)
-- [Zig source inventory](./zig-source-inventory.md)

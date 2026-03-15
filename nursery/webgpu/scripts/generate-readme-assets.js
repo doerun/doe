@@ -318,7 +318,7 @@ function renderLayersSvg() {
   <text x="600" y="343" text-anchor="middle" class="nodeTitle">Doe API</text>
 
   <rect x="360" y="398" width="480" height="52" rx="18" fill="url(#layers-routines)" stroke="#fde68a" class="box"/>
-  <text x="600" y="431" text-anchor="middle" class="nodeTitle">Doe API (`gpu.compute.once(...))</text>
+  <text x="600" y="431" text-anchor="middle" class="nodeTitle">Doe API (`gpu.compute(...))</text>
 </svg>
 `;
 }

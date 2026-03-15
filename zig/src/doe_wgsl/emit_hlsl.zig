@@ -132,8 +132,49 @@ const Emitter = struct {
             self.indent -= 4;
             try self.write("}\n");
         }
+        for (self.module.globals.items) |global| {
+            if (global.binding == null) continue;
+            switch (self.module.types.get(global.ty)) {
+                .texture_2d => {
+                    try self.write("\nuint2 doe_textureDimensions_");
+                    try self.write(global.name);
+                    try self.write("(uint level) {\n");
+                    self.indent += 4;
+                    try self.write_indent();
+                    try self.write("uint width = 0u;\n");
+                    try self.write_indent();
+                    try self.write("uint height = 0u;\n");
+                    try self.write_indent();
+                    try self.write("uint levels = 0u;\n");
+                    try self.write_indent();
+                    try self.write(global.name);
+                    try self.write(".GetDimensions(level, width, height, levels);\n");
+                    try self.write_indent();
+                    try self.write("return uint2(width, height);\n");
+                    self.indent -= 4;
+                    try self.write("}\n");
+                },
+                .storage_texture_2d => {
+                    try self.write("\nuint2 doe_textureDimensions_");
+                    try self.write(global.name);
+                    try self.write("() {\n");
+                    self.indent += 4;
+                    try self.write_indent();
+                    try self.write("uint width = 0u;\n");
+                    try self.write_indent();
+                    try self.write("uint height = 0u;\n");
+                    try self.write_indent();
+                    try self.write(global.name);
+                    try self.write(".GetDimensions(width, height);\n");
+                    try self.write_indent();
+                    try self.write("return uint2(width, height);\n");
+                    self.indent -= 4;
+                    try self.write("}\n");
+                },
+                else => {},
+            }
+        }
     }
-
     fn emit_bound_global(self: *Emitter, global: ir.Global) EmitError!void {
         const binding = global.binding orelse return error.InvalidIr;
         if (global.addr_space) |addr_space| switch (addr_space) {
@@ -240,9 +281,15 @@ const Emitter = struct {
         try self.write(" ");
         try self.write(function.name);
         try self.write("(");
-        for (function.params.items, 0..) |param, index| {
-            if (index > 0) try self.write(", ");
+        var first_param = true;
+        for (function.params.items) |param| {
+            // Builtins that map to HLSL intrinsic calls are not entry-point parameters
+            if (param.io) |io_attr| {
+                if (maps.hlsl_intrinsic_builtin(io_attr.builtin) != null) continue;
+            }
+            if (!first_param) try self.write(", ");
             try self.emit_param(param);
+            first_param = false;
         }
         try self.write(") {\n");
         self.indent += 4;
@@ -396,7 +443,16 @@ const Emitter = struct {
             .bool_lit => |value| try self.write(if (value) "true" else "false"),
             .int_lit => |value| try self.write_u64(value),
             .float_lit => |value| try self.write_float(value),
-            .param_ref => |index| try self.write(function.params.items[index].name),
+            .param_ref => |index| {
+                const param = function.params.items[index];
+                if (param.io) |io_attr| {
+                    if (maps.hlsl_intrinsic_builtin(io_attr.builtin)) |intrinsic| {
+                        try self.write(intrinsic);
+                        return;
+                    }
+                }
+                try self.write(param.name);
+            },
             .local_ref => |index| try self.write(function.locals.items[index].name),
             .global_ref => |index| try self.write(self.module.globals.items[index].name),
             .load => |inner| try self.emit_expr(function, inner),
@@ -504,6 +560,28 @@ const Emitter = struct {
                 try self.write("))");
                 return;
             }
+            if (std.mem.eql(u8, call.name, "textureSample")) {
+                if (call.args.len != 3) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".Sample(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureSampleLevel")) {
+                if (call.args.len != 4) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".SampleLevel(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(")");
+                return;
+            }
             if (std.mem.eql(u8, call.name, "textureStore")) {
                 if (call.args.len != 3) return error.InvalidIr;
                 try self.emit_expr(function, function.expr_args.items[call.args.start]);
@@ -512,6 +590,33 @@ const Emitter = struct {
                 try self.write("] = ");
                 try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
                 return;
+            }
+            if (std.mem.eql(u8, call.name, "textureDimensions")) {
+                if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
+                const target_expr = function.expr_args.items[call.args.start];
+                switch (function.exprs.items[target_expr].data) {
+                    .global_ref => |index| {
+                        const global = self.module.globals.items[index];
+                        try self.write("doe_textureDimensions_");
+                        try self.write(global.name);
+                        switch (self.module.types.get(global.ty)) {
+                            .texture_2d => {
+                                if (call.args.len != 2) return error.InvalidIr;
+                                try self.write("(uint(");
+                                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                                try self.write("))");
+                                return;
+                            },
+                            .storage_texture_2d => {
+                                if (call.args.len != 1) return error.InvalidIr;
+                                try self.write("()");
+                                return;
+                            },
+                            else => return error.InvalidIr,
+                        }
+                    },
+                    else => return error.InvalidIr,
+                }
             }
             if (std.mem.eql(u8, call.name, "degrees")) {
                 if (call.args.len != 1) return error.InvalidIr;
@@ -653,7 +758,6 @@ const Emitter = struct {
             .ref => |ref_ty| try self.emit_type_only(ref_ty.elem),
         }
     }
-
     pub fn write(self: *Emitter, text: []const u8) EmitError!void {
         if (self.pos + text.len > self.buf.len) return error.OutputTooLarge;
         @memcpy(self.buf[self.pos .. self.pos + text.len], text);

@@ -248,7 +248,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
     - `bench/run_blocking_gates.py` now treats `python3 bench/generate_backend_workloads.py --verify` as a blocking catalog-authority gate.
     - `bench/run_blocking_gates.py` now also runs `python3 bench/test_backend_workload_catalog.py` as a blocking regression gate for D3D12 catalog round-trip, expected workload IDs, and policy/config invariants.
     - benchmark cube placeholders now distinguish governed but unevidenced Windows D3D12 coverage as `contract exists, evidence missing`.
-  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs in `nursery/webgpu/api-contract.md` and compatibility boundary in `nursery/webgpu/compat-scope.md`.
+  - package scope/positioning is explicitly browserless AI/ML benchmarking and CI (not browser-parity WebGPU SDK), with versioned contract docs and scope/non-goals in `nursery/webgpu/api-contract.md`.
   - package exports now distinguish default `full` and explicit `compute` surfaces:
     - `@simulatte/webgpu` => full headless surface
     - `@simulatte/webgpu/compute` => AI-workload-oriented compute subset

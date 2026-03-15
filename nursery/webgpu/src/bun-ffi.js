@@ -29,6 +29,7 @@ import {
   assertBufferDescriptor,
   assertTextureSize,
   assertBindGroupResource as normalizeBindGroupResource,
+  normalizeTextureDimension,
   normalizeBindGroupLayoutEntry,
   autoLayoutEntriesFromNativeBindings,
 } from "./shared/validation.js";
@@ -121,8 +122,8 @@ function resolveDoeLibraryPath() {
     const ext = LIB_EXT[process.platform] ?? "so";
     const candidates = [
         process.env.DOE_WEBGPU_LIB,
-        resolve(PACKAGE_ROOT, "prebuilds", `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
         resolve(PACKAGE_ROOT, "..", "..", "zig", "zig-out", "lib", `libwebgpu_doe.${ext}`),
+        resolve(PACKAGE_ROOT, "prebuilds", `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
         resolve(process.cwd(), "zig", "zig-out", "lib", `libwebgpu_doe.${ext}`),
     ];
     for (const c of candidates) {
@@ -204,6 +205,8 @@ function openLibrary(path) {
         wgpuCommandEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuCommandEncoderBeginComputePass: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuCommandEncoderCopyBufferToBuffer: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.void },
+        wgpuCommandEncoderCopyTextureToBuffer: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+        doeNativeCommandEncoderCopyTextureToBuffer: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
         wgpuCommandEncoderFinish: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuCommandBufferRelease: { args: [FFIType.ptr], returns: FFIType.void },
 
@@ -268,6 +271,43 @@ function openLibrary(path) {
         symbols.doeNativeGetLastErrorColumn = {
             args: [],
             returns: FFIType.u32,
+        };
+        symbols.doeNativeDeviceCreateQuerySet = {
+            args: [FFIType.ptr, FFIType.u32, FFIType.u32],
+            returns: FFIType.ptr,
+        };
+        symbols.doeNativeCommandEncoderWriteTimestamp = {
+            args: [FFIType.ptr, FFIType.ptr, FFIType.u32],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeCommandEncoderResolveQuerySet = {
+            args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.ptr, FFIType.u64],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeQuerySetDestroy = {
+            args: [FFIType.ptr],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeQueueFlush = {
+            args: [FFIType.ptr],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeComputeDispatchFlush = {
+            args: [
+                FFIType.ptr,  // queue
+                FFIType.ptr,  // pipeline
+                FFIType.ptr,  // bindGroups (ptr array)
+                FFIType.u32,  // bgCount
+                FFIType.u32,  // x
+                FFIType.u32,  // y
+                FFIType.u32,  // z
+                FFIType.ptr,  // copySrc
+                FFIType.u64,  // copySrcOff
+                FFIType.ptr,  // copyDst
+                FFIType.u64,  // copyDstOff
+                FFIType.u64,  // copySize
+            ],
+            returns: FFIType.void,
         };
     }
     return dlopen(path, symbols);
@@ -419,6 +459,8 @@ function copyNativeErrorMeta(symbolName) {
     return decoder.decode(scratch.subarray(0, Math.min(len, scratch.length - 1)));
 }
 
+const fastPathStats = { dispatchFlush: 0, flushAndMap: 0 };
+
 /**
  * Read structured error fields (stage, kind, line, column) from the native
  * last-error ABI. Uses `doeNativeGetLastErrorLine` / `doeNativeGetLastErrorColumn`
@@ -452,13 +494,20 @@ function preflightShaderSource(code) {
     const ok = Number(fn(codeBytes, codeBytes.length)) !== 0;
     if (ok) return { ok: true, stage: "", kind: "", message: "", reasons: [] };
     const message = copyNativeErrorMeta("doeNativeCopyLastErrorMessage");
-    return {
+    const lineFn = wgpu?.symbols?.doeNativeGetLastErrorLine;
+    const colFn = wgpu?.symbols?.doeNativeGetLastErrorColumn;
+    const line = typeof lineFn === "function" ? Number(lineFn()) : 0;
+    const column = typeof colFn === "function" ? Number(colFn()) : 0;
+    const out = {
         ok: false,
         stage: copyNativeErrorMeta("doeNativeCopyLastErrorStage"),
         kind: copyNativeErrorMeta("doeNativeCopyLastErrorKind"),
         message,
         reasons: message ? [message] : [],
     };
+    if (line > 0) out.line = line;
+    if (column > 0) out.column = column;
+    return out;
 }
 
 function writeStringView(view, offset, strBytes) {
@@ -583,7 +632,7 @@ function buildRenderPipelineDescriptor(descriptor) {
             layoutView.setUint32(layoutOffset + 8, VERTEX_STEP_MODE_MAP[buffer.stepMode ?? "vertex"] ?? VERTEX_STEP_MODE_MAP.vertex, true);
             layoutView.setBigUint64(layoutOffset + 16, BigInt(buffer.arrayStride ?? 0), true);
             layoutView.setBigUint64(layoutOffset + 24, BigInt(attributes.length), true);
-            writePtr(layoutView, layoutOffset + 32, attributes.length > 0 ? bunPtr(vertexAttributeArr) + BigInt(attrIndex * WGPU_VERTEX_ATTRIBUTE_SIZE) : null);
+            writePtr(layoutView, layoutOffset + 32, attributes.length > 0 ? bunPtr(vertexAttributeArr) + attrIndex * WGPU_VERTEX_ATTRIBUTE_SIZE : null);
             for (const attribute of attributes) {
                 const attrOffset = attrIndex * WGPU_VERTEX_ATTRIBUTE_SIZE;
                 writePtr(attrView, attrOffset + 0, null);
@@ -801,9 +850,53 @@ function buildPipelineLayoutDescriptor(layouts) {
 const TEXTURE_DESC_SIZE = 80;
 
 const TEXTURE_FORMAT_MAP = {
-    rgba8unorm: 18, "rgba8unorm-srgb": 19, bgra8unorm: 23, "bgra8unorm-srgb": 24,
-    r32float: 33, rg32float: 43, rgba32float: 52, depth24plus: 55, depth32float: 55,
+    r8unorm: 0x01, r8snorm: 0x02, r8uint: 0x03, r8sint: 0x04,
+    r16uint: 0x07, r16sint: 0x08, r16float: 0x09,
+    rg8unorm: 0x0A, rg8snorm: 0x0B, rg8uint: 0x0C, rg8sint: 0x0D,
+    r32float: 0x0E, r32uint: 0x0F, r32sint: 0x10,
+    rg16uint: 0x13, rg16sint: 0x14, rg16float: 0x15,
+    rgba8unorm: 0x16, "rgba8unorm-srgb": 0x17, rgba8snorm: 0x18, rgba8uint: 0x19, rgba8sint: 0x1A,
+    bgra8unorm: 0x1B, "bgra8unorm-srgb": 0x1C,
+    rgb10a2uint: 0x1D, rgb10a2unorm: 0x1E, rg11b10ufloat: 0x1F, rgb9e5ufloat: 0x20,
+    rg32float: 0x21, rg32uint: 0x22, rg32sint: 0x23,
+    rgba16uint: 0x24, rgba16sint: 0x25, rgba16float: 0x26,
+    rgba32float: 0x27, rgba32uint: 0x28, rgba32sint: 0x29,
+    stencil8: 0x2C, depth16unorm: 0x2D,
+    depth24plus: 0x2E, "depth24plus-stencil8": 0x2F,
+    depth32float: 0x30, "depth32float-stencil8": 0x31,
+    // BC compressed formats (texture-compression-bc feature)
+    "bc1-rgba-unorm": 0x32, "bc1-rgba-unorm-srgb": 0x33,
+    "bc2-rgba-unorm": 0x34, "bc2-rgba-unorm-srgb": 0x35,
+    "bc3-rgba-unorm": 0x36, "bc3-rgba-unorm-srgb": 0x37,
+    "bc4-r-unorm": 0x38, "bc4-r-snorm": 0x39,
+    "bc5-rg-unorm": 0x3A, "bc5-rg-snorm": 0x3B,
+    "bc6h-rgb-ufloat": 0x3C, "bc6h-rgb-float": 0x3D,
+    "bc7-rgba-unorm": 0x3E, "bc7-rgba-unorm-srgb": 0x3F,
+    // ETC2/EAC compressed formats (texture-compression-etc2 feature)
+    "etc2-rgb8unorm": 0x40, "etc2-rgb8unorm-srgb": 0x41,
+    "etc2-rgb8a1unorm": 0x42, "etc2-rgb8a1unorm-srgb": 0x43,
+    "etc2-rgba8unorm": 0x44, "etc2-rgba8unorm-srgb": 0x45,
+    "eac-r11unorm": 0x46, "eac-r11snorm": 0x47,
+    "eac-rg11unorm": 0x48, "eac-rg11snorm": 0x49,
+    // ASTC compressed formats (texture-compression-astc feature)
+    "astc-4x4-unorm": 0x4A, "astc-4x4-unorm-srgb": 0x4B,
+    "astc-5x4-unorm": 0x4C, "astc-5x4-unorm-srgb": 0x4D,
+    "astc-5x5-unorm": 0x4E, "astc-5x5-unorm-srgb": 0x4F,
+    "astc-6x5-unorm": 0x50, "astc-6x5-unorm-srgb": 0x51,
+    "astc-6x6-unorm": 0x52, "astc-6x6-unorm-srgb": 0x53,
+    "astc-8x5-unorm": 0x54, "astc-8x5-unorm-srgb": 0x55,
+    "astc-8x6-unorm": 0x56, "astc-8x6-unorm-srgb": 0x57,
+    "astc-8x8-unorm": 0x58, "astc-8x8-unorm-srgb": 0x59,
+    "astc-10x5-unorm": 0x5A, "astc-10x5-unorm-srgb": 0x5B,
+    "astc-10x6-unorm": 0x5C, "astc-10x6-unorm-srgb": 0x5D,
+    "astc-10x8-unorm": 0x5E, "astc-10x8-unorm-srgb": 0x5F,
+    "astc-10x10-unorm": 0x60, "astc-10x10-unorm-srgb": 0x61,
+    "astc-12x10-unorm": 0x62, "astc-12x10-unorm-srgb": 0x63,
+    "astc-12x12-unorm": 0x64, "astc-12x12-unorm-srgb": 0x65,
 };
+
+// Alias used by bind group layout storage texture format lookup
+const TEXTURE_FORMATS = TEXTURE_FORMAT_MAP;
 
 const VERTEX_FORMAT_MAP = {
     float32: 0x00000019,
@@ -841,15 +934,20 @@ const INDEX_FORMAT_MAP = {
     uint32: 0x00000002,
 };
 
+const TEXTURE_DIMENSION_MAP = Object.freeze({
+    "1d": 1,
+    "2d": 2,
+    "3d": 3,
+});
+
 function buildTextureDescriptor(descriptor) {
     const buf = new ArrayBuffer(TEXTURE_DESC_SIZE);
     const v = new DataView(buf);
     writePtr(v, 0, null);
     writeStringView(v, 8, null);
     v.setBigUint64(24, BigInt(descriptor.usage || 0), true);
-    v.setUint32(32, 1, true); // dimension = 2D (WGPUTextureDimension_2D = 1... actually 0x00000002)
-    // WGPUTextureDimension: 1D=1, 2D=2, 3D=3 in standard. Let's use 2.
-    v.setUint32(32, 2, true);
+    const dimension = descriptor.dimension ?? "2d";
+    v.setUint32(32, typeof dimension === "number" ? dimension : (TEXTURE_DIMENSION_MAP[dimension] ?? 2), true);
     const w = descriptor.size?.[0] ?? descriptor.size?.width ?? descriptor.size ?? 1;
     const h = descriptor.size?.[1] ?? descriptor.size?.height ?? 1;
     const d = descriptor.size?.[2] ?? descriptor.size?.depthOrArrayLayers ?? 1;
@@ -857,7 +955,7 @@ function buildTextureDescriptor(descriptor) {
     v.setUint32(40, h, true);
     v.setUint32(44, d, true);
     const fmt = descriptor.format || "rgba8unorm";
-    v.setUint32(48, TEXTURE_FORMAT_MAP[fmt] ?? 18, true);
+    v.setUint32(48, TEXTURE_FORMAT_MAP[fmt] ?? 0x16, true);
     v.setUint32(52, descriptor.mipLevelCount || 1, true);
     v.setUint32(56, 1, true); // sampleCount
     v.setBigUint64(64, 0n, true); // viewFormatCount
@@ -893,6 +991,9 @@ function buildSamplerDescriptor(descriptor) {
 // { nextInChain:ptr@0, view:ptr@8, depthSlice:u32@16, pad@20, resolveTarget:ptr@24,
 //   loadOp:u32@32, storeOp:u32@36, clearValue:{r:f64@40, g:f64@48, b:f64@56, a:f64@64} } = 72
 const RENDER_PASS_COLOR_ATTACHMENT_SIZE = 72;
+const TEXEL_COPY_TEXTURE_INFO_SIZE = 32;
+const TEXEL_COPY_BUFFER_INFO_SIZE = 24;
+const EXTENT3D_SIZE = 12;
 
 // WGPURenderPassDescriptor:
 // { nextInChain:ptr@0, label:sv@8, colorAttachmentCount:size_t@24, colorAttachments:ptr@32,
@@ -945,6 +1046,37 @@ function buildRenderPassDescriptor(descriptor) {
     writePtr(descView, 56, null); // timestampWrites
 
     return { desc: new Uint8Array(descBuf), _refs: [attBuf, depthStencilAttachmentArr].filter(Boolean) };
+}
+
+function buildTexelCopyTextureInfo(source) {
+    const buf = new ArrayBuffer(TEXEL_COPY_TEXTURE_INFO_SIZE);
+    const view = new DataView(buf);
+    writePtr(view, 0, source.texture);
+    view.setUint32(8, source.mipLevel ?? 0, true);
+    view.setUint32(12, source.origin?.x ?? 0, true);
+    view.setUint32(16, source.origin?.y ?? 0, true);
+    view.setUint32(20, source.origin?.z ?? 0, true);
+    view.setUint32(24, source.aspect ?? 1, true);
+    return { desc: new Uint8Array(buf), srcRefs: null };
+}
+
+function buildTexelCopyBufferInfo(destination) {
+    const buf = new ArrayBuffer(TEXEL_COPY_BUFFER_INFO_SIZE);
+    const view = new DataView(buf);
+    view.setBigUint64(0, BigInt(destination.offset ?? 0), true);
+    view.setUint32(8, destination.bytesPerRow ?? 0, true);
+    view.setUint32(12, destination.rowsPerImage ?? 0, true);
+    writePtr(view, 16, destination.buffer);
+    return { desc: new Uint8Array(buf), dstRefs: null };
+}
+
+function buildExtent3D(size) {
+    const buf = new ArrayBuffer(EXTENT3D_SIZE);
+    const view = new DataView(buf);
+    view.setUint32(0, size.width, true);
+    view.setUint32(4, size.height, true);
+    view.setUint32(8, size.depthOrArrayLayers ?? 1, true);
+    return new Uint8Array(buf);
 }
 
 // ---------------------------------------------------------------------------
@@ -1126,45 +1258,84 @@ function waitForSubmittedWorkDoneSync(instancePtr, queuePtr) {
 // WebGPU wrapper classes — matches index.js surface exactly
 // ---------------------------------------------------------------------------
 
+function ensureBunCommandEncoderNative(encoder) {
+    encoder._assertOpen("GPUCommandEncoder");
+    if (encoder._native) return;
+    encoder._native = wgpu.symbols.wgpuDeviceCreateCommandEncoder(
+        assertLiveResource(encoder._device, "GPUCommandEncoder", "GPUDevice"), null);
+    for (const cmd of encoder._commands) {
+        if (cmd.t === 0) {
+            const pass = wgpu.symbols.wgpuCommandEncoderBeginComputePass(encoder._native, null);
+            wgpu.symbols.wgpuComputePassEncoderSetPipeline(pass, cmd.p);
+            for (let i = 0; i < cmd.bg.length; i += 1) {
+                if (cmd.bg[i]) {
+                    wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass, i, cmd.bg[i], BigInt(0), null);
+                }
+            }
+            wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(pass, cmd.x, cmd.y, cmd.z);
+            wgpu.symbols.wgpuComputePassEncoderEnd(pass);
+            wgpu.symbols.wgpuComputePassEncoderRelease(pass);
+        } else if (cmd.t === 1) {
+            wgpu.symbols.wgpuCommandEncoderCopyBufferToBuffer(
+                encoder._native, cmd.s, BigInt(cmd.so), cmd.d, BigInt(cmd.do), BigInt(cmd.sz));
+        }
+    }
+    encoder._commands = [];
+}
+
+function readIndirectDispatchCounts(bufferNative, offset) {
+    const dataPtr = wgpu.symbols.wgpuBufferGetConstMappedRange(bufferNative, BigInt(offset), BigInt(12));
+    if (!dataPtr) {
+        throw new Error("[fawn-webgpu] indirect dispatch buffer is not CPU-readable");
+    }
+    const countsBytes = new Uint8Array(toArrayBuffer(dataPtr, 0, 12)).slice(0);
+    const counts = new DataView(countsBytes.buffer, countsBytes.byteOffset, countsBytes.byteLength);
+    return {
+        x: counts.getUint32(0, true),
+        y: counts.getUint32(4, true),
+        z: counts.getUint32(8, true),
+    };
+}
+
 const bunEncoderBackend = {
-    computePassInit(pass, native) {
-        pass._native = native;
+    computePassInit(pass) {
+        pass._pipeline = null;
+        pass._bindGroups = [];
+        pass._ended = false;
+    },
+    computePassAssertOpen(pass, path) {
+        if (pass._ended) failValidation(path, "compute pass is already ended");
+        if (pass._encoder._finished) failValidation(path, "command encoder is already finished");
     },
     computePassSetPipeline(pass, pipelineNative) {
-        wgpu.symbols.wgpuComputePassEncoderSetPipeline(
-            assertLiveResource(pass, "GPUComputePassEncoder.setPipeline", "GPUComputePassEncoder"),
-            pipelineNative,
-        );
+        pass._pipeline = pipelineNative;
     },
     computePassSetBindGroup(pass, index, bindGroupNative) {
-        wgpu.symbols.wgpuComputePassEncoderSetBindGroup(
-            assertLiveResource(pass, "GPUComputePassEncoder.setBindGroup", "GPUComputePassEncoder"),
-            index,
-            bindGroupNative,
-            BigInt(0),
-            null,
-        );
+        pass._bindGroups[index] = bindGroupNative;
     },
     computePassDispatchWorkgroups(pass, x, y, z) {
-        wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(
-            assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroups", "GPUComputePassEncoder"),
-            x,
-            y,
-            z,
-        );
+        if (pass._pipeline == null) {
+            failValidation("GPUComputePassEncoder.dispatchWorkgroups", "setPipeline() must be called before dispatch");
+        }
+        pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z });
     },
     computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
-        wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroupsIndirect(
-            assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroupsIndirect", "GPUComputePassEncoder"),
-            indirectBufferNative,
-            BigInt(indirectOffset),
-        );
+        if (pass._pipeline == null) {
+            failValidation("GPUComputePassEncoder.dispatchWorkgroupsIndirect", "setPipeline() must be called before dispatch");
+        }
+        const counts = readIndirectDispatchCounts(indirectBufferNative, indirectOffset);
+        pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x: counts.x, y: counts.y, z: counts.z });
     },
     computePassEnd(pass) {
-        wgpu.symbols.wgpuComputePassEncoderEnd(assertLiveResource(pass, "GPUComputePassEncoder.end", "GPUComputePassEncoder"));
+        pass._ended = true;
     },
     renderPassInit(pass, native) {
         pass._native = native;
+        pass._ended = false;
+    },
+    renderPassAssertOpen(pass, path) {
+        if (pass._ended) failValidation(path, "render pass is already ended");
+        if (pass._encoder._finished) failValidation(path, "command encoder is already finished");
     },
     renderPassSetPipeline(pass, pipelineNative) {
         wgpu.symbols.wgpuRenderPassEncoderSetPipeline(
@@ -1214,44 +1385,83 @@ const bunEncoderBackend = {
     },
     renderPassEnd(pass) {
         wgpu.symbols.wgpuRenderPassEncoderEnd(assertLiveResource(pass, "GPURenderPassEncoder.end", "GPURenderPassEncoder"));
+        pass._ended = true;
     },
-    commandEncoderInit(encoder, native) {
-        encoder._native = native;
+    commandEncoderInit(encoder) {
+        encoder._commands = [];
+        encoder._native = null;
+        encoder._finished = false;
+    },
+    commandEncoderAssertOpen(encoder, path) {
+        if (encoder._finished) failValidation(path, "command encoder is already finished");
     },
     commandEncoderBeginComputePass(encoder, _descriptor, classes) {
-        const pass = wgpu.symbols.wgpuCommandEncoderBeginComputePass(
-            assertLiveResource(encoder, "GPUCommandEncoder.beginComputePass", "GPUCommandEncoder"),
-            null,
-        );
-        return new classes.DoeGPUComputePassEncoder(pass, encoder);
+        return new classes.DoeGPUComputePassEncoder(null, encoder);
     },
     commandEncoderBeginRenderPass(encoder, descriptor, classes) {
+        ensureBunCommandEncoderNative(encoder);
         const { desc, _refs } = buildRenderPassDescriptor(descriptor);
-        const pass = wgpu.symbols.wgpuCommandEncoderBeginRenderPass(
-            assertLiveResource(encoder, "GPUCommandEncoder.beginRenderPass", "GPUCommandEncoder"),
-            desc,
-        );
+        const pass = wgpu.symbols.wgpuCommandEncoderBeginRenderPass(encoder._native, desc);
         void _refs;
         return new classes.DoeGPURenderPassEncoder(pass, encoder);
     },
     commandEncoderCopyBufferToBuffer(encoder, srcNative, srcOffset, dstNative, dstOffset, size) {
-        wgpu.symbols.wgpuCommandEncoderCopyBufferToBuffer(
-            assertLiveResource(encoder, "GPUCommandEncoder.copyBufferToBuffer", "GPUCommandEncoder"),
-            srcNative,
-            BigInt(srcOffset),
-            dstNative,
-            BigInt(dstOffset),
-            BigInt(size),
-        );
+        if (encoder._native) {
+            wgpu.symbols.wgpuCommandEncoderCopyBufferToBuffer(
+                encoder._native, srcNative, BigInt(srcOffset), dstNative, BigInt(dstOffset), BigInt(size));
+            return;
+        }
+        encoder._commands.push({ t: 1, s: srcNative, so: srcOffset, d: dstNative, do: dstOffset, sz: size });
+    },
+    commandEncoderWriteTimestamp(encoder, querySetNative, queryIndex) {
+        ensureBunCommandEncoderNative(encoder);
+        if (typeof wgpu.symbols.doeNativeCommandEncoderWriteTimestamp === "function") {
+            wgpu.symbols.doeNativeCommandEncoderWriteTimestamp(encoder._native, querySetNative, queryIndex);
+        }
+    },
+    commandEncoderResolveQuerySet(encoder, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset) {
+        ensureBunCommandEncoderNative(encoder);
+        if (typeof wgpu.symbols.doeNativeCommandEncoderResolveQuerySet === "function") {
+            wgpu.symbols.doeNativeCommandEncoderResolveQuerySet(
+                encoder._native, querySetNative, firstQuery, queryCount, destinationNative, BigInt(destinationOffset));
+        }
+    },
+    commandEncoderCopyTextureToBuffer(encoder, source, destination, copySize) {
+        ensureBunCommandEncoderNative(encoder);
+        if (typeof wgpu.symbols.doeNativeCommandEncoderCopyTextureToBuffer === "function") {
+            wgpu.symbols.doeNativeCommandEncoderCopyTextureToBuffer(
+                encoder._native,
+                source.texture,
+                source.mipLevel ?? 0,
+                destination.buffer,
+                BigInt(destination.offset ?? 0),
+                destination.bytesPerRow ?? 0,
+                destination.rowsPerImage ?? 0,
+                copySize.width,
+                copySize.height,
+                copySize.depthOrArrayLayers ?? 1,
+            );
+            return;
+        }
+        const { desc: srcDesc } = buildTexelCopyTextureInfo({
+            ...source,
+            texture: source.texture,
+        });
+        const { desc: dstDesc } = buildTexelCopyBufferInfo({
+            ...destination,
+            buffer: destination.buffer,
+        });
+        const extent = buildExtent3D(copySize);
+        wgpu.symbols.wgpuCommandEncoderCopyTextureToBuffer(encoder._native, srcDesc, dstDesc, extent);
     },
     commandEncoderFinish(encoder) {
-        const cmd = wgpu.symbols.wgpuCommandEncoderFinish(
-            assertLiveResource(encoder, "GPUCommandEncoder.finish", "GPUCommandEncoder"),
-            null,
-        );
-        encoder._native = null;
-        encoder._destroyed = true;
-        return initResource({ _native: cmd }, "GPUCommandBuffer", encoder._resourceOwner);
+        encoder._finished = true;
+        if (encoder._native) {
+            const cmd = wgpu.symbols.wgpuCommandEncoderFinish(encoder._native, null);
+            encoder._native = null;
+            return { _native: cmd, _batched: false };
+        }
+        return { _commands: encoder._commands, _batched: true };
     },
 };
 
@@ -1264,10 +1474,21 @@ const {
 const fullSurfaceBackend = {
     initBufferState(buffer) {
         buffer._mapMode = 0;
+        buffer._mappedWriteRanges = [];
+    },
+    bufferMarkMappedAtCreation(buffer) {
+        buffer._mapMode = 0x0002;
+        buffer._mappedWriteRanges = [];
     },
     bufferMapAsync(wrapper, native, mode, offset, size) {
         if (wrapper._queue?.hasPendingSubmissions()) {
-            waitForSubmittedWorkDoneSync(wrapper._instance, assertLiveResource(wrapper._queue, "GPUBuffer.mapAsync", "GPUQueue"));
+            const queueNative = assertLiveResource(wrapper._queue, "GPUBuffer.mapAsync", "GPUQueue");
+            if (typeof wgpu.symbols.doeNativeQueueFlush === "function") {
+                wgpu.symbols.doeNativeQueueFlush(queueNative);
+                fastPathStats.flushAndMap += 1;
+            } else {
+                waitForSubmittedWorkDoneSync(wrapper._instance, queueNative);
+            }
             wrapper._queue.markSubmittedWorkDone();
         }
         bufferMapSync(wrapper._instance, native, mode, offset, size);
@@ -1293,6 +1514,7 @@ const fullSurfaceBackend = {
     bufferUnmap(native, wrapper) {
         wgpu.symbols.wgpuBufferUnmap(native);
         wrapper._mapMode = 0;
+        wrapper._mappedWriteRanges = [];
     },
     bufferDestroy(native) {
         wgpu.symbols.wgpuBufferRelease(native);
@@ -1306,13 +1528,60 @@ const fullSurfaceBackend = {
     queueMarkSubmittedWorkDone(queue) {
         queue._pendingSubmissions = 0;
     },
-    queueSubmit(queue, native, buffers) {
+    queueSubmit(queue, queueNative, buffers) {
+        const deviceNative = assertLiveResource(queue._device, "GPUQueue.submit", "GPUDevice");
+        queue._pendingSubmissions += 1;
+        const dispatchFlush = wgpu.symbols.doeNativeComputeDispatchFlush;
+        if (dispatchFlush && buffers.length === 1 && buffers[0]?._batched) {
+            const cmds = buffers[0]._commands;
+            if (cmds.length >= 1 && cmds.length <= 2 && cmds[0]?.t === 0 && (cmds.length === 1 || cmds[1]?.t === 1)) {
+                const cmd0 = cmds[0];
+                const bgPtrs = new BigUint64Array(cmd0.bg.length);
+                for (let i = 0; i < cmd0.bg.length; i += 1) {
+                    bgPtrs[i] = BigInt(cmd0.bg[i] ?? 0);
+                }
+                const cmd1 = cmds.length === 2 ? cmds[1] : null;
+                dispatchFlush(
+                    queueNative, cmd0.p, bgPtrs, cmd0.bg.length,
+                    cmd0.x, cmd0.y, cmd0.z,
+                    cmd1?.s ?? null, BigInt(cmd1?.so ?? 0),
+                    cmd1?.d ?? null, BigInt(cmd1?.do ?? 0), BigInt(cmd1?.sz ?? 0));
+                if (cmd1) queue.markSubmittedWorkDone();
+                fastPathStats.dispatchFlush += 1;
+                return;
+            }
+        }
+        if (buffers.every((cb) => cb?._batched && Array.isArray(cb._commands))) {
+            const allCommands = [];
+            for (const cb of buffers) allCommands.push(...cb._commands);
+            const encoder = wgpu.symbols.wgpuDeviceCreateCommandEncoder(deviceNative, null);
+            for (const cmd of allCommands) {
+                if (cmd.t === 0) {
+                    const pass = wgpu.symbols.wgpuCommandEncoderBeginComputePass(encoder, null);
+                    wgpu.symbols.wgpuComputePassEncoderSetPipeline(pass, cmd.p);
+                    for (let i = 0; i < cmd.bg.length; i += 1) {
+                        if (cmd.bg[i]) wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass, i, cmd.bg[i], BigInt(0), null);
+                    }
+                    wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(pass, cmd.x, cmd.y, cmd.z);
+                    wgpu.symbols.wgpuComputePassEncoderEnd(pass);
+                    wgpu.symbols.wgpuComputePassEncoderRelease(pass);
+                } else if (cmd.t === 1) {
+                    wgpu.symbols.wgpuCommandEncoderCopyBufferToBuffer(
+                        encoder, cmd.s, BigInt(cmd.so), cmd.d, BigInt(cmd.do), BigInt(cmd.sz));
+                }
+            }
+            const cmdBuf = wgpu.symbols.wgpuCommandEncoderFinish(encoder, null);
+            const ptrs = new BigUint64Array([BigInt(cmdBuf)]);
+            wgpu.symbols.wgpuQueueSubmit(queueNative, BigInt(1), ptrs);
+            wgpu.symbols.wgpuCommandBufferRelease(cmdBuf);
+            wgpu.symbols.wgpuCommandEncoderRelease(encoder);
+            return;
+        }
         const ptrs = new BigUint64Array(buffers.length);
         for (let index = 0; index < buffers.length; index += 1) {
             ptrs[index] = BigInt(assertLiveResource(buffers[index], "GPUQueue.submit", "GPUCommandBuffer"));
         }
-        wgpu.symbols.wgpuQueueSubmit(native, BigInt(buffers.length), ptrs);
-        queue._pendingSubmissions += buffers.length;
+        wgpu.symbols.wgpuQueueSubmit(queueNative, BigInt(buffers.length), ptrs);
     },
     queueWriteBuffer(_queue, native, bufferNative, bufferOffset, view) {
         wgpu.symbols.wgpuQueueWriteBuffer(native, bufferNative, BigInt(bufferOffset), view, BigInt(view.byteLength));
@@ -1416,6 +1685,7 @@ const fullSurfaceBackend = {
     deviceCreateTexture(device, textureDescriptor, size, usage) {
         const descBytes = buildTextureDescriptor({
             ...textureDescriptor,
+            dimension: normalizeTextureDimension(textureDescriptor.dimension, "GPUDevice.createTexture"),
             usage,
             size,
             mipLevelCount: assertIntegerInRange(textureDescriptor.mipLevelCount ?? 1, "GPUDevice.createTexture", "descriptor.mipLevelCount", { min: 1, max: UINT32_MAX }),
@@ -1449,9 +1719,27 @@ const fullSurfaceBackend = {
         }
         return native;
     },
+    deviceCreateQuerySet(device, descriptor) {
+        const QUERY_TYPE_TIMESTAMP = 2;
+        const fn = wgpu.symbols.doeNativeDeviceCreateQuerySet;
+        if (typeof fn !== "function") {
+            throw new Error("[fawn-webgpu] doeNativeDeviceCreateQuerySet not available");
+        }
+        const native = fn(
+            assertLiveResource(device, "GPUDevice.createQuerySet", "GPUDevice"),
+            QUERY_TYPE_TIMESTAMP,
+            descriptor.count,
+        );
+        if (!native) throw new Error("[fawn-webgpu] createQuerySet failed");
+        return native;
+    },
+    querySetDestroy(native) {
+        if (typeof wgpu.symbols.doeNativeQuerySetDestroy === "function") {
+            wgpu.symbols.doeNativeQuerySetDestroy(native);
+        }
+    },
     deviceCreateCommandEncoder(device) {
-        const native = wgpu.symbols.wgpuDeviceCreateCommandEncoder(assertLiveResource(device, "GPUDevice.createCommandEncoder", "GPUDevice"), null);
-        return new DoeGPUCommandEncoder(native, device);
+        return new DoeGPUCommandEncoder(null, device);
     },
     deviceDestroy(native) {
         wgpu.symbols.wgpuDeviceRelease(native);
@@ -1472,6 +1760,7 @@ const fullSurfaceBackend = {
             createTexture: classes.DoeGPUDevice.prototype.createTexture,
             createSampler: classes.DoeGPUDevice.prototype.createSampler,
             createRenderPipeline: classes.DoeGPUDevice.prototype.createRenderPipeline,
+            createQuerySet: classes.DoeGPUDevice.prototype.createQuerySet,
             createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
             destroy: classes.DoeGPUDevice.prototype.destroy,
         };
@@ -1583,6 +1872,7 @@ export function providerInfo() {
 
 export { createDoeRuntime, runDawnVsDoeCompare };
 export { preflightShaderSource };
+export { fastPathStats };
 
 export function setNativeTimeoutMs(timeoutMs) {
     validatePositiveInteger(timeoutMs, 'native timeout');
@@ -1600,4 +1890,5 @@ export default {
     setNativeTimeoutMs,
     createDoeRuntime,
     runDawnVsDoeCompare,
+    fastPathStats,
 };

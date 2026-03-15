@@ -58,11 +58,16 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
     try self.write("_stage_out ");
     try self.write(function.name);
     try self.write("(");
-    for (function.params.items, 0..) |param, index| {
-        if (index > 0) try self.write(", ");
+    var first_param = true;
+    for (function.params.items) |param| {
+        if (param.io) |io_attr| {
+            if (maps.hlsl_intrinsic_builtin(io_attr.builtin) != null) continue;
+        }
+        if (!first_param) try self.write(", ");
         try self.emit_typed_name(param.ty, param.name);
         try self.write(" : ");
         try write_input_semantic(self, param.io.?);
+        first_param = false;
     }
     try self.write(") {\n");
     self.indent += 4;
@@ -73,9 +78,18 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
     try self.write("out.value = ");
     try self.write(function.name);
     try self.write("_impl(");
-    for (function.params.items, 0..) |param, index| {
-        if (index > 0) try self.write(", ");
+    var first_arg = true;
+    for (function.params.items) |param| {
+        if (!first_arg) try self.write(", ");
+        if (param.io) |io_attr| {
+            if (maps.hlsl_intrinsic_builtin(io_attr.builtin)) |intrinsic| {
+                try self.write(intrinsic);
+                first_arg = false;
+                continue;
+            }
+        }
         try self.write(param.name);
+        first_arg = false;
     }
     try self.write(");\n");
     try self.write_indent();
@@ -94,6 +108,12 @@ fn write_input_semantic(self: anytype, io: ir.IoAttr) !void {
 }
 
 fn write_output_semantic(self: anytype, stage: ir.ShaderStage, io: ir.IoAttr) !void {
+    if (io.blend_src) |src_index| {
+        // Dual-source blending: both sources target SV_Target0
+        _ = src_index;
+        try self.write("SV_Target0");
+        return;
+    }
     if (io.location) |loc| {
         try self.write(if (stage == .fragment) "SV_Target" else "TEXCOORD");
         try self.write_u32(loc);

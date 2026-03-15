@@ -9,7 +9,7 @@ const lhs = Float32Array.from({ length: M * K }, (_, i) => (i % 17) / 17);
 const rhs = Float32Array.from({ length: K * N }, (_, i) => (i % 13) / 13);
 const dims = new Uint32Array([M, K, N, 0]);
 
-const result = await gpu.compute.once({
+const result = await gpu.compute({
   code: `
     struct Dims {
       m: u32,

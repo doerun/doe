@@ -29,8 +29,8 @@ This split is intentionally separate from Chromium Track A. Chromium integration
 depends on the full runtime artifact plus browser-specific gates; it must not
 depend on npm packaging shape.
 
-Boundary-enforcement and refactor-order details are defined in
-[`./layering-plan.md`](./layering-plan.md).
+Boundary-enforcement and refactor-order details are defined in the core/full
+runtime split section of [`./architecture.md`](./architecture.md).
 
 ## Dependency contract
 

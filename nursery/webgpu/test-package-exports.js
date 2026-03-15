@@ -6,6 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PACKAGE_DIR = dirname(fileURLToPath(import.meta.url));
+const DOE_PACKAGE_DIR = resolve(PACKAGE_DIR, "..", "webgpu-doe");
 const EXAMPLE_EXPECTATIONS = [
   {
     relativePath: join("examples", "direct-webgpu", "request-device.js"),
@@ -29,27 +30,27 @@ const EXAMPLE_EXPECTATIONS = [
     expected: [1, 2, 3, 4],
   },
   {
-    relativePath: join("examples", "doe-api", "compute-dispatch.js"),
+    relativePath: join("examples", "doe-api", "kernel-run.js"),
     expected: [2, 4, 6, 8],
   },
   {
-    relativePath: join("examples", "doe-api", "compile-and-dispatch.js"),
+    relativePath: join("examples", "doe-api", "kernel-create-and-dispatch.js"),
     expected: [5, 10, 15, 20],
   },
   {
-    relativePath: join("examples", "doe-routines", "compute-once.js"),
+    relativePath: join("examples", "doe-api", "compute-one-shot.js"),
     expected: [3, 6, 9, 12],
   },
   {
-    relativePath: join("examples", "doe-routines", "compute-once-like-input.js"),
+    relativePath: join("examples", "doe-api", "compute-one-shot-like-input.js"),
     expected: [2, 4, 6, 8],
   },
   {
-    relativePath: join("examples", "doe-routines", "compute-once-multiple-inputs.js"),
+    relativePath: join("examples", "doe-api", "compute-one-shot-multiple-inputs.js"),
     expected: [11, 22, 33, 44],
   },
   {
-    relativePath: join("examples", "doe-routines", "compute-once-matmul.js"),
+    relativePath: join("examples", "doe-api", "compute-one-shot-matmul.js"),
     expected: [110.8959, 110.7738, 110.5339, 111.1176, 110.7602, 110.3439, 110.8099, 111.1584],
   },
 ];
@@ -66,6 +67,7 @@ function main() {
   const temp_root = mkdtempSync(join(os.tmpdir(), "simulatte-webgpu-pack-"));
   const consumer_dir = join(temp_root, "consumer");
   let tarball_path = null;
+  let doe_tarball_path = null;
 
   try {
     const pack_output = npm_json(["pack", "--json"], PACKAGE_DIR);
@@ -73,6 +75,12 @@ function main() {
     assert.ok(tarball_name, "npm pack --json did not produce a tarball filename");
 
     tarball_path = resolve(PACKAGE_DIR, tarball_name);
+    if (existsSync(join(DOE_PACKAGE_DIR, "package.json"))) {
+      const doe_pack_output = npm_json(["pack", "--json"], DOE_PACKAGE_DIR);
+      const doe_tarball_name = doe_pack_output[0]?.filename;
+      assert.ok(doe_tarball_name, "npm pack --json did not produce a Doe tarball filename");
+      doe_tarball_path = resolve(DOE_PACKAGE_DIR, doe_tarball_name);
+    }
     mkdirSync(consumer_dir, { recursive: true });
     writeFileSync(join(consumer_dir, "package.json"), JSON.stringify({
       name: "simulatte-webgpu-pack-test",
@@ -80,7 +88,13 @@ function main() {
       type: "module",
     }, null, 2));
 
-    execFileSync("npm", ["install", "--ignore-scripts", tarball_path], {
+    const install_args = ["install", "--ignore-scripts"];
+    if (doe_tarball_path) {
+      install_args.push(doe_tarball_path);
+    }
+    install_args.push(tarball_path);
+
+    execFileSync("npm", install_args, {
       cwd: consumer_dir,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
@@ -120,6 +134,11 @@ function main() {
 
     assert.ok(installed_package.exports["./compute"], "packed tarball is missing ./compute export");
     assert.ok(installed_package.exports["./full"], "packed tarball is missing ./full export");
+    const doe_docs_path = join(installed_package_dir, "docs", "doe-api-reference.html");
+    assert.ok(existsSync(doe_docs_path), "packed tarball is missing docs/doe-api-reference.html");
+    const doe_docs_html = readFileSync(doe_docs_path, "utf8");
+    assert.match(doe_docs_html, /Doe API, as code and as contract\./);
+    assert.match(doe_docs_html, /Run example/);
     for (const example of EXAMPLE_EXPECTATIONS) {
       assert.ok(
         existsSync(join(installed_package_dir, example.relativePath)),
@@ -158,11 +177,9 @@ function main() {
       assert.equal(typeof gpu.buffer.create, "function");
       assert.equal(typeof gpu.kernel.run, "function");
       assert.equal(typeof gpu.kernel.create, "function");
-      assert.equal(typeof gpu.compute.once, "function");
-      const input = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
-      const output = gpu.buffer.like(input, {
-        usage: "storageReadWrite",
-      });
+      assert.equal(typeof gpu.compute, "function");
+      const input = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+      const output = gpu.buffer.create({ size: input.size, usage: "storageReadWrite" });
 
       await gpu.kernel.run({
         code: \`
@@ -179,10 +196,10 @@ function main() {
         workgroups: 1,
       });
 
-      const result = await gpu.buffer.read(output, Float32Array);
+      const result = await gpu.buffer.read({ buffer: output, type: Float32Array });
       assert.deepEqual(Array.from(result), [2, 4, 6, 8]);
 
-      const oneShot = await gpu.compute.once({
+      const oneShot = await gpu.compute({
         code: \`
           @group(0) @binding(0) var<storage, read> src: array<f32>;
           @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
@@ -285,7 +302,7 @@ function main() {
         /Doe binding access is required/
       );
 
-      const oneShotRawUsage = await gpu.compute.once({
+      const oneShotRawUsage = await gpu.compute({
         code: \`
           @group(0) @binding(0) var<storage, read> src: array<f32>;
           @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
@@ -310,7 +327,7 @@ function main() {
       assert.deepEqual(Array.from(oneShotRawUsage), [1]);
 
       await assert.rejects(
-        gpu.compute.once({
+        gpu.compute({
           code: \`
             @group(0) @binding(0) var<storage, read> src: array<f32>;
             @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
@@ -380,7 +397,7 @@ function main() {
       // --- doe.bind(device) ---
       const bound = compute.doe.bind(gpu.device);
       assert.ok(bound.device === gpu.device);
-      const boundInput = bound.buffer.fromData(new Float32Array([10, 20]));
+      const boundInput = bound.buffer.create({ data: new Float32Array([10, 20]) });
       await bound.kernel.run({
         code: \`
           @group(0) @binding(0) var<storage, read> src: array<f32>;
@@ -390,13 +407,64 @@ function main() {
             dst[gid.x] = src[gid.x] + 1.0;
           }
         \`,
-        bindings: [boundInput, bound.buffer.like(boundInput, { usage: "storageReadWrite" })],
+        bindings: [boundInput, bound.buffer.create({ size: boundInput.size, usage: "storageReadWrite" })],
         workgroups: 1,
       });
 
+      // --- multi-device doe.bind(device) isolation ---
+      const multiAdapter = await compute.requestAdapter();
+      assert.ok(multiAdapter, "multi-device test requires an adapter");
+      const deviceA = await multiAdapter.requestDevice();
+      const deviceB = await multiAdapter.requestDevice();
+      assert.notEqual(deviceA, deviceB, "requestDevice() should return distinct device objects");
+      assert.notEqual(deviceA.queue, deviceB.queue, "distinct devices should expose distinct queues");
+
+      const gpuA = compute.doe.bind(deviceA);
+      const gpuB = compute.doe.bind(deviceB);
+      assert.ok(gpuA.device === deviceA);
+      assert.ok(gpuB.device === deviceB);
+      assert.notEqual(gpuA.device, gpuB.device, "bound Doe helpers should remain device-specific");
+
+      const kernelCode = \`
+        @group(0) @binding(0) var<storage, read> src: array<f32>;
+        @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+        @compute @workgroup_size(4)
+        fn main(@builtin(global_invocation_id) gid: vec3u) {
+          let i = gid.x;
+          dst[i] = src[i] * 10.0 + 1.0;
+        }
+      \`;
+
+      const aIn = gpuA.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+      const aOut = gpuA.buffer.create({ size: aIn.size, usage: "storageReadWrite" });
+      const bIn = gpuB.buffer.create({ data: new Float32Array([10, 20, 30, 40]) });
+      const bOut = gpuB.buffer.create({ size: bIn.size, usage: "storageReadWrite" });
+
+      const kernelA = gpuA.kernel.create({
+        code: kernelCode,
+        bindings: [aIn, aOut],
+      });
+      const kernelB = gpuB.kernel.create({
+        code: kernelCode,
+        bindings: [bIn, bOut],
+      });
+
+      await Promise.all([
+        kernelA.dispatch({ bindings: [aIn, aOut], workgroups: 1 }),
+        kernelB.dispatch({ bindings: [bIn, bOut], workgroups: 1 }),
+      ]);
+
+      const [aResult, bResult] = await Promise.all([
+        gpuA.buffer.read({ buffer: aOut, type: Float32Array }),
+        gpuB.buffer.read({ buffer: bOut, type: Float32Array }),
+      ]);
+      assert.deepEqual(Array.from(aResult), [11, 21, 31, 41]);
+      assert.deepEqual(Array.from(bResult), [101, 201, 301, 401]);
+
       // --- kernel.create() + kernel.dispatch() reuse ---
-      const kernelInput = gpu.buffer.fromData(new Float32Array([1, 2, 3, 4]));
-      const kernelOutput = gpu.buffer.like(kernelInput, { usage: "storageReadWrite" });
+      const kernelInput = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
+      const kernelOutput = gpu.buffer.create({ size: kernelInput.size, usage: "storageReadWrite" });
       const kernel = gpu.kernel.create({
         code: \`
           @group(0) @binding(0) var<storage, read> src: array<f32>;
@@ -409,14 +477,14 @@ function main() {
         bindings: [kernelInput, kernelOutput],
       });
       await kernel.dispatch({ bindings: [kernelInput, kernelOutput], workgroups: 1 });
-      const kernelResult = await gpu.buffer.read(kernelOutput, Float32Array);
+      const kernelResult = await gpu.buffer.read({ buffer: kernelOutput, type: Float32Array });
       assert.deepEqual(Array.from(kernelResult), [5, 10, 15, 20]);
 
       // dispatch again with different data
-      const kernelInput2 = gpu.buffer.fromData(new Float32Array([10, 20, 30, 40]));
-      const kernelOutput2 = gpu.buffer.like(kernelInput2, { usage: "storageReadWrite" });
+      const kernelInput2 = gpu.buffer.create({ data: new Float32Array([10, 20, 30, 40]) });
+      const kernelOutput2 = gpu.buffer.create({ size: kernelInput2.size, usage: "storageReadWrite" });
       await kernel.dispatch({ bindings: [kernelInput2, kernelOutput2], workgroups: 1 });
-      const kernelResult2 = await gpu.buffer.read(kernelOutput2, Float32Array);
+      const kernelResult2 = await gpu.buffer.read({ buffer: kernelOutput2, type: Float32Array });
       assert.deepEqual(Array.from(kernelResult2), [50, 100, 150, 200]);
 
       // --- readBuffer direct MAP_READ path ---
@@ -425,11 +493,11 @@ function main() {
         usage: ["readback"],
       });
       gpu.device.queue.writeBuffer(mappableBuf, 0, new Float32Array([5, 6, 7, 8]));
-      const mappableResult = await gpu.buffer.read(mappableBuf, Float32Array);
+      const mappableResult = await gpu.buffer.read({ buffer: mappableBuf, type: Float32Array });
       assert.deepEqual(Array.from(mappableResult), [5, 6, 7, 8]);
 
       // --- 3-binding dispatch ---
-      const triOnce = await gpu.compute.once({
+      const triOnce = await gpu.compute({
         code: \`
           @group(0) @binding(0) var<storage, read> a: array<f32>;
           @group(0) @binding(1) var<storage, read> b: array<f32>;
@@ -499,6 +567,9 @@ function main() {
   } finally {
     if (tarball_path) {
       rmSync(tarball_path, { force: true });
+    }
+    if (doe_tarball_path) {
+      rmSync(doe_tarball_path, { force: true });
     }
     rmSync(temp_root, { recursive: true, force: true });
   }

@@ -115,6 +115,10 @@ pub fn msl_builtin_name(builtin: ir.Builtin) []const u8 {
         .sample_mask => "sample_mask",
         .vertex_index => "vertex_id",
         .instance_index => "instance_id",
+        .subgroup_size => "threads_per_simdgroup",
+        .subgroup_invocation_id => "thread_index_in_simdgroup",
+        .clip_distances => "clip_distance",
+        .primitive_index => "primitive_id",
         else => "unsupported_builtin",
     };
 }

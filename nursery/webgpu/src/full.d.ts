@@ -3,7 +3,7 @@ import type {
   DoeKernelDispatchOptions,
   DoeKernelCreateOptions,
   DoeNamespace,
-} from "./doe.js";
+} from "@simulatte/webgpu-doe";
 
 export interface ProviderInfo {
   module: string;
@@ -98,6 +98,16 @@ export function createDoeRuntime(options?: {
   libPath?: string;
 }): DoeRuntime;
 export function runDawnVsDoeCompare(options: Record<string, unknown>): DoeRuntimeRunResult;
+export function preflightShaderSource(code: string): {
+  ok: boolean;
+  stage: string;
+  kind: string;
+  message: string;
+  reasons: string[];
+  line?: number;
+  column?: number;
+};
+export function setNativeTimeoutMs(ms: number): void;
 
 export const doe: FullDoeNamespace;
 
@@ -110,6 +120,8 @@ declare const _default: {
   providerInfo: typeof providerInfo;
   createDoeRuntime: typeof createDoeRuntime;
   runDawnVsDoeCompare: typeof runDawnVsDoeCompare;
+  preflightShaderSource: typeof preflightShaderSource;
+  setNativeTimeoutMs: typeof setNativeTimeoutMs;
   doe: FullDoeNamespace;
 };
 

@@ -20,6 +20,7 @@ const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
 const ERR_CAP = native.ERR_CAP;
+const MAX_BIND = native.MAX_BIND;
 
 const DoeDevice = native.DoeDevice;
 const DoeBindGroup = native.DoeBindGroup;
@@ -193,6 +194,7 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc: ?*
         .cull_mode = pipeline_desc.primitive.cullMode,
         .depth_compare = if (pipeline_desc.depthStencil) |depth_stencil| depth_stencil.depthCompare else 0,
         .depth_write_enabled = if (pipeline_desc.depthStencil) |depth_stencil| depth_stencil.depthWriteEnabled != 0 else false,
+        .unclipped_depth = pipeline_desc.primitive.unclippedDepth != 0,
     };
     return toOpaque(rp);
 }
@@ -255,19 +257,22 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
         .first_instance = first_instance,
         .depth_compare = pass.depth_compare,
         .depth_write_enabled = pass.depth_write_enabled,
+        .unclipped_depth = pip.unclipped_depth,
     } };
     flatten_render_pass_state(pass, &cmd.render_pass);
     pass.enc.cmds.append(alloc, cmd) catch std.debug.panic("doe_render_native: OOM recording render command", .{});
 }
 
 fn flatten_render_pass_state(pass: *DoeRenderPass, cmd: *RenderPassCmd) void {
-    for (pass.bind_groups) |maybe_bg| {
+    for (pass.bind_groups, 0..) |maybe_bg, group_index| {
         const bg = maybe_bg orelse continue;
         for (0..bg.count) |slot| {
-            cmd.bind_buffers[slot] = bg.buffers[slot];
-            cmd.bind_buffer_offsets[slot] = bg.offsets[slot];
-            cmd.bind_textures[slot] = bg.textures[slot];
-            cmd.bind_samplers[slot] = bg.samplers[slot];
+            const flat_slot = group_index * MAX_BIND + slot;
+            if (flat_slot >= native.MAX_FLAT_BIND) continue;
+            cmd.bind_buffers[flat_slot] = bg.buffers[slot];
+            cmd.bind_buffer_offsets[flat_slot] = bg.offsets[slot];
+            cmd.bind_textures[flat_slot] = bg.textures[slot];
+            cmd.bind_samplers[flat_slot] = bg.samplers[slot];
         }
     }
     for (pass.vertex_buffers, pass.vertex_buffer_offsets, 0..) |maybe_buf, offset, slot| {
@@ -337,6 +342,7 @@ pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count:
         .base_vertex = base_vertex,
         .depth_compare = pass.depth_compare,
         .depth_write_enabled = pass.depth_write_enabled,
+        .unclipped_depth = pip.unclipped_depth,
     } };
     flatten_render_pass_state(pass, &cmd.render_pass);
     pass.enc.cmds.append(alloc, cmd) catch std.debug.panic("doe_render_native: OOM recording indexed render command", .{});

@@ -9,6 +9,8 @@ const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
+const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
+const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
 const metal_bridge_cmd_buf_encode_blit_copy = bridge.metal_bridge_cmd_buf_encode_blit_copy;
 const metal_bridge_cmd_buf_encode_compute_dispatch = bridge.metal_bridge_cmd_buf_encode_compute_dispatch;
 const metal_bridge_cmd_buf_encode_compute_dispatch_indirect = bridge.metal_bridge_cmd_buf_encode_compute_dispatch_indirect;
@@ -20,11 +22,13 @@ const metal_bridge_create_default_device = bridge.metal_bridge_create_default_de
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
 const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
+const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_release = bridge.metal_bridge_release;
 const metal_bridge_render_encoder_set_bind_buffer = bridge.metal_bridge_render_encoder_set_bind_buffer;
 const metal_bridge_render_encoder_set_bind_sampler = bridge.metal_bridge_render_encoder_set_bind_sampler;
 const metal_bridge_render_encoder_set_bind_texture = bridge.metal_bridge_render_encoder_set_bind_texture;
 const metal_bridge_render_encoder_set_cull_mode = bridge.metal_bridge_render_encoder_set_cull_mode;
+const metal_bridge_render_encoder_set_depth_clip_mode = bridge.metal_bridge_render_encoder_set_depth_clip_mode;
 const metal_bridge_render_encoder_set_depth_stencil_state = bridge.metal_bridge_render_encoder_set_depth_stencil_state;
 const metal_bridge_render_encoder_set_depth_stencil_values = bridge.metal_bridge_render_encoder_set_depth_stencil_values;
 const metal_bridge_render_encoder_set_front_facing = bridge.metal_bridge_render_encoder_set_front_facing;
@@ -33,6 +37,8 @@ const metal_bridge_render_encoder_draw_indexed = bridge.metal_bridge_render_enco
 const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 const metal_bridge_render_encoder_set_vertex_buffer = bridge.metal_bridge_render_encoder_set_vertex_buffer;
 const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
+const metal_bridge_sample_timestamp = bridge.metal_bridge_sample_timestamp;
+const metal_bridge_resolve_timestamps = bridge.metal_bridge_resolve_timestamps;
 
 // GPA for handle allocations — page_allocator wastes 16KB per 24-byte struct.
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -63,6 +69,8 @@ const MAGIC_RENDER_PASS: u32 = 0xD0E1_0012;
 
 pub const MAX_BIND: usize = 16;
 pub const MAX_RENDER_BIND_GROUPS: usize = 4;
+pub const MAX_COMPUTE_BIND_GROUPS: usize = 4;
+pub const MAX_FLAT_BIND: usize = MAX_BIND * MAX_COMPUTE_BIND_GROUPS;
 pub const MAX_VERTEX_BUFFERS: usize = 8;
 pub const VERTEX_BUFFER_SLOT_BASE: u32 = 8;
 pub const ERR_CAP: usize = 512;
@@ -99,6 +107,15 @@ pub const DeferredCopy = struct {
 };
 const MAX_DEFERRED_COPIES: u32 = 16;
 
+pub const DeferredResolve = struct {
+    counter_buffer: ?*anyopaque,
+    first_query: u32,
+    query_count: u32,
+    dst_mtl: ?*anyopaque,
+    dst_offset: u64,
+};
+const MAX_DEFERRED_RESOLVES: u32 = 8;
+
 pub const DoeQueue = struct {
     pub const TYPE_MAGIC = MAGIC_QUEUE;
     magic: u32 = TYPE_MAGIC,
@@ -108,6 +125,8 @@ pub const DoeQueue = struct {
     event_counter: u64 = 0,
     deferred_copies: [MAX_DEFERRED_COPIES]DeferredCopy = undefined,
     deferred_copy_count: u32 = 0,
+    deferred_resolves: [MAX_DEFERRED_RESOLVES]DeferredResolve = undefined,
+    deferred_resolve_count: u32 = 0,
 };
 
 pub const DoeBuffer = struct {
@@ -197,11 +216,22 @@ pub const DoeBindGroup = struct {
     count: u32 = 0,
 };
 
-pub const CmdTag = enum { dispatch, dispatch_indirect, copy_buf, render_pass };
+pub const CmdTag = enum { dispatch, dispatch_indirect, copy_buf, copy_texture_to_buffer, render_pass, write_timestamp, resolve_query_set };
 pub const RecordedCmd = union(CmdTag) {
-    dispatch: struct { pso: ?*anyopaque, bufs: [MAX_BIND]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32 },
-    dispatch_indirect: struct { pso: ?*anyopaque, bufs: [MAX_BIND]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, offset: u64, wg_x: u32 = 0, wg_y: u32 = 0, wg_z: u32 = 0 },
+    dispatch: struct { pso: ?*anyopaque, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32 },
+    dispatch_indirect: struct { pso: ?*anyopaque, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, offset: u64, wg_x: u32 = 0, wg_y: u32 = 0, wg_z: u32 = 0 },
     copy_buf: struct { src: ?*anyopaque, src_off: u64, dst: ?*anyopaque, dst_off: u64, size: u64 },
+    copy_texture_to_buffer: struct {
+        src_texture: ?*anyopaque,
+        src_mip_level: u32,
+        dst_buffer: ?*anyopaque,
+        dst_offset: u64,
+        dst_bytes_per_row: u32,
+        dst_rows_per_image: u32,
+        width: u32,
+        height: u32,
+        depth_or_array_layers: u32,
+    },
     render_pass: struct {
         pso: ?*anyopaque,
         depth_state: ?*anyopaque,
@@ -221,15 +251,18 @@ pub const RecordedCmd = union(CmdTag) {
         index_format: u32 = 0,
         index_count: u32 = 0,
         base_vertex: i32 = 0,
-        bind_buffers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
-        bind_buffer_offsets: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
-        bind_textures: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
-        bind_samplers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
+        bind_buffers: [MAX_FLAT_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
+        bind_buffer_offsets: [MAX_FLAT_BIND]u64 = [_]u64{0} ** MAX_FLAT_BIND,
+        bind_textures: [MAX_FLAT_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
+        bind_samplers: [MAX_FLAT_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
         vertex_buffers: [MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** MAX_VERTEX_BUFFERS,
         vertex_buffer_offsets: [MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** MAX_VERTEX_BUFFERS,
         depth_compare: u32 = 0,
         depth_write_enabled: bool = false,
+        unclipped_depth: bool = false,
     },
+    write_timestamp: struct { counter_buffer: ?*anyopaque, query_index: u32 },
+    resolve_query_set: struct { counter_buffer: ?*anyopaque, first_query: u32, query_count: u32, dst_mtl: ?*anyopaque, dst_offset: u64 },
 };
 
 pub const DoeCommandEncoder = struct {
@@ -285,6 +318,7 @@ pub const DoeRenderPipeline = struct {
     cull_mode: u32 = 0x00000001,
     depth_compare: u32 = 0,
     depth_write_enabled: bool = false,
+    unclipped_depth: bool = false,
 };
 
 pub const DoeRenderPass = struct {
@@ -491,7 +525,7 @@ pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
 }
 
 /// Wait for any pending GPU work on the queue, then release the command buffer.
-/// Also executes deferred CPU copies that depend on the completed GPU work.
+/// Also executes deferred CPU copies and counter resolves that depend on the completed GPU work.
 /// Uses MTLSharedEvent for GPU→CPU sync (direct memory poll, no GCD intermediary).
 pub fn flush_pending_work(q: *DoeQueue) void {
     if (q.pending_cmd) |cmd| {
@@ -502,6 +536,7 @@ pub fn flush_pending_work(q: *DoeQueue) void {
         q.pending_cmd = null;
     }
     executeDeferredCopies(q);
+    executeDeferredResolves(q);
 }
 
 fn executeDeferredCopies(q: *DoeQueue) void {
@@ -509,6 +544,36 @@ fn executeDeferredCopies(q: *DoeQueue) void {
         @memcpy(dc.dst[0..dc.size], dc.src[0..dc.size]);
     }
     q.deferred_copy_count = 0;
+}
+
+fn executeDeferredResolves(q: *DoeQueue) void {
+    for (q.deferred_resolves[0..q.deferred_resolve_count]) |dr| {
+        const contents = metal_bridge_buffer_contents(dr.dst_mtl) orelse continue;
+        const d_off: usize = @intCast(dr.dst_offset);
+        const dest: [*]u64 = @ptrCast(@alignCast(contents + d_off));
+        _ = metal_bridge_resolve_timestamps(
+            dr.counter_buffer,
+            dr.first_query,
+            dr.query_count,
+            dest,
+        );
+    }
+    q.deferred_resolve_count = 0;
+}
+
+fn read_indirect_dispatch_counts(buffer_raw: ?*anyopaque, offset: u64) ?struct { x: u32, y: u32, z: u32 } {
+    const buffer = cast(DoeBuffer, buffer_raw) orelse return null;
+    const byte_offset: usize = @intCast(offset);
+    const counts_bytes = 3 * @sizeOf(u32);
+    if (byte_offset + counts_bytes > buffer.size) return null;
+    const contents = metal_bridge_buffer_contents(buffer.mtl) orelse return null;
+    const base = contents + byte_offset;
+    const ints: *align(1) const [3]u32 = @ptrCast(base);
+    return .{
+        .x = ints[0],
+        .y = ints[1],
+        .z = ints[2],
+    };
 }
 
 pub fn try_schedule_deferred_copy(
@@ -619,6 +684,34 @@ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyop
     } }) catch std.debug.panic("doe_wgpu_native: OOM recording copy command", .{});
 }
 
+pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
+    enc_raw: ?*anyopaque,
+    src_texture_raw: ?*anyopaque,
+    src_mip_level: u32,
+    dst_buffer_raw: ?*anyopaque,
+    dst_offset: u64,
+    dst_bytes_per_row: u32,
+    dst_rows_per_image: u32,
+    width: u32,
+    height: u32,
+    depth_or_array_layers: u32,
+) callconv(.c) void {
+    const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
+    const src_texture = cast(DoeTexture, src_texture_raw) orelse return;
+    const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
+    enc.cmds.append(alloc, .{ .copy_texture_to_buffer = .{
+        .src_texture = src_texture.mtl,
+        .src_mip_level = src_mip_level,
+        .dst_buffer = dst_buffer.mtl,
+        .dst_offset = dst_offset,
+        .dst_bytes_per_row = dst_bytes_per_row,
+        .dst_rows_per_image = dst_rows_per_image,
+        .width = width,
+        .height = height,
+        .depth_or_array_layers = depth_or_array_layers,
+    } }) catch std.debug.panic("doe_wgpu_native: OOM recording texture copy command", .{});
+}
+
 pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const types.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
     _ = desc;
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
@@ -685,19 +778,52 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                         has_gpu_work = true;
                     }
                 },
+                .copy_texture_to_buffer => |c| {
+                    const blit = metal_bridge_cmd_buf_blit_encoder(mtl_cmd) orelse continue;
+                    metal_bridge_blit_encoder_copy_texture_to_buffer(
+                        blit,
+                        c.src_texture,
+                        c.src_mip_level,
+                        c.dst_buffer,
+                        c.dst_offset,
+                        c.dst_bytes_per_row,
+                        c.dst_rows_per_image,
+                        c.width,
+                        c.height,
+                        c.depth_or_array_layers,
+                    );
+                    metal_bridge_end_blit_encoding(blit);
+                    has_gpu_work = true;
+                },
                 .dispatch_indirect => |d| {
                     var bufs_copy = d.bufs;
-                    metal_bridge_cmd_buf_encode_compute_dispatch_indirect(
-                        mtl_cmd,
-                        d.pso,
-                        @as(?[*]?*anyopaque, &bufs_copy),
-                        d.buf_count,
-                        d.indirect_buf,
-                        d.offset,
-                        d.wg_x,
-                        d.wg_y,
-                        d.wg_z,
-                    );
+                    if (read_indirect_dispatch_counts(d.indirect_buf, d.offset)) |counts| {
+                        metal_bridge_cmd_buf_encode_compute_dispatch(
+                            mtl_cmd,
+                            d.pso,
+                            @as(?[*]?*anyopaque, &bufs_copy),
+                            d.buf_count,
+                            counts.x,
+                            counts.y,
+                            counts.z,
+                            d.wg_x,
+                            d.wg_y,
+                            d.wg_z,
+                        );
+                    } else {
+                        const indirect_buffer = cast(DoeBuffer, d.indirect_buf) orelse continue;
+                        metal_bridge_cmd_buf_encode_compute_dispatch_indirect(
+                            mtl_cmd,
+                            d.pso,
+                            @as(?[*]?*anyopaque, &bufs_copy),
+                            d.buf_count,
+                            indirect_buffer.mtl,
+                            d.offset,
+                            d.wg_x,
+                            d.wg_y,
+                            d.wg_z,
+                        );
+                    }
                     has_gpu_work = true;
                 },
                 .render_pass => |r| {
@@ -711,6 +837,9 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                     if (renc) |e| {
                         metal_bridge_render_encoder_set_front_facing(e, r.front_face);
                         metal_bridge_render_encoder_set_cull_mode(e, r.cull_mode);
+                        if (r.unclipped_depth) {
+                            metal_bridge_render_encoder_set_depth_clip_mode(e, 1);
+                        }
                         if (r.depth_state) |depth_state| {
                             metal_bridge_render_encoder_set_depth_stencil_state(e, depth_state);
                             metal_bridge_render_encoder_set_depth_stencil_values(e, r.depth_compare, if (r.depth_write_enabled) 1 else 0);
@@ -764,6 +893,26 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                         metal_bridge_render_encoder_end(e);
                         metal_bridge_release(e);
                     }
+                    has_gpu_work = true;
+                },
+                .write_timestamp => |ts| {
+                    metal_bridge_sample_timestamp(mtl_cmd, ts.counter_buffer, ts.query_index);
+                    has_gpu_work = true;
+                },
+                .resolve_query_set => |rs| {
+                    // Counter resolve is CPU-side — must run after GPU
+                    // completion. Record as deferred resolve.
+                    if (q.deferred_resolve_count < MAX_DEFERRED_RESOLVES) {
+                        q.deferred_resolves[q.deferred_resolve_count] = .{
+                            .counter_buffer = rs.counter_buffer,
+                            .first_query = rs.first_query,
+                            .query_count = rs.query_count,
+                            .dst_mtl = rs.dst_mtl,
+                            .dst_offset = rs.dst_offset,
+                        };
+                        q.deferred_resolve_count += 1;
+                    }
+                    // Timestamp sampling is GPU work.
                     has_gpu_work = true;
                 },
             }
@@ -851,6 +1000,13 @@ pub const doeNativeDeviceHasFeature = caps.doeNativeDeviceHasFeature;
 pub const doeNativeDeviceGetLimits = caps.doeNativeDeviceGetLimits;
 pub const doeNativeAdapterGetLimits = caps.doeNativeAdapterGetLimits;
 
+// QuerySet (timestamp query) exports are in doe_query_native.zig.
+const query = @import("doe_query_native.zig");
+pub const doeNativeDeviceCreateQuerySet = query.doeNativeDeviceCreateQuerySet;
+pub const doeNativeCommandEncoderWriteTimestamp = query.doeNativeCommandEncoderWriteTimestamp;
+pub const doeNativeCommandEncoderResolveQuerySet = query.doeNativeCommandEncoderResolveQuerySet;
+pub const doeNativeQuerySetDestroy = query.doeNativeQuerySetDestroy;
+
 comptime {
     _ = shader;
     _ = bind_group;
@@ -858,6 +1014,7 @@ comptime {
     _ = render;
     _ = compute_ext;
     _ = caps;
+    _ = query;
 }
 
 // Instance process events (no-op for sync).

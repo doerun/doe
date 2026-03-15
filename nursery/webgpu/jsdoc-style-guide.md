@@ -43,77 +43,30 @@ This guide does not apply to:
 
 ## API design rules
 
-### 1. Keep the package split explicit
+### 1. Follow the package and API style model
 
-The public package split is:
+The package split, export surfaces, API styles (`Direct WebGPU` vs `Doe API`),
+and helper taxonomy (`gpu.buffer.*`, `gpu.kernel.*`, `gpu.compute(...)`) are
+defined in:
 
-- `@simulatte/webgpu`
-  full headless package surface
-- `@simulatte/webgpu/compute`
-  compute-only facade
-
-The difference between those packages belongs in the raw surface, not in two
-different helper dialects.
-
-### 2. Keep the helper shape shared
-
-Both packages expose the same `doe` helper shape:
-
-- `await doe.requestDevice()`
-- `doe.bind(device)`
-- bound helper methods under `gpu.*`
-
-If package behavior differs, the difference should normally be in the returned
-device or runtime object, not in helper naming.
-
-### 3. Prefer the target Doe helper taxonomy for new APIs
-
-The current implemented helper contract is documented in `api-contract.md`.
-New API design work should follow the target hierarchy documented in
-`doe-api-design.md`:
-
-- `gpu.buffer.*`
-  resource helpers
-- `gpu.kernel.*`
-  explicit reusable kernel primitives
-- `gpu.compute.*`
-  higher-level routines
+- [`./api-contract.md`](./api-contract.md) — current implemented contract
+- [`./doe-api-design.md`](./doe-api-design.md) — target naming and design
+  principles
+- [`./architecture.md`](./architecture.md) — full layer stack
 
 Do not add new public helper namespaces unless they represent a stable,
-user-visible abstraction layer.
+user-visible abstraction layer. One-shot helpers like `gpu.compute(...)` should
+stay narrower than the explicit primitive parts of `Doe API`.
 
-### 4. Preserve the API style model
+### 2. Prefer explicit resource ownership
 
-The public model is:
-
-- `Direct WebGPU`
-  raw WebGPU-shaped API
-- `Doe API`
-  explicit Doe convenience surface, including the more opinionated one-shot
-  helpers under `gpu.compute.*`
-
-Current examples:
-
-- `Direct WebGPU`
-  `requestDevice()`, `device.createBuffer(...)`, `device.createComputePipeline(...)`
-- `Doe API`
-  `gpu.buffer.create(...)`, `gpu.buffer.fromData(...)`, `gpu.buffer.like(...)`, `gpu.kernel.run(...)`, `gpu.kernel.create(...)`
-  `gpu.compute.once(...)`
-
-More opinionated one-shot helpers such as `gpu.compute.once(...)` should stay
-narrower than the explicit primitive parts of `Doe API`. If callers need raw
-control, explicit reuse, or unusual binding behavior, they should drop to the
-rest of `Doe API` or `Direct WebGPU` rather than expanding those helpers into a
-catch-all surface.
-
-### 5. Prefer explicit resource ownership
 
 `Doe API` may reduce boilerplate, but it should still make resource ownership
 and execution shape understandable.
 
 Good:
 
-- `gpu.buffer.like(src, { usage: "storageReadWrite" })`
+- `gpu.buffer.create({ size: src.size, usage: "storageReadWrite" })`
 - `gpu.kernel.run({ code, bindings, workgroups })`
 
 Risky:
@@ -121,7 +74,7 @@ Risky:
 - giant option bags that hide allocations, binding rules, and reuse behavior
 - convenience APIs that make it hard to tell when buffers are created or destroyed
 
-### 6. Keep JS naming coherent
+### 3. Keep JS naming coherent
 
 For JavaScript APIs:
 
@@ -136,7 +89,7 @@ For example:
 - `createBufferLike`
 - `requestDevice`
 
-### 7. Prefer singular helper namespaces
+### 4. Prefer singular helper namespaces
 
 When a namespace represents one object domain, prefer the singular form:
 
@@ -146,7 +99,7 @@ When a namespace represents one object domain, prefer the singular form:
 Treat plural namespaces in the current API as compatibility debt rather than
 the naming target for future design work.
 
-### 8. Fail clearly on unsupported states
+### 5. Fail clearly on unsupported states
 
 Unsupported or out-of-scope behavior should fail explicitly with actionable
 messages. Public docs should state those boundaries when they are easy to miss.
@@ -154,7 +107,7 @@ messages. Public docs should state those boundaries when they are easy to miss.
 Examples:
 
 - compute facade intentionally omits render and surface APIs
-- `compute.once(...)` rejects raw numeric usage flags
+- `compute(...)` rejects raw numeric usage flags
 - bare buffers without Doe metadata require `{ buffer, access }`
 
 ## Public documentation rules
@@ -337,8 +290,8 @@ Requirements:
 Do:
 
 - use `await doe.requestDevice()` for the direct Doe API entry path
-- use `gpu.buffer.like(...)` when showing size-copy allocation
-- use `gpu.compute.once(...)` only for true one-shot Doe API examples
+- use `gpu.buffer.create({ size: src.size, ... })` when showing size-copy allocation
+- use `gpu.compute(...)` only for true one-shot Doe API examples
 
 Do not:
 
@@ -451,7 +404,7 @@ important constraints.
  * This example shows a basic one-shot Doe API path with a typed-array input.
  *
  * ```js
- * const out = await gpu.compute.once({
+ * const out = await gpu.compute({
  *   code: WGSL,
  *   inputs: [new Float32Array([1, 2, 3, 4])],
  *   output: { type: Float32Array },

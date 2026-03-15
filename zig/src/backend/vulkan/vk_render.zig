@@ -419,6 +419,10 @@ fn create_graphics_pipeline(
         .pScissors = null,
     };
 
+    // TODO: when unclippedDepth is piped through the Vulkan render pipeline
+    // descriptor, set depthClampEnable = VK_TRUE and chain
+    // VkPipelineRasterizationDepthClipStateCreateInfoEXT with
+    // depthClipEnable = VK_FALSE (requires VK_EXT_depth_clip_enable).
     var rasterization = c.VkPipelineRasterizationStateCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .pNext = null,

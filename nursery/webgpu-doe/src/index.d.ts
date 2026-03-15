@@ -10,28 +10,23 @@ export type DoeWorkgroups = number | [number, number] | [number, number, number]
 export type DoeBindingAccess = "uniform" | "storageRead" | "storageReadWrite";
 
 export interface DoeCreateBufferOptions {
-  size: number;
-  usage: DoeBufferUsage | DoeBufferUsage[] | number;
+  size?: number;
+  usage?: DoeBufferUsage | DoeBufferUsage[] | number;
+  data?: ArrayBufferView | ArrayBuffer;
   label?: string;
   mappedAtCreation?: boolean;
 }
 
-export interface DoeCreateBufferFromDataOptions {
-  usage?: DoeBufferUsage | DoeBufferUsage[] | number;
-  label?: string;
-}
-
-export interface DoeReadBufferOptions {
+export interface DoeReadBufferSubrangeOptions {
   size?: number;
   offset?: number;
   label?: string;
 }
 
-export interface DoeCreateBufferLikeOptions extends Omit<
-  DoeCreateBufferOptions,
-  "size"
-> {
-  size?: number;
+export interface DoeReadBufferOptions<T extends ArrayBufferView = ArrayBufferView>
+  extends DoeReadBufferSubrangeOptions {
+  buffer: unknown;
+  type: { new (buffer: ArrayBuffer): T };
 }
 
 export interface DoeBindingBuffer<TBuffer> {
@@ -60,7 +55,7 @@ export interface DoeComputeOnceOutputOptions<T extends ArrayBufferView> {
   usage?: DoeBufferUsage | DoeBufferUsage[];
   access?: DoeBindingAccess;
   label?: string;
-  read?: DoeReadBufferOptions;
+  read?: DoeReadBufferSubrangeOptions;
 }
 
 export interface DoeComputeOnceOptions<TBuffer, T extends ArrayBufferView> {
@@ -88,18 +83,8 @@ export interface DoeKernelDispatchOptions<TBuffer> {
 
 export interface BoundDoeBufferNamespace<TBuffer> {
   create(options: DoeCreateBufferOptions): TBuffer;
-  fromData<T extends ArrayBufferView>(
-    data: T | ArrayBuffer,
-    options?: DoeCreateBufferFromDataOptions,
-  ): TBuffer;
-  like(
-    source: TBuffer | ArrayBufferView | ArrayBuffer,
-    options?: DoeCreateBufferLikeOptions,
-  ): TBuffer;
   read<T extends ArrayBufferView>(
-    buffer: TBuffer,
-    type: { new (buffer: ArrayBuffer): T },
-    options?: DoeReadBufferOptions,
+    options: DoeReadBufferOptions<T>,
   ): Promise<T>;
 }
 
@@ -110,14 +95,6 @@ export interface BoundDoeKernelNamespace<
 > {
   run(options: TKernelOptions): Promise<void>;
   create(options: TKernelOptions): TKernel;
-}
-
-export interface BoundDoeComputeNamespace<
-  TBuffer,
-> {
-  once<T extends ArrayBufferView>(
-    options: DoeComputeOnceOptions<TBuffer, T>,
-  ): Promise<T>;
 }
 
 export interface BoundDoeNamespace<
@@ -133,9 +110,9 @@ export interface BoundDoeNamespace<
     TKernel,
     TKernelOptions
   >;
-  readonly compute: BoundDoeComputeNamespace<
-    TBuffer
-  >;
+  compute<T extends ArrayBufferView>(
+    options: DoeComputeOnceOptions<TBuffer, T>,
+  ): Promise<T>;
 }
 
 export interface DoeNamespace<

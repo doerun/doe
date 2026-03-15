@@ -14,32 +14,23 @@ const SCHEMA: u32 = 0;
 
 pub const Capability = struct {
     pub const Shader: u32 = 1;
+    pub const ClipDistance: u32 = 5;
     pub const Float16: u32 = 9;
     pub const GroupNonUniform: u32 = 61;
     pub const GroupNonUniformArithmetic: u32 = 63;
     pub const GroupNonUniformShuffle: u32 = 65;
 };
 
-pub const AddressingModel = struct {
-    pub const Logical: u32 = 0;
-};
-
-pub const MemoryModel = struct {
-    pub const GLSL450: u32 = 1;
-};
-
-pub const Dim = struct {
-    pub const _2D: u32 = 1;
-};
+pub const AddressingModel = struct { pub const Logical: u32 = 0; };
+pub const MemoryModel = struct { pub const GLSL450: u32 = 1; };
+pub const Dim = struct { pub const _2D: u32 = 1; };
 
 pub const ImageFormat = struct {
     pub const Unknown: u32 = 0;
     pub const Rgba8: u32 = 4;
 };
 
-pub const ImageOperandsMask = struct {
-    pub const Lod: u32 = 0x00000002;
-};
+pub const ImageOperandsMask = struct { pub const Lod: u32 = 0x00000002; };
 
 pub const ExecutionModel = struct {
     pub const Vertex: u32 = 0;
@@ -99,6 +90,7 @@ pub const Decoration = struct {
     pub const NonWritable: u32 = 24;
     pub const NonReadable: u32 = 25;
     pub const Location: u32 = 30;
+    pub const Index: u32 = 31;
     pub const Binding: u32 = 33;
     pub const DescriptorSet: u32 = 34;
     pub const Offset: u32 = 35;
@@ -106,6 +98,8 @@ pub const Decoration = struct {
 
 pub const Builtin = struct {
     pub const Position: u32 = 0;
+    pub const ClipDistance: u32 = 2;
+    pub const PrimitiveId: u32 = 7;
     pub const FragCoord: u32 = 15;
     pub const FrontFacing: u32 = 17;
     pub const SampleIndex: u32 = 18;
@@ -118,6 +112,8 @@ pub const Builtin = struct {
     pub const LocalInvocationIndex: u32 = 30;
     pub const VertexIndex: u32 = 42;
     pub const InstanceIndex: u32 = 43;
+    pub const SubgroupSize: u32 = 36;
+    pub const SubgroupLocalInvocationId: u32 = 41;
 };
 
 pub const FunctionControl = struct {
@@ -675,6 +671,10 @@ pub const Builder = struct {
 
     pub fn emit_noperspective_decoration(self: *Builder, target_id: u32) EmitError!void {
         try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.NoPerspective });
+    }
+
+    pub fn emit_index_decoration(self: *Builder, target_id: u32, index: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Index, index });
     }
 
     pub fn emit_invariant_decoration(self: *Builder, target_id: u32) EmitError!void {

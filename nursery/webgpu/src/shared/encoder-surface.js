@@ -145,6 +145,26 @@ function createEncoderClasses(backend) {
       backend.renderPassDrawIndexed(this, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     }
 
+    drawIndirect(indirectBuffer, indirectOffset = 0) {
+      this._assertOpen('GPURenderPassEncoder.drawIndirect');
+      assertIntegerInRange(indirectOffset, 'GPURenderPassEncoder.drawIndirect', 'indirectOffset', { min: 0 });
+      backend.renderPassDrawIndirect(
+        this,
+        assertLiveResource(indirectBuffer, 'GPURenderPassEncoder.drawIndirect', 'GPUBuffer'),
+        indirectOffset,
+      );
+    }
+
+    drawIndexedIndirect(indirectBuffer, indirectOffset = 0) {
+      this._assertOpen('GPURenderPassEncoder.drawIndexedIndirect');
+      assertIntegerInRange(indirectOffset, 'GPURenderPassEncoder.drawIndexedIndirect', 'indirectOffset', { min: 0 });
+      backend.renderPassDrawIndexedIndirect(
+        this,
+        assertLiveResource(indirectBuffer, 'GPURenderPassEncoder.drawIndexedIndirect', 'GPUBuffer'),
+        indirectOffset,
+      );
+    }
+
     end() {
       this._assertOpen('GPURenderPassEncoder.end');
       backend.renderPassEnd(this);
@@ -189,6 +209,71 @@ function createEncoderClasses(backend) {
         dstOffset,
         size,
       );
+    }
+
+    copyTextureToBuffer(source, destination, copySize) {
+      this._assertOpen('GPUCommandEncoder.copyTextureToBuffer');
+      const sourceObject = assertObject(source, 'GPUCommandEncoder.copyTextureToBuffer', 'source');
+      const destinationObject = assertObject(destination, 'GPUCommandEncoder.copyTextureToBuffer', 'destination');
+      const sizeObject = assertObject(copySize, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize');
+      if (sourceObject.origin !== undefined) {
+        assertObject(sourceObject.origin, 'GPUCommandEncoder.copyTextureToBuffer', 'source.origin');
+      }
+      assertIntegerInRange(destinationObject.offset ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.offset', { min: 0 });
+      assertIntegerInRange(destinationObject.bytesPerRow ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.bytesPerRow', { min: 0 });
+      assertIntegerInRange(destinationObject.rowsPerImage ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.rowsPerImage', { min: 0 });
+      assertIntegerInRange(sizeObject.width, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.width', { min: 1, max: UINT32_MAX });
+      assertIntegerInRange(sizeObject.height, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.height', { min: 1, max: UINT32_MAX });
+      if (sizeObject.depthOrArrayLayers !== undefined) {
+        assertIntegerInRange(sizeObject.depthOrArrayLayers, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.depthOrArrayLayers', { min: 1, max: UINT32_MAX });
+      }
+      backend.commandEncoderCopyTextureToBuffer(
+        this,
+        {
+          texture: assertLiveResource(sourceObject.texture, 'GPUCommandEncoder.copyTextureToBuffer', 'GPUTexture'),
+          mipLevel: sourceObject.mipLevel ?? 0,
+          origin: {
+            x: sourceObject.origin?.x ?? 0,
+            y: sourceObject.origin?.y ?? 0,
+            z: sourceObject.origin?.z ?? 0,
+          },
+          aspect: sourceObject.aspect,
+        },
+        {
+          buffer: assertLiveResource(destinationObject.buffer, 'GPUCommandEncoder.copyTextureToBuffer', 'GPUBuffer'),
+          offset: destinationObject.offset ?? 0,
+          bytesPerRow: destinationObject.bytesPerRow ?? 0,
+          rowsPerImage: destinationObject.rowsPerImage ?? 0,
+        },
+        {
+          width: sizeObject.width,
+          height: sizeObject.height,
+          depthOrArrayLayers: sizeObject.depthOrArrayLayers ?? 1,
+        },
+      );
+    }
+
+    writeTimestamp(querySet, queryIndex) {
+      this._assertOpen('GPUCommandEncoder.writeTimestamp');
+      const querySetNative = assertLiveResource(querySet, 'GPUCommandEncoder.writeTimestamp', 'GPUQuerySet');
+      assertIntegerInRange(queryIndex, 'GPUCommandEncoder.writeTimestamp', 'queryIndex', { min: 0, max: UINT32_MAX });
+      if (queryIndex >= querySet.count) {
+        failValidation('GPUCommandEncoder.writeTimestamp', `queryIndex ${queryIndex} exceeds querySet count ${querySet.count}`);
+      }
+      backend.commandEncoderWriteTimestamp(this, querySetNative, queryIndex);
+    }
+
+    resolveQuerySet(querySet, firstQuery, queryCount, destination, destinationOffset) {
+      this._assertOpen('GPUCommandEncoder.resolveQuerySet');
+      const querySetNative = assertLiveResource(querySet, 'GPUCommandEncoder.resolveQuerySet', 'GPUQuerySet');
+      assertIntegerInRange(firstQuery, 'GPUCommandEncoder.resolveQuerySet', 'firstQuery', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(queryCount, 'GPUCommandEncoder.resolveQuerySet', 'queryCount', { min: 1, max: UINT32_MAX });
+      if (firstQuery + queryCount > querySet.count) {
+        failValidation('GPUCommandEncoder.resolveQuerySet', `firstQuery ${firstQuery} + queryCount ${queryCount} exceeds querySet count ${querySet.count}`);
+      }
+      const destinationNative = assertLiveResource(destination, 'GPUCommandEncoder.resolveQuerySet', 'GPUBuffer');
+      assertIntegerInRange(destinationOffset, 'GPUCommandEncoder.resolveQuerySet', 'destinationOffset', { min: 0 });
+      backend.commandEncoderResolveQuerySet(this, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
     }
 
     finish() {

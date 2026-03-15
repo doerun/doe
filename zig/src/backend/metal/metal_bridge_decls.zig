@@ -24,6 +24,7 @@ pub extern fn metal_bridge_render_encoder_set_bind_sampler(encoder: ?*anyopaque,
 pub extern fn metal_bridge_render_encoder_set_vertex_buffer(encoder: ?*anyopaque, slot: u32, buffer: ?*anyopaque, offset: u64) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_set_depth_stencil_state(encoder: ?*anyopaque, depth_state: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_set_depth_stencil_values(encoder: ?*anyopaque, compare_fn: u32, write_enabled: c_int) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_set_depth_clip_mode(encoder: ?*anyopaque, clamp: c_int) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_set_front_facing(encoder: ?*anyopaque, front_face: u32) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_set_cull_mode(encoder: ?*anyopaque, cull_mode: u32) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_draw(encoder: ?*anyopaque, topology: u32, draw_count: u32, vertex_count: u32, instance_count: u32, first_vertex: u32, first_instance: u32, redundant_pipeline: c_int, pipeline: ?*anyopaque) callconv(.c) void;
@@ -64,6 +65,16 @@ pub extern fn metal_bridge_blit_encoder_copy_texture_to_buffer(encoder: ?*anyopa
 pub extern fn metal_bridge_blit_encoder_copy_texture_to_texture(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
 pub extern fn metal_bridge_create_surface_host(layer_out: *?*anyopaque) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_configure_surface_host(host: ?*anyopaque, width: u32, height: u32) callconv(.c) void;
+
+// Device capability queries — runtime feature detection
+pub extern fn metal_bridge_query_device_features() callconv(.c) u32;
+
+// GPU timestamp query (MTLCounterSampleBuffer)
+pub extern fn metal_bridge_supports_timestamp_query(device: ?*anyopaque) callconv(.c) c_int;
+pub extern fn metal_bridge_create_counter_sample_buffer(device: ?*anyopaque, count: u32) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_sample_timestamp(cmd_buf: ?*anyopaque, counter_buffer: ?*anyopaque, query_index: u32) callconv(.c) void;
+pub extern fn metal_bridge_resolve_timestamps(counter_buffer: ?*anyopaque, first_query: u32, query_count: u32, dest_ptr: [*]u64) callconv(.c) c_int;
+pub extern fn metal_bridge_destroy_counter_sample_buffer(counter_buffer: ?*anyopaque) callconv(.c) void;
 pub const MetalVertexBufferLayout = extern struct {
     array_stride: u64,
     step_mode: u32,

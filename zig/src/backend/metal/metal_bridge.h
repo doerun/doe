@@ -169,6 +169,9 @@ void metal_bridge_render_encoder_set_depth_stencil_values(
     MetalHandle encoder,
     uint32_t    compare_fn,
     int         write_enabled);
+void metal_bridge_render_encoder_set_depth_clip_mode(
+    MetalHandle encoder,
+    int         clamp);
 void metal_bridge_render_encoder_set_front_facing(
     MetalHandle encoder,
     uint32_t    front_face);
@@ -405,6 +408,34 @@ MetalHandle metal_bridge_encode_icb_render_pass(
     MetalHandle target,
     uint32_t    draw_count);
 
+// === GPU Timestamp Query (MTLCounterSampleBuffer) ===
+
+// Check whether the device supports GPU timestamp counter sampling at stage boundaries.
+int metal_bridge_supports_timestamp_query(MetalHandle device);
+
+// Create a MTLCounterSampleBuffer for GPU timestamp queries.
+// Returns NULL if counter sampling is unsupported or the timestamp counter set is absent.
+MetalHandle metal_bridge_create_counter_sample_buffer(MetalHandle device, uint32_t count);
+
+// Sample GPU timestamp on a blit encoder at the given query index.
+// Creates a blit encoder on cmd_buf, samples, and ends encoding.
+void metal_bridge_sample_timestamp(
+    MetalHandle cmd_buf,
+    MetalHandle counter_buffer,
+    uint32_t    query_index);
+
+// Resolve GPU timestamps from the counter sample buffer and copy to dest.
+// dest_ptr must point to query_count * sizeof(uint64_t) bytes.
+// Returns 1 on success, 0 on failure.
+int metal_bridge_resolve_timestamps(
+    MetalHandle counter_buffer,
+    uint32_t    first_query,
+    uint32_t    query_count,
+    uint64_t*   dest_ptr);
+
+// Release a counter sample buffer handle.
+void metal_bridge_destroy_counter_sample_buffer(MetalHandle counter_buffer);
+
 // === Semaphore-based completion (faster than waitUntilCompleted) ===
 
 // Register a completion handler on cmd_buf that signals an internal semaphore.
@@ -412,3 +443,30 @@ MetalHandle metal_bridge_encode_icb_render_pass(
 void metal_bridge_command_buffer_setup_fast_wait(MetalHandle cmd_buf);
 // Block until the completion handler fires. Call after commit.
 void metal_bridge_command_buffer_wait_fast(void);
+
+// === Device capability queries ===
+
+// Feature bitmask positions returned by metal_bridge_query_device_features().
+#define METAL_FEATURE_BIT_SHADER_F16               (1u << 0)
+#define METAL_FEATURE_BIT_SUBGROUPS                (1u << 1)
+#define METAL_FEATURE_BIT_TIMESTAMP_QUERY          (1u << 2)
+#define METAL_FEATURE_BIT_INDIRECT_FIRST_INSTANCE  (1u << 3)
+#define METAL_FEATURE_BIT_DEPTH_CLIP_CONTROL       (1u << 4)
+#define METAL_FEATURE_BIT_DEPTH32FLOAT_STENCIL8    (1u << 5)
+#define METAL_FEATURE_BIT_BGRA8UNORM_STORAGE       (1u << 6)
+#define METAL_FEATURE_BIT_FLOAT32_FILTERABLE       (1u << 7)
+#define METAL_FEATURE_BIT_FLOAT32_BLENDABLE        (1u << 8)
+#define METAL_FEATURE_BIT_TEXTURE_COMPRESSION_ASTC (1u << 9)
+#define METAL_FEATURE_BIT_TEXTURE_COMPRESSION_BC  (1u << 10)
+#define METAL_FEATURE_BIT_TEXTURE_COMPRESSION_BC_SLICED_3D (1u << 11)
+#define METAL_FEATURE_BIT_TEXTURE_COMPRESSION_ETC2 (1u << 12)
+#define METAL_FEATURE_BIT_RG11B10UFLOAT_RENDERABLE (1u << 13)
+#define METAL_FEATURE_BIT_SUBGROUPS_F16            (1u << 14)
+#define METAL_FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D (1u << 15)
+#define METAL_FEATURE_BIT_CLIP_DISTANCES           (1u << 16)
+#define METAL_FEATURE_BIT_DUAL_SOURCE_BLENDING     (1u << 17)
+
+// Query the default Metal device for supported features. Returns a bitmask
+// of METAL_FEATURE_BIT_* flags. Result is cached after the first call.
+// Returns 0 if no Metal device is available.
+uint32_t metal_bridge_query_device_features(void);

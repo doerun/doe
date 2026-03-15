@@ -116,6 +116,27 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
 }`);
     assert(preflight.ok === true, "preflight accepts simple fragment stage");
 
+    section("structured error: preflight rejection");
+    const badPreflight = preflightShaderSource(`fn main() { let x = !!!; }`);
+    assert(badPreflight.ok === false, "preflight rejects invalid WGSL");
+    assert(typeof badPreflight.message === "string" && badPreflight.message.length > 0, "preflight rejection has message");
+    assert(typeof badPreflight.stage === "string" && badPreflight.stage.length > 0, "preflight rejection has stage");
+    assert(typeof badPreflight.kind === "string" && badPreflight.kind.length > 0, "preflight rejection has kind");
+    assert(typeof badPreflight.line === "number" && badPreflight.line > 0, "preflight rejection has line");
+    assert(typeof badPreflight.column === "number" && badPreflight.column > 0, "preflight rejection has column");
+
+    section("structured error: createShaderModule failure");
+    let shaderError = null;
+    try {
+        device.createShaderModule({ code: `fn main() -> @location(0) vec4f { let x = !!!; return vec4f(0.0); }` });
+    } catch (e) {
+        shaderError = e;
+    }
+    assert(shaderError instanceof Error, "createShaderModule throws on invalid WGSL");
+    assert(typeof shaderError?.stage === "string" && shaderError.stage.length > 0, "shader error has stage");
+    assert(typeof shaderError?.line === "number" && shaderError.line > 0, "shader error has line");
+    assert(typeof shaderError?.column === "number" && shaderError.column > 0, "shader error has column");
+
     section("createBuffer");
     const readbackBuf = device.createBuffer({
         size: 256,
@@ -501,6 +522,633 @@ fn fs_main() -> @location(0) vec4f {
         sawOwnerDestroyedQueue = /GPUQueue cannot be used after GPUDevice was destroyed/.test(String(error?.message));
     }
     assert(sawOwnerDestroyedQueue, "queue rejects use after owning device destroy");
+
+    section("indirect dispatch");
+    try {
+        const indirectShader = device.createShaderModule({
+            code: `@group(0) @binding(0) var<storage, read> src: array<f32>;
+@group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+@compute @workgroup_size(4) fn main(@builtin(global_invocation_id) id: vec3u) {
+    dst[id.x] = src[id.x] * 2.0;
+}`,
+        });
+        const indirectPipeline = device.createComputePipeline({
+            layout: "auto",
+            compute: { module: indirectShader, entryPoint: "main" },
+        });
+        const indirectSrc = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_DST,
+        });
+        const indirectDst = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+        });
+        const indirectReadback = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.MAP_READ | globals.GPUBufferUsage.COPY_DST,
+        });
+        const indirectArgs = device.createBuffer({
+            size: 12,
+            usage: globals.GPUBufferUsage.INDIRECT | globals.GPUBufferUsage.COPY_DST,
+        });
+        device.queue.writeBuffer(indirectSrc, 0, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]));
+        device.queue.writeBuffer(indirectArgs, 0, new Uint32Array([2, 1, 1]));
+        const indirectBindGroup = device.createBindGroup({
+            layout: indirectPipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: indirectSrc } },
+                { binding: 1, resource: { buffer: indirectDst } },
+            ],
+        });
+        const indirectEncoder = device.createCommandEncoder();
+        const indirectPass = indirectEncoder.beginComputePass();
+        indirectPass.setPipeline(indirectPipeline);
+        indirectPass.setBindGroup(0, indirectBindGroup);
+        indirectPass.dispatchWorkgroupsIndirect(indirectArgs, 0);
+        indirectPass.end();
+        indirectEncoder.copyBufferToBuffer(indirectDst, 0, indirectReadback, 0, 32);
+        device.queue.submit([indirectEncoder.finish()]);
+        await device.queue.onSubmittedWorkDone();
+        await indirectReadback.mapAsync(globals.GPUMapMode.READ, 0, 32);
+        const indirectResult = new Float32Array(indirectReadback.getMappedRange(0, 32));
+        assert(indirectResult[0] === 2.0, "indirect dispatch result[0] === 2.0");
+        assert(indirectResult[7] === 16.0, "indirect dispatch result[7] === 16.0");
+        indirectReadback.unmap();
+    } catch (e) {
+        assert(false, `indirect dispatch threw: ${e}`);
+    }
+
+    section("shader module destroy");
+    try {
+        const destroyShader = device.createShaderModule({
+            code: `@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+    buf[id.x] = buf[id.x] * 4.0;
+}`,
+        });
+        assert(destroyShader != null, "shader module for destroy created");
+        const destroyPipeline = device.createComputePipeline({
+            layout: "auto",
+            compute: { module: destroyShader, entryPoint: "main" },
+        });
+        assert(destroyPipeline != null, "pipeline using shader created before destroy");
+        destroyShader.destroy?.();
+        assert(true, "shaderModule.destroy() did not crash");
+    } catch (e) {
+        assert(false, `shader module destroy threw: ${e}`);
+    }
+
+    section("texture destroy");
+    try {
+        const destroyTexture = device.createTexture({
+            size: [4, 4],
+            format: "rgba8unorm",
+            usage: globals.GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        assert(destroyTexture != null, "texture for destroy created");
+        const destroyView = destroyTexture.createView();
+        assert(destroyView != null, "view from texture created");
+        destroyTexture.destroy();
+        assert(true, "texture.destroy() did not crash");
+    } catch (e) {
+        assert(false, `texture destroy threw: ${e}`);
+    }
+
+    section("multiple dispatches in same encoder");
+    try {
+        const multiShaderA = device.createShaderModule({
+            code: `@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+    buf[id.x] = buf[id.x] + 10.0;
+}`,
+        });
+        const multiShaderB = device.createShaderModule({
+            code: `@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+    buf[id.x] = buf[id.x] * 2.0;
+}`,
+        });
+        const multiPipelineA = device.createComputePipeline({
+            layout: "auto",
+            compute: { module: multiShaderA, entryPoint: "main" },
+        });
+        const multiPipelineB = device.createComputePipeline({
+            layout: "auto",
+            compute: { module: multiShaderB, entryPoint: "main" },
+        });
+
+        const multiBufA = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+        });
+        const multiBufB = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+        });
+        const multiReadback = device.createBuffer({
+            size: 64,
+            usage: globals.GPUBufferUsage.MAP_READ | globals.GPUBufferUsage.COPY_DST,
+        });
+
+        device.queue.writeBuffer(multiBufA, 0, new Float32Array([1.0, 2.0]));
+        device.queue.writeBuffer(multiBufB, 0, new Float32Array([3.0, 4.0]));
+
+        const bgA = device.createBindGroup({
+            layout: multiPipelineA.getBindGroupLayout(0),
+            entries: [{ binding: 0, resource: { buffer: multiBufA } }],
+        });
+        const bgB = device.createBindGroup({
+            layout: multiPipelineB.getBindGroupLayout(0),
+            entries: [{ binding: 0, resource: { buffer: multiBufB } }],
+        });
+
+        const encMulti = device.createCommandEncoder();
+        const passMulti = encMulti.beginComputePass();
+        passMulti.setPipeline(multiPipelineA);
+        passMulti.setBindGroup(0, bgA);
+        passMulti.dispatchWorkgroups(2);
+        passMulti.setPipeline(multiPipelineB);
+        passMulti.setBindGroup(0, bgB);
+        passMulti.dispatchWorkgroups(2);
+        passMulti.end();
+        encMulti.copyBufferToBuffer(multiBufA, 0, multiReadback, 0, 8);
+        encMulti.copyBufferToBuffer(multiBufB, 0, multiReadback, 32, 8);
+        device.queue.submit([encMulti.finish()]);
+        await device.queue.onSubmittedWorkDone();
+
+        await multiReadback.mapAsync(globals.GPUMapMode.READ);
+        const multiResult = new Float32Array(multiReadback.getMappedRange());
+        // pipelineA: +10 → [11.0, 12.0]; pipelineB: *2 → [6.0, 8.0]
+        assert(multiResult[0] === 11.0, "multi-dispatch pipelineA result[0] === 11.0");
+        assert(multiResult[1] === 12.0, "multi-dispatch pipelineA result[1] === 12.0");
+        assert(multiResult[8] === 6.0, "multi-dispatch pipelineB result[0] === 6.0");
+        assert(multiResult[9] === 8.0, "multi-dispatch pipelineB result[1] === 8.0");
+        multiReadback.unmap();
+    } catch (e) {
+        assert(false, `multiple dispatches in same encoder threw: ${e}`);
+    }
+
+    section("multiple bind groups in explicit layout");
+    try {
+        const mbShader = device.createShaderModule({
+            code: `@group(0) @binding(0) var<storage, read> src: array<f32>;
+@group(1) @binding(0) var<storage, read_write> dst: array<f32>;
+@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+    dst[id.x] = src[id.x] * 5.0;
+}`,
+        });
+        const mbBgl0 = device.createBindGroupLayout({
+            entries: [
+                { binding: 0, visibility: globals.GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+            ],
+        });
+        const mbBgl1 = device.createBindGroupLayout({
+            entries: [
+                { binding: 0, visibility: globals.GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+            ],
+        });
+        const mbLayout = device.createPipelineLayout({ bindGroupLayouts: [mbBgl0, mbBgl1] });
+        const mbPipeline = device.createComputePipeline({
+            layout: mbLayout,
+            compute: { module: mbShader, entryPoint: "main" },
+        });
+
+        const srcBuf2 = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_DST,
+        });
+        const dstBuf2 = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+        });
+        const readback2 = device.createBuffer({
+            size: 32,
+            usage: globals.GPUBufferUsage.MAP_READ | globals.GPUBufferUsage.COPY_DST,
+        });
+
+        device.queue.writeBuffer(srcBuf2, 0, new Float32Array([2.0, 4.0]));
+
+        const bg2a = device.createBindGroup({
+            layout: mbBgl0,
+            entries: [
+                { binding: 0, resource: { buffer: srcBuf2 } },
+            ],
+        });
+        const bg2b = device.createBindGroup({
+            layout: mbBgl1,
+            entries: [
+                { binding: 0, resource: { buffer: dstBuf2 } },
+            ],
+        });
+
+        const enc2bg = device.createCommandEncoder();
+        const pass2bg = enc2bg.beginComputePass();
+        pass2bg.setPipeline(mbPipeline);
+        pass2bg.setBindGroup(0, bg2a);
+        pass2bg.setBindGroup(1, bg2b);
+        pass2bg.dispatchWorkgroups(2);
+        pass2bg.end();
+        enc2bg.copyBufferToBuffer(dstBuf2, 0, readback2, 0, 8);
+        device.queue.submit([enc2bg.finish()]);
+        await device.queue.onSubmittedWorkDone();
+
+        await readback2.mapAsync(globals.GPUMapMode.READ, 0, 8);
+        const result2bg = new Float32Array(readback2.getMappedRange(0, 8));
+        assert(result2bg[0] === 10.0, "multi bind-group result[0] === 10.0");
+        assert(result2bg[1] === 20.0, "multi bind-group result[1] === 20.0");
+        readback2.unmap();
+    } catch (e) {
+        assert(false, `multiple bind groups in explicit layout threw: ${e}`);
+    }
+
+    section("buffer copy with non-zero offsets");
+    try {
+        const offsetSrc = device.createBuffer({
+            size: 64,
+            usage: globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+        });
+        const offsetDst = device.createBuffer({
+            size: 64,
+            usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ,
+        });
+        // Write 8 floats; bytes 8..24 (floats 2..5) are the region we'll copy
+        device.queue.writeBuffer(offsetSrc, 0, new Float32Array([0.0, 0.0, 7.0, 8.0, 9.0, 10.0, 0.0, 0.0]));
+
+        const encOffset = device.createCommandEncoder();
+        // copy 8 bytes from src offset 8 → dst offset 4
+        encOffset.copyBufferToBuffer(offsetSrc, 8, offsetDst, 4, 8);
+        device.queue.submit([encOffset.finish()]);
+        await device.queue.onSubmittedWorkDone();
+
+        await offsetDst.mapAsync(globals.GPUMapMode.READ, 0, 16);
+        const offsetResult = new Float32Array(offsetDst.getMappedRange(0, 16));
+        // byte offset 4 in dst = float index 1
+        assert(offsetResult[1] === 7.0, "offset copy dst[1] === 7.0 (src byte 8)");
+        assert(offsetResult[2] === 8.0, "offset copy dst[2] === 8.0 (src byte 12)");
+        offsetDst.unmap();
+    } catch (e) {
+        assert(false, `buffer copy with non-zero offsets threw: ${e}`);
+    }
+
+    section("render pipeline draw");
+    try {
+        const rtShaderVert = device.createShaderModule({
+            code: `@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4f {
+    var x: f32 = 0.0;
+    var y: f32 = 0.0;
+    if (vi == 0u) { x = 0.0; y = 1.0; }
+    else if (vi == 1u) { x = -1.0; y = -1.0; }
+    else { x = 1.0; y = -1.0; }
+    return vec4f(x, y, 0.0, 1.0);
+}`,
+        });
+        const rtShaderFrag = device.createShaderModule({
+            code: `@fragment
+fn fs() -> @location(0) vec4f {
+    return vec4f(0.0, 1.0, 0.0, 1.0);
+}`,
+        });
+        assert(rtShaderVert != null, "render draw: vertex shader compiled");
+        assert(rtShaderFrag != null, "render draw: fragment shader compiled");
+        const rtPipeline = device.createRenderPipeline({
+            layout: "auto",
+            vertex: { module: rtShaderVert, entryPoint: "vs" },
+            fragment: {
+                module: rtShaderFrag,
+                entryPoint: "fs",
+                targets: [{ format: "rgba8unorm" }],
+            },
+        });
+        assert(rtPipeline != null, "render draw: pipeline created");
+
+        const rtColorTex = device.createTexture({
+            size: [4, 4],
+            format: "rgba8unorm",
+            usage: globals.GPUTextureUsage.RENDER_ATTACHMENT | globals.GPUTextureUsage.COPY_SRC,
+        });
+
+        const rtEncoder = device.createCommandEncoder();
+        const rtPass = rtEncoder.beginRenderPass({
+            colorAttachments: [{
+                view: rtColorTex.createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                loadOp: "clear",
+                storeOp: "store",
+            }],
+        });
+        rtPass.setPipeline(rtPipeline);
+        rtPass.draw(3);
+        rtPass.end();
+        const rtReadback = device.createBuffer({
+            size: 1024,
+            usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ,
+        });
+        rtEncoder.copyTextureToBuffer(
+            { texture: rtColorTex, mipLevel: 0, origin: { x: 0, y: 0, z: 0 } },
+            { buffer: rtReadback, offset: 0, bytesPerRow: 256, rowsPerImage: 4 },
+            { width: 4, height: 4, depthOrArrayLayers: 1 },
+        );
+        device.queue.submit([rtEncoder.finish()]);
+        await device.queue.onSubmittedWorkDone();
+        await rtReadback.mapAsync(globals.GPUMapMode.READ, 0, 1024);
+        const rtBytes = new Uint8Array(rtReadback.getMappedRange(0, 1024));
+        let sawGreen = false;
+        for (let i = 1; i < rtBytes.length; i += 4) {
+            if (rtBytes[i] > 0) {
+                sawGreen = true;
+                break;
+            }
+        }
+        assert(sawGreen, "render draw: copied texture contains non-zero green channel");
+        rtReadback.unmap();
+    } catch (e) {
+        assert(false, `render pipeline draw threw: ${e}`);
+    }
+
+    section("resource cleanup ordering");
+    try {
+        const cleanupShader = device.createShaderModule({
+            code: `@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+    buf[id.x] = buf[id.x] - 1.0;
+}`,
+        });
+        const cleanupBgl = device.createBindGroupLayout({
+            entries: [{ binding: 0, visibility: globals.GPUShaderStage.COMPUTE, buffer: { type: "storage" } }],
+        });
+        const cleanupLayout = device.createPipelineLayout({ bindGroupLayouts: [cleanupBgl] });
+        const cleanupPipeline = device.createComputePipeline({
+            layout: cleanupLayout,
+            compute: { module: cleanupShader, entryPoint: "main" },
+        });
+        const cleanupBuf = device.createBuffer({
+            size: 16,
+            usage: globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_DST,
+        });
+        const cleanupBg = device.createBindGroup({
+            layout: cleanupBgl,
+            entries: [{ binding: 0, resource: { buffer: cleanupBuf } }],
+        });
+        assert(cleanupBg != null, "cleanup: bind group created");
+
+        // Destroy in reverse order: bind group, pipeline, shader, buffer
+        cleanupBg.destroy?.();
+        cleanupPipeline.destroy?.();
+        cleanupShader.destroy?.();
+        cleanupBuf.destroy?.();
+        assert(true, "resource cleanup reverse-order destroy did not crash");
+    } catch (e) {
+        assert(false, `resource cleanup ordering threw: ${e}`);
+    }
+
+    section("feature publication");
+    const expectedFeatures = [
+        'shader-f16',
+        'subgroups',
+        'indirect-first-instance',
+        'depth-clip-control',
+        'depth32float-stencil8',
+        'bgra8unorm-storage',
+        'float32-filterable',
+        'float32-blendable',
+        'texture-compression-astc',
+    ];
+    for (const name of expectedFeatures) {
+        assert(device.features.has(name), `device.features contains '${name}'`);
+    }
+    const optionalFeatures = [
+        'texture-compression-bc',
+        'texture-compression-bc-sliced-3d',
+        'texture-compression-etc2',
+        'texture-compression-astc-sliced-3d',
+        'rg11b10ufloat-renderable',
+        'subgroups-f16',
+    ];
+    for (const name of optionalFeatures) {
+        if (adapter.features.has(name) || device.features.has(name)) {
+            assert(adapter.features.has(name), `adapter.features contains optional '${name}' when surfaced`);
+            assert(device.features.has(name), `device.features contains optional '${name}' when surfaced`);
+        }
+    }
+
+    section("compressed texture and format feature exercises");
+    try {
+        if (device.features.has('texture-compression-bc')) {
+            const bcTexture = device.createTexture({
+                size: [4, 4, 1],
+                format: "bc1-rgba-unorm",
+                usage: globals.GPUTextureUsage.TEXTURE_BINDING | globals.GPUTextureUsage.COPY_DST,
+            });
+            assert(bcTexture != null, "BC compressed texture creation succeeds");
+            bcTexture.destroy();
+        }
+
+        if (device.features.has('texture-compression-etc2')) {
+            const etc2Texture = device.createTexture({
+                size: [4, 4, 1],
+                format: "etc2-rgba8unorm",
+                usage: globals.GPUTextureUsage.TEXTURE_BINDING | globals.GPUTextureUsage.COPY_DST,
+            });
+            assert(etc2Texture != null, "ETC2 compressed texture creation succeeds");
+            etc2Texture.destroy();
+        }
+
+        if (device.features.has('texture-compression-astc-sliced-3d')) {
+            const astc3dTexture = device.createTexture({
+                size: [4, 4, 2],
+                dimension: "3d",
+                format: "astc-4x4-unorm",
+                usage: globals.GPUTextureUsage.TEXTURE_BINDING | globals.GPUTextureUsage.COPY_DST,
+            });
+            assert(astc3dTexture != null, "ASTC sliced 3D texture creation succeeds");
+            astc3dTexture.destroy();
+        }
+
+        if (device.features.has('texture-compression-bc-sliced-3d')) {
+            const bc3dTexture = device.createTexture({
+                size: [4, 4, 2],
+                dimension: "3d",
+                format: "bc1-rgba-unorm",
+                usage: globals.GPUTextureUsage.TEXTURE_BINDING | globals.GPUTextureUsage.COPY_DST,
+            });
+            assert(bc3dTexture != null, "BC sliced 3D texture creation succeeds");
+            bc3dTexture.destroy();
+        }
+
+        if (device.features.has('rg11b10ufloat-renderable')) {
+            const rg11b10Texture = device.createTexture({
+                size: [4, 4, 1],
+                format: "rg11b10ufloat",
+                usage: globals.GPUTextureUsage.RENDER_ATTACHMENT | globals.GPUTextureUsage.COPY_SRC,
+            });
+            assert(rg11b10Texture != null, "RG11B10 renderable texture creation succeeds");
+            rg11b10Texture.destroy();
+        }
+    } catch (e) {
+        assert(false, `compressed texture / format feature exercise threw: ${e}`);
+    }
+
+    section("subgroups-f16 shader exercise");
+    try {
+        if (device.features.has('subgroups-f16')) {
+            const subgroupF16Shader = device.createShaderModule({
+                code: `enable f16;
+enable subgroups;
+@group(0) @binding(0) var<storage, read_write> out_buf: array<f16>;
+@compute @workgroup_size(32)
+fn main(@builtin(local_invocation_index) lane: u32) {
+    let value: f16 = 1h;
+    let sum: f16 = subgroupAdd(value);
+    if (lane == 0u) {
+        out_buf[0] = sum;
+    }
+}`,
+            });
+            assert(subgroupF16Shader != null, "subgroups-f16 shader module creation succeeds");
+        }
+    } catch (e) {
+        assert(false, `subgroups-f16 shader exercise threw: ${e}`);
+    }
+
+    section("render feature compiler exercises");
+    try {
+        if (device.features.has('clip-distances')) {
+            const clipDistances = preflightShaderSource(`
+struct VSOut {
+  @builtin(position) pos: vec4f,
+  @builtin(clip_distances) clip: array<f32, 4>,
+};
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VSOut {
+  var out: VSOut;
+  out.pos = vec4f(0.0, 0.0, 0.0, 1.0);
+  out.clip = array<f32, 4>(1.0, 1.0, 1.0, 1.0);
+  return out;
+}
+`);
+            assert(clipDistances.ok === true, "clip-distances shader preflight succeeds");
+        }
+
+        if (device.features.has('dual-source-blending')) {
+            const dualSource = preflightShaderSource(`
+struct FSOut {
+  @location(0) @blend_src(0) color0: vec4f,
+  @location(0) @blend_src(1) color1: vec4f,
+};
+
+@fragment
+fn fs() -> FSOut {
+  var out: FSOut;
+  out.color0 = vec4f(1.0, 0.0, 0.0, 1.0);
+  out.color1 = vec4f(0.0, 1.0, 0.0, 1.0);
+  return out;
+}
+`);
+            assert(dualSource.ok === true, "dual-source-blending shader preflight succeeds");
+        }
+    } catch (e) {
+        assert(false, `render feature compiler exercises threw: ${e}`);
+    }
+
+    section("timestamp-query exercise");
+    if (device.features.has('timestamp-query')) {
+        try {
+            const tsQuerySet = device.createQuerySet({ type: "timestamp", count: 2 });
+            assert(tsQuerySet != null, "createQuerySet(timestamp) returns non-null");
+            const tsResolveBuf = device.createBuffer({
+                size: 16,
+                usage: globals.GPUBufferUsage.QUERY_RESOLVE | globals.GPUBufferUsage.COPY_SRC,
+            });
+            const tsReadbackBuf = device.createBuffer({
+                size: 16,
+                usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ,
+            });
+            const tsEncoder = device.createCommandEncoder();
+            tsEncoder.writeTimestamp(tsQuerySet, 0);
+            tsEncoder.writeTimestamp(tsQuerySet, 1);
+            tsEncoder.resolveQuerySet(tsQuerySet, 0, 2, tsResolveBuf, 0);
+            tsEncoder.copyBufferToBuffer(tsResolveBuf, 0, tsReadbackBuf, 0, 16);
+            device.queue.submit([tsEncoder.finish()]);
+            await device.queue.onSubmittedWorkDone();
+            await tsReadbackBuf.mapAsync(globals.GPUMapMode.READ, 0, 16);
+            const tsData = new BigUint64Array(tsReadbackBuf.getMappedRange(0, 16));
+            assert(tsData[0] > 0n || tsData[1] > 0n, "timestamp query resolved non-zero timestamps");
+            tsReadbackBuf.unmap();
+        } catch (e) {
+            assert(false, `timestamp-query exercise threw: ${e}`);
+        }
+    }
+
+    section("query set lifecycle");
+    if (device.features.has('timestamp-query')) {
+        try {
+            const lifecycleQs = device.createQuerySet({ type: "timestamp", count: 4 });
+            assert(lifecycleQs != null, "query set created");
+            assert(lifecycleQs.type === "timestamp", "querySet.type === 'timestamp'");
+            assert(lifecycleQs.count === 4, "querySet.count === 4");
+            lifecycleQs.destroy();
+            assert(true, "querySet.destroy() did not crash");
+        } catch (e) {
+            assert(false, `query set lifecycle threw: ${e}`);
+        }
+    }
+
+    section("drawIndirect method exists");
+    try {
+        const diVertShader = device.createShaderModule({
+            code: `@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4f {
+    return vec4f(0.0, 0.0, 0.0, 1.0);
+}`,
+        });
+        const diFragShader = device.createShaderModule({
+            code: `@fragment
+fn fs() -> @location(0) vec4f {
+    return vec4f(1.0, 0.0, 0.0, 1.0);
+}`,
+        });
+        const diPipeline = device.createRenderPipeline({
+            layout: "auto",
+            vertex: { module: diVertShader, entryPoint: "vs" },
+            fragment: {
+                module: diFragShader,
+                entryPoint: "fs",
+                targets: [{ format: "rgba8unorm" }],
+            },
+        });
+        const diColorTex = device.createTexture({
+            size: [4, 4],
+            format: "rgba8unorm",
+            usage: globals.GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        const diEncoder = device.createCommandEncoder();
+        const diPass = diEncoder.beginRenderPass({
+            colorAttachments: [{
+                view: diColorTex.createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                loadOp: "clear",
+                storeOp: "store",
+            }],
+        });
+        diPass.setPipeline(diPipeline);
+        assert(typeof diPass.drawIndirect === "function", "GPURenderPassEncoder.drawIndirect is a function");
+        diPass.end();
+        device.queue.submit([diEncoder.finish()]);
+        await device.queue.onSubmittedWorkDone();
+    } catch (e) {
+        assert(false, `drawIndirect method check threw: ${e}`);
+    }
+
+    section("adapter destroy");
+    try {
+        adapter.destroy?.();
+        assert(true, "adapter.destroy() did not crash");
+    } catch (e) {
+        assert(false, `adapter.destroy() threw: ${e}`);
+    }
 
     console.log(`\nResults: ${passed} passed, ${failed} failed`);
     return { passed, failed };

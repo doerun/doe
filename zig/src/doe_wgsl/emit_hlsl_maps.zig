@@ -60,7 +60,20 @@ pub fn hlsl_builtin_name(builtin: ir.Builtin) []const u8 {
         .sample_mask => "SV_Coverage",
         .vertex_index => "SV_VertexID",
         .instance_index => "SV_InstanceID",
+        .subgroup_size, .subgroup_invocation_id => "UNSUPPORTED_BUILTIN",
+        .clip_distances => "SV_ClipDistance",
+        .primitive_index => "SV_PrimitiveID",
         else => "UNSUPPORTED_BUILTIN",
+    };
+}
+
+/// Returns the HLSL intrinsic call for builtins that map to function calls
+/// rather than entry-point parameter semantics, or null for standard semantics.
+pub fn hlsl_intrinsic_builtin(builtin: ir.Builtin) ?[]const u8 {
+    return switch (builtin) {
+        .subgroup_size => "WaveGetLaneCount()",
+        .subgroup_invocation_id => "WaveGetLaneIndex()",
+        else => null,
     };
 }
 

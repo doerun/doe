@@ -70,6 +70,9 @@ pub fn parse_io_attr(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.IoAtt
         } else if (std.mem.eql(u8, name, "invariant")) {
             result.invariant = true;
             seen = true;
+        } else if (std.mem.eql(u8, name, "blend_src")) {
+            result.blend_src = try parse_single_int_attr(self.module.tree, attr_idx);
+            seen = true;
         }
     }
     return if (seen) result else null;
@@ -93,6 +96,15 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             else => error.UnsupportedBuiltin,
         };
+    }
+    if (std.mem.eql(u8, name, "textureSample")) {
+        return try infer_texture_sample_call(self, arg_types, false);
+    }
+    if (std.mem.eql(u8, name, "textureSampleLevel")) {
+        return try infer_texture_sample_call(self, arg_types, true);
+    }
+    if (std.mem.eql(u8, name, "textureDimensions")) {
+        return try infer_texture_dimensions_call(self, arg_types);
     }
     if (std.mem.eql(u8, name, "textureStore")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
@@ -169,6 +181,67 @@ fn scalar_result_type(self: anytype, ty: ir.TypeId) !ir.TypeId {
         .vector => |vec| vec.elem,
         .scalar => ty,
         else => error.UnsupportedBuiltin,
+    };
+}
+
+fn infer_texture_sample_call(self: anytype, arg_types: []const ir.TypeId, explicit_level: bool) !ir.TypeId {
+    const expected_arg_count: usize = if (explicit_level) 4 else 3;
+    if (arg_types.len != expected_arg_count) return error.UnsupportedBuiltin;
+    const sample_ty = switch (self.module.types.get(arg_types[0])) {
+        .texture_2d => |inner| inner,
+        else => return error.UnsupportedBuiltin,
+    };
+    if (!is_sampler_type(self, arg_types[1])) return error.UnsupportedBuiltin;
+    if (!is_float_coord_2d(self, arg_types[2])) return error.UnsupportedBuiltin;
+    if (explicit_level and !is_float_scalar(self, arg_types[3])) return error.UnsupportedBuiltin;
+    return try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } });
+}
+
+fn infer_texture_dimensions_call(self: anytype, arg_types: []const ir.TypeId) !ir.TypeId {
+    if (arg_types.len == 0) return error.UnsupportedBuiltin;
+    switch (self.module.types.get(arg_types[0])) {
+        .texture_2d => {
+            if (arg_types.len != 2 or !is_integer_scalar(self, arg_types[1])) return error.UnsupportedBuiltin;
+        },
+        .storage_texture_2d => {
+            if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        },
+        else => return error.UnsupportedBuiltin,
+    }
+    return try self.module.types.intern(.{ .vector = .{ .elem = self.module.u32_type, .len = 2 } });
+}
+
+fn is_sampler_type(self: anytype, ty: ir.TypeId) bool {
+    return switch (self.module.types.get(ty)) {
+        .sampler => true,
+        else => false,
+    };
+}
+
+fn is_float_coord_2d(self: anytype, ty: ir.TypeId) bool {
+    return switch (self.module.types.get(ty)) {
+        .vector => |vec| vec.len == 2 and is_float_scalar(self, vec.elem),
+        else => false,
+    };
+}
+
+fn is_float_scalar(self: anytype, ty: ir.TypeId) bool {
+    return switch (self.module.types.get(ty)) {
+        .scalar => |scalar| switch (scalar) {
+            .f32, .f16, .abstract_float => true,
+            else => false,
+        },
+        else => false,
+    };
+}
+
+fn is_integer_scalar(self: anytype, ty: ir.TypeId) bool {
+    return switch (self.module.types.get(ty)) {
+        .scalar => |scalar| switch (scalar) {
+            .u32, .i32, .abstract_int => true,
+            else => false,
+        },
+        else => false,
     };
 }
 

@@ -105,8 +105,7 @@
   `python3 bench/build_baseline_dataset.py --report-glob "bench/out/**/dawn-vs-doe*.json"`
   this maintains timestamped JSON+markdown baseline summaries plus stable latest outputs.
 - include distribution diagnostics in benchmark reporting (ECDF overlays, KS/p-value, Wasserstein, superiority probability, and bootstrap CI summaries)
-- for claimable "faster" statements, require reliability checks in addition to comparability:
-  minimum timed-sample floor and positive tail deltas (not median-only wins)
+- claimability rules (sample floors, tail consistency, structural equivalence) are defined in `performance-strategy.md`
 - run claim-mode (`--claimability local|release`) for benchmark artifacts that will be used in performance claims
 
 7. Release
