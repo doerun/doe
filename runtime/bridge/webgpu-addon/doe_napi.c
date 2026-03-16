@@ -1216,6 +1216,38 @@ static napi_value doe_buffer_read_copy(napi_env env, napi_callback_info info) {
     return ab;
 }
 
+/* bufferGetStagedRange(buf, offset, size) → V8-heap ArrayBuffer for WRITE-mode maps.
+ * Allocates a V8-managed buffer so TypedArray ops (fill, set, etc.) use V8's fast SIMD
+ * paths rather than the slow external-memory path. Call bufferFlushStagedRange on unmap. */
+static napi_value doe_buffer_get_staged_range(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
+    int64_t size_i = 0;
+    napi_get_value_int64(env, _args[2], &size_i);
+    void* copy = NULL;
+    napi_value ab;
+    napi_create_arraybuffer(env, (size_t)size_i, &copy, &ab);
+    return ab;
+}
+
+/* bufferFlushStagedRange(buf, arraybuffer, offset, size) → memcpy staged V8 buffer → Metal. */
+static napi_value doe_buffer_flush_staged_range(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 4);
+    CHECK_LIB_LOADED(env);
+    WGPUBuffer buf = unwrap_ptr(env, _args[0]);
+    void* staged = NULL;
+    size_t staged_len = 0;
+    napi_get_arraybuffer_info(env, _args[1], &staged, &staged_len);
+    int64_t offset_i = 0, size_i = 0;
+    napi_get_value_int64(env, _args[2], &offset_i);
+    napi_get_value_int64(env, _args[3], &size_i);
+    if (!staged || size_i <= 0) return NULL;
+    void* mapped = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    if (!mapped) NAPI_THROW(env, "bufferFlushStagedRange: mapped range unavailable");
+    memcpy(mapped, staged, (size_t)size_i);
+    return NULL;
+}
+
 static napi_value doe_buffer_write_mapped_range(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 3);
     CHECK_LIB_LOADED(env);
@@ -5020,6 +5052,8 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("bufferUnmap", doe_buffer_unmap),
         EXPORT_FN("bufferMapSync", doe_buffer_map_sync),
         EXPORT_FN("bufferGetMappedRange", doe_buffer_get_mapped_range),
+        EXPORT_FN("bufferGetStagedRange", doe_buffer_get_staged_range),
+        EXPORT_FN("bufferFlushStagedRange", doe_buffer_flush_staged_range),
         EXPORT_FN("bufferReadCopy", doe_buffer_read_copy),
         EXPORT_FN("bufferWriteMappedRange", doe_buffer_write_mapped_range),
         EXPORT_FN("bufferReadIndirectCounts", doe_buffer_read_indirect_counts),

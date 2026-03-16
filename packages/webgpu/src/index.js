@@ -544,6 +544,11 @@ const fullSurfaceBackend = {
     wrapper._mapMode = mode;
   },
   bufferGetMappedRange(wrapper, native, offset, size) {
+    if (wrapper._mapMode === globals.GPUMapMode.WRITE) {
+      const staged = addon.bufferGetStagedRange(native, offset, size);
+      wrapper._staged = { buf: staged, native, offset, size };
+      return staged;
+    }
     return addon.bufferGetMappedRange(native, offset, size);
   },
   bufferReadCopy(_wrapper, native, offset, size) {
@@ -556,6 +561,11 @@ const fullSurfaceBackend = {
     return addon.bufferAssertMappedPrefixF32(native, expected, count);
   },
   bufferUnmap(native, wrapper) {
+    if (wrapper._staged) {
+      const { buf, offset, size } = wrapper._staged;
+      addon.bufferFlushStagedRange(native, buf, offset, size);
+      wrapper._staged = null;
+    }
     wrapper._mapMode = 0;
     addon.bufferUnmap(native);
   },
