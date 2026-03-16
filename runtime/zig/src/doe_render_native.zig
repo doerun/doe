@@ -41,12 +41,12 @@ const RenderPassCmd = std.meta.TagPayloadByName(native.RecordedCmd, "render_pass
 pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const types.WGPUTextureDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
-    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.mipLevelCount, d.format, @intCast(d.usage)) orelse return null;
+    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.format, @intCast(d.usage), d.dimension) orelse return null;
     const tex = make(DoeTexture) orelse {
         metal_bridge_release(mtl);
         return null;
     };
-    tex.* = .{ .mtl = mtl, .format = d.format, .width = d.size.width, .height = d.size.height };
+    tex.* = .{ .mtl = mtl, .format = d.format, .width = d.size.width, .height = d.size.height, .depth_or_array_layers = d.size.depthOrArrayLayers, .dimension = d.dimension };
     return toOpaque(tex);
 }
 

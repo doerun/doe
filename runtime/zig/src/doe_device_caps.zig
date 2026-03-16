@@ -42,6 +42,9 @@ else
         pub fn metal_bridge_query_device_features() callconv(.c) u32 {
             return 0;
         }
+        pub fn metal_bridge_query_device_max_buffer_length() callconv(.c) u64 {
+            return 0;
+        }
     };
 
 fn getDeviceFeatures() u32 {
@@ -114,28 +117,19 @@ pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv
 }
 
 // ============================================================
-// Device / Adapter limits — Metal defaults for Apple Silicon.
+// Device / Adapter limits — WebGPU spec minimums as fallback,
+// overridden at runtime by actual Metal device queries.
 
-const METAL_MAX_TEXTURE_DIMENSION_1D: u32 = 16_384;
-const METAL_MAX_TEXTURE_DIMENSION_2D: u32 = 16_384;
-const METAL_MAX_TEXTURE_DIMENSION_3D: u32 = 2_048;
-const METAL_MAX_TEXTURE_ARRAY_LAYERS: u32 = 2_048;
-const METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE: u64 = 64 * 1024;
-const METAL_MAX_STORAGE_BUFFER_BINDING_SIZE: u64 = 128 * 1024 * 1024;
-const METAL_MAX_BUFFER_SIZE: u64 = 256 * 1024 * 1024;
-const METAL_MAX_VERTEX_BUFFER_ARRAY_STRIDE: u32 = 2_048;
-const METAL_MAX_COMPUTE_WORKGROUP_STORAGE_SIZE: u32 = 32 * 1024;
-const METAL_MAX_COMPUTE_INVOCATIONS_PER_WORKGROUP: u32 = 1_024;
-const METAL_MAX_COMPUTE_WORKGROUP_SIZE_X: u32 = 1_024;
-const METAL_MAX_COMPUTE_WORKGROUP_SIZE_Y: u32 = 1_024;
-const METAL_MAX_COMPUTE_WORKGROUPS_PER_DIMENSION: u32 = 65_535;
+const SPEC_MIN_UNIFORM_BUFFER_BINDING_SIZE: u64 = 64 * 1024;
+const SPEC_MIN_STORAGE_BUFFER_BINDING_SIZE: u64 = 128 * 1024 * 1024;
+const SPEC_MIN_MAX_BUFFER_SIZE: u64 = 256 * 1024 * 1024;
 
-const METAL_LIMITS = types.WGPULimits{
+const SPEC_MINIMUM_LIMITS = types.WGPULimits{
     .nextInChain = null,
-    .maxTextureDimension1D = METAL_MAX_TEXTURE_DIMENSION_1D,
-    .maxTextureDimension2D = METAL_MAX_TEXTURE_DIMENSION_2D,
-    .maxTextureDimension3D = METAL_MAX_TEXTURE_DIMENSION_3D,
-    .maxTextureArrayLayers = METAL_MAX_TEXTURE_ARRAY_LAYERS,
+    .maxTextureDimension1D = 16_384,
+    .maxTextureDimension2D = 16_384,
+    .maxTextureDimension3D = 2_048,
+    .maxTextureArrayLayers = 2_048,
     .maxBindGroups = 4,
     .maxBindGroupsPlusVertexBuffers = 24,
     .maxBindingsPerBindGroup = 1000,
@@ -146,35 +140,55 @@ const METAL_LIMITS = types.WGPULimits{
     .maxStorageBuffersPerShaderStage = 8,
     .maxStorageTexturesPerShaderStage = 4,
     .maxUniformBuffersPerShaderStage = 12,
-    .maxUniformBufferBindingSize = METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE,
-    .maxStorageBufferBindingSize = METAL_MAX_STORAGE_BUFFER_BINDING_SIZE,
+    .maxUniformBufferBindingSize = SPEC_MIN_UNIFORM_BUFFER_BINDING_SIZE,
+    .maxStorageBufferBindingSize = SPEC_MIN_STORAGE_BUFFER_BINDING_SIZE,
     .minUniformBufferOffsetAlignment = 256,
     .minStorageBufferOffsetAlignment = 32,
     .maxVertexBuffers = 8,
-    .maxBufferSize = METAL_MAX_BUFFER_SIZE,
+    .maxBufferSize = SPEC_MIN_MAX_BUFFER_SIZE,
     .maxVertexAttributes = 16,
-    .maxVertexBufferArrayStride = METAL_MAX_VERTEX_BUFFER_ARRAY_STRIDE,
+    .maxVertexBufferArrayStride = 2_048,
     .maxInterStageShaderVariables = 16,
     .maxColorAttachments = 8,
     .maxColorAttachmentBytesPerSample = 32,
-    .maxComputeWorkgroupStorageSize = METAL_MAX_COMPUTE_WORKGROUP_STORAGE_SIZE,
-    .maxComputeInvocationsPerWorkgroup = METAL_MAX_COMPUTE_INVOCATIONS_PER_WORKGROUP,
-    .maxComputeWorkgroupSizeX = METAL_MAX_COMPUTE_WORKGROUP_SIZE_X,
-    .maxComputeWorkgroupSizeY = METAL_MAX_COMPUTE_WORKGROUP_SIZE_Y,
+    .maxComputeWorkgroupStorageSize = 32 * 1024,
+    .maxComputeInvocationsPerWorkgroup = 1_024,
+    .maxComputeWorkgroupSizeX = 1_024,
+    .maxComputeWorkgroupSizeY = 1_024,
     .maxComputeWorkgroupSizeZ = 64,
-    .maxComputeWorkgroupsPerDimension = METAL_MAX_COMPUTE_WORKGROUPS_PER_DIMENSION,
+    .maxComputeWorkgroupsPerDimension = 65_535,
     .maxImmediateSize = 0,
 };
 
+var cached_device_limits: ?types.WGPULimits = null;
+
+fn getDeviceLimits() types.WGPULimits {
+    if (cached_device_limits) |l| return l;
+
+    var limits = SPEC_MINIMUM_LIMITS;
+
+    if (IS_METAL) {
+        const max_buf = metal_bridge.metal_bridge_query_device_max_buffer_length();
+        if (max_buf > SPEC_MIN_MAX_BUFFER_SIZE) {
+            limits.maxBufferSize = max_buf;
+            // Metal has no separate storage binding limit — bounded by buffer size
+            limits.maxStorageBufferBindingSize = max_buf;
+        }
+    }
+
+    cached_device_limits = limits;
+    return limits;
+}
+
 pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     _ = raw;
-    if (limits) |l| l.* = METAL_LIMITS;
+    if (limits) |l| l.* = getDeviceLimits();
     return types.WGPUStatus_Success;
 }
 
 pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     _ = raw;
-    if (limits) |l| l.* = METAL_LIMITS;
+    if (limits) |l| l.* = getDeviceLimits();
     return types.WGPUStatus_Success;
 }
 
@@ -183,50 +197,41 @@ pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULi
 const std = @import("std");
 const testing = std.testing;
 
-test "METAL_LIMITS texture dimensions are positive" {
-    try testing.expect(METAL_LIMITS.maxTextureDimension1D > 0);
-    try testing.expect(METAL_LIMITS.maxTextureDimension2D > 0);
-    try testing.expect(METAL_LIMITS.maxTextureDimension3D > 0);
-    try testing.expect(METAL_LIMITS.maxTextureArrayLayers > 0);
+test "spec minimum limits: texture dimensions are positive" {
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureDimension1D > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureDimension2D > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureDimension3D > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureArrayLayers > 0);
 }
 
-test "METAL_LIMITS compute workgroup sizes are positive" {
-    try testing.expect(METAL_LIMITS.maxComputeWorkgroupSizeX > 0);
-    try testing.expect(METAL_LIMITS.maxComputeWorkgroupSizeY > 0);
-    try testing.expect(METAL_LIMITS.maxComputeWorkgroupSizeZ > 0);
-    try testing.expect(METAL_LIMITS.maxComputeInvocationsPerWorkgroup > 0);
-    try testing.expect(METAL_LIMITS.maxComputeWorkgroupsPerDimension > 0);
-    try testing.expect(METAL_LIMITS.maxComputeWorkgroupStorageSize > 0);
+test "spec minimum limits: compute workgroup sizes are positive" {
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupSizeX > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupSizeY > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupSizeZ > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeInvocationsPerWorkgroup > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupsPerDimension > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupStorageSize > 0);
 }
 
-test "METAL_LIMITS buffer sizes respect hierarchy" {
-    // maxBufferSize >= maxStorageBufferBindingSize >= maxUniformBufferBindingSize
-    try testing.expect(METAL_LIMITS.maxBufferSize >= METAL_LIMITS.maxStorageBufferBindingSize);
-    try testing.expect(METAL_LIMITS.maxStorageBufferBindingSize >= METAL_LIMITS.maxUniformBufferBindingSize);
+test "spec minimum limits: buffer sizes respect hierarchy" {
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxBufferSize >= SPEC_MINIMUM_LIMITS.maxStorageBufferBindingSize);
+    try testing.expect(SPEC_MINIMUM_LIMITS.maxStorageBufferBindingSize >= SPEC_MINIMUM_LIMITS.maxUniformBufferBindingSize);
 }
 
-test "METAL_LIMITS alignment values are powers of two" {
-    try testing.expect(METAL_LIMITS.minUniformBufferOffsetAlignment > 0);
-    try testing.expect(METAL_LIMITS.minStorageBufferOffsetAlignment > 0);
-    // Power-of-two check: n & (n - 1) == 0 for n > 0
-    try testing.expectEqual(@as(u32, 0), METAL_LIMITS.minUniformBufferOffsetAlignment & (METAL_LIMITS.minUniformBufferOffsetAlignment - 1));
-    try testing.expectEqual(@as(u32, 0), METAL_LIMITS.minStorageBufferOffsetAlignment & (METAL_LIMITS.minStorageBufferOffsetAlignment - 1));
+test "spec minimum limits: alignment values are powers of two" {
+    try testing.expect(SPEC_MINIMUM_LIMITS.minUniformBufferOffsetAlignment > 0);
+    try testing.expect(SPEC_MINIMUM_LIMITS.minStorageBufferOffsetAlignment > 0);
+    try testing.expectEqual(@as(u32, 0), SPEC_MINIMUM_LIMITS.minUniformBufferOffsetAlignment & (SPEC_MINIMUM_LIMITS.minUniformBufferOffsetAlignment - 1));
+    try testing.expectEqual(@as(u32, 0), SPEC_MINIMUM_LIMITS.minStorageBufferOffsetAlignment & (SPEC_MINIMUM_LIMITS.minStorageBufferOffsetAlignment - 1));
 }
 
-test "METAL_LIMITS named constants match struct fields" {
-    try testing.expectEqual(METAL_MAX_TEXTURE_DIMENSION_1D, METAL_LIMITS.maxTextureDimension1D);
-    try testing.expectEqual(METAL_MAX_TEXTURE_DIMENSION_2D, METAL_LIMITS.maxTextureDimension2D);
-    try testing.expectEqual(METAL_MAX_TEXTURE_DIMENSION_3D, METAL_LIMITS.maxTextureDimension3D);
-    try testing.expectEqual(METAL_MAX_TEXTURE_ARRAY_LAYERS, METAL_LIMITS.maxTextureArrayLayers);
-    try testing.expectEqual(METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE, METAL_LIMITS.maxUniformBufferBindingSize);
-    try testing.expectEqual(METAL_MAX_STORAGE_BUFFER_BINDING_SIZE, METAL_LIMITS.maxStorageBufferBindingSize);
-    try testing.expectEqual(METAL_MAX_BUFFER_SIZE, METAL_LIMITS.maxBufferSize);
-    try testing.expectEqual(METAL_MAX_VERTEX_BUFFER_ARRAY_STRIDE, METAL_LIMITS.maxVertexBufferArrayStride);
-    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUP_STORAGE_SIZE, METAL_LIMITS.maxComputeWorkgroupStorageSize);
-    try testing.expectEqual(METAL_MAX_COMPUTE_INVOCATIONS_PER_WORKGROUP, METAL_LIMITS.maxComputeInvocationsPerWorkgroup);
-    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUP_SIZE_X, METAL_LIMITS.maxComputeWorkgroupSizeX);
-    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUP_SIZE_Y, METAL_LIMITS.maxComputeWorkgroupSizeY);
-    try testing.expectEqual(METAL_MAX_COMPUTE_WORKGROUPS_PER_DIMENSION, METAL_LIMITS.maxComputeWorkgroupsPerDimension);
+test "runtime limits: at least spec minimums" {
+    const limits = getDeviceLimits();
+    try testing.expect(limits.maxBufferSize >= SPEC_MIN_MAX_BUFFER_SIZE);
+    try testing.expect(limits.maxStorageBufferBindingSize >= SPEC_MIN_STORAGE_BUFFER_BINDING_SIZE);
+    try testing.expect(limits.maxUniformBufferBindingSize >= SPEC_MIN_UNIFORM_BUFFER_BINDING_SIZE);
+    try testing.expect(limits.maxBufferSize >= limits.maxStorageBufferBindingSize);
+    try testing.expect(limits.maxStorageBufferBindingSize >= limits.maxUniformBufferBindingSize);
 }
 
 test "adapter and device feature queries are symmetric" {
@@ -390,12 +395,14 @@ test "device and adapter GetLimits populates limits struct" {
     var limits: types.WGPULimits = undefined;
     const device_status = doeNativeDeviceGetLimits(null, &limits);
     try testing.expectEqual(types.WGPUStatus_Success, device_status);
-    try testing.expectEqual(METAL_LIMITS.maxTextureDimension2D, limits.maxTextureDimension2D);
-    try testing.expectEqual(METAL_LIMITS.maxComputeWorkgroupSizeX, limits.maxComputeWorkgroupSizeX);
-    try testing.expectEqual(METAL_LIMITS.maxBufferSize, limits.maxBufferSize);
+    try testing.expect(limits.maxTextureDimension2D >= 16_384);
+    try testing.expect(limits.maxComputeWorkgroupSizeX >= 1_024);
+    try testing.expect(limits.maxBufferSize >= SPEC_MIN_MAX_BUFFER_SIZE);
 
     var adapter_limits: types.WGPULimits = undefined;
     const adapter_status = doeNativeAdapterGetLimits(null, &adapter_limits);
     try testing.expectEqual(types.WGPUStatus_Success, adapter_status);
-    try testing.expectEqual(METAL_LIMITS.maxTextureDimension2D, adapter_limits.maxTextureDimension2D);
+    try testing.expect(adapter_limits.maxTextureDimension2D >= 16_384);
+    // Device and adapter must agree
+    try testing.expectEqual(limits.maxBufferSize, adapter_limits.maxBufferSize);
 }

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doe Volume Render</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #080a10; color: #ccc; font: 13px/1.5 monospace; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+  #controls { padding: 8px 12px; display: flex; gap: 12px; align-items: center; width: 100%; }
+  label { display: flex; align-items: center; gap: 6px; }
+  select, button { background: #1a1c22; color: #ccc; border: 1px solid #333; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
+  #status { margin-left: auto; font-size: 11px; color: #666; }
+  canvas { flex: 1; width: 100%; object-fit: contain; }
+</style>
+</head>
+<body>
+<div id="controls">
+  <label>dataset
+    <select id="ds-select">
+      <option value="fuel">fuel (64³)</option>
+      <option value="silicium">silicium (98×34×34)</option>
+      <option value="hydrogen_atom" selected>hydrogen atom (128³)</option>
+    </select>
+  </label>
+  <button id="load-btn">load</button>
+  <span id="status">not loaded</span>
+</div>
+<canvas id="c"></canvas>
+
+<script type="module">
+const DATASETS = {
+  fuel:          { w: 64,  h: 64,  d: 64,  file: "data/fuel_64x64x64_uint8.raw" },
+  silicium:      { w: 98,  h: 34,  d: 34,  file: "data/silicium_98x34x34_uint8.raw" },
+  hydrogen_atom: { w: 128, h: 128, d: 128, file: "data/hydrogen_atom_128x128x128_uint8.raw" },
+};
+const ALIGN = 256;
+
+const canvas = document.getElementById("c");
+const status = document.getElementById("status");
+
+let gpu, device, pipeline, bindGroup, pixelBuf, readbackBuf, camBuf;
+let W = 0, H = 0, animId = null, angle = 0;
+
+function padVolume(data, volW, volH, volD) {
+  const alignedRow = Math.ceil(volW / ALIGN) * ALIGN;
+  if (alignedRow === volW) return { data, bytesPerRow: volW };
+  const out = new Uint8Array(alignedRow * volH * volD);
+  for (let z = 0; z < volD; z++)
+    for (let y = 0; y < volH; y++)
+      out.set(data.subarray((z*volH+y)*volW, (z*volH+y)*volW+volW), (z*volH+y)*alignedRow);
+  return { data: out, bytesPerRow: alignedRow };
+}
+
+function setCam(buf, eye, target, w, h) {
+  const v = new DataView(buf);
+  v.setFloat32( 0, eye[0],    true); v.setFloat32( 4, eye[1],    true);
+  v.setFloat32( 8, eye[2],    true); v.setFloat32(12, 0,         true);
+  v.setFloat32(16, target[0], true); v.setFloat32(20, target[1], true);
+  v.setFloat32(24, target[2], true); v.setFloat32(28, 0,         true);
+  new DataView(buf).setUint32(32, w, true);
+  new DataView(buf).setUint32(36, h, true);
+}
+
+async function load() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+
+  if (!navigator.gpu) { status.textContent = "WebGPU not supported"; return; }
+  if (!device) {
+    const adapter = await navigator.gpu.requestAdapter();
+    device = await adapter.requestDevice();
+    gpu = navigator.gpu;
+  }
+
+  const dsName = document.getElementById("ds-select").value;
+  const ds = DATASETS[dsName];
+  status.textContent = `loading ${dsName}…`;
+
+  let rawData;
+  try {
+    const res = await fetch(ds.file);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: run download.sh first`);
+    rawData = new Uint8Array(await res.arrayBuffer());
+  } catch(e) {
+    status.textContent = `error: ${e.message}`;
+    return;
+  }
+
+  W = Math.floor(canvas.clientWidth)  || 640;
+  H = Math.floor(canvas.clientHeight) || 480;
+  canvas.width  = W;
+  canvas.height = H;
+
+  const ctx2d = canvas.getContext("2d");
+
+  const { data: volPadded, bytesPerRow: volBPR } = padVolume(rawData, ds.w, ds.h, ds.d);
+
+  const volStagingBuf = device.createBuffer({
+    size: volPadded.byteLength,
+    usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(volStagingBuf, 0, volPadded);
+
+  const volTex = device.createTexture({
+    dimension: "3d",
+    size: { width: ds.w, height: ds.h, depthOrArrayLayers: ds.d },
+    format: "r8unorm",
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+  });
+
+  {
+    const enc = device.createCommandEncoder();
+    enc.copyBufferToTexture(
+      { buffer: volStagingBuf, offset: 0, bytesPerRow: volBPR, rowsPerImage: ds.h },
+      { texture: volTex },
+      { width: ds.w, height: ds.h, depthOrArrayLayers: ds.d },
+    );
+    device.queue.submit([enc.finish()]);
+    await device.queue.onSubmittedWorkDone();
+  }
+  volStagingBuf.destroy();
+
+  const pixelBytes = W * H * 4;
+  pixelBuf    = device.createBuffer({ size: pixelBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
+  readbackBuf = device.createBuffer({ size: pixelBytes, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+  camBuf      = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+
+  const volInfoBuf = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const vi = new DataView(new ArrayBuffer(16));
+  vi.setUint32(0, ds.w, true); vi.setUint32(4, ds.h, true);
+  vi.setUint32(8, ds.d, true); vi.setUint32(12, 0,    true);
+  device.queue.writeBuffer(volInfoBuf, 0, vi.buffer);
+
+  const shaderSrc = await fetch("volume-render.wgsl").then(r => r.text());
+  const shaderMod = device.createShaderModule({ code: shaderSrc });
+  pipeline = device.createComputePipeline({
+    layout: "auto",
+    compute: { module: shaderMod, entryPoint: "main" },
+  });
+
+  bindGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: camBuf } },
+      { binding: 1, resource: { buffer: volInfoBuf } },
+      { binding: 2, resource: volTex.createView() },
+      { binding: 3, resource: { buffer: pixelBuf } },
+    ],
+  });
+
+  const wgX = Math.ceil(W / 8);
+  const wgY = Math.ceil(H / 8);
+  const camRaw = new ArrayBuffer(48);
+  let frameCount = 0, fps = 0, fpsTimer = performance.now();
+
+  async function frame() {
+    angle += 0.008;
+    const r   = 2.2;
+    const eye = [0.5 + r * Math.sin(angle), 0.9, 0.5 + r * Math.cos(angle)];
+    setCam(camRaw, eye, [0.5, 0.5, 0.5], W, H);
+    device.queue.writeBuffer(camBuf, 0, camRaw);
+
+    const enc  = device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.dispatchWorkgroups(wgX, wgY);
+    pass.end();
+    enc.copyBufferToBuffer(pixelBuf, 0, readbackBuf, 0, pixelBytes);
+    device.queue.submit([enc.finish()]);
+    await device.queue.onSubmittedWorkDone();
+
+    await readbackBuf.mapAsync(GPUMapMode.READ);
+    const raw  = new Uint8ClampedArray(readbackBuf.getMappedRange().slice(0));
+    readbackBuf.unmap();
+
+    // RGBA packed little-endian → ImageData expects [R,G,B,A] order
+    const img = new ImageData(W, H);
+    for (let i = 0; i < W * H; i++) {
+      img.data[i * 4 + 0] = raw[i * 4 + 0]; // R
+      img.data[i * 4 + 1] = raw[i * 4 + 1]; // G
+      img.data[i * 4 + 2] = raw[i * 4 + 2]; // B
+      img.data[i * 4 + 3] = 255;
+    }
+    ctx2d.putImageData(img, 0, 0);
+
+    frameCount++;
+    const now = performance.now();
+    if (now - fpsTimer >= 1000) {
+      fps = Math.round(frameCount * 1000 / (now - fpsTimer));
+      frameCount = 0;
+      fpsTimer = now;
+      status.textContent = `${dsName} · ${fps} fps`;
+    }
+
+    animId = requestAnimationFrame(frame);
+  }
+
+  status.textContent = `${dsName} loaded`;
+  animId = requestAnimationFrame(frame);
+}
+
+document.getElementById("load-btn").addEventListener("click", load);
+load();
+</script>
+</body>
+</html>

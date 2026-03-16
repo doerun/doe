@@ -213,6 +213,45 @@ function createEncoderClasses(backend) {
       );
     }
 
+    copyBufferToTexture(source, destination, copySize) {
+      this._assertOpen('GPUCommandEncoder.copyBufferToTexture');
+      const sourceObject = assertObject(source, 'GPUCommandEncoder.copyBufferToTexture', 'source');
+      const destinationObject = assertObject(destination, 'GPUCommandEncoder.copyBufferToTexture', 'destination');
+      const sizeObject = assertObject(copySize, 'GPUCommandEncoder.copyBufferToTexture', 'copySize');
+      assertIntegerInRange(sourceObject.offset ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.offset', { min: 0 });
+      assertIntegerInRange(sourceObject.bytesPerRow ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.bytesPerRow', { min: 0 });
+      assertIntegerInRange(sourceObject.rowsPerImage ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.rowsPerImage', { min: 0 });
+      assertIntegerInRange(sizeObject.width, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.width', { min: 1, max: UINT32_MAX });
+      assertIntegerInRange(sizeObject.height, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.height', { min: 1, max: UINT32_MAX });
+      if (sizeObject.depthOrArrayLayers !== undefined) {
+        assertIntegerInRange(sizeObject.depthOrArrayLayers, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.depthOrArrayLayers', { min: 1, max: UINT32_MAX });
+      }
+      backend.commandEncoderCopyBufferToTexture(
+        this,
+        {
+          buffer: assertLiveResource(sourceObject.buffer, 'GPUCommandEncoder.copyBufferToTexture', 'GPUBuffer'),
+          offset: sourceObject.offset ?? 0,
+          bytesPerRow: sourceObject.bytesPerRow ?? 0,
+          rowsPerImage: sourceObject.rowsPerImage ?? 0,
+        },
+        {
+          texture: assertLiveResource(destinationObject.texture, 'GPUCommandEncoder.copyBufferToTexture', 'GPUTexture'),
+          mipLevel: destinationObject.mipLevel ?? 0,
+          origin: {
+            x: destinationObject.origin?.x ?? 0,
+            y: destinationObject.origin?.y ?? 0,
+            z: destinationObject.origin?.z ?? 0,
+          },
+          aspect: destinationObject.aspect,
+        },
+        {
+          width: sizeObject.width,
+          height: sizeObject.height,
+          depthOrArrayLayers: sizeObject.depthOrArrayLayers ?? 1,
+        },
+      );
+    }
+
     copyTextureToBuffer(source, destination, copySize) {
       this._assertOpen('GPUCommandEncoder.copyTextureToBuffer');
       const sourceObject = assertObject(source, 'GPUCommandEncoder.copyTextureToBuffer', 'source');

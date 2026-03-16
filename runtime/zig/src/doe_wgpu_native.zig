@@ -9,6 +9,7 @@ const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
+const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
 const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
 const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
 const metal_bridge_cmd_buf_encode_blit_copy = bridge.metal_bridge_cmd_buf_encode_blit_copy;
@@ -216,11 +217,22 @@ pub const DoeBindGroup = struct {
     count: u32 = 0,
 };
 
-pub const CmdTag = enum { dispatch, dispatch_indirect, copy_buf, copy_texture_to_buffer, render_pass, write_timestamp, resolve_query_set };
+pub const CmdTag = enum { dispatch, dispatch_indirect, copy_buf, copy_buffer_to_texture, copy_texture_to_buffer, render_pass, write_timestamp, resolve_query_set };
 pub const RecordedCmd = union(CmdTag) {
     dispatch: struct { pso: ?*anyopaque, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32 },
     dispatch_indirect: struct { pso: ?*anyopaque, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, offset: u64, wg_x: u32 = 0, wg_y: u32 = 0, wg_z: u32 = 0 },
     copy_buf: struct { src: ?*anyopaque, src_off: u64, dst: ?*anyopaque, dst_off: u64, size: u64 },
+    copy_buffer_to_texture: struct {
+        src_buffer: ?*anyopaque,
+        src_offset: u64,
+        src_bytes_per_row: u32,
+        src_rows_per_image: u32,
+        dst_texture: ?*anyopaque,
+        dst_mip_level: u32,
+        width: u32,
+        height: u32,
+        depth_or_array_layers: u32,
+    },
     copy_texture_to_buffer: struct {
         src_texture: ?*anyopaque,
         src_mip_level: u32,
@@ -294,6 +306,8 @@ pub const DoeTexture = struct {
     format: u32 = 0,
     width: u32 = 0,
     height: u32 = 0,
+    depth_or_array_layers: u32 = 1,
+    dimension: u32 = 0,
 };
 
 pub const DoeTextureView = struct {
@@ -682,6 +696,34 @@ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyop
     } }) catch std.debug.panic("doe_wgpu_native: OOM recording copy command", .{});
 }
 
+pub export fn doeNativeCommandEncoderCopyBufferToTexture(
+    enc_raw: ?*anyopaque,
+    src_buffer_raw: ?*anyopaque,
+    src_offset: u64,
+    src_bytes_per_row: u32,
+    src_rows_per_image: u32,
+    dst_texture_raw: ?*anyopaque,
+    dst_mip_level: u32,
+    width: u32,
+    height: u32,
+    depth_or_array_layers: u32,
+) callconv(.c) void {
+    const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
+    const src_buffer = cast(DoeBuffer, src_buffer_raw) orelse return;
+    const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
+    enc.cmds.append(alloc, .{ .copy_buffer_to_texture = .{
+        .src_buffer = src_buffer.mtl,
+        .src_offset = src_offset,
+        .src_bytes_per_row = src_bytes_per_row,
+        .src_rows_per_image = src_rows_per_image,
+        .dst_texture = dst_texture.mtl,
+        .dst_mip_level = dst_mip_level,
+        .width = width,
+        .height = height,
+        .depth_or_array_layers = depth_or_array_layers,
+    } }) catch std.debug.panic("doe_wgpu_native: OOM recording buffer-to-texture copy command", .{});
+}
+
 pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     enc_raw: ?*anyopaque,
     src_texture_raw: ?*anyopaque,
@@ -775,6 +817,23 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                         );
                         has_gpu_work = true;
                     }
+                },
+                .copy_buffer_to_texture => |c| {
+                    const blit = metal_bridge_cmd_buf_blit_encoder(mtl_cmd) orelse continue;
+                    metal_bridge_blit_encoder_copy_buffer_to_texture(
+                        blit,
+                        c.src_buffer,
+                        c.src_offset,
+                        c.src_bytes_per_row,
+                        c.src_rows_per_image,
+                        c.dst_texture,
+                        c.dst_mip_level,
+                        c.width,
+                        c.height,
+                        c.depth_or_array_layers,
+                    );
+                    metal_bridge_end_blit_encoding(blit);
+                    has_gpu_work = true;
                 },
                 .copy_texture_to_buffer => |c| {
                     const blit = metal_bridge_cmd_buf_blit_encoder(mtl_cmd) orelse continue;

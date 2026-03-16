@@ -522,7 +522,9 @@ DECL_PFN(WGPUCommandEncoder, wgpuDeviceCreateCommandEncoder, (WGPUDevice, const 
 DECL_PFN(void, wgpuCommandEncoderRelease, (WGPUCommandEncoder));
 DECL_PFN(WGPUComputePassEncoder, wgpuCommandEncoderBeginComputePass, (WGPUCommandEncoder, const WGPUComputePassDescriptor*));
 DECL_PFN(void, wgpuCommandEncoderCopyBufferToBuffer, (WGPUCommandEncoder, WGPUBuffer, uint64_t, WGPUBuffer, uint64_t, uint64_t));
+DECL_PFN(void, wgpuCommandEncoderCopyBufferToTexture, (WGPUCommandEncoder, const WGPUTexelCopyBufferInfo*, const WGPUTexelCopyTextureInfo*, const WGPUExtent3D*));
 DECL_PFN(void, wgpuCommandEncoderCopyTextureToBuffer, (WGPUCommandEncoder, const WGPUTexelCopyTextureInfo*, const WGPUTexelCopyBufferInfo*, const WGPUExtent3D*));
+DECL_PFN(void, doeNativeCommandEncoderCopyBufferToTexture, (WGPUCommandEncoder, WGPUBuffer, uint64_t, uint32_t, uint32_t, WGPUTexture, uint32_t, uint32_t, uint32_t, uint32_t));
 DECL_PFN(void, doeNativeCommandEncoderCopyTextureToBuffer, (WGPUCommandEncoder, WGPUTexture, uint32_t, WGPUBuffer, uint64_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t));
 DECL_PFN(WGPUCommandBuffer, wgpuCommandEncoderFinish, (WGPUCommandEncoder, const WGPUCommandBufferDescriptor*));
 DECL_PFN(void, wgpuComputePassEncoderSetPipeline, (WGPUComputePassEncoder, WGPUComputePipeline));
@@ -832,7 +834,9 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuCommandEncoderRelease);
     LOAD_SYM(wgpuCommandEncoderBeginComputePass);
     LOAD_SYM(wgpuCommandEncoderCopyBufferToBuffer);
+    LOAD_SYM(wgpuCommandEncoderCopyBufferToTexture);
     LOAD_SYM(wgpuCommandEncoderCopyTextureToBuffer);
+    LOAD_SYM(doeNativeCommandEncoderCopyBufferToTexture);
     LOAD_SYM(doeNativeCommandEncoderCopyTextureToBuffer);
     LOAD_SYM(wgpuCommandEncoderFinish);
     LOAD_SYM(wgpuComputePassEncoderSetPipeline);
@@ -1878,6 +1882,58 @@ static napi_value doe_command_encoder_copy_buffer_to_buffer(napi_env env, napi_c
 
     pfn_wgpuCommandEncoderCopyBufferToBuffer(enc, src, (uint64_t)src_offset,
         dst, (uint64_t)dst_offset, (uint64_t)size);
+    return NULL;
+}
+
+static napi_value doe_command_encoder_copy_buffer_to_texture(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 14);
+    CHECK_LIB_LOADED(env);
+    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
+    WGPUBuffer src_buffer = unwrap_ptr(env, _args[1]);
+    if (!enc || !src_buffer) NAPI_THROW(env, "commandEncoderCopyBufferToTexture requires encoder and buffer");
+
+    WGPUTexelCopyBufferInfo src;
+    memset(&src, 0, sizeof(src));
+    src.buffer = src_buffer;
+    int64_t src_offset = 0;
+    napi_get_value_int64(env, _args[2], &src_offset);
+    src.layout.offset = (uint64_t)src_offset;
+    napi_get_value_uint32(env, _args[3], &src.layout.bytesPerRow);
+    napi_get_value_uint32(env, _args[4], &src.layout.rowsPerImage);
+
+    WGPUTexelCopyTextureInfo dst;
+    memset(&dst, 0, sizeof(dst));
+    dst.texture = unwrap_ptr(env, _args[5]);
+    if (!dst.texture) NAPI_THROW(env, "commandEncoderCopyBufferToTexture requires destination texture");
+    napi_get_value_uint32(env, _args[6], &dst.mipLevel);
+    napi_get_value_uint32(env, _args[7], &dst.origin.x);
+    napi_get_value_uint32(env, _args[8], &dst.origin.y);
+    napi_get_value_uint32(env, _args[9], &dst.origin.z);
+    napi_get_value_uint32(env, _args[10], &dst.aspect);
+
+    WGPUExtent3D size;
+    napi_get_value_uint32(env, _args[11], &size.width);
+    napi_get_value_uint32(env, _args[12], &size.height);
+    napi_get_value_uint32(env, _args[13], &size.depthOrArrayLayers);
+
+    if (pfn_doeNativeCommandEncoderCopyBufferToTexture) {
+        pfn_doeNativeCommandEncoderCopyBufferToTexture(
+            enc,
+            src.buffer,
+            src.layout.offset,
+            src.layout.bytesPerRow,
+            src.layout.rowsPerImage,
+            dst.texture,
+            dst.mipLevel,
+            size.width,
+            size.height,
+            size.depthOrArrayLayers
+        );
+    } else if (pfn_wgpuCommandEncoderCopyBufferToTexture) {
+        pfn_wgpuCommandEncoderCopyBufferToTexture(enc, &src, &dst, &size);
+    } else {
+        NAPI_THROW(env, "commandEncoderCopyBufferToTexture: no implementation available in loaded library");
+    }
     return NULL;
 }
 
@@ -4984,6 +5040,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("createCommandEncoder", doe_create_command_encoder),
         EXPORT_FN("commandEncoderRelease", doe_command_encoder_release),
         EXPORT_FN("commandEncoderCopyBufferToBuffer", doe_command_encoder_copy_buffer_to_buffer),
+        EXPORT_FN("commandEncoderCopyBufferToTexture", doe_command_encoder_copy_buffer_to_texture),
         EXPORT_FN("commandEncoderCopyTextureToBuffer", doe_command_encoder_copy_texture_to_buffer),
         EXPORT_FN("commandEncoderFinish", doe_command_encoder_finish),
         EXPORT_FN("commandBufferRelease", doe_command_buffer_release),

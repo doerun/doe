@@ -110,9 +110,11 @@ fn ensure_texture(self: anytype, resource: model.CopyTextureResource, required_u
         self.device,
         max_dim(resource.width),
         max_dim(resource.height),
+        resource.depth_or_array_layers,
         mip_levels,
         resource.format,
         @intCast(usage),
+        resource.dimension,
     ) orelse return error.InvalidState;
     try self.textures.put(self.allocator, resource.handle, texture);
     return texture;

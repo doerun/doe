@@ -283,21 +283,26 @@ void metal_bridge_cmd_buf_encode_compute_dispatch_indirect(
 
 // pixel_format: WGPU texture format value (mapped internally to MTLPixelFormat).
 // usage: WGPU texture usage flags.
+// dimension: WGPUTextureDimension value (2 = 2D, 3 = 3D). depth_or_array_layers > 1 with dimension 2 creates a 2D array.
 MetalHandle metal_bridge_device_new_texture(
     MetalHandle device,
     uint32_t    width,
     uint32_t    height,
+    uint32_t    depth_or_array_layers,
     uint32_t    mip_levels,
     uint32_t    pixel_format,
-    uint32_t    usage);
+    uint32_t    usage,
+    uint32_t    dimension);
 
-// Write CPU data into a single mip level of a 2D texture. mip_level 0 = base.
+// Write CPU data into a texture. For 3D textures uses replaceRegion:bytesPerImage:; for 2D uses bytesPerRow only.
 void metal_bridge_texture_replace_region(
     MetalHandle  texture,
     uint32_t     width,
     uint32_t     height,
+    uint32_t     depth_or_array_layers,
     const void*  data,
     uint32_t     bytes_per_row,
+    uint32_t     bytes_per_image,
     uint32_t     mip_level);
 
 uint32_t metal_bridge_texture_width(MetalHandle texture);
@@ -470,3 +475,8 @@ void metal_bridge_command_buffer_wait_fast(void);
 // of METAL_FEATURE_BIT_* flags. Result is cached after the first call.
 // Returns 0 if no Metal device is available.
 uint32_t metal_bridge_query_device_features(void);
+
+// Query the Metal device's maximum single buffer allocation size in bytes.
+// Maps to [MTLDevice maxBufferLength]. Result is cached after the first call.
+// Returns 0 if no Metal device is available.
+uint64_t metal_bridge_query_device_max_buffer_length(void);

@@ -183,7 +183,7 @@ const Emitter = struct {
                 try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
             },
-            .texture_2d, .storage_texture_2d => {
+            .texture_2d, .texture_3d, .storage_texture_2d => {
                 try self.emit_type(global.ty);
                 try self.write(" ");
                 try self.write(global.name);
@@ -712,6 +712,11 @@ const Emitter = struct {
             .sampler => try self.write("sampler"),
             .texture_2d => |sample_ty| {
                 try self.write("texture2d<");
+                try self.emit_type(sample_ty);
+                try self.write(">");
+            },
+            .texture_3d => |sample_ty| {
+                try self.write("texture3d<");
                 try self.emit_type(sample_ty);
                 try self.write(">");
             },

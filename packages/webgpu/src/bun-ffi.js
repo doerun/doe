@@ -1426,6 +1426,34 @@ const bunEncoderBackend = {
                 encoder._native, querySetNative, firstQuery, queryCount, destinationNative, BigInt(destinationOffset));
         }
     },
+    commandEncoderCopyBufferToTexture(encoder, source, destination, copySize) {
+        ensureBunCommandEncoderNative(encoder);
+        if (typeof wgpu.symbols.doeNativeCommandEncoderCopyBufferToTexture === "function") {
+            wgpu.symbols.doeNativeCommandEncoderCopyBufferToTexture(
+                encoder._native,
+                source.buffer,
+                BigInt(source.offset ?? 0),
+                source.bytesPerRow ?? 0,
+                source.rowsPerImage ?? 0,
+                destination.texture,
+                destination.mipLevel ?? 0,
+                copySize.width,
+                copySize.height,
+                copySize.depthOrArrayLayers ?? 1,
+            );
+            return;
+        }
+        const { desc: srcDesc } = buildTexelCopyBufferInfo({
+            ...source,
+            buffer: source.buffer,
+        });
+        const { desc: dstDesc } = buildTexelCopyTextureInfo({
+            ...destination,
+            texture: destination.texture,
+        });
+        const extent = buildExtent3D(copySize);
+        wgpu.symbols.wgpuCommandEncoderCopyBufferToTexture(encoder._native, srcDesc, dstDesc, extent);
+    },
     commandEncoderCopyTextureToBuffer(encoder, source, destination, copySize) {
         ensureBunCommandEncoderNative(encoder);
         if (typeof wgpu.symbols.doeNativeCommandEncoderCopyTextureToBuffer === "function") {

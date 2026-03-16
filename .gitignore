@@ -1,3 +1,7 @@
+# Demo data — downloaded locally, not committed
+demos/volume-render/data/*.raw
+demos/volume-render/out/
+
 # Ignore the oversized raw change dump
 dawn-research/data/raw_changes.ndjson
 .cache/doppler-compare/

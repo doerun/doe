@@ -1,5 +1,5 @@
 0
-72853 74873056 1773539681002132685 6206350524c7669480572b9726845c7c 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.m
+74513 75113606 1773680629328891911 a18a5868f34deec47694d0b30f993a8e 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.m
 3299 39704817 1754204360000000000 8909ff4eb50c9c3345cfd9917930061d 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/Metal.h
 847 39704805 1754204360000000000 6ae621f5e043f1fbc40548d53c299f30 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/MTLDefines.h
 14940 39607216 1754184064000000000 4ec834e4a95cf98ab2fd87a0c039787f 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/os/availability.h
@@ -1404,6 +1404,6 @@
 4810 39608574 1756266324000000000 7a81ccf1054e95dc9bd997e8df60f0c4 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CATransaction.h
 1374 39704850 1756264259000000000 4aad5fb4f4bb4d8285b44861c8a37082 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CATransformLayer.h
 3041 39704894 1756264258000000000 c6b3c5915f6bfadf7257635bc7c29c62 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CAValueFunction.h
-17479 75087616 1773674524566093400 084a926f0799e7acd66db330d5030e79 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.h
+18039 75113560 1773680617390945703 619291dd5c85d2c6fff12dbeba36a6df 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.h
 1410 39665718 1754187265000000000 cce15b00641a986fdcb686b2b3ec9d92 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/sched.h
 1977 39665721 1754187266000000000 d399640d53899900253b1cd2cd417752 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/pthread/pthread_impl.h

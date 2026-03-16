@@ -94,6 +94,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
         const first = self.module.types.get(arg_types[0]);
         return switch (first) {
             .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_3d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             else => error.UnsupportedBuiltin,
         };
     }
@@ -202,13 +203,18 @@ fn infer_texture_dimensions_call(self: anytype, arg_types: []const ir.TypeId) !i
     switch (self.module.types.get(arg_types[0])) {
         .texture_2d => {
             if (arg_types.len != 2 or !is_integer_scalar(self, arg_types[1])) return error.UnsupportedBuiltin;
+            return try self.module.types.intern(.{ .vector = .{ .elem = self.module.u32_type, .len = 2 } });
+        },
+        .texture_3d => {
+            if (arg_types.len != 2 or !is_integer_scalar(self, arg_types[1])) return error.UnsupportedBuiltin;
+            return try self.module.types.intern(.{ .vector = .{ .elem = self.module.u32_type, .len = 3 } });
         },
         .storage_texture_2d => {
             if (arg_types.len != 1) return error.UnsupportedBuiltin;
+            return try self.module.types.intern(.{ .vector = .{ .elem = self.module.u32_type, .len = 2 } });
         },
         else => return error.UnsupportedBuiltin,
     }
-    return try self.module.types.intern(.{ .vector = .{ .elem = self.module.u32_type, .len = 2 } });
 }
 
 fn is_sampler_type(self: anytype, ty: ir.TypeId) bool {

@@ -462,21 +462,27 @@ pub const NativeMetalRuntime = struct {
                 self.device,
                 t.width,
                 t.height,
+                t.depth_or_array_layers,
                 mip_count,
                 t.format,
                 @intCast(t.usage),
+                t.dimension,
             ) orelse return error.InvalidState;
             if (gop.found_existing and gop.value_ptr.* != null) metal_bridge_release(gop.value_ptr.*);
             gop.value_ptr.* = tex;
         }
 
         if (cmd.data.len > 0) {
+            const rows = if (t.rows_per_image > 0) t.rows_per_image else mip_h;
+            const bytes_per_image: u32 = rows * t.bytes_per_row;
             metal_bridge_texture_replace_region(
                 gop.value_ptr.*,
                 mip_w,
                 mip_h,
+                t.depth_or_array_layers,
                 cmd.data.ptr,
                 t.bytes_per_row,
+                bytes_per_image,
                 t.mip_level,
             );
         }

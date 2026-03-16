@@ -1,0 +1,16 @@
+{
+  "name": "@simulatte/demo-volume-render",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "download": "bash download.sh",
+    "render": "node node-render.js",
+    "render:fuel": "node node-render.js fuel 120",
+    "render:silicium": "node node-render.js silicium 120",
+    "render:hydrogen": "node node-render.js hydrogen_atom 120"
+  },
+  "dependencies": {
+    "@simulatte/webgpu": "file:../../packages/webgpu"
+  }
+}

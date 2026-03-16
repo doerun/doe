@@ -41,8 +41,8 @@ pub extern fn metal_bridge_encode_compute_dispatch(queue: ?*anyopaque, pipeline:
 pub extern fn metal_bridge_encode_compute_dispatch_batch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32, repeat_count: u32) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_cmd_buf_encode_compute_dispatch(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
 pub extern fn metal_bridge_cmd_buf_encode_compute_dispatch_indirect(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, indirect_offset: u64, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
-pub extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, pixel_format: u32, usage: u32) callconv(.c) ?*anyopaque;
-pub extern fn metal_bridge_texture_replace_region(texture: ?*anyopaque, width: u32, height: u32, data: *const anyopaque, bytes_per_row: u32, mip_level: u32) callconv(.c) void;
+pub extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, mip_levels: u32, pixel_format: u32, usage: u32, dimension: u32) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_texture_replace_region(texture: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, data: *const anyopaque, bytes_per_row: u32, bytes_per_image: u32, mip_level: u32) callconv(.c) void;
 pub extern fn metal_bridge_texture_width(texture: ?*anyopaque) callconv(.c) u32;
 pub extern fn metal_bridge_texture_height(texture: ?*anyopaque) callconv(.c) u32;
 pub extern fn metal_bridge_texture_depth(texture: ?*anyopaque) callconv(.c) u32;
@@ -68,6 +68,7 @@ pub extern fn metal_bridge_configure_surface_host(host: ?*anyopaque, width: u32,
 
 // Device capability queries — runtime feature detection
 pub extern fn metal_bridge_query_device_features() callconv(.c) u32;
+pub extern fn metal_bridge_query_device_max_buffer_length() callconv(.c) u64;
 
 // GPU timestamp query (MTLCounterSampleBuffer)
 pub extern fn metal_bridge_supports_timestamp_query(device: ?*anyopaque) callconv(.c) c_int;

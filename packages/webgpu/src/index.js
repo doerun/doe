@@ -444,6 +444,25 @@ const nodeEncoderBackend = {
     ensureNodeCommandEncoderNative(encoder);
     addon.commandEncoderResolveQuerySet(encoder._native, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
   },
+  commandEncoderCopyBufferToTexture(encoder, source, destination, copySize) {
+    ensureNodeCommandEncoderNative(encoder);
+    addon.commandEncoderCopyBufferToTexture(
+      encoder._native,
+      source.buffer,
+      source.offset ?? 0,
+      source.bytesPerRow ?? 0,
+      source.rowsPerImage ?? 0,
+      destination.texture,
+      destination.mipLevel ?? 0,
+      destination.origin?.x ?? 0,
+      destination.origin?.y ?? 0,
+      destination.origin?.z ?? 0,
+      destination.aspect ?? 1,
+      copySize.width,
+      copySize.height,
+      copySize.depthOrArrayLayers ?? 1,
+    );
+  },
   commandEncoderCopyTextureToBuffer(encoder, source, destination, copySize) {
     ensureNodeCommandEncoderNative(encoder);
     addon.commandEncoderCopyTextureToBuffer(

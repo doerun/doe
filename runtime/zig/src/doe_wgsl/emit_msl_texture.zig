@@ -64,6 +64,23 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
                         try self.write(")))");
                         return true;
                     },
+                    .texture_3d => {
+                        if (call.args.len != 2) return error.InvalidIr;
+                        try self.write("uint3(");
+                        try self.write(global.name);
+                        try self.write(".get_width(uint(");
+                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                        try self.write(")), ");
+                        try self.write(global.name);
+                        try self.write(".get_height(uint(");
+                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                        try self.write(")), ");
+                        try self.write(global.name);
+                        try self.write(".get_depth(uint(");
+                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                        try self.write(")))");
+                        return true;
+                    },
                     .storage_texture_2d => {
                         if (call.args.len != 1) return error.InvalidIr;
                         try self.write("uint2(");

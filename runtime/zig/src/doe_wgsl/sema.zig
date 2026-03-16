@@ -682,6 +682,7 @@ const Analyzer = struct {
         if (std.mem.eql(u8, name, "f16")) return self.module.f16_type;
         if (std.mem.eql(u8, name, "sampler")) return self.module.sampler_type;
         if (std.mem.eql(u8, name, "texture_2d")) return try self.module.types.intern(.{ .texture_2d = self.module.f32_type });
+        if (std.mem.eql(u8, name, "texture_3d")) return try self.module.types.intern(.{ .texture_3d = self.module.f32_type });
         if (self.try_resolve_named_type(name)) |ty| return ty;
         return error.UnknownType;
     }
@@ -761,7 +762,7 @@ fn bitcast_type_bits(module: *SemanticModule, ty: ir.TypeId) ?u32 {
 
 fn is_handle_type(ty: ir.Type) bool {
     return switch (ty) {
-        .sampler, .texture_2d, .storage_texture_2d => true,
+        .sampler, .texture_2d, .texture_3d, .storage_texture_2d => true,
         else => false,
     };
 }

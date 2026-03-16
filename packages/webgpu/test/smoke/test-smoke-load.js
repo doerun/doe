@@ -1,0 +1,94 @@
+#!/usr/bin/env node
+// Smoke test for @simulatte/webgpu.
+// Verifies the package loads, finds native artifacts, and can request a GPU device.
+// No GPU work — just load + device creation.
+//
+// Usage:
+//   node test/smoke/test-smoke-load.js
+//
+// Exit codes:
+//   0  All checks passed
+//   1  A check failed (actionable error printed)
+
+let passed = 0;
+let failed = 0;
+
+function check(label, condition, detail) {
+  if (condition) {
+    passed++;
+    console.log(`  ok: ${label}`);
+  } else {
+    failed++;
+    console.error(`  FAIL: ${label}${detail ? ' — ' + detail : ''}`);
+  }
+}
+
+console.log('=== @simulatte/webgpu smoke test ===\n');
+
+// 1. Import the package.
+let mod;
+try {
+  mod = await import('../../src/index.js');
+  check('import succeeds', true);
+} catch (err) {
+  check('import succeeds', false, err.message);
+  process.exit(1);
+}
+
+// 2. providerInfo shape.
+const info = mod.providerInfo();
+console.log('\nproviderInfo:', JSON.stringify(info, null, 2), '\n');
+check('providerInfo.module', info.module === '@simulatte/webgpu');
+check('providerInfo.loaded', info.loaded === true, `got ${info.loaded}`);
+check('providerInfo.loadError empty', info.loadError === '', `got "${info.loadError}"`);
+check('providerInfo.libraryFlavor', info.libraryFlavor === 'doe-dropin', `got "${info.libraryFlavor}"`);
+check('providerInfo.doeNative', info.doeNative === true, `got ${info.doeNative}`);
+check('providerInfo.buildMetadataSource string', typeof info.buildMetadataSource === 'string', `got ${typeof info.buildMetadataSource}`);
+check('providerInfo.buildMetadataPath string', typeof info.buildMetadataPath === 'string', `got ${typeof info.buildMetadataPath}`);
+check('providerInfo.leanVerifiedBuild boolean|null', info.leanVerifiedBuild === null || typeof info.leanVerifiedBuild === 'boolean', `got ${typeof info.leanVerifiedBuild}`);
+check('providerInfo.proofArtifactSha256 string|null', info.proofArtifactSha256 === null || typeof info.proofArtifactSha256 === 'string', `got ${typeof info.proofArtifactSha256}`);
+
+// 3. globals present.
+check('globals.GPUBufferUsage', mod.globals.GPUBufferUsage != null);
+check('globals.GPUShaderStage', mod.globals.GPUShaderStage != null);
+
+// 4. create() returns GPU object.
+let gpu;
+try {
+  gpu = mod.create();
+  check('create() succeeds', gpu != null);
+} catch (err) {
+  check('create() succeeds', false, err.message);
+  console.log(`\nResults: ${passed} passed, ${failed} failed`);
+  process.exitCode = failed > 0 ? 1 : 0;
+  process.exit(process.exitCode);
+}
+
+// 5. requestAdapter.
+let adapter;
+try {
+  adapter = await gpu.requestAdapter();
+  check('requestAdapter()', adapter != null);
+} catch (err) {
+  check('requestAdapter()', false, err.message);
+  console.log(`\nResults: ${passed} passed, ${failed} failed`);
+  process.exitCode = failed > 0 ? 1 : 0;
+  process.exit(process.exitCode);
+}
+
+// 6. requestDevice.
+let device;
+try {
+  device = await adapter.requestDevice();
+  check('requestDevice()', device != null);
+  check('device.queue exists', device.queue != null);
+} catch (err) {
+  check('requestDevice()', false, err.message);
+}
+
+if (device) {
+  device.destroy();
+}
+
+console.log(`\nResults: ${passed} passed, ${failed} failed`);
+process.exitCode = failed > 0 ? 1 : 0;

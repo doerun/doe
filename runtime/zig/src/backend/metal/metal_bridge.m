@@ -1105,22 +1105,40 @@ MetalHandle metal_bridge_device_new_texture(
     MetalHandle device_h,
     uint32_t    width,
     uint32_t    height,
+    uint32_t    depth_or_array_layers,
     uint32_t    mip_levels,
     uint32_t    pixel_format,
-    uint32_t    usage)
+    uint32_t    usage,
+    uint32_t    dimension)
 {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
-    MTLTextureDescriptor* desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:wgpu_to_mtl_format(pixel_format)
-                                                                                    width:width
-                                                                                   height:height
-                                                                                mipmapped:(mip_levels > 1)];
-    desc.mipmapLevelCount = mip_levels > 0 ? mip_levels : 1;
+    MTLPixelFormat fmt = wgpu_to_mtl_format(pixel_format);
+    uint32_t layers = depth_or_array_layers > 0 ? depth_or_array_layers : 1;
+    uint32_t mips   = mip_levels > 0 ? mip_levels : 1;
+
+    MTLTextureDescriptor* desc = [MTLTextureDescriptor new];
+    desc.pixelFormat      = fmt;
+    desc.width            = width;
+    desc.height           = height;
+    desc.mipmapLevelCount = mips;
+
+    // dimension: 3 = WGPUTextureDimension_3D; 2D-array when layers > 1 and dimension != 3.
+    if (dimension == 3) {
+        desc.textureType = MTLTextureType3D;
+        desc.depth       = layers;
+    } else if (layers > 1) {
+        desc.textureType = MTLTextureType2DArray;
+        desc.arrayLength = layers;
+    } else {
+        desc.textureType = MTLTextureType2D;
+        desc.depth       = 1;
+    }
 
     MTLTextureUsage mtl_usage = MTLTextureUsageShaderRead;
     if (usage & 0x02) mtl_usage |= MTLTextureUsageShaderWrite; // CopyDst
     if (usage & 0x08) mtl_usage |= MTLTextureUsageShaderWrite; // StorageBinding
     if (usage & 0x10) mtl_usage |= MTLTextureUsageRenderTarget; // RenderAttachment
-    desc.usage = mtl_usage;
+    desc.usage       = mtl_usage;
     desc.storageMode = MTLStorageModeShared;
 
     id<MTLTexture> tex = [device newTextureWithDescriptor:desc];
@@ -1132,13 +1150,21 @@ void metal_bridge_texture_replace_region(
     MetalHandle  texture_h,
     uint32_t     width,
     uint32_t     height,
+    uint32_t     depth_or_array_layers,
     const void*  data,
     uint32_t     bytes_per_row,
+    uint32_t     bytes_per_image,
     uint32_t     mip_level)
 {
     id<MTLTexture> tex = (__bridge id<MTLTexture>)texture_h;
-    MTLRegion region = MTLRegionMake2D(0, 0, width, height);
-    [tex replaceRegion:region mipmapLevel:mip_level withBytes:data bytesPerRow:bytes_per_row];
+    if (tex.textureType == MTLTextureType3D) {
+        uint32_t depth = depth_or_array_layers > 0 ? depth_or_array_layers : 1;
+        MTLRegion region = MTLRegionMake3D(0, 0, 0, width, height, depth);
+        [tex replaceRegion:region mipmapLevel:mip_level slice:0 withBytes:data bytesPerRow:(NSUInteger)bytes_per_row bytesPerImage:(NSUInteger)bytes_per_image];
+    } else {
+        MTLRegion region = MTLRegionMake2D(0, 0, width, height);
+        [tex replaceRegion:region mipmapLevel:mip_level withBytes:data bytesPerRow:bytes_per_row];
+    }
 }
 
 uint32_t metal_bridge_texture_width(MetalHandle h)           { return (uint32_t)[(__bridge id<MTLTexture>)h width]; }
@@ -1796,4 +1822,25 @@ uint32_t metal_bridge_query_device_features(void) {
         _device_features_initialized = YES;
     }
     return _cached_device_features;
+}
+
+// ============================================================
+// Device buffer limit query — runtime maxBufferLength
+// ============================================================
+
+static uint64_t _cached_max_buffer_length = 0;
+static BOOL     _device_max_buffer_length_initialized = NO;
+
+uint64_t metal_bridge_query_device_max_buffer_length(void) {
+    if (_device_max_buffer_length_initialized) return _cached_max_buffer_length;
+    @autoreleasepool {
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        if (device == nil) {
+            _device_max_buffer_length_initialized = YES;
+            return 0;
+        }
+        _cached_max_buffer_length = (uint64_t)[device maxBufferLength];
+        _device_max_buffer_length_initialized = YES;
+    }
+    return _cached_max_buffer_length;
 }
