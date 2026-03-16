@@ -33,6 +33,9 @@ function createFakeDevice() {
   const state = {
     submitted: 0,
     writes: 0,
+    bind_groups: 0,
+    compute_passes: 0,
+    dispatches: 0,
   };
 
   const device = {
@@ -77,15 +80,19 @@ function createFakeDevice() {
       };
     },
     createBindGroup(descriptor) {
+      state.bind_groups += 1;
       return descriptor;
     },
     createCommandEncoder() {
       return {
         beginComputePass() {
+          state.compute_passes += 1;
           return {
             setPipeline() {},
             setBindGroup() {},
-            dispatchWorkgroups() {},
+            dispatchWorkgroups() {
+              state.dispatches += 1;
+            },
             end() {},
           };
         },
@@ -121,6 +128,8 @@ async function main() {
   assert.equal(typeof bound.kernel.run, 'function');
   assert.equal(typeof bound.kernel.create, 'function');
   assert.equal(typeof bound.compute, 'function');
+  assert.equal(typeof bound.compute.begin, 'function');
+  assert.equal(typeof bound.commandEncoder.create, 'function');
 
   const uploaded = bound.buffer.create({
     data: Float32Array.of(1, 2, 3, 4),
@@ -158,6 +167,67 @@ async function main() {
   });
 
   assert.equal(fake_device._state.submitted, 1);
+  assert.equal(fake_device._state.bind_groups, 1);
+  assert.equal(fake_device._state.compute_passes, 1);
+  assert.equal(fake_device._state.dispatches, 1);
+
+  const reusable_bindings = kernel.bindings.create([
+    { buffer: uploaded, access: 'storageRead' },
+  ]);
+  assert.equal(fake_device._state.bind_groups, 2);
+
+  await kernel.dispatch({
+    bindings: reusable_bindings,
+    workgroups: [2, 1, 1],
+  });
+
+  assert.equal(fake_device._state.bind_groups, 2);
+  assert.equal(fake_device._state.submitted, 2);
+  assert.equal(fake_device._state.compute_passes, 2);
+  assert.equal(fake_device._state.dispatches, 2);
+
+  const batch = bound.compute.begin();
+  batch.dispatch(kernel, {
+    bindings: reusable_bindings,
+    workgroups: [3, 1, 1],
+  });
+  batch.dispatch(kernel, {
+    bindings: reusable_bindings,
+    workgroups: [4, 1, 1],
+  });
+  await batch.submit();
+
+  assert.equal(fake_device._state.bind_groups, 2);
+  assert.equal(fake_device._state.submitted, 3);
+  assert.equal(fake_device._state.compute_passes, 3);
+  assert.equal(fake_device._state.dispatches, 4);
+
+  const encoder = bound.commandEncoder.create();
+  const pass = encoder.beginComputePass();
+  kernel.encode(pass, {
+    bindings: reusable_bindings,
+    workgroups: [5, 1, 1],
+  });
+  pass.dispatch(kernel, {
+    bindings: reusable_bindings,
+    workgroups: [6, 1, 1],
+  });
+  pass.end();
+  await encoder.submit();
+
+  assert.equal(fake_device._state.bind_groups, 2);
+  assert.equal(fake_device._state.submitted, 4);
+  assert.equal(fake_device._state.compute_passes, 4);
+  assert.equal(fake_device._state.dispatches, 6);
+
+  await kernel.dispatch({
+    bindings: reusable_bindings,
+    workgroups: [257, 1, 1],
+  });
+
+  assert.equal(fake_device._state.submitted, 5);
+  assert.equal(fake_device._state.compute_passes, 5);
+  assert.equal(fake_device._state.dispatches, 7);
 
   const injected_namespace = createDoeNamespace({
     async requestDevice() {

@@ -134,6 +134,7 @@ function main() {
 
     assert.ok(installed_package.exports["./compute"], "packed tarball is missing ./compute export");
     assert.ok(installed_package.exports["./full"], "packed tarball is missing ./full export");
+    assert.ok(installed_package.exports["./native-direct"], "packed tarball is missing ./native-direct export");
     const doe_docs_path = join(installed_package_dir, "docs", "doe-api-reference.html");
     assert.ok(existsSync(doe_docs_path), "packed tarball is missing docs/doe-api-reference.html");
     const doe_docs_html = readFileSync(doe_docs_path, "utf8");
@@ -151,6 +152,7 @@ function main() {
       const full = await import("@simulatte/webgpu");
       const compute = await import("@simulatte/webgpu/compute");
       const explicitFull = await import("@simulatte/webgpu/full");
+      const nativeDirect = await import("@simulatte/webgpu/native-direct");
 
       assert.equal(typeof full.requestDevice, "function");
       assert.equal(typeof full.providerInfo, "function");
@@ -171,6 +173,8 @@ function main() {
 
       assert.equal(typeof explicitFull.requestDevice, "function");
       assert.equal(typeof explicitFull.doe.bind, "function");
+      assert.equal(typeof nativeDirect.requestDevice, "function");
+      assert.equal(typeof nativeDirect.create, "function");
 
       const gpu = await compute.doe.requestDevice();
       assert.ok(gpu.device.limits.maxComputeInvocationsPerWorkgroup > 0);
@@ -217,6 +221,82 @@ function main() {
         workgroups: 1,
       });
       assert.deepEqual(Array.from(oneShot), [3, 6, 9, 12]);
+
+      const directDevice = await nativeDirect.requestDevice();
+      const directSrc = directDevice.createBuffer({
+        size: 16,
+        usage: nativeDirect.globals.GPUBufferUsage.STORAGE | nativeDirect.globals.GPUBufferUsage.COPY_DST,
+      });
+      const directDst = directDevice.createBuffer({
+        size: 16,
+        usage: nativeDirect.globals.GPUBufferUsage.STORAGE | nativeDirect.globals.GPUBufferUsage.COPY_SRC,
+      });
+      const directReadback = directDevice.createBuffer({
+        size: 16,
+        usage: nativeDirect.globals.GPUBufferUsage.COPY_DST | nativeDirect.globals.GPUBufferUsage.MAP_READ,
+      });
+      directDevice.queue.writeBuffer(directSrc, 0, new Float32Array([1, 2, 3, 4]));
+      const directShader = directDevice.createShaderModule({
+        code: \`
+          @group(0) @binding(0) var<storage, read> src: array<f32>;
+          @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+          @compute @workgroup_size(4)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            let i = gid.x;
+            dst[i] = src[i] * 2.0;
+          }
+        \`,
+      });
+      const directBgl = directDevice.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: nativeDirect.globals.GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+          { binding: 1, visibility: nativeDirect.globals.GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+        ],
+      });
+      const directLayout = directDevice.createPipelineLayout({ bindGroupLayouts: [directBgl] });
+      const directPipeline = directDevice.createComputePipeline({
+        layout: directLayout,
+        compute: { module: directShader, entryPoint: "main" },
+      });
+      const directBindGroup = directDevice.createBindGroup({
+        layout: directBgl,
+        entries: [
+          { binding: 0, resource: { buffer: directSrc } },
+          { binding: 1, resource: { buffer: directDst } },
+        ],
+      });
+      const directEncoder = directDevice.createCommandEncoder();
+      const directPass = directEncoder.beginComputePass();
+      directPass.setPipeline(directPipeline);
+      directPass.setBindGroup(0, directBindGroup);
+      directPass.dispatchWorkgroups(1);
+      directPass.end();
+      directEncoder.copyBufferToBuffer(directDst, 0, directReadback, 0, 16);
+      directDevice.queue.submit([directEncoder.finish()]);
+      await directDevice.queue.onSubmittedWorkDone();
+      await directReadback.mapAsync(nativeDirect.globals.GPUMapMode.READ);
+      assert.deepEqual(Array.from(new Float32Array(directReadback.getMappedRange(0, 16))), [2, 4, 6, 8]);
+      directReadback.unmap();
+
+      const standaloneDoe = (await import("@simulatte/webgpu-doe")).default;
+      const directDoe = standaloneDoe.bind(directDevice);
+      const directDoeResult = await directDoe.compute({
+        code: \`
+          @group(0) @binding(0) var<storage, read> src: array<f32>;
+          @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+          @compute @workgroup_size(4)
+          fn main(@builtin(global_invocation_id) gid: vec3u) {
+            let i = gid.x;
+            dst[i] = src[i] * 3.0;
+          }
+        \`,
+        inputs: [new Float32Array([1, 2, 3, 4])],
+        output: { type: Float32Array },
+        workgroups: 1,
+      });
+      assert.deepEqual(Array.from(directDoeResult), [3, 6, 9, 12]);
 
       const fullDevice = await full.requestDevice();
       assert.ok(fullDevice.limits.maxComputeInvocationsPerWorkgroup > 0);

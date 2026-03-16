@@ -26,6 +26,10 @@
     "./full": {
       "types": "./src/full.d.ts",
       "default": "./src/full.js"
+    },
+    "./native-direct": {
+      "types": "./src/native-direct.d.ts",
+      "default": "./src/native-direct.js"
     }
   },
   "bin": {
@@ -67,6 +71,7 @@
     "build:doe-docs": "node scripts/generate-doe-api-docs.js",
     "prebuild": "node scripts/prebuild.js",
     "test": "node ./test-node.js && node ./test-surface-node.js && node ./test-doe-api-comprehensive.js && node ./test-package-exports.js",
+    "test:layers": "node ./test-webgpu-smoke.mjs",
     "test:bun": "bun ./test-bun.js",
     "smoke": "node scripts/smoke-test.js"
   },

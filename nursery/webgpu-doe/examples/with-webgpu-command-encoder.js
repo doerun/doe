@@ -22,18 +22,15 @@ const kernel = gpu.kernel.create({
 });
 
 const bindings = kernel.bindings.create([src, dst]);
-const batch = gpu.compute.begin();
+const encoder = gpu.commandEncoder.create();
+const pass = encoder.beginComputePass();
 
-batch.dispatch(kernel, {
+kernel.encode(pass, {
   bindings,
   workgroups: 1,
 });
 
-batch.dispatch(kernel, {
-  bindings,
-  workgroups: 1,
-});
-
-await batch.submit();
+pass.end();
+await encoder.submit();
 
 console.log(await gpu.buffer.read({ buffer: dst, type: Float32Array }));

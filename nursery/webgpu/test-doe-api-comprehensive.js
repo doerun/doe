@@ -373,10 +373,8 @@ try {
   const dst = gpu.buffer.create({ size: src.size, usage: "storageReadWrite" });
 
   // workgroup_size(256) → COUNT/256 = 1024 workgroups (within maxComputeWorkgroupsPerDimension)
-  // Note: Doe validation checks workgroup count against maxComputeWorkgroupSizeX (1024), so
-  // we stay at exactly 1024 which is the limit.
   const WGSIZE = 256;
-  const workgroups = COUNT / WGSIZE;  // = 1024, within the validation limit
+  const workgroups = COUNT / WGSIZE;
   await gpu.kernel.run({
     code: `
       @group(0) @binding(0) var<storage, read> src: array<f32>;
@@ -399,6 +397,44 @@ try {
     if (result[i] !== (i % 256) + 1) { correct = false; break; }
   }
   assert(correct, "large buffer: sampled values all incremented by 1");
+
+  if (typeof src.destroy === "function") src.destroy();
+  if (typeof dst.destroy === "function") dst.destroy();
+} catch (err) {
+  failed++;
+  console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+}
+
+// ---------------------------------------------------------------------------
+// i. Dispatch counts are not workgroup-size limits
+// ---------------------------------------------------------------------------
+
+console.log("\n--- i. Dispatch counts are not workgroup-size limits ---");
+try {
+  const COUNT = 1025;
+  const hostData = Float32Array.from({ length: COUNT }, (_, i) => i);
+  const src = gpu.buffer.create({ data: hostData });
+  const dst = gpu.buffer.create({ size: src.size, usage: "storageReadWrite" });
+
+  await gpu.kernel.run({
+    code: `
+      @group(0) @binding(0) var<storage, read> src: array<f32>;
+      @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+
+      @compute @workgroup_size(1)
+      fn main(@builtin(global_invocation_id) gid: vec3u) {
+        let i = gid.x;
+        dst[i] = src[i] + 2.0;
+      }
+    `,
+    bindings: [src, dst],
+    workgroups: [COUNT, 1, 1],
+  });
+
+  const result = await gpu.buffer.read({ buffer: dst, type: Float32Array });
+  assert(result.length === COUNT, `dispatch counts: result length = ${COUNT}`);
+  assert(result[0] === 2, "dispatch counts: first element incremented");
+  assert(result[COUNT - 1] === (COUNT - 1) + 2, "dispatch counts: last element incremented");
 
   if (typeof src.destroy === "function") src.destroy();
   if (typeof dst.destroy === "function") dst.destroy();

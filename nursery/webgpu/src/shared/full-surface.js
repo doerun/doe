@@ -86,6 +86,19 @@ function createFullSurfaceClasses({
       return backend.bufferGetMappedRange(this, native, offset, size);
     }
 
+    _readCopy(offset = 0, size = Math.max(0, this.size - offset)) {
+      const native = assertLiveResource(this, 'GPUBuffer._readCopy', 'GPUBuffer');
+      assertIntegerInRange(offset, 'GPUBuffer._readCopy', 'offset', { min: 0 });
+      assertIntegerInRange(size, 'GPUBuffer._readCopy', 'size', { min: 0 });
+      if (offset + size > this.size) {
+        failValidation('GPUBuffer._readCopy', `mapped range ${offset}+${size} exceeds buffer size ${this.size}`);
+      }
+      if (typeof backend.bufferReadCopy === 'function') {
+        return backend.bufferReadCopy(this, native, offset, size);
+      }
+      return backend.bufferGetMappedRange(this, native, offset, size).slice(0);
+    }
+
     assertMappedPrefixF32(expected, count) {
       const native = assertLiveResource(this, 'GPUBuffer.assertMappedPrefixF32', 'GPUBuffer');
       assertIntegerInRange(count, 'GPUBuffer.assertMappedPrefixF32', 'count', { min: 0, max: UINT32_MAX });

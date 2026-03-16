@@ -277,6 +277,20 @@ console.log(typeof device.createComputePipeline); // "function"
 console.log(typeof device.createRenderPipeline); // "undefined"
 ```
 
+### Request a native-direct compute device
+
+```js
+import { requestDevice } from "@simulatte/webgpu/native-direct";
+
+const device = await requestDevice();
+console.log(typeof device.createComputePipeline); // "function"
+```
+
+`@simulatte/webgpu/native-direct` is the thin compute-focused package entry used
+for apples-to-apples runtime comparison. It avoids the thicker full-surface
+wrapper layer and pairs naturally with the standalone `@simulatte/webgpu-doe`
+helpers when you want symmetric benchmark lanes.
+
 ## API layers
 
 The package gives you two API styles over the same Doe runtime:
@@ -350,6 +364,8 @@ npm run test:bun
 
 `npm run smoke` checks native library loading and a GPU round-trip. `npm test`
 covers the Node package contract and a packed-tarball export/import check.
+`npm run test:layers` runs the small direct-WebGPU vs Doe helper smoke with the
+same shader and expected output across the surfaced API shapes.
 
 ## Caveats
 

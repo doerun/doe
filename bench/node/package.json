@@ -9,7 +9,10 @@
     "bench:dawn": "node runner.js --provider dawn",
     "compare": "node compare.js --out ../out/node-doe-vs-dawn",
     "compare:quick": "node compare.js --iterations 10 --warmup 2",
-    "validate:doe": "node runner.js --provider doe --validate --iterations 1 --warmup 0"
+    "validate:doe": "node runner.js --provider doe --validate --iterations 1 --warmup 0",
+    "bench:compare:headless": "node bench-headless-webgpu-comparison.mjs",
+    "bench:compare:streaming": "node bench-streaming-webgpu-comparison.mjs",
+    "bench:doe-vs-cpu": "node bench-doe-routines-vs-cpu.mjs"
   },
   "dependencies": {
     "webgpu": "^0.3.8"

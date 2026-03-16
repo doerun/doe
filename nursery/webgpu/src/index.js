@@ -258,7 +258,7 @@ function ensureNodeCommandEncoderNative(encoder) {
     return;
   }
   encoder._native = addon.createCommandEncoder(assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'));
-  for (const cmd of encoder._commands) {
+  for (const cmd of encoder._commands ?? []) {
     if (cmd.t === 0) {
       const pass = addon.beginComputePass(encoder._native);
       addon.computePassSetPipeline(pass, cmd.p);
@@ -278,9 +278,8 @@ function ensureNodeCommandEncoderNative(encoder) {
 }
 
 const nodeEncoderBackend = {
-  computePassInit(pass) {
-    pass._pipeline = null;
-    pass._bindGroups = [];
+  computePassInit(pass, native) {
+    pass._native = native;
     pass._ended = false;
   },
   computePassAssertOpen(pass, path) {
@@ -292,46 +291,45 @@ const nodeEncoderBackend = {
     }
   },
   computePassSetPipeline(pass, pipelineNative) {
-    pass._pipeline = pipelineNative;
+    addon.computePassSetPipeline(
+      assertLiveResource(pass, 'GPUComputePassEncoder.setPipeline', 'GPUComputePassEncoder'),
+      pipelineNative,
+    );
   },
   computePassSetBindGroup(pass, index, bindGroupNative) {
-    pass._bindGroups[index] = bindGroupNative;
+    addon.computePassSetBindGroup(
+      assertLiveResource(pass, 'GPUComputePassEncoder.setBindGroup', 'GPUComputePassEncoder'),
+      index,
+      bindGroupNative,
+    );
   },
   computePassDispatchWorkgroups(pass, x, y, z) {
-    if (pass._pipeline == null) {
-      failValidation('GPUComputePassEncoder.dispatchWorkgroups', 'setPipeline() must be called before dispatch');
-    }
-    pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z });
+    addon.computePassDispatchWorkgroups(
+      assertLiveResource(pass, 'GPUComputePassEncoder.dispatchWorkgroups', 'GPUComputePassEncoder'),
+      x,
+      y,
+      z,
+    );
   },
   computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
-    if (pass._pipeline == null) {
-      failValidation('GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'setPipeline() must be called before dispatch');
-    }
+    const nativePass = assertLiveResource(
+      pass,
+      'GPUComputePassEncoder.dispatchWorkgroupsIndirect',
+      'GPUComputePassEncoder',
+    );
     if (typeof addon.bufferReadIndirectCounts === 'function') {
       const counts = addon.bufferReadIndirectCounts(indirectBufferNative, indirectOffset);
-      pass._encoder._commands.push({
-        t: 0,
-        p: pass._pipeline,
-        bg: [...pass._bindGroups],
-        x: counts.x,
-        y: counts.y,
-        z: counts.z,
-      });
+      addon.computePassDispatchWorkgroups(nativePass, counts.x, counts.y, counts.z);
       return;
     }
-    ensureNodeCommandEncoderNative(pass._encoder);
-    const nativePass = addon.beginComputePass(pass._encoder._native);
-    addon.computePassSetPipeline(nativePass, pass._pipeline);
-    for (let index = 0; index < pass._bindGroups.length; index += 1) {
-      if (pass._bindGroups[index]) {
-        addon.computePassSetBindGroup(nativePass, index, pass._bindGroups[index]);
-      }
-    }
     addon.computePassDispatchWorkgroupsIndirect(nativePass, indirectBufferNative, indirectOffset);
-    addon.computePassEnd(nativePass);
-    addon.computePassRelease(nativePass);
   },
   computePassEnd(pass) {
+    addon.computePassEnd(
+      assertLiveResource(pass, 'GPUComputePassEncoder.end', 'GPUComputePassEncoder'),
+    );
+    addon.computePassRelease(pass._native);
+    pass._native = null;
     pass._ended = true;
   },
   renderPassInit(pass, native) {
@@ -388,8 +386,10 @@ const nodeEncoderBackend = {
     pass._ended = true;
   },
   commandEncoderInit(encoder) {
-    encoder._commands = [];
-    encoder._native = null;
+    encoder._commands = null;
+    encoder._native = addon.createCommandEncoder(
+      assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'),
+    );
     encoder._finished = false;
   },
   commandEncoderAssertOpen(encoder, path) {
@@ -398,7 +398,10 @@ const nodeEncoderBackend = {
     }
   },
   commandEncoderBeginComputePass(encoder, _descriptor, classes) {
-    return new classes.DoeGPUComputePassEncoder(null, encoder);
+    return new classes.DoeGPUComputePassEncoder(
+      addon.beginComputePass(encoder._native),
+      encoder,
+    );
   },
   commandEncoderBeginRenderPass(encoder, passDescriptor, classes) {
     const attachments = assertArray(passDescriptor.colorAttachments ?? [], 'GPUCommandEncoder.beginRenderPass', 'descriptor.colorAttachments');
@@ -431,11 +434,7 @@ const nodeEncoderBackend = {
     return new classes.DoeGPURenderPassEncoder(pass, encoder);
   },
   commandEncoderCopyBufferToBuffer(encoder, srcNative, srcOffset, dstNative, dstOffset, size) {
-    if (encoder._native) {
-      addon.commandEncoderCopyBufferToBuffer(encoder._native, srcNative, srcOffset, dstNative, dstOffset, size);
-      return;
-    }
-    encoder._commands.push({ t: 1, s: srcNative, so: srcOffset, d: dstNative, do: dstOffset, sz: size });
+    addon.commandEncoderCopyBufferToBuffer(encoder._native, srcNative, srcOffset, dstNative, dstOffset, size);
   },
   commandEncoderWriteTimestamp(encoder, querySetNative, queryIndex) {
     ensureNodeCommandEncoderNative(encoder);
@@ -528,6 +527,12 @@ const fullSurfaceBackend = {
   bufferGetMappedRange(wrapper, native, offset, size) {
     return addon.bufferGetMappedRange(native, offset, size);
   },
+  bufferReadCopy(_wrapper, native, offset, size) {
+    if (typeof addon.bufferReadCopy === 'function') {
+      return addon.bufferReadCopy(native, offset, size);
+    }
+    return addon.bufferGetMappedRange(native, offset, size).slice(0);
+  },
   bufferAssertMappedPrefixF32(_wrapper, native, expected, count) {
     return addon.bufferAssertMappedPrefixF32(native, expected, count);
   },
@@ -605,6 +610,7 @@ const fullSurfaceBackend = {
   async queueOnSubmittedWorkDone(queue, queueNative) {
     try {
       addon.queueFlush(queue._instance, queueNative);
+      queue.markSubmittedWorkDone();
     } catch (error) {
       if (error?.code === 'DOE_QUEUE_UNAVAILABLE') {
         return;

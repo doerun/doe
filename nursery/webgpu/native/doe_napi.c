@@ -588,6 +588,8 @@ typedef struct {
     void* userdata2;
 } WGPUBufferMapCallbackInfo;
 
+DECL_PFN(WGPUFuture, doeNativeBufferMapAsync, (WGPUBuffer, uint64_t, size_t, size_t, WGPUBufferMapCallbackInfo));
+
 typedef WGPUFuture (*PFN_wgpuBufferMapAsync2)(WGPUBuffer, uint64_t, size_t, size_t, WGPUBufferMapCallbackInfo);
 static PFN_wgpuBufferMapAsync2 pfn_wgpuBufferMapAsync2 = NULL;
 
@@ -881,6 +883,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeCheckShaderSource = (PFN_doeNativeCheckShaderSource)LIB_SYM(g_lib, "doeNativeCheckShaderSource");
     pfn_doeNativeShaderModuleGetBindings = (PFN_doeNativeShaderModuleGetBindings)LIB_SYM(g_lib, "doeNativeShaderModuleGetBindings");
     pfn_doeNativeAdapterRequestDevice = (PFN_doeNativeAdapterRequestDevice)LIB_SYM(g_lib, "doeNativeAdapterRequestDevice");
+    pfn_doeNativeBufferMapAsync = (PFN_doeNativeBufferMapAsync)LIB_SYM(g_lib, "doeNativeBufferMapAsync");
     pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeRequestAdapterFlat");
     pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
@@ -1140,13 +1143,26 @@ static napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
         .userdata2 = NULL,
     };
 
-    WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
-        (size_t)offset_i, (size_t)size_i, cb_info);
-    if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
-    if (!process_events_until(inst, &result.done, current_timeout_ns()))
-        return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
-    if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-        return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
+    if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(
+            buf,
+            (uint64_t)mode,
+            (size_t)offset_i,
+            (size_t)size_i,
+            cb_info
+        );
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
+    } else {
+        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
+            (size_t)offset_i, (size_t)size_i, cb_info);
+        if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
+        if (!process_events_until(inst, &result.done, current_timeout_ns()))
+            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
+    }
 
     napi_value ok;
     napi_get_boolean(env, true, &ok);
@@ -1170,6 +1186,29 @@ static napi_value doe_buffer_get_mapped_range(napi_env env, napi_callback_info i
 
     napi_value ab;
     napi_create_external_arraybuffer(env, data, (size_t)size_i, NULL, NULL, &ab);
+    return ab;
+}
+
+static napi_value doe_buffer_read_copy(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
+    WGPUBuffer buf = unwrap_ptr(env, _args[0]);
+    int64_t offset_i, size_i;
+    napi_get_value_int64(env, _args[1], &offset_i);
+    napi_get_value_int64(env, _args[2], &size_i);
+
+    void* data = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    if (!data) {
+        data = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    }
+    if (!data) NAPI_THROW(env, "bufferReadCopy getMappedRange returned NULL");
+
+    void* copy = NULL;
+    napi_value ab;
+    napi_create_arraybuffer(env, (size_t)size_i, &copy, &ab);
+    if (copy && size_i > 0) {
+        memcpy(copy, data, (size_t)size_i);
+    }
     return ab;
 }
 
@@ -2347,13 +2386,26 @@ static napi_value doe_flush_and_map_sync(napi_env env, napi_callback_info info) 
         .userdata1 = &result,
         .userdata2 = NULL,
     };
-    WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
-        (size_t)offset_i, (size_t)size_i, cb_info);
-    if (future.id == 0) NAPI_THROW(env, "flushAndMapSync: bufferMapAsync future unavailable");
-    if (!process_events_until(inst, &result.done, current_timeout_ns()))
-        return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "flushAndMapSync: bufferMapAsync timed out", result.status, result.message);
-    if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-        return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: bufferMapAsync failed", result.status, result.message);
+    if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(
+            buf,
+            (uint64_t)mode,
+            (size_t)offset_i,
+            (size_t)size_i,
+            cb_info
+        );
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "flushAndMapSync: doeNativeBufferMapAsync unavailable");
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: doeNativeBufferMapAsync failed", result.status, result.message);
+    } else {
+        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
+            (size_t)offset_i, (size_t)size_i, cb_info);
+        if (future.id == 0) NAPI_THROW(env, "flushAndMapSync: bufferMapAsync future unavailable");
+        if (!process_events_until(inst, &result.done, current_timeout_ns()))
+            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "flushAndMapSync: bufferMapAsync timed out", result.status, result.message);
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: bufferMapAsync failed", result.status, result.message);
+    }
 
     napi_value ok;
     napi_get_boolean(env, true, &ok);
@@ -3405,6 +3457,1120 @@ static napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
     return NULL;
 }
 
+#define DOE_DIRECT_NATIVE "__doe_native"
+#define DOE_DIRECT_INSTANCE "__doe_instance"
+#define DOE_DIRECT_QUEUE "__doe_queue"
+#define DOE_DIRECT_QUEUE_NATIVE "__doe_queue_native"
+#define DOE_DIRECT_SUBMITTED_SERIAL "__doe_submitted_serial"
+#define DOE_DIRECT_COMPLETED_SERIAL "__doe_completed_serial"
+
+static napi_value create_native_direct_gpu_object(napi_env env, WGPUInstance instance);
+static napi_value create_native_direct_adapter_object(napi_env env, WGPUInstance instance, WGPUAdapter adapter);
+static napi_value create_native_direct_device_object(napi_env env, WGPUInstance instance, WGPUDevice device);
+static napi_value create_native_direct_queue_object(napi_env env, WGPUInstance instance, WGPUQueue queue);
+static napi_value create_native_direct_buffer_object(napi_env env, WGPUInstance instance, napi_value queue_obj, WGPUBuffer buffer, uint64_t size, uint64_t usage);
+static napi_value create_native_direct_bind_group_layout_object(napi_env env, WGPUBindGroupLayout layout);
+static napi_value create_native_direct_bind_group_object(napi_env env, WGPUBindGroup group);
+static napi_value create_native_direct_pipeline_layout_object(napi_env env, WGPUPipelineLayout layout);
+static napi_value create_native_direct_shader_module_object(napi_env env, WGPUShaderModule shader_module);
+static napi_value create_native_direct_compute_pipeline_object(napi_env env, WGPUComputePipeline pipeline);
+static napi_value create_native_direct_command_encoder_object(napi_env env, WGPUCommandEncoder encoder);
+static napi_value create_native_direct_command_buffer_object(napi_env env, WGPUCommandBuffer command_buffer);
+static napi_value create_native_direct_compute_pass_object(napi_env env, WGPUComputePassEncoder pass);
+
+static napi_value native_direct_resolved_promise(napi_env env, napi_value value) {
+    napi_deferred deferred;
+    napi_value promise;
+    napi_create_promise(env, &deferred, &promise);
+    napi_resolve_deferred(env, deferred, value);
+    return promise;
+}
+
+static napi_value native_direct_resolved_undefined_promise(napi_env env) {
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return native_direct_resolved_promise(env, undefined_value);
+}
+
+static void native_direct_set_external_prop(napi_env env, napi_value obj, const char* key, void* ptr) {
+    napi_value value;
+    if (ptr) {
+        napi_create_external(env, ptr, NULL, NULL, &value);
+    } else {
+        napi_get_null(env, &value);
+    }
+    napi_set_named_property(env, obj, key, value);
+}
+
+static void native_direct_set_object_prop(napi_env env, napi_value obj, const char* key, napi_value value) {
+    napi_set_named_property(env, obj, key, value);
+}
+
+static void native_direct_set_uint32_prop(napi_env env, napi_value obj, const char* key, uint32_t value) {
+    napi_value prop;
+    napi_create_uint32(env, value, &prop);
+    napi_set_named_property(env, obj, key, prop);
+}
+
+static void native_direct_set_double_prop(napi_env env, napi_value obj, const char* key, double value) {
+    napi_value prop;
+    napi_create_double(env, value, &prop);
+    napi_set_named_property(env, obj, key, prop);
+}
+
+static void* native_direct_unwrap_external_prop(napi_env env, napi_value obj, const char* key) {
+    if (!has_prop(env, obj, key)) return NULL;
+    napi_value value = get_prop(env, obj, key);
+    napi_valuetype vt;
+    napi_typeof(env, value, &vt);
+    if (vt != napi_external) return NULL;
+    return unwrap_ptr(env, value);
+}
+
+static uint32_t native_direct_get_uint32_prop(napi_env env, napi_value obj, const char* key) {
+    if (!has_prop(env, obj, key)) return 0;
+    return get_uint32_prop(env, obj, key);
+}
+
+static bool native_direct_queue_has_pending(napi_env env, napi_value queue_obj) {
+    uint32_t submitted = native_direct_get_uint32_prop(env, queue_obj, DOE_DIRECT_SUBMITTED_SERIAL);
+    uint32_t completed = native_direct_get_uint32_prop(env, queue_obj, DOE_DIRECT_COMPLETED_SERIAL);
+    return completed < submitted;
+}
+
+static void native_direct_queue_mark_submitted(napi_env env, napi_value queue_obj) {
+    uint32_t submitted = native_direct_get_uint32_prop(env, queue_obj, DOE_DIRECT_SUBMITTED_SERIAL);
+    native_direct_set_uint32_prop(env, queue_obj, DOE_DIRECT_SUBMITTED_SERIAL, submitted + 1);
+}
+
+static void native_direct_queue_mark_done(napi_env env, napi_value queue_obj) {
+    uint32_t submitted = native_direct_get_uint32_prop(env, queue_obj, DOE_DIRECT_SUBMITTED_SERIAL);
+    native_direct_set_uint32_prop(env, queue_obj, DOE_DIRECT_COMPLETED_SERIAL, submitted);
+}
+
+static napi_value native_direct_create_empty_set(napi_env env) {
+    napi_value global;
+    napi_value ctor;
+    napi_value result;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, "Set", &ctor);
+    napi_new_instance(env, ctor, 0, NULL, &result);
+    return result;
+}
+
+static napi_value native_direct_create_empty_object(napi_env env) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    return obj;
+}
+
+static void native_direct_add_method(napi_env env, napi_value obj, const char* name, napi_callback fn) {
+    napi_value method;
+    napi_create_function(env, name, NAPI_AUTO_LENGTH, fn, NULL, &method);
+    napi_set_named_property(env, obj, name, method);
+}
+
+static WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst) {
+    if (!inst) NAPI_THROW(env, "nativeDirect.requestAdapter requires instance");
+
+    RequestAdapterResult result = {0};
+    WGPURequestAdapterOptions options;
+    memset(&options, 0, sizeof(options));
+
+    WGPURequestAdapterCallbackInfo cb_info = {
+        .nextInChain = NULL,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = request_adapter_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
+
+    WGPUFuture future = pfn_wgpuInstanceRequestAdapter2(inst, &options, cb_info);
+    if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
+    if (!process_events_until(inst, &result.done, current_timeout_ns())) {
+        throw_status_error(env, "DOE_REQUEST_ADAPTER_TIMEOUT", "requestAdapter timed out", result.status, result.message);
+        return NULL;
+    }
+    if (result.status != WGPU_REQUEST_STATUS_SUCCESS) {
+        throw_status_error(env, "DOE_REQUEST_ADAPTER_ERROR", "requestAdapter failed", result.status, result.message);
+        return NULL;
+    }
+    return result.adapter;
+}
+
+static WGPUDevice native_direct_request_device_sync(napi_env env, WGPUInstance inst, WGPUAdapter adapter) {
+    if (!inst || !adapter) NAPI_THROW(env, "nativeDirect.requestDevice requires instance and adapter");
+
+    RequestDeviceResult result = {0};
+    WGPUDeviceDescriptor desc;
+    memset(&desc, 0, sizeof(desc));
+
+    WGPUDeviceLostCallbackInfo lost_cb = {
+        .nextInChain = NULL,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = noop_device_lost_callback,
+        .userdata1 = NULL,
+        .userdata2 = NULL,
+    };
+    WGPUUncapturedErrorCallbackInfo err_cb = {
+        .nextInChain = NULL,
+        .callback = noop_uncaptured_error_callback,
+        .userdata1 = NULL,
+        .userdata2 = NULL,
+    };
+    desc.deviceLostCallbackInfo = lost_cb;
+    desc.uncapturedErrorCallbackInfo = err_cb;
+
+    WGPURequestDeviceCallbackInfo cb_info = {
+        .nextInChain = NULL,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = request_device_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
+
+    WGPUFuture future = pfn_wgpuAdapterRequestDevice2(adapter, &desc, cb_info);
+    if (future.id == 0) NAPI_THROW(env, "requestDevice future unavailable");
+    if (!process_events_until(inst, &result.done, current_timeout_ns())) {
+        throw_status_error(env, "DOE_REQUEST_DEVICE_TIMEOUT", "requestDevice timed out", result.status, result.message);
+        return NULL;
+    }
+    if (result.status != WGPU_REQUEST_STATUS_SUCCESS) {
+        throw_status_error(env, "DOE_REQUEST_DEVICE_ERROR", "requestDevice failed", result.status, result.message);
+        return NULL;
+    }
+    return result.device;
+}
+
+static WGPULimits native_direct_query_adapter_limits(WGPUAdapter adapter, bool* ok) {
+    WGPULimits limits;
+    memset(&limits, 0, sizeof(limits));
+    *ok = false;
+    uint32_t (*fn)(WGPUAdapter, void*) = pfn_doeNativeAdapterGetLimits ? pfn_doeNativeAdapterGetLimits : pfn_wgpuAdapterGetLimits;
+    if (!fn) return limits;
+    *ok = fn(adapter, &limits) == WGPU_STATUS_SUCCESS;
+    return limits;
+}
+
+static WGPULimits native_direct_query_device_limits(WGPUDevice device, bool* ok) {
+    WGPULimits limits;
+    memset(&limits, 0, sizeof(limits));
+    *ok = false;
+    uint32_t (*fn)(WGPUDevice, void*) = pfn_doeNativeDeviceGetLimits ? pfn_doeNativeDeviceGetLimits : pfn_wgpuDeviceGetLimits;
+    if (!fn) return limits;
+    *ok = fn(device, &limits) == WGPU_STATUS_SUCCESS;
+    return limits;
+}
+
+static napi_value native_direct_gpu_request_adapter(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    (void)argv;
+    WGPUInstance inst = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
+    WGPUAdapter adapter = native_direct_request_adapter_sync(env, inst);
+    if (!adapter) return NULL;
+    return native_direct_resolved_promise(env, create_native_direct_adapter_object(env, inst, adapter));
+}
+
+static napi_value native_direct_adapter_request_device(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    (void)argv;
+    WGPUInstance inst = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
+    WGPUAdapter adapter = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUDevice device = native_direct_request_device_sync(env, inst, adapter);
+    if (!device) return NULL;
+    return native_direct_resolved_promise(env, create_native_direct_device_object(env, inst, device));
+}
+
+static napi_value native_direct_adapter_destroy(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    WGPUAdapter adapter = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (adapter) {
+        pfn_wgpuAdapterRelease(adapter);
+        native_direct_set_external_prop(env, this_arg, DOE_DIRECT_NATIVE, NULL);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_device_create_buffer(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "createBuffer requires a descriptor");
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUInstance inst = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
+    napi_value queue_obj = get_prop(env, this_arg, "queue");
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    WGPUBufferDescriptor desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.usage = (uint64_t)get_int64_prop(env, argv[0], "usage");
+    desc.size = (uint64_t)get_int64_prop(env, argv[0], "size");
+    desc.mappedAtCreation = get_bool_prop(env, argv[0], "mappedAtCreation") ? 1 : 0;
+
+    WGPUBuffer buffer = pfn_wgpuDeviceCreateBuffer(device, &desc);
+    if (!buffer) NAPI_THROW(env, "createBuffer failed");
+    return create_native_direct_buffer_object(env, inst, queue_obj, buffer, desc.size, desc.usage);
+}
+
+static napi_value native_direct_device_create_shader_module(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "createShaderModule requires a descriptor");
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!device) NAPI_THROW(env, "Invalid device");
+    napi_value code_value = has_prop(env, argv[0], "code") ? get_prop(env, argv[0], "code") : get_prop(env, argv[0], "source");
+    size_t code_len = 0;
+    napi_get_value_string_utf8(env, code_value, NULL, 0, &code_len);
+    char* code = (char*)malloc(code_len + 1);
+    if (!code) NAPI_THROW(env, "createShaderModule: out of memory");
+    napi_get_value_string_utf8(env, code_value, code, code_len + 1, &code_len);
+
+    WGPUShaderSourceWGSL wgsl_source = {
+        .chain = { .next = NULL, .sType = WGPU_STYPE_SHADER_SOURCE_WGSL },
+        .code = { .data = code, .length = code_len },
+    };
+    WGPUShaderModuleDescriptor desc = {
+        .nextInChain = (void*)&wgsl_source,
+        .label = { .data = NULL, .length = 0 },
+    };
+
+    WGPUShaderModule mod = pfn_wgpuDeviceCreateShaderModule(device, &desc);
+    free(code);
+    if (!mod) {
+        char msg[DOE_ERROR_BUF_CAP];
+        char stage[64];
+        char kind[64];
+        copy_library_error_message(msg, sizeof(msg));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorStage, stage, sizeof(stage));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorKind, kind, sizeof(kind));
+        if (msg[0] != '\0') {
+            char full_msg[DOE_ERROR_BUF_CAP];
+            if (stage[0] != '\0' && kind[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s/%s] %s", stage, kind, msg);
+            } else if (stage[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s] %s", stage, msg);
+            } else {
+                snprintf(full_msg, sizeof(full_msg), "%s", msg);
+            }
+            napi_throw_error(env, "DOE_SHADER_MODULE_ERROR", full_msg);
+        } else {
+            napi_throw_error(env, "DOE_SHADER_MODULE_ERROR", "createShaderModule failed");
+        }
+        return NULL;
+    }
+    return create_native_direct_shader_module_object(env, mod);
+}
+
+static napi_value native_direct_device_create_compute_pipeline(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "createComputePipeline requires a descriptor");
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    napi_value compute = get_prop(env, argv[0], "compute");
+    napi_value module_obj = get_prop(env, compute, "module");
+    WGPUShaderModule shader = native_direct_unwrap_external_prop(env, module_obj, DOE_DIRECT_NATIVE);
+    if (!shader) NAPI_THROW(env, "createComputePipeline: compute.module is required");
+    napi_value entry_value = has_prop(env, compute, "entryPoint") ? get_prop(env, compute, "entryPoint") : NULL;
+    char* entry_point = NULL;
+    size_t entry_len = 0;
+    if (entry_value) {
+        entry_point = dup_string_value(env, entry_value, &entry_len);
+    } else {
+        entry_len = 4;
+        entry_point = (char*)malloc(entry_len + 1);
+        memcpy(entry_point, "main", entry_len + 1);
+    }
+    if (!entry_point) NAPI_THROW(env, "createComputePipeline: out of memory");
+
+    WGPUPipelineLayout layout = NULL;
+    if (has_prop(env, argv[0], "layout")) {
+        layout = native_direct_unwrap_external_prop(env, get_prop(env, argv[0], "layout"), DOE_DIRECT_NATIVE);
+    }
+
+    WGPUComputePipelineDescriptor desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.layout = layout;
+    desc.compute.module = shader;
+    desc.compute.entryPoint.data = entry_point;
+    desc.compute.entryPoint.length = entry_len;
+
+    WGPUComputePipeline pipeline = pfn_wgpuDeviceCreateComputePipeline(device, &desc);
+    free(entry_point);
+    if (!pipeline) {
+        char msg[DOE_ERROR_BUF_CAP];
+        char stage[64];
+        char kind[64];
+        copy_library_error_message(msg, sizeof(msg));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorStage, stage, sizeof(stage));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorKind, kind, sizeof(kind));
+        if (msg[0] != '\0') {
+            char full_msg[DOE_ERROR_BUF_CAP];
+            if (stage[0] != '\0' && kind[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s/%s] %s", stage, kind, msg);
+            } else if (stage[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s] %s", stage, msg);
+            } else {
+                snprintf(full_msg, sizeof(full_msg), "%s", msg);
+            }
+            napi_throw_error(env, "DOE_COMPUTE_PIPELINE_ERROR", full_msg);
+        } else {
+            napi_throw_error(env, "DOE_COMPUTE_PIPELINE_ERROR", "createComputePipeline failed");
+        }
+        return NULL;
+    }
+    return create_native_direct_compute_pipeline_object(env, pipeline);
+}
+
+static napi_value native_direct_device_create_compute_pipeline_async(napi_env env, napi_callback_info info) {
+    napi_value result = native_direct_device_create_compute_pipeline(env, info);
+    if (!result) return NULL;
+    return native_direct_resolved_promise(env, result);
+}
+
+static napi_value native_direct_device_create_bind_group_layout(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "createBindGroupLayout requires a descriptor");
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    uint32_t entry_count = 0;
+    napi_value entries_array = get_prop(env, argv[0], "entries");
+    napi_get_array_length(env, entries_array, &entry_count);
+    WGPUBindGroupLayoutEntry* entries = (WGPUBindGroupLayoutEntry*)calloc(entry_count, sizeof(WGPUBindGroupLayoutEntry));
+    if (!entries && entry_count > 0) NAPI_THROW(env, "createBindGroupLayout: out of memory");
+
+    for (uint32_t i = 0; i < entry_count; i++) {
+        napi_value elem;
+        napi_get_element(env, entries_array, i, &elem);
+        entries[i].binding = get_uint32_prop(env, elem, "binding");
+        entries[i].visibility = (uint64_t)get_int64_prop(env, elem, "visibility");
+        if (has_prop(env, elem, "buffer") && prop_type(env, elem, "buffer") == napi_object) {
+            napi_value buffer = get_prop(env, elem, "buffer");
+            entries[i].buffer.type = buffer_binding_type_from_string(env, get_prop(env, buffer, "type"));
+            if (has_prop(env, buffer, "hasDynamicOffset")) entries[i].buffer.hasDynamicOffset = get_bool_prop(env, buffer, "hasDynamicOffset") ? 1 : 0;
+            if (has_prop(env, buffer, "minBindingSize")) entries[i].buffer.minBindingSize = (uint64_t)get_int64_prop(env, buffer, "minBindingSize");
+        }
+        if (has_prop(env, elem, "sampler") && prop_type(env, elem, "sampler") == napi_object) {
+            napi_value sampler = get_prop(env, elem, "sampler");
+            entries[i].sampler.type = sampler_binding_type_from_string(env, get_prop(env, sampler, "type"));
+        }
+        if (has_prop(env, elem, "texture") && prop_type(env, elem, "texture") == napi_object) {
+            napi_value texture = get_prop(env, elem, "texture");
+            entries[i].texture.sampleType = texture_sample_type_from_string(env, get_prop(env, texture, "sampleType"));
+            entries[i].texture.viewDimension = texture_view_dimension_from_string(env, get_prop(env, texture, "viewDimension"));
+            if (has_prop(env, texture, "multisampled")) entries[i].texture.multisampled = get_bool_prop(env, texture, "multisampled") ? 1 : 0;
+        }
+        if (has_prop(env, elem, "storageTexture") && prop_type(env, elem, "storageTexture") == napi_object) {
+            napi_value storage_texture = get_prop(env, elem, "storageTexture");
+            entries[i].storageTexture.access = storage_texture_access_from_string(env, get_prop(env, storage_texture, "access"));
+            entries[i].storageTexture.format = texture_format_from_string(env, get_prop(env, storage_texture, "format"));
+            entries[i].storageTexture.viewDimension = texture_view_dimension_from_string(env, get_prop(env, storage_texture, "viewDimension"));
+        }
+    }
+
+    WGPUBindGroupLayoutDescriptor desc = {
+        .nextInChain = NULL,
+        .label = { .data = NULL, .length = 0 },
+        .entryCount = entry_count,
+        .entries = entries,
+    };
+    WGPUBindGroupLayout layout = pfn_wgpuDeviceCreateBindGroupLayout(device, &desc);
+    free(entries);
+    if (!layout) NAPI_THROW(env, "createBindGroupLayout failed");
+    return create_native_direct_bind_group_layout_object(env, layout);
+}
+
+static napi_value native_direct_device_create_bind_group(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "createBindGroup requires a descriptor");
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUBindGroupLayout layout = native_direct_unwrap_external_prop(env, get_prop(env, argv[0], "layout"), DOE_DIRECT_NATIVE);
+    if (!device || !layout) NAPI_THROW(env, "Invalid device or layout");
+
+    napi_value entries_array = get_prop(env, argv[0], "entries");
+    uint32_t entry_count = 0;
+    napi_get_array_length(env, entries_array, &entry_count);
+    WGPUBindGroupEntry* entries = (WGPUBindGroupEntry*)calloc(entry_count, sizeof(WGPUBindGroupEntry));
+    if (!entries && entry_count > 0) NAPI_THROW(env, "createBindGroup: out of memory");
+
+    for (uint32_t i = 0; i < entry_count; i++) {
+        napi_value elem;
+        napi_value resource;
+        napi_get_element(env, entries_array, i, &elem);
+        entries[i].binding = get_uint32_prop(env, elem, "binding");
+        resource = get_prop(env, elem, "resource");
+        if (has_prop(env, resource, "buffer")) entries[i].buffer = native_direct_unwrap_external_prop(env, get_prop(env, resource, "buffer"), DOE_DIRECT_NATIVE);
+        if (has_prop(env, resource, "sampler")) entries[i].sampler = native_direct_unwrap_external_prop(env, get_prop(env, resource, "sampler"), DOE_DIRECT_NATIVE);
+        if (has_prop(env, resource, "textureView")) entries[i].textureView = native_direct_unwrap_external_prop(env, get_prop(env, resource, "textureView"), DOE_DIRECT_NATIVE);
+        if (has_prop(env, resource, "offset")) entries[i].offset = (uint64_t)get_int64_prop(env, resource, "offset");
+        entries[i].size = has_prop(env, resource, "size") ? (uint64_t)get_int64_prop(env, resource, "size") : WGPU_WHOLE_SIZE;
+    }
+
+    WGPUBindGroupDescriptor desc = {
+        .nextInChain = NULL,
+        .label = { .data = NULL, .length = 0 },
+        .layout = layout,
+        .entryCount = entry_count,
+        .entries = entries,
+    };
+    WGPUBindGroup group = pfn_wgpuDeviceCreateBindGroup(device, &desc);
+    free(entries);
+    if (!group) NAPI_THROW(env, "createBindGroup failed");
+    return create_native_direct_bind_group_object(env, group);
+}
+
+static napi_value native_direct_device_create_pipeline_layout(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "createPipelineLayout requires a descriptor");
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    napi_value layouts_array = get_prop(env, argv[0], "bindGroupLayouts");
+    uint32_t layout_count = 0;
+    napi_get_array_length(env, layouts_array, &layout_count);
+    WGPUBindGroupLayout* layouts = (WGPUBindGroupLayout*)calloc(layout_count, sizeof(WGPUBindGroupLayout));
+    if (!layouts && layout_count > 0) NAPI_THROW(env, "createPipelineLayout: out of memory");
+    for (uint32_t i = 0; i < layout_count; i++) {
+        napi_value elem;
+        napi_get_element(env, layouts_array, i, &elem);
+        layouts[i] = native_direct_unwrap_external_prop(env, elem, DOE_DIRECT_NATIVE);
+    }
+
+    WGPUPipelineLayoutDescriptor desc = {
+        .nextInChain = NULL,
+        .label = { .data = NULL, .length = 0 },
+        .bindGroupLayoutCount = layout_count,
+        .bindGroupLayouts = layouts,
+        .immediateSize = 0,
+    };
+    WGPUPipelineLayout pipeline_layout = pfn_wgpuDeviceCreatePipelineLayout(device, &desc);
+    free(layouts);
+    if (!pipeline_layout) NAPI_THROW(env, "createPipelineLayout failed");
+    return create_native_direct_pipeline_layout_object(env, pipeline_layout);
+}
+
+static napi_value native_direct_device_create_command_encoder(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    (void)argv;
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!device) NAPI_THROW(env, "Invalid device");
+    WGPUCommandEncoderDescriptor desc = {
+        .nextInChain = NULL,
+        .label = { .data = NULL, .length = 0 },
+    };
+    WGPUCommandEncoder encoder = pfn_wgpuDeviceCreateCommandEncoder(device, &desc);
+    if (!encoder) NAPI_THROW(env, "createCommandEncoder failed");
+    return create_native_direct_command_encoder_object(env, encoder);
+}
+
+static napi_value native_direct_device_destroy(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    WGPUDevice device = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (device) {
+        pfn_wgpuDeviceRelease(device);
+        native_direct_set_external_prop(env, this_arg, DOE_DIRECT_NATIVE, NULL);
+    }
+    if (has_prop(env, this_arg, "queue")) {
+        napi_value queue_obj = get_prop(env, this_arg, "queue");
+        native_direct_set_external_prop(env, queue_obj, DOE_DIRECT_NATIVE, NULL);
+        native_direct_set_external_prop(env, queue_obj, DOE_DIRECT_QUEUE_NATIVE, NULL);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_queue_submit(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "queue.submit requires command buffers");
+    WGPUQueue queue = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!queue) NAPI_THROW(env, "Invalid queue");
+    uint32_t cmd_count = 0;
+    napi_get_array_length(env, argv[0], &cmd_count);
+    WGPUCommandBuffer* cmds = (WGPUCommandBuffer*)calloc(cmd_count, sizeof(WGPUCommandBuffer));
+    if (!cmds && cmd_count > 0) NAPI_THROW(env, "queue.submit: out of memory");
+    for (uint32_t i = 0; i < cmd_count; i++) {
+        napi_value elem;
+        napi_get_element(env, argv[0], i, &elem);
+        cmds[i] = native_direct_unwrap_external_prop(env, elem, DOE_DIRECT_NATIVE);
+    }
+    pfn_wgpuQueueSubmit(queue, cmd_count, cmds);
+    free(cmds);
+    native_direct_queue_mark_submitted(env, this_arg);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_queue_write_buffer(napi_env env, napi_callback_info info) {
+    size_t argc = 5;
+    napi_value argv[5];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 3) NAPI_THROW(env, "queue.writeBuffer requires buffer, offset, and data");
+    WGPUQueue queue = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUBuffer buffer = native_direct_unwrap_external_prop(env, argv[0], DOE_DIRECT_NATIVE);
+    if (!queue || !buffer) NAPI_THROW(env, "queue.writeBuffer requires queue and buffer");
+    int64_t offset = 0;
+    napi_get_value_int64(env, argv[1], &offset);
+
+    void* data = NULL;
+    size_t byte_length = 0;
+    bool is_typedarray = false;
+    napi_is_typedarray(env, argv[2], &is_typedarray);
+    if (is_typedarray) {
+        napi_typedarray_type ta_type;
+        size_t ta_length;
+        napi_value ab;
+        size_t byte_offset;
+        napi_get_typedarray_info(env, argv[2], &ta_type, &ta_length, &data, &ab, &byte_offset);
+        size_t elem_size = 1;
+        switch (ta_type) {
+            case napi_int16_array: case napi_uint16_array: elem_size = 2; break;
+            case napi_int32_array: case napi_uint32_array: case napi_float32_array: elem_size = 4; break;
+            case napi_float64_array: case napi_bigint64_array: case napi_biguint64_array: elem_size = 8; break;
+            default: elem_size = 1; break;
+        }
+        byte_length = ta_length * elem_size;
+    } else {
+        bool is_ab = false;
+        napi_is_arraybuffer(env, argv[2], &is_ab);
+        if (is_ab) {
+            napi_get_arraybuffer_info(env, argv[2], &data, &byte_length);
+        } else {
+            bool is_buffer = false;
+            napi_is_buffer(env, argv[2], &is_buffer);
+            if (is_buffer) {
+                napi_get_buffer_info(env, argv[2], &data, &byte_length);
+            } else {
+                NAPI_THROW(env, "queue.writeBuffer data must be TypedArray, ArrayBuffer, or Buffer");
+            }
+        }
+    }
+
+    if (argc >= 4 && argv[3]) {
+        uint32_t data_offset = 0;
+        napi_get_value_uint32(env, argv[3], &data_offset);
+        data = ((uint8_t*)data) + data_offset;
+        byte_length = byte_length > data_offset ? byte_length - data_offset : 0;
+    }
+    if (argc >= 5 && argv[4]) {
+        uint32_t size = 0;
+        napi_get_value_uint32(env, argv[4], &size);
+        if (size < byte_length) byte_length = size;
+    }
+
+    pfn_wgpuQueueWriteBuffer(queue, buffer, (uint64_t)offset, data, byte_length);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_queue_on_submitted_work_done(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    WGPUInstance inst = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
+    WGPUQueue queue = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!queue) NAPI_THROW(env, "Invalid queue");
+    if (native_direct_queue_has_pending(env, this_arg)) {
+        if (pfn_doeNativeQueueFlush) {
+            pfn_doeNativeQueueFlush(queue);
+        } else {
+            QueueWorkDoneResult result = {0};
+            WGPUQueueWorkDoneCallbackInfo cb_info = {
+                .nextInChain = NULL,
+                .mode = WGPU_CALLBACK_MODE_WAIT_ANY_ONLY,
+                .callback = queue_work_done_callback,
+                .userdata1 = &result,
+                .userdata2 = NULL,
+            };
+            WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
+            if (future.id == 0) NAPI_THROW(env, "queue work-done future unavailable");
+            uint64_t start_ns = monotonic_now_ns();
+            while (!result.done) {
+                WGPUFutureWaitInfo wait_info = {
+                    .future = future,
+                    .completed = 0,
+                };
+                uint32_t wait_status = pfn_wgpuInstanceWaitAny(inst, 1, &wait_info, 0);
+                if (wait_status == WGPU_WAIT_STATUS_SUCCESS) {
+                    if (!result.done) pfn_wgpuInstanceProcessEvents(inst);
+                } else if (wait_status == WGPU_WAIT_STATUS_TIMED_OUT) {
+                    pfn_wgpuInstanceProcessEvents(inst);
+                    if (monotonic_now_ns() - start_ns >= current_timeout_ns()) {
+                        napi_throw_error(env, "DOE_QUEUE_TIMEOUT", "queue wait timed out");
+                        return NULL;
+                    }
+                    wait_slice();
+                } else if (wait_status == WGPU_WAIT_STATUS_ERROR) {
+                    napi_throw_error(env, "DOE_QUEUE_UNAVAILABLE", "queue wait failed");
+                    return NULL;
+                } else {
+                    NAPI_THROW(env, "queue wait returned unsupported status");
+                }
+            }
+            if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS) {
+                return throw_status_error(env, "DOE_QUEUE_FLUSH_ERROR", "queue work did not complete", result.status, result.message);
+            }
+        }
+        native_direct_queue_mark_done(env, this_arg);
+    }
+    return native_direct_resolved_undefined_promise(env);
+}
+
+static napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info) {
+    size_t argc = 3;
+    napi_value argv[3];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "buffer.mapAsync requires a mode");
+    WGPUInstance inst = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
+    WGPUBuffer buffer = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    napi_value queue_obj = get_prop(env, this_arg, DOE_DIRECT_QUEUE);
+    if (!buffer) NAPI_THROW(env, "Invalid buffer");
+    uint32_t mode = 0;
+    int64_t offset = 0;
+    int64_t size = (int64_t)get_double_prop(env, this_arg, "size");
+    napi_get_value_uint32(env, argv[0], &mode);
+    if (argc >= 2 && argv[1]) napi_get_value_int64(env, argv[1], &offset);
+    if (argc >= 3 && argv[2]) napi_get_value_int64(env, argv[2], &size);
+    if (native_direct_queue_has_pending(env, queue_obj)) {
+        WGPUQueue queue = native_direct_unwrap_external_prop(env, queue_obj, DOE_DIRECT_NATIVE);
+        if (pfn_doeNativeQueueFlush) {
+            pfn_doeNativeQueueFlush(queue);
+        } else {
+            QueueWorkDoneResult result = {0};
+            WGPUQueueWorkDoneCallbackInfo cb_info = {
+                .nextInChain = NULL,
+                .mode = WGPU_CALLBACK_MODE_WAIT_ANY_ONLY,
+                .callback = queue_work_done_callback,
+                .userdata1 = &result,
+                .userdata2 = NULL,
+            };
+            WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
+            if (future.id == 0) NAPI_THROW(env, "queue work-done future unavailable");
+            if (!process_events_until(inst, &result.done, current_timeout_ns())) {
+                return throw_status_error(env, "DOE_QUEUE_TIMEOUT", "queue wait timed out", result.status, result.message);
+            }
+            if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS) {
+                return throw_status_error(env, "DOE_QUEUE_FLUSH_ERROR", "queue work did not complete", result.status, result.message);
+            }
+        }
+        native_direct_queue_mark_done(env, queue_obj);
+    }
+
+    BufferMapResult result = {0};
+    WGPUBufferMapCallbackInfo cb_info = {
+        .nextInChain = NULL,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = buffer_map_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
+    if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
+        }
+    } else {
+        WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+        if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
+        if (!process_events_until(inst, &result.done, current_timeout_ns())) {
+            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
+        }
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
+        }
+    }
+    return native_direct_resolved_undefined_promise(env);
+}
+
+static napi_value native_direct_buffer_get_mapped_range(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    WGPUBuffer buffer = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!buffer) NAPI_THROW(env, "Invalid buffer");
+    int64_t offset = 0;
+    int64_t size = (int64_t)get_double_prop(env, this_arg, "size");
+    if (argc >= 1 && argv[0]) napi_get_value_int64(env, argv[0], &offset);
+    if (argc >= 2 && argv[1]) napi_get_value_int64(env, argv[1], &size);
+    void* data = pfn_wgpuBufferGetMappedRange(buffer, (size_t)offset, (size_t)size);
+    if (!data) data = (void*)pfn_wgpuBufferGetConstMappedRange(buffer, (size_t)offset, (size_t)size);
+    if (!data) NAPI_THROW(env, "getMappedRange returned NULL");
+    napi_value array_buffer;
+    napi_create_external_arraybuffer(env, data, (size_t)size, NULL, NULL, &array_buffer);
+    return array_buffer;
+}
+
+static napi_value native_direct_buffer_read_copy(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    WGPUBuffer buffer = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!buffer) NAPI_THROW(env, "Invalid buffer");
+    int64_t offset = 0;
+    int64_t size = (int64_t)get_double_prop(env, this_arg, "size");
+    if (argc >= 1 && argv[0]) napi_get_value_int64(env, argv[0], &offset);
+    if (argc >= 2 && argv[1]) napi_get_value_int64(env, argv[1], &size);
+    void* data = pfn_wgpuBufferGetMappedRange(buffer, (size_t)offset, (size_t)size);
+    if (!data) data = (void*)pfn_wgpuBufferGetConstMappedRange(buffer, (size_t)offset, (size_t)size);
+    if (!data) NAPI_THROW(env, "bufferReadCopy getMappedRange returned NULL");
+    void* copy = NULL;
+    napi_value array_buffer;
+    napi_create_arraybuffer(env, (size_t)size, &copy, &array_buffer);
+    if (copy && size > 0) memcpy(copy, data, (size_t)size);
+    return array_buffer;
+}
+
+static napi_value native_direct_buffer_unmap(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    WGPUBuffer buffer = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (buffer) pfn_wgpuBufferUnmap(buffer);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_buffer_destroy(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    WGPUBuffer buffer = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (buffer) {
+        pfn_wgpuBufferRelease(buffer);
+        native_direct_set_external_prop(env, this_arg, DOE_DIRECT_NATIVE, NULL);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_command_encoder_begin_compute_pass(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    (void)argv;
+    WGPUCommandEncoder encoder = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!encoder) NAPI_THROW(env, "Invalid encoder");
+    WGPUComputePassDescriptor desc = {
+        .nextInChain = NULL,
+        .label = { .data = NULL, .length = 0 },
+        .timestampWrites = NULL,
+    };
+    WGPUComputePassEncoder pass = pfn_wgpuCommandEncoderBeginComputePass(encoder, &desc);
+    if (!pass) NAPI_THROW(env, "beginComputePass failed");
+    return create_native_direct_compute_pass_object(env, pass);
+}
+
+static napi_value native_direct_command_encoder_copy_buffer_to_buffer(napi_env env, napi_callback_info info) {
+    size_t argc = 5;
+    napi_value argv[5];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 5) NAPI_THROW(env, "copyBufferToBuffer requires source, sourceOffset, target, targetOffset, and size");
+    WGPUCommandEncoder encoder = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUBuffer src = native_direct_unwrap_external_prop(env, argv[0], DOE_DIRECT_NATIVE);
+    WGPUBuffer dst = native_direct_unwrap_external_prop(env, argv[2], DOE_DIRECT_NATIVE);
+    int64_t src_offset = 0;
+    int64_t dst_offset = 0;
+    int64_t size = 0;
+    if (!encoder || !src || !dst) NAPI_THROW(env, "copyBufferToBuffer requires encoder and buffers");
+    napi_get_value_int64(env, argv[1], &src_offset);
+    napi_get_value_int64(env, argv[3], &dst_offset);
+    napi_get_value_int64(env, argv[4], &size);
+    pfn_wgpuCommandEncoderCopyBufferToBuffer(encoder, src, (uint64_t)src_offset, dst, (uint64_t)dst_offset, (uint64_t)size);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_command_encoder_finish(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    WGPUCommandEncoder encoder = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!encoder) NAPI_THROW(env, "Invalid encoder");
+    WGPUCommandBufferDescriptor desc = {
+        .nextInChain = NULL,
+        .label = { .data = NULL, .length = 0 },
+    };
+    WGPUCommandBuffer command_buffer = pfn_wgpuCommandEncoderFinish(encoder, &desc);
+    if (!command_buffer) NAPI_THROW(env, "commandEncoderFinish failed");
+    native_direct_set_external_prop(env, this_arg, DOE_DIRECT_NATIVE, NULL);
+    return create_native_direct_command_buffer_object(env, command_buffer);
+}
+
+static napi_value native_direct_compute_pass_set_pipeline(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "setPipeline requires a pipeline");
+    WGPUComputePassEncoder pass = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUComputePipeline pipeline = native_direct_unwrap_external_prop(env, argv[0], DOE_DIRECT_NATIVE);
+    pfn_wgpuComputePassEncoderSetPipeline(pass, pipeline);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_compute_pass_set_bind_group(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 2) NAPI_THROW(env, "setBindGroup requires an index and bind group");
+    WGPUComputePassEncoder pass = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUBindGroup bind_group = native_direct_unwrap_external_prop(env, argv[1], DOE_DIRECT_NATIVE);
+    uint32_t index = 0;
+    napi_get_value_uint32(env, argv[0], &index);
+    pfn_wgpuComputePassEncoderSetBindGroup(pass, index, bind_group, 0, NULL);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_compute_pass_dispatch_workgroups(napi_env env, napi_callback_info info) {
+    size_t argc = 3;
+    napi_value argv[3];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "dispatchWorkgroups requires x");
+    WGPUComputePassEncoder pass = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    uint32_t x = 1;
+    uint32_t y = 1;
+    uint32_t z = 1;
+    napi_get_value_uint32(env, argv[0], &x);
+    if (argc >= 2 && argv[1]) napi_get_value_uint32(env, argv[1], &y);
+    if (argc >= 3 && argv[2]) napi_get_value_uint32(env, argv[2], &z);
+    pfn_wgpuComputePassEncoderDispatchWorkgroups(pass, x, y, z);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_compute_pass_dispatch_workgroups_indirect(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "dispatchWorkgroupsIndirect requires a buffer");
+    WGPUComputePassEncoder pass = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    WGPUBuffer buffer = native_direct_unwrap_external_prop(env, argv[0], DOE_DIRECT_NATIVE);
+    int64_t offset = 0;
+    if (argc >= 2 && argv[1]) napi_get_value_int64(env, argv[1], &offset);
+    pfn_wgpuComputePassEncoderDispatchWorkgroupsIndirect(pass, buffer, (uint64_t)offset);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_compute_pass_end(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    WGPUComputePassEncoder pass = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    pfn_wgpuComputePassEncoderEnd(pass);
+    native_direct_set_external_prop(env, this_arg, DOE_DIRECT_NATIVE, NULL);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value create_native_direct_gpu_object(napi_env env, WGPUInstance instance) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_INSTANCE, instance);
+    native_direct_add_method(env, obj, "requestAdapter", native_direct_gpu_request_adapter);
+    return obj;
+}
+
+static napi_value create_native_direct_adapter_object(napi_env env, WGPUInstance instance, WGPUAdapter adapter) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_INSTANCE, instance);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, adapter);
+    bool limits_ok = false;
+    WGPULimits limits = native_direct_query_adapter_limits(adapter, &limits_ok);
+    native_direct_set_object_prop(env, obj, "limits", limits_ok ? create_limits_object(env, &limits) : native_direct_create_empty_object(env));
+    native_direct_set_object_prop(env, obj, "features", native_direct_create_empty_set(env));
+    {
+        napi_value info;
+        napi_create_object(env, &info);
+        napi_set_named_property(env, obj, "info", info);
+    }
+    native_direct_add_method(env, obj, "requestDevice", native_direct_adapter_request_device);
+    native_direct_add_method(env, obj, "destroy", native_direct_adapter_destroy);
+    return obj;
+}
+
+static napi_value create_native_direct_queue_object(napi_env env, WGPUInstance instance, WGPUQueue queue) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_INSTANCE, instance);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, queue);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_QUEUE_NATIVE, queue);
+    native_direct_set_uint32_prop(env, obj, DOE_DIRECT_SUBMITTED_SERIAL, 0);
+    native_direct_set_uint32_prop(env, obj, DOE_DIRECT_COMPLETED_SERIAL, 0);
+    native_direct_add_method(env, obj, "submit", native_direct_queue_submit);
+    native_direct_add_method(env, obj, "writeBuffer", native_direct_queue_write_buffer);
+    native_direct_add_method(env, obj, "onSubmittedWorkDone", native_direct_queue_on_submitted_work_done);
+    return obj;
+}
+
+static napi_value create_native_direct_device_object(napi_env env, WGPUInstance instance, WGPUDevice device) {
+    napi_value obj;
+    WGPUQueue queue = pfn_wgpuDeviceGetQueue(device);
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_INSTANCE, instance);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, device);
+    bool limits_ok = false;
+    WGPULimits limits = native_direct_query_device_limits(device, &limits_ok);
+    native_direct_set_object_prop(env, obj, "limits", limits_ok ? create_limits_object(env, &limits) : native_direct_create_empty_object(env));
+    native_direct_set_object_prop(env, obj, "features", native_direct_create_empty_set(env));
+    native_direct_set_object_prop(env, obj, "queue", create_native_direct_queue_object(env, instance, queue));
+    native_direct_add_method(env, obj, "createBuffer", native_direct_device_create_buffer);
+    native_direct_add_method(env, obj, "createShaderModule", native_direct_device_create_shader_module);
+    native_direct_add_method(env, obj, "createComputePipeline", native_direct_device_create_compute_pipeline);
+    native_direct_add_method(env, obj, "createComputePipelineAsync", native_direct_device_create_compute_pipeline_async);
+    native_direct_add_method(env, obj, "createBindGroupLayout", native_direct_device_create_bind_group_layout);
+    native_direct_add_method(env, obj, "createBindGroup", native_direct_device_create_bind_group);
+    native_direct_add_method(env, obj, "createPipelineLayout", native_direct_device_create_pipeline_layout);
+    native_direct_add_method(env, obj, "createCommandEncoder", native_direct_device_create_command_encoder);
+    native_direct_add_method(env, obj, "destroy", native_direct_device_destroy);
+    return obj;
+}
+
+static napi_value create_native_direct_buffer_object(napi_env env, WGPUInstance instance, napi_value queue_obj, WGPUBuffer buffer, uint64_t size, uint64_t usage) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_INSTANCE, instance);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, buffer);
+    native_direct_set_object_prop(env, obj, DOE_DIRECT_QUEUE, queue_obj);
+    native_direct_set_double_prop(env, obj, "size", (double)size);
+    native_direct_set_double_prop(env, obj, "usage", (double)usage);
+    native_direct_add_method(env, obj, "mapAsync", native_direct_buffer_map_async);
+    native_direct_add_method(env, obj, "getMappedRange", native_direct_buffer_get_mapped_range);
+    native_direct_add_method(env, obj, "_readCopy", native_direct_buffer_read_copy);
+    native_direct_add_method(env, obj, "unmap", native_direct_buffer_unmap);
+    native_direct_add_method(env, obj, "destroy", native_direct_buffer_destroy);
+    return obj;
+}
+
+static napi_value create_native_direct_bind_group_layout_object(napi_env env, WGPUBindGroupLayout layout) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, layout);
+    return obj;
+}
+
+static napi_value create_native_direct_bind_group_object(napi_env env, WGPUBindGroup group) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, group);
+    return obj;
+}
+
+static napi_value create_native_direct_pipeline_layout_object(napi_env env, WGPUPipelineLayout layout) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, layout);
+    return obj;
+}
+
+static napi_value create_native_direct_shader_module_object(napi_env env, WGPUShaderModule shader_module) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, shader_module);
+    return obj;
+}
+
+static napi_value create_native_direct_compute_pipeline_object(napi_env env, WGPUComputePipeline pipeline) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, pipeline);
+    return obj;
+}
+
+static napi_value create_native_direct_command_buffer_object(napi_env env, WGPUCommandBuffer command_buffer) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, command_buffer);
+    return obj;
+}
+
+static napi_value create_native_direct_command_encoder_object(napi_env env, WGPUCommandEncoder encoder) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, encoder);
+    native_direct_add_method(env, obj, "beginComputePass", native_direct_command_encoder_begin_compute_pass);
+    native_direct_add_method(env, obj, "copyBufferToBuffer", native_direct_command_encoder_copy_buffer_to_buffer);
+    native_direct_add_method(env, obj, "finish", native_direct_command_encoder_finish);
+    return obj;
+}
+
+static napi_value create_native_direct_compute_pass_object(napi_env env, WGPUComputePassEncoder pass) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, pass);
+    native_direct_add_method(env, obj, "setPipeline", native_direct_compute_pass_set_pipeline);
+    native_direct_add_method(env, obj, "setBindGroup", native_direct_compute_pass_set_bind_group);
+    native_direct_add_method(env, obj, "dispatchWorkgroups", native_direct_compute_pass_dispatch_workgroups);
+    native_direct_add_method(env, obj, "dispatchWorkgroupsIndirect", native_direct_compute_pass_dispatch_workgroups_indirect);
+    native_direct_add_method(env, obj, "end", native_direct_compute_pass_end);
+    return obj;
+}
+
+static napi_value doe_native_direct_create(napi_env env, napi_callback_info info) {
+    (void)info;
+    CHECK_LIB_LOADED(env);
+    WGPUInstance inst = pfn_wgpuCreateInstance(NULL);
+    if (!inst) NAPI_THROW(env, "wgpuCreateInstance returned NULL");
+    return create_native_direct_gpu_object(env, inst);
+}
+
 /* ================================================================
  * Module initialization
  * ================================================================ */
@@ -3414,6 +4580,7 @@ static napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
 static napi_value doe_module_init(napi_env env, napi_value exports) {
     napi_property_descriptor descriptors[] = {
         EXPORT_FN("loadLibrary", doe_load_library),
+        EXPORT_FN("nativeDirectCreate", doe_native_direct_create),
         EXPORT_FN("createInstance", doe_create_instance),
         EXPORT_FN("instanceRelease", doe_instance_release),
         EXPORT_FN("requestAdapter", doe_request_adapter),
@@ -3426,6 +4593,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("bufferUnmap", doe_buffer_unmap),
         EXPORT_FN("bufferMapSync", doe_buffer_map_sync),
         EXPORT_FN("bufferGetMappedRange", doe_buffer_get_mapped_range),
+        EXPORT_FN("bufferReadCopy", doe_buffer_read_copy),
         EXPORT_FN("bufferWriteMappedRange", doe_buffer_write_mapped_range),
         EXPORT_FN("bufferReadIndirectCounts", doe_buffer_read_indirect_counts),
         EXPORT_FN("bufferAssertMappedPrefixF32", doe_buffer_assert_mapped_prefix_f32),

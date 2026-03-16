@@ -17,6 +17,7 @@ const metal_bridge_cmd_buf_encode_compute_dispatch_indirect = bridge.metal_bridg
 const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
 const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
 const metal_bridge_command_buffer_encode_signal_event = bridge.metal_bridge_command_buffer_encode_signal_event;
+const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
@@ -36,7 +37,6 @@ const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw
 const metal_bridge_render_encoder_draw_indexed = bridge.metal_bridge_render_encoder_draw_indexed;
 const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 const metal_bridge_render_encoder_set_vertex_buffer = bridge.metal_bridge_render_encoder_set_vertex_buffer;
-const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
 const metal_bridge_sample_timestamp = bridge.metal_bridge_sample_timestamp;
 const metal_bridge_resolve_timestamps = bridge.metal_bridge_resolve_timestamps;
 
@@ -529,9 +529,7 @@ pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
 /// Uses MTLSharedEvent for GPU→CPU sync (direct memory poll, no GCD intermediary).
 pub fn flush_pending_work(q: *DoeQueue) void {
     if (q.pending_cmd) |cmd| {
-        if (q.mtl_event) |ev| {
-            metal_bridge_shared_event_wait(ev, q.event_counter);
-        }
+        metal_bridge_command_buffer_wait_completed(cmd);
         metal_bridge_release(cmd);
         q.pending_cmd = null;
     }

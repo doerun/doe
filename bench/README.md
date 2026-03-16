@@ -99,6 +99,20 @@ That document defines:
   - reads `dropin_benchmark_suite.py` JSON output and writes an HTML report that includes all benchmark rows grouped by class (`micro`, `end_to_end`).
 - `compare_runtimes.py`
   - runs two runtime commands repeatedly (left/right), captures wall-time quantiles, and writes a comparison artifact.
+- `bench/node/bench-headless-webgpu-comparison.mjs`
+  - runs the four-way Node package-surface comparison for compute-heavy matmul:
+    Dawn direct, Dawn + Doe helpers, Simulatte direct, and Simulatte + Doe helpers.
+  - uses the same generated WGSL, matrix data, and chunk plan across all four runners.
+  - the direct Simulatte lane now imports `@simulatte/webgpu/native-direct`, and both helper lanes now bind the same standalone `@simulatte/webgpu-doe` helpers onto their respective raw devices. This keeps wrapper-model asymmetry out of the compare contract.
+  - runs each GPU candidate in an isolated subprocess and prepares/tears it down sequentially so one candidate's buffers, pipelines, or provider state do not distort another candidate's measurement or stability.
+  - prints per-runner phase means (`encode`, `submit+wait`, `readback`) so direct-vs-helper and Dawn-vs-Simulatte gaps can be attributed instead of treated as one opaque wall-time delta.
+- `bench/node/bench-streaming-webgpu-comparison.mjs`
+  - runs the four-way Node package-surface comparison for the streaming affine-transform workload.
+  - uses the same `@simulatte/webgpu/native-direct` vs Dawn direct pairing and the same standalone `@simulatte/webgpu-doe` helper implementation on both helper lanes.
+  - runs each GPU candidate in an isolated subprocess and prepares/tears it down sequentially so the four-way compare stays apples-to-apples without concurrent package/device resource pressure or package-state carryover.
+  - prints the same per-runner phase means (`encode`, `submit+wait`, `readback`) for submission-heavy diagnosis.
+- `bench/node/bench-doe-routines-vs-cpu.mjs`
+  - compares the Doe one-shot compute helper against the CPU worker baseline for the streaming workload.
 - `compare_dawn_vs_doe.py`
   - executes shared workload files against two explicit command templates (default Doe backend runtime on the left side + configurable Dawn/competitor runtime).
   - outputs per-run trace artifacts (`--trace-jsonl` and `--trace-meta` when templates provide these placeholders) plus workload-level and overall quantile summaries.
