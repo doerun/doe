@@ -1,0 +1,38 @@
+{
+  "ok": false,
+  "errorCount": 1,
+  "errors": [
+    "fawn-2d-sdf-renderer.request.json: PointerToNowhere: '/$defs/point' does not exist within {'type': 'object', 'required': ['artifactKind', 'moduleId', 'paintState', 'pathOps', 'schemaVersion', 'target', 'textRuns'], 'properties': {'schemaVersion': {'type': 'integer', 'const': 1}, 'moduleId': {'type': 'string', 'const': 'fawn_2d_sdf_renderer'}, 'artifactKind': {'type': 'string', 'enum': ['request', 'result']}, 'textRuns': {'type': 'array', 'items': {'type': 'object', 'required': ['fontKey', 'glyphIds', 'positions', 'color', 'transform'], 'properties': {'fontKey': {'type': 'string', 'minLength': 1}, 'fontPx': {'type': 'number', 'minimum': 1}, 'glyphIds': {'type': 'array', 'items': {'type': 'integer', 'minimum': 0}}, 'positions': {'type': 'array', 'items': {'$ref': '#/$defs/point'}}, 'color': {'type': 'array', 'minItems': 4, 'maxItems': 4, 'items': {'type': 'integer', 'minimum': 0, 'maximum': 255}}, 'transform': {'type': 'array', 'minItems': 6, 'maxItems': 6, 'items': {'type': 'number'}}}, 'additionalProperties': False}}, 'pathOps': {'type': 'array', 'items': {'type': 'object', 'required': ['op', 'points'], 'properties': {'op': {'type': 'string', 'enum': ['moveTo', 'lineTo', 'curveTo', 'closePath']}, 'points': {'type': 'array', 'items': {'$ref': '#/$defs/point'}}}, 'additionalProperties': False}}, 'paintState': {'type': 'object', 'required': ['blendMode', 'clipState', 'transform'], 'properties': {'blendMode': {'type': 'string', 'minLength': 1}, 'clipState': {'type': 'object', 'required': ['mode'], 'properties': {'mode': {'type': 'string', 'minLength': 1}, 'bounds': {'type': 'array', 'minItems': 4, 'maxItems': 4, 'items': {'type': 'number'}}}, 'additionalProperties': False}, 'transform': {'type': 'array', 'minItems': 6, 'maxItems': 6, 'items': {'type': 'number'}}}, 'additionalProperties': False}, 'target': {'type': 'object', 'required': ['width', 'height', 'format', 'sampleCount'], 'properties': {'width': {'type': 'integer', 'minimum': 1}, 'height': {'type': 'integer', 'minimum': 1}, 'format': {'type': 'string', 'minLength': 1}, 'sampleCount': {'type': 'integer', 'minimum': 1}}, 'additionalProperties': False}}, 'additionalProperties': False}"
+  ],
+  "fixtureCount": 4,
+  "rows": [
+    {
+      "fixture": "fawn-compute-services.request.json",
+      "moduleId": "fawn_compute_services",
+      "deterministic": true,
+      "resultHash": "6466f1060c7ae8d60d724ef76bf4917dd4ad39ac57dcedc74f02d58026e687d4",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-effects-pipeline.request.json",
+      "moduleId": "fawn_effects_pipeline",
+      "deterministic": true,
+      "resultHash": "ca57f7e08fe3ca27f58f89bc078b44bb5e10448ff0ec6b77743798aa118af52d",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-path-engine.request.json",
+      "moduleId": "fawn_path_engine",
+      "deterministic": true,
+      "resultHash": "60f9f46fd1e7c1264d802c7af36d3fba87d1261b3d19b69bbf73913484c5bb53",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-resource-scheduler.request.json",
+      "moduleId": "fawn_resource_scheduler",
+      "deterministic": true,
+      "resultHash": "fc2554999d376e39ad6aed6feb75a0a763c41e6cea2e2c5f43ea90c933b52ec6",
+      "fallbackCount": 0
+    }
+  ]
+}

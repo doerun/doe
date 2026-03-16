@@ -16,7 +16,7 @@ import benchmark_cube_reports as cube_reports_mod
 import benchmark_cube_dashboard_html
 import output_paths
 import report_conformance
-from compare_dawn_vs_doe_modules import timing_sanity
+from native_compare_modules import timing_sanity
 
 STATUS_ORDER = {
     "unsupported": 0,

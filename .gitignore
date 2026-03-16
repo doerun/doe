@@ -69,6 +69,31 @@ nursery/fawn-browser/artifacts/*
 !nursery/fawn-browser/artifacts/fawn-icon-main.*
 !nursery/fawn-browser/artifacts/fawn-icon-main.*/**
 nursery/fawn-browser/.external-macos.env
+# Canonical browser/ paths (moved from nursery/)
+browser/chromium_webgpu_lane/out/
+browser/chromium_webgpu_lane/.local_volume/
+browser/fawn-browser/.gclient*
+browser/fawn-browser/.gcs_entries
+browser/fawn-browser/.cipd
+browser/fawn-browser/.cipd/
+browser/fawn-browser/.cipd.local_backup.*/
+browser/fawn-browser/.local_volume/
+browser/fawn-browser/_bad_scm/
+browser/fawn-browser/cache/
+browser/fawn-browser/cache
+browser/fawn-browser/depot_tools/
+browser/fawn-browser/depot_tools
+browser/fawn-browser/node_modules/
+browser/fawn-browser/src/
+browser/fawn-browser/src
+browser/fawn-browser/chromium/
+browser/fawn-browser/out/
+!browser/fawn-browser/artifacts/
+browser/fawn-browser/artifacts/*
+!browser/fawn-browser/artifacts/fawn-icon-main.svg
+!browser/fawn-browser/artifacts/fawn-icon-main.*
+!browser/fawn-browser/artifacts/fawn-icon-main.*/**
+browser/fawn-browser/.external-macos.env
 
 # Nested mirror artifacts (accidental local copies)
 bench/vendor/

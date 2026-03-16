@@ -11,7 +11,7 @@ This module is self-contained and does not depend on external runtime code.
 Before running or interpreting Dawn-vs-Doe performance results, read:
 
 - `performance-strategy.md`
-- `bench/benchmark-harness-taxonomy.md`
+- `docs/benchmark-taxonomy.md`
 - `bench/benchmark-writing-guide.md`
 
 If you're adding or changing workloads/commands, treat the benchmark writing guide as the required authoring contract.
@@ -76,8 +76,8 @@ That document defines:
   - use `--no-preserve-latest` only for intentionally isolated ad-hoc cube snapshots.
   - cube publication is lane-governed: every included row must resolve to governed lane IDs from `config/governed-lanes.json`.
   - backend rows carry the two source runtime lane IDs from report telemetry; package rows require explicit top-level `laneId` in the compare report.
-  - package-surface compare harnesses (`bench/node/compare.js`, `bench/bun/compare.js`) now force workload validation prepasses before timing comparable rows so claimable package-surface artifacts fail early on readback/correctness drift.
-  - `bench/node/compare.js` now runs each workload in a fresh provider subprocess, preventing package-state carryover from contaminating later workload timings in the same compare report.
+  - package-surface compare harnesses (`bench/package-compare/node/compare.js`, `bench/package-compare/bun/compare.js`) now force workload validation prepasses before timing comparable rows so claimable package-surface artifacts fail early on readback/correctness drift.
+  - `bench/package-compare/node/compare.js` now runs each workload in a fresh provider subprocess, preventing package-state carryover from contaminating later workload timings in the same compare report.
   - package surfaces can use explicit policy workload-id overrides (`config/benchmark-cube-policy.json`) so directional rows stay isolated from comparable workload-set cells.
   - backend rows preserve both canonical and legacy report history:
     - canonical rows come from fully conformant Dawn-vs-Doe reports.
@@ -100,7 +100,7 @@ That document defines:
   - reads `dropin_benchmark_suite.py` JSON output and writes an HTML report that includes all benchmark rows grouped by class (`micro`, `end_to_end`).
 - `compare_runtimes.py`
   - runs two runtime commands repeatedly (left/right), captures wall-time quantiles, and writes a comparison artifact.
-- `bench/node/bench-headless-webgpu-comparison.mjs`
+- `bench/diagnostics/node/bench-headless-webgpu-comparison.mjs`
   - runs the four-way Node package-surface comparison for compute-heavy matmul:
     Dawn direct, Dawn + Doe helpers, Simulatte direct, and Simulatte + Doe helpers.
   - uses the same generated WGSL, matrix data, and chunk plan across all four runners.
@@ -108,20 +108,27 @@ That document defines:
   - the helper lanes now use the same one-encoder, one-compute-pass, one-copy, one-submit, one-map round shape as the direct lanes; they no longer time `gpu.buffer.read(...)` as a second copy+submit path inside the measured round.
   - runs each GPU candidate in an isolated subprocess and prepares/tears it down sequentially so one candidate's buffers, pipelines, or provider state do not distort another candidate's measurement or stability.
   - prints per-runner phase means (`encode`, `submit+wait`, `readback`) so direct-vs-helper and Dawn-vs-Simulatte gaps can be attributed instead of treated as one opaque wall-time delta.
-- `bench/node/bench-streaming-webgpu-comparison.mjs`
+- `bench/diagnostics/node/bench-streaming-webgpu-comparison.mjs`
   - runs the four-way Node package-surface comparison for the streaming affine-transform workload.
   - uses the same addon-native `@simulatte/webgpu/native-direct` vs Dawn direct pairing and the same standalone `@simulatte/webgpu-doe` helper implementation on both helper lanes.
   - the helper lanes now use the same one-encoder, one-compute-pass, one-copy, one-submit, one-map round shape as the direct lanes; they no longer time `gpu.buffer.read(...)` as a second copy+submit path inside the measured round.
   - runs each GPU candidate in an isolated subprocess and prepares/tears it down sequentially so the four-way compare stays apples-to-apples without concurrent package/device resource pressure or package-state carryover.
-  - prints the same per-runner phase means (`encode`, `submit+wait`, `readback`) for submission-heavy diagnosis.
-- `bench/node/bench-doe-routines-vs-cpu.mjs`
+  - run one package-surface streaming compare process at a time on a host. Concurrent ad-hoc scenario runs are diagnostic-only because overlapping package/device processes can materially distort `submit+wait` and readback timings even when each compare keeps its own candidates sequential.
+  - prints per-runner phase means (`encode`, `submit+wait`, `readback`, `validation`) plus timed-sample variance (`stddev`, `CV`, `range`) for submission-heavy diagnosis.
+  - supports explicit attribution scenarios via `--scenario=`:
+    - `default`: 64 dispatches, full-range 16 MiB readback
+    - `single-dispatch-full-readback`: 1 dispatch, full-range 16 MiB readback
+    - `many-dispatches-tiny-readback`: 64 dispatches, 1 KiB readback
+    - `raw-per-pipeline-bindgroups`: 64 dispatches, full-range 16 MiB readback, one direct-path bind group per pipeline
+  - use those scenarios to separate dispatch-count cost, readback-byte cost, and bind-group-shape cost without changing the provider pair under test.
+- `bench/diagnostics/node/bench-doe-routines-vs-cpu.mjs`
   - compares the Doe one-shot compute helper against the CPU worker baseline for the streaming workload.
 - `compare_dawn_vs_doe.py`
   - executes shared workload files against two explicit command templates (default Doe backend runtime on the left side + configurable Dawn/competitor runtime).
   - outputs per-run trace artifacts (`--trace-jsonl` and `--trace-meta` when templates provide these placeholders) plus workload-level and overall quantile summaries.
   - enforces host/backend compatibility before execution and fails fast on unsupported OS/backend mixes (for example: Vulkan on macOS, Metal on Linux/Windows, D3D12 on Linux/macOS).
   - current repo compare configs default to command-stream Dawn delegate lanes (`dawn_delegate`) for apples-to-apples strict workloads; `dawn_benchmark_adapter.py` remains available for gtest-filter diagnostics.
-  - core logic is now split into dedicated helper modules under `bench/compare_dawn_vs_doe_modules/`:
+  - core logic is now split into dedicated helper modules under `bench/native_compare_modules/`:
     `timing_selection.py`, `comparability.py`, `claimability.py`, `reporting.py`.
 - `cleanup_out.py`
   - prunes legacy untimestamped artifacts from `bench/out` and can optionally prune old timestamped run folders by retention window.
@@ -166,7 +173,7 @@ That document defines:
   - validates a full-matrix compare report against strict done criteria (exact comparable workload identity from contract, `comparisonStatus=comparable`, `claimStatus=claimable`, and zero left unsupported/error counters).
   - prints worst p95/p99 tail regressions plus non-claimable workload reasons to accelerate tail-fix loops.
 - `run_full39_evidence_bundle.sh`
-  - post-run orchestrator for claim-grade artifacts: readiness check -> blocking gates (trace/correctness/schema + drop-in + claim) -> repeated claim windows + substantiation -> inventory and baseline refresh.
+  - post-run orchestrator for claim-grade artifacts: readiness check -> blocking gates (pipeline/trace/correctness/schema + drop-in + claim) -> repeated claim windows + substantiation -> inventory and baseline refresh.
 - `generate_feature_benchmark_table.py`
   - builds a markdown table joining `config/webgpu-spec-coverage.json`, workload contracts, and Dawn filter mappings for Dawn-vs-Doe feature/benchmark coverage auditing.
   - emits both overall comparable-coverage and eligible-only comparable-coverage metrics; eligibility is config-driven via `benchmarkClass` (`comparable` vs `directional`) in `config/webgpu-spec-coverage.json`.
@@ -235,13 +242,13 @@ python3 bench/cleanup_out.py --retention-days 14
   - backend-native execution contracts still live in `bench/workloads*.json`.
   - backend-native workload source of truth now lives in `bench/backend-workload-catalog.json`, and `python3 bench/generate_backend_workloads.py` materializes the lane-specific `bench/workloads*.json` files from that catalog.
   - `python3 bench/generate_backend_workloads.py --verify` is now part of the canonical blocking gate flow; generated backend workload files are no longer treated as hand-authored truth.
-  - Node/Bun package execution still lives in `bench/node/workloads.js`.
+  - Node/Bun package execution still lives in `bench/package-compare/node/workloads.js`.
   - the registry bridges those surfaces so package aliases like `buffer_upload_1kb` normalize to canonical workload IDs such as `upload_write_buffer_1kb` in package reports and cube rows.
   - the first Windows D3D12 execution contracts now exist as generated views:
     - `bench/workloads.local.d3d12.smoke.json`
     - `bench/workloads.local.d3d12.extended.json`
-  - the first governed D3D12 comparable config is `bench/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`.
-  - D3D12 release-lane scaffolding now also exists at `bench/compare_dawn_vs_doe.config.local.d3d12.release.json`, but it remains unevidenced until a Windows host runs it.
+  - the first governed D3D12 comparable config is `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`.
+  - D3D12 release-lane scaffolding now also exists at `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json`, but it remains unevidenced until a Windows host runs it.
   - run `python3 bench/preflight_d3d12_host.py --json` on a Windows x64 host before D3D12 compare runs.
   - `python3 bench/run_local_d3d12_lane.py` is the Windows handoff runner for preflight -> smoke -> extended comparable -> blocking gates -> cube rebuild.
   - `python3 bench/test_backend_workload_catalog.py` covers D3D12 catalog round-trip, expected ID sets, and config/policy invariants; the blocking gate now runs it after `generate_backend_workloads.py --verify`.
@@ -266,9 +273,9 @@ python3 bench/bootstrap_dawn.py \
 ```
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py \
-  --left-command-template "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}" \
-  --right-command-template "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --dawn-extra-args --backend=vulkan --dawn-extra-args --adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
+python3 bench/native-compare/compare_dawn_vs_doe.py \
+  --left-command-template "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}" \
+  --right-command-template "python3 bench/native-compare/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --dawn-extra-args --backend=vulkan --dawn-extra-args --adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
   --comparability strict \
   --require-timing-class operation \
   --resource-probe rocm-smi \
@@ -282,19 +289,19 @@ python3 bench/compare_dawn_vs_doe.py \
 Run extended suites (non-default domains):
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py \
+python3 bench/native-compare/compare_dawn_vs_doe.py \
   --include-extended-workloads \
   --include-noncomparable-workloads \
   --comparability warn \
   --workload-filter compute_workgroup_atomic_1024,compute_workgroup_non_atomic_1024,compute_matvec_32768x2048_f32,compute_matvec_32768x2048_f32_swizzle1,compute_matvec_32768x2048_f32_workgroupshared_swizzle1,pipeline_compile_stress,render_draw_throughput_baseline,texture_sampling_raster_baseline \
-  --right-command-template "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
+  --right-command-template "python3 bench/native-compare/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter {dawn_filter} --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}" \
   --out bench/out/dawn-vs-doe.extended.json
 ```
 
 With Doe's default binary path:
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py \
+python3 bench/native-compare/compare_dawn_vs_doe.py \
   --right-name "chromium-dawn" \
   --right-command-template "/path/to/dawn-wrapper {commands} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
 ```
@@ -321,7 +328,7 @@ python3 bench/compare_dawn_vs_doe.py \
   `p1-resource-table`, `p1-capability-macro`, `p2-lifecycle`, `p2-lifecycle-macro`, `surface`), promotion
   requires `applesToApplesVetted=true` in workload config.
 - strict upload comparability now preflights the executed `doe-zig-runtime` binary:
-  it must expose `--upload-buffer-usage` and `--upload-submit-every`, reject invalid values for both flags, and not be older than key upload/runtime Zig sources (`zig/src/main.zig`, `zig/src/execution.zig`, `zig/src/wgpu_commands.zig`, `zig/src/webgpu_ffi.zig`).
+  it must expose `--upload-buffer-usage` and `--upload-submit-every`, reject invalid values for both flags, and not be older than key upload/runtime Zig sources (`runtime/zig/src/main.zig`, `runtime/zig/src/execution.zig`, `runtime/zig/src/wgpu_commands.zig`, `runtime/zig/src/webgpu_ffi.zig`).
   when a workload contract sets `--queue-wait-mode`, strict preflight also requires runtime support and validation for `--queue-wait-mode process-events|wait-any`.
 - strict render comparability now selects encode-only operation timing on the Doe side for workload domains
   `render` and `render-bundle` (`timingSource=doe-execution-encode-ns`) to align with Dawn DrawCallPerf CPU-timing semantics.
@@ -351,8 +358,8 @@ Reliability guardrails for performance claims:
 Quick reliability recheck pattern:
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py \
-  --config bench/compare_dawn_vs_doe.config.amd.vulkan.json \
+python3 bench/native-compare/compare_dawn_vs_doe.py \
+  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.json \
   --workload-filter upload_write_buffer_64kb \
   --iterations 10 \
   --warmup 1 \
@@ -450,7 +457,7 @@ and `claimStatus=claimable`. Then generate an HTML visualization artifact:
 ```bash
 # canonical one-command release pipeline:
 python3 bench/run_release_pipeline.py \
-  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-claim-gate
@@ -458,32 +465,32 @@ python3 bench/run_release_pipeline.py \
 # <report>.claim-rehearsal.{claim-gate-result,tail-health,timing-invariant-audit,contract-hash-manifest,manifest}.json
 
 # drop-in compatibility + benchmark suite against a built shared-library artifact:
-python3 bench/dropin_gate.py \
-  --artifact zig/zig-out/lib/libwebgpu_doe.so \
+python3 bench/drop-in/dropin_gate.py \
+  --artifact runtime/zig/zig-out/lib/libwebgpu_doe.so \
   --report bench/out/dropin_report.json
 
 # optional standalone drop-in benchmark visualization (micro vs end-to-end sections):
-python3 bench/visualize_dropin_benchmark.py \
+python3 bench/drop-in/visualize_dropin_benchmark.py \
   --report bench/out/dropin_benchmark_report.json \
   --out bench/out/dropin_benchmark_report.html
 
 # run release pipeline and include drop-in gating:
 python3 bench/run_release_pipeline.py \
-  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact zig/zig-out/lib/libwebgpu_doe.so \
+  --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so \
   --with-claim-gate
 
 # optional repeated release windows for trend evidence:
 python3 bench/run_release_claim_windows.py \
-  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --windows 5 \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact zig/zig-out/lib/libwebgpu_doe.so \
+  --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so \
   --with-substantiation-gate \
   --substantiation-policy config/substantiation-policy.json
 # disable per-window claim rehearsal artifacts only when intentionally running diagnostics:
@@ -503,9 +510,9 @@ python3 bench/build_baseline_dataset.py \
   --report-glob "bench/out/**/dawn-vs-doe*.json"
 
 # optional visualization after the pipeline report exists:
-python3 bench/visualize_dawn_vs_doe.py --report bench/out/dawn-vs-doe.amd.vulkan.release.json --out bench/out/dawn-vs-doe.amd.vulkan.release.html
+python3 bench/native-compare/visualize_dawn_vs_doe.py --report bench/out/dawn-vs-doe.amd.vulkan.release.json --out bench/out/dawn-vs-doe.amd.vulkan.release.html
 # optional machine-readable distribution analysis:
-python3 bench/visualize_dawn_vs_doe.py --report bench/out/dawn-vs-doe.amd.vulkan.release.json --analysis-out bench/out/dawn-vs-doe.amd.vulkan.release.distribution.json
+python3 bench/native-compare/visualize_dawn_vs_doe.py --report bench/out/dawn-vs-doe.amd.vulkan.release.json --analysis-out bench/out/dawn-vs-doe.amd.vulkan.release.distribution.json
 ```
 
 ## Building dawn_perf_tests
@@ -665,7 +672,7 @@ These failures are intentional and indicate the run is not comparable.
 Use:
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.example.json
 ```
 
 Config fields (CLI-compatible, config-first):
@@ -675,11 +682,11 @@ Config fields (CLI-compatible, config-first):
   "workloads": "bench/workloads.json",
   "left": {
     "name": "doe",
-    "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+    "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
   },
   "right": {
     "name": "dawn",
-    "commandTemplate": "python3 bench/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --dawn-extra-args=--backend=vulkan --dawn-extra-args=--adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
+    "commandTemplate": "python3 bench/native-compare/dawn_benchmark_adapter.py --dawn-state bench/dawn_runtime_state.json --dawn-filter-map bench/dawn_workload_map.json --workload {workload} --dawn-extra-args=--backend=vulkan --dawn-extra-args=--adapter-vendor-id=0x1002 --trace-jsonl {trace_jsonl} --trace-meta {trace_meta}"
   },
   "run": {
     "iterations": 3,
@@ -711,22 +718,22 @@ Notes:
 
 A ready-to-run AMD Vulkan preset is now included:
 
-- config: `bench/compare_dawn_vs_doe.config.amd.vulkan.json`
+- config: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.json`
 - workloads: `bench/workloads.amd.vulkan.json`
 - Dawn filter map: `bench/dawn_workload_map.amd.autodiscover.json`
 - AMD quirks list (empty/no-op baseline): `examples/quirks/amd_radv_noop_list.json`
 
 Additional AMD Vulkan presets:
 
-- release claim mode on the AMD native-supported strict comparable matrix (release sample floor): `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json`
-- AMD Vulkan extended local-claim preset for the broader 40-row matrix: `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
-- directional diagnostics (remaining non-claim macro set): `bench/compare_dawn_vs_doe.config.amd.vulkan.directional.json`
-- directional macro diagnostics (focused non-claim macro subset): `bench/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json`
-- strict AMD smoke + GPU probe preset (16MB upload): `bench/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json`
-- AMD Vulkan extended comparable matrix (same host family, broader contract): `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
-- AMD Vulkan extended strict directional diagnostics: `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
-- AMD Vulkan extended strict comparable matrix: `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
-- AMD Vulkan extended strict release claim mode: `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
+- release claim mode on the AMD native-supported strict comparable matrix (release sample floor): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json`
+- AMD Vulkan extended local-claim preset for the broader 40-row matrix: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+- directional diagnostics (remaining non-claim macro set): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.directional.json`
+- directional macro diagnostics (focused non-claim macro subset): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json`
+- strict AMD smoke + GPU probe preset (16MB upload): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json`
+- AMD Vulkan extended comparable matrix (same host family, broader contract): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+- AMD Vulkan extended strict directional diagnostics: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
+- AMD Vulkan extended strict comparable matrix: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
+- AMD Vulkan extended strict release claim mode: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
 
 Preset behavior:
 
@@ -744,44 +751,44 @@ Preset behavior:
 Run from `` directory:
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.json
 ```
 
 Extended AMD Vulkan runs:
 
 ```bash
 # comparable extended matrix local-claim preset (upload + compute + render + texture + render-bundle + async)
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json
 
 # release claim gate matrix (extended comparable set, 15 timed samples)
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json
 
 # diagnostic slice (workload-filter driven; same strict comparable matrix contract)
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.directional.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.directional.json
 
 # diagnostic macro slice (high-volume render/texture + P0 PLS stress)
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json
 
 # directional comparability-candidate cohort (8 targeted Dawn parity candidates)
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.comparability-candidates.directional.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.comparability-candidates.directional.json
 
 # strict AMD smoke + GPU probe evidence check
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json
 python3 bench/verify_smoke_gpu_usage.py --report bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json --require-comparable
 
 # canonical one-command variants:
-python3 bench/run_release_pipeline.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json --strict-amd-vulkan --with-claim-gate
-python3 bench/run_release_pipeline.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json --strict-amd-vulkan --verify-smoke-report bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json --verify-smoke-require-comparable
+python3 bench/run_release_pipeline.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json --strict-amd-vulkan --with-claim-gate
+python3 bench/run_release_pipeline.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json --strict-amd-vulkan --verify-smoke-report bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json --verify-smoke-require-comparable
 # disable compare HTML generation when you only want JSON/workspace artifacts:
-python3 bench/run_release_pipeline.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json --no-compare-html-output
+python3 bench/run_release_pipeline.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json --no-compare-html-output
 
 # AMD Vulkan extended comparable matrix
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json
 
 # AMD Vulkan extended strict lanes
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json
 ```
 
 If Dawn cannot access an AMD Vulkan adapter on the host (for example, missing `/dev/dri` access),
@@ -903,7 +910,7 @@ Historical note:
 
 Additive local-metal presets:
 
-- `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
 
 Host preflight:
 
@@ -915,7 +922,7 @@ Single-workload strict sweep (repeat one workload and emit median/tail deltas):
 
 ```bash
 python3 bench/run_single_workload_sweep.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
   --workload upload_write_buffer_64kb \
   --repeats 5
 ```
@@ -936,8 +943,8 @@ python3 bench/run_blocking_gates.py \
 For release claims, enforce backend telemetry in claim gate:
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
+python3 bench/native-compare/compare_dawn_vs_doe.py \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
   --claimability release \
   --out bench/out/dawn-vs-doe.apple.metal.extended.release.json
 
@@ -959,7 +966,7 @@ Canonical command:
 
 ```bash
 python3 bench/run_market_readiness_bundle.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
   --report bench/out/metal.npm.compare.json \
   --cts-config bench/cts_subset.webgpu-node.json
 ```
@@ -975,7 +982,7 @@ Optional model ceiling matrix artifact:
 
 ```bash
 python3 bench/run_market_readiness_bundle.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
   --report bench/out/metal.npm.compare.json \
   --cts-config bench/cts_subset.webgpu-node.json \
   --model-capacity-config bench/model_capacity_matrix.template.json

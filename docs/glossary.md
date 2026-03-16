@@ -1,0 +1,20 @@
+# Fawn glossary
+
+- `Fawn`
+  - the full development platform and repository for Doe
+- `Doe runtime`
+  - the Zig-native WebGPU engine and its shared-library artifacts
+- `Doe API`
+  - the JavaScript helper surface exposed by Doe helper packages
+- `@simulatte/webgpu`
+  - the main runtime package family for Node.js and Bun
+- `@simulatte/webgpu-doe`
+  - the transport-free helper package family for compatible WebGPU surfaces
+- `subpath entrypoint`
+  - an alternate export of one package family, not a separate product
+- `browser lane`
+  - the Chromium-facing integration, smoke, and benchmark surface
+- `benchmark harness`
+  - a contract-specific evidence runner under `bench/`
+- `pipeline surface`
+  - supporting quirk, schema, proof, and trace infrastructure

@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--doe-bin",
-        default="zig/zig-out/bin/doe-zig-runtime",
+        default="runtime/zig/zig-out/bin/doe-zig-runtime",
         help="Doe runtime binary path.",
     )
     parser.add_argument(
@@ -164,9 +164,9 @@ def stripped_size_bytes(path: Path) -> int | None:
 
 def resolve_default_doe_lib() -> Path | None:
     candidates = [
-        Path("zig/zig-out/lib/libwebgpu_doe.dylib"),
-        Path("zig/zig-out/lib/libwebgpu_doe.so"),
-        Path("zig/zig-out/lib/libwebgpu_doe.dll"),
+        Path("runtime/zig/zig-out/lib/libwebgpu_doe.dylib"),
+        Path("runtime/zig/zig-out/lib/libwebgpu_doe.so"),
+        Path("runtime/zig/zig-out/lib/libwebgpu_doe.dll"),
     ]
     for candidate in candidates:
         if candidate.exists():

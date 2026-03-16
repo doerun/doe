@@ -3,7 +3,7 @@
 > **Using the package?** This README is for contributors and developers working
 > on Fawn itself. If you installed `@simulatte/webgpu` from npm and want
 > quickstart, smoke tests, and API examples, see the
-> [package README](nursery/webgpu/README.md).
+> [package README](packages/webgpu/README.md).
 
 Fawn is the development platform for Doe, a Zig-first WebGPU runtime centered
 on a core technical move: separate hoistable validation from truly dynamic
@@ -52,7 +52,7 @@ fail-fast paths, and the runtime behavior that must remain live.
 Doe is the engine. Fawn is everything required to make that engine real,
 measurable, and shippable.
 
-![Fawn logo](nursery/webgpu/assets/fawn-icon-main-256.png)
+![Fawn logo](packages/webgpu/assets/fawn-icon-main-256.png)
 
 ## Benchmark snapshot
 
@@ -188,18 +188,15 @@ Still in progress:
 
 Fawn is organized as a platform pipeline, not just a source tree:
 
-`agent` -> `config` -> `lean` -> `zig` -> package/browser surfaces -> `trace` + `bench`
+`pipeline/agent` -> `config` -> `pipeline/lean` -> `runtime/zig` -> packages/browser -> `pipeline/trace` + `bench`
 
-- `agent/`: mines and normalizes upstream quirk and compatibility signals
+- `pipeline/agent/`: mines and normalizes upstream quirk and compatibility signals
 - `config/`: owns schemas, gates, workload contracts, and migration-visible policy
-- `lean/`: proves eliminations and emits artifacts that can remove runtime checks
-- `zig/`: implements Doe, the runtime and compiler stack that executes WebGPU work
-- `nursery/webgpu/`: packages Doe for Node.js and Bun
-- `nursery/fawn-browser/`: carries the Chromium integration lane
-- `trace/` and `bench/`: replay work, validate comparability, and produce benchmark evidence
-
-`nursery/` is the home for Fawn's public surfaces and integration lanes; it is
-not an incubation-only area.
+- `pipeline/lean/`: proves eliminations and emits artifacts that can remove runtime checks
+- `runtime/zig/`: implements Doe, the runtime and compiler stack that executes WebGPU work
+- `packages/webgpu/`: packages Doe for Node.js and Bun
+- `browser/fawn-browser/`: carries the Chromium integration lane
+- `pipeline/trace/` and `bench/`: replay work, validate comparability, and produce benchmark evidence
 
 Supporting docs at the repository root define the operating contract:
 `thesis.md`, `architecture.md`, `process.md`, `status.md`, `upgrade-policy.md`,
@@ -207,7 +204,7 @@ and `licensing.md`.
 
 ## Package
 
-The canonical npm package is `@simulatte/webgpu`, rooted in `nursery/webgpu/`.
+The canonical npm package is `@simulatte/webgpu`, rooted in `packages/webgpu/`.
 It packages the Doe runtime for Node.js and Bun, exposes raw WebGPU entry
 points plus the Doe API / Doe routines JS surface, and includes CLI tools for
 benchmarking and CI workflows. Bun currently uses a platform-split bridge path
@@ -223,15 +220,15 @@ remains prototype until cells are populated by comparable benchmark artifacts.
 npm install @simulatte/webgpu
 
 # build the drop-in library
-cd zig && zig build dropin
+cd runtime/zig && zig build dropin
 
 # publish
-cd nursery/webgpu && npm publish --access public
+cd packages/webgpu && npm publish --access public
 ```
 
 ## Building and running
 
-Requires Zig 0.15.2 (see `config/toolchains.json`). From `zig/`:
+Requires Zig 0.15.2 (see `config/toolchains.json`). From `runtime/zig/`:
 
 ```bash
 # run with trace output
@@ -253,8 +250,8 @@ zig build app
 Run Dawn-vs-Doe comparison (requires Dawn build, see `bench/README.md`):
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py \
-  --config bench/compare_dawn_vs_doe.config.amd.vulkan.json
+python3 bench/native-compare/compare_dawn_vs_doe.py \
+  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.json
 ```
 
 ## Verification gates

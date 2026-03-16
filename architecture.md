@@ -167,7 +167,7 @@ A releasable build emits:
 ## 9. Quirk Pipeline (automated, no human in the loop)
 
 ```
-Dawn vendor repo          agent/                    zig/src/quirk/          zig/src/wgpu_commands_{copy,render}.zig
+Dawn vendor repo          pipeline/agent/                    runtime/zig/src/quirk/          runtime/zig/src/wgpu_commands_{copy,render}.zig
       |                      |                           |                           |
       |  git pull            |                           |                           |
       v                      v                           v                           v

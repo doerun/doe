@@ -193,12 +193,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--core-partition",
-        default="zig/src/core/command_partition.zig",
+        default="runtime/zig/src/core/command_partition.zig",
         help="Zig core command_partition.zig path.",
     )
     parser.add_argument(
         "--full-partition",
-        default="zig/src/full/command_partition.zig",
+        default="runtime/zig/src/full/command_partition.zig",
         help="Zig full command_partition.zig path.",
     )
     parser.add_argument(

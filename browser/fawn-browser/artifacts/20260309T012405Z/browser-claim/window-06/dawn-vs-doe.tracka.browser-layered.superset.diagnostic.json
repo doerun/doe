@@ -1,0 +1,3514 @@
+{
+  "schemaVersion": 2,
+  "reportKind": "browser-layered-diagnostic",
+  "benchmarkClass": "directional",
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "diagnostic",
+  "timingClass": "scenario",
+  "timingSource": "browser-performance-now",
+  "generatedAt": "2026-03-09T01:25:33.513Z",
+  "outputPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+  "hashAlgorithm": "sha256",
+  "projectionContractHash": "cc129ede4aeda8e3b216aaf6d9c4e2ea7afd09de01e61a42cc61e02ed356eee6",
+  "sourceWorkloadsPath": "bench/workloads.amd.vulkan.extended.json",
+  "sourceWorkloadsSha256": "deac125c6783fc7caeb5f8685413432518ab135a62f1ab29b21cd960f7af065b",
+  "projectionRulesPath": "nursery/fawn-browser/bench/projection-rules.json",
+  "projectionRulesSha256": "06ac37731d70bb86652dbad5a6e7e80f1de4aad1b5020d530b500c98e54de245",
+  "invocation": {
+    "argv": [
+      "--mode",
+      "both",
+      "--chrome",
+      "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--dawn-chrome",
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "--doe-chrome",
+      "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--doe-lib",
+      "/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib",
+      "--manifest",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
+      "--workflows",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json",
+      "--headless",
+      "true",
+      "--out",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-06/dawn-vs-doe.tracka.browser-layered.superset.diagnostic.json",
+      "--strict"
+    ],
+    "cwd": "/Users/xyz/deco/fawn",
+    "nodeVersion": "v22.20.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "chromePath": "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+  "modeChromePaths": {
+    "dawn": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "doe": "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium"
+  },
+  "doeLibPath": "/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib",
+  "mode": "both",
+  "modeOrder": [
+    "dawn",
+    "doe"
+  ],
+  "headless": true,
+  "chromeArgs": [],
+  "manifestPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
+  "workflowsPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json",
+  "workflowPromotionGateRequiredApprovals": [
+    "track_a_runtime_integration_owner",
+    "track_a_quality_owner",
+    "track_a_benchmark_methodology_owner",
+    "coordinator"
+  ],
+  "browserEnvironmentEvidence": {
+    "pageTargetKind": "server",
+    "pageTargetPort": 59483,
+    "pageTargetWarning": null,
+    "dataUrlFallbackEnabled": false
+  },
+  "methodology": {
+    "scenarioIterations": {
+      "upload": 300,
+      "dispatch": 200,
+      "render": 120,
+      "pipeline": 20,
+      "asyncPipeline": 10,
+      "workflow": 80
+    },
+    "strictMode": true,
+    "requiredStatusPolicy": {
+      "l1": "requiredStatus=ok rows are required",
+      "l2": "requiredStatus=ok rows are required"
+    },
+    "failureTaxonomy": {
+      "ok": [
+        "ok"
+      ],
+      "unsupported": [
+        "adapter_null",
+        "api_unsupported",
+        "launch_surface_unavailable",
+        "mode_execution_unavailable",
+        "runtime_mode_unavailable",
+        "sandbox_constraint",
+        "scenario_template_unknown",
+        "webgpu_unavailable"
+      ],
+      "fail": [
+        "browser_launch_failed",
+        "mode_setup_failed",
+        "mode_execution_failed",
+        "scenario_runtime_error"
+      ],
+      "l0_only": [
+        "l0_only"
+      ]
+    },
+    "notes": [
+      "Nursery layered browser harness output is diagnostic and not a strict L0 claim artifact.",
+      "Comparability and claim scope are carried from projection/workflow contracts and must not be widened."
+    ]
+  },
+  "modeRunDetails": [
+    {
+      "module": "nursery.fawn-browser.browser_layered_bench",
+      "opCode": "mode_result",
+      "seq": 1,
+      "mode": "dawn",
+      "chromePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "elapsedMs": 2498,
+      "launchArgs": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-crash-reporter",
+        "--disable-crashpad-for-testing",
+        "--ignore-gpu-blocklist",
+        "--enable-unsafe-webgpu",
+        "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:59483",
+        "--use-webgpu-runtime=dawn"
+      ],
+      "runtimeProbe": {
+        "webgpuAvailable": true,
+        "adapterAvailable": true,
+        "adapterInfo": {},
+        "featureCount": 23,
+        "errors": []
+      },
+      "runtimeEvidence": {
+        "modeRequested": "dawn",
+        "pageTargetKind": "server",
+        "pageTargetPort": 59483,
+        "pageTargetWarning": null,
+        "browserVersion": "145.0.7632.160",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.0.0 Safari/537.36",
+        "failureStage": null,
+        "failureStatusCode": null
+      },
+      "modeFailure": null,
+      "hash": "8864d45047733a002f8801c75059e42e83a7cb9cd1d7d17b4a4a241b52e2256e",
+      "previousHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "module": "nursery.fawn-browser.browser_layered_bench",
+      "opCode": "mode_result",
+      "seq": 2,
+      "mode": "doe",
+      "chromePath": "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "elapsedMs": 2572,
+      "launchArgs": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-crash-reporter",
+        "--disable-crashpad-for-testing",
+        "--ignore-gpu-blocklist",
+        "--enable-unsafe-webgpu",
+        "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:59483",
+        "--use-webgpu-runtime=doe",
+        "--doe-webgpu-library-path=/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib"
+      ],
+      "runtimeProbe": {
+        "webgpuAvailable": true,
+        "adapterAvailable": true,
+        "adapterInfo": {},
+        "featureCount": 23,
+        "errors": []
+      },
+      "runtimeEvidence": {
+        "modeRequested": "doe",
+        "pageTargetKind": "server",
+        "pageTargetPort": 59483,
+        "pageTargetWarning": null,
+        "browserVersion": "147.0.7705.0",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.0.0 Safari/537.36",
+        "failureStage": null,
+        "failureStatusCode": null
+      },
+      "modeFailure": null,
+      "hash": "4666c21dfd7abf54d8988ce462ad2a57f36b773c17baa8905199f2c49d950241",
+      "previousHash": "8864d45047733a002f8801c75059e42e83a7cb9cd1d7d17b4a4a241b52e2256e"
+    }
+  ],
+  "l1": {
+    "rowCount": 80,
+    "rows": [
+      {
+        "sourceWorkloadId": "upload_write_buffer_1kb",
+        "sourceWorkloadName": "buffer-upload 1KB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 30.666666825612385,
+              "elapsedMs": 11.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:28.703Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 28.666666746139526,
+              "elapsedMs": 11.5
+            },
+            "measuredAt": "2026-03-09T01:25:32.215Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "upload_write_buffer_64kb",
+        "sourceWorkloadName": "buffer-upload 64KB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 22.00000007947286,
+              "elapsedMs": 8
+            },
+            "measuredAt": "2026-03-09T01:25:28.716Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 24.666666587193806,
+              "elapsedMs": 9.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:32.228Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "upload_write_buffer_1mb",
+        "sourceWorkloadName": "buffer-upload 1MB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 17.99999992052714,
+              "elapsedMs": 6.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:28.727Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 19.333333174387615,
+              "elapsedMs": 7.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:32.239Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "upload_write_buffer_4mb",
+        "sourceWorkloadName": "buffer-upload 4MB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 18.00000011920929,
+              "elapsedMs": 6.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:28.737Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 19.333333373069763,
+              "elapsedMs": 7.5
+            },
+            "measuredAt": "2026-03-09T01:25:32.251Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "upload_write_buffer_16mb",
+        "sourceWorkloadName": "buffer-upload 16MB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 17.99999992052714,
+              "elapsedMs": 6.599999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:28.746Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 21.333333253860474,
+              "elapsedMs": 8.5
+            },
+            "measuredAt": "2026-03-09T01:25:32.263Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "upload_write_buffer_256mb",
+        "sourceWorkloadName": "buffer-upload 256MB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 17.666666706403095,
+              "elapsedMs": 6.400000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:28.756Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 20.666666626930237,
+              "elapsedMs": 8.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:32.274Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "upload_write_buffer_1gb",
+        "sourceWorkloadName": "buffer-upload 1GB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 18.666666746139526,
+              "elapsedMs": 7.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:28.766Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 20.666666825612385,
+              "elapsedMs": 8
+            },
+            "measuredAt": "2026-03-09T01:25:32.286Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "upload_write_buffer_4gb",
+        "sourceWorkloadName": "buffer-upload 4GB",
+        "domain": "upload",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "write_buffer_upload",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct queue.writeBuffer mapping with per-op normalization.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 18.333333333333332,
+              "elapsedMs": 6.700000047683716
+            },
+            "measuredAt": "2026-03-09T01:25:28.775Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 300,
+              "usPerOp": 19.666666785875957,
+              "elapsedMs": 8.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:32.297Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_workgroup_atomic_1024",
+        "sourceWorkloadName": "workgroup-atomic 1024",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 33.00000011920929,
+              "elapsedMs": 9.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:28.788Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 57.5,
+              "elapsedMs": 16.30000001192093
+            },
+            "measuredAt": "2026-03-09T01:25:32.317Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_workgroup_non_atomic_1024",
+        "sourceWorkloadName": "workgroup-non-atomic 1024",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 28.50000023841858,
+              "elapsedMs": 7.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:28.805Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 53.499999940395355,
+              "elapsedMs": 14
+            },
+            "measuredAt": "2026-03-09T01:25:32.335Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_matvec_32768x2048_f32",
+        "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (naive swizzle0)",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 27.5,
+              "elapsedMs": 7.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:28.820Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 56.500000059604645,
+              "elapsedMs": 14.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:32.353Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_matvec_32768x2048_f32_swizzle1",
+        "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (naive swizzle1)",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 29.000000059604645,
+              "elapsedMs": 8
+            },
+            "measuredAt": "2026-03-09T01:25:28.834Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 55,
+              "elapsedMs": 13.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:32.372Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+        "sourceWorkloadName": "matrix-vector multiply 32768x2048 f32 (workgroupshared swizzle1)",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 29.49999988079071,
+              "elapsedMs": 7.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:28.850Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 54.000000059604645,
+              "elapsedMs": 13.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:32.391Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "pipeline_compile_stress",
+        "sourceWorkloadName": "shader-compile pipeline stress",
+        "domain": "pipeline",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "pipeline_compile_stress",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level pipeline behavior only; no L0 parity claim language.",
+        "projectionNote": "Pipeline creation remains comparable but includes browser-side scheduling overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 20,
+              "msPerPipeline": 0.005000001192092896,
+              "elapsedMs": 0.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:28.856Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 20,
+              "msPerPipeline": 0.015000000596046448,
+              "elapsedMs": 1.300000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:32.396Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_throughput_baseline",
+        "sourceWorkloadName": "render draw throughput",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 6.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:28.866Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 10.5
+            },
+            "measuredAt": "2026-03-09T01:25:32.411Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_state_bindings",
+        "sourceWorkloadName": "render draw state/bindings",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 2.599999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:28.874Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 4
+            },
+            "measuredAt": "2026-03-09T01:25:32.419Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_redundant_pipeline_bindings",
+        "sourceWorkloadName": "render redundant pipeline/bindings",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3
+            },
+            "measuredAt": "2026-03-09T01:25:28.884Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:32.426Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_bundle_dynamic_bindings",
+        "sourceWorkloadName": "render bundle dynamic bindings",
+        "domain": "render-bundle",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_bundle_replay",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render-bundle behavior only; no L0 parity claim language.",
+        "projectionNote": "Render bundle throughput projected with browser submission overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 69.16666626930237,
+              "elapsedMs": 13.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:28.904Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 80.83333323399226,
+              "elapsedMs": 15.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:32.448Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_bundle_dynamic_pipeline_bindings",
+        "sourceWorkloadName": "render bundle dynamic pipeline+bindings",
+        "domain": "render-bundle",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_bundle_replay",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render-bundle behavior only; no L0 parity claim language.",
+        "projectionNote": "Render bundle throughput projected with browser submission overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 67.50000019868214,
+              "elapsedMs": 12
+            },
+            "measuredAt": "2026-03-09T01:25:28.934Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 77.50000009934108,
+              "elapsedMs": 14.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:32.472Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_indexed_baseline",
+        "sourceWorkloadName": "draw indexed render proxy",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3
+            },
+            "measuredAt": "2026-03-09T01:25:28.949Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 4.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:32.482Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "texture_sampling_raster_baseline",
+        "sourceWorkloadName": "texture sampling/raster",
+        "domain": "texture-raster",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "texture_sample_raster",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level texture raster behavior only; no L0 parity claim language.",
+        "projectionNote": "Texture sampling+raster projection includes browser canvas integration costs.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 4.5
+            },
+            "measuredAt": "2026-03-09T01:25:28.960Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 6.599999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:32.494Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "texture_sampler_write_query_destroy",
+        "sourceWorkloadName": "texture sampler/write/query/destroy contract",
+        "domain": "texture-contract",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "texture_write_query_destroy",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Texture write/query/destroy semantics map directly to browser WebGPU APIs.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "width": 128,
+              "height": 128,
+              "depthOrArrayLayers": 1,
+              "mipLevelCount": 1,
+              "sampleCount": 1,
+              "dimension": "2d",
+              "format": "rgba8unorm",
+              "usage": 22,
+              "viewCreated": true,
+              "destroyed": true,
+              "elapsedMs": 2.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:28.969Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "width": 128,
+              "height": 128,
+              "depthOrArrayLayers": 1,
+              "mipLevelCount": 1,
+              "sampleCount": 1,
+              "dimension": "2d",
+              "format": "rgba8unorm",
+              "usage": 22,
+              "viewCreated": true,
+              "destroyed": true,
+              "elapsedMs": 2.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:32.502Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "texture_sampler_write_query_destroy_mip8",
+        "sourceWorkloadName": "texture sampler/write/query/destroy contract (mip8)",
+        "domain": "texture-contract",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "texture_write_query_destroy",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Texture write/query/destroy semantics map directly to browser WebGPU APIs.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "width": 128,
+              "height": 128,
+              "depthOrArrayLayers": 1,
+              "mipLevelCount": 1,
+              "sampleCount": 1,
+              "dimension": "2d",
+              "format": "rgba8unorm",
+              "usage": 22,
+              "viewCreated": true,
+              "destroyed": true,
+              "elapsedMs": 2
+            },
+            "measuredAt": "2026-03-09T01:25:28.975Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "width": 128,
+              "height": 128,
+              "depthOrArrayLayers": 1,
+              "mipLevelCount": 1,
+              "sampleCount": 1,
+              "dimension": "2d",
+              "format": "rgba8unorm",
+              "usage": 22,
+              "viewCreated": true,
+              "destroyed": true,
+              "elapsedMs": 2.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:32.509Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "pipeline_async_diagnostics",
+        "sourceWorkloadName": "async pipeline diagnostics contract",
+        "domain": "pipeline-async",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "async_pipeline_diagnostics",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level async pipeline behavior only; no L0 parity claim language.",
+        "projectionNote": "Async pipeline APIs are comparable but sensitive to browser event-loop scheduling.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 10,
+              "msPerPipeline": 0.2099999964237213,
+              "elapsedMs": 2.599999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:28.982Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 10,
+              "msPerPipeline": 0.3699999988079071,
+              "elapsedMs": 4.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:32.518Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "capability_introspection",
+        "sourceWorkloadName": "p1 capability introspection contract",
+        "domain": "p1-capability",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Internal capability contract lane; not a browser API parity signal.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:28.982Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.518Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_table_immediates",
+        "sourceWorkloadName": "p1 resource-table/immediates contract",
+        "domain": "p1-resource-table",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Internal resource-table contract lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:28.982Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.518Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "lifecycle_refcount",
+        "sourceWorkloadName": "p2 lifecycle/refcount contract",
+        "domain": "p2-lifecycle",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Internal lifecycle/refcount contract lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:28.982Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.518Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "capability_introspection_500",
+        "sourceWorkloadName": "p1 capability introspection macro (500)",
+        "domain": "p1-capability-macro",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Internal capability macro lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:28.982Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.518Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_table_immediates_500",
+        "sourceWorkloadName": "p1 resource-table/immediates macro (500)",
+        "domain": "p1-resource-table-macro",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Internal resource-table macro lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:28.982Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.518Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "lifecycle_refcount_200",
+        "sourceWorkloadName": "p2 lifecycle/refcount macro (200)",
+        "domain": "p2-lifecycle-macro",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Internal lifecycle macro lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:28.982Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.518Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_throughput_200k",
+        "sourceWorkloadName": "render draw throughput macro (200k draws)",
+        "domain": "render-macro",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_bundle_replay",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level macro render behavior only; no L0 parity claim language.",
+        "projectionNote": "Macro render loops are projected as component-level browser runs.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 66.66666666666667,
+              "elapsedMs": 11.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:28.999Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 76.66666656732559,
+              "elapsedMs": 14.5
+            },
+            "measuredAt": "2026-03-09T01:25:32.539Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_indexed_200k",
+        "sourceWorkloadName": "draw indexed macro (200k draws)",
+        "domain": "render-macro",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_bundle_replay",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level macro render behavior only; no L0 parity claim language.",
+        "projectionNote": "Macro render loops are projected as component-level browser runs.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 65.00000009934108,
+              "elapsedMs": 11.700000047683716
+            },
+            "measuredAt": "2026-03-09T01:25:29.019Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerOp": 81.66666676600774,
+              "elapsedMs": 15
+            },
+            "measuredAt": "2026-03-09T01:25:32.564Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "texture_sampler_write_query_destroy_500",
+        "sourceWorkloadName": "texture contract macro (500 draws)",
+        "domain": "texture-macro",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "texture_write_query_destroy",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level macro texture behavior only; no L0 parity claim language.",
+        "projectionNote": "Texture macro loops project to browser API with non-trivial event-loop overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "width": 128,
+              "height": 128,
+              "depthOrArrayLayers": 1,
+              "mipLevelCount": 1,
+              "sampleCount": 1,
+              "dimension": "2d",
+              "format": "rgba8unorm",
+              "usage": 22,
+              "viewCreated": true,
+              "destroyed": true,
+              "elapsedMs": 1.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:29.025Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "width": 128,
+              "height": 128,
+              "depthOrArrayLayers": 1,
+              "mipLevelCount": 1,
+              "sampleCount": 1,
+              "dimension": "2d",
+              "format": "rgba8unorm",
+              "usage": 22,
+              "viewCreated": true,
+              "destroyed": true,
+              "elapsedMs": 2.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:32.574Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_lifecycle",
+        "sourceWorkloadName": "p0 resource lifecycle contract",
+        "domain": "p0-resource",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Runtime contract lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:29.025Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.574Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_indirect_timestamp",
+        "sourceWorkloadName": "p0 compute indirect/timestamp contract",
+        "domain": "p0-compute",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Runtime contract lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:29.025Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.574Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_multidraw",
+        "sourceWorkloadName": "p0 render multidraw contract",
+        "domain": "p0-render",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Runtime contract lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:29.025Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.574Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_multidraw_indexed",
+        "sourceWorkloadName": "p0 render multidraw indexed contract",
+        "domain": "p0-render",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Runtime contract lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:29.025Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.574Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pixel_local_storage_barrier",
+        "sourceWorkloadName": "p0 render pixel-local-storage barrier contract",
+        "domain": "p0-render",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Runtime contract lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:29.025Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.574Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pixel_local_storage_barrier_500",
+        "sourceWorkloadName": "p0 render pixel-local-storage barrier macro (500)",
+        "domain": "p0-render-macro",
+        "projectionClass": "non_projectable",
+        "layerTarget": "l0_only",
+        "scenarioTemplate": "none",
+        "comparabilityExpectation": "none",
+        "requiredStatus": "not_applicable",
+        "claimScope": "l0_only_no_claim",
+        "claimLanguage": "L0-only runtime contract row; no browser-layer claim language is allowed.",
+        "projectionNote": "Runtime contract macro lane; keep in core engine benchmarks only.",
+        "runtimes": {
+          "dawn": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:29.025Z"
+          },
+          "doe": {
+            "status": "l0_only",
+            "statusCode": "l0_only",
+            "error": null,
+            "metrics": {},
+            "measuredAt": "2026-03-09T01:25:32.574Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "surface_presentation",
+        "sourceWorkloadName": "surface presentation contract",
+        "domain": "surface",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "surface_present_basic",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level presentation behavior only; no L0 parity claim language.",
+        "projectionNote": "Surface presentation can be measured in browser, but includes presentation stack overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerFrame": 76.66666656732559,
+              "elapsedMs": 9.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:29.039Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerFrame": 87.5,
+              "elapsedMs": 12.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:32.595Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_buffer_to_texture",
+        "sourceWorkloadName": "copy buffer-to-texture contract",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 37.99999952316284,
+              "elapsedMs": 4.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:29.052Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 72.00000047683716,
+              "elapsedMs": 7.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:32.610Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_texture_to_buffer",
+        "sourceWorkloadName": "copy texture-to-buffer contract",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 37.99999952316284,
+              "elapsedMs": 4.200000047683716
+            },
+            "measuredAt": "2026-03-09T01:25:29.065Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 64.00000095367432,
+              "elapsedMs": 6
+            },
+            "measuredAt": "2026-03-09T01:25:32.626Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_fallback",
+        "sourceWorkloadName": "dispatch fallback contract",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 31.500000059604645,
+              "elapsedMs": 8.599999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:29.080Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 62.000000178813934,
+              "elapsedMs": 15.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:32.648Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_protocol",
+        "sourceWorkloadName": "copy protocol contract",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 33.99999976158142,
+              "elapsedMs": 4.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:29.087Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 73.99999976158142,
+              "elapsedMs": 6.399999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:32.660Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_texture_to_texture",
+        "sourceWorkloadName": "copy texture-to-texture contract",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 36.00000023841858,
+              "elapsedMs": 4.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:29.102Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 63.99999976158142,
+              "elapsedMs": 5.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:32.669Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_grid",
+        "sourceWorkloadName": "dispatch grid contract",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 31.99999988079071,
+              "elapsedMs": 8.5
+            },
+            "measuredAt": "2026-03-09T01:25:29.120Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 64.50000017881393,
+              "elapsedMs": 16.69999998807907
+            },
+            "measuredAt": "2026-03-09T01:25:32.688Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "surface_full_presentation",
+        "sourceWorkloadName": "surface full presentation contract",
+        "domain": "surface",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "surface_present_basic",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level presentation behavior only; no L0 parity claim language.",
+        "projectionNote": "Surface presentation can be measured in browser, but includes presentation stack overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerFrame": 77.50000009934108,
+              "elapsedMs": 9.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:29.135Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 120,
+              "usPerFrame": 81.66666676600774,
+              "elapsedMs": 11
+            },
+            "measuredAt": "2026-03-09T01:25:32.702Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_concurrent_execution_single",
+        "sourceWorkloadName": "concurrent execution single-dispatch contract",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 31.500000059604645,
+              "elapsedMs": 8.5
+            },
+            "measuredAt": "2026-03-09T01:25:29.149Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 65,
+              "elapsedMs": 16.700000047683716
+            },
+            "measuredAt": "2026-03-09T01:25:32.723Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_uniform_buffer_update_writebuffer_partial_single",
+        "sourceWorkloadName": "uniform buffer update (WriteBuffer partial single)",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:29.158Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.799999952316284
+            },
+            "measuredAt": "2026-03-09T01:25:32.734Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_zero_initialize_workgroup_memory_256",
+        "sourceWorkloadName": "zero-initialize workgroup memory (256)",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 32.000000178813934,
+              "elapsedMs": 8.5
+            },
+            "measuredAt": "2026-03-09T01:25:29.171Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 60.999999940395355,
+              "elapsedMs": 15.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:32.753Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_readback_1kb",
+        "sourceWorkloadName": "buffer map readback 1kb",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 36.00000023841858,
+              "elapsedMs": 4.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:29.180Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 77.99999952316284,
+              "elapsedMs": 6.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:32.762Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_readback_64kb",
+        "sourceWorkloadName": "buffer map readback 64kb",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 37.99999952316284,
+              "elapsedMs": 4.599999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:29.190Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 66.00000023841858,
+              "elapsedMs": 6
+            },
+            "measuredAt": "2026-03-09T01:25:32.770Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_write_1kb",
+        "sourceWorkloadName": "buffer map write 1kb",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 35.999999046325684,
+              "elapsedMs": 4.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:29.198Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 63.99999976158142,
+              "elapsedMs": 5.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:32.779Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_write_64kb",
+        "sourceWorkloadName": "buffer map write 64kb",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 40,
+              "elapsedMs": 3.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:29.207Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 63.99999976158142,
+              "elapsedMs": 6.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:32.788Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_partial_read_4kb",
+        "sourceWorkloadName": "buffer map partial read 4kb",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 38.00000071525574,
+              "elapsedMs": 4.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:29.217Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 62.00000047683716,
+              "elapsedMs": 5.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:32.805Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_partial_write_64kb",
+        "sourceWorkloadName": "buffer map partial write 64kb",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 52.00000047683716,
+              "elapsedMs": 4.399999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:29.229Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 67.99999952316284,
+              "elapsedMs": 6.399999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:32.817Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_double_request_guard",
+        "sourceWorkloadName": "buffer map double request guard",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 36.00000023841858,
+              "elapsedMs": 4
+            },
+            "measuredAt": "2026-03-09T01:25:29.236Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 68.00000071525574,
+              "elapsedMs": 7
+            },
+            "measuredAt": "2026-03-09T01:25:32.827Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "resource_buffer_map_unmap_storm",
+        "sourceWorkloadName": "buffer map unmap storm macro",
+        "domain": "resource",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 36.00000023841858,
+              "elapsedMs": 3.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:29.243Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 71.99999928474426,
+              "elapsedMs": 6.300000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:32.838Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_indirect_single",
+        "sourceWorkloadName": "dispatch indirect 1",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 37.999999821186066,
+              "elapsedMs": 9.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:29.259Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 63.00000011920929,
+              "elapsedMs": 16.5
+            },
+            "measuredAt": "2026-03-09T01:25:32.859Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_indirect_live_args",
+        "sourceWorkloadName": "dispatch indirect live args",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 35.999999940395355,
+              "elapsedMs": 9.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:29.283Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 68.49999994039536,
+              "elapsedMs": 16.80000001192093
+            },
+            "measuredAt": "2026-03-09T01:25:32.885Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_indirect_large_args",
+        "sourceWorkloadName": "dispatch indirect large args",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 35.499999821186066,
+              "elapsedMs": 9.299999952316284
+            },
+            "measuredAt": "2026-03-09T01:25:29.303Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 70.99999994039536,
+              "elapsedMs": 17.19999998807907
+            },
+            "measuredAt": "2026-03-09T01:25:32.905Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_workgroups_2d_sweep",
+        "sourceWorkloadName": "dispatch workgroups 2D sweep",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 35.499999821186066,
+              "elapsedMs": 9.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:29.317Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 63.499999940395355,
+              "elapsedMs": 15.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:32.928Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_workgroups_3d_sweep",
+        "sourceWorkloadName": "dispatch workgroups 3D sweep",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 37.5,
+              "elapsedMs": 9.700000047683716
+            },
+            "measuredAt": "2026-03-09T01:25:29.339Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 68.49999994039536,
+              "elapsedMs": 17.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:32.953Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_dispatch_workgroups_indirect_pipeline_switch",
+        "sourceWorkloadName": "dispatch indirect pipeline switch",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 35,
+              "elapsedMs": 9.300000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:29.361Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 65.99999994039536,
+              "elapsedMs": 16.19999998807907
+            },
+            "measuredAt": "2026-03-09T01:25:32.982Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "compute_kernel_dispatch_1000",
+        "sourceWorkloadName": "kernel dispatch macro 1000",
+        "domain": "compute",
+        "projectionClass": "high",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "compute_dispatch_basic",
+        "comparabilityExpectation": "strict",
+        "requiredStatus": "ok",
+        "claimScope": "l1_strict_candidate",
+        "claimLanguage": "Strict browser API candidate only when timing scope and semantics are explicitly matched.",
+        "projectionNote": "Direct compute dispatch projection with minimal browser mediation.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 35.499999821186066,
+              "elapsedMs": 9.299999952316284
+            },
+            "measuredAt": "2026-03-09T01:25:29.382Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 200,
+              "usPerOp": 65,
+              "elapsedMs": 15.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:33.002Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_indexed_indirect_u16",
+        "sourceWorkloadName": "draw indexed indirect u16",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3
+            },
+            "measuredAt": "2026-03-09T01:25:29.390Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:33.010Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_indexed_indirect_u32",
+        "sourceWorkloadName": "draw indexed indirect u32",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3
+            },
+            "measuredAt": "2026-03-09T01:25:29.400Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:33.019Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_draw_indirect_legacy_equivalent",
+        "sourceWorkloadName": "draw indirect legacy equivalent",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 2.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:29.407Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.800000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:33.028Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pass_loadops_clear_load",
+        "sourceWorkloadName": "render pass loadOps clear/load",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 2.5
+            },
+            "measuredAt": "2026-03-09T01:25:29.413Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:33.038Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pass_storeops_discard",
+        "sourceWorkloadName": "render pass storeOps discard",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 2.399999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:29.419Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 4.300000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:33.046Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pass_depth_stencil",
+        "sourceWorkloadName": "render pass depth stencil",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 2.5
+            },
+            "measuredAt": "2026-03-09T01:25:29.426Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:33.052Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pass_stencil_ref_sweep",
+        "sourceWorkloadName": "render pass stencil ref sweep",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3
+            },
+            "measuredAt": "2026-03-09T01:25:29.443Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:33.059Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pass_multisample_resolve",
+        "sourceWorkloadName": "render pass multisample resolve",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 2.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:29.450Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.399999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:33.065Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "render_pass_dynamic_viewport_scissor",
+        "sourceWorkloadName": "render pass dynamic viewport scissor",
+        "domain": "render",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "render_triangle_readback",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level render behavior only; no L0 parity claim language.",
+        "projectionNote": "Render command shape projects to browser API with canvas/context overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 2.599999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:29.458Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "centerRgba": [
+                255,
+                0,
+                0,
+                255
+              ],
+              "pass": true,
+              "elapsedMs": 3.300000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:33.071Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_buffer_to_buffer_4kb",
+        "sourceWorkloadName": "copy buffer to buffer 4kb",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 41.99999928474426,
+              "elapsedMs": 4.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:29.471Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 80,
+              "elapsedMs": 7.099999964237213
+            },
+            "measuredAt": "2026-03-09T01:25:33.081Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_buffer_to_buffer_overlap",
+        "sourceWorkloadName": "copy buffer to buffer overlap",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 42.00000047683716,
+              "elapsedMs": 4.100000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:29.478Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 77.99999952316284,
+              "elapsedMs": 7.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:33.092Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_buffer_to_texture_tight_pitch",
+        "sourceWorkloadName": "copy buffer to texture tight pitch",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 58.00000071525574,
+              "elapsedMs": 4.900000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:29.487Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 66.00000023841858,
+              "elapsedMs": 6.399999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:33.102Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_texture_to_buffer_padded",
+        "sourceWorkloadName": "copy texture to buffer padded",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 44.000000953674316,
+              "elapsedMs": 4.200000047683716
+            },
+            "measuredAt": "2026-03-09T01:25:29.495Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 76.00000023841858,
+              "elapsedMs": 6.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:33.111Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_texture_to_texture_subresource",
+        "sourceWorkloadName": "copy texture to texture subresource",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 43.99999976158142,
+              "elapsedMs": 4.199999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:29.504Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 74.00000095367432,
+              "elapsedMs": 7.400000035762787
+            },
+            "measuredAt": "2026-03-09T01:25:33.122Z"
+          }
+        }
+      },
+      {
+        "sourceWorkloadId": "copy_texture_to_texture_stress",
+        "sourceWorkloadName": "copy texture to texture stress macro",
+        "domain": "copy",
+        "projectionClass": "medium",
+        "layerTarget": "l1_browser_api",
+        "scenarioTemplate": "generic_webgpu_api",
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l1_component_only",
+        "claimLanguage": "Component-level browser API diagnostic only; not a direct L0 parity claim.",
+        "projectionNote": "Default browser API projection with declared browser-layer overhead.",
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 43.99999976158142,
+              "elapsedMs": 5.300000011920929
+            },
+            "measuredAt": "2026-03-09T01:25:29.520Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 50,
+              "usPerOp": 77.99999952316284,
+              "elapsedMs": 7.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:33.132Z"
+          }
+        }
+      }
+    ]
+  },
+  "l2": {
+    "workflowCount": 4,
+    "rows": [
+      {
+        "id": "startup_adapter_device",
+        "scenarioTemplate": "startup_adapter_device",
+        "description": "Acquire adapter/device and validate minimal command submission after startup.",
+        "metrics": [
+          "startupMs",
+          "adapterAvailable"
+        ],
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l2_component_only",
+        "claimLanguage": "Workflow/component diagnostic claim only; never a substitute for L0 parity claims.",
+        "required": true,
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "startupMs": 0.5,
+              "adapterAvailable": true,
+              "elapsedMs": 0.6000000238418579
+            },
+            "measuredAt": "2026-03-09T01:25:29.528Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "startupMs": 0.800000011920929,
+              "adapterAvailable": true,
+              "elapsedMs": 0.8999999761581421
+            },
+            "measuredAt": "2026-03-09T01:25:33.135Z"
+          }
+        }
+      },
+      {
+        "id": "canvas_reconfigure_resize",
+        "scenarioTemplate": "canvas_reconfigure_resize",
+        "description": "Repeated OffscreenCanvas reconfigure/resize sequence with clear+submit at each step.",
+        "metrics": [
+          "resizeCount",
+          "totalMs",
+          "msPerResize"
+        ],
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l2_component_only",
+        "claimLanguage": "Workflow/component diagnostic claim only; never a substitute for L0 parity claims.",
+        "required": true,
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "resizeCount": 6,
+              "totalMs": 3,
+              "msPerResize": 0.5,
+              "elapsedMs": 3.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:29.535Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "resizeCount": 6,
+              "totalMs": 4,
+              "msPerResize": 0.6666666666666666,
+              "elapsedMs": 4.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:33.143Z"
+          }
+        }
+      },
+      {
+        "id": "queue_submit_burst",
+        "scenarioTemplate": "queue_submit_burst",
+        "description": "Burst queue submissions to include browser scheduling and command serialization overhead.",
+        "metrics": [
+          "submitCount",
+          "totalMs",
+          "usPerSubmit"
+        ],
+        "comparabilityExpectation": "component",
+        "requiredStatus": "ok",
+        "claimScope": "l2_component_only",
+        "claimLanguage": "Workflow/component diagnostic claim only; never a substitute for L0 parity claims.",
+        "required": true,
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "submitCount": 80,
+              "totalMs": 4.099999964237213,
+              "usPerSubmit": 51.249999552965164,
+              "elapsedMs": 4.699999988079071
+            },
+            "measuredAt": "2026-03-09T01:25:29.547Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "submitCount": 80,
+              "totalMs": 6.5,
+              "usPerSubmit": 81.25,
+              "elapsedMs": 7.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:33.153Z"
+          }
+        }
+      },
+      {
+        "id": "async_pipeline_burst",
+        "scenarioTemplate": "async_pipeline_burst",
+        "description": "Repeated async pipeline creation to surface event-loop and browser tasking behavior.",
+        "metrics": [
+          "pipelineCount",
+          "totalMs",
+          "msPerPipeline"
+        ],
+        "comparabilityExpectation": "component",
+        "requiredStatus": "optional",
+        "claimScope": "l2_component_only",
+        "claimLanguage": "Optional workflow diagnostic claim only; never a substitute for L0 parity claims.",
+        "required": false,
+        "runtimes": {
+          "dawn": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 10,
+              "msPerPipeline": 0.2,
+              "elapsedMs": 2.600000023841858
+            },
+            "measuredAt": "2026-03-09T01:25:29.554Z"
+          },
+          "doe": {
+            "status": "ok",
+            "statusCode": "ok",
+            "error": null,
+            "metrics": {
+              "iterations": 10,
+              "msPerPipeline": 0.4599999964237213,
+              "elapsedMs": 5.899999976158142
+            },
+            "measuredAt": "2026-03-09T01:25:33.162Z"
+          }
+        }
+      }
+    ]
+  },
+  "summary": {
+    "l1": {
+      "dawn": {
+        "ok": 68,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 12,
+        "missing": 0,
+        "requiredFailures": 0,
+        "kind": "l1"
+      },
+      "doe": {
+        "ok": 68,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 12,
+        "missing": 0,
+        "requiredFailures": 0,
+        "kind": "l1"
+      }
+    },
+    "l2": {
+      "dawn": {
+        "ok": 4,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 0,
+        "missing": 0,
+        "requiredFailures": 0,
+        "kind": "l2"
+      },
+      "doe": {
+        "ok": 4,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 0,
+        "missing": 0,
+        "requiredFailures": 0,
+        "kind": "l2"
+      }
+    },
+    "perMode": {
+      "dawn": {
+        "l1": {
+          "ok": 68,
+          "fail": 0,
+          "unsupported": 0,
+          "l0_only": 12,
+          "missing": 0,
+          "requiredFailures": 0,
+          "kind": "l1"
+        },
+        "l2": {
+          "ok": 4,
+          "fail": 0,
+          "unsupported": 0,
+          "l0_only": 0,
+          "missing": 0,
+          "requiredFailures": 0,
+          "kind": "l2"
+        },
+        "requiredFailures": 0
+      },
+      "doe": {
+        "l1": {
+          "ok": 68,
+          "fail": 0,
+          "unsupported": 0,
+          "l0_only": 12,
+          "missing": 0,
+          "requiredFailures": 0,
+          "kind": "l1"
+        },
+        "l2": {
+          "ok": 4,
+          "fail": 0,
+          "unsupported": 0,
+          "l0_only": 0,
+          "missing": 0,
+          "requiredFailures": 0,
+          "kind": "l2"
+        },
+        "requiredFailures": 0
+      }
+    },
+    "overallRequiredFailures": 0
+  },
+  "reportHash": "89372dce338a31e9a90988217b4bd08b4d5732cbc08197dd9b370549f1643f8c"
+}

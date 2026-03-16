@@ -1,0 +1,101 @@
+{
+  "name": "@simulatte/webgpu",
+  "version": "0.3.2",
+  "description": "Headless WebGPU for Node.js and Bun, with the Doe runtime and Doe API",
+  "type": "module",
+  "main": "./src/node-runtime.js",
+  "types": "./src/full.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/full.d.ts",
+      "bun": "./src/bun.js",
+      "default": "./src/node-runtime.js"
+    },
+    "./bun": {
+      "types": "./src/full.d.ts",
+      "default": "./src/bun.js"
+    },
+    "./node": {
+      "types": "./src/full.d.ts",
+      "default": "./src/node-runtime.js"
+    },
+    "./compute": {
+      "types": "./src/compute.d.ts",
+      "default": "./src/compute.js"
+    },
+    "./full": {
+      "types": "./src/full.d.ts",
+      "default": "./src/full.js"
+    },
+    "./native-direct": {
+      "types": "./src/native-direct.d.ts",
+      "default": "./src/native-direct.js"
+    }
+  },
+  "bin": {
+    "fawn-webgpu-bench": "./bin/fawn-webgpu-bench.js",
+    "fawn-webgpu-compare": "./bin/fawn-webgpu-compare.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@simulatte/webgpu-doe": "^0.3.2"
+  },
+  "files": [
+    "assets/",
+    "bin/",
+    "docs/",
+    "examples/",
+    "src/",
+    "scripts/",
+    "prebuilds/",
+    "binding.gyp",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "api-contract.md",
+    "architecture.md",
+    "doe-api-design.md",
+    "headless-webgpu-comparison.md",
+    "jsdoc-style-guide.md",
+    "support-contracts.md",
+    "doe-build-metadata.schema.json",
+    "prebuild-metadata.schema.json"
+  ],
+  "scripts": {
+    "install": "node scripts/install.js",
+    "build:addon": "node-gyp rebuild",
+    "build:readme-assets": "node scripts/generate-readme-assets.js",
+    "build:doe-docs": "node scripts/generate-doe-api-docs.js",
+    "prebuild": "node scripts/prebuild.js",
+    "test": "node ./test-node.js && node ./test-surface-node.js && node ./test-doe-api-comprehensive.js && node ./test-package-exports.js",
+    "test:layers": "node ./test-webgpu-smoke.mjs",
+    "test:bun": "bun ./test-bun.js",
+    "smoke": "node scripts/smoke-test.js"
+  },
+  "keywords": [
+    "webgpu",
+    "doe",
+    "headless",
+    "benchmarking",
+    "ai",
+    "ml",
+    "ci",
+    "bun"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clocksmith/fawn.git",
+    "directory": "packages/webgpu"
+  },
+  "homepage": "https://github.com/clocksmith/fawn/tree/main/packages/webgpu",
+  "bugs": {
+    "url": "https://github.com/clocksmith/fawn/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Fawn",
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "status": "verified",
+  "contractHashes": {
+    "comparabilityObligationsSha256": "68598321d000d069f8d95eef213dcfe0dc2559a24a35275d06d2c4dda4b9d10c"
+  },
+  "theorems": [
+    { "name": "critical_is_max_rank", "module": "Fawn.Core.Model", "category": "comptime_verified" },
+    { "name": "requiredProof_forbidden_reject_from_rank", "module": "Fawn.Core.Model", "category": "comptime_verified" },
+    { "name": "toggleAlwaysSupported", "module": "Fawn.Core.Dispatch", "category": "tautological" },
+    { "name": "strongerSafetyRaisesProofDemand", "module": "Fawn.Core.Dispatch", "category": "comptime_verified" },
+    { "name": "betterMatch_prefers_higher_score", "module": "Fawn.Core.Runtime", "category": "tautological" },
+    { "name": "comparableFromObligations_eq_noFailed", "module": "Fawn.Full.Comparability", "category": "lean_verified" },
+    { "name": "comparableFromFacts_eq_noFailed", "module": "Fawn.Full.Comparability", "category": "lean_verified" },
+    { "name": "comparableFromObligations_true_iff_failedBlockingNil", "module": "Fawn.Full.Comparability", "category": "lean_verified" },
+    { "name": "comparableFromObligations_false_iff_failedBlockingNonEmpty", "module": "Fawn.Full.Comparability", "category": "lean_verified" },
+    { "name": "comparableFromFacts_true_iff_failedBlockingNil", "module": "Fawn.Full.Comparability", "category": "lean_verified" },
+    { "name": "comparableFromFacts_false_iff_failedBlockingNonEmpty", "module": "Fawn.Full.Comparability", "category": "lean_verified" },
+    { "name": "structurallyEquivalentGeometry_refl", "module": "Fawn.Full.WorkloadGeometry", "category": "lean_verified" },
+    { "name": "structurallyEquivalentGeometry_forall_components", "module": "Fawn.Full.WorkloadGeometry", "category": "lean_verified" },
+    { "name": "equalGeometrySetsExecutionShapeFacts", "module": "Fawn.Full.WorkloadGeometry", "category": "lean_verified" },
+    { "name": "strictHappyPathExpectedBlocking_exact", "module": "Fawn.Full.ComparabilityFixtures", "category": "lean_fixture" },
+    { "name": "strictHappyPathComparable", "module": "Fawn.Full.ComparabilityFixtures", "category": "lean_fixture" },
+    { "name": "strictMissingLeftSamplesExpectedBlocking_exact", "module": "Fawn.Full.ComparabilityFixtures", "category": "lean_fixture" },
+    { "name": "strictMissingLeftSamplesComparable", "module": "Fawn.Full.ComparabilityFixtures", "category": "lean_fixture" },
+    { "name": "allowLeftNoExecutionDensityFailureExpectedBlocking_exact", "module": "Fawn.Full.ComparabilityFixtures", "category": "lean_fixture" },
+    { "name": "allowLeftNoExecutionDensityFailureComparable", "module": "Fawn.Full.ComparabilityFixtures", "category": "lean_fixture" },
+    { "name": "noOpActionIdentity", "module": "Fawn.Core.Dispatch", "category": "tautological" },
+    { "name": "informationalToggleIdentity", "module": "Fawn.Core.Dispatch", "category": "tautological" },
+    { "name": "unhandledToggleIdentity", "module": "Fawn.Core.Dispatch", "category": "tautological" },
+    { "name": "behavioralToggleNotIdentity", "module": "Fawn.Core.Dispatch", "category": "tautological" },
+    { "name": "identityActionComplete", "module": "Fawn.Core.Dispatch", "category": "comptime_verified" },
+    { "name": "scopeCommandTableComplete", "module": "Fawn.Core.Dispatch", "category": "tautological" },
+    { "name": "identityActionPreservesCommand", "module": "Fawn.Core.Dispatch", "category": "tautological" },
+    { "name": "mslBindingSlot_injective_within_group", "module": "Fawn.Core.BindGroupSlot", "category": "lean_verified" },
+    { "name": "mslBindingSlot_injective_across_groups", "module": "Fawn.Core.BindGroupSlot", "category": "lean_verified" },
+    { "name": "mslBindingSlot_in_bounds", "module": "Fawn.Core.BindGroupSlot", "category": "lean_verified" },
+    { "name": "mslBindingSlot_distinct_groups", "module": "Fawn.Core.BindGroupSlot", "category": "lean_verified" },
+    { "name": "doeRelease_terminal", "module": "Fawn.Core.BufferLifecycle", "category": "tautological" },
+    { "name": "released_absorbs_all", "module": "Fawn.Core.BufferLifecycle", "category": "tautological" },
+    { "name": "doeMapAsync_idempotent", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
+    { "name": "doeUnmap_idempotent", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
+    { "name": "doeMapUnmap_roundtrip", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
+    { "name": "doe_getMappedRange_gap", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
+    { "name": "doe_dispatch_gap", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
+    { "name": "doe_getMappedRange_superset", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
+    { "name": "doe_dispatch_superset", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" }
+  ],
+  "evaluatedConditions": {
+    "comparability.strictHappyPath.comparable": true,
+    "comparability.strictHappyPath.failedBlockingCount": 0,
+    "comparability.strictMissingLeftSamples.comparable": false,
+    "comparability.strictMissingLeftSamples.failedBlockingCount": 5,
+    "comparability.allowLeftNoExecutionDensityFailure.comparable": false,
+    "comparability.allowLeftNoExecutionDensityFailure.failedBlockingCount": 1,
+    "dispatch.criticalSafetyRank": 3,
+    "dispatch.provenProofRank": 3,
+    "dispatch.noOpIsIdentity": true,
+    "dispatch.informationalToggleIsIdentity": true,
+    "dispatch.behavioralToggleIsIdentity": false,
+    "dispatch.driverToggleSupportsUpload": true,
+    "dispatch.driverToggleSupportsMapAsync": true,
+    "dispatch.alignmentSupportsBarrier": false,
+    "dispatch.layoutSupportsRenderDraw": true,
+    "bindGroupSlot.slot_0_0": 0,
+    "bindGroupSlot.slot_1_0": 16,
+    "bindGroupSlot.slot_3_15": 63,
+    "bufferLifecycle.doeAllowsGetMappedRange_unmapped": true,
+    "bufferLifecycle.specAllowsGetMappedRange_unmapped": false,
+    "bufferLifecycle.doeAllowsDispatch_mapped": true,
+    "bufferLifecycle.specAllowsDispatch_mapped": false
+  },
+  "eliminationTargets": [
+    {
+      "theorem": "toggleAlwaysSupported",
+      "condition": "scope == driver_toggle implies supports all commands",
+      "runtimePath": "quirk/runtime.zig:supportsScope"
+    },
+    {
+      "theorem": "requiredProof_forbidden_reject_from_rank",
+      "condition": "no safety class maps to ProofLevel.rejected",
+      "runtimePath": "quirk/runtime.zig:finalizeBucket"
+    },
+    {
+      "theorem": "strongerSafetyRaisesProofDemand",
+      "condition": "critical safety class requires proven proof level",
+      "runtimePath": "quirk/runtime.zig:finalizeBucket"
+    },
+    {
+      "theorem": "identityActionComplete",
+      "condition": "no_op, informational toggle, and unhandled toggle actions are identity; behavioral toggle is not",
+      "runtimePath": "quirk/runtime.zig:dispatch"
+    },
+    {
+      "theorem": "scopeCommandTableComplete",
+      "condition": "comptime scope×command table matches supportsScope for all pairs; subsumes toggleAlwaysSupported",
+      "runtimePath": "quirk/runtime.zig:buildDispatchContext,buildProfileDispatchContext"
+    },
+    {
+      "theorem": "identityActionPreservesCommand",
+      "condition": "identity actions preserve the command unchanged; dispatch can skip applyAction",
+      "runtimePath": "quirk/runtime.zig:dispatch"
+    },
+    {
+      "theorem": "equalGeometrySetsExecutionShapeFacts",
+      "condition": "matching buffer size and dispatch geometry force execution-shape comparability facts true for arbitrary Nat-valued workloads",
+      "runtimePath": "bench/native-compare/modules/comparability.py:evaluate_comparability_from_facts"
+    },
+    {
+      "theorem": "mslBindingSlot_injective_across_groups",
+      "condition": "group*16+binding is injective for binding<16; flat buffer array has no collisions",
+      "runtimePath": "runtime/runtime/zig/src/doe_wgsl/emit_msl_ir.zig:msl_binding_slot,doe_compute_ext_native.zig:flattenBindGroups"
+    },
+    {
+      "theorem": "mslBindingSlot_in_bounds",
+      "condition": "valid group and binding produce slot < 64; bounds check can be elided at comptime",
+      "runtimePath": "runtime/runtime/zig/src/doe_compute_ext_native.zig:flattenBindGroups"
+    },
+    {
+      "theorem": "doe_getMappedRange_superset",
+      "condition": "Doe permits all spec-valid getMappedRange calls; no false rejections",
+      "runtimePath": "runtime/runtime/zig/src/doe_wgpu_native.zig:doeBufferGetMappedRange"
+    },
+    {
+      "theorem": "doe_dispatch_superset",
+      "condition": "Doe permits all spec-valid dispatch calls; no false rejections",
+      "runtimePath": "runtime/runtime/zig/src/doe_wgpu_native.zig:doeBufferRelease"
+    }
+  ]
+}

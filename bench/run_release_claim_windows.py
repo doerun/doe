@@ -18,7 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/compare_dawn_vs_doe.config.amd.vulkan.release.json",
+        default="bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json",
         help="compare_dawn_vs_doe release config path.",
     )
     parser.add_argument(
@@ -106,7 +106,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--dropin-artifact",
-        default="zig/zig-out/lib/libwebgpu_doe.so",
+        default="runtime/zig/zig-out/lib/libwebgpu_doe.so",
         help="Shared library artifact path when --with-dropin-gate is set.",
     )
     parser.add_argument(

@@ -1,0 +1,35 @@
+{
+  "workloads": "bench/workloads.apple.metal.extended.json",
+  "left": {
+    "name": "doe",
+    "commandTemplate": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor apple --api metal --family m3 --driver 1.0.0 --backend native --backend-lane metal_doe_comparable --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode off --kernel-root bench/kernels {extra_args}"
+  },
+  "right": {
+    "name": "dawn_delegate",
+    "commandTemplate": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor apple --api metal --family m3 --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode off --kernel-root bench/kernels {extra_args}"
+  },
+  "run": {
+    "iterations": 20,
+    "warmup": 1,
+    "out": "bench/out/dawn-vs-doe.local.metal.extended.comparable.json",
+    "workspace": "bench/out/runtime-comparisons.local.metal.extended.comparable",
+    "workloadFilter": "",
+    "includeExtendedWorkloads": true,
+    "includeNoncomparableWorkloads": false,
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowLeftNoExecution": false
+  },
+  "claimability": {
+    "mode": "local",
+    "minTimedSamples": 19
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  }
+}

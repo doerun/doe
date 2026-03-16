@@ -10,7 +10,7 @@ from typing import Any
 import jsonschema
 
 import report_conformance
-from compare_dawn_vs_doe_modules import timing_sanity
+from native_compare_modules import timing_sanity
 
 def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))

@@ -8,7 +8,7 @@ fi
 
 report="$1"
 windows="${2:-3}"
-dropin_artifact="zig/zig-out/lib/libwebgpu_doe.so"
+dropin_artifact="runtime/zig/zig-out/lib/libwebgpu_doe.so"
 
 echo "[1/5] validating matrix readiness report: $report"
 python3 bench/check_full39_claim_readiness.py --report "$report"
@@ -30,7 +30,7 @@ python3 bench/run_blocking_gates.py \
 
 echo "[3/5] running repeated release windows + substantiation gate"
 python3 bench/run_release_claim_windows.py \
-  --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json \
   --windows "$windows" \
   --strict-amd-vulkan \
   --with-dropin-gate \

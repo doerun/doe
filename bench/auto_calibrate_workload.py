@@ -27,7 +27,7 @@ def parse_args():
 
 def run_benchmark(workload_id: str, command_repeat: int, submit_every: int) -> dict:
     cmd = [
-        "python3", "bench/compare_dawn_vs_doe.py",
+        "python3", "bench/native-compare/compare_dawn_vs_doe.py",
         "--workload-filter", workload_id,
         "--iterations", "5",
         "--warmup", "2",

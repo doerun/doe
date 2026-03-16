@@ -6,7 +6,7 @@ This runbook is for final strict apples-to-apples Metal proof on Apple Silicon h
 
 1. Host is macOS on Apple Silicon (`arm64`) with Metal capability.
 2. Dawn binaries and `dawn_perf_tests` are present under `bench/vendor/dawn/out/Release`.
-3. Zig runtime binary exists at `zig/zig-out/bin/doe-zig-runtime`.
+3. Zig runtime binary exists at `runtime/zig/zig-out/bin/doe-zig-runtime`.
 
 ## 1. Host preflight
 
@@ -20,7 +20,7 @@ Expected: preflight reports Metal-capable host and exits `0`.
 
 ```bash
 python3 bench/run_release_pipeline.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.comparable.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.comparable.json \
   --report bench/out/metal.macos.final.local.comparable.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.local.comparable \
   --with-local-metal-gates \
@@ -40,7 +40,7 @@ python3 bench/run_release_pipeline.py \
 
 ```bash
 python3 bench/run_release_pipeline.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.release.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.release.json \
   --report bench/out/metal.macos.final.local.release.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.local.release \
   --with-local-metal-gates \
@@ -60,7 +60,7 @@ python3 bench/run_release_pipeline.py \
 
 ```bash
 python3 bench/run_release_pipeline.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.comparable.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.comparable.json \
   --report bench/out/metal.macos.final.metal_doe_app.comparable.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.metal_doe_app.comparable \
   --with-local-metal-gates \
@@ -80,7 +80,7 @@ Strict-lane run:
 
 ```bash
 python3 bench/run_release_pipeline.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.comparable.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.comparable.json \
   --report bench/out/metal.macos.final.strict_nofallback.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.strict_nofallback \
   --with-local-metal-gates \
@@ -93,7 +93,7 @@ Optional invariance check (legacy env var should be inert):
 ```bash
 FAWN_BACKEND_SWITCH=force_dawn_delegate \
 python3 bench/run_release_pipeline.py \
-  --config bench/compare_dawn_vs_doe.config.apple.metal.comparable.json \
+  --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.comparable.json \
   --report bench/out/metal.macos.final.strict_nofallback.legacy_env.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.strict_nofallback.legacy_env \
   --with-local-metal-gates \

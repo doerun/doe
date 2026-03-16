@@ -8,7 +8,7 @@ Applies to:
 - `bench/workloads.json`
 - `bench/workloads.*.json`
 - `examples/*_commands.json`
-- `bench/compare_dawn_vs_doe.config.*.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.*.json`
 - `config/comparability-obligations.json`
 - `config/backend-timing-policy.json`
 - `config/webgpu-spec-coverage.json`
@@ -28,12 +28,12 @@ Applies to:
   - `bench/workloads*.json`
   - DOE-vs-DOE strict fullsuite contract: `bench/workloads.amd.vulkan.superset.doe-vs-doe.json`
 - Compare harness:
-  - `bench/compare_dawn_vs_doe.py`
-  - `bench/compare_dawn_vs_doe_modules/comparability.py`
-  - `bench/compare_dawn_vs_doe_modules/timing_selection.py`
+  - `bench/native-compare/compare_dawn_vs_doe.py`
+  - `bench/native_compare_modules/comparability.py`
+  - `bench/native_compare_modules/timing_selection.py`
 - Comparability obligation contract:
   - `config/comparability-obligations.json`
-  - `lean/Fawn/Comparability.lean`
+  - `pipeline/lean/Fawn/Comparability.lean`
 - Timing policy contract:
   - `config/backend-timing-policy.json`
   - `bench/vulkan_timing_policy_gate.py`
@@ -49,7 +49,7 @@ Required checkpoints for benchmark contract changes:
 
 ## 3) Workload contract format (`bench/workloads*.json`)
 
-Each workload entry is parsed by `bench/compare_dawn_vs_doe.py`.
+Each workload entry is parsed by `bench/native-compare/compare_dawn_vs_doe.py`.
 
 Authoring rule:
 - do not hand-edit the generated backend lane files under `bench/workloads*.json`.
@@ -312,7 +312,7 @@ Coverage updates are separate from claimability. A covered feature is not automa
 Useful strict run pattern:
 
 ```bash
-python3 bench/compare_dawn_vs_doe.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.doe-vs-dawn.fullsuite.json
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.doe-vs-dawn.fullsuite.json
 python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan.strict.doe_vs_dawn.fullsuite.apples.json
 ```
 

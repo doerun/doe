@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from compare_dawn_vs_doe_modules import vulkan_sync_contract
+from native_compare_modules import vulkan_sync_contract
 
 
 def parse_args() -> argparse.Namespace:

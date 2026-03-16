@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from compare_dawn_vs_doe_modules import shader_contract
+from native_compare_modules import shader_contract
 
 
 def parse_args() -> argparse.Namespace:

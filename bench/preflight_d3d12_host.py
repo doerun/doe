@@ -91,7 +91,7 @@ def main() -> int:
     system = platform.system().strip().lower()
     checks: list[dict[str, object]] = []
 
-    runtime_bin = Path("zig/zig-out/bin/doe-zig-runtime.exe")
+    runtime_bin = Path("runtime/zig/zig-out/bin/doe-zig-runtime.exe")
     dawn_bin = Path("bench/vendor/dawn/out/Release/dawn_perf_tests.exe")
 
     checks.append(

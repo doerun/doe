@@ -264,7 +264,7 @@ def main() -> int:
 
     checks: list[dict[str, object]] = []
 
-    runtime_bin = Path("zig/zig-out/bin/doe-zig-runtime")
+    runtime_bin = Path("runtime/zig/zig-out/bin/doe-zig-runtime")
     dawn_bin = Path("bench/vendor/dawn/out/Release/dawn_perf_tests")
     lib_webgpu = Path("bench/vendor/dawn/out/Release/libwebgpu.so")
     lib_wgpu_native = Path("bench/vendor/dawn/out/Release/libwgpu_native.so")
@@ -397,7 +397,7 @@ def main() -> int:
         "recommendations": [
             "Set LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH for native Fawn runs.",
             "If /dev/dri/renderD128 is denied, add your user to group render and re-login.",
-            "Use bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json when AMD adapter constraints are unavailable.",
+            "Use bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json when AMD adapter constraints are unavailable.",
         ],
     }
 

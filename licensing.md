@@ -27,7 +27,7 @@ The BSD 3-Clause license (`bench/vendor/dawn/LICENSE`) governs all Dawn source i
 4. **Calling Dawn via dawn_delegate/dawn_oracle**: Permitted as dynamic linking against
    a BSD-licensed library.
 
-5. **Mining Dawn source for driver quirk patterns** (`agent/mine_upstream_quirks.py`):
+5. **Mining Dawn source for driver quirk patterns** (`pipeline/agent/mine_upstream_quirks.py`):
    Extracting toggle names, vendor guard patterns, and workaround descriptions from
    BSD-licensed source is permitted. The miner reads Dawn source to identify behavioral
    patterns; no Dawn code is copied into Doe runtime paths.
@@ -46,7 +46,7 @@ The BSD 3-Clause license (`bench/vendor/dawn/LICENSE`) governs all Dawn source i
 
 ### What to watch
 
-If any verbatim Dawn source code were copied into Doe runtime paths (`zig/src/`),
+If any verbatim Dawn source code were copied into Doe runtime paths (`runtime/zig/src/`),
 that code would carry the BSD 3-Clause attribution requirement. As of this writing,
 no Dawn source has been copied -- Doe calls native APIs directly, and the
 dawn_delegate paths link against Dawn as a separate binary.

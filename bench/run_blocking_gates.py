@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical entrypoint for schema/correctness/trace/drop-in/claim gates with optional parity verification."""
+"""Canonical entrypoint for schema/correctness/pipeline/trace/drop-in/claim gates with optional parity verification."""
 
 from __future__ import annotations
 
@@ -192,7 +192,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--dropin-artifact",
-        default="zig/zig-out/lib/libwebgpu_doe.so",
+        default="runtime/zig/zig-out/lib/libwebgpu_doe.so",
         help="Shared library artifact path passed to dropin_gate.py when --with-dropin-gate is set.",
     )
     parser.add_argument(

@@ -1,0 +1,78 @@
+{
+  "ok": true,
+  "errorCount": 0,
+  "errors": [],
+  "fixtureCount": 10,
+  "rows": [
+    {
+      "fixture": "fawn-2d-sdf-renderer.edge.unsupported-sample-count.request.json",
+      "moduleId": "fawn_2d_sdf_renderer",
+      "deterministic": true,
+      "resultHash": "85e0affe9fa671676047728dab9a72b789e876eae8ca4076cdaa7c443f1a9d73",
+      "fallbackCount": 1
+    },
+    {
+      "fixture": "fawn-2d-sdf-renderer.request.json",
+      "moduleId": "fawn_2d_sdf_renderer",
+      "deterministic": true,
+      "resultHash": "6ae9539320ea20636dccb10788b206eea65c4b5528635402b6e738b5b79e92f4",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-compute-services.edge.input-contract-invalid.request.json",
+      "moduleId": "fawn_compute_services",
+      "deterministic": true,
+      "resultHash": "01cd11b3e3c4c20ba63a8fc9ae8500863a345d40c5f7e437d329d29f413c3aae",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-compute-services.request.json",
+      "moduleId": "fawn_compute_services",
+      "deterministic": true,
+      "resultHash": "6466f1060c7ae8d60d724ef76bf4917dd4ad39ac57dcedc74f02d58026e687d4",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-effects-pipeline.edge.unsupported-op.request.json",
+      "moduleId": "fawn_effects_pipeline",
+      "deterministic": true,
+      "resultHash": "7b13977f0d9aafaaf6597b10dc259c9e96137e48d819d798737bbb9495f9a5c3",
+      "fallbackCount": 1
+    },
+    {
+      "fixture": "fawn-effects-pipeline.request.json",
+      "moduleId": "fawn_effects_pipeline",
+      "deterministic": true,
+      "resultHash": "ca57f7e08fe3ca27f58f89bc078b44bb5e10448ff0ec6b77743798aa118af52d",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-path-engine.edge.dash-pattern.request.json",
+      "moduleId": "fawn_path_engine",
+      "deterministic": true,
+      "resultHash": "1f9343d730c8d9489ba037736f61a4f23f5b407a3494f4452d8fc8b13fd4288b",
+      "fallbackCount": 1
+    },
+    {
+      "fixture": "fawn-path-engine.request.json",
+      "moduleId": "fawn_path_engine",
+      "deterministic": true,
+      "resultHash": "60f9f46fd1e7c1264d802c7af36d3fba87d1261b3d19b69bbf73913484c5bb53",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-resource-scheduler.edge.invalid-cadence.request.json",
+      "moduleId": "fawn_resource_scheduler",
+      "deterministic": true,
+      "resultHash": "c0812556ca217e328c08eee660f8b8f7b0d94592371f432fb57d3b56d0cd63bd",
+      "fallbackCount": 1
+    },
+    {
+      "fixture": "fawn-resource-scheduler.request.json",
+      "moduleId": "fawn_resource_scheduler",
+      "deterministic": true,
+      "resultHash": "fc2554999d376e39ad6aed6feb75a0a763c41e6cea2e2c5f43ea90c933b52ec6",
+      "fallbackCount": 0
+    }
+  ]
+}

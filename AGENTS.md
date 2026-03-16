@@ -29,11 +29,11 @@ Before changing Fawn behavior, read:
 - `status.md`
 - `upgrade-policy.md`
 - `licensing.md`
-- `agent/README.md`
-- `lean/README.md`
-- `zig/README.md`
+- `pipeline/agent/README.md`
+- `pipeline/lean/README.md`
+- `runtime/zig/README.md`
 - `bench/README.md`
-- `trace/README.md`
+- `pipeline/trace/README.md`
 
 If a change affects runtime-visible behavior and any mandatory doc above has not been read in the current task, stop and read it before editing code.
 
@@ -132,9 +132,9 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 
 ## Runtime boundaries
 
-- ingestion and policy should remain in `agent/` and `bench/trace` tooling;
-- proof-bound work belongs to `lean/`;
-- specialization work belongs to `zig/`;
+- ingestion and policy should remain in `pipeline/agent/`, `pipeline/trace/`, and `bench/` tooling;
+- proof-bound work belongs to `pipeline/lean/`;
+- specialization work belongs to `runtime/zig/`;
 - shared orchestration in `process.md` and config files.
 
 ## Zig-first, Lean-eliminate policy
@@ -158,7 +158,7 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 
 ## File size
 
-- 777 lines max for Zig runtime source files in `zig/src`; shard before exceeding this
+- 777 lines max for Zig runtime source files in `runtime/zig/src`; shard before exceeding this
 - split by cohesive functionality, not by arbitrary line count
 - group by feature (e.g. `pipeline_cache.zig`) not by type (e.g. `helpers.zig`)
 - keep related code together; splitting a file must not scatter a single concern
@@ -229,7 +229,7 @@ For each change set, verify:
 - schema updates and migration notes are consistent
 - docs in this repo reflect behavior
 - gate expectations were updated or confirmed in `process.md`
-- trace/replay outputs are consistent with the changed behavior
+- pipeline/trace/replay outputs are consistent with the changed behavior
 - if Dawn-vs-Doe benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
 - if any workload is marked claimable, verify structural work equivalence: both sides executed the same commands, dispatch counts match, timing phases have symmetric non-zero coverage, and no hardware-path asymmetry is unannoted
 - `status.md` records remaining placeholders, temporary methodology choices, and follow-up work

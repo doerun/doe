@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Blocking file-size gate: enforces maximum line counts for source files.
 
-Zig runtime sources in zig/src/ must not exceed 777 lines.
-Python benchmark/tooling files in bench/ and agent/ must not exceed 1200 lines.
+Zig runtime sources in runtime/zig/src/ must not exceed 777 lines.
+Python benchmark/tooling files in bench/ and pipeline/agent/ must not exceed 1200 lines.
 
 Exit 0 when all files are within limits, 1 when any violation is found.
 """
@@ -69,7 +69,7 @@ def detect_repo_root(explicit_root: str) -> Path:
 
     raise ValueError(
         "unable to auto-detect repository root; pass --root with a path "
-        "containing zig/src/ and bench/"
+        "containing runtime/zig/src/ and bench/"
     )
 
 
@@ -131,7 +131,7 @@ def main() -> int:
     violations: list[Violation] = []
 
     violations.extend(
-        scan_directory(root, "zig/src", ".zig", ZIG_LINE_LIMIT, "zig", excludes)
+        scan_directory(root, "runtime/zig/src", ".zig", ZIG_LINE_LIMIT, "zig", excludes)
     )
     violations.extend(
         scan_directory(root, "bench", ".py", PYTHON_LINE_LIMIT, "python", excludes)
@@ -154,7 +154,7 @@ def main() -> int:
                 for v in violations
             ],
             "checkedLimits": {
-                "zig": {"directory": "zig/src", "maxLines": ZIG_LINE_LIMIT},
+                "zig": {"directory": "runtime/zig/src", "maxLines": ZIG_LINE_LIMIT},
                 "python": {
                     "directories": ["bench", "agent"],
                     "maxLines": PYTHON_LINE_LIMIT,

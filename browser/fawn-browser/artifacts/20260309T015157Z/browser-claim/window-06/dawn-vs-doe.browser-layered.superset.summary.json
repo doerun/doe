@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-03-09T01:56:24.861176Z",
+  "reportKind": "browser-layered-superset-summary",
+  "benchmarkClass": "directional",
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "diagnostic",
+  "timingClass": "scenario",
+  "timingSource": "browser-performance-now",
+  "invocation": {
+    "argv": [
+      "--chrome",
+      "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--doe-lib",
+      "/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib",
+      "--mode",
+      "both",
+      "--strict-run",
+      "--require-promotion-approvals",
+      "--promotion-approvals",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+      "--out",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "--summary-out",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.summary.json",
+      "--check-out",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.check.json",
+      "--dawn-chrome",
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    ],
+    "cwd": "/Users/xyz/deco/fawn",
+    "pythonExecutable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
+  },
+  "inputs": {
+    "workloads": "/Users/xyz/deco/fawn/bench/workloads.amd.vulkan.extended.json",
+    "rules": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/projection-rules.json",
+    "manifest": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
+    "workflows": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json",
+    "chrome": "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+    "dawnChrome": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "doeChrome": "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+    "doeLib": "/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib",
+    "mode": "both",
+    "promotionApprovals": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json"
+  },
+  "commands": {
+    "generate": [
+      "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/scripts/generate-browser-projection-manifest.py",
+      "--workloads",
+      "/Users/xyz/deco/fawn/bench/workloads.amd.vulkan.extended.json",
+      "--rules",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/projection-rules.json",
+      "--out",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/generated/browser_projection_manifest.json"
+    ],
+    "run": [
+      "node",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs",
+      "--mode",
+      "both",
+      "--chrome",
+      "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--dawn-chrome",
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "--doe-chrome",
+      "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--doe-lib",
+      "/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib",
+      "--manifest",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
+      "--workflows",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json",
+      "--headless",
+      "true",
+      "--out",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "--strict"
+    ],
+    "check": [
+      "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/scripts/check-browser-benchmark-superset.py",
+      "--workloads",
+      "/Users/xyz/deco/fawn/bench/workloads.amd.vulkan.extended.json",
+      "--manifest",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
+      "--workflows",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json",
+      "--json",
+      "--report",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "--require-modes",
+      "dawn,doe",
+      "--require-promotion-approvals",
+      "--promotion-approvals",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json"
+    ]
+  },
+  "artifacts": {
+    "layeredReportPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+    "checkResultPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.check.json",
+    "summaryPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.summary.json",
+    "manifestPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/generated/browser_projection_manifest.json",
+    "workflowsPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json"
+  },
+  "projectionContract": {
+    "projectionContractHash": "cc129ede4aeda8e3b216aaf6d9c4e2ea7afd09de01e61a42cc61e02ed356eee6",
+    "sourceWorkloadsSha256": "deac125c6783fc7caeb5f8685413432518ab135a62f1ab29b21cd960f7af065b",
+    "rulesSha256": "06ac37731d70bb86652dbad5a6e7e80f1de4aad1b5020d530b500c98e54de245",
+    "sourceWorkloadsPath": "bench/workloads.amd.vulkan.extended.json",
+    "rulesPath": "nursery/fawn-browser/bench/projection-rules.json"
+  },
+  "check": {
+    "ok": true,
+    "errorCount": 0,
+    "errors": [],
+    "summary": {
+      "rowCount": 80,
+      "high": 26,
+      "medium": 42,
+      "non_projectable": 12,
+      "l1_browser_api": 68,
+      "l0_only": 12
+    },
+    "requiredModes": [
+      "dawn",
+      "doe"
+    ],
+    "reportChecked": true,
+    "promotionChecked": true,
+    "projectionContractHash": "cc129ede4aeda8e3b216aaf6d9c4e2ea7afd09de01e61a42cc61e02ed356eee6",
+    "sourceWorkloadsSha256": "deac125c6783fc7caeb5f8685413432518ab135a62f1ab29b21cd960f7af065b"
+  },
+  "projection": {
+    "rowCount": 80,
+    "high": 26,
+    "medium": 42,
+    "non_projectable": 12,
+    "l1_browser_api": 68,
+    "l0_only": 12
+  },
+  "run": {
+    "status": "report_present",
+    "reason": "",
+    "reportPath": "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T015157Z/browser-claim/window-06/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+    "reportPresent": true,
+    "skipRun": false,
+    "strictRun": true,
+    "modeOrder": [
+      "dawn",
+      "doe"
+    ],
+    "l1": {
+      "dawn": {
+        "ok": 68,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 12,
+        "missing": 0,
+        "requiredFailures": 0
+      },
+      "doe": {
+        "ok": 68,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 12,
+        "missing": 0,
+        "requiredFailures": 0
+      }
+    },
+    "l2": {
+      "dawn": {
+        "ok": 4,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 0,
+        "missing": 0,
+        "requiredFailures": 0
+      },
+      "doe": {
+        "ok": 4,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 0,
+        "missing": 0,
+        "requiredFailures": 0
+      }
+    },
+    "overallRequiredFailures": 0,
+    "browserEnvironmentEvidence": {
+      "pageTargetKind": "server",
+      "pageTargetPort": 60466,
+      "pageTargetWarning": null,
+      "dataUrlFallbackEnabled": false
+    }
+  }
+}

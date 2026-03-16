@@ -16,8 +16,9 @@ from pathlib import Path
 from typing import Any
 
 
-REPLAY_SCRIPT = Path(__file__).resolve().parents[1] / "trace" / "replay.py"
-COMPARE_SCRIPT = Path(__file__).resolve().parents[1] / "trace" / "compare_dispatch_traces.py"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+REPLAY_SCRIPT = REPO_ROOT / "pipeline" / "trace" / "replay.py"
+COMPARE_SCRIPT = REPO_ROOT / "pipeline" / "trace" / "compare_dispatch_traces.py"
 DOE_MODULE_PREFIX = "doe-"
 
 

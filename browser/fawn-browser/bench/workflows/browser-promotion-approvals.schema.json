@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fawn.local/schemas/browser/browser_promotion_approvals.schema.json",
+  "title": "BrowserPromotionApprovals",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "requiredApprovals",
+    "approvals"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "requiredApprovals": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "string",
+        "enum": [
+          "browser_runtime_integration_owner",
+          "browser_quality_owner",
+          "browser_benchmark_methodology_owner",
+          "module_contracts_owner",
+          "coordinator"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "approvals": {
+      "type": "object",
+      "required": [
+        "browser_runtime_integration_owner",
+        "browser_quality_owner",
+        "browser_benchmark_methodology_owner",
+        "module_contracts_owner",
+        "coordinator"
+      ],
+      "properties": {
+        "browser_runtime_integration_owner": {
+          "$ref": "#/$defs/approval"
+        },
+        "browser_quality_owner": {
+          "$ref": "#/$defs/approval"
+        },
+        "browser_benchmark_methodology_owner": {
+          "$ref": "#/$defs/approval"
+        },
+        "module_contracts_owner": {
+          "$ref": "#/$defs/approval"
+        },
+        "coordinator": {
+          "$ref": "#/$defs/approval"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "approval": {
+      "type": "object",
+      "required": [
+        "approved",
+        "by",
+        "at"
+      ],
+      "properties": {
+        "approved": {
+          "type": "boolean"
+        },
+        "by": {
+          "type": "string"
+        },
+        "at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

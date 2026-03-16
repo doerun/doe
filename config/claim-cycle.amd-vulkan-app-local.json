@@ -13,7 +13,7 @@
       "sha256": "2984aaf379ddf1973edb5a0214fc84b826e3fffca4a9cc796a85a7b609f43b11"
     },
     "compareConfig": {
-      "path": "bench/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json",
+      "path": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json",
       "sha256": "2eaf549cfcad8af46a694dfa7158b24a89015c150dab7c0bd2a379a9f35e6d13"
     },
     "substantiationPolicy": {
@@ -91,7 +91,7 @@
     ],
     "diagnosticAllowedPrefixes": [
       "bench/out/scratch/",
-      "nursery/fawn-browser/"
+      "browser/fawn-browser/"
     ]
   },
   "attestations": {

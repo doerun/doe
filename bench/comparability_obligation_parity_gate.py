@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from compare_dawn_vs_doe_modules import comparability as comparability_mod
+from native_compare_modules import comparability as comparability_mod
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--lean-ids-source",
-        default="lean/Fawn/Generated/ComparabilityContract.lean",
+        default="pipeline/lean/Fawn/Generated/ComparabilityContract.lean",
         help="Lean source file containing ComparabilityObligationId constructors.",
     )
     return parser.parse_args()

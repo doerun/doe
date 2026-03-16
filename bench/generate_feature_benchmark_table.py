@@ -163,7 +163,7 @@ def _measure_dawn_header_api_surface_coverage() -> tuple[int, int, float]:
     header_text = header.read_text(errors="ignore")
     header_symbols = set(re.findall(r"\b(wgpu[A-Za-z0-9_]+)\s*\(", header_text))
     zig_symbols: set[str] = set()
-    for source in Path("zig/src").glob("*.zig"):
+    for source in Path("runtime/zig/src").glob("*.zig"):
         text = source.read_text(errors="ignore")
         zig_symbols.update(re.findall(r"\b(wgpu[A-Za-z0-9_]+)\b", text))
     if not header_symbols:
@@ -286,7 +286,7 @@ def main() -> int:
             done=implemented,
             total=total_capabilities,
         ),
-        "| Dawn header API-surface reference coverage (estimate) | {percent:.2f}% ({done}/{total}) | Dawn header `bench/vendor/dawn/third_party/webgpu-headers/src/webgpu.h` vs `wgpu*` symbols referenced in `zig/src` |".format(
+        "| Dawn header API-surface reference coverage (estimate) | {percent:.2f}% ({done}/{total}) | Dawn header `bench/vendor/dawn/third_party/webgpu-headers/src/webgpu.h` vs `wgpu*` symbols referenced in `runtime/zig/src` |".format(
             percent=dawn_header_percent,
             done=dawn_header_covered,
             total=dawn_header_total,

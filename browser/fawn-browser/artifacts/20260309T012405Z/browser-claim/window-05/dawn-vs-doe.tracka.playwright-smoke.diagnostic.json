@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "chromium-webgpu-playwright-smoke",
+  "benchmarkClass": "diagnostic",
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "diagnostic",
+  "timingClass": "browser-operation-proxy",
+  "timingSource": "performance.now",
+  "generatedAt": "2026-03-09T01:25:08.824Z",
+  "hashAlgorithm": "sha256",
+  "invocation": {
+    "argv": [
+      "--chrome",
+      "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--doe-lib",
+      "/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib",
+      "--mode",
+      "both",
+      "--strict",
+      "--out",
+      "/Users/xyz/deco/fawn/nursery/fawn-browser/artifacts/20260309T012405Z/browser-claim/window-05/dawn-vs-doe.tracka.playwright-smoke.diagnostic.json"
+    ],
+    "cwd": "/Users/xyz/deco/fawn",
+    "nodeVersion": "v22.20.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "chromePath": "/Users/xyz/deco/fawn/nursery/chromium_webgpu_lane/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+  "headless": true,
+  "chromeArgs": [],
+  "mode": "both",
+  "methodology": {
+    "uploadIterations": 500,
+    "dispatchIterations": 200,
+    "uploadWarmupIterations": 50,
+    "dispatchWarmupIterations": 20,
+    "suiteTimeoutMs": 120000,
+    "operationTimeoutMs": 30000,
+    "strictMode": true,
+    "notes": [
+      "Browser harness output is diagnostic and not a strict L0 apples-to-apples claim artifact."
+    ]
+  },
+  "modeResults": [
+    {
+      "mode": "dawn",
+      "runtimeArgs": [
+        "--use-webgpu-runtime=dawn"
+      ],
+      "launchArgs": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--ignore-gpu-blocklist",
+        "--enable-unsafe-webgpu",
+        "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:59375",
+        "--use-webgpu-runtime=dawn"
+      ],
+      "browserVersion": "147.0.7705.0",
+      "elapsedMs": 2101,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.0.0 Safari/537.36",
+      "webgpuAvailable": true,
+      "adapterAvailable": true,
+      "adapterInfo": {},
+      "features": [
+        "bgra8unorm-storage",
+        "chromium-experimental-subgroup-matrix",
+        "clip-distances",
+        "core-features-and-limits",
+        "depth-clip-control",
+        "depth32float-stencil8",
+        "dual-source-blending",
+        "float32-blendable",
+        "float32-filterable",
+        "indirect-first-instance",
+        "primitive-index",
+        "rg11b10ufloat-renderable",
+        "shader-f16",
+        "subgroups",
+        "texture-component-swizzle",
+        "texture-compression-astc",
+        "texture-compression-astc-sliced-3d",
+        "texture-compression-bc",
+        "texture-compression-bc-sliced-3d",
+        "texture-compression-etc2",
+        "texture-formats-tier1",
+        "texture-formats-tier2",
+        "timestamp-query"
+      ],
+      "limits": {
+        "maxTextureDimension1D": 16384,
+        "maxTextureDimension2D": 16384,
+        "maxTextureDimension3D": 2048,
+        "maxTextureArrayLayers": 2048,
+        "maxBindGroups": 4,
+        "maxBindingsPerBindGroup": 1000,
+        "maxDynamicUniformBuffersPerPipelineLayout": 10,
+        "maxDynamicStorageBuffersPerPipelineLayout": 8,
+        "maxSampledTexturesPerShaderStage": 48,
+        "maxSamplersPerShaderStage": 16,
+        "maxStorageBuffersPerShaderStage": 10,
+        "maxStorageTexturesPerShaderStage": 8,
+        "maxUniformBuffersPerShaderStage": 12,
+        "maxUniformBufferBindingSize": 65536,
+        "maxStorageBufferBindingSize": 4294967292,
+        "maxBufferSize": 4294967296,
+        "maxComputeInvocationsPerWorkgroup": 1024,
+        "maxComputeWorkgroupSizeX": 1024,
+        "maxComputeWorkgroupSizeY": 1024,
+        "maxComputeWorkgroupSizeZ": 64,
+        "maxComputeWorkgroupsPerDimension": 65535,
+        "maxComputeWorkgroupStorageSize": 32768
+      },
+      "wgslLanguageFeatures": [
+        "packed_4x8_integer_dot_product",
+        "pointer_composite_access",
+        "readonly_and_readwrite_storage_textures",
+        "subgroup_id",
+        "subgroup_uniformity",
+        "swizzle_assignment",
+        "texture_and_sampler_let",
+        "uniform_buffer_standard_layout",
+        "unrestricted_pointer_parameters"
+      ],
+      "smoke": {
+        "computeIncrement": {
+          "pass": true,
+          "actual": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "expected": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "error": null
+        },
+        "renderTriangle": {
+          "pass": true,
+          "centerRgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "error": null
+        }
+      },
+      "benches": {
+        "writeBuffer64kbUsPerOp": 28.40000009536743,
+        "computeDispatchUsPerOp": 75.49999982118607,
+        "iterations": {
+          "upload": 500,
+          "dispatch": 200
+        },
+        "errors": []
+      },
+      "errors": [],
+      "previousHash": null,
+      "hash": "468b298e915eccfa8efaa161d375ed1670f11efaf053f31d4bca732f314153d3"
+    },
+    {
+      "mode": "doe",
+      "runtimeArgs": [
+        "--use-webgpu-runtime=doe",
+        "--doe-webgpu-library-path=/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib"
+      ],
+      "launchArgs": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--ignore-gpu-blocklist",
+        "--enable-unsafe-webgpu",
+        "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:59375",
+        "--use-webgpu-runtime=doe",
+        "--doe-webgpu-library-path=/Users/xyz/deco/fawn/zig/zig-out/lib/libwebgpu_doe.dylib"
+      ],
+      "browserVersion": "147.0.7705.0",
+      "elapsedMs": 1726,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.0.0 Safari/537.36",
+      "webgpuAvailable": true,
+      "adapterAvailable": true,
+      "adapterInfo": {},
+      "features": [
+        "bgra8unorm-storage",
+        "chromium-experimental-subgroup-matrix",
+        "clip-distances",
+        "core-features-and-limits",
+        "depth-clip-control",
+        "depth32float-stencil8",
+        "dual-source-blending",
+        "float32-blendable",
+        "float32-filterable",
+        "indirect-first-instance",
+        "primitive-index",
+        "rg11b10ufloat-renderable",
+        "shader-f16",
+        "subgroups",
+        "texture-component-swizzle",
+        "texture-compression-astc",
+        "texture-compression-astc-sliced-3d",
+        "texture-compression-bc",
+        "texture-compression-bc-sliced-3d",
+        "texture-compression-etc2",
+        "texture-formats-tier1",
+        "texture-formats-tier2",
+        "timestamp-query"
+      ],
+      "limits": {
+        "maxTextureDimension1D": 16384,
+        "maxTextureDimension2D": 16384,
+        "maxTextureDimension3D": 2048,
+        "maxTextureArrayLayers": 2048,
+        "maxBindGroups": 4,
+        "maxBindingsPerBindGroup": 1000,
+        "maxDynamicUniformBuffersPerPipelineLayout": 10,
+        "maxDynamicStorageBuffersPerPipelineLayout": 8,
+        "maxSampledTexturesPerShaderStage": 48,
+        "maxSamplersPerShaderStage": 16,
+        "maxStorageBuffersPerShaderStage": 10,
+        "maxStorageTexturesPerShaderStage": 8,
+        "maxUniformBuffersPerShaderStage": 12,
+        "maxUniformBufferBindingSize": 65536,
+        "maxStorageBufferBindingSize": 4294967292,
+        "maxBufferSize": 4294967296,
+        "maxComputeInvocationsPerWorkgroup": 1024,
+        "maxComputeWorkgroupSizeX": 1024,
+        "maxComputeWorkgroupSizeY": 1024,
+        "maxComputeWorkgroupSizeZ": 64,
+        "maxComputeWorkgroupsPerDimension": 65535,
+        "maxComputeWorkgroupStorageSize": 32768
+      },
+      "wgslLanguageFeatures": [
+        "packed_4x8_integer_dot_product",
+        "pointer_composite_access",
+        "readonly_and_readwrite_storage_textures",
+        "subgroup_id",
+        "subgroup_uniformity",
+        "swizzle_assignment",
+        "texture_and_sampler_let",
+        "uniform_buffer_standard_layout",
+        "unrestricted_pointer_parameters"
+      ],
+      "smoke": {
+        "computeIncrement": {
+          "pass": true,
+          "actual": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "expected": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "error": null
+        },
+        "renderTriangle": {
+          "pass": true,
+          "centerRgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "error": null
+        }
+      },
+      "benches": {
+        "writeBuffer64kbUsPerOp": 25.799999952316284,
+        "computeDispatchUsPerOp": 62.999999821186066,
+        "iterations": {
+          "upload": 500,
+          "dispatch": 200
+        },
+        "errors": []
+      },
+      "errors": [],
+      "previousHash": "468b298e915eccfa8efaa161d375ed1670f11efaf053f31d4bca732f314153d3",
+      "hash": "8ae82f30c3ecc6ac0a90e07031285240b340b3b98d23b6c9ef0db144f723e30f"
+    }
+  ],
+  "comparison": {
+    "writeBuffer64kbDeltaPercent": 9.154930050423681,
+    "computeDispatchDeltaPercent": 16.55629142994034,
+    "bothComputeSmokePass": true,
+    "bothRenderSmokePass": true
+  },
+  "reportHash": "48ac2a1e1cc074859c4340e89722139d84aa1caa93b74175e802d27a90e3a042"
+}

@@ -6,7 +6,7 @@
 - pull upstream sources
 - extract candidate driver/workaround deltas
 - canonical miner entrypoint:
-  `python3 agent/mine_upstream_quirks.py --source-root <upstream-root> --source-repo <repo> --source-commit <commit> --vendor <vendor> --api <api> --output bench/out/mined-quirks.json --manifest-output bench/out/mined-quirks.manifest.json`
+  `python3 pipeline/agent/mine_upstream_quirks.py --source-root <upstream-root> --source-repo <repo> --source-commit <commit> --vendor <vendor> --api <api> --output bench/out/mined-quirks.json --manifest-output bench/out/mined-quirks.manifest.json`
   miner output is deterministic and hash-linked (`config/quirk-mining-manifest.schema.json`).
 
 2. Normalize
@@ -43,7 +43,7 @@
   CI must run without `--skip-missing` and fail hard if any sample is missing or fails replay checks.
   For runtime-to-runtime reference lanes (for example Zig vs Lean trace parity), run with `--semantic-parity-mode required` so the gate fails unless semantic parity checks execute and pass.
 - run drop-in compatibility hard gate from a built shared-library artifact:
-  `python3 bench/dropin_gate.py --artifact zig/zig-out/lib/libwebgpu_doe.so --report bench/out/dropin_report.json`
+  `python3 bench/drop-in/dropin_gate.py --artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --report bench/out/dropin_report.json`
   CI must fail hard if symbol completeness, black-box behavior, or drop-in benchmark execution fails, and must emit a drop-in report on every run.
 - run release claimability hard gate from comparison report artifacts:
   `python3 bench/claim_gate.py --report bench/out/dawn-vs-doe.json --require-claimability-mode release --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15`
@@ -55,11 +55,11 @@
 - each timestamped run folder emits `run_manifest.json` (`runType`, `config`, `fullRun`, `claimGateRan`, `dropinGateRan`, and status metadata) for quick human+automation audit.
 - ad-hoc/manual artifact names are routed under `bench/out/scratch/<timestamp>/...` to keep canonical run folders and dashboard inputs clean.
 - canonical CI/script entrypoint for blocking gate sequence:
-  `python3 bench/run_blocking_gates.py --report bench/out/dawn-vs-doe.json --trace-semantic-parity-mode auto --with-comparability-parity-gate --with-dropin-gate --dropin-artifact zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
+  `python3 bench/run_blocking_gates.py --report bench/out/dawn-vs-doe.json --trace-semantic-parity-mode auto --with-comparability-parity-gate --with-dropin-gate --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
   when `--with-claim-gate` is enabled, `run_blocking_gates.py` also auto-enables `structural_equivalence_gate.py` so path asymmetry and timing-phase mismatch block the claim lane before publication.
   runs without `--with-claim-gate` validate blocking quality gates but are not release-claim readiness evidence; use `--require-claim-gate` to enforce this contract in local automation.
 - canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
-  `python3 bench/run_release_pipeline.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate`
+  `python3 bench/run_release_pipeline.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate`
   the release config now targets the AMD Vulkan extended comparable matrix (all comparable workload contracts), not only the default 7-workload subset.
   when `--with-claim-gate` is enabled, the pipeline now emits claim rehearsal artifacts by default:
   claim gate result, tail-health table, timing-invariant audit, and contract-hash manifest
@@ -69,7 +69,7 @@
 - standalone claim rehearsal artifact builder:
   `python3 bench/build_claim_rehearsal_artifacts.py --report bench/out/dawn-vs-doe.json --require-comparison-status comparable --require-claim-status claimable --require-claimability-mode release --require-min-timed-samples 15`
 - canonical trend/substantiation entrypoint for repeated release windows:
-  `python3 bench/run_release_claim_windows.py --config bench/compare_dawn_vs_doe.config.amd.vulkan.release.json --windows 3 --strict-amd-vulkan --with-substantiation-gate --substantiation-policy config/substantiation-policy.json`
+  `python3 bench/run_release_claim_windows.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json --windows 3 --strict-amd-vulkan --with-substantiation-gate --substantiation-policy config/substantiation-policy.json`
   this emits a timestamped window summary, per-window claim rehearsal artifacts (default-on), and a substantiation report with policy-backed report-count and profile-diversity checks.
 - substantiation policy can enforce target profile diversity as a hard failure:
   `releaseEvidence.enforceTargetUniqueLeftProfiles=true` makes `targetUniqueLeftProfiles` blocking (not warning-only).
@@ -84,9 +84,9 @@
   - Windows preflight is explicit and blocking before compare execution:
     `python3 bench/preflight_d3d12_host.py --json`
   - first compare configs:
-    - smoke: `bench/compare_dawn_vs_doe.config.local.d3d12.smoke.json`
-    - comparable: `bench/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`
-    - release scaffold: `bench/compare_dawn_vs_doe.config.local.d3d12.release.json` (contract only until a Windows host produces evidence)
+    - smoke: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.smoke.json`
+    - comparable: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`
+    - release scaffold: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json` (contract only until a Windows host produces evidence)
   - Windows handoff runner for the first governed D3D12 lane:
     `python3 bench/run_local_d3d12_lane.py`
   - backend workload catalog drift is now blocked by both generation verify and catalog tests:
@@ -134,9 +134,9 @@ This keeps process weight aligned with v0 maturity.
 
 Promoted Track B (modules) follow the same blocking schema, correctness, and trace requirements as other core runtime modules. `python3 bench/run_blocking_gates.py --with-modules` enables those promoted-module gates in the canonical blocking runner. Track B (modules) performance gates remain advisory and are not required for M6 governance promotion, but no Track B module may carry claimability assertions until explicit advisory performance coverage is added.
 
-Promoted Track A (browser) diagnostics are governed through the lane-wrapper browser gate in `bench/browser_gate.py`. `python3 bench/run_blocking_gates.py --with-browser-gate` runs the macOS/host browser preflight plus fresh Playwright smoke and strict layered-superset validation with required browser promotion approvals. That default browser gate remains diagnostic-only by contract.
+Promoted Track A (browser) diagnostics are governed through the lane-wrapper browser gate in `bench/browser/browser_gate.py`. `python3 bench/run_blocking_gates.py --with-browser-gate` runs the macOS/host browser preflight plus fresh Playwright smoke and strict layered-superset validation with required browser promotion approvals. That default browser gate remains diagnostic-only by contract.
 
-Track A (browser) claimability is now a separate repeated-window lane in `bench/browser_claim_gate.py`, controlled by `config/browser-claim-policy.json`. `python3 bench/run_blocking_gates.py --with-browser-claim-gate` runs the claim gate instead of the single-window browser gate, aggregates repeated strict browser windows, and requires positive local-claim percentiles before reporting `claimStatus=claimable`. Browser claimability remains local-only until a release-grade browser claim policy is explicitly added.
+Track A (browser) claimability is now a separate repeated-window lane in `bench/browser/browser_claim_gate.py`, controlled by `config/browser-claim-policy.json`. `python3 bench/run_blocking_gates.py --with-browser-claim-gate` runs the claim gate instead of the single-window browser gate, aggregates repeated strict browser windows, and requires positive local-claim percentiles before reporting `claimStatus=claimable`. Browser claimability remains local-only until a release-grade browser claim policy is explicitly added.
 
 ### Verification obligation precedence
 
@@ -209,7 +209,7 @@ Apple Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 
 2. compare
 - use Apple Metal config presets:
-  - `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
   - for release-claim checks, reuse the same config with `--claimability release` (and optional explicit `--out` path)
   - optional Dawn-baseline lane forcing for baseline checks: `--local-metal-lane metal_dawn_release`
   - render/bundle rows may still select encode-only timing for strict comparability, but claim evaluation must use `timingInterpretation.headlineProcessWall` when `selectedTiming.scopeClass=narrow-hot-path`
@@ -247,10 +247,10 @@ AMD Vulkan extended lanes are additive and must not weaken the governed AMD Vulk
 
 2. compare
 - use AMD Vulkan extended config presets:
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
 
 3. blocking gates
 - run backend/sync/timing/shader checks in `bench/run_blocking_gates.py`:

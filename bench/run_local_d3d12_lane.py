@@ -23,12 +23,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--smoke-config",
-        default="bench/compare_dawn_vs_doe.config.local.d3d12.smoke.json",
+        default="bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.smoke.json",
         help="Smoke compare config path.",
     )
     parser.add_argument(
         "--extended-config",
-        default="bench/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json",
+        default="bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json",
         help="Extended comparable config path.",
     )
     parser.add_argument(

@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "errorCount": 0,
+  "errors": [],
+  "fixtureCount": 5,
+  "rows": [
+    {
+      "fixture": "fawn-2d-sdf-renderer.request.json",
+      "moduleId": "fawn_2d_sdf_renderer",
+      "deterministic": true,
+      "resultHash": "6ae9539320ea20636dccb10788b206eea65c4b5528635402b6e738b5b79e92f4",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-compute-services.request.json",
+      "moduleId": "fawn_compute_services",
+      "deterministic": true,
+      "resultHash": "6466f1060c7ae8d60d724ef76bf4917dd4ad39ac57dcedc74f02d58026e687d4",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-effects-pipeline.request.json",
+      "moduleId": "fawn_effects_pipeline",
+      "deterministic": true,
+      "resultHash": "ca57f7e08fe3ca27f58f89bc078b44bb5e10448ff0ec6b77743798aa118af52d",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-path-engine.request.json",
+      "moduleId": "fawn_path_engine",
+      "deterministic": true,
+      "resultHash": "60f9f46fd1e7c1264d802c7af36d3fba87d1261b3d19b69bbf73913484c5bb53",
+      "fallbackCount": 0
+    },
+    {
+      "fixture": "fawn-resource-scheduler.request.json",
+      "moduleId": "fawn_resource_scheduler",
+      "deterministic": true,
+      "resultHash": "fc2554999d376e39ad6aed6feb75a0a763c41e6cea2e2c5f43ea90c933b52ec6",
+      "fallbackCount": 0
+    }
+  ]
+}

@@ -18,9 +18,9 @@
   - `bench/workloads.amd.vulkan.extended.json`
   - `bench/workloads.amd.vulkan.extended.strict.json`
   - `bench/workloads.apple.metal.extended.json`
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.superset*.json`
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended*.json`
-  - `bench/compare_dawn_vs_doe.config.apple.metal*.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.superset*.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended*.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal*.json`
 - Browser-layer superset tooling now sources `bench/workloads.amd.vulkan.superset.json`
   explicitly, so the name still matches the broader 80-row engine contract it
   projects from.
@@ -33,11 +33,11 @@
 
 ### macOS dispatch parity and normalization contract promotion
 
-- `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json` now
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json` now
   passes `--kernel-root bench/kernels` to both sides of the local Metal strict
   comparable lane, so workloads that resolve WGSL kernels at runtime no longer
   depend on ad hoc extra-arg injection.
-- `zig/src/core/compute/wgpu_commands_compute.zig` now executes plain
+- `runtime/zig/src/core/compute/wgpu_commands_compute.zig` now executes plain
   `dispatch` / `dispatch_indirect` commands through the Dawn delegate path
   using the new built-in WGSL kernel `bench/kernels/dispatch_noop.wgsl`
   instead of returning `unsupported`.
@@ -49,8 +49,8 @@
   local-Metal overrides (`applesToApplesVetted=true`,
   `comparabilityCandidate.enabled=false`, explicit right repeats/divisors, and
   `strictNormalizationUnit=dispatch` for `compute_dispatch_grid`).
-- `bench/compare_dawn_vs_doe.py` and
-  `bench/compare_dawn_vs_doe_modules/runner.py` now accept explicit workload
+- `bench/native-compare/compare_dawn_vs_doe.py` and
+  `bench/native-compare/modules/runner.py` now accept explicit workload
   `strictNormalizationUnit` contracts (`dispatch` or `cycle`) so strict
   command-shape lint and trace-derived physical-operation checks can agree on
   workloads whose comparable unit is not raw command-row count.
@@ -92,7 +92,7 @@
 
 - Native Metal upload benchmarking now reuses pre-zeroed shared upload sources
   instead of re-zeroing large buffers inside every timed sample in
-  `zig/src/backend/metal/metal_native_runtime.zig`.
+  `runtime/zig/src/backend/metal/metal_native_runtime.zig`.
 - Local-Metal strict upload claims may now fall back to
   `timingInterpretation.headlineProcessWall.deltaPercent` when selected
   operation timing implies physically implausible throughput or otherwise
@@ -115,10 +115,10 @@
   presentable surface with `bgra8unorm` instead of `rgba8unorm`.
 - The full WebGPU surface proc path on macOS now creates a hosted
   `CAMetalLayer` source for `wgpuInstanceCreateSurface`:
-  - `zig/src/full/surface/wgpu_surface_commands.zig`
-  - `zig/src/full/surface/wgpu_surface_macos.zig`
-  - `zig/src/full/surface/wgpu_surface_procs.zig`
-  - `zig/src/backend/metal/metal_bridge.{h,m}`
+  - `runtime/zig/src/full/surface/wgpu_surface_commands.zig`
+  - `runtime/zig/src/full/surface/wgpu_surface_macos.zig`
+  - `runtime/zig/src/full/surface/wgpu_surface_procs.zig`
+  - `runtime/zig/src/backend/metal/metal_bridge.{h,m}`
 - Behavioral difference versus the previous contract:
   the Dawn delegate path now uses a real macOS Metal surface source and a
   presentable swapchain format, so `surface_full_presentation` can acquire and
@@ -132,12 +132,12 @@
   `bench/workloads.apple.metal.extended.json` now carries the comparable local
   Metal override (`applesToApplesVetted=true`, `rightCommandRepeat=100`,
   `left/rightTimingDivisor=100`, `comparabilityCandidate.enabled=false`).
-- `zig/src/full/surface/wgpu_surface_commands.zig` now records non-present
+- `runtime/zig/src/full/surface/wgpu_surface_commands.zig` now records non-present
   surface lifecycle wall time in `encode_ns` and present wall time in
   `submit_wait_ns`, aligning the full WebGPU surface path with the native Metal
   timing-phase contract used by the strict comparability gate.
-- `bench/compare_dawn_vs_doe.py` and
-  `bench/compare_dawn_vs_doe_modules/runner.py` now validate `domain=surface`
+- `bench/native-compare/compare_dawn_vs_doe.py` and
+  `bench/native-compare/modules/runner.py` now validate `domain=surface`
   normalization against repeated presentation cycles, not raw per-command row
   count, so strict comparable surface claims use one full presentation cycle as
   the comparable unit.
@@ -187,12 +187,12 @@
   - `config/browser-claim-policy.schema.json`
   - `config/browser-claim-policy.json`
 - Added a repeated-window browser claim gate:
-  - `bench/browser_claim_gate.py`
+  - `bench/browser/browser_claim_gate.py`
 - The canonical blocking runner can now execute the browser claim gate:
   - `python3 bench/run_blocking_gates.py --with-browser-claim-gate`
 - Added scheduled macOS browser refresh wiring and browser-artifact retention cleanup:
   - `.github/workflows/macos-browser-refresh.yml`
-  - `nursery/fawn-browser/scripts/cleanup-browser-artifacts.py`
+  - `browser/fawn-browser/scripts/cleanup-browser-artifacts.py`
 - Behavioral difference versus the prior promoted-browser state:
   browser diagnostics are no longer limited to a single smoke + layered
   snapshot. The repo now supports repeated-window local claim evidence and
@@ -203,7 +203,7 @@
 ### Track A (browser) governance promotion
 
 - Track A (browser) diagnostics now have a governed core gate:
-  - `bench/browser_gate.py`
+  - `bench/browser/browser_gate.py`
 - The canonical blocking runner can now execute that browser gate:
   - `python3 bench/run_blocking_gates.py --with-browser-gate`
 - Added explicit promoted ownership for Track A (browser) scope:
@@ -211,10 +211,10 @@
   - `config/browser-ownership.json`
 - Browser workflow and approval contracts were promoted from Track B (modules)-only
   approval assumptions to explicit Track A (browser) cross-owner signoff:
-  - `nursery/fawn-browser/bench/workflows/browser-workflow-manifest.json`
-  - `nursery/fawn-browser/bench/workflows/browser-workflow-manifest.schema.json`
-  - `nursery/fawn-browser/bench/workflows/browser-promotion-approvals.json`
-  - `nursery/fawn-browser/bench/workflows/browser-promotion-approvals.schema.json`
+  - `browser/fawn-browser/bench/workflows/browser-workflow-manifest.json`
+  - `browser/fawn-browser/bench/workflows/browser-workflow-manifest.schema.json`
+  - `browser/fawn-browser/bench/workflows/browser-promotion-approvals.json`
+  - `browser/fawn-browser/bench/workflows/browser-promotion-approvals.schema.json`
 - Behavioral difference versus the prior nursery-only state:
   browser smoke and strict layered superset validation are now executable from
   the canonical blocking gate runner with required ownership/approval checks,
@@ -223,13 +223,13 @@
 ### Track B (modules) 2D SDF renderer promotion
 
 - `fawn_2d_sdf_renderer` moved from the nursery Python prototype in
-  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
-  implementation in `zig/src/full/modules/rendering/sdf_renderer.zig`.
+  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `runtime/zig/src/full/modules/rendering/sdf_renderer.zig`.
 - The canonical schema/policy contract is now:
   - `config/sdf-renderer.schema.json`
   - `config/sdf-renderer.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `nursery/fawn-browser/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json`
+  - `browser/fawn-browser/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json`
 - Behavioral difference versus the nursery prototype:
   the promoted path now executes through the shared render runtime and emits
   deterministic trace-linked render artifacts instead of prototype-only policy
@@ -238,13 +238,13 @@
 ### Track B (modules) path engine promotion
 
 - `fawn_path_engine` moved from the nursery Python prototype in
-  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
-  implementation in `zig/src/full/modules/rendering/path_engine.zig`.
+  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `runtime/zig/src/full/modules/rendering/path_engine.zig`.
 - The canonical schema/policy contract is now:
   - `config/path-engine.schema.json`
   - `config/path-engine.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `nursery/fawn-browser/module-incubation/schemas/fawn-path-engine.schema.json`
+  - `browser/fawn-browser/module-incubation/schemas/fawn-path-engine.schema.json`
 - Behavioral difference versus the nursery prototype:
   the promoted path now executes through the shared render runtime and emits
   deterministic geometry/raster telemetry instead of prototype-only counters.
@@ -252,13 +252,13 @@
 ### Track B (modules) effects pipeline promotion
 
 - `fawn_effects_pipeline` moved from the nursery Python prototype in
-  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
-  implementation in `zig/src/full/modules/rendering/effects_pipeline.zig`.
+  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `runtime/zig/src/full/modules/rendering/effects_pipeline.zig`.
 - The canonical schema/policy contract is now:
   - `config/effects-pipeline.schema.json`
   - `config/effects-pipeline.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `nursery/fawn-browser/module-incubation/schemas/fawn-effects-pipeline.schema.json`
+  - `browser/fawn-browser/module-incubation/schemas/fawn-effects-pipeline.schema.json`
 - Behavioral difference versus the nursery prototype:
   the promoted path now executes through the shared render runtime and emits
   deterministic effect-pass timing and fallback telemetry under the canonical
@@ -269,13 +269,13 @@
 ### Track B (modules) compute services promotion
 
 - `fawn_compute_services` moved from the nursery Python prototype in
-  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
-  implementation in `zig/src/full/modules/services/compute_services.zig`.
+  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `runtime/zig/src/full/modules/services/compute_services.zig`.
 - The canonical schema/policy contract is now:
   - `config/compute-services.schema.json`
   - `config/compute-services.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `nursery/fawn-browser/module-incubation/schemas/fawn-compute-services.schema.json`
+  - `browser/fawn-browser/module-incubation/schemas/fawn-compute-services.schema.json`
 - Behavioral difference versus the nursery prototype:
   real GPU `kernel_dispatch` execution now runs through the core WebGPU compute
   path, while returned timing fields are deterministic contract values rather
@@ -284,13 +284,13 @@
 ### Track B (modules) resource scheduler promotion
 
 - `fawn_resource_scheduler` moved from the nursery Python prototype in
-  `nursery/fawn-browser/scripts/module_prototype.py` to a core Zig
-  implementation in `zig/src/full/modules/services/resource_scheduler.zig`.
+  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  implementation in `runtime/zig/src/full/modules/services/resource_scheduler.zig`.
 - The canonical schema/policy contract is now:
   - `config/resource-scheduler.schema.json`
   - `config/resource-scheduler.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `nursery/fawn-browser/module-incubation/schemas/fawn-resource-scheduler.schema.json`
+  - `browser/fawn-browser/module-incubation/schemas/fawn-resource-scheduler.schema.json`
 - Behavioral difference versus the nursery prototype:
   real buffer/texture allocation now happens through `WebGPUBackend` resource
   helpers, and pool statistics are emitted from the promoted scheduler contract
@@ -309,37 +309,37 @@
 
 ### Package/Zig build proof provenance metadata
 
-- `zig/build.zig` now emits deterministic drop-in build provenance to
-  `zig/zig-out/share/doe-build-metadata.json`, including:
+- `runtime/zig/build.zig` now emits deterministic drop-in build provenance to
+  `runtime/zig/zig-out/share/doe-build-metadata.json`, including:
   - `leanVerifiedBuild`
   - `proofArtifactSha256`
-- `zig/src/wgpu_dropin_lib.zig` now links a tiny build-info export so the shared
+- `runtime/zig/src/wgpu_dropin_lib.zig` now links a tiny build-info export so the shared
   library embeds the `lean_verified` build bit instead of leaving it purely in
   publish metadata.
-- `nursery/webgpu/scripts/prebuild.js` now requires that Zig build metadata sidecar
+- `packages/webgpu/scripts/prebuild.js` now requires that Zig build metadata sidecar
   and copies the same proof provenance into published `prebuilds/*/metadata.json`.
-- `nursery/webgpu/src/index.js` and `nursery/webgpu/src/bun-ffi.js` now expose that
+- `packages/webgpu/src/index.js` and `packages/webgpu/src/bun-ffi.js` now expose that
   provenance via `providerInfo()`:
   - `buildMetadataSource`
   - `buildMetadataPath`
   - `leanVerifiedBuild`
   - `proofArtifactSha256`
 - Added package contract schemas:
-  - `nursery/webgpu/doe-build-metadata.schema.json`
-  - `nursery/webgpu/prebuild-metadata.schema.json`
+  - `packages/webgpu/doe-build-metadata.schema.json`
+  - `packages/webgpu/prebuild-metadata.schema.json`
 
 ### Metal upload apples-to-apples restoration
 
-- `zig/src/backend/metal/metal_native_runtime.zig` now routes comparable
+- `runtime/zig/src/backend/metal/metal_native_runtime.zig` now routes comparable
   WriteBuffer-style uploads through staged shared-to-private blit copies on
   Metal for both small and large payloads.
 - Removed the Metal tiny-upload shared-memory fast path that could bypass the
   staged GPU copy Dawn performs, and upload staging buffers are now rewritten on
   every iteration instead of only on first allocation.
-- `zig/src/backend/metal/mod.zig` now records Metal upload staging work in
+- `runtime/zig/src/backend/metal/mod.zig` now records Metal upload staging work in
   `setup_ns` instead of `encode_ns`, aligning timing-phase accounting with the
   Dawn delegate upload lane.
-- `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json` now
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json` now
   forwards `queue_sync_mode`, `upload_buffer_usage`, and `upload_submit_every`
   symmetrically to both left and right runtime commands.
 - Local Metal upload workload contracts no longer carry `pathAsymmetry` after
@@ -355,16 +355,16 @@
   - `config/comparability-obligations.json`
   - `config/comparability-obligation-fixtures.schema.json`
   - `bench/comparability_obligation_fixtures.json`
-  - `bench/compare_dawn_vs_doe_modules/comparability.py`
-  - `lean/Fawn/Comparability.lean`
-  - `lean/Fawn/ComparabilityFixtures.lean`
+  - `bench/native-compare/modules/comparability.py`
+  - `pipeline/lean/Fawn/Comparability.lean`
+  - `pipeline/lean/Fawn/ComparabilityFixtures.lean`
 - Strict comparable reports now fail when one side reports a median-zero timing
   phase that the other side spends materially in, closing the setup/encode/submit
   scope gap that previously escaped comparability while only failing claimability.
 
 ### Compare report timing interpretation fields
 
-- `bench/compare_dawn_vs_doe.py` still writes report `schemaVersion: 4`, but now
+- `bench/native-compare/compare_dawn_vs_doe.py` still writes report `schemaVersion: 4`, but now
   adds additive timing-interpretation fields without changing existing
   `deltaPercent` semantics:
   - top-level `timingInterpretationPolicy`
@@ -394,12 +394,12 @@
 ### AMD Vulkan extended preset aliases restored
 
 - Restored the documented AMD Vulkan extended compare config aliases:
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
 - `.gitignore` now explicitly unignores those three aliases so the documented
   presets remain versioned instead of machine-local.
-- `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` now
+- `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` now
   uses the canonical strict lane name `vulkan_doe_comparable` instead of the
   stale nonexistent `vulkan_local_comparable`.
 - Helper lane inference in `bench/backend_selection_gate.py` and
@@ -420,7 +420,7 @@
 - `config/schema-targets.json` now validates `config/benchmark-cube-policy.json`
   through schema gate like other canonical config contracts.
 - benchmark cube rows now require governed lane provenance:
-  - backend compare rows carry the two source runtime lane IDs from trace/report telemetry
+  - backend compare rows carry the two source runtime lane IDs from pipeline/trace/report telemetry
   - package compare rows require explicit report `laneId`
   - browser lanes are governed in the same catalog but remain non-cube lanes for now
 - The benchmark cube introduces explicit cross-surface reporting dimensions:
@@ -455,7 +455,7 @@
   - `toggleContextCounts` (top-level): object mapping context token → hit count.
   - `toggleHits[].toggleContext` (per-hit): context token for how the toggle was observed.
 - Toggle context tokens: `reference`, `default_on`, `default_off`, `force_on`, `force_off`.
-- `agent/mine_upstream_quirks.py` now recognizes context-aware patterns:
+- `pipeline/agent/mine_upstream_quirks.py` now recognizes context-aware patterns:
   - `->Default(Toggle::X, true/false)` → `default_on` / `default_off`
   - `->ForceSet(Toggle::X, true/false)` → `force_on` / `force_off`
   - `->ForceEnable(Toggle::X)` → `force_on`
@@ -467,19 +467,19 @@
 
 ### Lean model: String.trim compatibility fix
 
-- `lean/Fawn/Model.lean`: replaced `text.trimAscii.toString` with `text.trim` for
+- `pipeline/lean/Fawn/Model.lean`: replaced `text.trimAscii.toString` with `text.trim` for
   compatibility with the pinned Lean toolchain (4.16.0), where `String.trimAscii`
   is not available. Semantic behavior is identical for version-string parsing.
 
 ### Lean fixtures: Doe-vs-Doe parity obligation fields
 
-- `lean/Fawn/ComparabilityFixtures.lean`: added missing `ComparabilityFacts` fields
+- `pipeline/lean/Fawn/ComparabilityFixtures.lean`: added missing `ComparabilityFacts` fields
   introduced in 2026-02-26 (Doe-vs-Doe timing-scope parity obligations):
   - `traceMetaSourceMatchApplies` / `leftRightTraceMetaSourceMatch`
   - `timingSelectionPolicyMatchApplies` / `leftRightTimingSelectionPolicyMatch`
   - `queueSyncModeMatchApplies` / `leftRightQueueSyncModeMatch`
   - `executionShapeMatchApplies` / `leftRightExecutionShapeMatch`
-- `lean/check.sh` now passes cleanly with the pinned 4.16.0 toolchain.
+- `pipeline/lean/check.sh` now passes cleanly with the pinned 4.16.0 toolchain.
 
 ### Apple Metal quirks and CI
 
@@ -488,7 +488,7 @@
 - Updated `bench/workloads.apple.metal.extended.json`: all 43 workload quirksPath entries
   changed from `amd_radv_noop_list.json` to `apple_m3_noop_list.json`.
 - Added `.github/workflows/lean-check.yml`: CI workflow that installs elan and runs
-  `lean/check.sh` on every push/PR, making Lean typecheck a CI gate on macOS runners.
+  `pipeline/lean/check.sh` on every push/PR, making Lean typecheck a CI gate on macOS runners.
 
 ### Metal benchmark — third run (2026-03-05)
 
@@ -534,9 +534,9 @@
 - Updated files:
   - `config/dropin-symbol-ownership.schema.json`
   - `config/dropin-symbol-ownership.json`
-  - `zig/src/config/dropin-symbol-ownership.json`
+  - `runtime/zig/src/config/dropin-symbol-ownership.json`
 - Runtime parser now enforces `schemaVersion == 2` in:
-  - `zig/src/dropin/dropin_symbol_ownership.zig`
+  - `runtime/zig/src/dropin/dropin_symbol_ownership.zig`
 
 ### No-op execution placeholder retirement
 
@@ -559,7 +559,7 @@
   - `leftTimingDivisor=1.0`
   - `rightTimingDivisor=1.0`
 - Updated workload catalogs under `bench/workloads*.json` accordingly for comparable workloads.
-- `bench/compare_dawn_vs_doe.py` now fails fast in strict operation mode if a comparable
+- `bench/native-compare/compare_dawn_vs_doe.py` now fails fast in strict operation mode if a comparable
   Dawn-vs-Doe workload config attempts side-specific divisor scaling.
 
 ### Benchmark workload ID contract migration (status-free IDs)
@@ -624,14 +624,14 @@
   in config:
   - `vulkan_doe_comparable` -> `uploadPathPolicy: "staged_copy_only"`
   - `vulkan_doe_release` -> `uploadPathPolicy: "staged_copy_only"`
-- `selectionPolicyHashSeed` is now `backend-runtime-policy-v2` so trace/report
+- `selectionPolicyHashSeed` is now `backend-runtime-policy-v2` so pipeline/trace/report
   artifacts distinguish pre-fix and post-fix strict-lane evidence.
-- `zig/src/backend/backend_policy.zig`, `zig/src/backend/backend_runtime.zig`,
-  and `zig/src/backend/backend_registry.zig` now load and thread the lane upload
+- `runtime/zig/src/backend/backend_policy.zig`, `runtime/zig/src/backend/backend_runtime.zig`,
+  and `runtime/zig/src/backend/backend_registry.zig` now load and thread the lane upload
   path policy into backend initialization, failing fast if strict Vulkan lanes do
   not declare `staged_copy_only`.
-- `zig/src/backend/vulkan/mod.zig` and
-  `zig/src/backend/vulkan/native_runtime.zig` now honor the lane upload path
+- `runtime/zig/src/backend/vulkan/mod.zig` and
+  `runtime/zig/src/backend/vulkan/native_runtime.zig` now honor the lane upload path
   policy at runtime: strict `vulkan_doe_comparable` / `vulkan_doe_release`
   uploads always execute staged GPU copy work, while app/directional Vulkan lanes
   keep the bounded mapped shortcuts for non-claim diagnostics.
@@ -646,7 +646,7 @@
   now include `timingScopeSanity`:
   - `minOperationWallCoverageRatio`
   - `maxOperationWallCoverageAsymmetryRatio`
-- `bench/compare_dawn_vs_doe.py` now treats rows as non-claimable when selected
+- `bench/native-compare/compare_dawn_vs_doe.py` now treats rows as non-claimable when selected
   operation timing covers implausibly little of process wall on one side and the
   left/right coverage ratios diverge beyond the configured asymmetry bound.
 - `bench/build_benchmark_cube.py` applies the same policy to historical backend
@@ -679,19 +679,19 @@
   - `selectionPolicyHash`
   - `shaderArtifactManifestPath`
   - `shaderArtifactManifestHash`
-- `zig/src/backend/backend_runtime.zig` now loads lane policy from `config/backend-runtime-policy.json` at runtime (`schemaVersion=1`, `selectionPolicyHashSeed`, lane `defaultBackend`/`allowFallback`/`strictNoFallback`).
+- `runtime/zig/src/backend/backend_runtime.zig` now loads lane policy from `config/backend-runtime-policy.json` at runtime (`schemaVersion=1`, `selectionPolicyHashSeed`, lane `defaultBackend`/`allowFallback`/`strictNoFallback`).
   - missing/invalid policy contract entries now fail fast during runtime initialization (no implicit compile-time lane fallback in this path).
 - `bench/schema_gate.py` is now driven from `config/schema-targets.json` instead of a hardcoded target list.
 - Added local Metal compare preset configs to run comparable, directional, and release lanes against Dawn via Metal autodescovery:
-  - `bench/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
-  - `bench/compare_dawn_vs_doe.config.apple.metal.directional.json`
-  - `bench/compare_dawn_vs_doe.config.apple.metal.release.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.directional.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.release.json`
 
 ### Metal app-lane cutover closure
 
 - `config/backend-cutover-policy.json` now sets `targetLane` to `metal_doe_app` and `defaultBackend` to `doe_metal` for the app lane cutover path.
 - `config/backend-runtime-policy.json` keeps `metal_doe_app` as strict (`allowFallback=false`, `strictNoFallback=true`) and now enforces strict no-fallback across every lane.
-- `zig/src/execution.zig` now routes implicit Metal profile lane selection to `metal_doe_app` by default.
+- `runtime/zig/src/execution.zig` now routes implicit Metal profile lane selection to `metal_doe_app` by default.
 - Metal strict gate execution now supports cutover validation by passing `metal_doe_app` as `--local-metal-lane` where required and using release-cycle enforcement (`cycle_gate.py` with rollback criteria enabled).
 - rollback switching is retired from runtime backend selection; incident response uses explicit lane policy/config changes with auditable artifacts.
 
@@ -715,10 +715,10 @@
   - `bench/metal_sync_conformance.py`
   - `bench/metal_timing_policy_gate.py`
   - `bench/preflight_metal_host.py`
-  - `bench/dropin_proc_resolution_tests.py`
-  - `bench/compare_dawn_vs_doe_modules/backend_contract.py`
-  - `bench/compare_dawn_vs_doe_modules/shader_contract.py`
-  - `bench/compare_dawn_vs_doe_modules/metal_sync_contract.py`
+  - `bench/drop-in/dropin_proc_resolution_tests.py`
+  - `bench/native-compare/modules/backend_contract.py`
+  - `bench/native-compare/modules/shader_contract.py`
+  - `bench/native-compare/modules/metal_sync_contract.py`
 - `config/benchmark-methodology-thresholds.schema.json` + `config/benchmark-methodology-thresholds.json` now include reliability policy fields:
   - positive-tail percentile sets for local/release lanes
   - flake budget
@@ -738,7 +738,7 @@
   - `applesToApplesVetted=true`
 - Dawn filter contracts now map indexed workloads to the indexed variant:
   - `bench/dawn_workload_map.amd.extended.json`
-  - `bench/dawn_benchmark_adapter.py` autodiscovery patterns (`DynamicVertexBuffer_DrawIndexed`)
+  - `bench/native-compare/dawn_benchmark_adapter.py` autodiscovery patterns (`DynamicVertexBuffer_DrawIndexed`)
 - strict apples-to-apples lanes now run indexed-vs-indexed for this contract.
 
 ### Directional comparability-candidate cohort contract
@@ -750,7 +750,7 @@
   - `notes` (string)
 - this field marks directional workloads that are isolated as likely parity-promotion
   targets; it does not change strict comparability status by itself.
-- `bench/compare_dawn_vs_doe.py` now supports:
+- `bench/native-compare/compare_dawn_vs_doe.py` now supports:
   - CLI: `--workload-cohort all|comparability-candidates`
   - config: `run.workloadCohort`
 - cohort `comparability-candidates` is fail-fast gated to directional lanes and
@@ -759,7 +759,7 @@
   - top-level `comparabilityPolicy.workloadCohort`
   - per-workload `comparabilityCandidate` metadata.
 - added directional preset for the current 8 candidate workloads:
-  `bench/compare_dawn_vs_doe.config.amd.vulkan.comparability-candidates.directional.json`.
+  `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.comparability-candidates.directional.json`.
 
 ### Doe backend identity cutover (phase 1-3 completed)
 
@@ -792,7 +792,7 @@
 
 - Public npm/package scope now uses `@simulatte/*`.
 - Canonical runtime/headless package is now `@simulatte/webgpu`.
-- Canonical `@simulatte/webgpu` package root now lives entirely under `nursery/webgpu/`.
+- Canonical `@simulatte/webgpu` package root now lives entirely under `packages/webgpu/`.
 - Browser package naming is reserved as `@simulatte/fawn-browser`.
 - Doe remains the backend/runtime family name for:
   - backend IDs (`doe_vulkan`, `doe_metal`, `doe_d3d12`)
@@ -809,7 +809,7 @@
 - `config/benchmark-methodology-thresholds.schema.json` and
   `config/benchmark-methodology-thresholds.json` are now enforced inputs for
   benchmark comparability/claimability threshold selection.
-- `bench/compare_dawn_vs_doe.py` now reads:
+- `bench/native-compare/compare_dawn_vs_doe.py` now reads:
   - `timingSelection.minDispatchWindowNsWithoutEncode`
   - `timingSelection.minDispatchWindowCoveragePercentWithoutEncode`
   - `claimabilityDefaults.localMinTimedSamples`
@@ -847,7 +847,7 @@
 - Closed remaining tracked/blocked feature inventory rows by promoting all `feature_*` entries to explicit implemented inventory contracts.
 - Feature inventory implementation contract now requires:
   - Dawn feature-enum source (`bench/vendor/dawn/src/dawn/dawn.json` `feature name` values).
-  - Zig runtime capability introspection path (`wgpuAdapterGetFeatures` / `wgpuDeviceGetFeatures` via `zig/src/wgpu_capability_runtime.zig`).
+  - Zig runtime capability introspection path (`wgpuAdapterGetFeatures` / `wgpuDeviceGetFeatures` via `runtime/zig/src/wgpu_capability_runtime.zig`).
   - benchmark mapping contract via capability introspection workloads (`capability_introspection`, `capability_introspection_500`).
 - Current closure totals in `config/webgpu-spec-coverage.json`:
   - `implemented=103`
@@ -857,7 +857,7 @@
 
 ### Dawn autodiscovery map coverage for extended comparable matrix
 
-- Extended `bench/dawn_benchmark_adapter.py` `AUTODISCOVER_WORKLOAD_PATTERNS` to cover all workload IDs in `bench/workloads.amd.vulkan.extended.json` (including `p0_*`, `p1_*`, `p2_*`, macro contracts, and added Dawn suites).
+- Extended `bench/native-compare/dawn_benchmark_adapter.py` `AUTODISCOVER_WORKLOAD_PATTERNS` to cover all workload IDs in `bench/workloads.amd.vulkan.extended.json` (including `p0_*`, `p1_*`, `p2_*`, macro contracts, and added Dawn suites).
 - This removes local strict-run failures caused by missing autodiscovery patterns for full39 execution passes.
 
 ### `substantiation-policy` contract introduced
@@ -877,7 +877,7 @@
 
 ### Dispatch-window timing selection hardening
 
-- `bench/compare_dawn_vs_doe_modules/timing_selection.py` now applies tiny dispatch-window rejection globally (not only submit-only/no-dispatch traces) when both are true:
+- `bench/native-compare/modules/timing_selection.py` now applies tiny dispatch-window rejection globally (not only submit-only/no-dispatch traces) when both are true:
   - dispatch window `< timingSelection.minDispatchWindowNsWithoutEncode`
   - dispatch-window coverage `< timingSelection.minDispatchWindowCoveragePercentWithoutEncode` of `executionTotalNs`
 - when rejected, timing selection falls back to `doe-execution-total-ns` and records `dispatchWindowSelectionRejected` metadata.
@@ -895,21 +895,21 @@
 ### Apples-to-apples enforcement hardening
 
 - `bench/workloads.amd.vulkan.extended.json` now reclassifies directional/proxy mappings as non-comparable (`comparable=false`, `benchmarkClass=directional`) for strict claim lanes.
-- `bench/compare_dawn_vs_doe.py` now rejects workload contract entries that set `comparable=true` while:
+- `bench/native-compare/compare_dawn_vs_doe.py` now rejects workload contract entries that set `comparable=true` while:
   - description is directional (`description` starts with `Directional`)
   - comparability notes explicitly declare closest-proxy mapping (`closest draw-call throughput proxy`)
 - strict comparable runs now fail fast when those contract invariants are violated.
 
 ### Upload ignore-first scope enforcement
 
-- `bench/compare_dawn_vs_doe_modules/comparability.py` and `bench/compare_dawn_vs_doe_modules/claimability.py` now enforce ignore-first timing scope consistency:
+- `bench/native-compare/modules/comparability.py` and `bench/native-compare/modules/claimability.py` now enforce ignore-first timing scope consistency:
   - `uploadIgnoreFirstAdjustedTimingSource` must resolve to `doe-execution-row-total-ns`
   - base and adjusted ignore-first canonical timing sources must match
 - mixed-scope derived upload timings now fail strict comparability and claimability checks.
 
 ### Machine-checkable comparability obligations
 
-- `bench/compare_dawn_vs_doe_modules/comparability.py` now emits machine-checkable obligation artifacts per workload in report field `comparability`:
+- `bench/native-compare/modules/comparability.py` now emits machine-checkable obligation artifacts per workload in report field `comparability`:
   - `obligationSchemaVersion`
   - `obligations[]` entries (`id`, `blocking`, `applicable`, `passes`, `details`)
   - `blockingFailedObligations` / `advisoryFailedObligations`
@@ -929,14 +929,14 @@
   - `bench/comparability_obligation_parity_gate.py`
   - validates Python fixture evaluation (`evaluate_comparability_from_facts`) and Lean/Python obligation ID alignment.
 - Added Lean parity fixture proofs:
-  - `lean/Fawn/ComparabilityFixtures.lean`
-  - compiled by `lean/check.sh`.
+  - `pipeline/lean/Fawn/ComparabilityFixtures.lean`
+  - compiled by `pipeline/lean/check.sh`.
 - `bench/claim_gate.py` now validates report obligation IDs against `config/comparability-obligations.json` (canonical ID contract) in addition to schema-version checks.
 - `bench/run_blocking_gates.py` and release orchestrators now support `--with-comparability-parity-gate` to wire this verification step into automated gate runs.
 
 ### Report anti-staleness metadata
 
-- `bench/compare_dawn_vs_doe.py` now emits workload contract metadata in reports:
+- `bench/native-compare/compare_dawn_vs_doe.py` now emits workload contract metadata in reports:
   - `workloadContract.path`
   - `workloadContract["sha256"]`
 - `bench/check_full39_claim_readiness.py` now verifies:
@@ -945,7 +945,7 @@
 
 ### Dawn filter-map fallback removal
 
-- `bench/dawn_benchmark_adapter.py` no longer accepts implicit/default workload
+- `bench/native-compare/dawn_benchmark_adapter.py` no longer accepts implicit/default workload
   map fallback resolution for Dawn gtest filters.
 - `--dawn-filter-map` now resolves only explicit `filters.<workload>` entries or
   explicit `--dawn-filter`; unresolved workloads fail fast.
@@ -968,7 +968,7 @@
 
 ### Track B claim-row hash-link and rehearsal artifact enforcement
 
-- `bench/compare_dawn_vs_doe.py` claim-row linkage fields are now validated by
+- `bench/native-compare/compare_dawn_vs_doe.py` claim-row linkage fields are now validated by
   gate logic, not report-emission only:
   - per-workload `claimRowHash`
   - report-level `claimRowHashChain`
@@ -1019,18 +1019,18 @@
 ### Vulkan app lane runtime routing update (2026-02-26)
 
 - Added backend lane `vulkan_doe_app` to the backend policy contract.
-- Updated implicit native Vulkan lane selection to `vulkan_doe_app` in `zig/src/execution.zig`.
+- Updated implicit native Vulkan lane selection to `vulkan_doe_app` in `runtime/zig/src/execution.zig`.
 - Extended `config/backend-runtime-policy.json` with `vulkan_doe_app` as `doe_vulkan` with `allowFallback=false` and `strictNoFallback=true`.
 - `config/backend-cutover-policy.json` remains targeted to Metal app cutover (`metal_doe_app` -> `doe_metal`); Vulkan app routing is controlled by runtime lane policy.
 - Kept `vulkan_dawn_release` as the Dawn baseline benchmark/claim lane for apples-to-apples comparative evidence.
 - All Vulkan compare config command templates now pin an explicit `--backend-lane` so strict AMD Dawn-baseline reports remain on `vulkan_dawn_release` while local Vulkan presets remain on their intended local lanes.
-- Vulkan backend execution no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `zig/src/backend/vulkan/mod.zig` now runs through Vulkan module contracts and emits native execution results directly.
-- Added Vulkan shader-manifest telemetry path/hash emission in `zig/src/backend/vulkan/vulkan_runtime_state.zig` and backend telemetry refresh in `zig/src/backend/backend_runtime.zig` for strict shader-artifact gate coverage.
+- Vulkan backend execution no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `runtime/zig/src/backend/vulkan/mod.zig` now runs through Vulkan module contracts and emits native execution results directly.
+- Added Vulkan shader-manifest telemetry path/hash emission in `runtime/zig/src/backend/vulkan/vulkan_runtime_state.zig` and backend telemetry refresh in `runtime/zig/src/backend/backend_runtime.zig` for strict shader-artifact gate coverage.
 - Retired runtime rollback switch activation in backend policy loading; backend selection no longer honors `FAWN_BACKEND_SWITCH`.
 
 ### Metal end-to-end runtime closure (2026-02-26)
 
-- `zig/src/backend/metal/mod.zig` no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `doe_metal` now executes through metal module contracts and returns native execution results directly.
+- `runtime/zig/src/backend/metal/mod.zig` no longer delegates command execution to `webgpu.WebGPUBackend.executeCommand(...)`; `doe_metal` now executes through metal module contracts and returns native execution results directly.
 - Removed `catch unreachable` behavior from Metal backend wrappers; queue/upload/timestamp policy knobs are now explicit backend fields.
 - Metal shader manifest emission is now enforced on successful command routing paths so strict shader artifact gates can validate manifest linkage in strict lanes.
 - `bench/workloads.apple.metal.smoke.json` `compute_workgroup_atomic_1024.commandsPath` corrected from missing `examples/dispatch_commands.json` to `examples/workgroup_atomic_commands.json`.
@@ -1114,10 +1114,10 @@ Contract updates in this change:
   - `rightUploadBufferUsage`
   - `rightUploadSubmitEvery`
   - `rightTimingDivisor`
-- Added strict DOE-vs-DOE normalization symmetry enforcement in `bench/compare_dawn_vs_doe.py`:
+- Added strict DOE-vs-DOE normalization symmetry enforcement in `bench/native-compare/compare_dawn_vs_doe.py`:
   - when both command templates target `doe-zig-runtime` and comparability mode is `strict`, comparable workloads must satisfy left/right normalization parity or the run fails fast.
 - Added lane-vs-lane full-suite preset using the DOE-vs-DOE parity workload contract:
-  - `bench/compare_dawn_vs_doe.config.amd.vulkan.doe-vs-dawn.fullsuite.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.doe-vs-dawn.fullsuite.json`
 
 ### Strict timing-scope comparability obligations for Doe-vs-Doe lanes (2026-02-26)
 
@@ -1127,9 +1127,9 @@ Contract updates in this change:
   - `left_right_queue_sync_mode_match`
 - Updated obligation sources and parity fixtures:
   - `config/comparability-obligations.json`
-  - `lean/Fawn/Comparability.lean`
+  - `pipeline/lean/Fawn/Comparability.lean`
   - `bench/comparability_obligation_fixtures.json`
-  - `bench/compare_dawn_vs_doe_modules/comparability.py`
+  - `bench/native-compare/modules/comparability.py`
 - Strict comparable runs now fail comparability when left/right timing scope selection diverges, preventing mixed-scope rows from being treated as claimable apples-to-apples evidence.
 - Updated `bench/workloads.amd.vulkan.superset.doe-vs-doe.json` to mark current timing-scope-unstable workloads as `comparable=false` (directional-only) for strict DOE-vs-DOE comparable runs until timing-scope parity is stabilized:
   - `render_draw_throughput_baseline`
@@ -1174,21 +1174,21 @@ Contract updates in this change:
   `vendorId`, `deviceId`, `queueFamilyIndex`, and `presentCapable`.
 - `config/run-metadata.schema.json` now allows the same adapter-selection data
   under an optional `adapter` object for downstream evidence products.
-- `bench/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` and
-  `bench/compare_dawn_vs_doe.config.amd.vulkan.release.json` now point at
+- `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` and
+  `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json` now point at
   `bench/workloads.amd.vulkan.superset.native-supported.json` so strict AMD
   comparable/release lanes only cite command classes that are currently native
   by contract.
 
 ### Vulkan async-diagnostics submode split (2026-03-06)
 
-- `zig/src/backend/common/capabilities.zig` now treats `async_diagnostics` as
+- `runtime/zig/src/backend/common/capabilities.zig` now treats `async_diagnostics` as
   explicit sub-capabilities instead of one coarse family bucket:
   `async_pipeline_diagnostics`, `async_capability_introspection`,
   `async_resource_table_immediates`, `async_lifecycle_refcount`, and
   `async_pixel_local_storage`.
 - Native Vulkan now declares and executes only the honest submodes currently
-  supported in `zig/src/backend/vulkan/mod.zig`:
+  supported in `runtime/zig/src/backend/vulkan/mod.zig`:
   `capability_introspection`, `lifecycle_refcount`, and `pipeline_async`.
 - Native Vulkan now executes `resource_table_immediates` and
   `pixel_local_storage` through explicit Doe-native emulation paths when the
@@ -1201,8 +1201,8 @@ Contract updates in this change:
 
 ### Vulkan native headless surface/timestamp follow-up (2026-03-06)
 
-- `zig/src/backend/vulkan/mod.zig` and
-  `zig/src/backend/vulkan/native_runtime.zig` now execute `surface_create`,
+- `runtime/zig/src/backend/vulkan/mod.zig` and
+  `runtime/zig/src/backend/vulkan/native_runtime.zig` now execute `surface_create`,
   `surface_capabilities`, `surface_configure`, `surface_acquire`,
   `surface_present`, `surface_unconfigure`, and `surface_release` through a
   native Doe headless surface lifecycle/present path.
@@ -1216,7 +1216,7 @@ Contract updates in this change:
 ### Vulkan large-upload cap removal (2026-03-06)
 
 - Removed the stale `64MB` artificial upload cap from
-  `zig/src/backend/vulkan/native_runtime.zig`.
+  `runtime/zig/src/backend/vulkan/native_runtime.zig`.
 - Vulkan upload prewarm now uses the full requested upload size when no
   backend-specific cap is configured, matching the large-upload comparable
   contract promotion for `256MB`, `1GB`, and `4GB` workloads.
@@ -1225,7 +1225,7 @@ Contract updates in this change:
 
 ### Benchmark deltaPercent formula drift note (2026-02-26, superseded)
 
-- A temporary migration moved `bench/compare_dawn_vs_doe.py` to ratio-style speedup semantics:
+- A temporary migration moved `bench/native-compare/compare_dawn_vs_doe.py` to ratio-style speedup semantics:
   - from `((rightMs - leftMs) / rightMs) * 100`
   - to `((rightMs / leftMs) - 1) * 100`
 - This introduced cross-tool inconsistency with other benchmark/report tooling.
@@ -1235,9 +1235,9 @@ Contract updates in this change:
 - Re-aligned benchmark/report tooling to ratio-style speedup semantics:
   - `((rightMs / leftMs) - 1) * 100`
 - Updated:
-  - `bench/compare_dawn_vs_doe.py`
-  - `bench/visualize_dawn_vs_doe.py`
-  - `bench/compare_runtimes.py`
+  - `bench/native-compare/compare_dawn_vs_doe.py`
+  - `bench/native-compare/visualize_dawn_vs_doe.py`
+  - `bench/native-compare/compare_runtimes.py`
   - `bench/benchmark-writing-guide.md`
   - `bench/README.md`
 - `deltaPercentConvention` now consistently declares:
@@ -1250,7 +1250,7 @@ Contract updates in this change:
 ### Dawn-vs-Doe strict timing-basis clarification (2026-03-02)
 
 - Default strict timing basis for cross-runtime Dawn-vs-Doe lanes is `operation`.
-- Removed forced strict `process-wall` guard in `bench/compare_dawn_vs_doe.py`.
+- Removed forced strict `process-wall` guard in `bench/native-compare/compare_dawn_vs_doe.py`.
 - Updated compare presets back to `comparability.requireTimingClass=operation`.
 - Documentation now explicitly separates benchmark intents:
   - `apples-to-apples` (comparable contract lanes)
@@ -1265,13 +1265,13 @@ Contract updates in this change:
   - ordered `obligations`
   - per-obligation `blocking`, `applicableWhen`, and `passesWhen` fields
 - Python comparability fixture evaluation now interprets the v2 contract directly.
-- Lean comparability IDs/facts/rule application are now generated from the same contract via `lean/generate_comparability_contract.py`.
+- Lean comparability IDs/facts/rule application are now generated from the same contract via `pipeline/lean/generate_comparability_contract.py`.
 - Downstream report/gate conformance loaders accept both v1 and v2 obligation contracts so historical reports remain auditable while new runs use the semantic contract.
 
 ### Doe-vs-Doe timing-source parity stabilization for strict comparable runs (2026-02-26)
 
 - Updated timing selection to prefer `doe-execution-total-ns` when execution evidence is present and GPU timestamp timing is unavailable.
-- Removed render-domain encode-only timing override from `bench/compare_dawn_vs_doe.py` so left/right timing selection no longer diverges by side-specific render override policy.
+- Removed render-domain encode-only timing override from `bench/native-compare/compare_dawn_vs_doe.py` so left/right timing selection no longer diverges by side-specific render override policy.
 - Restored the 12 previously directionalized DOE-vs-DOE Vulkan workloads in `bench/workloads.amd.vulkan.superset.doe-vs-doe.json` to `comparable=true` after timing-source parity stabilization.
 
 ### Doe-vs-Doe strict comparability hardening for execution shape + upload timing scope (2026-02-26)
@@ -1281,12 +1281,12 @@ Contract updates in this change:
 - This obligation compares sampled `executionDispatchCount`, `executionRowCount`, and `executionSuccessCount` tuples across sides and fails strict comparability on divergence.
 - Updated obligation contract and parity fixtures:
   - `config/comparability-obligations.json`
-  - `lean/Fawn/Comparability.lean`
+  - `pipeline/lean/Fawn/Comparability.lean`
   - `bench/comparability_obligation_fixtures.json`
   - `config/comparability-obligation-fixtures.schema.json`
-  - `bench/compare_dawn_vs_doe_modules/comparability.py`
+  - `bench/native-compare/modules/comparability.py`
 - Updated DOE timing-source selection for upload workloads:
-  - `bench/compare_dawn_vs_doe_modules/timing_selection.py` now prefers `doe-execution-row-total-ns` (trace row execution durations) for upload-domain operation timing when execution evidence is present.
+  - `bench/native-compare/modules/timing_selection.py` now prefers `doe-execution-row-total-ns` (trace row execution durations) for upload-domain operation timing when execution evidence is present.
   - This removes strict upload lane drift where `doe-execution-total-ns` could violate upload timing policy allowances and mixes setup/runtime scope in per-op upload comparisons.
 
 ### Canonical backend workload catalog and package workload alias normalization (2026-03-09)
@@ -1308,9 +1308,9 @@ Contract updates in this change:
   - `bench/workloads.local.d3d12.smoke.json`
   - `bench/workloads.local.d3d12.extended.json`
 - Added first governed Windows D3D12 compare configs:
-  - `bench/compare_dawn_vs_doe.config.local.d3d12.smoke.json`
-  - `bench/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`
-  - release scaffold: `bench/compare_dawn_vs_doe.config.local.d3d12.release.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.smoke.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`
+  - release scaffold: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json`
 - Added Windows-host D3D12 preflight contract:
   - `bench/preflight_d3d12_host.py`
 - Added Windows handoff runner:
