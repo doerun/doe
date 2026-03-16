@@ -1,7 +1,7 @@
 const std = @import("std");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
-const APP_ICON_SOURCE_SVG = "../browser/fawn-browser/assets/fawn-icon-main.svg";
+const APP_ICON_SOURCE_SVG = "../../browser/fawn-browser/assets/fawn-icon-main.svg";
 
 fn fileExists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
@@ -29,7 +29,7 @@ pub fn build(b: *std.Build) void {
     const build_options = b.addOptions();
     build_options.addOption(bool, "lean_verified", lean_verified);
     {
-        const f = std.fs.cwd().openFile("../config/comparability-obligations.json", .{}) catch
+        const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch
             @panic("config/comparability-obligations.json not found");
         defer f.close();
         const json = f.readToEndAlloc(b.allocator, 128 * 1024) catch
@@ -40,7 +40,7 @@ pub fn build(b: *std.Build) void {
 
     var proof_artifact_sha256: ?[]const u8 = null;
     if (lean_verified) {
-        const proof_artifact = std.fs.cwd().openFile("../pipeline/lean/artifacts/proven-conditions.json", .{}) catch
+        const proof_artifact = std.fs.cwd().openFile("../../pipeline/lean/artifacts/proven-conditions.json", .{}) catch
             @panic("lean-verified=true but pipeline/lean/artifacts/proven-conditions.json not found. Run pipeline/lean/extract.sh first.");
         defer proof_artifact.close();
         const proof_json = proof_artifact.readToEndAlloc(b.allocator, 64 * 1024) catch
@@ -50,7 +50,7 @@ pub fn build(b: *std.Build) void {
     }
 
     {
-        const f = std.fs.cwd().openFile("../config/dropin-abi-behavior.json", .{}) catch
+        const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch
             @panic("config/dropin-abi-behavior.json not found");
         defer f.close();
         const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
@@ -58,7 +58,7 @@ pub fn build(b: *std.Build) void {
         build_options.addOption([]const u8, "dropin_behavior_config_json", json);
     }
     {
-        const f = std.fs.cwd().openFile("../config/dropin-symbol-ownership.json", .{}) catch
+        const f = std.fs.cwd().openFile("../../config/dropin-symbol-ownership.json", .{}) catch
             @panic("config/dropin-symbol-ownership.json not found");
         defer f.close();
         const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
@@ -66,7 +66,7 @@ pub fn build(b: *std.Build) void {
         build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", json);
     }
     {
-        const f = std.fs.cwd().openFile("../config/quirk-toggle-registry.json", .{}) catch
+        const f = std.fs.cwd().openFile("../../config/quirk-toggle-registry.json", .{}) catch
             @panic("config/quirk-toggle-registry.json not found");
         defer f.close();
         const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
@@ -141,9 +141,9 @@ pub fn build(b: *std.Build) void {
     );
     dropin_step.dependOn(&install_dropin_build_metadata.step);
     const dawn_sidecar = switch (target.result.os.tag) {
-        .macos => "../bench/vendor/dawn/out/Release/libwebgpu_dawn.dylib",
-        .linux => "../bench/vendor/dawn/out/Release/libwebgpu_dawn.so",
-        .windows => "../bench/vendor/dawn/out/Release/webgpu_dawn.dll",
+        .macos => "../../bench/vendor/dawn/out/Release/libwebgpu_dawn.dylib",
+        .linux => "../../bench/vendor/dawn/out/Release/libwebgpu_dawn.so",
+        .windows => "../../bench/vendor/dawn/out/Release/webgpu_dawn.dll",
         else => "",
     };
     const dawn_sidecar_install_name = switch (target.result.os.tag) {
@@ -153,9 +153,9 @@ pub fn build(b: *std.Build) void {
         else => "",
     };
     const webgpu_sidecar = switch (target.result.os.tag) {
-        .macos => "../bench/vendor/dawn/out/Release/libwebgpu.dylib",
-        .linux => "../bench/vendor/dawn/out/Release/libwebgpu.so",
-        .windows => "../bench/vendor/dawn/out/Release/webgpu.dll",
+        .macos => "../../bench/vendor/dawn/out/Release/libwebgpu.dylib",
+        .linux => "../../bench/vendor/dawn/out/Release/libwebgpu.so",
+        .windows => "../../bench/vendor/dawn/out/Release/webgpu.dll",
         else => "",
     };
     const webgpu_sidecar_install_name = switch (target.result.os.tag) {
@@ -165,7 +165,7 @@ pub fn build(b: *std.Build) void {
         else => "",
     };
     const wgpu_native_sidecar = switch (target.result.os.tag) {
-        .linux => "../bench/vendor/dawn/out/Release/libwgpu_native.so",
+        .linux => "../../bench/vendor/dawn/out/Release/libwgpu_native.so",
         else => "",
     };
     if (dawn_sidecar.len != 0 and fileExists(dawn_sidecar)) {
@@ -355,8 +355,8 @@ pub fn build(b: *std.Build) void {
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);
 
-    const coverage_gate_check = b.addSystemCommand(&.{ "python3", "../bench/split_coverage_gate.py", "--surface", "both" });
-    coverage_gate_check.setCwd(b.path(".."));
+    const coverage_gate_check = b.addSystemCommand(&.{ "python3", "../../bench/split_coverage_gate.py", "--surface", "both" });
+    coverage_gate_check.setCwd(b.path("../.."));
     const coverage_gate_step = b.step("coverage-gate", "Validate split core/full coverage ledgers against Zig partitions");
     coverage_gate_step.dependOn(&coverage_gate_check.step);
 
