@@ -61,10 +61,10 @@ def detect_repo_root(explicit_root: str) -> Path:
         return root.resolve()
 
     cwd = Path.cwd()
-    if (cwd / "zig" / "src").is_dir() and (cwd / "bench").is_dir():
+    if (cwd / "runtime" / "zig" / "src").is_dir() and (cwd / "bench").is_dir():
         return cwd.resolve()
     nested = cwd / "fawn"
-    if (nested / "zig" / "src").is_dir() and (nested / "bench").is_dir():
+    if (nested / "runtime" / "zig" / "src").is_dir() and (nested / "bench").is_dir():
         return nested.resolve()
 
     raise ValueError(

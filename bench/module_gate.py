@@ -176,7 +176,7 @@ def recompute_result_hash(payload: dict[str, Any]) -> str:
 def build_runner(root: Path) -> Path:
     subprocess.run(
         ["zig", "build", "dropin", "module-core-runner"],
-        cwd=root / "zig",
+        cwd=root / "runtime" / "zig",
         check=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
