@@ -23,7 +23,18 @@ const rounds = parsePositiveInt(process.argv[3], DEFAULT_ROUNDS);
 const iterations = parsePositiveInt(process.argv[4], DEFAULT_ITERATIONS);
 const warmupRuns = parsePositiveInt(process.argv[5], DEFAULT_WARMUP);
 const workerCount = parsePositiveInt(process.argv[6], DEFAULT_WORKERS);
+const scenarioId =
+  process.argv.find((value) => value.startsWith("--scenario="))?.split("=")[1] ?? "default";
 const RESULT_PREFIX = "FAWN_BENCH_RESULT ";
+const BENCH_GPU_BUFFER_USAGE = Object.freeze({
+  MAP_READ: 0x0001,
+  COPY_SRC: 0x0004,
+  COPY_DST: 0x0008,
+  STORAGE: 0x0080,
+});
+const BENCH_GPU_MAP_MODE = Object.freeze({
+  READ: 0x0001,
+});
 
 const DIRECT_RAW_WEBGPU_CONTRACT = Object.freeze({
   shader: "shared generated WGSL",
@@ -91,7 +102,8 @@ function createPhaseTable(rows) {
     encode: Math.max("Encode".length, ...rows.map((row) => row.encode.length)),
     submit_wait: Math.max("Submit+wait".length, ...rows.map((row) => row.submit_wait.length)),
     readback: Math.max("Readback".length, ...rows.map((row) => row.readback.length)),
-    total: Math.max("Total".length, ...rows.map((row) => row.total.length)),
+    validation: Math.max("Validation".length, ...rows.map((row) => row.validation.length)),
+    total: Math.max("Total+validation".length, ...rows.map((row) => row.total.length)),
   };
 
   const divider = [
@@ -99,6 +111,7 @@ function createPhaseTable(rows) {
     "-".repeat(widths.encode),
     "-".repeat(widths.submit_wait),
     "-".repeat(widths.readback),
+    "-".repeat(widths.validation),
     "-".repeat(widths.total),
   ].join("  ");
 
@@ -108,7 +121,8 @@ function createPhaseTable(rows) {
       padCell("Encode", widths.encode),
       padCell("Submit+wait", widths.submit_wait),
       padCell("Readback", widths.readback),
-      padCell("Total", widths.total),
+      padCell("Validation", widths.validation),
+      padCell("Total+validation", widths.total),
     ].join("  "),
     divider,
   ];
@@ -120,7 +134,47 @@ function createPhaseTable(rows) {
         padCell(row.encode, widths.encode),
         padCell(row.submit_wait, widths.submit_wait),
         padCell(row.readback, widths.readback),
+        padCell(row.validation, widths.validation),
         padCell(row.total, widths.total),
+      ].join("  ")
+    );
+  }
+
+  return lines.join("\n");
+}
+
+function createVarianceTable(rows) {
+  const widths = {
+    label: Math.max("Runner".length, ...rows.map((row) => row.label.length)),
+    stddev: Math.max("Stddev".length, ...rows.map((row) => row.stddev.length)),
+    cv: Math.max("CV".length, ...rows.map((row) => row.cv.length)),
+    range: Math.max("Range".length, ...rows.map((row) => row.range.length)),
+  };
+
+  const divider = [
+    "-".repeat(widths.label),
+    "-".repeat(widths.stddev),
+    "-".repeat(widths.cv),
+    "-".repeat(widths.range),
+  ].join("  ");
+
+  const lines = [
+    [
+      padCell("Runner", widths.label, false),
+      padCell("Stddev", widths.stddev),
+      padCell("CV", widths.cv),
+      padCell("Range", widths.range),
+    ].join("  "),
+    divider,
+  ];
+
+  for (const row of rows) {
+    lines.push(
+      [
+        padCell(row.label, widths.label, false),
+        padCell(row.stddev, widths.stddev),
+        padCell(row.cv, widths.cv),
+        padCell(row.range, widths.range),
       ].join("  ")
     );
   }
@@ -273,48 +327,70 @@ async function runRawPreparedRound(device, gpuGlobals, workload, state) {
 }
 
 function prepareDoeState(gpu, workload) {
-  const src = gpu.buffer.create({ data: workload.input });
-  const dst = gpu.buffer.create({
+  const src = gpu.device.createBuffer({
     size: workload.outputBytes,
-    usage: ["storageReadWrite", "readback"],
+    usage: BENCH_GPU_BUFFER_USAGE.STORAGE | BENCH_GPU_BUFFER_USAGE.COPY_DST,
   });
+  gpu.device.queue.writeBuffer(src, 0, workload.input);
+  const dst = gpu.device.createBuffer({
+    size: workload.outputBytes,
+    usage: BENCH_GPU_BUFFER_USAGE.STORAGE | BENCH_GPU_BUFFER_USAGE.COPY_SRC,
+  });
+  const readback = gpu.device.createBuffer({
+    size: workload.outputBytes,
+    usage: BENCH_GPU_BUFFER_USAGE.COPY_DST | BENCH_GPU_BUFFER_USAGE.MAP_READ,
+  });
+  const srcBinding = { buffer: src, access: "storageRead" };
+  const dstBinding = { buffer: dst, access: "storageReadWrite" };
   const chunkPlans = createChunkPlans(workload);
   const kernels = chunkPlans.map((plan) =>
     gpu.kernel.create({
       code: plan.code,
-      bindings: [src, dst],
+      bindings: [srcBinding, dstBinding],
     })
   );
   const bindingSets = kernels.map((kernel) =>
-    kernel.bindings.create([src, dst])
+    kernel.bindings.create([srcBinding, dstBinding])
   );
 
   return {
     chunkPlans,
     kernels,
     bindingSets,
-    src,
     dst,
+    readback,
   };
 }
 
 async function runDoePreparedRound(gpu, state) {
   const encodeStartedAt = performance.now();
-  const batch = gpu.compute.begin();
+  const encoder = gpu.device.createCommandEncoder();
+  const pass = encoder.beginComputePass();
   for (let index = 0; index < state.kernels.length; index += 1) {
-    batch.dispatch(state.kernels[index], {
-      bindings: state.bindingSets[index],
-      workgroups: state.chunkPlans[index].workgroups,
-    });
+    const kernel = state.kernels[index];
+    const bindingSet = state.bindingSets[index];
+    pass.setPipeline(kernel.pipeline);
+    if (bindingSet.bindGroup) {
+      pass.setBindGroup(0, bindingSet.bindGroup);
+    }
+    pass.dispatchWorkgroups(state.chunkPlans[index].workgroups);
   }
+  pass.end();
+  encoder.copyBufferToBuffer(state.dst, 0, state.readback, 0, state.readback.size);
+  const commandBuffer = encoder.finish();
   const encodeMs = performance.now() - encodeStartedAt;
 
   const submitWaitStartedAt = performance.now();
-  await batch.submit();
+  gpu.device.queue.submit([commandBuffer]);
+  await gpu.device.queue.onSubmittedWorkDone?.();
   const submitWaitMs = performance.now() - submitWaitStartedAt;
 
   const readbackStartedAt = performance.now();
-  const output = await gpu.buffer.read({ buffer: state.dst, type: Float32Array });
+  await state.readback.mapAsync(BENCH_GPU_MAP_MODE.READ);
+  const output = new Float32Array(
+    state.readback.getMappedRange(0, state.readback.size),
+  ).slice();
+  state.readback.unmap();
   const readbackMs = performance.now() - readbackStartedAt;
 
   return {
@@ -540,6 +616,7 @@ function runCandidateSubprocess(candidateId) {
       `${warmupRuns}`,
       `${workerCount}`,
       `--candidate=${candidateId}`,
+      `--scenario=${scenarioId}`,
     ],
     {
       cwd: process.cwd(),
@@ -559,15 +636,25 @@ function runCandidateSubprocess(candidateId) {
 
 async function main() {
   const workload = createWorkload(elements, rounds);
+  const displayChunkSize =
+    scenarioId === "single-dispatch-full-readback" ? workload.elements : workload.chunkSize;
+  const displayChunkCount =
+    scenarioId === "single-dispatch-full-readback" ? 1 : workload.chunkCount;
+  const displayReadbackBytes =
+    scenarioId === "many-dispatches-tiny-readback"
+      ? 256 * Float32Array.BYTES_PER_ELEMENT
+      : workload.outputBytes;
   console.log(
     `Versions: @simulatte/webgpu 0.3.2, @simulatte/webgpu-doe 0.3.2, webgpu 0.3.8`
   );
   console.log(
     `Workload: streaming affine transform elements=${elements.toLocaleString()} rounds=${rounds} iterations=${iterations} warmup=${warmupRuns}`
   );
+  console.log(`Scenario: ${scenarioId}`);
   console.log(
-    `Dispatch: chunkSize=${workload.chunkSize.toLocaleString()} chunkCount=${workload.chunkCount} workgroupSize=${WORKGROUP_SIZE_X}`
+    `Dispatch: chunkSize=${displayChunkSize.toLocaleString()} chunkCount=${displayChunkCount} workgroupSize=${WORKGROUP_SIZE_X}`
   );
+  console.log(`Readback: ${displayReadbackBytes.toLocaleString()} bytes per sample`);
   console.log(
     "Arithmetic: exact f32 affine transforms over four accumulators per element"
   );
@@ -581,6 +668,7 @@ async function main() {
 
   const results = [];
   const phaseResults = [];
+  const varianceResults = [];
   const failures = [];
   const candidateMetadata = [];
   const cpuExpected = cpuResult.output;
@@ -611,11 +699,21 @@ async function main() {
           encode: formatMs(result.phaseTimings.encodeMs),
           submit_wait: formatMs(result.phaseTimings.submitWaitMs),
           readback: formatMs(result.phaseTimings.readbackMs),
+          validation: formatMs(result.phaseTimings.validationMs),
           total: formatMs(
             result.phaseTimings.encodeMs
               + result.phaseTimings.submitWaitMs
               + result.phaseTimings.readbackMs
+              + result.phaseTimings.validationMs
           ),
+        });
+      }
+      if (result.variance) {
+        varianceResults.push({
+          label: result.label,
+          stddev: formatMs(result.variance.stddevMs),
+          cv: `${result.variance.cvPercent.toFixed(1)}%`,
+          range: formatMs(result.variance.rangeMs),
         });
       }
       candidateMetadata.push(result);
@@ -636,9 +734,15 @@ async function main() {
   if (phaseResults.length > 0) {
     console.log(`\nPhase means (GPU candidates only):\n${createPhaseTable(phaseResults)}`);
   }
+  if (varianceResults.length > 0) {
+    console.log(`\nTimed-sample variance (GPU candidates only):\n${createVarianceTable(varianceResults)}`);
+  }
   console.log(
     `\nCPU sample outputs: [${Array.from(cpuExpected.subarray(0, 8)).join(", ")}]`
   );
+  if (candidateMetadata[0]?.scenario?.description) {
+    console.log(`\nScenario detail: ${candidateMetadata[0].scenario.description}`);
+  }
   if (failures.length === 0) {
     console.log("\nAll GPU candidates matched the CPU reference exactly.");
   } else {

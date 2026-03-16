@@ -5,7 +5,7 @@
   "platform": "darwin",
   "arch": "arm64",
   "nodeNapiVersion": 8,
-  "doeVersion": "bd19f92dd",
+  "doeVersion": "7ac3224c5",
   "doeBuild": {
     "artifact": "libwebgpu_doe",
     "leanVerifiedBuild": false,
@@ -13,7 +13,7 @@
   },
   "files": {
     "doe_napi.node": {
-      "sha256": "e78718b67e9e97426c67955f457105660eb7ec07a2e4e2ea4e2b0d71bd7f556f"
+      "sha256": "14f57b0785e31f5f18b07da3a08af89c53966ba2d9471b3be60d2a353005edc3"
     },
     "libwebgpu_doe.dylib": {
       "sha256": "eb583f163263ab742052ac40368c9b96db3d5559d6890a350e473cdbf9163106"
@@ -22,5 +22,5 @@
       "sha256": "828fb9ef95b08b4192cb9e84392e432e0d0a4ebca90df678e076e2e3c731b82e"
     }
   },
-  "builtAt": "2026-03-15T23:32:36.439Z"
+  "builtAt": "2026-03-16T00:44:19.304Z"
 }

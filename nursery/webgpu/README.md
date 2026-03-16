@@ -286,10 +286,11 @@ const device = await requestDevice();
 console.log(typeof device.createComputePipeline); // "function"
 ```
 
-`@simulatte/webgpu/native-direct` is the thin compute-focused package entry used
-for apples-to-apples runtime comparison. It avoids the thicker full-surface
-wrapper layer and pairs naturally with the standalone `@simulatte/webgpu-doe`
-helpers when you want symmetric benchmark lanes.
+`@simulatte/webgpu/native-direct` is the addon-native compute-focused package
+entry used for apples-to-apples runtime comparison. It avoids the thicker
+full-surface wrapper layer by creating the compute object surface inside the
+addon itself, and it pairs naturally with the standalone
+`@simulatte/webgpu-doe` helpers when you want symmetric benchmark lanes.
 
 ## API layers
 

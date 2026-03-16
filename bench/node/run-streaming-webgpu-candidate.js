@@ -15,6 +15,16 @@ import {
 } from "./bench-workload-common.mjs";
 
 const RESULT_PREFIX = "FAWN_BENCH_RESULT ";
+const TINY_READBACK_ELEMENTS = 256;
+const BENCH_GPU_BUFFER_USAGE = Object.freeze({
+  MAP_READ: 0x0001,
+  COPY_SRC: 0x0004,
+  COPY_DST: 0x0008,
+  STORAGE: 0x0080,
+});
+const BENCH_GPU_MAP_MODE = Object.freeze({
+  READ: 0x0001,
+});
 
 const elements = parsePositiveInt(process.argv[2], DEFAULT_ELEMENTS);
 const rounds = parsePositiveInt(process.argv[3], DEFAULT_ROUNDS);
@@ -23,12 +33,82 @@ const warmupRuns = parsePositiveInt(process.argv[5], DEFAULT_WARMUP);
 const workerCount = parsePositiveInt(process.argv[6], DEFAULT_WORKERS);
 const candidateId =
   process.argv.find((value) => value.startsWith("--candidate="))?.split("=")[1] ?? null;
+const scenarioId =
+  process.argv.find((value) => value.startsWith("--scenario="))?.split("=")[1] ?? "default";
 
 function summarizePhaseSamples(samples) {
   return {
     encodeMs: summarizeSamples(samples.map((sample) => sample.encodeMs)).meanMs,
     submitWaitMs: summarizeSamples(samples.map((sample) => sample.submitWaitMs)).meanMs,
     readbackMs: summarizeSamples(samples.map((sample) => sample.readbackMs)).meanMs,
+    validationMs: summarizeSamples(samples.map((sample) => sample.validationMs)).meanMs,
+  };
+}
+
+function summarizeVariance(samples) {
+  const summary = summarizeSamples(samples);
+  const variance =
+    samples.reduce((total, sample) => total + (sample - summary.meanMs) ** 2, 0) / samples.length;
+  const stddevMs = Math.sqrt(variance);
+  return {
+    stddevMs,
+    cvPercent: summary.meanMs > 0 ? (stddevMs / summary.meanMs) * 100 : 0,
+    rangeMs: summary.worstMs - summary.bestMs,
+  };
+}
+
+function buildScenario(workload, id) {
+  if (id === "default") {
+    return {
+      id,
+      description:
+        "64 dispatches, full-range 16 MiB readback, raw shared bind group, helper per-kernel binding sets",
+      chunkSize: workload.chunkSize,
+      readbackElements: workload.elements,
+      rawBindGroupMode: "shared",
+    };
+  }
+  if (id === "single-dispatch-full-readback") {
+    return {
+      id,
+      description: "1 dispatch, full-range 16 MiB readback, raw shared bind group",
+      chunkSize: workload.elements,
+      readbackElements: workload.elements,
+      rawBindGroupMode: "shared",
+    };
+  }
+  if (id === "many-dispatches-tiny-readback") {
+    return {
+      id,
+      description: `64 dispatches, ${TINY_READBACK_ELEMENTS * Float32Array.BYTES_PER_ELEMENT} B readback, raw shared bind group`,
+      chunkSize: workload.chunkSize,
+      readbackElements: TINY_READBACK_ELEMENTS,
+      rawBindGroupMode: "shared",
+    };
+  }
+  if (id === "raw-per-pipeline-bindgroups") {
+    return {
+      id,
+      description:
+        "64 dispatches, full-range 16 MiB readback, direct path creates and rebinds one bind group per pipeline",
+      chunkSize: workload.chunkSize,
+      readbackElements: workload.elements,
+      rawBindGroupMode: "per-pipeline",
+    };
+  }
+  throw new Error(`Unknown scenario: ${id}`);
+}
+
+function applyScenarioToWorkload(workload, scenario) {
+  const readbackElements = Math.min(workload.elements, scenario.readbackElements);
+  return {
+    ...workload,
+    chunkSize: scenario.chunkSize,
+    chunkCount: Math.ceil(workload.elements / scenario.chunkSize),
+    readbackElements,
+    readbackBytes: readbackElements * Float32Array.BYTES_PER_ELEMENT,
+    rawBindGroupMode: scenario.rawBindGroupMode,
+    scenario,
   };
 }
 
@@ -46,7 +126,7 @@ function prepareRawState(device, gpuGlobals, workload) {
   });
 
   const readback = device.createBuffer({
-    size: workload.outputBytes,
+    size: workload.readbackBytes,
     usage: gpuGlobals.GPUBufferUsage.COPY_DST | gpuGlobals.GPUBufferUsage.MAP_READ,
   });
 
@@ -67,12 +147,13 @@ function prepareRawState(device, gpuGlobals, workload) {
   const pipelineLayout = device.createPipelineLayout({
     bindGroupLayouts: [bindGroupLayout],
   });
+  const bindGroupEntries = [
+    { binding: 0, resource: { buffer: src } },
+    { binding: 1, resource: { buffer: dst } },
+  ];
   const bindGroup = device.createBindGroup({
     layout: bindGroupLayout,
-    entries: [
-      { binding: 0, resource: { buffer: src } },
-      { binding: 1, resource: { buffer: dst } },
-    ],
+    entries: bindGroupEntries,
   });
   const pipelines = chunkPlans.map((plan) =>
     device.createComputePipeline({
@@ -83,11 +164,22 @@ function prepareRawState(device, gpuGlobals, workload) {
       },
     })
   );
+  const bindGroups =
+    workload.rawBindGroupMode === "per-pipeline"
+      ? chunkPlans.map(() =>
+          device.createBindGroup({
+            layout: bindGroupLayout,
+            entries: bindGroupEntries,
+          })
+        )
+      : null;
 
   return {
     chunkPlans,
     pipelines,
     bindGroup,
+    bindGroups,
+    src,
     dst,
     readback,
   };
@@ -97,15 +189,20 @@ async function runRawPreparedRound(device, gpuGlobals, workload, state) {
   const encodeStartedAt = performance.now();
   const encoder = device.createCommandEncoder();
   const pass = encoder.beginComputePass();
-  pass.setBindGroup(0, state.bindGroup);
+  if (!state.bindGroups) {
+    pass.setBindGroup(0, state.bindGroup);
+  }
 
   for (let index = 0; index < state.pipelines.length; index += 1) {
+    if (state.bindGroups) {
+      pass.setBindGroup(0, state.bindGroups[index]);
+    }
     pass.setPipeline(state.pipelines[index]);
     pass.dispatchWorkgroups(state.chunkPlans[index].workgroups);
   }
 
   pass.end();
-  encoder.copyBufferToBuffer(state.dst, 0, state.readback, 0, workload.outputBytes);
+  encoder.copyBufferToBuffer(state.dst, 0, state.readback, 0, workload.readbackBytes);
   const commandBuffer = encoder.finish();
   const encodeMs = performance.now() - encodeStartedAt;
 
@@ -117,7 +214,7 @@ async function runRawPreparedRound(device, gpuGlobals, workload, state) {
   const readbackStartedAt = performance.now();
   await state.readback.mapAsync(gpuGlobals.GPUMapMode.READ);
   const output = new Float32Array(
-    state.readback.getMappedRange(0, workload.outputBytes),
+    state.readback.getMappedRange(0, workload.readbackBytes),
   ).slice();
   state.readback.unmap();
   const readbackMs = performance.now() - readbackStartedAt;
@@ -134,45 +231,69 @@ async function runRawPreparedRound(device, gpuGlobals, workload, state) {
 }
 
 function prepareDoeState(gpu, workload) {
-  const src = gpu.buffer.create({ data: workload.input });
-  const dst = gpu.buffer.create({
+  const src = gpu.device.createBuffer({
     size: workload.outputBytes,
-    usage: ["storageReadWrite", "readback"],
+    usage: BENCH_GPU_BUFFER_USAGE.STORAGE | BENCH_GPU_BUFFER_USAGE.COPY_DST,
   });
+  gpu.device.queue.writeBuffer(src, 0, workload.input);
+  const dst = gpu.device.createBuffer({
+    size: workload.outputBytes,
+    usage: BENCH_GPU_BUFFER_USAGE.STORAGE | BENCH_GPU_BUFFER_USAGE.COPY_SRC,
+  });
+  const readback = gpu.device.createBuffer({
+    size: workload.readbackBytes,
+    usage: BENCH_GPU_BUFFER_USAGE.COPY_DST | BENCH_GPU_BUFFER_USAGE.MAP_READ,
+  });
+  const srcBinding = { buffer: src, access: "storageRead" };
+  const dstBinding = { buffer: dst, access: "storageReadWrite" };
   const chunkPlans = createChunkPlans(workload);
   const kernels = chunkPlans.map((plan) =>
     gpu.kernel.create({
       code: plan.code,
-      bindings: [src, dst],
+      bindings: [srcBinding, dstBinding],
     })
   );
-  const bindingSets = kernels.map((kernel) => kernel.bindings.create([src, dst]));
+  const bindingSets = kernels.map((kernel) => kernel.bindings.create([srcBinding, dstBinding]));
 
   return {
     chunkPlans,
+    src,
     kernels,
     bindingSets,
     dst,
+    readback,
   };
 }
 
 async function runDoePreparedRound(gpu, state) {
   const encodeStartedAt = performance.now();
-  const batch = gpu.compute.begin();
+  const encoder = gpu.device.createCommandEncoder();
+  const pass = encoder.beginComputePass();
   for (let index = 0; index < state.kernels.length; index += 1) {
-    batch.dispatch(state.kernels[index], {
-      bindings: state.bindingSets[index],
-      workgroups: state.chunkPlans[index].workgroups,
-    });
+    const kernel = state.kernels[index];
+    const bindingSet = state.bindingSets[index];
+    pass.setPipeline(kernel.pipeline);
+    if (bindingSet.bindGroup) {
+      pass.setBindGroup(0, bindingSet.bindGroup);
+    }
+    pass.dispatchWorkgroups(state.chunkPlans[index].workgroups);
   }
+  pass.end();
+  encoder.copyBufferToBuffer(state.dst, 0, state.readback, 0, state.readback.size);
+  const commandBuffer = encoder.finish();
   const encodeMs = performance.now() - encodeStartedAt;
 
   const submitWaitStartedAt = performance.now();
-  await batch.submit();
+  gpu.device.queue.submit([commandBuffer]);
+  await gpu.device.queue.onSubmittedWorkDone?.();
   const submitWaitMs = performance.now() - submitWaitStartedAt;
 
   const readbackStartedAt = performance.now();
-  const output = await gpu.buffer.read({ buffer: state.dst, type: Float32Array });
+  await state.readback.mapAsync(BENCH_GPU_MAP_MODE.READ);
+  const output = new Float32Array(
+    state.readback.getMappedRange(0, state.readback.size),
+  ).slice();
+  state.readback.unmap();
   const readbackMs = performance.now() - readbackStartedAt;
 
   return {
@@ -213,23 +334,29 @@ async function measureCandidate({ label, load, run }, expectedOutput) {
 
   for (let index = 0; index < warmupRuns; index += 1) {
     const result = await run();
-    compareExact(expectedOutput, result.output);
+    compareExact(expectedOutput.subarray(0, result.output.length), result.output);
     referenceOutput = result.output;
   }
 
   const samples = [];
   for (let index = 0; index < iterations; index += 1) {
     const result = await run();
-    compareExact(expectedOutput, result.output);
+    const validationStartedAt = performance.now();
+    compareExact(expectedOutput.subarray(0, result.output.length), result.output);
+    const validationMs = performance.now() - validationStartedAt;
     referenceOutput = result.output;
     samples.push(result.ms);
-    phaseSamples.push(result.phases);
+    phaseSamples.push({
+      ...result.phases,
+      validationMs,
+    });
   }
 
   return {
     label,
     loadMs: load,
     timings: summarizeSamples(samples),
+    variance: summarizeVariance(samples),
     phaseTimings: summarizePhaseSamples(phaseSamples),
     output: referenceOutput,
   };
@@ -324,7 +451,9 @@ async function main() {
     throw new Error("Expected --candidate=<id>");
   }
 
-  const workload = createWorkload(elements, rounds);
+  const baseWorkload = createWorkload(elements, rounds);
+  const scenario = buildScenario(baseWorkload, scenarioId);
+  const workload = applyScenarioToWorkload(baseWorkload, scenario);
   const cpuResult = await measureCpu(workload);
 
   const setupMap = {
@@ -347,9 +476,11 @@ async function main() {
       label: result.label,
       loadMs: result.loadMs,
       timings: result.timings,
+      variance: result.variance,
       phaseTimings: result.phaseTimings,
       adapterInfo: setup.adapterInfo ?? null,
       provider: setup.provider ?? null,
+      scenario,
     })}\n`
   );
 }

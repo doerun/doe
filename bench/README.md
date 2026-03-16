@@ -11,6 +11,7 @@ This module is self-contained and does not depend on external runtime code.
 Before running or interpreting Dawn-vs-Doe performance results, read:
 
 - `performance-strategy.md`
+- `bench/benchmark-harness-taxonomy.md`
 - `bench/benchmark-writing-guide.md`
 
 If you're adding or changing workloads/commands, treat the benchmark writing guide as the required authoring contract.
@@ -103,12 +104,14 @@ That document defines:
   - runs the four-way Node package-surface comparison for compute-heavy matmul:
     Dawn direct, Dawn + Doe helpers, Simulatte direct, and Simulatte + Doe helpers.
   - uses the same generated WGSL, matrix data, and chunk plan across all four runners.
-  - the direct Simulatte lane now imports `@simulatte/webgpu/native-direct`, and both helper lanes now bind the same standalone `@simulatte/webgpu-doe` helpers onto their respective raw devices. This keeps wrapper-model asymmetry out of the compare contract.
+  - the direct Simulatte lane now imports the addon-native `@simulatte/webgpu/native-direct` surface, and both helper lanes now bind the same standalone `@simulatte/webgpu-doe` helpers onto their respective raw devices. This keeps wrapper-model asymmetry out of the compare contract.
+  - the helper lanes now use the same one-encoder, one-compute-pass, one-copy, one-submit, one-map round shape as the direct lanes; they no longer time `gpu.buffer.read(...)` as a second copy+submit path inside the measured round.
   - runs each GPU candidate in an isolated subprocess and prepares/tears it down sequentially so one candidate's buffers, pipelines, or provider state do not distort another candidate's measurement or stability.
   - prints per-runner phase means (`encode`, `submit+wait`, `readback`) so direct-vs-helper and Dawn-vs-Simulatte gaps can be attributed instead of treated as one opaque wall-time delta.
 - `bench/node/bench-streaming-webgpu-comparison.mjs`
   - runs the four-way Node package-surface comparison for the streaming affine-transform workload.
-  - uses the same `@simulatte/webgpu/native-direct` vs Dawn direct pairing and the same standalone `@simulatte/webgpu-doe` helper implementation on both helper lanes.
+  - uses the same addon-native `@simulatte/webgpu/native-direct` vs Dawn direct pairing and the same standalone `@simulatte/webgpu-doe` helper implementation on both helper lanes.
+  - the helper lanes now use the same one-encoder, one-compute-pass, one-copy, one-submit, one-map round shape as the direct lanes; they no longer time `gpu.buffer.read(...)` as a second copy+submit path inside the measured round.
   - runs each GPU candidate in an isolated subprocess and prepares/tears it down sequentially so the four-way compare stays apples-to-apples without concurrent package/device resource pressure or package-state carryover.
   - prints the same per-runner phase means (`encode`, `submit+wait`, `readback`) for submission-heavy diagnosis.
 - `bench/node/bench-doe-routines-vs-cpu.mjs`

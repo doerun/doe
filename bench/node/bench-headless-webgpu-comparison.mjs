@@ -39,6 +39,15 @@ const iterations = parsePositiveInt(process.argv[3], Math.min(DEFAULT_ITERATIONS
 const warmupRuns = parsePositiveInt(process.argv[4], DEFAULT_WARMUP);
 const workerCount = parsePositiveInt(process.argv[5], DEFAULT_WORKERS);
 const RESULT_PREFIX = "FAWN_BENCH_RESULT ";
+const BENCH_GPU_BUFFER_USAGE = Object.freeze({
+  MAP_READ: 0x0001,
+  COPY_SRC: 0x0004,
+  COPY_DST: 0x0008,
+  STORAGE: 0x0080,
+});
+const BENCH_GPU_MAP_MODE = Object.freeze({
+  READ: 0x0001,
+});
 
 function padCell(value, width, rightAlign = true) {
   const text = `${value}`;
@@ -362,27 +371,41 @@ async function runRawPreparedRound(device, gpuGlobals, workload, state) {
 
 function prepareDoeState(gpu, workload) {
   const chunkPlans = createMatmulChunkPlans(workload);
-  const left = gpu.buffer.create({ data: workload.left });
-  const right = gpu.buffer.create({ data: workload.right });
-  const output = gpu.buffer.create({
+  const left = gpu.device.createBuffer({
     size: workload.outputBytes,
-    usage: ["storageReadWrite", "readback"],
+    usage: BENCH_GPU_BUFFER_USAGE.STORAGE | BENCH_GPU_BUFFER_USAGE.COPY_DST,
   });
+  gpu.device.queue.writeBuffer(left, 0, workload.left);
+  const right = gpu.device.createBuffer({
+    size: workload.outputBytes,
+    usage: BENCH_GPU_BUFFER_USAGE.STORAGE | BENCH_GPU_BUFFER_USAGE.COPY_DST,
+  });
+  gpu.device.queue.writeBuffer(right, 0, workload.right);
+  const output = gpu.device.createBuffer({
+    size: workload.outputBytes,
+    usage: BENCH_GPU_BUFFER_USAGE.STORAGE | BENCH_GPU_BUFFER_USAGE.COPY_SRC,
+  });
+  const readback = gpu.device.createBuffer({
+    size: workload.outputBytes,
+    usage: BENCH_GPU_BUFFER_USAGE.COPY_DST | BENCH_GPU_BUFFER_USAGE.MAP_READ,
+  });
+  const leftBinding = { buffer: left, access: "storageRead" };
+  const rightBinding = { buffer: right, access: "storageRead" };
+  const outputBinding = { buffer: output, access: "storageReadWrite" };
   const kernels = chunkPlans.map((plan) =>
     gpu.kernel.create({
       code: plan.code,
-      bindings: [left, right, output],
+      bindings: [leftBinding, rightBinding, outputBinding],
     })
   );
   const bindingSets = kernels.map((kernel) =>
-    kernel.bindings.create([left, right, output])
+    kernel.bindings.create([leftBinding, rightBinding, outputBinding])
   );
 
   return {
     chunkPlans,
-    left,
-    right,
     output,
+    readback,
     kernels,
     bindingSets,
   };
@@ -390,22 +413,34 @@ function prepareDoeState(gpu, workload) {
 
 async function runDoePreparedRound(gpu, state) {
   const encodeStartedAt = performance.now();
-  const batch = gpu.compute.begin();
+  const encoder = gpu.device.createCommandEncoder();
+  const pass = encoder.beginComputePass();
   for (let index = 0; index < state.kernels.length; index += 1) {
     const plan = state.chunkPlans[index];
-    batch.dispatch(state.kernels[index], {
-      bindings: state.bindingSets[index],
-      workgroups: [plan.workgroupsX, plan.workgroupsY, 1],
-    });
+    const kernel = state.kernels[index];
+    const bindingSet = state.bindingSets[index];
+    pass.setPipeline(kernel.pipeline);
+    if (bindingSet.bindGroup) {
+      pass.setBindGroup(0, bindingSet.bindGroup);
+    }
+    pass.dispatchWorkgroups(plan.workgroupsX, plan.workgroupsY, 1);
   }
+  pass.end();
+  encoder.copyBufferToBuffer(state.output, 0, state.readback, 0, state.readback.size);
+  const commandBuffer = encoder.finish();
   const encodeMs = performance.now() - encodeStartedAt;
 
   const submitWaitStartedAt = performance.now();
-  await batch.submit();
+  gpu.device.queue.submit([commandBuffer]);
+  await gpu.device.queue.onSubmittedWorkDone?.();
   const submitWaitMs = performance.now() - submitWaitStartedAt;
 
   const readbackStartedAt = performance.now();
-  const output = await gpu.buffer.read({ buffer: state.output, type: Float32Array });
+  await state.readback.mapAsync(BENCH_GPU_MAP_MODE.READ);
+  const output = new Float32Array(
+    state.readback.getMappedRange(0, state.readback.size),
+  ).slice();
+  state.readback.unmap();
   const readbackMs = performance.now() - readbackStartedAt;
 
   return {
