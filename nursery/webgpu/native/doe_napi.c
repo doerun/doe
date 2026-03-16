@@ -3573,25 +3573,27 @@ static void native_direct_add_method(napi_env env, napi_value obj, const char* n
 static WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst) {
     if (!inst) NAPI_THROW(env, "nativeDirect.requestAdapter requires instance");
 
-    RequestAdapterResult result = {0};
-    WGPURequestAdapterOptions options;
-    memset(&options, 0, sizeof(options));
-
-    WGPURequestAdapterCallbackInfo cb_info = {
-        .nextInChain = NULL,
-        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
-        .callback = request_adapter_callback,
-        .userdata1 = &result,
-        .userdata2 = NULL,
-    };
-
-    WGPUFuture future = pfn_wgpuInstanceRequestAdapter2(inst, &options, cb_info);
+    AdapterRequestResult result = {0};
+    WGPUFuture future;
+    if (pfn_doeRequestAdapterFlat) {
+        future = pfn_doeRequestAdapterFlat(
+            inst, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, adapter_callback, &result, NULL);
+    } else {
+        const WGPURequestAdapterCallbackInfo callback_info = {
+            .nextInChain = NULL,
+            .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+            .callback = adapter_callback,
+            .userdata1 = &result,
+            .userdata2 = NULL,
+        };
+        future = pfn_wgpuInstanceRequestAdapter(inst, NULL, callback_info);
+    }
     if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
     if (!process_events_until(inst, &result.done, current_timeout_ns())) {
         throw_status_error(env, "DOE_REQUEST_ADAPTER_TIMEOUT", "requestAdapter timed out", result.status, result.message);
         return NULL;
     }
-    if (result.status != WGPU_REQUEST_STATUS_SUCCESS) {
+    if (result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.adapter) {
         throw_status_error(env, "DOE_REQUEST_ADAPTER_ERROR", "requestAdapter failed", result.status, result.message);
         return NULL;
     }
@@ -3601,41 +3603,24 @@ static WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance
 static WGPUDevice native_direct_request_device_sync(napi_env env, WGPUInstance inst, WGPUAdapter adapter) {
     if (!inst || !adapter) NAPI_THROW(env, "nativeDirect.requestDevice requires instance and adapter");
 
-    RequestDeviceResult result = {0};
-    WGPUDeviceDescriptor desc;
-    memset(&desc, 0, sizeof(desc));
-
-    WGPUDeviceLostCallbackInfo lost_cb = {
+    DeviceRequestResult result = {0};
+    const WGPURequestDeviceCallbackInfo cb_info = {
         .nextInChain = NULL,
         .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
-        .callback = noop_device_lost_callback,
-        .userdata1 = NULL,
-        .userdata2 = NULL,
-    };
-    WGPUUncapturedErrorCallbackInfo err_cb = {
-        .nextInChain = NULL,
-        .callback = noop_uncaptured_error_callback,
-        .userdata1 = NULL,
-        .userdata2 = NULL,
-    };
-    desc.deviceLostCallbackInfo = lost_cb;
-    desc.uncapturedErrorCallbackInfo = err_cb;
-
-    WGPURequestDeviceCallbackInfo cb_info = {
-        .nextInChain = NULL,
-        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
-        .callback = request_device_callback,
+        .callback = device_callback,
         .userdata1 = &result,
         .userdata2 = NULL,
     };
 
-    WGPUFuture future = pfn_wgpuAdapterRequestDevice2(adapter, &desc, cb_info);
+    WGPUFuture future = pfn_doeNativeAdapterRequestDevice
+        ? pfn_doeNativeAdapterRequestDevice(adapter, NULL, cb_info)
+        : pfn_wgpuAdapterRequestDevice(adapter, NULL, cb_info);
     if (future.id == 0) NAPI_THROW(env, "requestDevice future unavailable");
     if (!process_events_until(inst, &result.done, current_timeout_ns())) {
         throw_status_error(env, "DOE_REQUEST_DEVICE_TIMEOUT", "requestDevice timed out", result.status, result.message);
         return NULL;
     }
-    if (result.status != WGPU_REQUEST_STATUS_SUCCESS) {
+    if (result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.device) {
         throw_status_error(env, "DOE_REQUEST_DEVICE_ERROR", "requestDevice failed", result.status, result.message);
         return NULL;
     }
