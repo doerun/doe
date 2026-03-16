@@ -1,32 +1,31 @@
 // Volume ray marcher — shared by Node.js and browser entry points.
 //
-// Bindings:
-//   0: Camera uniform
-//   1: VolumeInfo uniform
-//   2: volume texture_3d<f32> (r8unorm, values in [0,1])
-//   3: output storage buffer array<u32> (packed RGBA8, row-major)
+// Compositing matches open-scivis-datasets reference (dvr.js):
+//   accum.rgb += (1 - accum.a) * c.a * c.rgb   (pre-multiplied alpha)
+//   accum.a   += (1 - accum.a) * c.a
+// Step size: DDA = 1 / max(width, height, depth)
 //
-// Note: Doe WGSL sema constraints observed here:
-//   - binary ops require same concrete type (no implicit scalar broadcast)
-//   - postfix i++ not supported; use i = i + 1
+// Note: Doe WGSL sema constraints:
+//   - binary ops require same concrete type; use vec3f(scalar) for vec*scalar
+//   - postfix i++ unsupported; use i = i + 1
 //   - user functions referencing uniform globals must be inlined into the kernel
 
 struct Camera {
-  eye:    vec3f,
-  _p0:    f32,
-  target: vec3f,
-  _p1:    f32,
-  width:  u32,
-  height: u32,
-  _p2:    u32,
-  _p3:    u32,
+  eye:     vec3f,
+  _p0:     f32,
+  look_at: vec3f,
+  _p1:     f32,
+  width:   u32,
+  height:  u32,
+  _p2:     u32,
+  _p3:     u32,
 }
 
 struct VolumeInfo {
   width:  u32,
   height: u32,
   depth:  u32,
-  _p:     u32,
+  mode:   u32,  // 0=grayscale 1=fire 2=hot 3=viridis 4=cool
 }
 
 @group(0) @binding(0) var<uniform>             cam:    Camera;
@@ -34,13 +33,58 @@ struct VolumeInfo {
 @group(0) @binding(2) var                      vol_tex: texture_3d<f32>;
 @group(0) @binding(3) var<storage, read_write> pixels: array<u32>;
 
-fn transfer(d: f32) -> vec4f {
-  if (d < 0.06) { return vec4f(0.0); }
-  let alpha = min(d * 1.2, 0.9) * 0.04;
-  let r = min(d * 3.0,       1.0);
-  let g = min(d * 3.0 - 0.8, 1.0) * 0.55;
-  let b = min(d * 2.0 - 0.4, 1.0) * 0.25;
-  return vec4f(r, max(g, 0.0), max(b, 0.0), alpha);
+// mode 1: fire
+fn transfer_fire(d: f32) -> vec4f {
+  if (d < 0.02) { return vec4f(0.0); }
+  let alpha = clamp(d * 4.0, 0.0, 1.0) * 0.5;
+  let r = clamp(d * 3.0,       0.0, 1.0);
+  let g = clamp(d * 3.0 - 0.6, 0.0, 1.0) * 0.7;
+  let b = clamp(d * 5.0 - 3.5, 0.0, 1.0);
+  return vec4f(r, g, b, alpha);
+}
+
+// mode 2: hot — black→red→yellow→white
+fn transfer_hot(d: f32) -> vec4f {
+  if (d < 0.01) { return vec4f(0.0); }
+  let r = clamp(d * 3.0,       0.0, 1.0);
+  let g = clamp(d * 3.0 - 1.0, 0.0, 1.0);
+  let b = clamp(d * 3.0 - 2.0, 0.0, 1.0);
+  return vec4f(r, g, b, d * 0.8);
+}
+
+// mode 3: viridis (piecewise linear approximation, colorblind-friendly)
+fn transfer_viridis(d: f32) -> vec4f {
+  if (d < 0.01) { return vec4f(0.0); }
+  var rgb: vec3f;
+  if (d < 0.25) {
+    let t = d * 4.0;
+    rgb = mix(vec3f(0.267, 0.004, 0.329), vec3f(0.282, 0.305, 0.682), t);
+  } else if (d < 0.5) {
+    let t = (d - 0.25) * 4.0;
+    rgb = mix(vec3f(0.282, 0.305, 0.682), vec3f(0.163, 0.553, 0.627), t);
+  } else if (d < 0.75) {
+    let t = (d - 0.5) * 4.0;
+    rgb = mix(vec3f(0.163, 0.553, 0.627), vec3f(0.478, 0.821, 0.318), t);
+  } else {
+    let t = (d - 0.75) * 4.0;
+    rgb = mix(vec3f(0.478, 0.821, 0.318), vec3f(0.993, 0.906, 0.144), t);
+  }
+  return vec4f(rgb, d * 0.8);
+}
+
+// mode 4: cool — cyan→magenta, colorblind-friendly
+fn transfer_cool(d: f32) -> vec4f {
+  if (d < 0.01) { return vec4f(0.0); }
+  let r = d;
+  let g = clamp(1.0 - d * 1.5, 0.0, 1.0);
+  let b = 1.0;
+  return vec4f(r, g, b, d * 0.8);
+}
+
+// matches dvr.js linear_to_srgb — compositing is in linear space; output must be sRGB
+fn linear_to_srgb(v: f32) -> f32 {
+  if (v <= 0.0031308) { return 12.92 * v; }
+  return 1.055 * pow(v, 1.0 / 2.4) - 0.055;
 }
 
 fn ray_aabb(ro: vec3f, rd: vec3f) -> vec2f {
@@ -58,7 +102,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   let py = gid.y;
   if (px >= cam.width || py >= cam.height) { return; }
 
-  let fwd    = normalize(cam.target - cam.eye);
+  let fwd    = normalize(cam.look_at - cam.eye);
   let right  = normalize(cross(fwd, vec3f(0.0, 1.0, 0.0)));
   let up_cam = cross(right, fwd);
   let aspect = f32(cam.width) / f32(cam.height);
@@ -72,35 +116,54 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
   let b = ray_aabb(ro, rd);
   if (b.x >= b.y || b.y < 0.0) {
-    pixels[py * cam.width + px] = 0xFF080A10u;
+    let bg  = vec3f(0.03, 0.04, 0.06);
+    let r_  = u32(clamp(linear_to_srgb(bg.r) * 255.0, 0.0, 255.0));
+    let g_  = u32(clamp(linear_to_srgb(bg.g) * 255.0, 0.0, 255.0));
+    let b__ = u32(clamp(linear_to_srgb(bg.b) * 255.0, 0.0, 255.0));
+    pixels[py * cam.width + px] = r_ | (g_ << 8u) | (b__ << 16u) | (0xFFu << 24u);
     return;
   }
 
-  let step: f32 = 0.004;
-  let t_near  = max(b.x, 0.0);
-  let t_far   = b.y;
-  let nsteps  = i32((t_far - t_near) / step);
-  var accum   = vec4f(0.0);
+  // DDA step: 1 voxel advance per step along dominant axis (matches reference)
+  let max_dim = max(max(vol.width, vol.height), vol.depth);
+  let step: f32 = 1.0 / f32(max_dim);
+
+  let t_near = max(b.x, 0.0);
+  let t_far  = b.y;
+  let nsteps = i32((t_far - t_near) / step);
+  var accum  = vec4f(0.0);
 
   let wf = f32(vol.width  - 1u);
   let hf = f32(vol.height - 1u);
   let df = f32(vol.depth  - 1u);
 
   for (var i = 0; i < nsteps; i = i + 1) {
-    if (accum.a >= 0.99) { break; }
+    if (accum.a >= 0.95) { break; }
     let t   = t_near + f32(i) * step;
     let pos = ro + rd * vec3f(t);
-    // inline sample_vol to avoid globals-in-user-function MSL issue
     let p   = clamp(pos, vec3f(0.0), vec3f(1.0));
     let d   = textureLoad(vol_tex, vec3u(u32(p.x * wf), u32(p.y * hf), u32(p.z * df)), 0).r;
-    let c   = transfer(d);
-    accum = accum + c * vec4f(1.0 - accum.a);
+    var c: vec4f;
+    if (vol.mode == 1u) {
+      c = transfer_fire(d);
+    } else if (vol.mode == 2u) {
+      c = transfer_hot(d);
+    } else if (vol.mode == 3u) {
+      c = transfer_viridis(d);
+    } else if (vol.mode == 4u) {
+      c = transfer_cool(d);
+    } else {
+      c = vec4f(d, d, d, d);  // mode 0: grayscale (default)
+    }
+    // correct pre-multiplied alpha compositing (matches reference dvr.js)
+    let w = c.a * (1.0 - accum.a);
+    accum = vec4f(accum.rgb + c.rgb * vec3f(w), accum.a + w);
   }
 
   let bg  = vec3f(0.03, 0.04, 0.06);
   let rgb = accum.rgb + bg * vec3f(1.0 - accum.a);
-  let r   = u32(clamp(rgb.r * 255.0, 0.0, 255.0));
-  let g   = u32(clamp(rgb.g * 255.0, 0.0, 255.0));
-  let b_  = u32(clamp(rgb.b * 255.0, 0.0, 255.0));
+  let r   = u32(clamp(linear_to_srgb(rgb.r) * 255.0, 0.0, 255.0));
+  let g   = u32(clamp(linear_to_srgb(rgb.g) * 255.0, 0.0, 255.0));
+  let b_  = u32(clamp(linear_to_srgb(rgb.b) * 255.0, 0.0, 255.0));
   pixels[py * cam.width + px] = r | (g << 8u) | (b_ << 16u) | (0xFFu << 24u);
 }

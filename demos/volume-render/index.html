@@ -8,9 +8,10 @@
   body { background: #080a10; color: #ccc; font: 13px/1.5 monospace; display: flex; flex-direction: column; align-items: center; height: 100vh; }
   #controls { padding: 8px 12px; display: flex; gap: 12px; align-items: center; width: 100%; }
   label { display: flex; align-items: center; gap: 6px; }
-  select, button { background: #1a1c22; color: #ccc; border: 1px solid #333; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
+  select { background: #1a1c22; color: #ccc; border: 1px solid #333; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
   #status { margin-left: auto; font-size: 11px; color: #666; }
-  canvas { flex: 1; width: 100%; object-fit: contain; }
+  canvas { flex: 1; width: 100%; object-fit: contain; cursor: grab; }
+  canvas:active { cursor: grabbing; }
 </style>
 </head>
 <body>
@@ -20,124 +21,198 @@
       <option value="fuel">fuel (64³)</option>
       <option value="silicium">silicium (98×34×34)</option>
       <option value="hydrogen_atom" selected>hydrogen atom (128³)</option>
+      <option value="bonsai">bonsai (256³)</option>
+      <option value="engine">engine (256×256×128)</option>
+      <option value="foot">foot (256³)</option>
+      <option value="csafe_heptane">CSAFE heptane (302³)</option>
+      <option value="marmoset_neurons">marmoset neurons (512×512×314)</option>
+      <option value="skull">skull (256³)</option>
+      <option value="aneurism">aneurism (256³)</option>
+      <option value="tooth">tooth (103×94×161)</option>
+      <option value="mri_ventricles">MRI ventricles (256×256×124)</option>
+      <option value="mri_woman">MRI woman (256×256×109)</option>
+      <option value="vis_male">visible male (128×256×256)</option>
+      <option value="stag_beetle">stag beetle (832×832×494)</option>
+      <option value="zeiss">Zeiss microscopy (680³)</option>
     </select>
   </label>
-  <button id="load-btn">load</button>
-  <span id="status">not loaded</span>
+  <label>palette
+    <select id="palette-select">
+      <option value="0" selected>grayscale</option>
+      <option value="1">fire</option>
+      <option value="2">hot</option>
+      <option value="3">viridis</option>
+      <option value="4">cool</option>
+    </select>
+  </label>
+  <span id="status">loading…</span>
 </div>
 <canvas id="c"></canvas>
 
 <script type="module">
 const DATASETS = {
-  fuel:          { w: 64,  h: 64,  d: 64,  file: "data/fuel_64x64x64_uint8.raw" },
-  silicium:      { w: 98,  h: 34,  d: 34,  file: "data/silicium_98x34x34_uint8.raw" },
-  hydrogen_atom: { w: 128, h: 128, d: 128, file: "data/hydrogen_atom_128x128x128_uint8.raw" },
+  fuel:             { w: 64,  h: 64,  d: 64,  file: "data/fuel_64x64x64_uint8.raw" },
+  silicium:         { w: 98,  h: 34,  d: 34,  file: "data/silicium_98x34x34_uint8.raw" },
+  hydrogen_atom:    { w: 128, h: 128, d: 128, file: "data/hydrogen_atom_128x128x128_uint8.raw" },
+  bonsai:           { w: 256, h: 256, d: 256, file: "data/bonsai_256x256x256_uint8.raw" },
+  engine:           { w: 256, h: 256, d: 128, file: "data/engine_256x256x128_uint8.raw" },
+  foot:             { w: 256, h: 256, d: 256, file: "data/foot_256x256x256_uint8.raw" },
+  csafe_heptane:    { w: 302, h: 302, d: 302, file: "data/csafe_heptane_302x302x302_uint8.raw" },
+  marmoset_neurons: { w: 512, h: 512, d: 314, file: "data/marmoset_neurons_512x512x314_uint8.raw" },
+  skull:            { w: 256, h: 256, d: 256, file: "data/skull_256x256x256_uint8.raw" },
+  aneurism:         { w: 256, h: 256, d: 256, file: "data/aneurism_256x256x256_uint8.raw" },
+  tooth:            { w: 103, h: 94,  d: 161, file: "data/tooth_103x94x161_uint8.raw" },
+  mri_ventricles:   { w: 256, h: 256, d: 124, file: "data/mri_ventricles_256x256x124_uint8.raw" },
+  mri_woman:        { w: 256, h: 256, d: 109, file: "data/mri_woman_256x256x109_uint8.raw" },
+  vis_male:         { w: 128, h: 256, d: 256, file: "data/vis_male_128x256x256_uint8.raw" },
+  stag_beetle:      { w: 832, h: 832, d: 494, file: "data/stag_beetle_832x832x494_uint8.raw" },
+  zeiss:            { w: 680, h: 680, d: 680, file: "data/zeiss_680x680x680_uint8.raw" },
 };
 const ALIGN = 256;
 
-const canvas = document.getElementById("c");
-const status = document.getElementById("status");
+const canvas  = document.getElementById("c");
+const statusEl      = document.getElementById("status");
+const dsSelect      = document.getElementById("ds-select");
+const paletteSelect = document.getElementById("palette-select");
 
-let gpu, device, pipeline, bindGroup, pixelBuf, readbackBuf, camBuf;
-let W = 0, H = 0, animId = null, angle = 0;
+// camera state — shared across loads
+// polar: spherical elevation angle (0=top, π/2=equator, π=bottom)
+let angle = 0, polar = 1.1, radius = 2.2;
+let dragging = false, lastX = 0, lastY = 0, autoRotate = true;
 
-function padVolume(data, volW, volH, volD) {
-  const alignedRow = Math.ceil(volW / ALIGN) * ALIGN;
-  if (alignedRow === volW) return { data, bytesPerRow: volW };
-  const out = new Uint8Array(alignedRow * volH * volD);
-  for (let z = 0; z < volD; z++)
-    for (let y = 0; y < volH; y++)
-      out.set(data.subarray((z*volH+y)*volW, (z*volH+y)*volW+volW), (z*volH+y)*alignedRow);
-  return { data: out, bytesPerRow: alignedRow };
+canvas.addEventListener("mousedown", e => { dragging = true; lastX = e.clientX; lastY = e.clientY; autoRotate = false; });
+canvas.addEventListener("mouseup",   () => { dragging = false; });
+canvas.addEventListener("mouseleave",() => { dragging = false; });
+canvas.addEventListener("mousemove", e => {
+  if (!dragging) return;
+  angle += (e.clientX - lastX) * 0.005;
+  polar  = Math.max(0.01, Math.min(Math.PI - 0.01, polar + (e.clientY - lastY) * 0.005));
+  lastX = e.clientX; lastY = e.clientY;
+});
+canvas.addEventListener("wheel", e => {
+  radius = Math.max(0.5, Math.min(6.0, radius + e.deltaY * 0.005));
+  e.preventDefault();
+}, { passive: false });
+
+async function uploadVolume(device, rawData, w, h, d) {
+  const alignedRow = Math.ceil(w / ALIGN) * ALIGN;
+  const padded = alignedRow === w ? rawData : (() => {
+    const out = new Uint8Array(alignedRow * h * d);
+    for (let z = 0; z < d; z++)
+      for (let y = 0; y < h; y++)
+        out.set(rawData.subarray((z*h+y)*w, (z*h+y)*w+w), (z*h+y)*alignedRow);
+    return out;
+  })();
+  const volTex = device.createTexture({
+    dimension: "3d",
+    size: { width: w, height: h, depthOrArrayLayers: d },
+    format: "r8unorm",
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+  });
+  const stagingBuf = device.createBuffer({
+    size: padded.byteLength,
+    usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(stagingBuf, 0, padded);
+  const enc = device.createCommandEncoder();
+  enc.copyBufferToTexture(
+    { buffer: stagingBuf, offset: 0, bytesPerRow: alignedRow, rowsPerImage: h },
+    { texture: volTex },
+    { width: w, height: h, depthOrArrayLayers: d },
+  );
+  device.queue.submit([enc.finish()]);
+  await device.queue.onSubmittedWorkDone();
+  stagingBuf.destroy();
+  return volTex;
 }
 
-function setCam(buf, eye, target, w, h) {
+function setCam(buf, eye, lookAt, w, h) {
   const v = new DataView(buf);
   v.setFloat32( 0, eye[0],    true); v.setFloat32( 4, eye[1],    true);
   v.setFloat32( 8, eye[2],    true); v.setFloat32(12, 0,         true);
-  v.setFloat32(16, target[0], true); v.setFloat32(20, target[1], true);
-  v.setFloat32(24, target[2], true); v.setFloat32(28, 0,         true);
-  new DataView(buf).setUint32(32, w, true);
-  new DataView(buf).setUint32(36, h, true);
+  v.setFloat32(16, lookAt[0], true); v.setFloat32(20, lookAt[1], true);
+  v.setFloat32(24, lookAt[2], true); v.setFloat32(28, 0,         true);
+  v.setUint32(32, w, true);
+  v.setUint32(36, h, true);
 }
+
+let device = null;
+let animId = null;
+let volInfoBuf = null;
+let loadGen = 0;  // incremented on each load; frame loops check their captured gen
+
+// palette change — works immediately if a dataset is loaded
+paletteSelect.addEventListener("change", () => {
+  if (!volInfoBuf || !device) return;
+  device.queue.writeBuffer(volInfoBuf, 12, new Uint32Array([parseInt(paletteSelect.value)]));
+});
 
 async function load() {
   if (animId) { cancelAnimationFrame(animId); animId = null; }
+  const gen = ++loadGen;
 
-  if (!navigator.gpu) { status.textContent = "WebGPU not supported"; return; }
+  if (!navigator.gpu) { statusEl.textContent = "WebGPU not supported"; return; }
   if (!device) {
     const adapter = await navigator.gpu.requestAdapter();
-    device = await adapter.requestDevice();
-    gpu = navigator.gpu;
+    device = await adapter.requestDevice({
+      requiredLimits: {
+        maxBufferSize:               adapter.limits.maxBufferSize,
+        maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+      },
+    });
   }
 
-  const dsName = document.getElementById("ds-select").value;
+  const dsName = dsSelect.value;
   const ds = DATASETS[dsName];
-  status.textContent = `loading ${dsName}…`;
+  // zoom out proportionally for low-res volumes so voxels don't look pixelated
+  radius = Math.min(8.0, 2.2 * 256 / Math.min(ds.w, ds.h, ds.d));
+  polar  = 1.1;
+  autoRotate = true;
+  statusEl.textContent = `loading ${dsName}…`;
 
   let rawData;
   try {
     const res = await fetch(ds.file);
-    if (!res.ok) throw new Error(`HTTP ${res.status}: run download.sh first`);
-    rawData = new Uint8Array(await res.arrayBuffer());
+    if (!res.ok) throw new Error(`HTTP ${res.status}: run ./download.sh first`);
+    const buf = await res.arrayBuffer();
+    if (ds.uint16) {
+      // uint16 little-endian → uint8 by taking high byte (>> 8); keeps r8unorm texture format unchanged
+      const src = new Uint16Array(buf);
+      rawData = new Uint8Array(src.length);
+      for (let i = 0; i < src.length; i++) rawData[i] = src[i] >> 8;
+    } else {
+      rawData = new Uint8Array(buf);
+    }
   } catch(e) {
-    status.textContent = `error: ${e.message}`;
+    statusEl.textContent = `error: ${e.message}`;
     return;
   }
 
-  W = Math.floor(canvas.clientWidth)  || 640;
-  H = Math.floor(canvas.clientHeight) || 480;
+  const W = Math.floor(canvas.clientWidth)  || 640;
+  const H = Math.floor(canvas.clientHeight) || 480;
   canvas.width  = W;
   canvas.height = H;
-
   const ctx2d = canvas.getContext("2d");
 
-  const { data: volPadded, bytesPerRow: volBPR } = padVolume(rawData, ds.w, ds.h, ds.d);
-
-  const volStagingBuf = device.createBuffer({
-    size: volPadded.byteLength,
-    usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(volStagingBuf, 0, volPadded);
-
-  const volTex = device.createTexture({
-    dimension: "3d",
-    size: { width: ds.w, height: ds.h, depthOrArrayLayers: ds.d },
-    format: "r8unorm",
-    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-  });
-
-  {
-    const enc = device.createCommandEncoder();
-    enc.copyBufferToTexture(
-      { buffer: volStagingBuf, offset: 0, bytesPerRow: volBPR, rowsPerImage: ds.h },
-      { texture: volTex },
-      { width: ds.w, height: ds.h, depthOrArrayLayers: ds.d },
-    );
-    device.queue.submit([enc.finish()]);
-    await device.queue.onSubmittedWorkDone();
-  }
-  volStagingBuf.destroy();
+  const volTex = await uploadVolume(device, rawData, ds.w, ds.h, ds.d);
 
   const pixelBytes = W * H * 4;
-  pixelBuf    = device.createBuffer({ size: pixelBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
-  readbackBuf = device.createBuffer({ size: pixelBytes, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-  camBuf      = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const pixelBuf    = device.createBuffer({ size: pixelBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
+  const readbackBuf = device.createBuffer({ size: pixelBytes, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+  const camBuf      = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
 
-  const volInfoBuf = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-  const vi = new DataView(new ArrayBuffer(16));
-  vi.setUint32(0, ds.w, true); vi.setUint32(4, ds.h, true);
-  vi.setUint32(8, ds.d, true); vi.setUint32(12, 0,    true);
-  device.queue.writeBuffer(volInfoBuf, 0, vi.buffer);
+  volInfoBuf = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const vi = new Uint32Array([ds.w, ds.h, ds.d, parseInt(paletteSelect.value)]);
+  device.queue.writeBuffer(volInfoBuf, 0, vi);
 
   const shaderSrc = await fetch("volume-render.wgsl").then(r => r.text());
   const shaderMod = device.createShaderModule({ code: shaderSrc });
-  pipeline = device.createComputePipeline({
+  const pipeline  = device.createComputePipeline({
     layout: "auto",
     compute: { module: shaderMod, entryPoint: "main" },
   });
 
-  bindGroup = device.createBindGroup({
+  const bindGroup = device.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
     entries: [
       { binding: 0, resource: { buffer: camBuf } },
@@ -150,12 +225,16 @@ async function load() {
   const wgX = Math.ceil(W / 8);
   const wgY = Math.ceil(H / 8);
   const camRaw = new ArrayBuffer(48);
-  let frameCount = 0, fps = 0, fpsTimer = performance.now();
+  let frameCount = 0, fpsTimer = performance.now();
 
   async function frame() {
-    angle += 0.008;
-    const r   = 2.2;
-    const eye = [0.5 + r * Math.sin(angle), 0.9, 0.5 + r * Math.cos(angle)];
+    if (autoRotate) angle += 0.008;
+    const sinP = Math.sin(polar), cosP = Math.cos(polar);
+    const eye = [
+      0.5 + radius * sinP * Math.sin(angle),
+      0.5 + radius * cosP,
+      0.5 + radius * sinP * Math.cos(angle),
+    ];
     setCam(camRaw, eye, [0.5, 0.5, 0.5], W, H);
     device.queue.writeBuffer(camBuf, 0, camRaw);
 
@@ -170,36 +249,35 @@ async function load() {
     await device.queue.onSubmittedWorkDone();
 
     await readbackBuf.mapAsync(GPUMapMode.READ);
-    const raw  = new Uint8ClampedArray(readbackBuf.getMappedRange().slice(0));
+    const raw = new Uint8ClampedArray(readbackBuf.getMappedRange().slice(0));
     readbackBuf.unmap();
 
-    // RGBA packed little-endian → ImageData expects [R,G,B,A] order
     const img = new ImageData(W, H);
     for (let i = 0; i < W * H; i++) {
-      img.data[i * 4 + 0] = raw[i * 4 + 0]; // R
-      img.data[i * 4 + 1] = raw[i * 4 + 1]; // G
-      img.data[i * 4 + 2] = raw[i * 4 + 2]; // B
-      img.data[i * 4 + 3] = 255;
+      img.data[i*4+0] = raw[i*4+0];
+      img.data[i*4+1] = raw[i*4+1];
+      img.data[i*4+2] = raw[i*4+2];
+      img.data[i*4+3] = 255;
     }
     ctx2d.putImageData(img, 0, 0);
 
     frameCount++;
     const now = performance.now();
     if (now - fpsTimer >= 1000) {
-      fps = Math.round(frameCount * 1000 / (now - fpsTimer));
+      statusEl.textContent = `${dsName} · ${Math.round(frameCount * 1000 / (now - fpsTimer))} fps`;
       frameCount = 0;
       fpsTimer = now;
-      status.textContent = `${dsName} · ${fps} fps`;
     }
 
+    if (loadGen !== gen) return;  // a newer load started; abandon this loop
     animId = requestAnimationFrame(frame);
   }
 
-  status.textContent = `${dsName} loaded`;
+  statusEl.textContent = `${dsName} loaded`;
   animId = requestAnimationFrame(frame);
 }
 
-document.getElementById("load-btn").addEventListener("click", load);
+dsSelect.addEventListener("change", load);
 load();
 </script>
 </body>

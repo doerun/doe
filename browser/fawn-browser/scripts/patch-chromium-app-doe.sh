@@ -213,9 +213,14 @@ if [[ -z "\${DOE_LIB}" || ! -f "\${DOE_LIB}" ]]; then
   exit 1
 fi
 
+FAWN_START="\${SCRIPT_DIR}/../Resources/fawn-start.html"
+
 exec -a fawn-doe "\${REAL_BINARY}" \
   --use-webgpu-runtime=doe \
   --doe-webgpu-library-path="\${DOE_LIB}" \
+  --no-first-run \
+  --homepage="file://\${FAWN_START}" \
+  --new-window "file://\${FAWN_START}" \
   "\$@"
 EOF
   chmod 0755 "${MACOS_BIN}"
@@ -285,6 +290,11 @@ else
   if [[ -n "${APP_ICON}" && ! -f "${APP_ICON}" ]]; then
     echo "warning: provided app icon not found: ${APP_ICON}" >&2
   fi
+fi
+
+FAWN_START_SRC="${LANE_ROOT}/resources/fawn-start.html"
+if [[ -f "${FAWN_START_SRC}" && -d "${RESOURCES_DIR}" ]]; then
+  cp -f "${FAWN_START_SRC}" "${RESOURCES_DIR}/fawn-start.html"
 fi
 
 echo "patched app bundle: ${APP_PATH}"

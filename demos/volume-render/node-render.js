@@ -20,9 +20,22 @@ import { globals, requestDevice } from "@simulatte/webgpu";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const DATASETS = {
-  fuel:          { w: 64,  h: 64,  d: 64,  file: "fuel_64x64x64_uint8.raw" },
-  silicium:      { w: 98,  h: 34,  d: 34,  file: "silicium_98x34x34_uint8.raw" },
-  hydrogen_atom: { w: 128, h: 128, d: 128, file: "hydrogen_atom_128x128x128_uint8.raw" },
+  fuel:             { w: 64,  h: 64,  d: 64,  file: "fuel_64x64x64_uint8.raw" },
+  silicium:         { w: 98,  h: 34,  d: 34,  file: "silicium_98x34x34_uint8.raw" },
+  hydrogen_atom:    { w: 128, h: 128, d: 128, file: "hydrogen_atom_128x128x128_uint8.raw" },
+  bonsai:           { w: 256, h: 256, d: 256, file: "bonsai_256x256x256_uint8.raw" },
+  engine:           { w: 256, h: 256, d: 128, file: "engine_256x256x128_uint8.raw" },
+  foot:             { w: 256, h: 256, d: 256, file: "foot_256x256x256_uint8.raw" },
+  csafe_heptane:    { w: 302, h: 302, d: 302, file: "csafe_heptane_302x302x302_uint8.raw" },
+  marmoset_neurons: { w: 512, h: 512, d: 314, file: "marmoset_neurons_512x512x314_uint8.raw" },
+  skull:            { w: 256, h: 256, d: 256, file: "skull_256x256x256_uint8.raw" },
+  aneurism:         { w: 256, h: 256, d: 256, file: "aneurism_256x256x256_uint8.raw" },
+  tooth:            { w: 103, h: 94,  d: 161, file: "tooth_103x94x161_uint8.raw" },
+  mri_ventricles:   { w: 256, h: 256, d: 124, file: "mri_ventricles_256x256x124_uint8.raw" },
+  mri_woman:        { w: 256, h: 256, d: 109, file: "mri_woman_256x256x109_uint8.raw" },
+  vis_male:         { w: 128, h: 256, d: 256, file: "vis_male_128x256x256_uint8.raw" },
+  stag_beetle:      { w: 832, h: 832, d: 494, file: "stag_beetle_832x832x494_uint8.raw" },
+  zeiss:            { w: 680, h: 680, d: 680, file: "zeiss_680x680x680_uint8.raw" },
 };
 
 const ALIGN = 256; // WebGPU copyBufferToTexture bytesPerRow alignment
@@ -106,7 +119,10 @@ const device  = await requestDevice();
 const { GPUBufferUsage, GPUTextureUsage } = globals;
 
 // --- volume texture ---
-const rawData = new Uint8Array(readFileSync(rawPath).buffer);
+const rawBuf = readFileSync(rawPath).buffer;
+const rawData = ds.uint16
+  ? (() => { const src = new Uint16Array(rawBuf); const out = new Uint8Array(src.length); for (let i = 0; i < src.length; i++) out[i] = src[i] >> 8; return out; })()
+  : new Uint8Array(rawBuf);
 const { data: volPadded, bytesPerRow: volBytesPerRow } = padVolume(rawData, ds.w, ds.h, ds.d);
 
 const volStagingBuf = device.createBuffer({
