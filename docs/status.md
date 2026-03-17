@@ -91,7 +91,7 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
 - Shader contract/gate layer now supports a backend-neutral transition contract:
   - `config/shader-artifact.schema.json` accepts legacy `schemaVersion=1` manifests and new `schemaVersion=2` manifests with shared `irSha256`, backend-specific final artifact hashes (`mslSha256`/`metallibSha256`, `spirvSha256`, `dxilSha256`), and stage-by-stage route attestations.
   - `config/shader-toolchain.json` and its schema now model backend routes as explicit stage contracts (`native_zig` vs `external_tool`) instead of hard-coded Metal-only translation steps.
-  - `bench/shader_artifact_gate.py` can now validate taxonomy membership, toolchain-hash linkage, and strict native-backend route conformance when enabled from `run_blocking_gates.py`.
+  - `bench/shader_artifact_gate.py` can now validate taxonomy membership, toolchain-hash linkage, strict native-backend route conformance, and SPIR-V artifacts by default whenever a manifest carries SPIR-V output; `run_blocking_gates.py` auto-uses `spirv-val` from PATH when present.
   - `bench/preflight_metal_host.py` now derives required external tools from the shader toolchain contract instead of hard-coding Metal compiler checks.
   - runtime shader manifest emitters still need to adopt `schemaVersion=2` end-to-end before strict native-route enforcement can be enabled universally.
 

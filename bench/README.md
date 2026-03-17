@@ -38,6 +38,7 @@ That document defines:
   - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional drop-in -> optional claim gate.
   - release-claim readiness evidence requires claim gate enabled (`--with-claim-gate`), and can be enforced with `--require-claim-gate`.
   - can run comparability verification parity fixtures with `--with-comparability-parity-gate`.
+  - shader-artifact gating now treats SPIR-V validation as routine for SPIR-V-bearing manifests; `spirv-val` is auto-discovered from PATH when available.
 - `comparability_obligation_parity_gate.py`
   - validates comparability obligation parity fixtures against Python evaluation and Lean obligation ID set alignment.
   - verifies fixture expectations (`expectedBlockingFailedObligations`, `expectedComparable`) from `bench/comparability_obligation_fixtures.json`.

@@ -97,6 +97,7 @@ def main() -> int:
                 validated += 1
                 manifest = load_json(manifest_path)
                 spirv_failures, spirv_count = validate_spirv_artifacts(
+                    manifest_path,
                     manifest,
                     args.spirv_val.strip(),
                     args.require_spirv_validation,
@@ -117,6 +118,7 @@ def main() -> int:
 
 
 def validate_spirv_artifacts(
+    manifest_path: Path,
     manifest: dict[str, Any],
     spirv_val: str,
     require_spirv_validation: bool,
@@ -129,6 +131,7 @@ def validate_spirv_artifacts(
     validated = 0
     saw_spirv_output = isinstance(manifest.get("spirvSha256"), str)
     saw_spirv_stage = False
+    require_validation = require_spirv_validation or saw_spirv_output
     for stage in stages:
         if not isinstance(stage, dict):
             continue
@@ -137,25 +140,26 @@ def validate_spirv_artifacts(
         saw_spirv_stage = True
         artifact_path = stage.get("artifactPath")
         if not isinstance(artifact_path, str) or not artifact_path:
-            if require_spirv_validation:
-                failures.append("SPIR-V stage missing artifactPath for validation")
+            failures.append("SPIR-V stage missing artifactPath for validation")
             continue
+        resolved_artifact_path = artifact_path
+        if not Path(artifact_path).is_absolute():
+            resolved_artifact_path = str((manifest_path.parent / artifact_path).resolve())
         if not spirv_val:
-            if require_spirv_validation:
-                failures.append("SPIR-V stage present but --spirv-val not provided")
+            failures.append("SPIR-V stage present but --spirv-val not provided")
             continue
         completed = subprocess.run(
-            [spirv_val, artifact_path],
+            [spirv_val, resolved_artifact_path],
             capture_output=True,
             text=True,
             check=False,
         )
         if completed.returncode != 0:
             stderr = completed.stderr.strip() or completed.stdout.strip() or "spirv-val failed"
-            failures.append(f"spirv-val failed for {artifact_path}: {stderr}")
+            failures.append(f"spirv-val failed for {resolved_artifact_path}: {stderr}")
             continue
         validated += 1
-    if require_spirv_validation and saw_spirv_output and not saw_spirv_stage:
+    if require_validation and saw_spirv_output and not saw_spirv_stage:
         failures.append("SPIR-V artifact present but manifest has no SPIR-V artifact stage")
     return failures, validated
 

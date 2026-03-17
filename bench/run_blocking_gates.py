@@ -498,17 +498,18 @@ def main() -> int:
             if not shader_schema_path.exists():
                 print(f"FAIL: missing --shader-artifact-schema: {shader_schema_path}")
                 return 1
-            if args.shader_artifact_require_spirv_validation:
-                spirv_val = args.shader_artifact_spirv_val.strip()
-                if not spirv_val:
-                    print(
-                        "FAIL: --shader-artifact-require-spirv-validation "
-                        "requires --shader-artifact-spirv-val"
-                    )
-                    return 1
-                if shutil.which(spirv_val) is None:
-                    print(f"FAIL: missing --shader-artifact-spirv-val executable: {spirv_val}")
-                    return 1
+            spirv_val = args.shader_artifact_spirv_val.strip()
+            if not spirv_val:
+                spirv_val = shutil.which("spirv-val") or ""
+            if args.shader_artifact_require_spirv_validation and not spirv_val:
+                print(
+                    "FAIL: --shader-artifact-require-spirv-validation "
+                    "requires --shader-artifact-spirv-val or spirv-val on PATH"
+                )
+                return 1
+            if spirv_val and shutil.which(spirv_val) is None:
+                print(f"FAIL: missing --shader-artifact-spirv-val executable: {spirv_val}")
+                return 1
             shader_artifact_command = [
                 sys.executable,
                 str(shader_artifact_gate),
@@ -519,11 +520,9 @@ def main() -> int:
             ]
             if args.shader_artifact_require_manifest:
                 shader_artifact_command.append("--require-manifest")
-            if args.shader_artifact_spirv_val.strip():
-                shader_artifact_command.extend(
-                    ["--spirv-val", args.shader_artifact_spirv_val.strip()]
-                )
-            if args.shader_artifact_require_spirv_validation:
+            if spirv_val:
+                shader_artifact_command.extend(["--spirv-val", spirv_val])
+            if args.shader_artifact_require_spirv_validation and not spirv_val:
                 shader_artifact_command.append("--require-spirv-validation")
             run_gate("shader-artifact", shader_artifact_command)
 

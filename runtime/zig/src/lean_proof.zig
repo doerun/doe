@@ -18,6 +18,12 @@ fn comptimeContains(haystack: []const u8, needle: []const u8) bool {
     return false;
 }
 
+fn requireTheorem(comptime json: []const u8, comptime theorem: []const u8) void {
+    if (!comptimeContains(json, theorem)) {
+        @compileError("lean proof artifact: missing required theorem " ++ theorem);
+    }
+}
+
 comptime {
     @setEvalBranchQuota(100_000);
     if (build_options.lean_verified) {
@@ -49,5 +55,11 @@ comptime {
 
         if (!comptimeContains(json, "\"identityActionPreservesCommand\""))
             @compileError("lean proof artifact: missing required theorem identityActionPreservesCommand");
+
+        requireTheorem(json, "\"gid_component_lt_total\"");
+        requireTheorem(json, "\"gid_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"clamp_noop_when_inbounds\"");
+        requireTheorem(json, "\"gid_2d_inbounds\"");
+        requireTheorem(json, "\"flat_index_2d_inbounds\"");
     }
 }

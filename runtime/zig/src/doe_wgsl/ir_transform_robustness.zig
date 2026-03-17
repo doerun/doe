@@ -58,10 +58,13 @@ fn transform_function(allocator: std.mem.Allocator, module: *ir.Module, function
 
 /// Resolve through ref types to get the indexable element type.
 fn resolve_indexable_type(types: *const ir.TypeStore, ty: ir.TypeId) ir.TypeId {
-    return switch (types.get(ty)) {
-        .ref => |ref_ty| ref_ty.elem,
-        else => ty,
-    };
+    var current = ty;
+    while (true) {
+        switch (types.get(current)) {
+            .ref => |ref_ty| current = ref_ty.elem,
+            else => return current,
+        }
+    }
 }
 
 /// Intern the u32 scalar type, creating it if it does not already exist.
@@ -209,6 +212,25 @@ fn f32_type(module: *ir.Module) ir.TypeId {
     unreachable;
 }
 
+fn add_struct_type(
+    module: *ir.Module,
+    allocator: std.mem.Allocator,
+    name: []const u8,
+    fields: []const struct { name: []const u8, ty: ir.TypeId },
+) !ir.TypeId {
+    var struct_def = ir.StructDef{ .name = try ir.dup_string(allocator, name) };
+    errdefer struct_def.deinit(allocator);
+    for (fields) |field| {
+        try struct_def.fields.append(allocator, .{
+            .name = try ir.dup_string(allocator, field.name),
+            .ty = field.ty,
+        });
+    }
+    try module.structs.append(allocator, struct_def);
+    const struct_id: ir.StructId = @intCast(module.structs.items.len - 1);
+    return try module.types.intern(.{ .struct_ = struct_id });
+}
+
 test "robustness: sized array index is clamped" {
     const allocator = testing.allocator;
     var module = try make_test_module(allocator);
@@ -292,6 +314,154 @@ test "robustness: vector index is clamped" {
     const max_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
     const max_expr = module.functions.items[0].exprs.items[max_arg_id];
     try testing.expectEqual(@as(u64, 3), max_expr.data.int_lit);
+}
+
+test "robustness: struct member and nested array indices are clamped" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+
+    // array<array<f32, 4>, 3>
+    const inner_arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = 4 } });
+    const outer_arr_ty = try module.types.intern(.{ .array = .{ .elem = inner_arr_ty, .len = 3 } });
+    const struct_ty = try add_struct_type(&module, allocator, "Wrapper", &.{
+        .{ .name = "data", .ty = outer_arr_ty },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    try function.locals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "wrapper"),
+        .ty = struct_ty,
+        .mutable = false,
+    });
+
+    // expr 0: local_ref(0) — the struct wrapper
+    const base_id = try function.append_expr(allocator, .{
+        .ty = struct_ty,
+        .category = .value,
+        .data = .{ .local_ref = 0 },
+    });
+    // expr 1: member { base, data } — array<array<f32, 4>, 3>
+    const member_id = try function.append_expr(allocator, .{
+        .ty = outer_arr_ty,
+        .category = .value,
+        .data = .{
+            .member = .{
+                .base = base_id,
+                .field_name = try ir.dup_string(allocator, "data"),
+                .field_index = 0,
+            },
+        },
+    });
+    // expr 2: int_lit(9) — out of bounds for the outer array
+    const outer_idx_id = try function.append_expr(allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 9 },
+    });
+    // expr 3: index { member, outer_idx } — inner array< f32, 4 >
+    const outer_access_id = try function.append_expr(allocator, .{
+        .ty = inner_arr_ty,
+        .category = .value,
+        .data = .{ .index = .{ .base = member_id, .index = outer_idx_id } },
+    });
+    // expr 4: int_lit(8) — out of bounds for the inner array
+    const inner_idx_id = try function.append_expr(allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 8 },
+    });
+    // expr 5: index { outer_access, inner_idx } — final f32 element
+    const inner_access_id = try function.append_expr(allocator, .{
+        .ty = f32_ty,
+        .category = .value,
+        .data = .{ .index = .{ .base = outer_access_id, .index = inner_idx_id } },
+    });
+
+    try module.functions.append(allocator, function);
+    try apply(allocator, &module);
+
+    const outer_transformed = module.functions.items[0].exprs.items[outer_access_id];
+    try testing.expect(outer_transformed.data == .index);
+    const outer_min_id = outer_transformed.data.index.index;
+    const outer_min_expr = module.functions.items[0].exprs.items[outer_min_id];
+    try testing.expectEqualStrings("min", outer_min_expr.data.call.name);
+    const outer_max_id = module.functions.items[0].expr_args.items[outer_min_expr.data.call.args.start + 1];
+    const outer_max_expr = module.functions.items[0].exprs.items[outer_max_id];
+    try testing.expectEqual(@as(u64, 2), outer_max_expr.data.int_lit);
+
+    const inner_transformed = module.functions.items[0].exprs.items[inner_access_id];
+    try testing.expect(inner_transformed.data == .index);
+    const inner_min_id = inner_transformed.data.index.index;
+    const inner_min_expr = module.functions.items[0].exprs.items[inner_min_id];
+    try testing.expectEqualStrings("min", inner_min_expr.data.call.name);
+    const inner_max_id = module.functions.items[0].expr_args.items[inner_min_expr.data.call.args.start + 1];
+    const inner_max_expr = module.functions.items[0].exprs.items[inner_max_id];
+    try testing.expectEqual(@as(u64, 3), inner_max_expr.data.int_lit);
+}
+
+test "robustness: nested refs to arrays are unwrapped for clamping" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+
+    // array<f32, 5> wrapped in two ref layers.
+    const arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = 5 } });
+    const ref_ty = try module.types.intern(.{ .ref = .{
+        .elem = arr_ty,
+        .addr_space = .function,
+        .access = .read_write,
+    } });
+    const nested_ref_ty = try module.types.intern(.{ .ref = .{
+        .elem = ref_ty,
+        .addr_space = .function,
+        .access = .read_write,
+    } });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    try function.locals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "data"),
+        .ty = nested_ref_ty,
+        .mutable = false,
+    });
+
+    const base_id = try function.append_expr(allocator, .{
+        .ty = nested_ref_ty,
+        .category = .value,
+        .data = .{ .local_ref = 0 },
+    });
+    const idx_id = try function.append_expr(allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 11 },
+    });
+    const index_id = try function.append_expr(allocator, .{
+        .ty = f32_ty,
+        .category = .value,
+        .data = .{ .index = .{ .base = base_id, .index = idx_id } },
+    });
+
+    try module.functions.append(allocator, function);
+    try apply(allocator, &module);
+
+    const transformed = module.functions.items[0].exprs.items[index_id];
+    try testing.expect(transformed.data == .index);
+    const new_index = transformed.data.index.index;
+    const min_expr = module.functions.items[0].exprs.items[new_index];
+    try testing.expectEqualStrings("min", min_expr.data.call.name);
+    const max_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
+    const max_expr = module.functions.items[0].exprs.items[max_arg_id];
+    try testing.expectEqual(@as(u64, 4), max_expr.data.int_lit);
 }
 
 test "robustness: runtime-sized array uses arrayLength" {
