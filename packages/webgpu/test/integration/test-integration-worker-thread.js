@@ -1,6 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requestDevice } from '../../src/node-runtime.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKER_PATH = resolve(__dirname, '../../examples/direct-webgpu/worker-compute.js');
@@ -23,6 +24,9 @@ function dispatch(worker, data) {
     worker.postMessage({ data });
   });
 }
+
+const preflight = await requestDevice();
+preflight.destroy?.();
 
 // ---------------------------------------------------------------------------
 // a. Single dispatch — verify ×2 transform

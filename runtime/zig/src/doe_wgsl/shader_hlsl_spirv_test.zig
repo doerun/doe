@@ -1128,3 +1128,41 @@ test "spirv texture: textureSampleGrad produces valid SPIR-V" {
     try testing.expect(len >= 20);
     try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
 }
+
+test "spirv texture: textureSampleOffset produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    let off = vec2i(1, 0);
+        \\    out_data[id.x] = textureSampleOffset(tex, samp, uv, off).x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureSampleLevelOffset produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    let off = vec2i(1, 0);
+        \\    out_data[id.x] = textureSampleLevelOffset(tex, samp, uv, 0.0, off).x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}

@@ -59,13 +59,13 @@ measurable, and shippable.
 Performance claims in Fawn are earned, not asserted. Citable results come
 from reproducible artifacts with explicit workload contracts, explicit
 comparison modes, and enough timing evidence to satisfy the claim gates in
-`process.md` and the Dawn-vs-Doe methodology in `performance-strategy.md`.
+`docs/process.md` and the Dawn-vs-Doe methodology in `docs/performance-strategy.md`.
 
-For tier compatibility and escalation rules, see `doe-support-matrix.md`.
+For tier compatibility and escalation rules, see `docs/doe-support-matrix.md`.
 For command-stream example coverage and status, see `examples/README.md`.
 
 Backend-native strict lanes and package-surface comparison lanes are tracked
-separately. The evolving ground truth lives in `status.md` and `bench/out/`;
+separately. The evolving ground truth lives in `docs/status.md` and `bench/out/`;
 the summary below is only the current top-line read.
 
 ### AMD Vulkan (RADV, GFX11)
@@ -198,9 +198,9 @@ Fawn is organized as a platform pipeline, not just a source tree:
 - `browser/fawn-browser/`: carries the Chromium integration lane
 - `pipeline/trace/` and `bench/`: replay work, validate comparability, and produce benchmark evidence
 
-Supporting docs at the repository root define the operating contract:
-`thesis.md`, `architecture.md`, `process.md`, `status.md`, `upgrade-policy.md`,
-and `licensing.md`.
+Supporting docs in `docs/` define the operating contract:
+`docs/thesis.md`, `docs/architecture.md`, `docs/process.md`, `docs/status.md`,
+`docs/upgrade-policy.md`, and `docs/licensing.md`.
 
 ## Package
 
@@ -214,6 +214,80 @@ Node is the primary supported package surface. Bun has API parity (61/61
 contract tests) through the package surface; the bridge layer is platform-
 dependent, but the intended package semantics stay the same. Cube maturity
 remains prototype until cells are populated by comparable benchmark artifacts.
+
+### Package layer stack
+
+Read this top to bottom:
+
+- application code sits above the package surface
+- `@simulatte/webgpu` is the main runtime package family
+- `@simulatte/webgpu-doe` is the transport-free helper package family, not a second runtime
+- the Doe runtime starts at the native transport and Zig drop-in layers below the JS object model
+
+```text
+Application code
+┌──────────────────────────────────────────────────────────────────────┐
+│ Your app / script / CLI / worker                                    │
+│ imports from @simulatte/webgpu or @simulatte/webgpu/compute         │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+@simulatte/webgpu package boundary
+┌──────────────────────────────────────────────────────────────────────┐
+│ Package exports                                                     │
+│ requestAdapter · requestDevice · create · globals                   │
+│ preflightShaderSource · providerInfo · createDoeRuntime             │
+│ plus the exported `doe` helper namespace and subpath entrypoints    │
+├──────────────────────────────────────────────────────────────────────┤
+│ Doe API helper layer                                                │
+│ exposed here as `doe.*` and also published as the transport-free    │
+│ helper package family `@simulatte/webgpu-doe`                       │
+│ doe.requestDevice · doe.bind · gpu.buffer.* · gpu.kernel.*          │
+│ gpu.compute                                                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ Shared WebGPU JS object model and validation                        │
+│ shared/full-surface.js · shared/encoder-surface.js                  │
+│ GPUDevice · GPUBuffer · GPUQueue · encoders · pipelines             │
+│ This is the raw WebGPU package surface, not the Doe helper API.     │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+Native transport boundary
+┌──────────────────────────────────────────────────────────────────────┐
+│ Node: N-API addon (`doe_napi.node`)                                 │
+│ Bun: bun-ffi.js flat symbol bridge                                  │
+│ Different transports, same package-facing JS contract               │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+Doe runtime boundary
+┌──────────────────────────────────────────────────────────────────────┐
+│ Zig drop-in ABI and native exports                                  │
+│ runtime/zig/src/doe_*.zig                                           │
+│ instance / adapter / device / queue / shader / pipeline / render    │
+├──────────────────────────────────────────────────────────────────────┤
+│ WGSL compiler and runtime partitions                                │
+│ doe_wgsl: lexer → parser → sema → IR → MSL/SPIR-V/HLSL/DXIL         │
+│ core/: compute, queue, resource, trace                              │
+│ full/: render, surface, lifecycle, modules                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ Backend abstraction and concrete backends                           │
+│ backend_iface → Metal / Vulkan / D3D12                              │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+OS GPU APIs and physical GPU
+```
+
+Boundary notes:
+
+- `@simulatte/webgpu` is the main runtime package family most users install. It owns the raw WebGPU surface and re-exports the Doe API helper layer.
+- `@simulatte/webgpu-doe` is the transport-free helper package family. It sits above the same underlying device and runtime; it does not introduce a separate backend or separate native engine.
+- The WebGPU vs Doe API boundary is inside the JS package layer:
+  raw `requestDevice()` / `device.*` on one side, `doe.*` and `gpu.*` helpers on the other.
+- Subpaths such as `compute`, `full`, `node`, `bun`, and `native-direct` are subpath entrypoints of `@simulatte/webgpu`, not separate products.
+- The JS vs native runtime boundary is the transport layer:
+  N-API on Node, Bun FFI on Bun, then the Zig drop-in runtime underneath.
 
 ```bash
 # install from npm
@@ -260,8 +334,8 @@ Blocking in v0: schema, correctness, trace, verification, and drop-in
 compatibility for artifact lanes.
 Advisory in v0: performance.
 
-Release requires all blocking gates green. See `process.md` for gate policy and `config/gates.json` for thresholds.
+Release requires all blocking gates green. See `docs/process.md` for gate policy and `config/gates.json` for thresholds.
 
 ## License
 
-See `licensing.md`.
+See [`docs/licensing.md`](docs/licensing.md).

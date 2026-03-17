@@ -108,6 +108,7 @@ pub fn ensure_streaming_render_encoder(self: anytype) !void {
         self.render_target,
         null,
         0,
+        0.0, 0.0, 0.0, 0.0,
     ) orelse return error.InvalidState;
     self.streaming_has_render = true;
 }

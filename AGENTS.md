@@ -23,12 +23,12 @@ This repo drives Doe development: quirk ingestion, verification, specialization,
 
 Before changing Fawn behavior, read:
 
-- `thesis.md`
-- `architecture.md`
-- `process.md`
-- `status.md`
-- `upgrade-policy.md`
-- `licensing.md`
+- `docs/thesis.md`
+- `docs/architecture.md`
+- `docs/process.md`
+- `docs/status.md`
+- `docs/upgrade-policy.md`
+- `docs/licensing.md`
 - `pipeline/agent/README.md`
 - `pipeline/lean/README.md`
 - `runtime/zig/README.md`
@@ -39,7 +39,7 @@ If a change affects runtime-visible behavior and any mandatory doc above has not
 
 For Dawn-vs-Doe performance work, also read:
 
-- `performance-strategy.md`
+- `docs/performance-strategy.md`
 
 ## Core principles (adopted)
 
@@ -60,7 +60,7 @@ For Dawn-vs-Doe performance work, also read:
 - do not auto-switch to hidden behavior not declared in contracts
 
 5. Reproducibility
-- every quality decision should emit artifacts required by gates in `process.md`
+- every quality decision should emit artifacts required by gates in `docs/process.md`
 - benchmark and trace artifacts must include traceability fields (module/op hash chain)
 
 ## Non-negotiables
@@ -69,7 +69,7 @@ For Dawn-vs-Doe performance work, also read:
 - any production behavior change must be reflected in versioned config.
 
 2. Placeholder discipline
-- placeholders are allowed only for benchmark/gate bootstrap thresholds when explicitly flagged in config and tracked in `status.md` and gate policy.
+- placeholders are allowed only for benchmark/gate bootstrap thresholds when explicitly flagged in config and tracked in `docs/status.md` and gate policy.
 - runtime behavior placeholders are not allowed in `zig` execution paths; implement fully or fail with explicit unsupported taxonomy.
 
 3. Schema discipline
@@ -139,7 +139,7 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - ingestion and policy should remain in `pipeline/agent/`, `pipeline/trace/`, and `bench/` tooling;
 - proof-bound work belongs to `pipeline/lean/`;
 - specialization work belongs to `runtime/zig/`;
-- shared orchestration in `process.md` and config files.
+- shared orchestration in `docs/process.md` and config files.
 
 ## Zig-first, Lean-eliminate policy
 
@@ -166,7 +166,7 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - split by cohesive functionality, not by arbitrary line count
 - group by feature (e.g. `pipeline_cache.zig`) not by type (e.g. `helpers.zig`)
 - keep related code together; splitting a file must not scatter a single concern
-- Python benchmark and tooling files must stay modular; when a file exceeds 1200 lines, add a tracked sharding follow-up in `status.md` with owner and next split target.
+- Python benchmark and tooling files must stay modular; when a file exceeds 1200 lines, add a tracked sharding follow-up in `docs/status.md` with owner and next split target.
 
 ## Constants and thresholds
 
@@ -232,8 +232,8 @@ For each change set, verify:
 
 - schema updates and migration notes are consistent
 - docs in this repo reflect behavior
-- gate expectations were updated or confirmed in `process.md`
+- gate expectations were updated or confirmed in `docs/process.md`
 - pipeline/trace/replay outputs are consistent with the changed behavior
 - if Dawn-vs-Doe benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
 - if any workload is marked claimable, verify structural work equivalence: both sides executed the same commands, dispatch counts match, timing phases have symmetric non-zero coverage, and no hardware-path asymmetry is unannoted
-- `status.md` records remaining placeholders, temporary methodology choices, and follow-up work
+- `docs/status.md` records remaining placeholders, temporary methodology choices, and follow-up work

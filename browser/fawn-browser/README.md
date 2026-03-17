@@ -41,7 +41,7 @@ This directory is isolated from core runtime development by policy:
 3. Any future implementation promoted from this layer must:
    - move to core module directories (`runtime/zig/`, `bench/`, `config/`, etc.),
    - land with schema and migration updates,
-   - pass blocking gates defined in `process.md`.
+   - pass blocking gates defined in `docs/process.md`.
 4. Nothing in this layer bypasses stage discipline:
    - Mine -> Normalize -> Verify -> Bind -> Gate -> Benchmark -> Release.
 
@@ -184,7 +184,7 @@ Future implementation promoted from this layer must use config-as-code:
 1. Config files in `config/*.json`.
 2. Schema files in `config/*schema*.json`.
 3. Migration notes in `config/migration-notes.md` for runtime-visible changes.
-4. Status tracking updates in `status.md` for temporary placeholders or staged methods.
+4. Status tracking updates in `docs/status.md` for temporary placeholders or staged methods.
 
 ## Gate policy alignment
 

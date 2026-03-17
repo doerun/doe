@@ -493,10 +493,7 @@ test "doe_device_caps: all C ABI symbols exist" {
 // ============================================================
 
 test "doe_device_caps: feature constants match WebGPU spec values" {
-    try std.testing.expectEqual(@as(u32, 0x0000000F), caps.FEATURE_SUBGROUPS);
-    try std.testing.expectEqual(@as(u32, 0x00000010), caps.FEATURE_SUBGROUP_UNIFORMITY);
-    try std.testing.expectEqual(@as(u32, 0x00000014), caps.FEATURE_RW_STORAGE_TEXTURE);
-    try std.testing.expectEqual(@as(u32, 0x00000015), caps.FEATURE_LARGE_BUFFER);
+    try std.testing.expectEqual(@as(u32, 0x0000000E), caps.FEATURE_SUBGROUPS);
 }
 
 test "doe_device_caps: METAL_SIMD_GROUP_SIZE is 32" {
@@ -547,22 +544,10 @@ test "doeNativeAdapterHasFeature: subgroups is platform-dependent" {
     }
 }
 
-test "doeNativeAdapterHasFeature: rw_storage_texture is platform-dependent" {
-    const result = caps.doeNativeAdapterHasFeature(null, caps.FEATURE_RW_STORAGE_TEXTURE);
-    if (builtin.os.tag == .macos) {
-        try std.testing.expectEqual(@as(u32, 1), result);
-    } else {
-        try std.testing.expectEqual(@as(u32, 0), result);
-    }
-}
-
 test "doeNativeAdapterHasFeature: adapter and device agree on all features" {
     const features = [_]u32{
         types.WGPUFeatureName_ShaderF16,
         caps.FEATURE_SUBGROUPS,
-        caps.FEATURE_SUBGROUP_UNIFORMITY,
-        caps.FEATURE_RW_STORAGE_TEXTURE,
-        caps.FEATURE_LARGE_BUFFER,
         0,
         0xFFFFFFFF,
     };

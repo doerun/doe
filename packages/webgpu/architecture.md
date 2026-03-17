@@ -11,6 +11,14 @@ For contract details see the companion docs:
 
 ## Layer diagram
 
+For the condensed package boundary map, see the root
+[`README.md`](../../README.md). That overview is the best starting point when
+you want to understand where application code stops, where
+`@simulatte/webgpu` stops, where `@simulatte/webgpu-doe` sits, and where the
+native Doe runtime begins.
+
+The stack below is the package-local inventory view of the same layers.
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  Package exports                                         │

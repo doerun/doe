@@ -18,9 +18,11 @@ pub const emit_msl_shared = @import("emit_msl_shared.zig");
 pub const emit_msl_vertex = @import("emit_msl_vertex.zig");
 pub const emit_msl_fragment = @import("emit_msl_fragment.zig");
 pub const emit_hlsl = @import("emit_hlsl.zig");
+pub const emit_hlsl_texture = @import("emit_hlsl_texture.zig");
 pub const emit_spirv = @import("emit_spirv.zig");
 pub const emit_spirv_fn = @import("emit_spirv_fn.zig");
 pub const emit_spirv_stages = @import("emit_spirv_stages.zig");
+pub const emit_spirv_texture = @import("emit_spirv_texture.zig");
 pub const emit_dxil = @import("emit_dxil.zig");
 const legacy_msl = @import("doe_wgsl_msl.zig");
 
@@ -437,9 +439,11 @@ test {
     _ = emit_msl_vertex;
     _ = emit_msl_fragment;
     _ = emit_hlsl;
+    _ = emit_hlsl_texture;
     _ = emit_spirv;
     _ = emit_spirv_fn;
     _ = emit_spirv_stages;
+    _ = emit_spirv_texture;
     _ = emit_dxil;
     // Test files are registered in test_suite*.zig, not imported here,
     // to avoid bleeding failing tests into every consumer of mod.zig.
@@ -467,7 +471,10 @@ test "translate vertex shader with struct I/O to MSL" {
     const len = try translateToMsl(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
     const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "vertex ") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[position]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[attribute(0)]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[attribute(1)]]") != null);
 }
 
 test "translate fragment shader with MRT output to MSL" {
@@ -490,7 +497,9 @@ test "translate fragment shader with MRT output to MSL" {
     const len = try translateToMsl(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
     const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "[[fragment]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "fragment ") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[color(0)]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[color(1)]]") != null);
 }
 
 test "translate fragment shader with builtin inputs and discard to MSL" {
@@ -510,7 +519,9 @@ test "translate fragment shader with builtin inputs and discard to MSL" {
     const len = try translateToMsl(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
     const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "[[fragment]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "fragment ") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[position]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[front_facing]]") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "discard_fragment()") != null);
 }
 
@@ -528,7 +539,7 @@ test "translate vertex shader with builtin vertex_index and instance_index to MS
     const len = try translateToMsl(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
     const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "vertex ") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex_id]]") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "[[instance_id]]") != null);
 }
@@ -567,6 +578,19 @@ test "robustness: runtime-sized array index emits arrayLength in MSL output" {
     try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes") != null);
 }
 
+test "arrayLength(&buf) in comparison compiles" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    if (id.x < arrayLength(&buf)) { buf[id.x] = buf[id.x] * 2.0; }
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
 test "robustness: runtime-sized constant index coerces abstract int for MSL min()" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
@@ -580,3 +604,5 @@ test "robustness: runtime-sized constant index coerces abstract int for MSL min(
     const msl = out[0..len];
     try std.testing.expect(std.mem.indexOf(u8, msl, "min(uint(0), (uint(_doe_sizes[0] / sizeof(uint)) - 1))") != null);
 }
+
+

@@ -1,7 +1,13 @@
 const native = @import("doe_wgpu_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
 const metal_bridge_compute_dispatch_copy_signal_commit = bridge.metal_bridge_compute_dispatch_copy_signal_commit;
+const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
+const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
+const metal_bridge_release = bridge.metal_bridge_release;
 const MAX_BIND = native.MAX_BIND;
+const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
+const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
 
 /// Single-call compute dispatch + optional same-submit copy + event signal + commit.
 /// When the follow-on copy is a CPU-visible shared-buffer readback, we schedule it as
@@ -27,6 +33,7 @@ pub export fn doeNativeComputeDispatchFlush(
 
     // Flatten bind groups into linear Metal buffer array.
     var bufs: [MAX_BIND * 4]?*anyopaque = [_]?*anyopaque{null} ** (MAX_BIND * 4);
+    var buf_sizes: [MAX_BIND * 4]u64 = [_]u64{0} ** (MAX_BIND * 4);
     var buf_total: u32 = 0;
     for (0..@min(bg_count, 4)) |i| {
         const bg = native.cast(native.DoeBindGroup, bg_ptrs[i]) orelse continue;
@@ -34,8 +41,24 @@ pub export fn doeNativeComputeDispatchFlush(
             const idx = i * MAX_BIND + j;
             if (idx < bufs.len) {
                 bufs[idx] = bg.buffers[j];
+                buf_sizes[idx] = bg.buffer_sizes[j];
                 if (idx + 1 > buf_total) buf_total = @intCast(idx + 1);
             }
+        }
+    }
+
+    var sizes_mtl: ?*anyopaque = null;
+    defer if (sizes_mtl) |smtl| metal_bridge_release(smtl);
+    if (pipe.needs_sizes_buf) {
+        sizes_mtl = metal_bridge_device_new_buffer_shared(q.dev.mtl_device, SIZES_BUF_BYTES);
+        if (sizes_mtl) |smtl| {
+            if (metal_bridge_buffer_contents(smtl)) |ptr| {
+                const sizes: *[MSL_SIZES_SLOT + 1]u32 = @ptrCast(@alignCast(ptr));
+                for (0..MSL_SIZES_SLOT + 1) |i| sizes[i] = 0;
+                for (0..buf_total) |i| sizes[i] = @intCast(buf_sizes[i]);
+            }
+            bufs[MSL_SIZES_SLOT] = smtl;
+            if (buf_total <= MSL_SIZES_SLOT) buf_total = MSL_SIZES_SLOT + 1;
         }
     }
 

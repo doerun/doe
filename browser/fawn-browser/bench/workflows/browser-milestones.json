@@ -667,7 +667,7 @@
         {
           "id": "status_doc",
           "kind": "doc",
-          "path": "status.md",
+          "path": "docs/status.md",
           "description": "Current Fawn status doc with promoted Track B (modules) ownership and gate state.",
           "required": true,
           "mustExist": true

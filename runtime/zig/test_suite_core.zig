@@ -45,4 +45,5 @@ comptime {
     _ = native_api_core_test;
     _ = capability_runtime_test;
     _ = handle_safety_test;
+    _ = precompiled_shader_test;
 }

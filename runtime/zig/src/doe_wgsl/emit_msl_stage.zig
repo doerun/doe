@@ -5,13 +5,9 @@ const maps = @import("emit_msl_maps.zig");
 pub fn emit_stage_function(self: anytype, function_index: ir.FunctionId) !void {
     const function = self.module.functions.items[function_index];
     const stage = function.stage orelse return error.InvalidIr;
-    if (stage == .compute or function.return_io == null) return error.InvalidIr;
-    for (function.params.items) |param| {
-        if (switch (self.module.types.get(param.ty)) {
-            .struct_ => true,
-            else => false,
-        }) return error.InvalidIr;
-    }
+    if (stage == .compute) return error.InvalidIr;
+    // Need either scalar return with IO attr, or struct return with IO fields.
+    if (function.return_io == null and !is_io_struct(self, function.return_type)) return error.InvalidIr;
 
     try emit_stage_in_struct(self, function, stage);
     try emit_stage_out_struct(self, function, stage);
@@ -35,28 +31,103 @@ pub fn runtime_array_needs_size_param(self: anytype, global_name: []const u8) bo
     return false;
 }
 
+// Returns true if an IO attribute designates a stage_in field (location or position builtin).
+fn is_stage_in_io(io: ir.IoAttr) bool {
+    return io.location != null or io.builtin == .position;
+}
+
+fn is_io_struct(self: anytype, ty: ir.TypeId) bool {
+    return switch (self.module.types.get(ty)) {
+        .struct_ => |struct_id| {
+            const struct_def = self.module.structs.items[struct_id];
+            for (struct_def.fields.items) |field| {
+                if (field.io != null) return true;
+            }
+            return false;
+        },
+        else => false,
+    };
+}
+
+fn get_struct_def(self: anytype, ty: ir.TypeId) ?*const ir.StructDef {
+    return switch (self.module.types.get(ty)) {
+        .struct_ => |struct_id| &self.module.structs.items[struct_id],
+        else => null,
+    };
+}
+
+fn needs_stage_in(self: anytype, function: ir.Function) bool {
+    for (function.params.items) |param| {
+        if (get_struct_def(self, param.ty)) |struct_def| {
+            for (struct_def.fields.items) |field| {
+                const io = field.io orelse continue;
+                if (is_stage_in_io(io)) return true;
+            }
+        } else {
+            const io = param.io orelse continue;
+            if (is_stage_in_io(io)) return true;
+        }
+    }
+    return false;
+}
+
+fn emit_input_io_attr(self: anytype, io: ir.IoAttr, stage: ir.ShaderStage) !void {
+    if (io.location) |loc| {
+        try self.write(if (stage == .vertex) "attribute(" else "user(loc");
+        try self.write_u32(loc);
+        try self.write(")");
+    } else {
+        try self.write(maps.msl_builtin_name(io.builtin));
+    }
+}
+
+fn emit_output_io_attr(self: anytype, io: ir.IoAttr, stage: ir.ShaderStage) !void {
+    if (io.blend_src) |src_index| {
+        try self.write("color(0), index(");
+        try self.write_u32(src_index);
+        try self.write(")");
+    } else if (io.location) |loc| {
+        try self.write(if (stage == .fragment) "color(" else "user(loc");
+        try self.write_u32(loc);
+        try self.write(")");
+    } else {
+        try self.write(maps.msl_builtin_name(io.builtin));
+    }
+}
+
 fn emit_stage_in_struct(self: anytype, function: ir.Function, stage: ir.ShaderStage) !void {
-    if (!needs_stage_in(function)) return;
+    if (!needs_stage_in(self, function)) return;
     try self.write("\nstruct ");
     try self.write(function.name);
     try self.write("_stage_in {\n");
     self.indent += 4;
-    for (function.params.items, 0..) |param, index| {
-        const io = param.io orelse continue;
-        if (io.location == null and io.builtin != .position) continue;
-        try self.write_indent();
-        try self.emit_type(param.ty);
-        try self.write(" p");
-        try self.write_u32(@intCast(index));
-        try self.write(" [[");
-        if (io.location) |loc| {
-            try self.write(if (stage == .vertex) "attribute(" else "user(loc");
-            try self.write_u32(loc);
-            try self.write(")");
+    var flat_index: u32 = 0;
+    for (function.params.items) |param| {
+        if (get_struct_def(self, param.ty)) |struct_def| {
+            for (struct_def.fields.items) |field| {
+                const io = field.io orelse continue;
+                if (!is_stage_in_io(io)) continue;
+                try self.write_indent();
+                try self.emit_type(field.ty);
+                try self.write(" p");
+                try self.write_u32(flat_index);
+                try self.write(" [[");
+                try emit_input_io_attr(self, io, stage);
+                try self.write("]];\n");
+                flat_index += 1;
+            }
         } else {
-            try self.write(maps.msl_builtin_name(io.builtin));
+            const io = param.io orelse continue;
+            if (!is_stage_in_io(io)) continue;
+            try self.write_indent();
+            try self.emit_type(param.ty);
+            try self.write(" p");
+            try self.write_u32(flat_index);
+            try self.write(" [[");
+            try emit_input_io_attr(self, io, stage);
+            try self.write("]];\n");
+            flat_index += 1;
         }
-        try self.write("]];\n");
     }
     self.indent -= 4;
     try self.write("};\n");
@@ -67,33 +138,33 @@ fn emit_stage_out_struct(self: anytype, function: ir.Function, stage: ir.ShaderS
     try self.write(function.name);
     try self.write("_stage_out {\n");
     self.indent += 4;
-    try self.write_indent();
-    const io = function.return_io.?;
-    if (io.builtin == .clip_distances) {
-        // clip_distances: emit as float array with [[clip_distance]] attribute
-        const arr_len = switch (self.module.types.get(function.return_type)) {
-            .array => |arr| arr.len orelse 8,
-            else => 8,
-        };
-        try self.write("float value [[clip_distance]] [");
-        try self.write_u32(arr_len);
-        try self.write("];\n");
-    } else {
-        try self.emit_type(function.return_type);
-        try self.write(" value [[");
-        if (io.blend_src) |src_index| {
-            // dual-source blending: [[color(0), index(N)]]
-            try self.write("color(0), index(");
-            try self.write_u32(src_index);
-            try self.write(")");
-        } else if (io.location) |loc| {
-            try self.write(if (stage == .fragment) "color(" else "user(loc");
-            try self.write_u32(loc);
-            try self.write(")");
+    if (function.return_io) |io| {
+        try self.write_indent();
+        if (io.builtin == .clip_distances) {
+            const arr_len = switch (self.module.types.get(function.return_type)) {
+                .array => |arr| arr.len orelse 8,
+                else => 8,
+            };
+            try self.write("float value [[clip_distance]] [");
+            try self.write_u32(arr_len);
+            try self.write("];\n");
         } else {
-            try self.write(maps.msl_builtin_name(io.builtin));
+            try self.emit_type(function.return_type);
+            try self.write(" value [[");
+            try emit_output_io_attr(self, io, stage);
+            try self.write("]];\n");
         }
-        try self.write("]];\n");
+    } else if (get_struct_def(self, function.return_type)) |struct_def| {
+        for (struct_def.fields.items) |field| {
+            const io = field.io orelse continue;
+            try self.write_indent();
+            try self.emit_type(field.ty);
+            try self.write(" ");
+            try self.write(field.name);
+            try self.write(" [[");
+            try emit_output_io_attr(self, io, stage);
+            try self.write("]];\n");
+        }
     }
     self.indent -= 4;
     try self.write("};\n");
@@ -140,49 +211,107 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
     try self.write(maps.msl_function_name(function.name, stage));
     try self.write("(");
     var need_comma = false;
+    // Bound globals (textures, buffers, etc.)
     for (self.module.globals.items) |global| {
         if (global.binding == null) continue;
         if (need_comma) try self.write(", ");
         try self.emit_bound_global_param(global);
         need_comma = true;
     }
-    if (needs_stage_in(function)) {
+    // Stage-in struct
+    if (needs_stage_in(self, function)) {
         if (need_comma) try self.write(", ");
         try self.write(function.name);
         try self.write("_stage_in in [[stage_in]]");
         need_comma = true;
     }
+    // Non-stage-in builtin params (passed directly with [[builtin]] attribute)
     for (function.params.items) |param| {
-        const io = param.io orelse continue;
-        if (io.location != null or io.builtin == .position) continue;
-        if (need_comma) try self.write(", ");
-        try self.emit_type(param.ty);
-        try self.write(" ");
-        try self.write(param.name);
-        try self.write(" [[");
-        try self.write(maps.msl_builtin_name(io.builtin));
-        try self.write("]]");
-        need_comma = true;
+        if (get_struct_def(self, param.ty)) |struct_def| {
+            for (struct_def.fields.items) |field| {
+                const io = field.io orelse continue;
+                if (is_stage_in_io(io)) continue;
+                if (need_comma) try self.write(", ");
+                try self.emit_type(field.ty);
+                try self.write(" _blt_");
+                try self.write(field.name);
+                try self.write(" [[");
+                try self.write(maps.msl_builtin_name(io.builtin));
+                try self.write("]]");
+                need_comma = true;
+            }
+        } else {
+            const io = param.io orelse continue;
+            if (is_stage_in_io(io)) continue;
+            if (need_comma) try self.write(", ");
+            try self.emit_type(param.ty);
+            try self.write(" ");
+            try self.write(param.name);
+            try self.write(" [[");
+            try self.write(maps.msl_builtin_name(io.builtin));
+            try self.write("]]");
+            need_comma = true;
+        }
     }
     try self.write(") {\n");
     self.indent += 4;
-    for (function.params.items, 0..) |param, index| {
-        const io = param.io orelse continue;
-        if (io.location == null and io.builtin != .position) continue;
-        try self.write_indent();
-        try self.write("const ");
-        try self.emit_type(param.ty);
-        try self.write(" ");
-        try self.write(param.name);
-        try self.write(" = in.p");
-        try self.write_u32(@intCast(index));
-        try self.write(";\n");
+
+    // Body: extract stage_in values and construct params
+    var flat_index: u32 = 0;
+    for (function.params.items) |param| {
+        if (get_struct_def(self, param.ty)) |struct_def| {
+            // Struct param: create local, assign fields from stage_in and builtins
+            try self.write_indent();
+            try self.emit_type(param.ty);
+            try self.write(" ");
+            try self.write(param.name);
+            try self.write(";\n");
+            for (struct_def.fields.items) |field| {
+                const io = field.io orelse continue;
+                try self.write_indent();
+                try self.write(param.name);
+                try self.write(".");
+                try self.write(field.name);
+                try self.write(" = ");
+                if (is_stage_in_io(io)) {
+                    try self.write("in.p");
+                    try self.write_u32(flat_index);
+                    flat_index += 1;
+                } else {
+                    try self.write("_blt_");
+                    try self.write(field.name);
+                }
+                try self.write(";\n");
+            }
+        } else {
+            const io = param.io orelse continue;
+            if (!is_stage_in_io(io)) continue;
+            try self.write_indent();
+            try self.write("const ");
+            try self.emit_type(param.ty);
+            try self.write(" ");
+            try self.write(param.name);
+            try self.write(" = in.p");
+            try self.write_u32(flat_index);
+            try self.write(";\n");
+            flat_index += 1;
+        }
     }
+
+    // Call impl and handle return
     try self.write_indent();
     try self.write(function.name);
     try self.write("_stage_out out;\n");
-    try self.write_indent();
-    try self.write("out.value = ");
+
+    const is_struct_return = function.return_io == null and get_struct_def(self, function.return_type) != null;
+    if (is_struct_return) {
+        try self.write_indent();
+        try self.emit_type(function.return_type);
+        try self.write(" _result = ");
+    } else {
+        try self.write_indent();
+        try self.write("out.value = ");
+    }
     try self.write(function.name);
     try self.write("_impl(");
     need_comma = false;
@@ -206,16 +335,24 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
         need_comma = true;
     }
     try self.write(");\n");
+
+    // For struct return, copy fields from result to stage_out
+    if (is_struct_return) {
+        if (get_struct_def(self, function.return_type)) |struct_def| {
+            for (struct_def.fields.items) |field| {
+                if (field.io == null) continue;
+                try self.write_indent();
+                try self.write("out.");
+                try self.write(field.name);
+                try self.write(" = _result.");
+                try self.write(field.name);
+                try self.write(";\n");
+            }
+        }
+    }
+
     try self.write_indent();
     try self.write("return out;\n");
     self.indent -= 4;
     try self.write("}\n");
-}
-
-fn needs_stage_in(function: ir.Function) bool {
-    for (function.params.items) |param| {
-        const io = param.io orelse continue;
-        if (io.location != null or io.builtin == .position) return true;
-    }
-    return false;
 }

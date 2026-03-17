@@ -5,7 +5,7 @@ Purpose:
 
 Scope:
 - this document governs `browser/fawn-browser` operational maintenance.
-- it does not relax runtime or benchmark gate policy in `process.md`.
+- it does not relax runtime or benchmark gate policy in `docs/process.md`.
 
 ## 1. Integration boundary
 

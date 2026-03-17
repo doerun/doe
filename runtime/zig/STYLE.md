@@ -93,7 +93,7 @@ pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
 - Do not add comments that restate the code.
 - Use `///` doc comments for public function/type intent.
 - Inline comments are for preconditions, control-flow rationale, or non-obvious constraints.
-- Do not add TODO/FIXME inline; track follow-ups in `status.md`.
+- Do not add TODO/FIXME inline; track follow-ups in `docs/status.md`.
 
 ## Memory
 

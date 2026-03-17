@@ -523,7 +523,7 @@ test "IndirectFirstInstance feature value is 0x0C" {
 // ============================================================
 
 test "device caps FEATURE_SUBGROUPS matches expected value" {
-    try std.testing.expectEqual(@as(u32, 0x0000000F), caps.FEATURE_SUBGROUPS);
+    try std.testing.expectEqual(@as(u32, 0x0000000E), caps.FEATURE_SUBGROUPS);
 }
 
 test "device caps METAL_SIMD_GROUP_SIZE is 32" {

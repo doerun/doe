@@ -132,6 +132,8 @@ async function runDoeOneShotLayer() {
 
 async function main() {
   console.log("providerInfo:", providerInfo());
+  const preflight = await requestDevice();
+  preflight.destroy?.();
   await runDirectWebGpuLayer();
   await runDoeApiLayer();
   await runDoeOneShotLayer();

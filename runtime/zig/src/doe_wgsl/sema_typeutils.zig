@@ -58,7 +58,7 @@ pub fn bitcast_type_bits(module: *SemanticModule, ty: ir.TypeId) ?u32 {
 
 pub fn is_handle_type(ty: ir.Type) bool {
     return switch (ty) {
-        .sampler, .texture_2d, .texture_3d, .storage_texture_2d => true,
+        .sampler, .sampler_comparison, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => true,
         else => false,
     };
 }

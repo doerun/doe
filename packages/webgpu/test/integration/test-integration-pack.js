@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import os from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as compute from "../../src/compute.js";
 
 const PACKAGE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const DOE_PACKAGE_DIR = resolve(PACKAGE_DIR, "..", "webgpu-doe");
@@ -63,7 +64,10 @@ function npm_json(args, cwd) {
   }));
 }
 
-function main() {
+async function main() {
+  const preflight = await compute.doe.requestDevice();
+  preflight.device.destroy?.();
+
   const temp_root = mkdtempSync(join(os.tmpdir(), "simulatte-webgpu-pack-"));
   const consumer_dir = join(temp_root, "consumer");
   let tarball_path = null;

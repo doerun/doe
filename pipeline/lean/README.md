@@ -39,9 +39,9 @@ Finite-enum properties that require checking all cases. Zig `comptime` inline-fo
 | `strongerSafetyRaisesProofDemand` | Critical safety demands `.proven` proof | 3 enum values |
 | `identityActionComplete` | Exactly which actions are identity (iff) | 4 action variants × sub-cases |
 
-### `lean_verified` (9 theorems, ~65 lines)
+### `lean_verified` (14 theorems, ~100 lines)
 
-Quantified over arbitrary `List Obligation` — unbounded domain, cannot enumerate.
+Quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded domain, cannot enumerate.
 
 | Theorem | What it proves |
 |---------|---------------|
@@ -54,6 +54,11 @@ Quantified over arbitrary `List Obligation` — unbounded domain, cannot enumera
 | `structurallyEquivalentGeometry_refl` | Any workload geometry is structurally equivalent to itself |
 | `structurallyEquivalentGeometry_forall_components` | Arbitrary Nat-valued buffer/dispatch components remain structurally equivalent when mirrored |
 | `equalGeometrySetsExecutionShapeFacts` | Equal Nat-valued geometry forces execution-shape comparability facts true |
+| `gid_component_lt_total` | Single-dimension gid < array_length when dispatch fits |
+| `gid_inbounds_when_dispatch_fits` | 1D dispatch: gid.x < buf.length when ws.x * nwg.x ≤ buf.length |
+| `clamp_noop_when_inbounds` | min(gid, len-1) = gid when gid < len (connects proof to transform) |
+| `gid_2d_inbounds` | Both components bounded independently for 2D dispatch |
+| `flat_index_2d_inbounds` | gid.y * width + gid.x < width * height when components bounded |
 
 ### `lean_fixture` (10 theorems, ~35 lines)
 
@@ -101,6 +106,9 @@ Full theorem pack (`Fawn/Full/`, maps to `runtime/zig/src/full/`):
 - `Fawn/Full/Comparability.lean` — comparability obligation model (`lean_verified`)
 - `Fawn/Full/ComparabilityFixtures.lean` — parity fixtures (`lean_fixture`)
 - `Fawn/Full/WorkloadGeometry.lean` — arbitrary-`Nat` workload-geometry theorems feeding execution-shape comparability
+
+Shader theorem pack (`Fawn/Shader/`, maps to `runtime/zig/src/doe_wgsl/`):
+- `Fawn/Shader/ComputeBounds.lean` — compute dispatch bounds safety, proving global_invocation_id < array_length under dispatch-fit preconditions. Enables bounds-check elimination in `ir_transform_robustness.zig`.
 
 Generated theorem contract:
 - `Fawn/Generated/ComparabilityContract.lean` — generated from `config/comparability-obligations.json`; provides the canonical obligation IDs, fact record, and `obligationsFromFacts`

@@ -16,6 +16,7 @@ pub fn init_builtin_types(module: *SemanticModule) !void {
     module.f32_type = try module.types.intern(.{ .scalar = .f32 });
     module.f16_type = try module.types.intern(.{ .scalar = .f16 });
     module.sampler_type = try module.types.intern(.{ .sampler = {} });
+    module.sampler_comparison_type = try module.types.intern(.{ .sampler_comparison = {} });
 }
 
 pub fn concrete_numeric_type(module: *SemanticModule, lhs: ir.TypeId, rhs: ir.TypeId) ir.TypeId {

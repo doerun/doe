@@ -22,7 +22,17 @@ const metal_bridge_release = bridge.metal_bridge_release;
 
 const WGPU_WAIT_STATUS_SUCCESS: u32 = 1;
 const WGPU_REQUEST_STATUS_SUCCESS: u32 = 1;
+const WGPU_REQUEST_STATUS_UNAVAILABLE: u32 = 3;
 const WGPU_REQUEST_STATUS_ERROR: u32 = 4;
+const MSG_ADAPTER_UNAVAILABLE = "metal default device unavailable";
+const MSG_ADAPTER_ALLOCATION_FAILED = "adapter allocation failed";
+const MSG_INVALID_ADAPTER = "invalid adapter handle";
+const MSG_QUEUE_UNAVAILABLE = "metal command queue unavailable";
+const MSG_DEVICE_ALLOCATION_FAILED = "device allocation failed";
+
+fn stringView(comptime message: []const u8) types.WGPUStringView {
+    return .{ .data = message.ptr, .length = message.len };
+}
 
 // ============================================================
 // Instance
@@ -62,16 +72,16 @@ pub export fn doeNativeRequestAdapterFlat(
     _ = inst;
     const device = metal_bridge_create_default_device();
     if (device == null) {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
+        if (callback) |cb| cb(WGPU_REQUEST_STATUS_UNAVAILABLE, null, stringView(MSG_ADAPTER_UNAVAILABLE), userdata1, userdata2);
         return .{ .id = 1 };
     }
     const adapter = make(DoeAdapter) orelse {
         metal_bridge_release(device);
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
+        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
         return .{ .id = 1 };
     };
     adapter.* = .{ .mtl_device = device };
-    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), .{ .data = null, .length = 0 }, userdata1, userdata2);
+    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
     return .{ .id = 1 };
 }
 
@@ -83,19 +93,18 @@ pub export fn doeNativeInstanceRequestAdapter(
 ) callconv(.c) types.WGPUFuture {
     _ = options;
     _ = inst;
-    const empty_msg = types.WGPUStringView{ .data = null, .length = 0 };
     const device = metal_bridge_create_default_device();
     if (device == null) {
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
+        info.callback(.unavailable, null, stringView(MSG_ADAPTER_UNAVAILABLE), info.userdata1, info.userdata2);
         return .{ .id = 1 };
     }
     const adapter = make(DoeAdapter) orelse {
         metal_bridge_release(device);
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
+        info.callback(.@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), info.userdata1, info.userdata2);
         return .{ .id = 1 };
     };
     adapter.* = .{ .mtl_device = device };
-    info.callback(.success, toOpaque(adapter), empty_msg, info.userdata1, info.userdata2);
+    info.callback(.success, toOpaque(adapter), stringView(""), info.userdata1, info.userdata2);
     return .{ .id = 1 };
 }
 
@@ -114,18 +123,22 @@ pub export fn doeNativeAdapterRequestDevice(
     info: types.WGPURequestDeviceCallbackInfo,
 ) callconv(.c) types.WGPUFuture {
     _ = desc;
-    const empty_msg = types.WGPUStringView{ .data = null, .length = 0 };
     const adapter = cast(DoeAdapter, adapter_raw) orelse {
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
+        info.callback(.@"error", null, stringView(MSG_INVALID_ADAPTER), info.userdata1, info.userdata2);
         return .{ .id = 2 };
     };
     const queue = metal_bridge_device_new_command_queue(adapter.mtl_device);
+    if (queue == null) {
+        info.callback(.@"error", null, stringView(MSG_QUEUE_UNAVAILABLE), info.userdata1, info.userdata2);
+        return .{ .id = 2 };
+    }
     const dev = make(DoeDevice) orelse {
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
+        metal_bridge_release(queue);
+        info.callback(.@"error", null, stringView(MSG_DEVICE_ALLOCATION_FAILED), info.userdata1, info.userdata2);
         return .{ .id = 2 };
     };
     dev.* = .{ .mtl_device = adapter.mtl_device, .mtl_queue = queue };
-    info.callback(.success, toOpaque(dev), empty_msg, info.userdata1, info.userdata2);
+    info.callback(.success, toOpaque(dev), stringView(""), info.userdata1, info.userdata2);
     return .{ .id = 2 };
 }
 
@@ -139,16 +152,21 @@ pub export fn doeNativeRequestDeviceFlat(
     userdata2: ?*anyopaque,
 ) callconv(.c) types.WGPUFuture {
     const adapter = cast(DoeAdapter, adapter_raw) orelse {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
+        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_INVALID_ADAPTER), userdata1, userdata2);
         return .{ .id = 2 };
     };
     const queue = metal_bridge_device_new_command_queue(adapter.mtl_device);
+    if (queue == null) {
+        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_QUEUE_UNAVAILABLE), userdata1, userdata2);
+        return .{ .id = 2 };
+    }
     const dev = make(DoeDevice) orelse {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
+        metal_bridge_release(queue);
+        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_DEVICE_ALLOCATION_FAILED), userdata1, userdata2);
         return .{ .id = 2 };
     };
     dev.* = .{ .mtl_device = adapter.mtl_device, .mtl_queue = queue };
-    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(dev), .{ .data = null, .length = 0 }, userdata1, userdata2);
+    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(dev), stringView(""), userdata1, userdata2);
     return .{ .id = 2 };
 }
 

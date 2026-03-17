@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import os from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createDoeRuntime } from "../../src/node-runtime.js";
+import { createDoeRuntime, requestDevice } from "../../src/node-runtime.js";
 
 const PACKAGE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const REPO_ROOT = resolve(PACKAGE_DIR, "..", "..");
@@ -34,11 +34,14 @@ function defaultBenchOptions() {
     return {};
 }
 
-function main() {
+async function main() {
     if (!existsSync(DEFAULT_COMMANDS)) {
         console.log(`skip: commands file not found: ${DEFAULT_COMMANDS}`);
         return;
     }
+
+    const preflight = await requestDevice();
+    preflight.destroy?.();
 
     const runtime = createDoeRuntime({
         binPath: process.env.FAWN_DOE_BIN,
@@ -79,7 +82,7 @@ function main() {
 }
 
 try {
-    main();
+    await main();
 } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

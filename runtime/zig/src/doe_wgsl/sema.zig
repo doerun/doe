@@ -517,6 +517,7 @@ const Analyzer = struct {
         return switch (self.module.tree.tokens.items[node.main_token].tag) {
             .@"-", .@"~" => operand_ty,
             .@"!" => self.module.bool_type,
+            .@"&" => operand_ty,
             else => error.InvalidWgsl,
         };
     }
@@ -662,8 +663,10 @@ const Analyzer = struct {
         if (std.mem.eql(u8, name, "f32")) return self.module.f32_type;
         if (std.mem.eql(u8, name, "f16")) return self.module.f16_type;
         if (std.mem.eql(u8, name, "sampler")) return self.module.sampler_type;
+        if (std.mem.eql(u8, name, "sampler_comparison")) return self.module.sampler_comparison_type;
         if (std.mem.eql(u8, name, "texture_2d")) return try self.module.types.intern(.{ .texture_2d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_3d")) return try self.module.types.intern(.{ .texture_3d = self.module.f32_type });
+        if (std.mem.eql(u8, name, "texture_depth_2d")) return try self.module.types.intern(.{ .texture_depth_2d = {} });
         if (self.try_resolve_named_type(name)) |ty| return ty;
         return error.UnknownType;
     }

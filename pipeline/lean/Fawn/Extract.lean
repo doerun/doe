@@ -4,6 +4,7 @@ import Fawn.Core.BufferLifecycle
 import Fawn.Core.Dispatch
 import Fawn.Full.ComparabilityFixtures
 import Fawn.Full.WorkloadGeometry
+import Fawn.Shader.ComputeBounds
 
 set_option maxRecDepth 1024
 
@@ -21,7 +22,7 @@ def main : IO Unit := do
   let densityFailureBlocking := (failedBlockingObligations (obligationsFromFacts allowLeftNoExecutionDensityFailureFacts)).length
 
   IO.println "{"
-  IO.println "  \"schemaVersion\": 1,"
+  IO.println "  \"schemaVersion\": 2,"
   IO.println "  \"status\": \"verified\","
   IO.println "  \"contractHashes\": {"
   IO.println ("    \"comparabilityObligationsSha256\": \"" ++ comparabilityContractSha256 ++ "\"")
@@ -66,7 +67,12 @@ def main : IO Unit := do
   IO.println "    { \"name\": \"doe_getMappedRange_gap\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"doe_dispatch_gap\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"doe_getMappedRange_superset\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
-  IO.println "    { \"name\": \"doe_dispatch_superset\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" }"
+  IO.println "    { \"name\": \"doe_dispatch_superset\", \"module\": \"Fawn.Core.BufferLifecycle\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"gid_component_lt_total\", \"module\": \"Fawn.Shader.ComputeBounds\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"gid_inbounds_when_dispatch_fits\", \"module\": \"Fawn.Shader.ComputeBounds\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"clamp_noop_when_inbounds\", \"module\": \"Fawn.Shader.ComputeBounds\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"gid_2d_inbounds\", \"module\": \"Fawn.Shader.ComputeBounds\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"flat_index_2d_inbounds\", \"module\": \"Fawn.Shader.ComputeBounds\", \"category\": \"lean_verified\" }"
   IO.println "  ],"
   IO.println "  \"evaluatedConditions\": {"
   IO.println ("    \"comparability.strictHappyPath.comparable\": " ++ jsonBool happyPath ++ ",")
@@ -92,6 +98,26 @@ def main : IO Unit := do
   IO.println ("    \"bufferLifecycle.doeAllowsDispatch_mapped\": " ++ jsonBool (doeAllowsDispatch .mapped) ++ ",")
   IO.println ("    \"bufferLifecycle.specAllowsDispatch_mapped\": " ++ jsonBool (specAllowsDispatch .mapped))
   IO.println "  },"
+  IO.println "  \"boundsEliminations\": ["
+  IO.println "    {"
+  IO.println "      \"theorem\": \"gid_inbounds_when_dispatch_fits\","
+  IO.println "      \"module\": \"Fawn.Shader.ComputeBounds\","
+  IO.println "      \"category\": \"lean_verified\","
+  IO.println "      \"pattern\": \"global_invocation_id.{component} indexes storage buffer\","
+  IO.println "      \"precondition\": \"workgroup_size.{component} * num_workgroups.{component} <= buffer_element_count\","
+  IO.println "      \"eliminates\": \"min(gid.{component}, arrayLength(&buf) - 1) -> gid.{component}\","
+  IO.println "      \"runtimePath\": \"runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized\""
+  IO.println "    },"
+  IO.println "    {"
+  IO.println "      \"theorem\": \"flat_index_2d_inbounds\","
+  IO.println "      \"module\": \"Fawn.Shader.ComputeBounds\","
+  IO.println "      \"category\": \"lean_verified\","
+  IO.println "      \"pattern\": \"gid.y * width + gid.x indexes storage buffer\","
+  IO.println "      \"precondition\": \"ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height <= buffer_element_count\","
+  IO.println "      \"eliminates\": \"min(flat_index, arrayLength(&buf) - 1) -> flat_index\","
+  IO.println "      \"runtimePath\": \"runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized\""
+  IO.println "    }"
+  IO.println "  ],"
   IO.println "  \"eliminationTargets\": ["
   IO.println "    {"
   IO.println "      \"theorem\": \"toggleAlwaysSupported\","

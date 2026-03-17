@@ -46,7 +46,7 @@ Establish unambiguous integration contracts and acceptance criteria before imple
    - blocking/advisory gate mapping,
    - KPI thresholds per module.
 3. Gate mapping:
-   - blocking/advisory expectations aligned with `process.md`.
+   - blocking/advisory expectations aligned with `docs/process.md`.
 4. Risk register:
    - failure modes, mitigation, rollback.
 5. Experiment inventory:

@@ -10,7 +10,7 @@ This module is self-contained and does not depend on external runtime code.
 
 Before running or interpreting Dawn-vs-Doe performance results, read:
 
-- `performance-strategy.md`
+- `docs/performance-strategy.md`
 - `docs/benchmark-taxonomy.md`
 - `bench/benchmark-writing-guide.md`
 
