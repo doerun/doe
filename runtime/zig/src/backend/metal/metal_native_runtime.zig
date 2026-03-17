@@ -42,10 +42,10 @@ const metal_bridge_texture_width = bridge.metal_bridge_texture_width;
 
 // Metal on Apple Silicon supports large shared buffers up to device maxBufferLength.
 // No artificial cap here — let allocation failure propagate as InvalidState.
-const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
-const MAX_BINDING_SLOTS: usize = 32;
-const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024; // reuse staging pair for uploads <= 1MB
-const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;
+pub const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
+pub const MAX_BINDING_SLOTS: usize = 32;
+pub const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024; // reuse staging pair for uploads <= 1MB
+pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;
 
 pub const DispatchMetrics = struct {
     setup_ns: u64,
@@ -61,20 +61,20 @@ pub const RenderMetrics = struct {
     draw_count: u32,
 };
 
-const PendingUpload = struct {
+pub const PendingUpload = struct {
     src_buffer: ?*anyopaque,
     dst_buffer: ?*anyopaque,
     byte_count: usize,
 };
 
-const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
+pub const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
 
-const KernelPipeline = struct {
+pub const KernelPipeline = struct {
     library: ?*anyopaque,
     pipeline: ?*anyopaque,
 };
 
-const IcbKey = struct {
+pub const IcbKey = struct {
     draw_count: u32,
     vertex_count: u32,
     instance_count: u32,
@@ -704,16 +704,16 @@ pub const NativeMetalRuntime = struct {
     }
 };
 
-const BufferPool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));
+pub const BufferPool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));
 
-inline fn release_ref(ref: *?*anyopaque) void {
+pub inline fn release_ref(ref: *?*anyopaque) void {
     if (ref.*) |obj| {
         metal_bridge_release(obj);
         ref.* = null;
     }
 }
 
-fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
+pub fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
     if (pool.getPtr(size)) |list| {
         if (list.items.len > 0) return list.pop() orelse null;
     }

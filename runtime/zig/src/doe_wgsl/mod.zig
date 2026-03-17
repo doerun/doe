@@ -436,10 +436,8 @@ test {
     _ = emit_spirv_fn;
     _ = emit_spirv_stages;
     _ = emit_dxil;
-    _ = @import("mod_test.zig");
-    _ = @import("shader_emit_test.zig");
-    _ = @import("shader_sema_test.zig");
-    _ = @import("shader_hlsl_spirv_test.zig");
+    // Test files are registered in test_suite*.zig, not imported here,
+    // to avoid bleeding failing tests into every consumer of mod.zig.
 }
 
 test "translate vertex shader with struct I/O to MSL" {

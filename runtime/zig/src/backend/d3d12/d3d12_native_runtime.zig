@@ -481,7 +481,7 @@ pub fn strip_extension(name: []const u8) []const u8 {
     return name;
 }
 
-fn file_exists(path: []const u8) bool {
+pub fn file_exists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
     return true;
 }
@@ -536,9 +536,9 @@ fn run_dxc(alloc: std.mem.Allocator, input_path: []const u8, output_path: []cons
     }
 }
 
-const D3D12Pool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(PoolEntry));
+pub const D3D12Pool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(PoolEntry));
 
-fn d3d12_pool_pop(pool: *D3D12Pool, size: usize) ?*anyopaque {
+pub fn d3d12_pool_pop(pool: *D3D12Pool, size: usize) ?*anyopaque {
     if (pool.getPtr(size)) |list| {
         if (list.items.len > 0) {
             const entry = list.pop() orelse return null;

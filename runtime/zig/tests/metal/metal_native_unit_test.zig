@@ -3,6 +3,144 @@ const builtin = @import("builtin");
 const metal_runtime = @import("../../src/backend/metal/metal_native_runtime.zig");
 
 // ============================================================
+// Constants — verify named constants match expected values
+// ============================================================
+
+test "metal: SMALL_UPLOAD_CAPACITY is 1MB" {
+    try std.testing.expectEqual(@as(usize, 1024 * 1024), metal_runtime.SMALL_UPLOAD_CAPACITY);
+}
+
+test "metal: FAST_WAIT_UPLOAD_THRESHOLD is 256KB" {
+    try std.testing.expectEqual(@as(usize, 256 * 1024), metal_runtime.FAST_WAIT_UPLOAD_THRESHOLD);
+}
+
+test "metal: MAX_BINDING_SLOTS is 32" {
+    try std.testing.expectEqual(@as(usize, 32), metal_runtime.MAX_BINDING_SLOTS);
+}
+
+test "metal: MAX_POOL_ENTRIES_PER_SIZE is 8" {
+    try std.testing.expectEqual(@as(usize, 8), metal_runtime.MAX_POOL_ENTRIES_PER_SIZE);
+}
+
+test "metal: MAX_UPLOAD_BYTES is zero (no artificial cap)" {
+    try std.testing.expectEqual(@as(u64, 0), metal_runtime.MAX_UPLOAD_BYTES);
+}
+
+test "metal: SMALL_UPLOAD_CAPACITY is a power of two" {
+    const cap = metal_runtime.SMALL_UPLOAD_CAPACITY;
+    try std.testing.expect(cap > 0);
+    try std.testing.expectEqual(@as(usize, 0), cap & (cap - 1));
+}
+
+test "metal: FAST_WAIT_UPLOAD_THRESHOLD is a power of two" {
+    const threshold = metal_runtime.FAST_WAIT_UPLOAD_THRESHOLD;
+    try std.testing.expect(threshold > 0);
+    try std.testing.expectEqual(@as(usize, 0), threshold & (threshold - 1));
+}
+
+test "metal: FAST_WAIT_UPLOAD_THRESHOLD <= SMALL_UPLOAD_CAPACITY" {
+    try std.testing.expect(metal_runtime.FAST_WAIT_UPLOAD_THRESHOLD <= metal_runtime.SMALL_UPLOAD_CAPACITY);
+}
+
+test "metal: pool capacity limit is reasonable" {
+    try std.testing.expect(metal_runtime.MAX_POOL_ENTRIES_PER_SIZE > 0);
+    try std.testing.expect(metal_runtime.MAX_POOL_ENTRIES_PER_SIZE <= 32);
+}
+
+// ============================================================
+// PendingUpload — struct layout
+// ============================================================
+
+test "metal: PendingUpload stores src, dst, and byte_count" {
+    const upload = metal_runtime.PendingUpload{
+        .src_buffer = null,
+        .dst_buffer = null,
+        .byte_count = 4096,
+    };
+    try std.testing.expectEqual(@as(?*anyopaque, null), upload.src_buffer);
+    try std.testing.expectEqual(@as(?*anyopaque, null), upload.dst_buffer);
+    try std.testing.expectEqual(@as(usize, 4096), upload.byte_count);
+}
+
+// ============================================================
+// IcbKey — struct equality and default
+// ============================================================
+
+test "metal: IcbKey default is all zeros and not redundant" {
+    const key = metal_runtime.IcbKey{
+        .draw_count = 0,
+        .vertex_count = 0,
+        .instance_count = 0,
+        .redundant = false,
+    };
+    try std.testing.expectEqual(@as(u32, 0), key.draw_count);
+    try std.testing.expectEqual(@as(u32, 0), key.vertex_count);
+    try std.testing.expectEqual(@as(u32, 0), key.instance_count);
+    try std.testing.expect(!key.redundant);
+}
+
+test "metal: IcbKey fields differentiate configurations" {
+    const a = metal_runtime.IcbKey{
+        .draw_count = 100,
+        .vertex_count = 3,
+        .instance_count = 1,
+        .redundant = false,
+    };
+    const b = metal_runtime.IcbKey{
+        .draw_count = 100,
+        .vertex_count = 3,
+        .instance_count = 1,
+        .redundant = true,
+    };
+    try std.testing.expect(a.redundant != b.redundant);
+    try std.testing.expectEqual(a.draw_count, b.draw_count);
+}
+
+// ============================================================
+// KernelPipeline — struct layout
+// ============================================================
+
+test "metal: KernelPipeline holds library and pipeline refs" {
+    const kp = metal_runtime.KernelPipeline{
+        .library = null,
+        .pipeline = null,
+    };
+    try std.testing.expectEqual(@as(?*anyopaque, null), kp.library);
+    try std.testing.expectEqual(@as(?*anyopaque, null), kp.pipeline);
+}
+
+// ============================================================
+// pool_pop — pure pool lookup logic
+// ============================================================
+
+test "metal: pool_pop returns null from empty pool" {
+    var pool = metal_runtime.BufferPool{};
+    defer pool.deinit(std.testing.allocator);
+    const result = metal_runtime.pool_pop(&pool, 1024);
+    try std.testing.expectEqual(@as(?*anyopaque, null), result);
+}
+
+test "metal: pool_pop returns null for missing size key" {
+    var pool = metal_runtime.BufferPool{};
+    defer pool.deinit(std.testing.allocator);
+
+    // Insert an entry for size 2048 but look up size 1024.
+    var list = std.ArrayListUnmanaged(?*anyopaque){};
+    const sentinel: usize = 0xDEAD;
+    try list.append(std.testing.allocator, @ptrFromInt(sentinel));
+    try pool.put(std.testing.allocator, 2048, list);
+
+    const result = metal_runtime.pool_pop(&pool, 1024);
+    try std.testing.expectEqual(@as(?*anyopaque, null), result);
+
+    // Cleanup: pop the inserted entry so no dangling refs remain.
+    if (pool.getPtr(2048)) |l| {
+        _ = l.pop();
+        l.deinit(std.testing.allocator);
+    }
+}
+
+// ============================================================
 // DispatchMetrics — struct layout and field values
 // ============================================================
 
