@@ -27,6 +27,13 @@
             "buffer_upload_1kb"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "buffer_upload_1kb"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -52,6 +59,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "buffer_upload_64kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "buffer_upload_64kb"
           ],
@@ -85,6 +99,13 @@
             "buffer_upload_1mb"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "buffer_upload_1mb"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -114,6 +135,13 @@
             "buffer_upload_16mb"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "buffer_upload_16mb"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -132,6 +160,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "buffer_map_write_unmap"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "buffer_map_write_unmap"
           ],
@@ -158,6 +193,13 @@
             "compute_e2e_256"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "compute_e2e_256"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -176,6 +218,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "compute_e2e_4096"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "compute_e2e_4096"
           ],
@@ -202,6 +251,13 @@
             "compute_e2e_65536"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "compute_e2e_65536"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -220,6 +276,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_4kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "copy_buffer_to_buffer_4kb"
           ],
@@ -246,6 +309,13 @@
             "copy_buffer_to_buffer_64kb"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_64kb"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -264,6 +334,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_1mb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "copy_buffer_to_buffer_1mb"
           ],
@@ -290,6 +367,13 @@
             "buffer_map_read_unmap"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "buffer_map_read_unmap"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -308,6 +392,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "compute_e2e_262144"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "compute_e2e_262144"
           ],
@@ -334,6 +425,13 @@
             "compute_dispatch_simple"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "compute_dispatch_simple"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -352,6 +450,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "submit_empty"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "submit_empty"
           ],
@@ -378,6 +483,100 @@
             "pipeline_create"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "pipeline_create"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "submit_trivial_and_wait",
+      "displayName": "Submit trivial and wait",
+      "domain": "overhead",
+      "description": "Package-surface completion-scoped submit benchmark: one minimal copy command, one queue submit, one completion wait, and readback validation. Comparable replacement for directional-only submit_empty timing.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "submit_trivial_and_wait"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "submit_trivial_and_wait"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "submit_trivial_and_wait"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "compute_dispatch_and_wait_simple",
+      "displayName": "Compute dispatch and wait simple",
+      "domain": "compute",
+      "description": "Package-surface completion-scoped simple compute benchmark: one dispatch, one submit, one completion wait, one readback validation. Comparable replacement for directional-only compute_dispatch_simple timing.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "compute_dispatch_and_wait_simple"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "compute_dispatch_and_wait_simple"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "compute_dispatch_and_wait_simple"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "pipeline_first_use_e2e",
+      "displayName": "Pipeline first use E2E",
+      "domain": "pipeline",
+      "description": "Package-surface first-use pipeline benchmark: unique WGSL per timed iteration, pipeline creation, one dispatch, one completion wait, and readback validation. Comparable replacement for directional-only pipeline_create timing.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "pipeline_first_use_e2e"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "pipeline_first_use_e2e"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "pipeline_first_use_e2e"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -385,7 +584,7 @@
       "canonicalId": "texture_copy_roundtrip_64x64",
       "displayName": "Texture copy roundtrip 64x64",
       "domain": "copy",
-      "description": "Package-surface texture copy roundtrip benchmark: buffer→texture→buffer for 64x64 RGBA8 (16KB). Measures copyBufferToTexture + copyTextureToBuffer + readback.",
+      "description": "Package-surface texture copy roundtrip benchmark: buffer\u2192texture\u2192buffer for 64x64 RGBA8 (16KB). Measures copyBufferToTexture + copyTextureToBuffer + readback.",
       "surfaces": [
         {
           "surface": "node_package",
@@ -396,6 +595,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "texture_copy_roundtrip_64x64"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "texture_copy_roundtrip_64x64"
           ],
@@ -407,7 +613,7 @@
       "canonicalId": "texture_copy_roundtrip_256x256",
       "displayName": "Texture copy roundtrip 256x256",
       "domain": "copy",
-      "description": "Package-surface texture copy roundtrip benchmark: buffer→texture→buffer for 256x256 RGBA8 (256KB). Measures copyBufferToTexture + copyTextureToBuffer + readback.",
+      "description": "Package-surface texture copy roundtrip benchmark: buffer\u2192texture\u2192buffer for 256x256 RGBA8 (256KB). Measures copyBufferToTexture + copyTextureToBuffer + readback.",
       "surfaces": [
         {
           "surface": "node_package",
@@ -418,6 +624,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "texture_copy_roundtrip_256x256"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "texture_copy_roundtrip_256x256"
           ],
@@ -444,6 +657,13 @@
             "shader_module_create"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "shader_module_create"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -462,6 +682,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "render_triangle_solid"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "render_triangle_solid"
           ],
@@ -488,6 +715,13 @@
             "render_indexed_quad"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "render_indexed_quad"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -506,6 +740,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "render_pass_switching"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "render_pass_switching"
           ],
@@ -532,6 +773,13 @@
             "texture_to_texture_copy"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "texture_to_texture_copy"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -550,6 +798,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "sampler_create_destroy"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "sampler_create_destroy"
           ],
@@ -576,6 +831,13 @@
             "timestamp_query"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "timestamp_query"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -598,6 +860,13 @@
             "dispatch_indirect"
           ],
           "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "dispatch_indirect"
+          ],
+          "implementationKind": "webgpu_factory"
         }
       ]
     },
@@ -616,6 +885,13 @@
         },
         {
           "surface": "bun_package",
+          "workloadIds": [
+            "render_bundle_replay"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
           "workloadIds": [
             "render_bundle_replay"
           ],

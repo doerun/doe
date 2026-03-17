@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "description": "Deno webgpu-doe helper API benchmark: Doe helper vs raw deno-webgpu (wgpu)",
+  "providers": {
+    "doe-api": {
+      "package": "@simulatte/webgpu-doe",
+      "source": "packages/webgpu-doe/src/index.js",
+      "runtime": "@simulatte/webgpu (deno node-compat)",
+      "notes": "Doe helper API on Doe via Deno node-compat N-API layer"
+    },
+    "deno-webgpu": {
+      "package": "built-in",
+      "notes": "Raw Deno built-in WebGPU backed by wgpu (requires --unstable-webgpu)"
+    }
+  },
+  "run": {
+    "iterations": 50,
+    "warmup": 5,
+    "minTimedSamples": 19,
+    "outDir": "bench/out/doe-api-deno-vs-webgpu"
+  },
+  "comparability": {
+    "timingSource": "performance.now",
+    "timingClass": "operation",
+    "notes": "Both providers measured at JS API boundary. Left uses webgpu-doe helpers, right uses raw WebGPU. Both dispatch identical GPU work and readback."
+  },
+  "claimability": {
+    "minSamples": 19,
+    "requireP50Faster": true,
+    "requireP95Faster": true
+  }
+}

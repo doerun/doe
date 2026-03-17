@@ -24,7 +24,7 @@ export const workloads = [
   // ================================================================
   defineWorkload('buffer_upload_1kb', true, (device, queue, G) => {
       const size = 1024;
-      const data = new ArrayBuffer(size);
+      const data = new Uint8Array(size);
       let buf;
       return {
         setup() {
@@ -36,7 +36,7 @@ export const workloads = [
     }),
   defineWorkload('buffer_upload_64kb', true, (device, queue, G) => {
       const size = 65536;
-      const data = new ArrayBuffer(size);
+      const data = new Uint8Array(size);
       let buf;
       return {
         setup() {
@@ -48,7 +48,7 @@ export const workloads = [
     }),
   defineWorkload('buffer_upload_1mb', true, (device, queue, G) => {
       const size = 1024 * 1024;
-      const data = new ArrayBuffer(size);
+      const data = new Uint8Array(size);
       let buf;
       return {
         setup() {
@@ -60,7 +60,7 @@ export const workloads = [
     }),
   defineWorkload('buffer_upload_16mb', true, (device, queue, G) => {
       const size = 16 * 1024 * 1024;
-      const data = new ArrayBuffer(size);
+      const data = new Uint8Array(size);
       let buf;
       return {
         setup() {
@@ -256,6 +256,13 @@ export const workloads = [
     }),
 
   // ================================================================
+  // Comparable replacements for directional-only JS-boundary rows
+  // ================================================================
+  defineWorkload('submit_trivial_and_wait', true, makeSubmitTrivialAndWait()),
+  defineWorkload('compute_dispatch_and_wait_simple', true, makeComputeDispatchAndWaitSimple()),
+  defineWorkload('pipeline_first_use_e2e', true, makePipelineFirstUseE2E()),
+
+  // ================================================================
   // Render workloads (comparable: both sides wait for GPU completion via readback)
   // ================================================================
   defineWorkload('render_triangle_solid', true, makeRenderTriangleSolid()),
@@ -379,6 +386,248 @@ function makeComputeE2E(threadCount, workgroupSize) {
       async validate() {
         let lastError = null;
         // Validation budget is separate from timed-run readback retries.
+        for (let attempt = 0; attempt < VALIDATE_RETRY_LIMIT; attempt++) {
+          try {
+            await this.prepareSample();
+            await this.run();
+            return { ok: true };
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        return { ok: false, detail: lastError?.message || 'validation retry budget exhausted' };
+      },
+      teardown() {
+        storageBuf.destroy();
+        stagingBuf.destroy();
+      },
+    };
+  };
+}
+
+function makeSubmitTrivialAndWait() {
+  return (device, queue, G) => {
+    const size = Uint32Array.BYTES_PER_ELEMENT;
+    const pattern = new Uint32Array([0x12345678]);
+    let srcBuf, stagingBuf;
+
+    async function assertReadbackMatchesSource() {
+      await stagingBuf.mapAsync(G.GPUMapMode.READ, 0, size);
+      const mapped = new Uint32Array(stagingBuf.getMappedRange(0, size));
+      if (mapped[0] !== pattern[0]) {
+        throw new Error(`submit_trivial_and_wait: expected ${pattern[0]}, got ${mapped[0]}`);
+      }
+      stagingBuf.unmap();
+    }
+
+    return {
+      setup() {
+        srcBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.COPY_SRC | G.GPUBufferUsage.COPY_DST,
+        });
+        stagingBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.COPY_DST | G.GPUBufferUsage.MAP_READ,
+        });
+        queue.writeBuffer(srcBuf, 0, pattern);
+        return queue.onSubmittedWorkDone?.();
+      },
+      async run() {
+        const enc = device.createCommandEncoder();
+        enc.copyBufferToBuffer(srcBuf, 0, stagingBuf, 0, size);
+        queue.submit([enc.finish()]);
+        await queue.onSubmittedWorkDone();
+        await assertReadbackMatchesSource();
+      },
+      async validate() {
+        await this.run();
+        return { ok: true };
+      },
+      teardown() {
+        srcBuf.destroy();
+        stagingBuf.destroy();
+      },
+    };
+  };
+}
+
+function makeComputeDispatchAndWaitSimple() {
+  return (device, queue, G) => {
+    const COUNT = 256;
+    const size = COUNT * Float32Array.BYTES_PER_ELEMENT;
+    const validateBytes = 4 * Float32Array.BYTES_PER_ELEMENT;
+    const wgsl = `
+      @group(0) @binding(0) var<storage, read_write> data: array<f32>;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) id: vec3u) {
+        data[id.x] = data[id.x] * 2.0;
+      }
+    `;
+    let storageBuf, stagingBuf, shader, pipeline, bindGroupLayout, bindGroup, pipelineLayout, input;
+
+    async function resetInput() {
+      queue.writeBuffer(storageBuf, 0, input);
+      await queue.onSubmittedWorkDone?.();
+    }
+
+    function assertReadbackMatchesPreparedInput() {
+      const mapped = new Float32Array(stagingBuf.getMappedRange(0, validateBytes));
+      for (let i = 0; i < 4; i++) {
+        if (mapped[i] !== input[i] * 2.0) {
+          throw new Error(`compute_dispatch_and_wait_simple: expected readback[${i}] === ${input[i] * 2.0}, got ${mapped[i]}`);
+        }
+      }
+    }
+
+    return {
+      setup() {
+        storageBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.STORAGE | G.GPUBufferUsage.COPY_SRC | G.GPUBufferUsage.COPY_DST,
+        });
+        stagingBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.MAP_READ | G.GPUBufferUsage.COPY_DST,
+        });
+        input = new Float32Array(COUNT);
+        for (let i = 0; i < COUNT; i++) {
+          input[i] = i;
+        }
+        queue.writeBuffer(storageBuf, 0, input);
+        shader = device.createShaderModule({ code: wgsl });
+        bindGroupLayout = device.createBindGroupLayout({
+          entries: [{ binding: 0, visibility: G.GPUShaderStage.COMPUTE, buffer: { type: 'storage' } }],
+        });
+        pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        pipeline = device.createComputePipeline({
+          layout: pipelineLayout,
+          compute: { module: shader, entryPoint: 'main' },
+        });
+        bindGroup = device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [{ binding: 0, resource: { buffer: storageBuf } }],
+        });
+        return queue.onSubmittedWorkDone?.();
+      },
+      async prepareSample() {
+        await resetInput();
+      },
+      async run() {
+        const enc = device.createCommandEncoder();
+        const pass = enc.beginComputePass();
+        pass.setPipeline(pipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.dispatchWorkgroups(COUNT / 64);
+        pass.end();
+        enc.copyBufferToBuffer(storageBuf, 0, stagingBuf, 0, validateBytes);
+        queue.submit([enc.finish()]);
+        await queue.onSubmittedWorkDone();
+        await stagingBuf.mapAsync(G.GPUMapMode.READ, 0, validateBytes);
+        assertReadbackMatchesPreparedInput();
+        stagingBuf.unmap();
+      },
+      async validate() {
+        let lastError = null;
+        for (let attempt = 0; attempt < VALIDATE_RETRY_LIMIT; attempt++) {
+          try {
+            await this.prepareSample();
+            await this.run();
+            return { ok: true };
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        return { ok: false, detail: lastError?.message || 'validation retry budget exhausted' };
+      },
+      teardown() {
+        storageBuf.destroy();
+        stagingBuf.destroy();
+      },
+    };
+  };
+}
+
+function makePipelineFirstUseE2E() {
+  return (device, queue, G) => {
+    const COUNT = 256;
+    const size = COUNT * Float32Array.BYTES_PER_ELEMENT;
+    const validateBytes = 4 * Float32Array.BYTES_PER_ELEMENT;
+    let storageBuf, stagingBuf, input, iteration = 0;
+
+    async function resetInput() {
+      input.fill(0);
+      queue.writeBuffer(storageBuf, 0, input);
+      await queue.onSubmittedWorkDone?.();
+    }
+
+    function shaderSource(addend) {
+      return `
+        @group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        @compute @workgroup_size(64)
+        fn main(@builtin(global_invocation_id) id: vec3u) {
+          data[id.x] = data[id.x] + ${addend}.0;
+        }
+      `;
+    }
+
+    function assertReadbackMatches(addend) {
+      const mapped = new Float32Array(stagingBuf.getMappedRange(0, validateBytes));
+      for (let i = 0; i < 4; i++) {
+        if (mapped[i] !== addend) {
+          throw new Error(`pipeline_first_use_e2e: expected readback[${i}] === ${addend}, got ${mapped[i]}`);
+        }
+      }
+    }
+
+    return {
+      setup() {
+        storageBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.STORAGE | G.GPUBufferUsage.COPY_SRC | G.GPUBufferUsage.COPY_DST,
+        });
+        stagingBuf = device.createBuffer({
+          size,
+          usage: G.GPUBufferUsage.MAP_READ | G.GPUBufferUsage.COPY_DST,
+        });
+        input = new Float32Array(COUNT);
+        queue.writeBuffer(storageBuf, 0, input);
+        return queue.onSubmittedWorkDone?.();
+      },
+      async prepareSample() {
+        await resetInput();
+      },
+      async run() {
+        const addend = ++iteration;
+        const shader = device.createShaderModule({ code: shaderSource(addend) });
+        const bindGroupLayout = device.createBindGroupLayout({
+          entries: [{ binding: 0, visibility: G.GPUShaderStage.COMPUTE, buffer: { type: 'storage' } }],
+        });
+        const pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        const pipeline = device.createComputePipeline({
+          layout: pipelineLayout,
+          compute: { module: shader, entryPoint: 'main' },
+        });
+        const bindGroup = device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [{ binding: 0, resource: { buffer: storageBuf } }],
+        });
+
+        const enc = device.createCommandEncoder();
+        const pass = enc.beginComputePass();
+        pass.setPipeline(pipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.dispatchWorkgroups(COUNT / 64);
+        pass.end();
+        enc.copyBufferToBuffer(storageBuf, 0, stagingBuf, 0, validateBytes);
+        queue.submit([enc.finish()]);
+        await queue.onSubmittedWorkDone();
+        await stagingBuf.mapAsync(G.GPUMapMode.READ, 0, validateBytes);
+        assertReadbackMatches(addend);
+        stagingBuf.unmap();
+      },
+      async validate() {
+        let lastError = null;
         for (let attempt = 0; attempt < VALIDATE_RETRY_LIMIT; attempt++) {
           try {
             await this.prepareSample();

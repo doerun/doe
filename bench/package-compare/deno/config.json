@@ -4,8 +4,8 @@
   "providers": {
     "doe": {
       "package": "@simulatte/webgpu",
-      "source": "packages/webgpu/src/index.js",
-      "notes": "Doe N-API provider loaded via Deno node-compat layer"
+      "source": "packages/webgpu/src/deno.js",
+      "notes": "Doe provider loaded via Deno node-compat N-API layer"
     },
     "deno-webgpu": {
       "package": "built-in",

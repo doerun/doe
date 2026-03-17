@@ -57,7 +57,8 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
 - Primary entrypoints:
   - `bench/package-compare/node/compare.js`
   - `bench/package-compare/bun/compare.js`
-- Question: "How does the package surface behave and perform for users of Node/Bun WebGPU APIs?"
+  - `bench/package-compare/deno/compare.js`
+- Question: "How does the package surface behave and perform for users of Node/Bun/Deno WebGPU APIs?"
 - Contract:
   - provider-level validation prepass
   - package runtime execution through per-provider runners
@@ -132,9 +133,9 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
 
 These are valid consolidation targets because they keep the same contract class:
 
-- Node and Bun compare orchestration
+- Node, Bun, and Deno compare orchestration
   - shared package-compare core
-  - thin `bench/package-compare/node/compare.js` and `bench/package-compare/bun/compare.js` wrappers
+  - thin `bench/package-compare/node/compare.js`, `bench/package-compare/bun/compare.js`, and `bench/package-compare/deno/compare.js` wrappers
 - Targeted JS attribution benches
   - shared experiment driver
   - workload-specific scenario modules

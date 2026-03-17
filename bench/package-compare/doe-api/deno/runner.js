@@ -1,17 +1,19 @@
-import { workloads } from '../node/workloads.js';
+import { workloads } from '../workloads.js';
 import {
   executePackageRunner,
   parsePackageRunnerArgs,
-} from '../../shared/lib/package-runner-core.js';
+} from '../../../shared/lib/package-runner-core.js';
 
 const args = parsePackageRunnerArgs();
 
 async function loadProvider(name) {
-  if (name === 'doe') {
-    // Doe loads via packages/webgpu/src/deno.js, which uses Deno's Node
-    // compatibility layer to load the N-API addon. Verified on Deno 2.7.5.
-    const doe = await import('../../../packages/webgpu/src/deno.js');
-    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu (deno node-compat)' };
+  if (name === 'doe' || name === 'doe-api') {
+    const doe = await import('../../../../packages/webgpu/src/index.js');
+    return {
+      create: doe.create,
+      globals: { ...doe.globals, doeApi: true },
+      name: '@simulatte/webgpu-doe (deno)',
+    };
   }
   if (name === 'deno-webgpu') {
     if (typeof globalThis.navigator === 'undefined' || !globalThis.navigator.gpu) {
@@ -20,15 +22,14 @@ async function loadProvider(name) {
       );
     }
     const gpu = globalThis.navigator.gpu;
-    const globals = {
-      GPUBufferUsage:  globalThis.GPUBufferUsage,
-      GPUShaderStage:  globalThis.GPUShaderStage,
-      GPUMapMode:      globalThis.GPUMapMode,
-      GPUTextureUsage: globalThis.GPUTextureUsage,
-    };
     return {
       create: () => gpu,
-      globals,
+      globals: {
+        GPUBufferUsage:  globalThis.GPUBufferUsage,
+        GPUShaderStage:  globalThis.GPUShaderStage,
+        GPUMapMode:      globalThis.GPUMapMode,
+        GPUTextureUsage: globalThis.GPUTextureUsage,
+      },
       name: 'deno-webgpu (built-in wgpu)',
     };
   }

@@ -179,6 +179,17 @@
       "notes": "Governed package-surface compare lane for Doe Bun vs bun-webgpu."
     },
     {
+      "id": "deno_package_compare",
+      "displayName": "Deno package compare",
+      "governanceKind": "package_compare",
+      "surface": "deno_package",
+      "hostProfiles": ["mac_apple_silicon", "linux_x64"],
+      "providerPairs": ["doe_deno_vs_deno_webgpu"],
+      "sourceReportTypes": ["deno_package_compare_report"],
+      "cubeEligible": true,
+      "notes": "Deno package compare lane. Doe provider loaded via Deno node-compat N-API layer. First verified run: 2026-03-17 (19/19 comparable claimable, macOS Apple Silicon, Deno 2.7.5)."
+    },
+    {
       "id": "browser_diagnostic",
       "displayName": "Browser diagnostic gate",
       "governanceKind": "browser_gate",

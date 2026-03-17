@@ -43,6 +43,93 @@ The detailed file-level breakdown lives in `examples/README.md`.
 
 ---
 
+## Surface and competitor matrix snapshot (2026-03-17)
+
+The tier table above answers "what can Fawn honestly claim today?".
+This section answers the adjacent product question:
+"which Doe/Simulatte surface exists on which host, against which competitor or
+reference surface, and what is that cell for?"
+
+Status vocabulary used below:
+
+- `verified`: fresh evidence or an explicitly promoted governed lane exists
+- `supported`: documented public surface exists, even if it is not itself a
+  left/right claim lane
+- `diagnostic`: useful for attribution, debugging, or local comparison, but not
+  a canonical claim surface
+- `scaffolded`: config/files/contracts exist, but fresh evidence or release
+  maturity is missing
+- `possible`: technically viable from current contracts, but not productized or
+  governed today
+- `not meaningful`: not a product cell we should try to fill
+
+Subpath reminder:
+
+- `compute`, `full`, `node`, and `bun` are subpath entrypoints of
+  `@simulatte/webgpu`, not separate products
+- `native-direct` is also a subpath of `@simulatte/webgpu`, but it is distinct
+  enough to list separately because it creates a diagnostic comparison mode
+- `@simulatte/webgpu-doe` is a helper package family, not a second runtime
+
+### Runtime package family: `@simulatte/webgpu`
+
+| Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
+|------|------|------|------|------|------|
+| Node | `@simulatte/webgpu` / `@simulatte/webgpu/node` | `webgpu` (Dawn) | product + governed compare lane | `verified` | Main headless Node package niche. Canonical package compare lane with fresh claimable rows in `docs/status.md`. |
+| Bun | `@simulatte/webgpu` / `@simulatte/webgpu/bun` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche. Canonical package compare lane with fresh claimable rows in `docs/status.md`. |
+| Deno | `@simulatte/webgpu` via `packages/webgpu/src/deno.js` | built-in Deno WebGPU (`navigator.gpu`, wgpu-backed) | product + governed compare lane | `verified` | Deno package lane now exists in-repo and is registered as `deno_package_compare`; still newer than Node/Bun and should be read lane-specifically. |
+| CLI | `fawn-webgpu-bench`, `fawn-webgpu-compare`, `createDoeRuntime()` | no package-surface incumbent | product surface | `supported` | Real public Doe-core surface, but not a JS package head-to-head cell. |
+| Node | `@simulatte/webgpu/native-direct` | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |
+| Browser | `@simulatte/webgpu` package family | browser `navigator.gpu` | package cell | `not meaningful` | Browser ownership lives in `fawn-browser`, not in the npm runtime package family. |
+
+### Helper package family: `@simulatte/webgpu-doe`
+
+| Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
+|------|------|------|------|------|------|
+| Node / Bun / Deno | `@simulatte/webgpu-doe` bound onto `@simulatte/webgpu` device objects | same underlying Doe runtime | product helper surface | `supported` | Canonical ergonomic helper layer. Valuable because it keeps helper ergonomics separate from transport/runtime selection. |
+| Node | `@simulatte/webgpu-doe` bound onto `webgpu` raw devices | Dawn-backed Node runtime | attribution / compatibility cell | `diagnostic` | Explicitly useful today in Node four-way attribution compares; not a separate marketed runtime. |
+| Bun | `@simulatte/webgpu-doe` bound onto `bun-webgpu` raw devices | Dawn-backed Bun runtime | compatibility cell | `possible` | Allowed by the transport-free helper contract when the surface is compatible, but not a governed lane today. |
+| Deno | `@simulatte/webgpu-doe` bound onto built-in Deno WebGPU devices | wgpu-backed Deno runtime | compatibility cell | `possible` | Contractually plausible, but not yet a documented governed helper-comparison lane. |
+| Browser | `@simulatte/webgpu-doe` bound onto browser-provided `GPUDevice` objects | stock browser WebGPU surfaces | product helper surface | `supported` | This is the portable helper niche: bring Doe API ergonomics to any compatible browser/device without shipping Doe runtime itself. |
+| Any host | `@simulatte/webgpu-doe` treated as a standalone WebGPU runtime | runtime incumbents | product cell | `not meaningful` | The helper package does not ship the Doe native runtime and should not be described as a runtime replacement. |
+
+### Native runtime, ABI, and browser cells
+
+| Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
+|------|------|------|------|------|------|
+| macOS Apple Silicon | Doe Metal backend | Dawn Metal delegate | governed native compare lane | `verified` | Strong backend-native evidence exists, but the current broad full lane remains diagnostic rather than fully claimable. |
+| Linux AMD Vulkan | Doe Vulkan backend | Dawn Vulkan delegate | governed native compare lane | `verified` | Real native compare evidence exists; the current strict release lane remains diagnostic with one remaining upload blocker. |
+| Windows D3D12 | Doe D3D12 backend | Dawn D3D12 delegate | governed native compare lane | `scaffolded` | Contracts, configs, and runtime path exist, but the current inventory still lacks a fresh Windows evidence artifact. |
+| Native apps / engines / embedded | `libwebgpu_doe.{so,dylib,dll}` drop-in runtime | Dawn / wgpu via `webgpu.h` ABI | runtime replacement target | `scaffolded` | This is the intended doe-runtime product cell, but `dropin_gate.py`, CTS publication, and broader runtime-tier evidence are still open. |
+| Any `webgpu.h` host | Doe shared-library ABI surface | Dawn ABI / `webgpu.h` expectations | validation cell | `scaffolded` | Valuable because ABI validation is required for runtime-tier replacement claims, but the support matrix still treats full validation as incomplete. |
+| Chromium / Fawn browser lane | Doe as browser `navigator.gpu` runtime | Chromium / Chrome Dawn path | browser compare / smoke cell | `diagnostic` | Browser lane exists and is governed, but current browser evidence is still separate from claim-grade native/package replacement language. |
+
+### Exhaustiveness notes
+
+The matrix above is intentionally exhaustive across the named surfaces that
+exist in the repo today:
+
+- runtime package family
+  - Node, Bun, Deno, CLI, and the Node-only `native-direct` diagnostic subpath
+- helper package family
+  - bound to Doe runtime surfaces, competitor runtime surfaces, and browser
+    `GPUDevice` surfaces
+- native/runtime/browser deployment tiers
+  - Metal, Vulkan, D3D12, drop-in ABI, and browser integration
+
+Cells not listed separately are intentionally folded into one of those rows:
+
+- `@simulatte/webgpu/compute` and `@simulatte/webgpu/full` are API-shape
+  entrypoints inside the same runtime package family, not separate competitive
+  surfaces
+- `@simulatte/webgpu/node` and `@simulatte/webgpu/bun` are host-specific
+  subpaths of the same package family and inherit the same lane status as their
+  parent Node/Bun rows
+- browser competitors are represented at the browser tier, not duplicated under
+  the npm package family
+
+---
+
 ## Tier 1: doe-core
 
 ### Scope

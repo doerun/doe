@@ -1,0 +1,12 @@
+{
+  "nodeModulesDir": "auto",
+  "unstable": ["webgpu"],
+  "permissions": {
+    "read": true,
+    "write": true,
+    "ffi": true,
+    "env": true,
+    "run": true,
+    "net": false
+  }
+}
