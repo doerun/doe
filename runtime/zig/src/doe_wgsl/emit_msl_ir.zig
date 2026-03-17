@@ -3,6 +3,7 @@ const ir = @import("ir.zig");
 const maps = @import("emit_msl_maps.zig");
 const stage_render = @import("emit_msl_stage.zig");
 const texture_builtins = @import("emit_msl_texture.zig");
+const subgroups = @import("emit_msl_subgroups.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -30,6 +31,8 @@ const Emitter = struct {
 
     fn emit_root(self: *Emitter) EmitError!void {
         try self.write("#include <metal_stdlib>\nusing namespace metal;\n");
+        // Simdgroup header only needed when subgroup builtins are present.
+        if (subgroups.module_uses_subgroups(self.module)) try self.write(subgroups.SIMDGROUP_INCLUDE);
         try self.emit_structs();
         try self.emit_globals();
         try self.emit_functions();
@@ -176,14 +179,14 @@ const Emitter = struct {
             else => {},
         };
         switch (self.module.types.get(global.ty)) {
-            .sampler => {
+            .sampler, .sampler_comparison => {
                 try self.write("sampler ");
                 try self.write(global.name);
                 try self.write(" [[sampler(");
                 try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
             },
-            .texture_2d, .texture_3d, .storage_texture_2d => {
+            .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => {
                 try self.emit_type(global.ty);
                 try self.write(" ");
                 try self.write(global.name);
@@ -202,8 +205,13 @@ const Emitter = struct {
         if (param.io) |io_attr| {
             if (io_attr.builtin != .none) {
                 try self.write(" [[");
-                try self.write(maps.msl_builtin_name(io_attr.builtin));
-                try self.write("]]" );
+                // Subgroup builtins use simdgroup attribute strings; others fall through to maps.
+                if (subgroups.msl_subgroup_attribute(io_attr.builtin)) |attr| {
+                    try self.write(attr);
+                } else {
+                    try self.write(maps.msl_builtin_name(io_attr.builtin));
+                }
+                try self.write("]]");
             } else if (io_attr.location != null) {
                 return error.InvalidIr;
             }
@@ -710,18 +718,38 @@ const Emitter = struct {
             },
             .struct_ => |struct_id| try self.write(self.module.structs.items[struct_id].name),
             .sampler => try self.write("sampler"),
+            .sampler_comparison => try self.write("sampler"),
             .texture_2d => |sample_ty| {
                 try self.write("texture2d<");
                 try self.emit_type(sample_ty);
                 try self.write(">");
             },
+            .texture_2d_array => |sample_ty| {
+                try self.write("texture2d_array<");
+                try self.emit_type(sample_ty);
+                try self.write(">");
+            },
+            .texture_cube => |sample_ty| {
+                try self.write("texturecube<");
+                try self.emit_type(sample_ty);
+                try self.write(">");
+            },
+            .texture_multisampled_2d => |sample_ty| {
+                try self.write("texture2d_ms<");
+                try self.emit_type(sample_ty);
+                try self.write(">");
+            },
+            .texture_depth_2d => try self.write("depth2d<float>"),
+            .texture_depth_cube => try self.write("depthcube<float>"),
             .texture_3d => |sample_ty| {
                 try self.write("texture3d<");
                 try self.emit_type(sample_ty);
                 try self.write(">");
             },
             .storage_texture_2d => |storage_tex| {
-                try self.write("texture2d<float, access::");
+                try self.write("texture2d<");
+                try self.write(maps.msl_storage_texture_elem(storage_tex.format));
+                try self.write(", access::");
                 try self.write(switch (storage_tex.access) {
                     .read => "read",
                     .write => "write",

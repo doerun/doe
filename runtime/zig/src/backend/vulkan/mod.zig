@@ -13,10 +13,7 @@ const artifact_meta = @import("../common/artifact_meta.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
 const hash_utils = @import("../common/hash_utils.zig");
 const artifact_emit = @import("artifact_emit.zig");
-const native_runtime = if (builtin.os.tag == .macos)
-    @import("native_runtime_stub.zig")
-else
-    @import("native_runtime.zig");
+const native_runtime = @import("native_runtime.zig");
 
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
@@ -26,6 +23,11 @@ const STATUS_MESSAGE_BYTES: usize = 256;
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
+// Uploads accumulate and flush lazily: flush_pending_uploads_if_required fires
+// once before the first non-upload command that needs to see the written data.
+// This matches Dawn's batched-upload behavior and eliminates per-upload fence overhead.
+const UPLOAD_BATCH_LAZY: u32 = std.math.maxInt(u32);
+
 pub const ZigVulkanBackend = struct {
     allocator: std.mem.Allocator,
     kernel_root_owned: ?[]u8 = null,
@@ -33,7 +35,7 @@ pub const ZigVulkanBackend = struct {
 
     upload_path_policy: backend_policy.UploadPathPolicy = .allow_mapped_shortcuts,
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
-    upload_submit_every: u32 = 1,
+    upload_submit_every: u32 = UPLOAD_BATCH_LAZY,
     queue_wait_mode: webgpu.QueueWaitMode = .process_events,
     queue_sync_mode: webgpu.QueueSyncMode = .per_command,
     gpu_timestamp_mode: webgpu.GpuTimestampMode = .auto,
@@ -112,7 +114,7 @@ pub const ZigVulkanBackend = struct {
             .runtime = null,
             .upload_path_policy = upload_path_policy,
             .upload_buffer_usage_mode = .copy_dst_copy_src,
-            .upload_submit_every = 1,
+            .upload_submit_every = UPLOAD_BATCH_LAZY,
             .queue_wait_mode = .process_events,
             .queue_sync_mode = .per_command,
             .gpu_timestamp_mode = .auto,
@@ -653,7 +655,7 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .runtime = null,
         .upload_path_policy = .allow_mapped_shortcuts,
         .upload_buffer_usage_mode = .copy_dst_copy_src,
-        .upload_submit_every = 1,
+        .upload_submit_every = UPLOAD_BATCH_LAZY,
         .queue_wait_mode = .process_events,
         .queue_sync_mode = queue_sync_mode,
         .gpu_timestamp_mode = .off,

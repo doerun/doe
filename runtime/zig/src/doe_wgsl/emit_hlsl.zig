@@ -219,7 +219,7 @@ const Emitter = struct {
         };
 
         switch (self.module.types.get(global.ty)) {
-            .sampler => {
+            .sampler, .sampler_comparison => {
                 try self.write("\nSamplerState ");
                 try self.write(global.name);
                 try self.write(" : register(s");
@@ -228,10 +228,10 @@ const Emitter = struct {
                 try self.write_u32(binding.group);
                 try self.write(");\n");
             },
-            .texture_2d => |sample_ty| {
-                try self.write("\nTexture2D<");
-                try self.write(maps.texture_component(sample_ty));
-                try self.write("4> ");
+            .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d => {
+                try self.write("\n");
+                try self.emit_type_only(global.ty);
+                try self.write(" ");
                 try self.write(global.name);
                 try self.write(" : register(t");
                 try self.write_u32(binding.binding);
@@ -742,9 +742,31 @@ const Emitter = struct {
                 else => return error.InvalidIr,
             },
             .struct_ => |struct_id| try self.write(self.module.structs.items[struct_id].name),
-            .sampler => try self.write("SamplerState"),
+            .sampler, .sampler_comparison => try self.write("SamplerState"),
             .texture_2d => |sample_ty| {
                 try self.write("Texture2D<");
+                try self.write(maps.texture_component(sample_ty));
+                try self.write("4>");
+            },
+            .texture_2d_array => |sample_ty| {
+                try self.write("Texture2DArray<");
+                try self.write(maps.texture_component(sample_ty));
+                try self.write("4>");
+            },
+            .texture_cube => |sample_ty| {
+                try self.write("TextureCube<");
+                try self.write(maps.texture_component(sample_ty));
+                try self.write("4>");
+            },
+            .texture_multisampled_2d => |sample_ty| {
+                try self.write("Texture2DMS<");
+                try self.write(maps.texture_component(sample_ty));
+                try self.write("4>");
+            },
+            .texture_depth_2d => try self.write("Texture2D<float>"),
+            .texture_depth_cube => try self.write("TextureCube<float>"),
+            .texture_3d => |sample_ty| {
+                try self.write("Texture3D<");
                 try self.write(maps.texture_component(sample_ty));
                 try self.write("4>");
             },

@@ -12,13 +12,15 @@ const artifact_meta = @import("../common/artifact_meta.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
 const artifact_state = @import("../common/artifact_state.zig");
 const hash_utils = @import("../common/hash_utils.zig");
-const native_runtime = if (builtin.os.tag == .windows)
-    @import("d3d12_native_runtime.zig")
-else
-    @import("d3d12_native_runtime_stub.zig");
+const native_runtime = @import("d3d12_native_runtime.zig");
 
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
+
+// Uploads accumulate and flush lazily: flush_pending_uploads_if_required fires
+// once before the first non-upload command that needs to see the written data.
+// This matches Dawn's batched-upload behavior and eliminates per-upload fence overhead.
+const UPLOAD_BATCH_LAZY: u32 = std.math.maxInt(u32);
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
 const MANIFEST_CONTENT_CAPACITY: usize = 2048;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
@@ -34,7 +36,7 @@ pub const ZigD3D12Backend = struct {
     runtime: ?native_runtime.NativeD3D12Runtime = null,
 
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
-    upload_submit_every: u32 = 1,
+    upload_submit_every: u32 = UPLOAD_BATCH_LAZY,
     queue_wait_mode: webgpu.QueueWaitMode = .process_events,
     queue_sync_mode: webgpu.QueueSyncMode = .per_command,
     gpu_timestamp_mode: webgpu.GpuTimestampMode = .auto,
@@ -79,7 +81,7 @@ pub const ZigD3D12Backend = struct {
             .kernel_root_owned = owned_root,
             .runtime = null,
             .upload_buffer_usage_mode = .copy_dst_copy_src,
-            .upload_submit_every = 1,
+            .upload_submit_every = UPLOAD_BATCH_LAZY,
             .queue_wait_mode = .process_events,
             .queue_sync_mode = .per_command,
             .gpu_timestamp_mode = .auto,

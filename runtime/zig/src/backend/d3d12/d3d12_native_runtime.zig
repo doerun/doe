@@ -17,15 +17,15 @@ const d3d12_timestamps = @import("commands/d3d12_gpu_timestamps.zig");
 const d3d12_map = @import("commands/d3d12_map_async.zig");
 const dc = @import("d3d12_constants.zig");
 
-const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
-const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
-const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
-const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
-const GENERATED_SHADER_DIR: []const u8 = "bench/out/shader-artifacts/generated";
-const MAX_DXC_OUTPUT_BYTES: usize = 64 * 1024;
-const DXC_PROFILE: []const u8 = "cs_6_0";
-const DXC_ENTRYPOINT: []const u8 = "main";
-const HEAP_TYPE_DEFAULT: c_int = 1;
+pub const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
+pub const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
+pub const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
+pub const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
+pub const GENERATED_SHADER_DIR: []const u8 = "bench/out/shader-artifacts/generated";
+pub const MAX_DXC_OUTPUT_BYTES: usize = 64 * 1024;
+pub const DXC_PROFILE: []const u8 = "cs_6_0";
+pub const DXC_ENTRYPOINT: []const u8 = "main";
+pub const HEAP_TYPE_DEFAULT: c_int = 1;
 
 extern fn d3d12_bridge_create_device() callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
@@ -47,7 +47,7 @@ extern fn d3d12_bridge_command_list_dispatch(cmd_list: ?*anyopaque, x: u32, y: u
 extern fn d3d12_bridge_command_allocator_reset(allocator_h: ?*anyopaque) callconv(.c) c_int;
 extern fn d3d12_bridge_command_list_reset(cmd_list: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) c_int;
 
-const PendingUpload = struct {
+pub const PendingUpload = struct {
     cmd_allocator: ?*anyopaque,
     cmd_list: ?*anyopaque,
     src_buffer: ?*anyopaque,
@@ -55,7 +55,7 @@ const PendingUpload = struct {
     byte_count: usize,
 };
 
-const PoolEntry = struct {
+pub const PoolEntry = struct {
     buffer: ?*anyopaque,
 };
 
@@ -175,6 +175,10 @@ pub const NativeD3D12Runtime = struct {
         if (self.pending_uploads.items.len > 0 or self.has_deferred_submissions) {
             self.fence_value +|= 1;
             d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
+            // TODO(perf): replace blocking WaitForSingleObject in d3d12_bridge_fence_wait with
+            // ID3D12Fence::SetEventOnCompletion + short spin-poll loop before falling back to
+            // WaitForSingleObjectEx(INFINITE). On AMD/NVIDIA this saves ~50-200us per flush for
+            // small uploads by avoiding the OS scheduling roundtrip when the GPU finishes quickly.
             d3d12_bridge_fence_wait(self.fence, self.fence_value);
             self.has_deferred_submissions = false;
         }
@@ -469,7 +473,7 @@ pub const NativeD3D12Runtime = struct {
     }
 };
 
-fn strip_extension(name: []const u8) []const u8 {
+pub fn strip_extension(name: []const u8) []const u8 {
     const suffixes = [_][]const u8{ ".wgsl", ".hlsl", ".dxil", ".cso", ".dxbc" };
     for (suffixes) |sfx| {
         if (std.mem.endsWith(u8, name, sfx)) return name[0 .. name.len - sfx.len];

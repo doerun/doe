@@ -335,7 +335,97 @@ pub const Emitter = struct {
                     spirv.ImageFormat.Rgba8,
                 );
             },
-            .sampler => try self.lower_sampler_type(),
+            .texture_3d => |sample_ty| blk: {
+                switch (self.module.types.get(sample_ty)) {
+                    .scalar => |scalar| {
+                        if (scalar != .f32) return error.UnsupportedConstruct;
+                    },
+                    else => return error.UnsupportedConstruct,
+                }
+                break :blk try self.builder.type_image(
+                    try self.lower_type(sample_ty),
+                    spirv.Dim._3D,
+                    0,
+                    0,
+                    0,
+                    1,
+                    spirv.ImageFormat.Unknown,
+                );
+            },
+            .texture_2d_array => |sample_ty| blk: {
+                switch (self.module.types.get(sample_ty)) {
+                    .scalar => |scalar| {
+                        if (scalar != .f32) return error.UnsupportedConstruct;
+                    },
+                    else => return error.UnsupportedConstruct,
+                }
+                break :blk try self.builder.type_image(
+                    try self.lower_type(sample_ty),
+                    spirv.Dim._2D,
+                    0,
+                    1,
+                    0,
+                    1,
+                    spirv.ImageFormat.Unknown,
+                );
+            },
+            .texture_cube => |sample_ty| blk: {
+                switch (self.module.types.get(sample_ty)) {
+                    .scalar => |scalar| {
+                        if (scalar != .f32) return error.UnsupportedConstruct;
+                    },
+                    else => return error.UnsupportedConstruct,
+                }
+                break :blk try self.builder.type_image(
+                    try self.lower_type(sample_ty),
+                    spirv.Dim.Cube,
+                    0,
+                    0,
+                    0,
+                    1,
+                    spirv.ImageFormat.Unknown,
+                );
+            },
+            .texture_multisampled_2d => |sample_ty| blk: {
+                switch (self.module.types.get(sample_ty)) {
+                    .scalar => |scalar| {
+                        if (scalar != .f32) return error.UnsupportedConstruct;
+                    },
+                    else => return error.UnsupportedConstruct,
+                }
+                break :blk try self.builder.type_image(
+                    try self.lower_type(sample_ty),
+                    spirv.Dim._2D,
+                    0,
+                    0,
+                    1,
+                    1,
+                    spirv.ImageFormat.Unknown,
+                );
+            },
+            .texture_depth_2d => blk: {
+                break :blk try self.builder.type_image(
+                    try self.builder.type_f32(),
+                    spirv.Dim._2D,
+                    1,
+                    0,
+                    0,
+                    1,
+                    spirv.ImageFormat.Unknown,
+                );
+            },
+            .texture_depth_cube => blk: {
+                break :blk try self.builder.type_image(
+                    try self.builder.type_f32(),
+                    spirv.Dim.Cube,
+                    1,
+                    0,
+                    0,
+                    1,
+                    spirv.ImageFormat.Unknown,
+                );
+            },
+            .sampler, .sampler_comparison => try self.lower_sampler_type(),
             .struct_ => |struct_id| blk: {
                 const struct_def = self.module.structs.items[struct_id];
                 var member_types = std.ArrayListUnmanaged(u32){};
@@ -420,7 +510,7 @@ pub const Emitter = struct {
         const addr_space = global.addr_space orelse return false;
         if (addr_space != .handle) return false;
         return switch (self.module.types.get(global.ty)) {
-            .sampler, .texture_2d, .storage_texture_2d => true,
+            .sampler, .sampler_comparison, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => true,
             else => false,
         };
     }
@@ -507,7 +597,7 @@ pub const Emitter = struct {
                 };
             },
             .atomic => |inner| try self.decorate_memory_type(inner, addr_space),
-            .sampler, .texture_2d, .storage_texture_2d, .ref => return error.UnsupportedConstruct,
+            .sampler, .sampler_comparison, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d, .ref => return error.UnsupportedConstruct,
         };
     }
 

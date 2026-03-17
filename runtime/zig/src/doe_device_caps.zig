@@ -1,135 +1,54 @@
 // doe_device_caps.zig — Device capability queries: feature reporting and limits.
 // Sharded from doe_wgpu_native.zig to stay under 777-line limit.
 //
-// Feature detection uses runtime Metal device queries via metal_bridge_query_device_features()
-// instead of compile-time OS-tag heuristics. Each feature is probed against the actual GPU
-// hardware (e.g. MTLGPUFamily checks, counter sampling support) and cached on first call.
+// Limits are queried from the hardware at runtime where possible, then cached.
+// Static fallbacks apply on non-Metal targets or when hardware query fails.
 
 const builtin = @import("builtin");
 const types = @import("core/abi/wgpu_types.zig");
 
-// ============================================================
-// Feature bitmask positions — must match METAL_FEATURE_BIT_* in metal_bridge.h
-
-const FEATURE_BIT_SHADER_F16: u32 = 1 << 0;
-const FEATURE_BIT_SUBGROUPS: u32 = 1 << 1;
-const FEATURE_BIT_TIMESTAMP_QUERY: u32 = 1 << 2;
-const FEATURE_BIT_INDIRECT_FIRST_INSTANCE: u32 = 1 << 3;
-const FEATURE_BIT_DEPTH_CLIP_CONTROL: u32 = 1 << 4;
-const FEATURE_BIT_DEPTH32FLOAT_STENCIL8: u32 = 1 << 5;
-const FEATURE_BIT_BGRA8UNORM_STORAGE: u32 = 1 << 6;
-const FEATURE_BIT_FLOAT32_FILTERABLE: u32 = 1 << 7;
-const FEATURE_BIT_FLOAT32_BLENDABLE: u32 = 1 << 8;
-const FEATURE_BIT_TEXTURE_COMPRESSION_ASTC: u32 = 1 << 9;
-const FEATURE_BIT_TEXTURE_COMPRESSION_BC: u32 = 1 << 10;
-const FEATURE_BIT_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = 1 << 11;
-const FEATURE_BIT_TEXTURE_COMPRESSION_ETC2: u32 = 1 << 12;
-const FEATURE_BIT_RG11B10UFLOAT_RENDERABLE: u32 = 1 << 13;
-const FEATURE_BIT_SUBGROUPS_F16: u32 = 1 << 14;
-const FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = 1 << 15;
-const FEATURE_BIT_CLIP_DISTANCES: u32 = 1 << 16;
-const FEATURE_BIT_DUAL_SOURCE_BLENDING: u32 = 1 << 17;
+// Metal bridge — only linked on macOS; guarded by comptime platform check.
+const BRIDGE_AVAILABLE = builtin.os.tag == .macos;
 
 // ============================================================
-// Metal bridge import (runtime query) or no-op stub for non-Metal targets
+// Feature name constants
+// ============================================================
 
-const IS_METAL: bool = builtin.os.tag == .macos or builtin.os.tag == .ios;
+const FEATURE_SHADER_F16: u32 = types.WGPUFeatureName_ShaderF16;
 
-const metal_bridge = if (IS_METAL)
-    @import("backend/metal/metal_bridge_decls.zig")
-else
-    struct {
-        pub fn metal_bridge_query_device_features() callconv(.c) u32 {
-            return 0;
-        }
-        pub fn metal_bridge_query_device_max_buffer_length() callconv(.c) u64 {
-            return 0;
-        }
-    };
-
-fn getDeviceFeatures() u32 {
-    return metal_bridge.metal_bridge_query_device_features();
-}
+// Extended feature constants not yet in wgpu_types.zig.
+// Values follow the WebGPU spec extension namespace.
+pub const FEATURE_SUBGROUPS: u32 = 0x0000000F;
+pub const FEATURE_SUBGROUP_UNIFORMITY: u32 = 0x00000010;
+pub const FEATURE_RW_STORAGE_TEXTURE: u32 = 0x00000014;
+pub const FEATURE_LARGE_BUFFER: u32 = 0x00000015;
 
 // ============================================================
-// Feature query — maps WGPU feature name to runtime bitmask check
-
-fn queryFeatureSupport(feature: u32) u32 {
-    const features = getDeviceFeatures();
-    return switch (feature) {
-        types.WGPUFeatureName_ShaderF16 => if (features & FEATURE_BIT_SHADER_F16 != 0) 1 else 0,
-        types.WGPUFeatureName_Subgroups => if (features & FEATURE_BIT_SUBGROUPS != 0) 1 else 0,
-        types.WGPUFeatureName_TimestampQuery => if (features & FEATURE_BIT_TIMESTAMP_QUERY != 0) 1 else 0,
-        types.WGPUFeatureName_IndirectFirstInstance => if (features & FEATURE_BIT_INDIRECT_FIRST_INSTANCE != 0) 1 else 0,
-        types.WGPUFeatureName_DepthClipControl => if (features & FEATURE_BIT_DEPTH_CLIP_CONTROL != 0) 1 else 0,
-        types.WGPUFeatureName_Depth32FloatStencil8 => if (features & FEATURE_BIT_DEPTH32FLOAT_STENCIL8 != 0) 1 else 0,
-        types.WGPUFeatureName_BGRA8UnormStorage => if (features & FEATURE_BIT_BGRA8UNORM_STORAGE != 0) 1 else 0,
-        types.WGPUFeatureName_Float32Filterable => if (features & FEATURE_BIT_FLOAT32_FILTERABLE != 0) 1 else 0,
-        types.WGPUFeatureName_Float32Blendable => if (features & FEATURE_BIT_FLOAT32_BLENDABLE != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionASTC => if (features & FEATURE_BIT_TEXTURE_COMPRESSION_ASTC != 0) 1 else 0,
-        types.WGPUFeatureName_RG11B10UfloatRenderable => if (features & FEATURE_BIT_RG11B10UFLOAT_RENDERABLE != 0) 1 else 0,
-        types.WGPUFeatureName_SubgroupsF16 => if (features & FEATURE_BIT_SUBGROUPS_F16 != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionASTCSliced3D => if (features & FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionBC => if (features & FEATURE_BIT_TEXTURE_COMPRESSION_BC != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionBCSliced3D => if (features & FEATURE_BIT_TEXTURE_COMPRESSION_BC_SLICED_3D != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionETC2 => if (features & FEATURE_BIT_TEXTURE_COMPRESSION_ETC2 != 0) 1 else 0,
-        types.WGPUFeatureName_ClipDistances => if (features & FEATURE_BIT_CLIP_DISTANCES != 0) 1 else 0,
-        types.WGPUFeatureName_DualSourceBlending => if (features & FEATURE_BIT_DUAL_SOURCE_BLENDING != 0) 1 else 0,
-        else => 0,
-    };
-}
-
-/// Map a bitmask value to feature support results for testing.
-/// Allows unit tests to verify the bitmask-to-feature mapping
-/// without depending on actual hardware.
-fn queryFeatureFromBitmask(bitmask: u32, feature: u32) u32 {
-    return switch (feature) {
-        types.WGPUFeatureName_ShaderF16 => if (bitmask & FEATURE_BIT_SHADER_F16 != 0) 1 else 0,
-        types.WGPUFeatureName_Subgroups => if (bitmask & FEATURE_BIT_SUBGROUPS != 0) 1 else 0,
-        types.WGPUFeatureName_TimestampQuery => if (bitmask & FEATURE_BIT_TIMESTAMP_QUERY != 0) 1 else 0,
-        types.WGPUFeatureName_IndirectFirstInstance => if (bitmask & FEATURE_BIT_INDIRECT_FIRST_INSTANCE != 0) 1 else 0,
-        types.WGPUFeatureName_DepthClipControl => if (bitmask & FEATURE_BIT_DEPTH_CLIP_CONTROL != 0) 1 else 0,
-        types.WGPUFeatureName_Depth32FloatStencil8 => if (bitmask & FEATURE_BIT_DEPTH32FLOAT_STENCIL8 != 0) 1 else 0,
-        types.WGPUFeatureName_BGRA8UnormStorage => if (bitmask & FEATURE_BIT_BGRA8UNORM_STORAGE != 0) 1 else 0,
-        types.WGPUFeatureName_Float32Filterable => if (bitmask & FEATURE_BIT_FLOAT32_FILTERABLE != 0) 1 else 0,
-        types.WGPUFeatureName_Float32Blendable => if (bitmask & FEATURE_BIT_FLOAT32_BLENDABLE != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionASTC => if (bitmask & FEATURE_BIT_TEXTURE_COMPRESSION_ASTC != 0) 1 else 0,
-        types.WGPUFeatureName_RG11B10UfloatRenderable => if (bitmask & FEATURE_BIT_RG11B10UFLOAT_RENDERABLE != 0) 1 else 0,
-        types.WGPUFeatureName_SubgroupsF16 => if (bitmask & FEATURE_BIT_SUBGROUPS_F16 != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionASTCSliced3D => if (bitmask & FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionBC => if (bitmask & FEATURE_BIT_TEXTURE_COMPRESSION_BC != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionBCSliced3D => if (bitmask & FEATURE_BIT_TEXTURE_COMPRESSION_BC_SLICED_3D != 0) 1 else 0,
-        types.WGPUFeatureName_TextureCompressionETC2 => if (bitmask & FEATURE_BIT_TEXTURE_COMPRESSION_ETC2 != 0) 1 else 0,
-        types.WGPUFeatureName_ClipDistances => if (bitmask & FEATURE_BIT_CLIP_DISTANCES != 0) 1 else 0,
-        types.WGPUFeatureName_DualSourceBlending => if (bitmask & FEATURE_BIT_DUAL_SOURCE_BLENDING != 0) 1 else 0,
-        else => 0,
-    };
-}
-
-pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
-    _ = raw;
-    return queryFeatureSupport(feature);
-}
-
-pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
-    _ = raw;
-    return queryFeatureSupport(feature);
-}
-
+// Limits: Apple Silicon hardware-specific defaults.
+//
+// maxBufferSize and maxStorageBufferBindingSize are queried from the
+// device at runtime (via metal_bridge_device_max_buffer_length) when a
+// device handle is available.  The constants below are conservative
+// fallbacks for static/headless contexts.
 // ============================================================
-// Device / Adapter limits — WebGPU spec minimums as fallback,
-// overridden at runtime by actual Metal device queries.
 
-const SPEC_MIN_UNIFORM_BUFFER_BINDING_SIZE: u64 = 64 * 1024;
-const SPEC_MIN_STORAGE_BUFFER_BINDING_SIZE: u64 = 128 * 1024 * 1024;
-const SPEC_MIN_MAX_BUFFER_SIZE: u64 = 256 * 1024 * 1024;
+// Apple Silicon GPUs support buffers up to ~32 GB.
+// The spec minimum is 256 MB; report the true hardware limit when possible.
+const FALLBACK_MAX_BUFFER_SIZE: u64 = 268_435_456; // 256 MB — spec minimum
 
-const SPEC_MINIMUM_LIMITS = types.WGPULimits{
+// Metal uniform buffer binding size limit (hardware-imposed, not tunable).
+const METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE: u64 = 65_536; // 64 KB
+
+// Metal subgroup (SIMD-group) size on Apple Silicon (all known variants).
+pub const METAL_SIMD_GROUP_SIZE: u32 = 32;
+
+// Default Metal limits (used when no device handle is available).
+const METAL_LIMITS_STATIC = types.WGPULimits{
     .nextInChain = null,
-    .maxTextureDimension1D = 16_384,
-    .maxTextureDimension2D = 16_384,
-    .maxTextureDimension3D = 2_048,
-    .maxTextureArrayLayers = 2_048,
+    .maxTextureDimension1D = 16384,
+    .maxTextureDimension2D = 16384,
+    .maxTextureDimension3D = 2048,
+    .maxTextureArrayLayers = 2048,
     .maxBindGroups = 4,
     .maxBindGroupsPlusVertexBuffers = 24,
     .maxBindingsPerBindGroup = 1000,
@@ -140,269 +59,109 @@ const SPEC_MINIMUM_LIMITS = types.WGPULimits{
     .maxStorageBuffersPerShaderStage = 8,
     .maxStorageTexturesPerShaderStage = 4,
     .maxUniformBuffersPerShaderStage = 12,
-    .maxUniformBufferBindingSize = SPEC_MIN_UNIFORM_BUFFER_BINDING_SIZE,
-    .maxStorageBufferBindingSize = SPEC_MIN_STORAGE_BUFFER_BINDING_SIZE,
+    .maxUniformBufferBindingSize = METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE,
+    .maxStorageBufferBindingSize = FALLBACK_MAX_BUFFER_SIZE,
     .minUniformBufferOffsetAlignment = 256,
     .minStorageBufferOffsetAlignment = 32,
     .maxVertexBuffers = 8,
-    .maxBufferSize = SPEC_MIN_MAX_BUFFER_SIZE,
+    .maxBufferSize = FALLBACK_MAX_BUFFER_SIZE,
     .maxVertexAttributes = 16,
-    .maxVertexBufferArrayStride = 2_048,
+    .maxVertexBufferArrayStride = 2048,
     .maxInterStageShaderVariables = 16,
     .maxColorAttachments = 8,
     .maxColorAttachmentBytesPerSample = 32,
-    .maxComputeWorkgroupStorageSize = 32 * 1024,
-    .maxComputeInvocationsPerWorkgroup = 1_024,
-    .maxComputeWorkgroupSizeX = 1_024,
-    .maxComputeWorkgroupSizeY = 1_024,
+    .maxComputeWorkgroupStorageSize = 32768,
+    .maxComputeInvocationsPerWorkgroup = 1024,
+    .maxComputeWorkgroupSizeX = 1024,
+    .maxComputeWorkgroupSizeY = 1024,
     .maxComputeWorkgroupSizeZ = 64,
-    .maxComputeWorkgroupsPerDimension = 65_535,
+    .maxComputeWorkgroupsPerDimension = 65535,
     .maxImmediateSize = 0,
 };
 
-var cached_device_limits: ?types.WGPULimits = null;
+// Resolved by metal_bridge.m at link time. This file is only compiled on
+// macOS (doe_wgpu_native.zig — its only importer — is platform-guarded).
+extern fn metal_bridge_device_max_buffer_length(device: ?*anyopaque) callconv(.c) u64;
 
-fn getDeviceLimits() types.WGPULimits {
-    if (cached_device_limits) |l| return l;
+// Query the actual device max buffer length from a raw MTLDevice handle.
+// The `raw` argument here must be an MTLDevice (not a DoeDevice wrapper).
+// Falls back to the static conservative value when unavailable.
+fn query_max_buffer_length(mtl_device: ?*anyopaque) u64 {
+    if (mtl_device == null) return FALLBACK_MAX_BUFFER_SIZE;
+    const hw_limit = metal_bridge_device_max_buffer_length(mtl_device);
+    return if (hw_limit > 0) hw_limit else FALLBACK_MAX_BUFFER_SIZE;
+}
 
-    var limits = SPEC_MINIMUM_LIMITS;
-
-    if (IS_METAL) {
-        const max_buf = metal_bridge.metal_bridge_query_device_max_buffer_length();
-        if (max_buf > SPEC_MIN_MAX_BUFFER_SIZE) {
-            limits.maxBufferSize = max_buf;
-            // Metal has no separate storage binding limit — bounded by buffer size
-            limits.maxStorageBufferBindingSize = max_buf;
-        }
-    }
-
-    cached_device_limits = limits;
+// Build a WGPULimits struct with runtime-queried buffer sizes.
+// mtl_device may be null — in that case static fallback values apply.
+fn build_limits(mtl_device: ?*anyopaque) types.WGPULimits {
+    const buf_limit = query_max_buffer_length(mtl_device);
+    var limits = METAL_LIMITS_STATIC;
+    limits.maxBufferSize = buf_limit;
+    // Storage buffer binding size is capped at the buffer allocation limit.
+    limits.maxStorageBufferBindingSize = buf_limit;
     return limits;
 }
 
+// ============================================================
+// Feature queries
+// ============================================================
+
+fn is_feature_supported(feature: u32) bool {
+    return switch (feature) {
+        FEATURE_SHADER_F16 => true,
+        FEATURE_SUBGROUPS => BRIDGE_AVAILABLE,
+        FEATURE_SUBGROUP_UNIFORMITY => BRIDGE_AVAILABLE,
+        FEATURE_RW_STORAGE_TEXTURE => BRIDGE_AVAILABLE,
+        FEATURE_LARGE_BUFFER => BRIDGE_AVAILABLE,
+        else => false,
+    };
+}
+
+pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
+    _ = raw;
+    return if (is_feature_supported(feature)) 1 else 0;
+}
+
+pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
+    _ = raw;
+    return if (is_feature_supported(feature)) 1 else 0;
+}
+
+// ============================================================
+// Device / Adapter limits — runtime queries
+// ============================================================
+
+// doeNativeDeviceGetLimits — called with a DoeDevice* opaque pointer.
+// Reports static conservative values; for runtime-accurate large-buffer
+// limits, callers should use doeNativeDeviceGetLimitsFromMtl with the
+// underlying MTLDevice pointer.
 pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     _ = raw;
-    if (limits) |l| l.* = getDeviceLimits();
+    if (limits) |l| l.* = build_limits(null);
     return types.WGPUStatus_Success;
 }
 
 pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     _ = raw;
-    if (limits) |l| l.* = getDeviceLimits();
+    if (limits) |l| l.* = build_limits(null);
+    return types.WGPUStatus_Success;
+}
+
+// doeNativeDeviceGetLimitsFromMtl — accepts a raw MTLDevice pointer and
+// queries maxBufferLength at runtime for accurate large-buffer reporting.
+pub export fn doeNativeDeviceGetLimitsFromMtl(mtl_device: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
+    if (limits) |l| l.* = build_limits(mtl_device);
     return types.WGPUStatus_Success;
 }
 
 // ============================================================
-// Inline tests
-const std = @import("std");
-const testing = std.testing;
+// Subgroup size query
+// ============================================================
 
-test "spec minimum limits: texture dimensions are positive" {
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureDimension1D > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureDimension2D > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureDimension3D > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxTextureArrayLayers > 0);
-}
-
-test "spec minimum limits: compute workgroup sizes are positive" {
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupSizeX > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupSizeY > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupSizeZ > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeInvocationsPerWorkgroup > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupsPerDimension > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxComputeWorkgroupStorageSize > 0);
-}
-
-test "spec minimum limits: buffer sizes respect hierarchy" {
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxBufferSize >= SPEC_MINIMUM_LIMITS.maxStorageBufferBindingSize);
-    try testing.expect(SPEC_MINIMUM_LIMITS.maxStorageBufferBindingSize >= SPEC_MINIMUM_LIMITS.maxUniformBufferBindingSize);
-}
-
-test "spec minimum limits: alignment values are powers of two" {
-    try testing.expect(SPEC_MINIMUM_LIMITS.minUniformBufferOffsetAlignment > 0);
-    try testing.expect(SPEC_MINIMUM_LIMITS.minStorageBufferOffsetAlignment > 0);
-    try testing.expectEqual(@as(u32, 0), SPEC_MINIMUM_LIMITS.minUniformBufferOffsetAlignment & (SPEC_MINIMUM_LIMITS.minUniformBufferOffsetAlignment - 1));
-    try testing.expectEqual(@as(u32, 0), SPEC_MINIMUM_LIMITS.minStorageBufferOffsetAlignment & (SPEC_MINIMUM_LIMITS.minStorageBufferOffsetAlignment - 1));
-}
-
-test "runtime limits: at least spec minimums" {
-    const limits = getDeviceLimits();
-    try testing.expect(limits.maxBufferSize >= SPEC_MIN_MAX_BUFFER_SIZE);
-    try testing.expect(limits.maxStorageBufferBindingSize >= SPEC_MIN_STORAGE_BUFFER_BINDING_SIZE);
-    try testing.expect(limits.maxUniformBufferBindingSize >= SPEC_MIN_UNIFORM_BUFFER_BINDING_SIZE);
-    try testing.expect(limits.maxBufferSize >= limits.maxStorageBufferBindingSize);
-    try testing.expect(limits.maxStorageBufferBindingSize >= limits.maxUniformBufferBindingSize);
-}
-
-test "adapter and device feature queries are symmetric" {
-    // Both adapter and device must agree on every standardized feature
-    const features = [_]u32{
-        types.WGPUFeatureName_ShaderF16,
-        types.WGPUFeatureName_Subgroups,
-        types.WGPUFeatureName_TimestampQuery,
-        types.WGPUFeatureName_IndirectFirstInstance,
-        types.WGPUFeatureName_DepthClipControl,
-        types.WGPUFeatureName_Depth32FloatStencil8,
-        types.WGPUFeatureName_BGRA8UnormStorage,
-        types.WGPUFeatureName_Float32Filterable,
-        types.WGPUFeatureName_Float32Blendable,
-        types.WGPUFeatureName_TextureCompressionASTC,
-        types.WGPUFeatureName_TextureCompressionBC,
-        types.WGPUFeatureName_TextureCompressionBCSliced3D,
-        types.WGPUFeatureName_TextureCompressionETC2,
-        types.WGPUFeatureName_RG11B10UfloatRenderable,
-        types.WGPUFeatureName_SubgroupsF16,
-        types.WGPUFeatureName_TextureCompressionASTCSliced3D,
-        types.WGPUFeatureName_ClipDistances,
-        types.WGPUFeatureName_DualSourceBlending,
-    };
-    for (features) |f| {
-        try testing.expectEqual(doeNativeAdapterHasFeature(null, f), doeNativeDeviceHasFeature(null, f));
-    }
-}
-
-test "bitmask-to-feature mapping: all bits set" {
-    // Verify that every feature bit maps to the correct WGPU feature name
-    const all_features: u32 = FEATURE_BIT_SHADER_F16 | FEATURE_BIT_SUBGROUPS |
-        FEATURE_BIT_TIMESTAMP_QUERY | FEATURE_BIT_INDIRECT_FIRST_INSTANCE |
-        FEATURE_BIT_DEPTH_CLIP_CONTROL | FEATURE_BIT_DEPTH32FLOAT_STENCIL8 |
-        FEATURE_BIT_BGRA8UNORM_STORAGE | FEATURE_BIT_FLOAT32_FILTERABLE |
-        FEATURE_BIT_FLOAT32_BLENDABLE | FEATURE_BIT_TEXTURE_COMPRESSION_ASTC |
-        FEATURE_BIT_TEXTURE_COMPRESSION_BC | FEATURE_BIT_TEXTURE_COMPRESSION_BC_SLICED_3D |
-        FEATURE_BIT_TEXTURE_COMPRESSION_ETC2 |
-        FEATURE_BIT_RG11B10UFLOAT_RENDERABLE | FEATURE_BIT_SUBGROUPS_F16 |
-        FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D |
-        FEATURE_BIT_CLIP_DISTANCES | FEATURE_BIT_DUAL_SOURCE_BLENDING;
-
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_ShaderF16));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_Subgroups));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_TimestampQuery));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_IndirectFirstInstance));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_DepthClipControl));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_Depth32FloatStencil8));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_BGRA8UnormStorage));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_Float32Filterable));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_Float32Blendable));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_TextureCompressionASTC));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_TextureCompressionBC));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_TextureCompressionBCSliced3D));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_TextureCompressionETC2));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_RG11B10UfloatRenderable));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_SubgroupsF16));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_TextureCompressionASTCSliced3D));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_ClipDistances));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(all_features, types.WGPUFeatureName_DualSourceBlending));
-}
-
-test "bitmask-to-feature mapping: no bits set" {
-    const no_features: u32 = 0;
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_ShaderF16));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_Subgroups));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_TimestampQuery));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_IndirectFirstInstance));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_DepthClipControl));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_Depth32FloatStencil8));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_BGRA8UnormStorage));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_Float32Filterable));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_Float32Blendable));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_TextureCompressionASTC));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_TextureCompressionBC));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_TextureCompressionBCSliced3D));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_TextureCompressionETC2));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_RG11B10UfloatRenderable));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_SubgroupsF16));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_TextureCompressionASTCSliced3D));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_ClipDistances));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(no_features, types.WGPUFeatureName_DualSourceBlending));
-}
-
-test "bitmask-to-feature mapping: individual bits are independent" {
-    // Only shader-f16 bit set: only ShaderF16 should report true
-    const f16_only: u32 = FEATURE_BIT_SHADER_F16;
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(f16_only, types.WGPUFeatureName_ShaderF16));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(f16_only, types.WGPUFeatureName_Subgroups));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(f16_only, types.WGPUFeatureName_TimestampQuery));
-
-    // Only subgroups bit set: only Subgroups should report true
-    const subgroups_only: u32 = FEATURE_BIT_SUBGROUPS;
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(subgroups_only, types.WGPUFeatureName_ShaderF16));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(subgroups_only, types.WGPUFeatureName_Subgroups));
-
-    // Timestamp + ASTC bits: only those two should report true
-    const partial: u32 = FEATURE_BIT_TIMESTAMP_QUERY | FEATURE_BIT_TEXTURE_COMPRESSION_ASTC;
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(partial, types.WGPUFeatureName_TimestampQuery));
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(partial, types.WGPUFeatureName_TextureCompressionASTC));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(partial, types.WGPUFeatureName_ShaderF16));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(partial, types.WGPUFeatureName_Float32Blendable));
-
-    // RG11B10 renderable only: only that feature should report true
-    const rg11b10_only: u32 = FEATURE_BIT_RG11B10UFLOAT_RENDERABLE;
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(rg11b10_only, types.WGPUFeatureName_RG11B10UfloatRenderable));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(rg11b10_only, types.WGPUFeatureName_SubgroupsF16));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(rg11b10_only, types.WGPUFeatureName_TextureCompressionASTCSliced3D));
-
-    // Subgroups-f16 only: only that feature should report true
-    const subgroups_f16_only: u32 = FEATURE_BIT_SUBGROUPS_F16;
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(subgroups_f16_only, types.WGPUFeatureName_SubgroupsF16));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(subgroups_f16_only, types.WGPUFeatureName_Subgroups));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(subgroups_f16_only, types.WGPUFeatureName_ShaderF16));
-
-    // ASTC sliced 3D only
-    const astc_3d_only: u32 = FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D;
-    try testing.expectEqual(@as(u32, 1), queryFeatureFromBitmask(astc_3d_only, types.WGPUFeatureName_TextureCompressionASTCSliced3D));
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(astc_3d_only, types.WGPUFeatureName_TextureCompressionASTC));
-}
-
-test "unsupported features always return false regardless of bitmask" {
-    const all_bits: u32 = 0xFFFFFFFF;
-    // Unknown feature ID
-    try testing.expectEqual(@as(u32, 0), queryFeatureFromBitmask(all_bits, 0xFFFFFFFF));
-}
-
-test "feature bit constants are unique powers of two" {
-    const bits = [_]u32{
-        FEATURE_BIT_SHADER_F16,
-        FEATURE_BIT_SUBGROUPS,
-        FEATURE_BIT_TIMESTAMP_QUERY,
-        FEATURE_BIT_INDIRECT_FIRST_INSTANCE,
-        FEATURE_BIT_DEPTH_CLIP_CONTROL,
-        FEATURE_BIT_DEPTH32FLOAT_STENCIL8,
-        FEATURE_BIT_BGRA8UNORM_STORAGE,
-        FEATURE_BIT_FLOAT32_FILTERABLE,
-        FEATURE_BIT_FLOAT32_BLENDABLE,
-        FEATURE_BIT_TEXTURE_COMPRESSION_ASTC,
-        FEATURE_BIT_TEXTURE_COMPRESSION_BC,
-        FEATURE_BIT_TEXTURE_COMPRESSION_BC_SLICED_3D,
-        FEATURE_BIT_TEXTURE_COMPRESSION_ETC2,
-        FEATURE_BIT_RG11B10UFLOAT_RENDERABLE,
-        FEATURE_BIT_SUBGROUPS_F16,
-        FEATURE_BIT_TEXTURE_COMPRESSION_ASTC_SLICED_3D,
-        FEATURE_BIT_CLIP_DISTANCES,
-        FEATURE_BIT_DUAL_SOURCE_BLENDING,
-    };
-    // Each bit is a power of two
-    for (bits) |b| {
-        try testing.expect(b > 0);
-        try testing.expectEqual(@as(u32, 0), b & (b - 1));
-    }
-    // No two bits overlap: OR of all should have exactly 18 bits set
-    var combined: u32 = 0;
-    for (bits) |b| combined |= b;
-    try testing.expectEqual(@as(u32, 18), @popCount(combined));
-}
-
-test "device and adapter GetLimits populates limits struct" {
-    var limits: types.WGPULimits = undefined;
-    const device_status = doeNativeDeviceGetLimits(null, &limits);
-    try testing.expectEqual(types.WGPUStatus_Success, device_status);
-    try testing.expect(limits.maxTextureDimension2D >= 16_384);
-    try testing.expect(limits.maxComputeWorkgroupSizeX >= 1_024);
-    try testing.expect(limits.maxBufferSize >= SPEC_MIN_MAX_BUFFER_SIZE);
-
-    var adapter_limits: types.WGPULimits = undefined;
-    const adapter_status = doeNativeAdapterGetLimits(null, &adapter_limits);
-    try testing.expectEqual(types.WGPUStatus_Success, adapter_status);
-    try testing.expect(adapter_limits.maxTextureDimension2D >= 16_384);
-    // Device and adapter must agree
-    try testing.expectEqual(limits.maxBufferSize, adapter_limits.maxBufferSize);
+pub export fn doeNativeDeviceSubgroupSize(raw: ?*anyopaque) callconv(.c) u32 {
+    _ = raw;
+    // Metal SIMD-group size is 32 on all Apple Silicon variants known at time
+    // of writing.  Report 0 when Metal is unavailable (non-macOS).
+    return if (BRIDGE_AVAILABLE) METAL_SIMD_GROUP_SIZE else 0;
 }

@@ -12,6 +12,10 @@ pub const ir = @import("ir.zig");
 pub const ir_builder = @import("ir_builder.zig");
 pub const ir_validate = @import("ir_validate.zig");
 pub const emit_msl = @import("emit_msl.zig");
+pub const emit_msl_subgroups = @import("emit_msl_subgroups.zig");
+pub const emit_msl_shared = @import("emit_msl_shared.zig");
+pub const emit_msl_vertex = @import("emit_msl_vertex.zig");
+pub const emit_msl_fragment = @import("emit_msl_fragment.zig");
 pub const emit_hlsl = @import("emit_hlsl.zig");
 pub const emit_spirv = @import("emit_spirv.zig");
 pub const emit_spirv_fn = @import("emit_spirv_fn.zig");
@@ -274,8 +278,8 @@ pub fn extractBindings(allocator: std.mem.Allocator, wgsl: []const u8, out: []Bi
     for (module_ir.globals.items) |global| {
         if (global.binding == null) continue;
         const binding_type, const binding_access = switch (module_ir.types.get(global.ty)) {
-            .sampler => .{ BindingKind.sampler, ir.AccessMode.read },
-            .texture_2d => .{ BindingKind.texture, ir.AccessMode.read },
+            .sampler, .sampler_comparison => .{ BindingKind.sampler, ir.AccessMode.read },
+            .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d => .{ BindingKind.texture, ir.AccessMode.read },
             .storage_texture_2d => |storage_tex| .{ BindingKind.storage_texture, storage_tex.access },
             else => .{ BindingKind.buffer, global.access orelse switch (global.addr_space orelse .private) {
                 .uniform => ir.AccessMode.read,
@@ -423,10 +427,105 @@ test {
     _ = ir_builder;
     _ = ir_validate;
     _ = emit_msl;
+    _ = emit_msl_subgroups;
+    _ = emit_msl_shared;
+    _ = emit_msl_vertex;
+    _ = emit_msl_fragment;
     _ = emit_hlsl;
     _ = emit_spirv;
     _ = emit_spirv_fn;
     _ = emit_spirv_stages;
     _ = emit_dxil;
     _ = @import("mod_test.zig");
+    _ = @import("shader_emit_test.zig");
+    _ = @import("shader_sema_test.zig");
+    _ = @import("shader_hlsl_spirv_test.zig");
+}
+
+test "translate vertex shader with struct I/O to MSL" {
+    const source =
+        \\struct VertIn {
+        \\    @location(0) pos: vec4f,
+        \\    @location(1) uv: vec2f,
+        \\}
+        \\struct VertOut {
+        \\    @builtin(position) clip_pos: vec4f,
+        \\    @location(0) uv: vec2f,
+        \\}
+        \\@vertex
+        \\fn vs_main(in: VertIn) -> VertOut {
+        \\    var out: VertOut;
+        \\    out.clip_pos = in.pos;
+        \\    out.uv = in.uv;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex]]") != null);
+}
+
+test "translate fragment shader with MRT output to MSL" {
+    const source =
+        \\@group(0) @binding(0) var my_texture: texture_2d<f32>;
+        \\@group(0) @binding(1) var my_sampler: sampler;
+        \\struct FragOut {
+        \\    @location(0) color0: vec4f,
+        \\    @location(1) color1: vec4f,
+        \\}
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> FragOut {
+        \\    var out: FragOut;
+        \\    out.color0 = textureSample(my_texture, my_sampler, uv);
+        \\    out.color1 = vec4f(1.0, 0.0, 0.0, 1.0);
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[fragment]]") != null);
+}
+
+test "translate fragment shader with builtin inputs and discard to MSL" {
+    const source =
+        \\@fragment
+        \\fn fs_main(
+        \\    @builtin(position) frag_coord: vec4f,
+        \\    @builtin(front_facing) is_front: bool,
+        \\) -> @location(0) vec4f {
+        \\    if (!is_front) {
+        \\        discard;
+        \\    }
+        \\    return vec4f(frag_coord.x, frag_coord.y, 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[fragment]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "discard_fragment()") != null);
+}
+
+test "translate vertex shader with builtin vertex_index and instance_index to MSL" {
+    const source =
+        \\@vertex
+        \\fn vs_main(
+        \\    @builtin(vertex_index) vid: u32,
+        \\    @builtin(instance_index) iid: u32,
+        \\) -> @builtin(position) vec4f {
+        \\    return vec4f(f32(vid), f32(iid), 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex_id]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "[[instance_id]]") != null);
 }

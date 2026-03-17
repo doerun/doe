@@ -94,6 +94,21 @@ pub const ScalarType = enum {
 
 pub const TextureFormat = enum {
     rgba8unorm,
+    rgba8snorm,
+    rgba8uint,
+    rgba8sint,
+    rgba16uint,
+    rgba16sint,
+    rgba16float,
+    r32uint,
+    r32sint,
+    r32float,
+    rg32uint,
+    rg32sint,
+    rg32float,
+    rgba32uint,
+    rgba32sint,
+    rgba32float,
 };
 
 pub const Type = union(enum) {
@@ -114,7 +129,13 @@ pub const Type = union(enum) {
     atomic: TypeId,
     struct_: StructId,
     sampler: void,
+    sampler_comparison: void,
     texture_2d: TypeId,
+    texture_2d_array: TypeId,
+    texture_cube: TypeId,
+    texture_multisampled_2d: TypeId,
+    texture_depth_2d: void,
+    texture_depth_cube: void,
     texture_3d: TypeId,
     storage_texture_2d: struct {
         format: TextureFormat,
@@ -183,8 +204,32 @@ fn type_eql(lhs: Type, rhs: Type) bool {
             .sampler => true,
             else => false,
         },
+        .sampler_comparison => switch (rhs) {
+            .sampler_comparison => true,
+            else => false,
+        },
         .texture_2d => |lhs_sample| switch (rhs) {
             .texture_2d => |rhs_sample| lhs_sample == rhs_sample,
+            else => false,
+        },
+        .texture_2d_array => |lhs_sample| switch (rhs) {
+            .texture_2d_array => |rhs_sample| lhs_sample == rhs_sample,
+            else => false,
+        },
+        .texture_cube => |lhs_sample| switch (rhs) {
+            .texture_cube => |rhs_sample| lhs_sample == rhs_sample,
+            else => false,
+        },
+        .texture_multisampled_2d => |lhs_sample| switch (rhs) {
+            .texture_multisampled_2d => |rhs_sample| lhs_sample == rhs_sample,
+            else => false,
+        },
+        .texture_depth_2d => switch (rhs) {
+            .texture_depth_2d => true,
+            else => false,
+        },
+        .texture_depth_cube => switch (rhs) {
+            .texture_depth_cube => true,
             else => false,
         },
         .texture_3d => |lhs_sample| switch (rhs) {

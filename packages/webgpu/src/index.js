@@ -279,7 +279,15 @@ function ensureNodeCommandEncoderNative(encoder) {
 
 const nodeEncoderBackend = {
   computePassInit(pass, native) {
-    pass._native = native;
+    if (native === null) {
+      pass._native = null;
+      pass._pipeline = null;
+      pass._bindGroups = [];
+      pass._lazy = true;
+    } else {
+      pass._native = native;
+      pass._lazy = false;
+    }
     pass._ended = false;
   },
   computePassAssertOpen(pass, path) {
@@ -291,12 +299,20 @@ const nodeEncoderBackend = {
     }
   },
   computePassSetPipeline(pass, pipelineNative) {
+    if (pass._lazy) {
+      pass._pipeline = pipelineNative;
+      return;
+    }
     addon.computePassSetPipeline(
       assertLiveResource(pass, 'GPUComputePassEncoder.setPipeline', 'GPUComputePassEncoder'),
       pipelineNative,
     );
   },
   computePassSetBindGroup(pass, index, bindGroupNative) {
+    if (pass._lazy) {
+      pass._bindGroups[index] = bindGroupNative;
+      return;
+    }
     addon.computePassSetBindGroup(
       assertLiveResource(pass, 'GPUComputePassEncoder.setBindGroup', 'GPUComputePassEncoder'),
       index,
@@ -304,6 +320,13 @@ const nodeEncoderBackend = {
     );
   },
   computePassDispatchWorkgroups(pass, x, y, z) {
+    if (pass._lazy) {
+      if (pass._pipeline == null) {
+        failValidation('GPUComputePassEncoder.dispatchWorkgroups', 'setPipeline() must be called before dispatch');
+      }
+      pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z });
+      return;
+    }
     addon.computePassDispatchWorkgroups(
       assertLiveResource(pass, 'GPUComputePassEncoder.dispatchWorkgroups', 'GPUComputePassEncoder'),
       x,
@@ -312,6 +335,19 @@ const nodeEncoderBackend = {
     );
   },
   computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
+    if (pass._lazy) {
+      ensureNodeCommandEncoderNative(pass._encoder);
+      pass._lazy = false;
+      pass._native = addon.beginComputePass(pass._encoder._native);
+      if (pass._pipeline != null) {
+        addon.computePassSetPipeline(pass._native, pass._pipeline);
+      }
+      for (let i = 0; i < pass._bindGroups.length; i += 1) {
+        if (pass._bindGroups[i]) {
+          addon.computePassSetBindGroup(pass._native, i, pass._bindGroups[i]);
+        }
+      }
+    }
     const nativePass = assertLiveResource(
       pass,
       'GPUComputePassEncoder.dispatchWorkgroupsIndirect',
@@ -325,6 +361,10 @@ const nodeEncoderBackend = {
     addon.computePassDispatchWorkgroupsIndirect(nativePass, indirectBufferNative, indirectOffset);
   },
   computePassEnd(pass) {
+    if (pass._lazy) {
+      pass._ended = true;
+      return;
+    }
     addon.computePassEnd(
       assertLiveResource(pass, 'GPUComputePassEncoder.end', 'GPUComputePassEncoder'),
     );
@@ -386,10 +426,8 @@ const nodeEncoderBackend = {
     pass._ended = true;
   },
   commandEncoderInit(encoder) {
-    encoder._commands = null;
-    encoder._native = addon.createCommandEncoder(
-      assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'),
-    );
+    encoder._commands = [];
+    encoder._native = null;
     encoder._finished = false;
   },
   commandEncoderAssertOpen(encoder, path) {
@@ -398,6 +436,9 @@ const nodeEncoderBackend = {
     }
   },
   commandEncoderBeginComputePass(encoder, _descriptor, classes) {
+    if (encoder._native === null) {
+      return new classes.DoeGPUComputePassEncoder(null, encoder);
+    }
     return new classes.DoeGPUComputePassEncoder(
       addon.beginComputePass(encoder._native),
       encoder,
@@ -434,6 +475,10 @@ const nodeEncoderBackend = {
     return new classes.DoeGPURenderPassEncoder(pass, encoder);
   },
   commandEncoderCopyBufferToBuffer(encoder, srcNative, srcOffset, dstNative, dstOffset, size) {
+    if (encoder._native === null) {
+      encoder._commands.push({ t: 1, s: srcNative, so: srcOffset, d: dstNative, do: dstOffset, sz: size });
+      return;
+    }
     addon.commandEncoderCopyBufferToBuffer(encoder._native, srcNative, srcOffset, dstNative, dstOffset, size);
   },
   commandEncoderWriteTimestamp(encoder, querySetNative, queryIndex) {
@@ -483,6 +528,16 @@ const nodeEncoderBackend = {
     );
   },
   commandEncoderFinish(encoder) {
+    const cmds = encoder._commands;
+    if (
+      encoder._native === null
+      && cmds.length === 2
+      && cmds[0].t === 0
+      && cmds[1].t === 1
+    ) {
+      encoder._finished = true;
+      return { _commands: cmds, _batched: true };
+    }
     ensureNodeCommandEncoderNative(encoder);
     encoder._finished = true;
     const cmd = addon.commandEncoderFinish(encoder._native);

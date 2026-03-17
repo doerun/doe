@@ -111,6 +111,14 @@ pub fn build(b: *std.Build) void {
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
             });
+            dropin_lib.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            dropin_lib.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
         }
     }
     const install_dropin = b.addInstallArtifact(dropin_lib, .{});
@@ -226,6 +234,14 @@ pub fn build(b: *std.Build) void {
             exe.linkFramework("AppKit");
             exe.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            exe.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            exe.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
             });
         }
@@ -344,6 +360,14 @@ pub fn build(b: *std.Build) void {
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
             });
+            module_runner.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            module_runner.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
         }
     }
     const install_module_runner = b.addInstallArtifact(module_runner, .{});
@@ -395,6 +419,14 @@ pub fn build(b: *std.Build) void {
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
             });
+            core_dropin_lib.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            core_dropin_lib.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
         }
     }
     const install_core_dropin = b.addInstallArtifact(core_dropin_lib, .{});
@@ -433,6 +465,14 @@ pub fn build(b: *std.Build) void {
             test_exec.linkFramework("AppKit");
             test_exec.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
             });
         }
@@ -475,6 +515,14 @@ pub fn build(b: *std.Build) void {
                 .file = b.path("src/backend/metal/metal_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
             });
+            core_test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            core_test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
         }
     }
     const run_core_tests = b.addRunArtifact(core_test_exec);
@@ -513,6 +561,14 @@ pub fn build(b: *std.Build) void {
             full_test_exec.linkFramework("AppKit");
             full_test_exec.addCSourceFile(.{
                 .file = b.path("src/backend/metal/metal_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            full_test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+                .flags = &.{"-fobjc-arc"},
+            });
+            full_test_exec.addCSourceFile(.{
+                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
                 .flags = &.{"-fobjc-arc"},
             });
         }

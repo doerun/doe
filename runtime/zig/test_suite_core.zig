@@ -9,6 +9,14 @@ const wgpu_resource_normalizers_test = @import("src/core/resource/wgpu_resource_
 const command_json_test = @import("src/command_json.zig");
 const common_hash_utils = @import("src/backend/common/hash_utils.zig");
 const common_artifact_state = @import("src/backend/common/artifact_state.zig");
+const gpu_timeline_test = @import("tests/core/gpu_timeline_test.zig");
+const multi_queue_test = @import("tests/core/multi_queue_test.zig");
+const error_scope_test = @import("tests/core/error_scope_test.zig");
+const native_shader_render_test = @import("tests/core/native_shader_render_test.zig");
+const execution_test = @import("tests/core/execution_test.zig");
+const multi_adapter_test = @import("tests/core/multi_adapter_test.zig");
+const pipeline_cache_test = @import("tests/core/pipeline_cache_test.zig");
+const render_bundle_test = @import("tests/core/render_bundle_test.zig");
 
 comptime {
     _ = common_artifact_meta_test;
@@ -22,4 +30,12 @@ comptime {
     _ = command_json_test;
     _ = common_hash_utils;
     _ = common_artifact_state;
+    _ = gpu_timeline_test;
+    _ = multi_queue_test;
+    _ = error_scope_test;
+    _ = native_shader_render_test;
+    _ = execution_test;
+    _ = multi_adapter_test;
+    _ = pipeline_cache_test;
+    _ = render_bundle_test;
 }

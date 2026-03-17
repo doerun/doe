@@ -78,12 +78,16 @@ For Dawn-vs-Doe performance work, also read:
 4. Artifact discipline
 - all artifact inputs and outputs for a stage must be versioned and hash-linked where appropriate.
 
-5. Gate discipline
+5. Synthetic runtime-state ban
+- no backend file may implement fake/synthetic runtime-state behavior, including any `*_runtime_state.zig` module; backend timing and capability behavior must be native or explicit unsupported behavior.
+- any native/runtime module import or file matching that pattern is a hard rejection in `runtime/zig/tools/check_core_import_fence.py`.
+
+6. Gate discipline
 - blocking in v0: schema, correctness, trace, verification
 - advisory in v0: performance
 - release only when blocking gates are green.
 
-6. Dawn apples-to-apples discipline
+7. Dawn apples-to-apples discipline
 - all Dawn-vs-Doe performance claims must be apples-to-apples by default.
 - strict comparability is required for claimable results; directional runs must be explicitly labeled non-comparable.
 - benchmark methodology knobs that affect comparability must be explicit in config/workload contracts, never hidden in code.
@@ -92,22 +96,22 @@ For Dawn-vs-Doe performance work, also read:
 - timing-phase symmetry is required: if one side reports zero in a timing phase (setup, encode, or submit_wait) while the other side reports material cost in that phase, the timing scopes are measuring different things. This is a comparability failure, not a speed win.
 - hardware-path asymmetry (e.g. UMA shared-memory memset vs staging-buffer GPU copy) must carry explicit transferability caveats and cannot be presented as a general speed claim. Mark such workloads with `"pathAsymmetry": true` and document the non-transferable condition.
 
-7. Incumbent development discipline
+8. Incumbent development discipline
 - performance development against Dawn must preserve matched workload semantics: backend/adapter constraints, operation shape, repeat accounting, and timing unit normalization.
 - if methodology differs from Dawn, the report and docs must state the deviation explicitly.
 
-8. Contract update discipline
+9. Contract update discipline
 - runtime-visible field changes require schema updates and migration notes in the same change.
 - process/gate docs and status tracking must be updated in the same change when behavior or contracts change.
 
-9. Structural work equivalence discipline
+10. Structural work equivalence discipline
 - a comparable benchmark must verify that both sides execute the same commands and perform equivalent GPU work, not just that methodology metadata matches.
 - if one side returns `unsupported`, reports 0 dispatches, or skips execution for commands the other side executes, the comparison is invalid.
 - if one side reports an entire timing phase as identically zero across all workloads (e.g. setup_ns=0 on every row) while the other side reports material values, treat this as a systemic instrumentation gap and audit before claiming.
 - execution-shape parity checks (dispatch count, row count, success count) must apply to ALL domains, not only compute-like workloads.
 - when the agent or harness produces a "claimable" result, it must verify structural equivalence before accepting. A positive delta from mismatched work is not evidence of anything.
 
-10. Timing-scope completeness discipline
+11. Timing-scope completeness discipline
 - for comparable workloads, both sides must report non-trivial timing in the same phases. If LEFT measures only encode while RIGHT measures setup+encode+submit_wait, the comparison is measuring different scopes.
 - render workloads that never commit/wait on the GPU (submit_wait=0) while the comparison side does a full submit+wait are not comparable.
 - upload workloads where one side uses a hardware-specific path (UMA memset, shared memory) that skips operations the other side performs (staging buffer allocation, blit copy, GPU transfer) are not structurally equivalent. The delta measures architectural path choice, not implementation quality.

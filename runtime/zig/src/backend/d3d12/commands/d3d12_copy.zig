@@ -39,6 +39,8 @@ pub fn execute_copy(
 
     const encode_start = common_timing.now_ns();
 
+    // TODO(perf): allocate a persistent cmd_allocator/cmd_list on a CopyState struct (same pattern
+    // as DispatchState.ensure_cmd) and reset+reuse instead of creating a fresh allocator per call.
     const cmd_alloc = d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
     defer d3d12_bridge_release(cmd_alloc);
 

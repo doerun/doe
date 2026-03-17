@@ -6,6 +6,7 @@ const sema_types = @import("sema_types.zig");
 const sema_attrs = @import("sema_attrs.zig");
 const sema_helpers = @import("sema_helpers.zig");
 const sema_resolve = @import("sema_resolve.zig");
+const sema_typeutils = @import("sema_typeutils.zig");
 
 const Ast = ast_mod.Ast;
 const Node = ast_mod.Node;
@@ -468,8 +469,8 @@ const Analyzer = struct {
         const node = self.module.tree.nodes.items[node_idx];
         var info = NodeInfo{};
         info.ty = switch (node.tag) {
-            .int_literal => try self.analyze_int_literal(node),
-            .float_literal => try self.analyze_float_literal(node),
+            .int_literal => try sema_typeutils.analyze_int_literal(self.module, node),
+            .float_literal => try sema_typeutils.analyze_float_literal(self.module, node),
             .bool_literal => self.module.bool_type,
             .ident_expr => try self.resolve_ident_expr(node, body, &info),
             .unary_expr => try self.analyze_unary(node, body),
@@ -486,26 +487,6 @@ const Analyzer = struct {
         }
         self.module.node_info.items[node_idx] = info;
         return info.ty;
-    }
-
-    fn analyze_int_literal(self: *Analyzer, node: Node) AnalyzeError!ir.TypeId {
-        const literal = self.module.tree.tokenSlice(node.main_token);
-        _ = parse_wgsl_int_literal(u64, literal) catch return error.InvalidWgsl;
-        return switch (int_literal_suffix(literal)) {
-            .i => self.module.i32_type,
-            .u => self.module.u32_type,
-            .none => self.module.abstract_int_type,
-        };
-    }
-
-    fn analyze_float_literal(self: *Analyzer, node: Node) AnalyzeError!ir.TypeId {
-        const literal = self.module.tree.tokenSlice(node.main_token);
-        _ = parse_wgsl_float_literal(literal) catch return error.InvalidWgsl;
-        return switch (float_literal_suffix(literal)) {
-            .f => self.module.f32_type,
-            .h => self.module.f16_type,
-            .none => self.module.abstract_float_type,
-        };
     }
 
     fn resolve_ident_expr(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) !ir.TypeId {
@@ -739,64 +720,17 @@ const Analyzer = struct {
     }
 };
 
-fn bitcast_types_compatible(module: *SemanticModule, target_ty: ir.TypeId, source_ty: ir.TypeId) bool {
-    const target_bits = bitcast_type_bits(module, target_ty) orelse return false;
-    const source_bits = bitcast_type_bits(module, source_ty) orelse return false;
-    return target_bits == source_bits;
-}
-
-fn bitcast_type_bits(module: *SemanticModule, ty: ir.TypeId) ?u32 {
-    return switch (module.types.get(ty)) {
-        .scalar => |scalar| switch (scalar) {
-            .i32, .u32, .f32 => 32,
-            .f16 => 16,
-            else => null,
-        },
-        .vector => |vec| blk: {
-            const elem_bits = bitcast_type_bits(module, vec.elem) orelse return null;
-            break :blk elem_bits * vec.len;
-        },
-        else => null,
-    };
-}
-
-fn is_handle_type(ty: ir.Type) bool {
-    return switch (ty) {
-        .sampler, .texture_2d, .texture_3d, .storage_texture_2d => true,
-        else => false,
-    };
-}
-
 fn captureFailureNode(tree: *const Ast, node_idx: u32) void {
-    if (node_idx == NULL_NODE or node_idx >= tree.nodes.items.len) return;
-    const node = tree.nodes.items[node_idx];
-    last_failure_context = .{
-        .node_idx = node_idx,
-        .token_idx = if (node.main_token < tree.tokens.items.len) node.main_token else null,
-    };
+    sema_typeutils.captureFailureNode(tree, node_idx, &last_failure_context);
 }
 
-fn materialize_inferred_local_type(module: *SemanticModule, ty: ir.TypeId) ir.TypeId {
-    return switch (module.types.get(ty)) {
-        .scalar => |scalar| switch (scalar) {
-            .abstract_int => module.i32_type,
-            .abstract_float => module.f32_type,
-            else => ty,
-        },
-        else => ty,
-    };
-}
-
+const bitcast_types_compatible = sema_typeutils.bitcast_types_compatible;
+const bitcast_type_bits = sema_typeutils.bitcast_type_bits;
+const is_handle_type = sema_typeutils.is_handle_type;
+const materialize_inferred_local_type = sema_typeutils.materialize_inferred_local_type;
 const init_builtin_types = sema_helpers.init_builtin_types;
 const concrete_numeric_type = sema_helpers.concrete_numeric_type;
 const decode_packed_span = sema_helpers.decode_packed_span;
-const int_literal_suffix = sema_helpers.int_literal_suffix;
-const float_literal_suffix = sema_helpers.float_literal_suffix;
-const parse_single_int_attr = sema_helpers.parse_single_int_attr;
-const parse_builtin_attr = sema_helpers.parse_builtin_attr;
 const parse_address_space = sema_helpers.parse_address_space;
 const parse_access = sema_helpers.parse_access;
-const parse_storage_texture_format = sema_helpers.parse_storage_texture_format;
 const parse_vector_swizzle = sema_helpers.parse_vector_swizzle;
-const parse_wgsl_int_literal = sema_helpers.parse_wgsl_int_literal;
-const parse_wgsl_float_literal = sema_helpers.parse_wgsl_float_literal;

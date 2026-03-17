@@ -228,6 +228,94 @@
       ]
     },
     {
+      "canonicalId": "copy_buffer_to_buffer_64kb",
+      "displayName": "Copy buffer to buffer 64KB",
+      "domain": "copy",
+      "description": "Package-surface end-to-end buffer-to-buffer copy benchmark with 64KB payload and readback validation.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_64kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_64kb"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "copy_buffer_to_buffer_1mb",
+      "displayName": "Copy buffer to buffer 1MB",
+      "domain": "copy",
+      "description": "Package-surface end-to-end buffer-to-buffer copy benchmark with 1MB payload and readback validation.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_1mb"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "copy_buffer_to_buffer_1mb"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "buffer_map_read_unmap",
+      "displayName": "Map read unmap",
+      "domain": "copy",
+      "description": "Package-surface MAP_READ lifecycle benchmark: GPU copy to MAP_READ buffer, mapAsync, validate, unmap.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "buffer_map_read_unmap"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "buffer_map_read_unmap"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "compute_e2e_262144",
+      "displayName": "Compute E2E 262144",
+      "domain": "compute",
+      "description": "Package-surface end-to-end dispatch plus readback benchmark with 262144 threads (1MB buffer).",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "compute_e2e_262144"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "compute_e2e_262144"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
       "canonicalId": "compute_dispatch_simple",
       "displayName": "Compute dispatch simple",
       "domain": "compute",
@@ -288,6 +376,248 @@
           "surface": "bun_package",
           "workloadIds": [
             "pipeline_create"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "texture_copy_roundtrip_64x64",
+      "displayName": "Texture copy roundtrip 64x64",
+      "domain": "copy",
+      "description": "Package-surface texture copy roundtrip benchmark: buffer→texture→buffer for 64x64 RGBA8 (16KB). Measures copyBufferToTexture + copyTextureToBuffer + readback.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "texture_copy_roundtrip_64x64"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "texture_copy_roundtrip_64x64"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "texture_copy_roundtrip_256x256",
+      "displayName": "Texture copy roundtrip 256x256",
+      "domain": "copy",
+      "description": "Package-surface texture copy roundtrip benchmark: buffer→texture→buffer for 256x256 RGBA8 (256KB). Measures copyBufferToTexture + copyTextureToBuffer + readback.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "texture_copy_roundtrip_256x256"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "texture_copy_roundtrip_256x256"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "shader_module_create",
+      "displayName": "Shader module create",
+      "domain": "pipeline",
+      "description": "Package-surface shader module creation benchmark with per-iteration varying WGSL to defeat compilation caches. Used for directional shader-compilation evidence.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "shader_module_create"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "shader_module_create"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "render_triangle_solid",
+      "displayName": "Render triangle solid",
+      "domain": "render",
+      "description": "Package-surface render pipeline benchmark: vertex+fragment shaders draw a solid triangle to a 64x64 RGBA8 texture with readback validation.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "render_triangle_solid"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "render_triangle_solid"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "render_indexed_quad",
+      "displayName": "Render indexed quad",
+      "domain": "render",
+      "description": "Package-surface indexed draw benchmark: 4 vertices, 6 indices (2 triangles) render a quad to a 64x64 RGBA8 texture with readback validation.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "render_indexed_quad"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "render_indexed_quad"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "render_pass_switching",
+      "displayName": "Render pass switching",
+      "domain": "render",
+      "description": "Package-surface multiple render pass benchmark: 3 sequential render passes with different clear colors to the same texture, readback validates final result.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "render_pass_switching"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "render_pass_switching"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "texture_to_texture_copy",
+      "displayName": "Texture to texture copy",
+      "domain": "copy",
+      "description": "Package-surface texture-to-texture copy benchmark: write to source texture via buffer, copyTextureToTexture to destination, readback from destination and validate.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "texture_to_texture_copy"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "texture_to_texture_copy"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "sampler_create_destroy",
+      "displayName": "Sampler create destroy",
+      "domain": "resource",
+      "description": "Package-surface sampler creation benchmark: creates samplers with varying filter and address modes. Directional only, not comparable across implementations.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "sampler_create_destroy"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "sampler_create_destroy"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "timestamp_query",
+      "displayName": "Timestamp query",
+      "domain": "compute",
+      "description": "Package-surface timestamp query benchmark: write timestamps around a compute dispatch, resolve query set, readback and validate ordering. Directional only, not comparable across implementations.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "timestamp_query"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "timestamp_query"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "dispatch_indirect",
+      "displayName": "Dispatch indirect",
+      "domain": "compute",
+      "description": "Package-surface indirect dispatch benchmark: dispatch parameters written to a GPU buffer, dispatchWorkgroupsIndirect, readback and validate results.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "dispatch_indirect"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "dispatch_indirect"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "render_bundle_replay",
+      "displayName": "Render bundle replay",
+      "domain": "render",
+      "description": "Package-surface render bundle benchmark: record a render bundle with 10 draw calls, replay in a render pass with readback validation. Directional only, not comparable across implementations.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "render_bundle_replay"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "render_bundle_replay"
           ],
           "implementationKind": "webgpu_factory"
         }

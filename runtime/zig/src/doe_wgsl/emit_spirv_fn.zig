@@ -233,7 +233,7 @@ pub const FunctionState = struct {
             .global_ref => |index| blk: {
                 const global = self.emitter.module.globals.items[index];
                 switch (self.emitter.module.types.get(global.ty)) {
-                    .sampler, .texture_2d, .storage_texture_2d => {
+                    .sampler, .sampler_comparison, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => {
                         break :blk try self.emitter.emit_function_load(
                             try self.emitter.lower_type(expr.ty),
                             self.emitter.global_ids[index],

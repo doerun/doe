@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WebGPU Worker Compute</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #080a10; color: #ccc; font: 13px/1.5 monospace; padding: 24px; max-width: 720px; }
+  h1 { color: #eee; font-size: 15px; margin-bottom: 20px; }
+  .section { margin-bottom: 28px; }
+  .section h2 { color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .section p { color: #555; font-size: 11px; margin-bottom: 10px; line-height: 1.6; }
+  button { background: #1a1c22; color: #ccc; border: 1px solid #333; padding: 6px 14px; border-radius: 3px; cursor: pointer; font: inherit; }
+  button:hover { border-color: #666; }
+  .output { margin-top: 10px; padding: 10px 12px; background: #0d0f14; border: 1px solid #222; border-radius: 3px; min-height: 36px; white-space: pre; font-size: 12px; }
+  .ok  { color: #4caf50; }
+  .err { color: #f44336; }
+  .dim { color: #444; }
+</style>
+</head>
+<body>
+<h1>WebGPU compute in worker contexts</h1>
+
+<div class="section">
+  <h2>Dedicated Worker</h2>
+  <p>Spawns a Web Worker, sends 1024 floats, dispatches GPU compute (×2), reads back result via postMessage.</p>
+  <button id="btn-worker">Run in Worker</button>
+  <div class="output" id="out-worker"><span class="dim">idle</span></div>
+</div>
+
+<div class="section">
+  <h2>Service Worker</h2>
+  <p>Registers a service worker, then POSTs 1024 floats to <code>./gpu-compute</code>. The SW intercepts the request, runs WebGPU compute, and returns the result as the HTTP response body.</p>
+  <button id="btn-sw">Run via Service Worker</button>
+  <div class="output" id="out-sw"><span class="dim">idle</span></div>
+</div>
+
+<script type="module">
+const COUNT = 1024;
+const input = Float32Array.from({ length: COUNT }, (_, i) => i);
+
+// ── Dedicated Worker ─────────────────────────────────────────────────────────
+const workerOut = document.getElementById('out-worker');
+document.getElementById('btn-worker').addEventListener('click', () => {
+  workerOut.innerHTML = '<span class="dim">dispatching…</span>';
+  const t0 = performance.now();
+  const worker = new Worker('./compute-worker.js');
+  worker.postMessage({ data: input.buffer.slice(0) });
+  worker.addEventListener('message', ({ data }) => {
+    const ms = (performance.now() - t0).toFixed(1);
+    if (data.error) {
+      workerOut.innerHTML = `<span class="err">error: ${data.error}</span>`;
+    } else {
+      const result = new Float32Array(data.result);
+      workerOut.innerHTML =
+        `<span class="ok">ok</span>  ${ms}ms\n` +
+        `input[0..3]:  [${Array.from(input.slice(0, 4)).join(', ')}]\n` +
+        `result[0..3]: [${Array.from(result.slice(0, 4)).join(', ')}]`;
+    }
+    worker.terminate();
+  });
+  worker.addEventListener('error', (e) => {
+    workerOut.innerHTML = `<span class="err">worker error: ${e.message}</span>`;
+  });
+});
+
+// ── Service Worker ────────────────────────────────────────────────────────────
+const swOut = document.getElementById('out-sw');
+
+async function ensureSW() {
+  if (!('serviceWorker' in navigator)) throw new Error('Service workers not supported');
+  await navigator.serviceWorker.register('./sw.js');
+  await navigator.serviceWorker.ready;
+}
+
+document.getElementById('btn-sw').addEventListener('click', async () => {
+  swOut.innerHTML = '<span class="dim">registering SW…</span>';
+  try {
+    await ensureSW();
+    swOut.innerHTML = '<span class="dim">dispatching…</span>';
+    const t0 = performance.now();
+    const res = await fetch('./gpu-compute', {
+      method: 'POST',
+      headers: { 'content-type': 'application/octet-stream' },
+      body: input.buffer.slice(0),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`HTTP ${res.status}: ${body}`);
+    }
+    const ms = (performance.now() - t0).toFixed(1);
+    const result = new Float32Array(await res.arrayBuffer());
+    swOut.innerHTML =
+      `<span class="ok">ok</span>  ${ms}ms\n` +
+      `input[0..3]:  [${Array.from(input.slice(0, 4)).join(', ')}]\n` +
+      `result[0..3]: [${Array.from(result.slice(0, 4)).join(', ')}]`;
+  } catch (e) {
+    swOut.innerHTML = `<span class="err">error: ${e.message}</span>`;
+  }
+});
+</script>
+</body>
+</html>

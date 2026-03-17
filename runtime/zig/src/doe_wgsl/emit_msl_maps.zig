@@ -122,3 +122,19 @@ pub fn msl_builtin_name(builtin: ir.Builtin) []const u8 {
         else => "unsupported_builtin",
     };
 }
+
+// MSL element type for a storage texture format.
+// Float formats → "float", uint formats → "uint", sint formats → "int".
+pub fn msl_storage_texture_elem(format: ir.TextureFormat) []const u8 {
+    return switch (format) {
+        .rgba8unorm, .rgba8snorm,
+        .rgba16float,
+        .r32float, .rg32float, .rgba32float => "float",
+
+        .rgba8uint, .rgba16uint,
+        .r32uint, .rg32uint, .rgba32uint => "uint",
+
+        .rgba8sint, .rgba16sint,
+        .r32sint, .rg32sint, .rgba32sint => "int",
+    };
+}

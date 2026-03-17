@@ -140,6 +140,7 @@ pub const SemanticModule = struct {
     f32_type: ir.TypeId = ir.INVALID_TYPE,
     f16_type: ir.TypeId = ir.INVALID_TYPE,
     sampler_type: ir.TypeId = ir.INVALID_TYPE,
+    sampler_comparison_type: ir.TypeId = ir.INVALID_TYPE,
 
     pub fn deinit(self: *SemanticModule) void {
         self.node_info.deinit(self.allocator);

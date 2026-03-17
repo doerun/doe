@@ -480,3 +480,148 @@ uint32_t metal_bridge_query_device_features(void);
 // Maps to [MTLDevice maxBufferLength]. Result is cached after the first call.
 // Returns 0 if no Metal device is available.
 uint64_t metal_bridge_query_device_max_buffer_length(void);
+
+// === Render bundle replay helpers ===
+
+// Set the pipeline state on an open render encoder.
+void metal_bridge_render_encoder_set_pipeline(MetalHandle encoder, MetalHandle pipeline);
+
+// Bind a buffer at a given index on an open render encoder.
+void metal_bridge_render_encoder_set_buffer(
+    MetalHandle encoder,
+    MetalHandle buffer,
+    uint64_t    offset,
+    uint32_t    index);
+
+// Draw indexed primitives on an open render encoder (render bundle replay variant).
+// index_type: 1=uint16, 2=uint32 (matching WGPUIndexFormat).
+// first_index is applied as a byte offset into the index buffer.
+void metal_bridge_render_encoder_draw_indexed_bundle(
+    MetalHandle encoder,
+    MetalHandle index_buffer,
+    uint64_t    index_buffer_offset,
+    uint32_t    index_type,
+    uint32_t    index_count,
+    uint32_t    instance_count,
+    uint32_t    first_index,
+    int32_t     base_vertex,
+    uint32_t    first_instance);
+
+// Draw non-indexed primitives from an indirect buffer on an open render encoder.
+void metal_bridge_render_encoder_draw_indirect(
+    MetalHandle encoder,
+    MetalHandle indirect_buffer,
+    uint64_t    indirect_offset);
+
+// Draw indexed primitives from an indirect buffer on an open render encoder.
+void metal_bridge_render_encoder_draw_indexed_indirect(
+    MetalHandle encoder,
+    MetalHandle index_buffer,
+    uint64_t    index_buffer_offset,
+    uint32_t    index_type,
+    MetalHandle indirect_buffer,
+    uint64_t    indirect_offset);
+
+// === Multi-queue support ===
+
+// Create a command queue with a priority hint (0=low, 50=normal, 100=high).
+// Falls back to default priority on older OS versions.
+MetalHandle metal_bridge_device_new_command_queue_with_priority(
+    MetalHandle device,
+    uint32_t    priority);
+
+// Encode a wait-for-event into cmd_buf so the GPU does not start executing
+// commands until the shared event reaches the target value.
+void metal_bridge_command_buffer_encode_wait_event(
+    MetalHandle cmd_buf,
+    MetalHandle event,
+    uint64_t    value);
+
+// === Large buffer queries ===
+
+// Return the maximum MTLBuffer length the device supports (bytes).
+uint64_t metal_bridge_device_max_buffer_length(MetalHandle device);
+
+// === Read-write storage texture creation ===
+
+// Create a 2D texture with both read and write usage bits set.
+// pixel_format: WGPU texture format. Returns NULL on failure.
+MetalHandle metal_bridge_device_new_storage_texture_rw(
+    MetalHandle device,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    mip_levels,
+    uint32_t    pixel_format);
+
+// === Multi-device adapter enumeration ===
+
+// Populate out_devices[0..max_count] with retained MTLDevice handles.
+// Writes the number of found devices into *out_count (capped at max_count).
+// Caller must call metal_bridge_release() on each non-null handle when done.
+void metal_bridge_enumerate_devices(
+    MetalHandle* out_devices,
+    uint32_t     max_count,
+    uint32_t*    out_count);
+
+// Device property queries (cheap; no allocation).
+uint64_t metal_bridge_device_registry_id(MetalHandle device);
+uint32_t metal_bridge_device_is_low_power(MetalHandle device);
+uint32_t metal_bridge_device_is_removable(MetalHandle device);
+// Write UTF-8 device name (NUL-terminated, truncated to cap) into buf.
+void     metal_bridge_device_name(MetalHandle device, char* buf, size_t cap);
+
+// Increment the ARC retain count of a MTLDevice.
+// Used when handing a device handle out to a second owner.
+void metal_bridge_retain_device(MetalHandle device);
+
+// === MTLBinaryArchive pipeline caching (macOS 11+) ===
+
+// Create or open a binary archive at the given file path.
+// Returns NULL if MTLBinaryArchive is unavailable (< macOS 11) or path is invalid.
+// Returned handle is +1 retained; call metal_bridge_release() when done.
+MetalHandle metal_bridge_binary_archive_create(
+    MetalHandle device,
+    const char* path,
+    char*       error_buf,
+    size_t      error_cap);
+
+// Add a compiled compute pipeline to the archive. Returns 1 on success.
+uint32_t metal_bridge_binary_archive_add_compute(
+    MetalHandle archive,
+    MetalHandle device,
+    MetalHandle pipeline,
+    char*       error_buf,
+    size_t      error_cap);
+
+// Add a compiled render pipeline to the archive. Returns 1 on success.
+uint32_t metal_bridge_binary_archive_add_render(
+    MetalHandle archive,
+    MetalHandle device,
+    MetalHandle pipeline,
+    char*       error_buf,
+    size_t      error_cap);
+
+// Persist the archive to the file URL supplied at creation. Returns 1 on success.
+uint32_t metal_bridge_binary_archive_serialize(
+    MetalHandle archive,
+    char*       error_buf,
+    size_t      error_cap);
+
+// Create a compute pipeline, using archive as the binary source when available.
+// Returns NULL on cache miss (caller should compile fresh and add to archive).
+MetalHandle metal_bridge_device_new_compute_pipeline_with_archive(
+    MetalHandle device,
+    MetalHandle function,
+    MetalHandle archive,
+    char*       error_buf,
+    size_t      error_cap);
+
+// Create a render pipeline using archive as the binary source when available.
+// Returns NULL on cache miss.
+MetalHandle metal_bridge_device_new_render_pipeline_with_archive(
+    MetalHandle device,
+    uint32_t    pixel_format,
+    int         support_icb,
+    MetalHandle archive,
+    char*       error_buf,
+    size_t      error_cap);

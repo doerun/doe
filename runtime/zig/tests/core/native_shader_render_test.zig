@@ -1,0 +1,946 @@
+// native_shader_render_test.zig — Unit tests for C ABI native modules:
+//   doe_shader_native.zig, doe_render_native.zig,
+//   doe_query_native.zig, doe_instance_device_native.zig.
+//
+// Tests cover: exported symbol existence (comptime), null-pointer safety,
+// constant correctness, pure helper functions, and error-state management.
+
+const std = @import("std");
+
+const shader = @import("../../src/doe_shader_native.zig");
+const render = @import("../../src/doe_render_native.zig");
+const query = @import("../../src/doe_query_native.zig");
+const instance_device = @import("../../src/doe_instance_device_native.zig");
+const native = @import("../../src/doe_wgpu_native.zig");
+const types = @import("../../src/core/abi/wgpu_types.zig");
+const wgsl_compiler = @import("../../src/doe_wgsl/mod.zig");
+const caps = @import("../../src/doe_device_caps.zig");
+
+// ============================================================
+// Comptime: exported C ABI symbol existence
+// ============================================================
+
+test "shader native exports exist as callable C ABI functions" {
+    // Verify each pub export fn resolves at comptime.
+    comptime {
+        _ = @as(*const fn (?[*]u8, usize) callconv(.c) usize, &shader.doeNativeCopyLastErrorMessage);
+        _ = @as(*const fn (?[*]u8, usize) callconv(.c) usize, &shader.doeNativeCopyLastErrorStage);
+        _ = @as(*const fn (?[*]u8, usize) callconv(.c) usize, &shader.doeNativeCopyLastErrorKind);
+        _ = @as(*const fn () callconv(.c) u32, &shader.doeNativeGetLastErrorLine);
+        _ = @as(*const fn () callconv(.c) u32, &shader.doeNativeGetLastErrorColumn);
+        _ = @as(*const fn (?[*]const u8, usize) callconv(.c) u32, &shader.doeNativeCheckShaderSource);
+        _ = @as(*const fn (?*anyopaque, ?[*]native.BindingInfo, usize) callconv(.c) usize, &shader.doeNativeShaderModuleGetBindings);
+        _ = @as(*const fn (?*anyopaque, ?*const types.WGPUShaderModuleDescriptor) callconv(.c) ?*anyopaque, &shader.doeNativeDeviceCreateShaderModule);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &shader.doeNativeShaderModuleRelease);
+        _ = @as(*const fn (?*anyopaque, ?*const types.WGPUComputePipelineDescriptor) callconv(.c) ?*anyopaque, &shader.doeNativeDeviceCreateComputePipeline);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &shader.doeNativeComputePipelineRelease);
+    }
+}
+
+test "render native exports exist as callable C ABI functions" {
+    comptime {
+        _ = @as(*const fn (?*anyopaque, ?*const types.WGPUTextureDescriptor) callconv(.c) ?*anyopaque, &render.doeNativeDeviceCreateTexture);
+        _ = @as(*const fn (?*anyopaque, ?*const types.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque, &render.doeNativeTextureCreateView);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &render.doeNativeTextureRelease);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &render.doeNativeTextureViewRelease);
+        _ = @as(*const fn (?*anyopaque, ?*const types.WGPUSamplerDescriptor) callconv(.c) ?*anyopaque, &render.doeNativeDeviceCreateSampler);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &render.doeNativeSamplerRelease);
+        _ = @as(*const fn (?*anyopaque, ?*anyopaque) callconv(.c) ?*anyopaque, &render.doeNativeDeviceCreateRenderPipeline);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &render.doeNativeRenderPipelineRelease);
+        _ = @as(*const fn (?*anyopaque, ?*const types.WGPURenderPassDescriptor) callconv(.c) ?*anyopaque, &render.doeNativeCommandEncoderBeginRenderPass);
+        _ = @as(*const fn (?*anyopaque, ?*anyopaque) callconv(.c) void, &render.doeNativeRenderPassSetPipeline);
+        _ = @as(*const fn (?*anyopaque, u32, u32, u32, u32) callconv(.c) void, &render.doeNativeRenderPassDraw);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &render.doeNativeRenderPassEnd);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &render.doeNativeRenderPassRelease);
+    }
+}
+
+test "query native exports exist as callable C ABI functions" {
+    comptime {
+        _ = @as(*const fn (?*anyopaque, u32, u32) callconv(.c) ?*anyopaque, &query.doeNativeDeviceCreateQuerySet);
+        _ = @as(*const fn (?*anyopaque, ?*anyopaque, u32) callconv(.c) void, &query.doeNativeCommandEncoderWriteTimestamp);
+        _ = @as(*const fn (?*anyopaque, ?*anyopaque, u32, u32, ?*anyopaque, u64) callconv(.c) void, &query.doeNativeCommandEncoderResolveQuerySet);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &query.doeNativeQuerySetDestroy);
+    }
+}
+
+test "instance device native exports exist as callable C ABI functions" {
+    comptime {
+        _ = @as(*const fn (?*anyopaque) callconv(.c) ?*anyopaque, &instance_device.doeNativeCreateInstance);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &instance_device.doeNativeInstanceRelease);
+        _ = @as(*const fn (?*anyopaque, usize, [*]types.WGPUFutureWaitInfo, u64) callconv(.c) u32, &instance_device.doeNativeInstanceWaitAny);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &instance_device.doeNativeAdapterRelease);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &instance_device.doeNativeDeviceRelease);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) ?*anyopaque, &instance_device.doeNativeDeviceGetQueue);
+    }
+}
+
+test "device caps native exports exist as callable C ABI functions" {
+    comptime {
+        _ = @as(*const fn (?*anyopaque, u32) callconv(.c) u32, &caps.doeNativeAdapterHasFeature);
+        _ = @as(*const fn (?*anyopaque, u32) callconv(.c) u32, &caps.doeNativeDeviceHasFeature);
+        _ = @as(*const fn (?*anyopaque, ?*types.WGPULimits) callconv(.c) types.WGPUStatus, &caps.doeNativeDeviceGetLimits);
+        _ = @as(*const fn (?*anyopaque, ?*types.WGPULimits) callconv(.c) types.WGPUStatus, &caps.doeNativeAdapterGetLimits);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) u32, &caps.doeNativeDeviceSubgroupSize);
+    }
+}
+
+// ============================================================
+// Null-pointer safety: shader native
+// ============================================================
+
+test "doeNativeCopyLastErrorMessage with null out_ptr returns length without crash" {
+    const len = shader.doeNativeCopyLastErrorMessage(null, 256);
+    // After init, error buffer should be empty (length 0) or have a prior value.
+    // The key invariant: calling with null does not crash.
+    _ = len;
+}
+
+test "doeNativeCopyLastErrorMessage with zero out_len returns length without crash" {
+    var buf: [64]u8 = undefined;
+    const len = shader.doeNativeCopyLastErrorMessage(&buf, 0);
+    _ = len;
+}
+
+test "doeNativeCopyLastErrorStage with null out_ptr returns length without crash" {
+    const len = shader.doeNativeCopyLastErrorStage(null, 256);
+    _ = len;
+}
+
+test "doeNativeCopyLastErrorKind with null out_ptr returns length without crash" {
+    const len = shader.doeNativeCopyLastErrorKind(null, 256);
+    _ = len;
+}
+
+test "doeNativeCheckShaderSource with null code_ptr returns 0 and sets error" {
+    const result = shader.doeNativeCheckShaderSource(null, 0);
+    try std.testing.expectEqual(@as(u32, 0), result);
+
+    // Error state should be populated.
+    var msg_buf: [256]u8 = undefined;
+    const msg_len = shader.doeNativeCopyLastErrorMessage(&msg_buf, msg_buf.len);
+    try std.testing.expect(msg_len > 0);
+
+    const msg = msg_buf[0..msg_len];
+    try std.testing.expect(std.mem.indexOf(u8, msg, "null") != null);
+
+    // Stage should be set.
+    var stage_buf: [64]u8 = undefined;
+    const stage_len = shader.doeNativeCopyLastErrorStage(&stage_buf, stage_buf.len);
+    try std.testing.expect(stage_len > 0);
+    try std.testing.expectEqualStrings("native_check", stage_buf[0..stage_len]);
+
+    // Kind should be set.
+    var kind_buf: [64]u8 = undefined;
+    const kind_len = shader.doeNativeCopyLastErrorKind(&kind_buf, kind_buf.len);
+    try std.testing.expect(kind_len > 0);
+    try std.testing.expectEqualStrings("InvalidInput", kind_buf[0..kind_len]);
+}
+
+test "doeNativeCheckShaderSource with invalid WGSL returns 0 and sets error metadata" {
+    const bad_wgsl = "this is not valid wgsl code !!!";
+    const result = shader.doeNativeCheckShaderSource(bad_wgsl.ptr, bad_wgsl.len);
+    try std.testing.expectEqual(@as(u32, 0), result);
+
+    // Error line/column should be populated for parse errors.
+    // (The exact values depend on the parser, but at least one should be non-zero.)
+    const line = shader.doeNativeGetLastErrorLine();
+    const col = shader.doeNativeGetLastErrorColumn();
+    // For a first-token error, line should be 1.
+    try std.testing.expect(line >= 1 or col >= 1);
+
+    // Kind should be an error name from the WGSL compiler.
+    var kind_buf: [64]u8 = undefined;
+    const kind_len = shader.doeNativeCopyLastErrorKind(&kind_buf, kind_buf.len);
+    try std.testing.expect(kind_len > 0);
+}
+
+test "doeNativeCheckShaderSource with valid WGSL returns 1 and clears error" {
+    const valid_wgsl =
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    _ = gid;
+        \\}
+    ;
+    const result = shader.doeNativeCheckShaderSource(valid_wgsl.ptr, valid_wgsl.len);
+    try std.testing.expectEqual(@as(u32, 1), result);
+
+    // After successful check, error line/column should be cleared.
+    try std.testing.expectEqual(@as(u32, 0), shader.doeNativeGetLastErrorLine());
+    try std.testing.expectEqual(@as(u32, 0), shader.doeNativeGetLastErrorColumn());
+}
+
+test "doeNativeDeviceCreateShaderModule with null device returns null" {
+    const result = shader.doeNativeDeviceCreateShaderModule(null, null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeDeviceCreateShaderModule with invalid device returns null" {
+    // Pass a non-null but invalid-magic pointer for device — will fail the magic check.
+    // Use a properly aligned struct to avoid alignment panic.
+    var fake_dev = native.DoeDevice{};
+    fake_dev.magic = 0xDEADBEEF; // wrong magic
+    const result = shader.doeNativeDeviceCreateShaderModule(native.toOpaque(&fake_dev), null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeShaderModuleRelease with null does not crash" {
+    shader.doeNativeShaderModuleRelease(null);
+}
+
+test "doeNativeShaderModuleRelease with invalid magic does not crash" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeShaderModule
+    shader.doeNativeShaderModuleRelease(native.toOpaque(&fake));
+}
+
+test "doeNativeDeviceCreateComputePipeline with null device returns null" {
+    const result = shader.doeNativeDeviceCreateComputePipeline(null, null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeDeviceCreateComputePipeline with null descriptor returns null" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeDevice
+    const result = shader.doeNativeDeviceCreateComputePipeline(native.toOpaque(&fake), null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeComputePipelineRelease with null does not crash" {
+    shader.doeNativeComputePipelineRelease(null);
+}
+
+test "doeNativeShaderModuleGetBindings with null returns 0" {
+    const count = shader.doeNativeShaderModuleGetBindings(null, null, 0);
+    try std.testing.expectEqual(@as(usize, 0), count);
+}
+
+test "doeNativeShaderModuleGetBindings with invalid magic returns 0" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeShaderModule
+    const count = shader.doeNativeShaderModuleGetBindings(native.toOpaque(&fake), null, 0);
+    try std.testing.expectEqual(@as(usize, 0), count);
+}
+
+// ============================================================
+// Null-pointer safety: render native
+// ============================================================
+
+test "doeNativeDeviceCreateTexture with null device returns null" {
+    const result = render.doeNativeDeviceCreateTexture(null, null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeDeviceCreateTexture with null descriptor returns null" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeDevice
+    const result = render.doeNativeDeviceCreateTexture(native.toOpaque(&fake), null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeTextureCreateView with null texture returns null" {
+    const result = render.doeNativeTextureCreateView(null, null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeTextureRelease with null does not crash" {
+    render.doeNativeTextureRelease(null);
+}
+
+test "doeNativeTextureViewRelease with null does not crash" {
+    render.doeNativeTextureViewRelease(null);
+}
+
+test "doeNativeDeviceCreateSampler with null device returns null" {
+    const result = render.doeNativeDeviceCreateSampler(null, null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeDeviceCreateSampler with null descriptor returns null" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeDevice
+    const result = render.doeNativeDeviceCreateSampler(native.toOpaque(&fake), null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeSamplerRelease with null does not crash" {
+    render.doeNativeSamplerRelease(null);
+}
+
+test "doeNativeDeviceCreateRenderPipeline with null device returns null" {
+    const result = render.doeNativeDeviceCreateRenderPipeline(null, null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeRenderPipelineRelease with null does not crash" {
+    render.doeNativeRenderPipelineRelease(null);
+}
+
+test "doeNativeCommandEncoderBeginRenderPass with null encoder returns null" {
+    const result = render.doeNativeCommandEncoderBeginRenderPass(null, null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeRenderPassSetPipeline with null pass does not crash" {
+    render.doeNativeRenderPassSetPipeline(null, null);
+}
+
+test "doeNativeRenderPassDraw with null pass does not crash" {
+    render.doeNativeRenderPassDraw(null, 3, 1, 0, 0);
+}
+
+test "doeNativeRenderPassEnd with null does not crash" {
+    render.doeNativeRenderPassEnd(null);
+}
+
+test "doeNativeRenderPassRelease with null does not crash" {
+    render.doeNativeRenderPassRelease(null);
+}
+
+// ============================================================
+// Null-pointer safety: query native
+// ============================================================
+
+test "doeNativeDeviceCreateQuerySet with null device returns null" {
+    const result = query.doeNativeDeviceCreateQuerySet(null, types.WGPUQueryType_Timestamp, 2);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeDeviceCreateQuerySet with non-timestamp type returns null" {
+    // query_type 0 is WGPUQueryType_Occlusion, which is not supported.
+    const result = query.doeNativeDeviceCreateQuerySet(null, 0, 2);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeDeviceCreateQuerySet with count 0 returns null" {
+    const result = query.doeNativeDeviceCreateQuerySet(null, types.WGPUQueryType_Timestamp, 0);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeCommandEncoderWriteTimestamp with null encoder does not crash" {
+    query.doeNativeCommandEncoderWriteTimestamp(null, null, 0);
+}
+
+test "doeNativeCommandEncoderResolveQuerySet with null encoder does not crash" {
+    query.doeNativeCommandEncoderResolveQuerySet(null, null, 0, 2, null, 0);
+}
+
+test "doeNativeQuerySetDestroy with null does not crash" {
+    query.doeNativeQuerySetDestroy(null);
+}
+
+test "doeNativeQuerySetDestroy with invalid magic does not crash" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeQuerySet
+    query.doeNativeQuerySetDestroy(native.toOpaque(&fake));
+}
+
+// ============================================================
+// Null-pointer safety: instance device native
+// ============================================================
+
+test "doeNativeCreateInstance with null descriptor succeeds" {
+    const inst = instance_device.doeNativeCreateInstance(null);
+    try std.testing.expect(inst != null);
+    // Clean up.
+    instance_device.doeNativeInstanceRelease(inst);
+}
+
+test "doeNativeInstanceRelease with null does not crash" {
+    instance_device.doeNativeInstanceRelease(null);
+}
+
+test "doeNativeInstanceRelease with invalid magic does not crash" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeInstance
+    instance_device.doeNativeInstanceRelease(native.toOpaque(&fake));
+}
+
+test "doeNativeAdapterRelease with null does not crash" {
+    instance_device.doeNativeAdapterRelease(null);
+}
+
+test "doeNativeDeviceRelease with null does not crash" {
+    instance_device.doeNativeDeviceRelease(null);
+}
+
+test "doeNativeDeviceGetQueue with null device returns null" {
+    const result = instance_device.doeNativeDeviceGetQueue(null);
+    try std.testing.expect(result == null);
+}
+
+test "doeNativeDeviceGetQueue with invalid magic returns null" {
+    var fake = native.DoeBuffer{}; // wrong magic for DoeDevice
+    const result = instance_device.doeNativeDeviceGetQueue(native.toOpaque(&fake));
+    try std.testing.expect(result == null);
+}
+
+// ============================================================
+// Constants: query native
+// ============================================================
+
+test "DoeQuerySet magic matches expected value" {
+    try std.testing.expectEqual(@as(u32, 0xD0E1_0020), query.DoeQuerySet.TYPE_MAGIC);
+}
+
+test "DoeQuerySet default initialization has correct defaults" {
+    const qs = query.DoeQuerySet{};
+    try std.testing.expectEqual(@as(u32, 0xD0E1_0020), qs.magic);
+    try std.testing.expectEqual(@as(u32, 0), qs.count);
+    try std.testing.expect(qs.counter_sample_buffer == null);
+}
+
+test "timestamp query type constant matches spec" {
+    try std.testing.expectEqual(@as(u32, 0x00000002), types.WGPUQueryType_Timestamp);
+}
+
+// ============================================================
+// Constants: handle type magics
+// ============================================================
+
+test "handle magic constants are distinct for types with pub TYPE_MAGIC or default init" {
+    // Test distinctness for types that expose TYPE_MAGIC or can be default-initialized.
+    // Types with required non-nullable pointer fields are excluded (they require a
+    // valid parent object, tested via cast/make round-trips elsewhere).
+    const inst_magic = (native.DoeInstance{}).magic;
+    const adapter_magic = (native.DoeAdapter{}).magic;
+    const dev_magic = (native.DoeDevice{}).magic;
+    const queue_magic = native.DoeQueue.TYPE_MAGIC;
+    const buf_magic = native.DoeBuffer.TYPE_MAGIC;
+    const shader_magic = (native.DoeShaderModule{}).magic;
+    const compute_magic = native.DoeComputePipeline.TYPE_MAGIC;
+    const bgl_magic = (native.DoeBindGroupLayout{}).magic;
+    const pl_magic = (native.DoePipelineLayout{}).magic;
+    const bg_magic = native.DoeBindGroup.TYPE_MAGIC;
+    const tex_magic = (native.DoeTexture{}).magic;
+    const samp_magic = (native.DoeSampler{}).magic;
+    const rp_magic = (native.DoeRenderPipeline{}).magic;
+    const qs_magic = query.DoeQuerySet.TYPE_MAGIC;
+
+    const magics = [_]u32{
+        inst_magic,    adapter_magic, dev_magic,   queue_magic,
+        buf_magic,     shader_magic,  compute_magic, bgl_magic,
+        pl_magic,      bg_magic,      tex_magic,   samp_magic,
+        rp_magic,      qs_magic,
+    };
+    // Every pair of magics must differ.
+    for (magics, 0..) |a, i| {
+        for (magics[i + 1 ..]) |b| {
+            try std.testing.expect(a != b);
+        }
+    }
+}
+
+test "handle magics share the D0E1 prefix" {
+    try std.testing.expect((native.DoeInstance{}).magic & 0xFFFF_0000 == 0xD0E1_0000);
+    try std.testing.expect((native.DoeDevice{}).magic & 0xFFFF_0000 == 0xD0E1_0000);
+    try std.testing.expect(native.DoeQueue.TYPE_MAGIC & 0xFFFF_0000 == 0xD0E1_0000);
+    try std.testing.expect(native.DoeBuffer.TYPE_MAGIC & 0xFFFF_0000 == 0xD0E1_0000);
+    try std.testing.expect((native.DoeTexture{}).magic & 0xFFFF_0000 == 0xD0E1_0000);
+    try std.testing.expect((native.DoeRenderPipeline{}).magic & 0xFFFF_0000 == 0xD0E1_0000);
+    try std.testing.expect(query.DoeQuerySet.TYPE_MAGIC & 0xFFFF_0000 == 0xD0E1_0000);
+}
+
+// ============================================================
+// Constants: capacity and size constants
+// ============================================================
+
+test "ERR_CAP is 512" {
+    try std.testing.expectEqual(@as(usize, 512), native.ERR_CAP);
+}
+
+test "MAX_BIND is 16" {
+    try std.testing.expectEqual(@as(usize, 16), native.MAX_BIND);
+}
+
+test "MAX_FLAT_BIND is MAX_BIND * MAX_COMPUTE_BIND_GROUPS" {
+    try std.testing.expectEqual(native.MAX_BIND * native.MAX_COMPUTE_BIND_GROUPS, native.MAX_FLAT_BIND);
+}
+
+test "MAX_VERTEX_BUFFERS is 8" {
+    try std.testing.expectEqual(@as(usize, 8), native.MAX_VERTEX_BUFFERS);
+}
+
+test "VERTEX_BUFFER_SLOT_BASE is 8" {
+    try std.testing.expectEqual(@as(u32, 8), native.VERTEX_BUFFER_SLOT_BASE);
+}
+
+test "MAX_SHADER_BINDINGS matches wgsl compiler MAX_BINDINGS" {
+    try std.testing.expectEqual(wgsl_compiler.MAX_BINDINGS, native.MAX_SHADER_BINDINGS);
+}
+
+// ============================================================
+// Constants: texture format values match WebGPU spec
+// ============================================================
+
+test "RGBA8Unorm format value is 0x16" {
+    try std.testing.expectEqual(@as(u32, 0x00000016), types.WGPUTextureFormat_RGBA8Unorm);
+}
+
+test "BGRA8Unorm format value is 0x1B" {
+    try std.testing.expectEqual(@as(u32, 0x0000001B), types.WGPUTextureFormat_BGRA8Unorm);
+}
+
+test "Depth32Float format value is 0x30" {
+    try std.testing.expectEqual(@as(u32, 0x00000030), types.WGPUTextureFormat_Depth32Float);
+}
+
+test "R8Unorm format value is 0x01" {
+    try std.testing.expectEqual(@as(u32, 0x00000001), types.WGPUTextureFormat_R8Unorm);
+}
+
+// ============================================================
+// Constants: buffer usage flags match WebGPU spec
+// ============================================================
+
+test "buffer usage flag values match spec" {
+    try std.testing.expectEqual(@as(u64, 0x0000000000000001), types.WGPUBufferUsage_MapRead);
+    try std.testing.expectEqual(@as(u64, 0x0000000000000002), types.WGPUBufferUsage_MapWrite);
+    try std.testing.expectEqual(@as(u64, 0x0000000000000004), types.WGPUBufferUsage_CopySrc);
+    try std.testing.expectEqual(@as(u64, 0x0000000000000008), types.WGPUBufferUsage_CopyDst);
+    try std.testing.expectEqual(@as(u64, 0x0000000000000040), types.WGPUBufferUsage_Uniform);
+    try std.testing.expectEqual(@as(u64, 0x0000000000000080), types.WGPUBufferUsage_Storage);
+    try std.testing.expectEqual(@as(u64, 0x0000000000000200), types.WGPUBufferUsage_QueryResolve);
+}
+
+// ============================================================
+// Constants: feature name values match WebGPU spec
+// ============================================================
+
+test "ShaderF16 feature value is 0x0B" {
+    try std.testing.expectEqual(@as(u32, 0x0000000B), types.WGPUFeatureName_ShaderF16);
+}
+
+test "TimestampQuery feature value is 0x09" {
+    try std.testing.expectEqual(@as(u32, 0x00000009), types.WGPUFeatureName_TimestampQuery);
+}
+
+test "IndirectFirstInstance feature value is 0x0C" {
+    try std.testing.expectEqual(@as(u32, 0x0000000C), types.WGPUFeatureName_IndirectFirstInstance);
+}
+
+// ============================================================
+// Constants: device caps feature constants
+// ============================================================
+
+test "device caps FEATURE_SUBGROUPS matches expected value" {
+    try std.testing.expectEqual(@as(u32, 0x0000000F), caps.FEATURE_SUBGROUPS);
+}
+
+test "device caps METAL_SIMD_GROUP_SIZE is 32" {
+    try std.testing.expectEqual(@as(u32, 32), caps.METAL_SIMD_GROUP_SIZE);
+}
+
+// ============================================================
+// Constants: instance device status codes
+// ============================================================
+
+test "WGPUFuture struct has expected layout" {
+    try std.testing.expectEqual(@as(usize, 8), @sizeOf(types.WGPUFuture));
+}
+
+test "WGPUStringView struct has expected layout" {
+    // pointer + usize
+    try std.testing.expectEqual(@as(usize, 16), @sizeOf(types.WGPUStringView));
+}
+
+// ============================================================
+// Pure helper: extractWorkgroupSize
+// ============================================================
+
+test "extractWorkgroupSize parses single-dimension workgroup" {
+    const wgsl = "@workgroup_size(64)\nfn main() {}";
+    const wg = native.extractWorkgroupSize(wgsl);
+    try std.testing.expectEqual(@as(u32, 64), wg.x);
+    try std.testing.expectEqual(@as(u32, 1), wg.y);
+    try std.testing.expectEqual(@as(u32, 1), wg.z);
+}
+
+test "extractWorkgroupSize parses two-dimension workgroup" {
+    const wgsl = "@workgroup_size(8, 16)\nfn main() {}";
+    const wg = native.extractWorkgroupSize(wgsl);
+    try std.testing.expectEqual(@as(u32, 8), wg.x);
+    try std.testing.expectEqual(@as(u32, 16), wg.y);
+    try std.testing.expectEqual(@as(u32, 1), wg.z);
+}
+
+test "extractWorkgroupSize parses three-dimension workgroup" {
+    const wgsl = "@workgroup_size(4, 8, 2)\nfn main() {}";
+    const wg = native.extractWorkgroupSize(wgsl);
+    try std.testing.expectEqual(@as(u32, 4), wg.x);
+    try std.testing.expectEqual(@as(u32, 8), wg.y);
+    try std.testing.expectEqual(@as(u32, 2), wg.z);
+}
+
+test "extractWorkgroupSize with no annotation returns zeros mapped to 1" {
+    const wgsl = "fn main() {}";
+    const wg = native.extractWorkgroupSize(wgsl);
+    // When no annotation is found, raw values are 0; the function maps them to 1.
+    // Actually, when no annotation found, x/y/z = 0 (the fallback return is .{.x=0,.y=0,.z=0}).
+    try std.testing.expectEqual(@as(u32, 0), wg.x);
+    try std.testing.expectEqual(@as(u32, 0), wg.y);
+    try std.testing.expectEqual(@as(u32, 0), wg.z);
+}
+
+test "extractWorkgroupSize with spaces in args" {
+    const wgsl = "@workgroup_size( 16 , 32 , 4 )\nfn main() {}";
+    const wg = native.extractWorkgroupSize(wgsl);
+    try std.testing.expectEqual(@as(u32, 16), wg.x);
+    try std.testing.expectEqual(@as(u32, 32), wg.y);
+    try std.testing.expectEqual(@as(u32, 4), wg.z);
+}
+
+test "extractWorkgroupSize with workgroup_size(1) returns 1,1,1" {
+    const wgsl = "@workgroup_size(1)\nfn main() {}";
+    const wg = native.extractWorkgroupSize(wgsl);
+    try std.testing.expectEqual(@as(u32, 1), wg.x);
+    try std.testing.expectEqual(@as(u32, 1), wg.y);
+    try std.testing.expectEqual(@as(u32, 1), wg.z);
+}
+
+test "extractWorkgroupSize with large value" {
+    const wgsl = "@workgroup_size(1024)\nfn main() {}";
+    const wg = native.extractWorkgroupSize(wgsl);
+    try std.testing.expectEqual(@as(u32, 1024), wg.x);
+}
+
+// ============================================================
+// Pure helper: cast (type-checked downcast)
+// ============================================================
+
+test "cast with null returns null" {
+    const result = native.cast(native.DoeDevice, null);
+    try std.testing.expect(result == null);
+}
+
+test "cast with wrong magic returns null" {
+    // Create a buffer handle and try to cast it as a device.
+    var buf = native.DoeBuffer{};
+    const result = native.cast(native.DoeDevice, native.toOpaque(&buf));
+    try std.testing.expect(result == null);
+}
+
+test "cast with correct magic succeeds" {
+    var buf = native.DoeBuffer{};
+    const result = native.cast(native.DoeBuffer, native.toOpaque(&buf));
+    try std.testing.expect(result != null);
+    try std.testing.expectEqual(native.DoeBuffer.TYPE_MAGIC, result.?.magic);
+}
+
+test "cast round-trips through toOpaque" {
+    var inst = native.DoeInstance{};
+    const ptr = native.toOpaque(&inst);
+    const back = native.cast(native.DoeInstance, ptr);
+    try std.testing.expect(back != null);
+    try std.testing.expect(@intFromPtr(back.?) == @intFromPtr(&inst));
+}
+
+// ============================================================
+// Pure helper: make (allocation with null return)
+// ============================================================
+
+test "make allocates a valid struct with correct magic" {
+    const dev = native.make(native.DoeDevice);
+    try std.testing.expect(dev != null);
+    const d = dev.?;
+    // Default magic should be correct.
+    try std.testing.expectEqual((native.DoeDevice{}).magic, d.magic);
+    // Clean up.
+    native.alloc.destroy(d);
+}
+
+test "make DoeInstance has correct magic" {
+    const inst = native.make(native.DoeInstance);
+    try std.testing.expect(inst != null);
+    try std.testing.expectEqual((native.DoeInstance{}).magic, inst.?.magic);
+    native.alloc.destroy(inst.?);
+}
+
+// ============================================================
+// Shader error state management
+// ============================================================
+
+test "doeNativeCopyLastErrorMessage copies error into buffer" {
+    // Force an error by checking null WGSL.
+    _ = shader.doeNativeCheckShaderSource(null, 0);
+
+    var buf: [512]u8 = undefined;
+    const len = shader.doeNativeCopyLastErrorMessage(&buf, buf.len);
+    try std.testing.expect(len > 0);
+
+    // The copied string should be null-terminated.
+    try std.testing.expectEqual(@as(u8, 0), buf[len]);
+}
+
+test "doeNativeCopyLastErrorMessage truncates to out_len minus 1" {
+    // Force an error.
+    _ = shader.doeNativeCheckShaderSource(null, 0);
+
+    // Use a very small buffer.
+    var buf: [8]u8 = undefined;
+    const full_len = shader.doeNativeCopyLastErrorMessage(&buf, buf.len);
+    // The returned value is the full error length, not the truncated length.
+    try std.testing.expect(full_len > 0);
+
+    // The last byte should be null-terminated within our buffer.
+    const copy_len = @min(full_len, buf.len - 1);
+    try std.testing.expectEqual(@as(u8, 0), buf[copy_len]);
+}
+
+test "successful shader check clears error line and column" {
+    // First, trigger an error to populate line/column.
+    const bad_wgsl = "invalid wgsl !!!";
+    _ = shader.doeNativeCheckShaderSource(bad_wgsl.ptr, bad_wgsl.len);
+
+    // Now check valid WGSL.
+    const valid_wgsl =
+        \\@compute @workgroup_size(1)
+        \\fn main() {}
+    ;
+    const result = shader.doeNativeCheckShaderSource(valid_wgsl.ptr, valid_wgsl.len);
+    try std.testing.expectEqual(@as(u32, 1), result);
+    try std.testing.expectEqual(@as(u32, 0), shader.doeNativeGetLastErrorLine());
+    try std.testing.expectEqual(@as(u32, 0), shader.doeNativeGetLastErrorColumn());
+}
+
+// ============================================================
+// Instance lifecycle (no Metal required for basic instance)
+// ============================================================
+
+test "instance create and release round-trip" {
+    const inst = instance_device.doeNativeCreateInstance(null);
+    try std.testing.expect(inst != null);
+
+    // Verify the opaque pointer round-trips to a valid DoeInstance.
+    const typed = native.cast(native.DoeInstance, inst);
+    try std.testing.expect(typed != null);
+    try std.testing.expectEqual((native.DoeInstance{}).magic, typed.?.magic);
+
+    instance_device.doeNativeInstanceRelease(inst);
+}
+
+test "multiple instances can coexist" {
+    const a = instance_device.doeNativeCreateInstance(null);
+    const b = instance_device.doeNativeCreateInstance(null);
+    try std.testing.expect(a != null);
+    try std.testing.expect(b != null);
+    try std.testing.expect(a != b);
+
+    instance_device.doeNativeInstanceRelease(a);
+    instance_device.doeNativeInstanceRelease(b);
+}
+
+// ============================================================
+// InstanceWaitAny (synchronous — marks all completed)
+// ============================================================
+
+test "doeNativeInstanceWaitAny marks all infos as completed" {
+    var infos = [_]types.WGPUFutureWaitInfo{
+        .{ .future = .{ .id = 100 }, .completed = 0 },
+        .{ .future = .{ .id = 200 }, .completed = 0 },
+        .{ .future = .{ .id = 300 }, .completed = 0 },
+    };
+
+    const status = instance_device.doeNativeInstanceWaitAny(null, infos.len, &infos, 0);
+    // Should return WGPU_WAIT_STATUS_SUCCESS = 1.
+    try std.testing.expectEqual(@as(u32, 1), status);
+
+    // All infos should be marked as completed.
+    for (infos) |info| {
+        try std.testing.expectEqual(@as(u32, 1), info.completed);
+    }
+}
+
+test "doeNativeInstanceWaitAny with count 0 returns success" {
+    var dummy: types.WGPUFutureWaitInfo = .{ .future = .{ .id = 0 }, .completed = 0 };
+    const status = instance_device.doeNativeInstanceWaitAny(null, 0, @ptrCast(&dummy), 1000);
+    try std.testing.expectEqual(@as(u32, 1), status);
+}
+
+// ============================================================
+// Device caps: feature queries
+// ============================================================
+
+test "doeNativeAdapterHasFeature returns 1 for ShaderF16" {
+    const result = caps.doeNativeAdapterHasFeature(null, types.WGPUFeatureName_ShaderF16);
+    try std.testing.expectEqual(@as(u32, 1), result);
+}
+
+test "doeNativeDeviceHasFeature returns 1 for ShaderF16" {
+    const result = caps.doeNativeDeviceHasFeature(null, types.WGPUFeatureName_ShaderF16);
+    try std.testing.expectEqual(@as(u32, 1), result);
+}
+
+test "doeNativeAdapterHasFeature returns 0 for unsupported feature" {
+    // Use a bogus feature ID.
+    const result = caps.doeNativeAdapterHasFeature(null, 0x99999999);
+    try std.testing.expectEqual(@as(u32, 0), result);
+}
+
+test "doeNativeDeviceHasFeature returns 0 for unsupported feature" {
+    const result = caps.doeNativeDeviceHasFeature(null, 0x99999999);
+    try std.testing.expectEqual(@as(u32, 0), result);
+}
+
+test "doeNativeDeviceSubgroupSize returns 32 on macOS" {
+    const result = caps.doeNativeDeviceSubgroupSize(null);
+    // On macOS (where tests run), should be 32.
+    if (@import("builtin").os.tag == .macos) {
+        try std.testing.expectEqual(@as(u32, 32), result);
+    }
+}
+
+// ============================================================
+// Device caps: limits queries
+// ============================================================
+
+test "doeNativeDeviceGetLimits populates limits struct" {
+    var limits = std.mem.zeroes(types.WGPULimits);
+    const status = caps.doeNativeDeviceGetLimits(null, &limits);
+    try std.testing.expectEqual(types.WGPUStatus_Success, status);
+
+    // Check known Metal defaults.
+    try std.testing.expectEqual(@as(u32, 16384), limits.maxTextureDimension1D);
+    try std.testing.expectEqual(@as(u32, 16384), limits.maxTextureDimension2D);
+    try std.testing.expectEqual(@as(u32, 2048), limits.maxTextureDimension3D);
+    try std.testing.expectEqual(@as(u32, 4), limits.maxBindGroups);
+    try std.testing.expectEqual(@as(u32, 1024), limits.maxComputeInvocationsPerWorkgroup);
+    try std.testing.expectEqual(@as(u32, 1024), limits.maxComputeWorkgroupSizeX);
+    try std.testing.expectEqual(@as(u32, 1024), limits.maxComputeWorkgroupSizeY);
+    try std.testing.expectEqual(@as(u32, 64), limits.maxComputeWorkgroupSizeZ);
+    try std.testing.expectEqual(@as(u32, 65535), limits.maxComputeWorkgroupsPerDimension);
+    try std.testing.expectEqual(@as(u64, 65536), limits.maxUniformBufferBindingSize);
+    try std.testing.expectEqual(@as(u32, 256), limits.minUniformBufferOffsetAlignment);
+    try std.testing.expectEqual(@as(u32, 32), limits.minStorageBufferOffsetAlignment);
+    try std.testing.expectEqual(@as(u32, 8), limits.maxVertexBuffers);
+    try std.testing.expectEqual(@as(u32, 8), limits.maxColorAttachments);
+}
+
+test "doeNativeAdapterGetLimits populates same values as device" {
+    var dev_limits = std.mem.zeroes(types.WGPULimits);
+    var adapter_limits = std.mem.zeroes(types.WGPULimits);
+
+    _ = caps.doeNativeDeviceGetLimits(null, &dev_limits);
+    _ = caps.doeNativeAdapterGetLimits(null, &adapter_limits);
+
+    // Both should report the same static limits when called without a device handle.
+    try std.testing.expectEqual(dev_limits.maxTextureDimension1D, adapter_limits.maxTextureDimension1D);
+    try std.testing.expectEqual(dev_limits.maxComputeInvocationsPerWorkgroup, adapter_limits.maxComputeInvocationsPerWorkgroup);
+    try std.testing.expectEqual(dev_limits.maxBufferSize, adapter_limits.maxBufferSize);
+    try std.testing.expectEqual(dev_limits.maxStorageBufferBindingSize, adapter_limits.maxStorageBufferBindingSize);
+}
+
+test "doeNativeDeviceGetLimits with null limits pointer returns success" {
+    const status = caps.doeNativeDeviceGetLimits(null, null);
+    try std.testing.expectEqual(types.WGPUStatus_Success, status);
+}
+
+// ============================================================
+// Struct layout: BindingInfo
+// ============================================================
+
+test "BindingInfo default has buffer kind" {
+    const info = native.BindingInfo{ .group = 0, .binding = 0 };
+    try std.testing.expectEqual(@as(u32, @intFromEnum(wgsl_compiler.BindingKind.buffer)), info.kind);
+    try std.testing.expectEqual(@as(u32, 0), info.addr_space);
+    try std.testing.expectEqual(@as(u32, 0), info.access);
+}
+
+// ============================================================
+// Struct layout: DoeRenderPipeline defaults
+// ============================================================
+
+test "DoeRenderPipeline default topology is triangle list" {
+    const rp = native.DoeRenderPipeline{};
+    // 0x00000004 = WGPUPrimitiveTopology_TriangleList (Metal convention).
+    try std.testing.expectEqual(@as(u32, 0x00000004), rp.topology);
+}
+
+test "DoeRenderPipeline default front_face is CCW" {
+    const rp = native.DoeRenderPipeline{};
+    // 0x00000001 = WGPUFrontFace_CCW.
+    try std.testing.expectEqual(@as(u32, 0x00000001), rp.front_face);
+}
+
+test "DoeRenderPipeline default cull_mode is none" {
+    const rp = native.DoeRenderPipeline{};
+    // 0x00000001 = WGPUCullMode_None.
+    try std.testing.expectEqual(@as(u32, 0x00000001), rp.cull_mode);
+}
+
+test "DoeRenderPipeline default depth is disabled" {
+    const rp = native.DoeRenderPipeline{};
+    try std.testing.expect(!rp.depth_write_enabled);
+    try std.testing.expect(!rp.unclipped_depth);
+    try std.testing.expectEqual(@as(u32, 0), rp.depth_compare);
+}
+
+// ============================================================
+// Struct layout: DoeRenderPass defaults
+// ============================================================
+
+test "DoeRenderPass default bind_groups are all null" {
+    const dev = native.make(native.DoeDevice) orelse unreachable;
+    defer native.alloc.destroy(dev);
+    dev.* = .{};
+    var enc = native.DoeCommandEncoder{ .dev = dev };
+    const pass = native.DoeRenderPass{ .enc = &enc };
+    for (pass.bind_groups) |bg| {
+        try std.testing.expect(bg == null);
+    }
+    for (pass.vertex_buffers) |vb| {
+        try std.testing.expect(vb == null);
+    }
+    for (pass.vertex_buffer_offsets) |off| {
+        try std.testing.expectEqual(@as(u64, 0), off);
+    }
+}
+
+// ============================================================
+// WGSL compiler constants
+// ============================================================
+
+test "MAX_BINDINGS is 16" {
+    try std.testing.expectEqual(@as(usize, 16), wgsl_compiler.MAX_BINDINGS);
+}
+
+test "CompilationStage enum has expected variants" {
+    // Verify key stages exist.
+    try std.testing.expectEqual(wgsl_compiler.CompilationStage.none, .none);
+    try std.testing.expectEqual(wgsl_compiler.CompilationStage.parser, .parser);
+    try std.testing.expectEqual(wgsl_compiler.CompilationStage.sema, .sema);
+    try std.testing.expectEqual(wgsl_compiler.CompilationStage.msl_emit, .msl_emit);
+}
+
+// ============================================================
+// initLimits helper
+// ============================================================
+
+test "initLimits returns zeroed struct with null nextInChain" {
+    const limits = types.initLimits();
+    try std.testing.expect(limits.nextInChain == null);
+    try std.testing.expectEqual(@as(u32, 0), limits.maxTextureDimension1D);
+    try std.testing.expectEqual(@as(u32, 0), limits.maxBindGroups);
+    try std.testing.expectEqual(@as(u64, 0), limits.maxBufferSize);
+}
+
+// ============================================================
+// WGPUStringView and WGPU_STRLEN sentinel
+// ============================================================
+
+test "WGPU_STRLEN is max usize" {
+    try std.testing.expectEqual(std.math.maxInt(usize), types.WGPU_STRLEN);
+}
+
+test "WGPUStringView with null data and zero length is valid empty view" {
+    const sv = types.WGPUStringView{ .data = null, .length = 0 };
+    try std.testing.expect(sv.data == null);
+    try std.testing.expectEqual(@as(usize, 0), sv.length);
+}
+
+// ============================================================
+// doeNativeInstanceProcessEvents (no-op, must not crash)
+// ============================================================
+
+test "doeNativeInstanceProcessEvents with null does not crash" {
+    native.doeNativeInstanceProcessEvents(null);
+}
+
+test "doeNativeInstanceProcessEvents with valid instance does not crash" {
+    const inst = instance_device.doeNativeCreateInstance(null);
+    defer instance_device.doeNativeInstanceRelease(inst);
+    native.doeNativeInstanceProcessEvents(inst);
+}

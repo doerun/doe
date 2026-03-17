@@ -12,10 +12,7 @@ const artifact_meta = @import("../common/artifact_meta.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
 const artifact_state = @import("../common/artifact_state.zig");
 const hash_utils = @import("../common/hash_utils.zig");
-const native_runtime = if (builtin.os.tag == .macos)
-    @import("metal_native_runtime.zig")
-else
-    @import("metal_native_runtime_stub.zig");
+const native_runtime = @import("metal_native_runtime.zig");
 
 const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;

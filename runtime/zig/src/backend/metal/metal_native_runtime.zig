@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const model = @import("../../model.zig");
@@ -7,6 +8,8 @@ const dispatch_runtime = @import("metal_dispatch_runtime.zig");
 const resource_runtime = @import("metal_runtime_resources.zig");
 const surface_runtime = @import("metal_surface_runtime.zig");
 const bridge = @import("metal_bridge_decls.zig");
+const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
+const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
 const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
 const metal_bridge_blit_encoder_copy = bridge.metal_bridge_blit_encoder_copy;
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
@@ -130,6 +133,8 @@ pub const NativeMetalRuntime = struct {
     cached_icb: ?*anyopaque = null,
     cached_icb_key: IcbKey = .{ .draw_count = 0, .vertex_count = 0, .instance_count = 0, .redundant = false },
 
+    pipeline_binary_cache: ?*anyopaque = null,
+
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeMetalRuntime {
         var self = NativeMetalRuntime{ .allocator = allocator, .kernel_root = kernel_root };
         errdefer self.deinit();
@@ -173,6 +178,15 @@ pub const NativeMetalRuntime = struct {
         self.release_surfaces();
         self.release_render_resources();
         release_ref(&self.shared_event);
+        if (builtin.os.tag == .macos) {
+            if (HAS_PIPELINE_CACHE) {
+                if (self.pipeline_binary_cache) |c| {
+                    const typed: *metal_pipeline_cache.MetalPipelineCache = @ptrCast(@alignCast(c));
+                    typed.deinit();
+                    self.pipeline_binary_cache = null;
+                }
+            }
+        }
         release_ref(&self.queue);
         release_ref(&self.device);
         self.has_device = false;
@@ -576,11 +590,27 @@ pub const NativeMetalRuntime = struct {
         return try surface_runtime.release_surface(self, cmd);
     }
 
+    pub fn attach_canvas_layer(self: *NativeMetalRuntime, handle: u64, layer: ?*anyopaque) !void {
+        return try surface_runtime.attach_canvas_layer(self, handle, layer);
+    }
+
+    pub fn update_surface_size(self: *NativeMetalRuntime, handle: u64, width: u32, height: u32, dpi_scale: f32) !void {
+        return try surface_runtime.update_surface_size(self, handle, width, height, dpi_scale);
+    }
+
     fn bootstrap(self: *NativeMetalRuntime) !void {
         self.device = metal_bridge_create_default_device() orelse return error.UnsupportedFeature;
         self.queue = metal_bridge_device_new_command_queue(self.device) orelse return error.InvalidState;
         self.shared_event = metal_bridge_device_new_shared_event(self.device);
         self.has_device = true;
+        if (builtin.os.tag == .macos) {
+            if (HAS_PIPELINE_CACHE) {
+                const cache_dir = self.kernel_root orelse "bench/kernels";
+                self.pipeline_binary_cache = @ptrCast(
+                    metal_pipeline_cache.MetalPipelineCache.init(self.allocator, self.device, cache_dir) catch null,
+                );
+            }
+        }
     }
 
     fn defer_or_release(self: *NativeMetalRuntime, obj: ?*anyopaque) !void {

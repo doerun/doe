@@ -23,7 +23,12 @@ pub const Capability = struct {
 
 pub const AddressingModel = struct { pub const Logical: u32 = 0; };
 pub const MemoryModel = struct { pub const GLSL450: u32 = 1; };
-pub const Dim = struct { pub const _2D: u32 = 1; };
+pub const Dim = struct {
+    pub const _1D: u32 = 0;
+    pub const _2D: u32 = 1;
+    pub const _3D: u32 = 2;
+    pub const Cube: u32 = 3;
+};
 
 pub const ImageFormat = struct {
     pub const Unknown: u32 = 0;

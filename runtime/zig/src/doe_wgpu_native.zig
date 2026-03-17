@@ -7,39 +7,12 @@
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
+const error_scope = @import("error_scope.zig");
+const gpu_timeline = @import("gpu_timeline.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
-const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
-const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
-const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
-const metal_bridge_cmd_buf_encode_blit_copy = bridge.metal_bridge_cmd_buf_encode_blit_copy;
-const metal_bridge_cmd_buf_encode_compute_dispatch = bridge.metal_bridge_cmd_buf_encode_compute_dispatch;
-const metal_bridge_cmd_buf_encode_compute_dispatch_indirect = bridge.metal_bridge_cmd_buf_encode_compute_dispatch_indirect;
-const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
-const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
-const metal_bridge_command_buffer_encode_signal_event = bridge.metal_bridge_command_buffer_encode_signal_event;
-const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
-const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
-const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
-const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
-const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
-const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_release = bridge.metal_bridge_release;
-const metal_bridge_render_encoder_set_bind_buffer = bridge.metal_bridge_render_encoder_set_bind_buffer;
-const metal_bridge_render_encoder_set_bind_sampler = bridge.metal_bridge_render_encoder_set_bind_sampler;
-const metal_bridge_render_encoder_set_bind_texture = bridge.metal_bridge_render_encoder_set_bind_texture;
-const metal_bridge_render_encoder_set_cull_mode = bridge.metal_bridge_render_encoder_set_cull_mode;
-const metal_bridge_render_encoder_set_depth_clip_mode = bridge.metal_bridge_render_encoder_set_depth_clip_mode;
-const metal_bridge_render_encoder_set_depth_stencil_state = bridge.metal_bridge_render_encoder_set_depth_stencil_state;
-const metal_bridge_render_encoder_set_depth_stencil_values = bridge.metal_bridge_render_encoder_set_depth_stencil_values;
-const metal_bridge_render_encoder_set_front_facing = bridge.metal_bridge_render_encoder_set_front_facing;
-const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw;
-const metal_bridge_render_encoder_draw_indexed = bridge.metal_bridge_render_encoder_draw_indexed;
-const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
-const metal_bridge_render_encoder_set_vertex_buffer = bridge.metal_bridge_render_encoder_set_vertex_buffer;
-const metal_bridge_sample_timestamp = bridge.metal_bridge_sample_timestamp;
-const metal_bridge_resolve_timestamps = bridge.metal_bridge_resolve_timestamps;
 
 // GPA for handle allocations — page_allocator wastes 16KB per 24-byte struct.
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -77,17 +50,14 @@ pub const VERTEX_BUFFER_SLOT_BASE: u32 = 8;
 pub const ERR_CAP: usize = 512;
 
 // WebGPU status constants — must match doe_napi.c definitions.
-const WGPU_WAIT_STATUS_SUCCESS: u32 = 1;
-const WGPU_REQUEST_STATUS_SUCCESS: u32 = 1;
-const WGPU_REQUEST_STATUS_ERROR: u32 = 4;
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
 
-const DoeInstance = struct {
+pub const DoeInstance = struct {
     const TYPE_MAGIC = MAGIC_INSTANCE;
     magic: u32 = TYPE_MAGIC,
 };
 
-const DoeAdapter = struct {
+pub const DoeAdapter = struct {
     const TYPE_MAGIC = MAGIC_ADAPTER;
     magic: u32 = TYPE_MAGIC,
     mtl_device: ?*anyopaque = null,
@@ -99,6 +69,8 @@ pub const DoeDevice = struct {
     mtl_device: ?*anyopaque = null,
     mtl_queue: ?*anyopaque = null,
     queue: ?*DoeQueue = null, // cached; getQueue returns this
+    // Per-device error scope stack for pushErrorScope/popErrorScope.
+    error_scopes: error_scope.ErrorScopeStack = error_scope.ErrorScopeStack.init(),
 };
 
 pub const DeferredCopy = struct {
@@ -106,7 +78,7 @@ pub const DeferredCopy = struct {
     dst: [*]u8,
     size: usize,
 };
-const MAX_DEFERRED_COPIES: u32 = 16;
+pub const MAX_DEFERRED_COPIES: u32 = 16;
 
 pub const DeferredResolve = struct {
     counter_buffer: ?*anyopaque,
@@ -115,7 +87,7 @@ pub const DeferredResolve = struct {
     dst_mtl: ?*anyopaque,
     dst_offset: u64,
 };
-const MAX_DEFERRED_RESOLVES: u32 = 8;
+pub const MAX_DEFERRED_RESOLVES: u32 = 8;
 
 pub const DoeQueue = struct {
     pub const TYPE_MAGIC = MAGIC_QUEUE;
@@ -124,6 +96,8 @@ pub const DoeQueue = struct {
     pending_cmd: ?*anyopaque = null,
     mtl_event: ?*anyopaque = null, // MTLSharedEvent for user-space GPU fence
     event_counter: u64 = 0,
+    // Timeline tracks monotonic submit counter and fires async callbacks.
+    gpu_timeline: gpu_timeline.GpuTimeline = gpu_timeline.GpuTimeline.init(null),
     deferred_copies: [MAX_DEFERRED_COPIES]DeferredCopy = undefined,
     deferred_copy_count: u32 = 0,
     deferred_resolves: [MAX_DEFERRED_RESOLVES]DeferredResolve = undefined,
@@ -292,7 +266,7 @@ pub const DoeComputePass = struct {
     bind_groups: [4]?*DoeBindGroup = [_]?*DoeBindGroup{null} ** 4,
 };
 
-const DoeCommandBuffer = struct {
+pub const DoeCommandBuffer = struct {
     const TYPE_MAGIC = MAGIC_CMD_BUFFER;
     magic: u32 = TYPE_MAGIC,
     dev: *DoeDevice,
@@ -368,147 +342,6 @@ pub fn toOpaque(p: anytype) ?*anyopaque {
 }
 
 // ============================================================
-// Instance / Adapter / Device
-// ============================================================
-
-pub export fn doeNativeCreateInstance(desc: ?*anyopaque) callconv(.c) ?*anyopaque {
-    _ = desc;
-    const inst = make(DoeInstance) orelse return null;
-    inst.* = .{};
-    return toOpaque(inst);
-}
-
-pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeInstance, raw)) |inst| alloc.destroy(inst);
-}
-
-pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]types.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
-    _ = inst;
-    _ = timeout_ns;
-    for (infos[0..count]) |*info| info.completed = 1;
-    return WGPU_WAIT_STATUS_SUCCESS;
-}
-
-// Flat adapter request: callback(status, adapter, message, userdata1, userdata2)
-pub export fn doeNativeRequestAdapterFlat(
-    inst: ?*anyopaque,
-    _: ?*anyopaque, // options
-    _: u32, // callback mode
-    callback: ?*const fn (u32, ?*anyopaque, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
-    _ = inst;
-    const device = metal_bridge_create_default_device();
-    if (device == null) {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
-        return .{ .id = 1 };
-    }
-    const adapter = make(DoeAdapter) orelse {
-        metal_bridge_release(device);
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
-        return .{ .id = 1 };
-    };
-    adapter.* = .{ .mtl_device = device };
-    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), .{ .data = null, .length = 0 }, userdata1, userdata2);
-    return .{ .id = 1 };
-}
-
-// Standard-signature wrappers for routing layer compatibility.
-// Flat versions above are used by doe_napi.c's bypass path; these take callback info structs.
-
-pub export fn doeNativeInstanceRequestAdapter(
-    inst: ?*anyopaque,
-    options: ?*const types.WGPURequestAdapterOptions,
-    info: types.WGPURequestAdapterCallbackInfo,
-) callconv(.c) types.WGPUFuture {
-    _ = options;
-    _ = inst;
-    const empty_msg = types.WGPUStringView{ .data = null, .length = 0 };
-    const device = metal_bridge_create_default_device();
-    if (device == null) {
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
-        return .{ .id = 1 };
-    }
-    const adapter = make(DoeAdapter) orelse {
-        metal_bridge_release(device);
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
-        return .{ .id = 1 };
-    };
-    adapter.* = .{ .mtl_device = device };
-    info.callback(.success, toOpaque(adapter), empty_msg, info.userdata1, info.userdata2);
-    return .{ .id = 1 };
-}
-
-pub export fn doeNativeAdapterRequestDevice(
-    adapter_raw: ?*anyopaque,
-    desc: ?*const types.WGPUDeviceDescriptor,
-    info: types.WGPURequestDeviceCallbackInfo,
-) callconv(.c) types.WGPUFuture {
-    _ = desc;
-    const empty_msg = types.WGPUStringView{ .data = null, .length = 0 };
-    const adapter = cast(DoeAdapter, adapter_raw) orelse {
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
-        return .{ .id = 2 };
-    };
-    const queue = metal_bridge_device_new_command_queue(adapter.mtl_device);
-    const dev = make(DoeDevice) orelse {
-        info.callback(.@"error", null, empty_msg, info.userdata1, info.userdata2);
-        return .{ .id = 2 };
-    };
-    dev.* = .{ .mtl_device = adapter.mtl_device, .mtl_queue = queue };
-    info.callback(.success, toOpaque(dev), empty_msg, info.userdata1, info.userdata2);
-    return .{ .id = 2 };
-}
-
-pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
-    // Adapter does NOT own the MTLDevice — device ownership transfers to DoeDevice.
-    if (cast(DoeAdapter, raw)) |a| alloc.destroy(a);
-}
-
-// Flat device request.
-pub export fn doeNativeRequestDeviceFlat(
-    adapter_raw: ?*anyopaque,
-    _: ?*anyopaque,
-    _: u32,
-    callback: ?*const fn (u32, ?*anyopaque, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
-    const adapter = cast(DoeAdapter, adapter_raw) orelse {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
-        return .{ .id = 2 };
-    };
-    const queue = metal_bridge_device_new_command_queue(adapter.mtl_device);
-    const dev = make(DoeDevice) orelse {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, .{ .data = null, .length = 0 }, userdata1, userdata2);
-        return .{ .id = 2 };
-    };
-    dev.* = .{ .mtl_device = adapter.mtl_device, .mtl_queue = queue };
-    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(dev), .{ .data = null, .length = 0 }, userdata1, userdata2);
-    return .{ .id = 2 };
-}
-
-pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeDevice, raw)) |d| {
-        if (d.queue) |q| alloc.destroy(q);
-        if (d.mtl_queue) |q| metal_bridge_release(q);
-        if (d.mtl_device) |dev| metal_bridge_release(dev);
-        alloc.destroy(d);
-    }
-}
-
-pub export fn doeNativeDeviceGetQueue(raw: ?*anyopaque) callconv(.c) ?*anyopaque {
-    const dev = cast(DoeDevice, raw) orelse return null;
-    if (dev.queue) |q| return toOpaque(q);
-    const q = make(DoeQueue) orelse return null;
-    q.* = .{ .dev = dev };
-    q.mtl_event = metal_bridge_device_new_shared_event(dev.mtl_device);
-    dev.queue = q;
-    return toOpaque(q);
-}
-
-// ============================================================
 // Buffer
 // ============================================================
 
@@ -538,82 +371,6 @@ pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBuffer, raw)) |b| b.mapped = false;
 }
 
-/// Wait for any pending GPU work on the queue, then release the command buffer.
-/// Also executes deferred CPU copies and counter resolves that depend on the completed GPU work.
-/// Uses MTLSharedEvent for GPU→CPU sync (direct memory poll, no GCD intermediary).
-pub fn flush_pending_work(q: *DoeQueue) void {
-    if (q.pending_cmd) |cmd| {
-        metal_bridge_command_buffer_wait_completed(cmd);
-        metal_bridge_release(cmd);
-        q.pending_cmd = null;
-    }
-    executeDeferredCopies(q);
-    executeDeferredResolves(q);
-}
-
-fn executeDeferredCopies(q: *DoeQueue) void {
-    for (q.deferred_copies[0..q.deferred_copy_count]) |dc| {
-        @memcpy(dc.dst[0..dc.size], dc.src[0..dc.size]);
-    }
-    q.deferred_copy_count = 0;
-}
-
-fn executeDeferredResolves(q: *DoeQueue) void {
-    for (q.deferred_resolves[0..q.deferred_resolve_count]) |dr| {
-        const contents = metal_bridge_buffer_contents(dr.dst_mtl) orelse continue;
-        const d_off: usize = @intCast(dr.dst_offset);
-        const dest: [*]u64 = @ptrCast(@alignCast(contents + d_off));
-        _ = metal_bridge_resolve_timestamps(
-            dr.counter_buffer,
-            dr.first_query,
-            dr.query_count,
-            dest,
-        );
-    }
-    q.deferred_resolve_count = 0;
-}
-
-fn read_indirect_dispatch_counts(buffer_raw: ?*anyopaque, offset: u64) ?struct { x: u32, y: u32, z: u32 } {
-    const buffer = cast(DoeBuffer, buffer_raw) orelse return null;
-    const byte_offset: usize = @intCast(offset);
-    const counts_bytes = 3 * @sizeOf(u32);
-    if (byte_offset + counts_bytes > buffer.size) return null;
-    const contents = metal_bridge_buffer_contents(buffer.mtl) orelse return null;
-    const base = contents + byte_offset;
-    const ints: *align(1) const [3]u32 = @ptrCast(base);
-    return .{
-        .x = ints[0],
-        .y = ints[1],
-        .z = ints[2],
-    };
-}
-
-pub fn try_schedule_deferred_copy(
-    q: *DoeQueue,
-    src_raw: ?*anyopaque,
-    src_off: u64,
-    dst_raw: ?*anyopaque,
-    dst_off: u64,
-    size: u64,
-) bool {
-    if (size == 0 or q.deferred_copy_count >= MAX_DEFERRED_COPIES) return false;
-    const src = cast(DoeBuffer, src_raw) orelse return false;
-    const dst = cast(DoeBuffer, dst_raw) orelse return false;
-    const copy_size: usize = @intCast(size);
-    const src_offset: usize = @intCast(src_off);
-    const dst_offset: usize = @intCast(dst_off);
-    if (src_offset + copy_size > src.size or dst_offset + copy_size > dst.size) return false;
-    const src_ptr = metal_bridge_buffer_contents(src.mtl) orelse return false;
-    const dst_ptr = metal_bridge_buffer_contents(dst.mtl) orelse return false;
-    q.deferred_copies[q.deferred_copy_count] = .{
-        .src = src_ptr + src_offset,
-        .dst = dst_ptr + dst_offset,
-        .size = copy_size,
-    };
-    q.deferred_copy_count += 1;
-    return true;
-}
-
 pub export fn doeNativeBufferMapAsync(
     buf_raw: ?*anyopaque,
     mode: u64,
@@ -640,6 +397,23 @@ pub export fn doeNativeBufferGetMappedRange(buf_raw: ?*anyopaque, offset: usize,
     return doeNativeBufferGetConstMappedRange(buf_raw, offset, size);
 }
 
+// ============================================================
+// Shard re-exports
+// ============================================================
+
+// Instance / adapter / device lifecycle in doe_instance_device_native.zig.
+const instance_device = @import("doe_instance_device_native.zig");
+pub const doeNativeCreateInstance = instance_device.doeNativeCreateInstance;
+pub const doeNativeInstanceRelease = instance_device.doeNativeInstanceRelease;
+pub const doeNativeInstanceWaitAny = instance_device.doeNativeInstanceWaitAny;
+pub const doeNativeRequestAdapterFlat = instance_device.doeNativeRequestAdapterFlat;
+pub const doeNativeInstanceRequestAdapter = instance_device.doeNativeInstanceRequestAdapter;
+pub const doeNativeAdapterRequestDevice = instance_device.doeNativeAdapterRequestDevice;
+pub const doeNativeAdapterRelease = instance_device.doeNativeAdapterRelease;
+pub const doeNativeRequestDeviceFlat = instance_device.doeNativeRequestDeviceFlat;
+pub const doeNativeDeviceRelease = instance_device.doeNativeDeviceRelease;
+pub const doeNativeDeviceGetQueue = instance_device.doeNativeDeviceGetQueue;
+
 // Shader module and compute pipeline creation in doe_shader_native.zig.
 const shader = @import("doe_shader_native.zig");
 pub const doeNativeDeviceCreateShaderModule = shader.doeNativeDeviceCreateShaderModule;
@@ -647,7 +421,7 @@ pub const doeNativeShaderModuleRelease = shader.doeNativeShaderModuleRelease;
 pub const doeNativeDeviceCreateComputePipeline = shader.doeNativeDeviceCreateComputePipeline;
 pub const doeNativeComputePipelineRelease = shader.doeNativeComputePipelineRelease;
 
-// Bind group, bind group layout, and pipeline layout exports are in doe_bind_group_native.zig.
+// Bind group, bind group layout, and pipeline layout in doe_bind_group_native.zig.
 const bind_group = @import("doe_bind_group_native.zig");
 pub const doeNativeDeviceCreateBindGroupLayout = bind_group.doeNativeDeviceCreateBindGroupLayout;
 pub const doeNativeBindGroupLayoutRelease = bind_group.doeNativeBindGroupLayoutRelease;
@@ -656,363 +430,29 @@ pub const doeNativeBindGroupRelease = bind_group.doeNativeBindGroupRelease;
 pub const doeNativeDeviceCreatePipelineLayout = bind_group.doeNativeDeviceCreatePipelineLayout;
 pub const doeNativePipelineLayoutRelease = bind_group.doeNativePipelineLayoutRelease;
 
-// ============================================================
-// Command Encoder / Compute Pass
-// ============================================================
+// Command encoder, command buffer, and texture copy recording in doe_encoder_native.zig.
+const encoder = @import("doe_encoder_native.zig");
+pub const doeNativeDeviceCreateCommandEncoder = encoder.doeNativeDeviceCreateCommandEncoder;
+pub const doeNativeCommandEncoderRelease = encoder.doeNativeCommandEncoderRelease;
+pub const doeNativeCommandEncoderBeginComputePass = encoder.doeNativeCommandEncoderBeginComputePass;
+pub const doeNativeCopyBufferToBuffer = encoder.doeNativeCopyBufferToBuffer;
+pub const doeNativeCommandEncoderCopyBufferToTexture = encoder.doeNativeCommandEncoderCopyBufferToTexture;
+pub const doeNativeCommandEncoderCopyTextureToBuffer = encoder.doeNativeCommandEncoderCopyTextureToBuffer;
+pub const doeNativeCommandEncoderFinish = encoder.doeNativeCommandEncoderFinish;
+pub const doeNativeCommandBufferRelease = encoder.doeNativeCommandBufferRelease;
 
-pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const types.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque {
-    _ = desc;
-    const dev = cast(DoeDevice, dev_raw) orelse return null;
-    const enc = make(DoeCommandEncoder) orelse return null;
-    enc.* = .{ .dev = dev };
-    return toOpaque(enc);
-}
+// Queue submit loop, deferred-work helpers, and queue lifecycle in doe_queue_submit_native.zig.
+const queue_submit = @import("doe_queue_submit_native.zig");
+// Re-exported for callers (e.g. doe_compute_fast.zig) that go through doe_wgpu_native.
+pub const flush_pending_work = queue_submit.flush_pending_work;
+pub const try_schedule_deferred_copy = queue_submit.try_schedule_deferred_copy;
+pub const doeNativeQueueSubmit = queue_submit.doeNativeQueueSubmit;
+pub const doeNativeQueueFlush = queue_submit.doeNativeQueueFlush;
+pub const doeNativeQueueWriteBuffer = queue_submit.doeNativeQueueWriteBuffer;
+pub const doeNativeQueueRelease = queue_submit.doeNativeQueueRelease;
+pub const doeNativeQueueOnSubmittedWorkDone = queue_submit.doeNativeQueueOnSubmittedWorkDone;
 
-pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeCommandEncoder, raw)) |e| {
-        e.cmds.deinit(alloc);
-        alloc.destroy(e);
-    }
-}
-
-pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc: ?*const types.WGPUComputePassDescriptor) callconv(.c) ?*anyopaque {
-    _ = desc;
-    const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
-    const pass = make(DoeComputePass) orelse return null;
-    pass.* = .{ .enc = enc };
-    return toOpaque(pass);
-}
-
-pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyopaque, src_off: u64, dst_raw: ?*anyopaque, dst_off: u64, size: u64) callconv(.c) void {
-    const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
-    const src = cast(DoeBuffer, src_raw) orelse return;
-    const dst = cast(DoeBuffer, dst_raw) orelse return;
-    enc.cmds.append(alloc, .{ .copy_buf = .{
-        .src = src.mtl,
-        .src_off = src_off,
-        .dst = dst.mtl,
-        .dst_off = dst_off,
-        .size = size,
-    } }) catch std.debug.panic("doe_wgpu_native: OOM recording copy command", .{});
-}
-
-pub export fn doeNativeCommandEncoderCopyBufferToTexture(
-    enc_raw: ?*anyopaque,
-    src_buffer_raw: ?*anyopaque,
-    src_offset: u64,
-    src_bytes_per_row: u32,
-    src_rows_per_image: u32,
-    dst_texture_raw: ?*anyopaque,
-    dst_mip_level: u32,
-    width: u32,
-    height: u32,
-    depth_or_array_layers: u32,
-) callconv(.c) void {
-    const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
-    const src_buffer = cast(DoeBuffer, src_buffer_raw) orelse return;
-    const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
-    enc.cmds.append(alloc, .{ .copy_buffer_to_texture = .{
-        .src_buffer = src_buffer.mtl,
-        .src_offset = src_offset,
-        .src_bytes_per_row = src_bytes_per_row,
-        .src_rows_per_image = src_rows_per_image,
-        .dst_texture = dst_texture.mtl,
-        .dst_mip_level = dst_mip_level,
-        .width = width,
-        .height = height,
-        .depth_or_array_layers = depth_or_array_layers,
-    } }) catch std.debug.panic("doe_wgpu_native: OOM recording buffer-to-texture copy command", .{});
-}
-
-pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
-    enc_raw: ?*anyopaque,
-    src_texture_raw: ?*anyopaque,
-    src_mip_level: u32,
-    dst_buffer_raw: ?*anyopaque,
-    dst_offset: u64,
-    dst_bytes_per_row: u32,
-    dst_rows_per_image: u32,
-    width: u32,
-    height: u32,
-    depth_or_array_layers: u32,
-) callconv(.c) void {
-    const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
-    const src_texture = cast(DoeTexture, src_texture_raw) orelse return;
-    const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
-    enc.cmds.append(alloc, .{ .copy_texture_to_buffer = .{
-        .src_texture = src_texture.mtl,
-        .src_mip_level = src_mip_level,
-        .dst_buffer = dst_buffer.mtl,
-        .dst_offset = dst_offset,
-        .dst_bytes_per_row = dst_bytes_per_row,
-        .dst_rows_per_image = dst_rows_per_image,
-        .width = width,
-        .height = height,
-        .depth_or_array_layers = depth_or_array_layers,
-    } }) catch std.debug.panic("doe_wgpu_native: OOM recording texture copy command", .{});
-}
-
-pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const types.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
-    _ = desc;
-    const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
-    const cb = make(DoeCommandBuffer) orelse return null;
-    cb.* = .{ .dev = enc.dev, .cmds = enc.cmds };
-    enc.cmds = .{}; // Transfer ownership.
-    return toOpaque(cb);
-}
-
-pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeCommandBuffer, raw)) |cb| {
-        cb.cmds.deinit(alloc);
-        alloc.destroy(cb);
-    }
-}
-
-// ============================================================
-// Queue
-// ============================================================
-
-pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [*]const ?*anyopaque) callconv(.c) void {
-    const q = cast(DoeQueue, q_raw) orelse return;
-    const queue = q.dev.mtl_queue;
-
-    // Flush any prior pending GPU work before encoding new commands.
-    flush_pending_work(q);
-
-    // Batch all recorded commands into a single MTLCommandBuffer.
-    const mtl_cmd = metal_bridge_create_command_buffer(queue) orelse return;
-    var has_gpu_work = false;
-
-    for (cmd_bufs[0..count]) |raw| {
-        const cb = cast(DoeCommandBuffer, raw) orelse continue;
-        for (cb.cmds.items) |cmd| {
-            switch (cmd) {
-                .dispatch => |d| {
-                    var bufs_copy = d.bufs;
-                    metal_bridge_cmd_buf_encode_compute_dispatch(
-                        mtl_cmd,
-                        d.pso,
-                        @as(?[*]?*anyopaque, &bufs_copy),
-                        d.buf_count,
-                        d.x,
-                        d.y,
-                        d.z,
-                        d.wg_x,
-                        d.wg_y,
-                        d.wg_z,
-                    );
-                    has_gpu_work = true;
-                },
-                .copy_buf => |c| {
-                    // Apple Silicon unified memory: defer as CPU memcpy after GPU completion
-                    // whenever both buffers expose shared contents.
-                    if (!try_schedule_deferred_copy(q, c.src, c.src_off, c.dst, c.dst_off, c.size)) {
-                        metal_bridge_cmd_buf_encode_blit_copy(
-                            mtl_cmd,
-                            c.src,
-                            @intCast(c.src_off),
-                            c.dst,
-                            @intCast(c.dst_off),
-                            @intCast(c.size),
-                        );
-                        has_gpu_work = true;
-                    }
-                },
-                .copy_buffer_to_texture => |c| {
-                    const blit = metal_bridge_cmd_buf_blit_encoder(mtl_cmd) orelse continue;
-                    metal_bridge_blit_encoder_copy_buffer_to_texture(
-                        blit,
-                        c.src_buffer,
-                        c.src_offset,
-                        c.src_bytes_per_row,
-                        c.src_rows_per_image,
-                        c.dst_texture,
-                        c.dst_mip_level,
-                        c.width,
-                        c.height,
-                        c.depth_or_array_layers,
-                    );
-                    metal_bridge_end_blit_encoding(blit);
-                    has_gpu_work = true;
-                },
-                .copy_texture_to_buffer => |c| {
-                    const blit = metal_bridge_cmd_buf_blit_encoder(mtl_cmd) orelse continue;
-                    metal_bridge_blit_encoder_copy_texture_to_buffer(
-                        blit,
-                        c.src_texture,
-                        c.src_mip_level,
-                        c.dst_buffer,
-                        c.dst_offset,
-                        c.dst_bytes_per_row,
-                        c.dst_rows_per_image,
-                        c.width,
-                        c.height,
-                        c.depth_or_array_layers,
-                    );
-                    metal_bridge_end_blit_encoding(blit);
-                    has_gpu_work = true;
-                },
-                .dispatch_indirect => |d| {
-                    var bufs_copy = d.bufs;
-                    if (read_indirect_dispatch_counts(d.indirect_buf, d.offset)) |counts| {
-                        metal_bridge_cmd_buf_encode_compute_dispatch(
-                            mtl_cmd,
-                            d.pso,
-                            @as(?[*]?*anyopaque, &bufs_copy),
-                            d.buf_count,
-                            counts.x,
-                            counts.y,
-                            counts.z,
-                            d.wg_x,
-                            d.wg_y,
-                            d.wg_z,
-                        );
-                    } else {
-                        const indirect_buffer = cast(DoeBuffer, d.indirect_buf) orelse continue;
-                        metal_bridge_cmd_buf_encode_compute_dispatch_indirect(
-                            mtl_cmd,
-                            d.pso,
-                            @as(?[*]?*anyopaque, &bufs_copy),
-                            d.buf_count,
-                            indirect_buffer.mtl,
-                            d.offset,
-                            d.wg_x,
-                            d.wg_y,
-                            d.wg_z,
-                        );
-                    }
-                    has_gpu_work = true;
-                },
-                .render_pass => |r| {
-                    const renc = metal_bridge_cmd_buf_render_encoder(
-                        mtl_cmd,
-                        r.pso,
-                        r.target,
-                        r.depth_target,
-                        if (r.depth_write_enabled) 1 else 0,
-                    );
-                    if (renc) |e| {
-                        metal_bridge_render_encoder_set_front_facing(e, r.front_face);
-                        metal_bridge_render_encoder_set_cull_mode(e, r.cull_mode);
-                        if (r.unclipped_depth) {
-                            metal_bridge_render_encoder_set_depth_clip_mode(e, 1);
-                        }
-                        if (r.depth_state) |depth_state| {
-                            metal_bridge_render_encoder_set_depth_stencil_state(e, depth_state);
-                            metal_bridge_render_encoder_set_depth_stencil_values(e, r.depth_compare, if (r.depth_write_enabled) 1 else 0);
-                        }
-                        for (r.bind_buffers, r.bind_buffer_offsets, 0..) |maybe_buf, offset, slot| {
-                            if (maybe_buf) |buf| {
-                                metal_bridge_render_encoder_set_bind_buffer(e, @intCast(slot), buf, offset);
-                            }
-                        }
-                        for (r.bind_textures, 0..) |maybe_tex, slot| {
-                            if (maybe_tex) |tex| {
-                                metal_bridge_render_encoder_set_bind_texture(e, @intCast(slot), tex);
-                            }
-                        }
-                        for (r.bind_samplers, 0..) |maybe_sampler, slot| {
-                            if (maybe_sampler) |sampler| {
-                                metal_bridge_render_encoder_set_bind_sampler(e, @intCast(slot), sampler);
-                            }
-                        }
-                        for (r.vertex_buffers, r.vertex_buffer_offsets, 0..) |maybe_buf, offset, slot| {
-                            if (maybe_buf) |buf| {
-                                metal_bridge_render_encoder_set_vertex_buffer(e, VERTEX_BUFFER_SLOT_BASE + @as(u32, @intCast(slot)), buf, offset);
-                            }
-                        }
-                        if (r.indexed) {
-                            metal_bridge_render_encoder_draw_indexed(
-                                e,
-                                r.topology,
-                                r.draw_count,
-                                r.index_count,
-                                r.instance_count,
-                                r.index_buffer,
-                                r.index_offset,
-                                r.index_format,
-                                r.base_vertex,
-                                r.first_instance,
-                            );
-                        } else {
-                            metal_bridge_render_encoder_draw(
-                                e,
-                                r.topology,
-                                r.draw_count,
-                                r.vertex_count,
-                                r.instance_count,
-                                r.first_vertex,
-                                r.first_instance,
-                                0,
-                                r.pso,
-                            );
-                        }
-                        metal_bridge_render_encoder_end(e);
-                        metal_bridge_release(e);
-                    }
-                    has_gpu_work = true;
-                },
-                .write_timestamp => |ts| {
-                    metal_bridge_sample_timestamp(mtl_cmd, ts.counter_buffer, ts.query_index);
-                    has_gpu_work = true;
-                },
-                .resolve_query_set => |rs| {
-                    // Counter resolve is CPU-side — must run after GPU
-                    // completion. Record as deferred resolve.
-                    if (q.deferred_resolve_count < MAX_DEFERRED_RESOLVES) {
-                        q.deferred_resolves[q.deferred_resolve_count] = .{
-                            .counter_buffer = rs.counter_buffer,
-                            .first_query = rs.first_query,
-                            .query_count = rs.query_count,
-                            .dst_mtl = rs.dst_mtl,
-                            .dst_offset = rs.dst_offset,
-                        };
-                        q.deferred_resolve_count += 1;
-                    }
-                    // Timestamp sampling is GPU work.
-                    has_gpu_work = true;
-                },
-            }
-        }
-    }
-
-    if (has_gpu_work) {
-        // Signal shared event after GPU work completes (direct GPU→CPU sync).
-        q.event_counter += 1;
-        metal_bridge_command_buffer_encode_signal_event(mtl_cmd, q.mtl_event, q.event_counter);
-        metal_bridge_command_buffer_commit(mtl_cmd);
-        q.pending_cmd = mtl_cmd;
-    } else {
-        metal_bridge_release(mtl_cmd);
-        executeDeferredCopies(q);
-    }
-}
-
-/// Flush pending GPU work. Called before CPU reads (mapAsync) and at queue release.
-pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
-    const q = cast(DoeQueue, q_raw) orelse return;
-    flush_pending_work(q);
-}
-
-const compute_fast = @import("doe_compute_fast.zig");
-
-pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque, offset: u64, data: [*]const u8, size: usize) callconv(.c) void {
-    _ = q_raw;
-    const buf = cast(DoeBuffer, buf_raw) orelse return;
-    const contents = metal_bridge_buffer_contents(buf.mtl) orelse return;
-    const dst = (contents + @as(usize, @intCast(offset)))[0..size];
-    @memcpy(dst, data[0..size]);
-}
-
-pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeQueue, raw)) |q| {
-        flush_pending_work(q);
-        if (q.mtl_event) |ev| metal_bridge_release(ev);
-        alloc.destroy(q);
-    }
-}
-
-// Texture, Sampler, Render Pipeline, Render Pass exports are in doe_render_native.zig.
+// Texture, Sampler, Render Pipeline, Render Pass exports in doe_render_native.zig.
 const render = @import("doe_render_native.zig");
 pub const doeNativeDeviceCreateTexture = render.doeNativeDeviceCreateTexture;
 pub const doeNativeTextureCreateView = render.doeNativeTextureCreateView;
@@ -1032,15 +472,7 @@ pub const doeNativeRenderPassDrawIndexed = render.doeNativeRenderPassDrawIndexed
 pub const doeNativeRenderPassEnd = render.doeNativeRenderPassEnd;
 pub const doeNativeRenderPassRelease = render.doeNativeRenderPassRelease;
 
-// ============================================================
-// Queue: onSubmittedWorkDone — Doe is synchronous, so call back immediately.
-pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.WGPUQueueWorkDoneCallbackInfo) callconv(.c) types.WGPUFuture {
-    _ = q_raw;
-    info.callback(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
-    return .{ .id = 4 };
-}
-
-// Compute extensions (getBindGroupLayout, dispatchIndirect) in doe_compute_ext_native.zig.
+// Compute pass operations (setBindGroup, dispatch, dispatchIndirect, getBindGroupLayout) in doe_compute_ext_native.zig.
 const compute_ext = @import("doe_compute_ext_native.zig");
 pub const doeNativeComputePassSetPipeline = compute_ext.doeNativeComputePassSetPipeline;
 pub const doeNativeComputePassSetBindGroup = compute_ext.doeNativeComputePassSetBindGroup;
@@ -1050,14 +482,14 @@ pub const doeNativeComputePassRelease = compute_ext.doeNativeComputePassRelease;
 pub const doeNativeComputePipelineGetBindGroupLayout = compute_ext.doeNativeComputePipelineGetBindGroupLayout;
 pub const doeNativeComputePassDispatchIndirect = compute_ext.doeNativeComputePassDispatchIndirect;
 
-// Feature queries and device limits are in doe_device_caps.zig.
+// Feature queries and device limits in doe_device_caps.zig.
 const caps = @import("doe_device_caps.zig");
 pub const doeNativeAdapterHasFeature = caps.doeNativeAdapterHasFeature;
 pub const doeNativeDeviceHasFeature = caps.doeNativeDeviceHasFeature;
 pub const doeNativeDeviceGetLimits = caps.doeNativeDeviceGetLimits;
 pub const doeNativeAdapterGetLimits = caps.doeNativeAdapterGetLimits;
 
-// QuerySet (timestamp query) exports are in doe_query_native.zig.
+// QuerySet (timestamp query) exports in doe_query_native.zig.
 const query = @import("doe_query_native.zig");
 pub const doeNativeDeviceCreateQuerySet = query.doeNativeDeviceCreateQuerySet;
 pub const doeNativeCommandEncoderWriteTimestamp = query.doeNativeCommandEncoderWriteTimestamp;
@@ -1065,13 +497,16 @@ pub const doeNativeCommandEncoderResolveQuerySet = query.doeNativeCommandEncoder
 pub const doeNativeQuerySetDestroy = query.doeNativeQuerySetDestroy;
 
 comptime {
+    _ = instance_device;
     _ = shader;
     _ = bind_group;
-    _ = compute_fast;
+    _ = encoder;
+    _ = queue_submit;
     _ = render;
     _ = compute_ext;
     _ = caps;
     _ = query;
+    _ = @import("doe_compute_fast.zig");
 }
 
 // Instance process events (no-op for sync).

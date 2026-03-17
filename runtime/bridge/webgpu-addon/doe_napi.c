@@ -1182,10 +1182,9 @@ static napi_value doe_buffer_get_mapped_range(napi_env env, napi_callback_info i
     napi_get_value_int64(env, _args[1], &offset_i);
     napi_get_value_int64(env, _args[2], &size_i);
 
-    void* data = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, (size_t)size_i);
-    if (!data) {
-        data = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
-    }
+    /* pfn_wgpuBufferGetMappedRange resolves to Dawn for Doe-native buffers (~50us, returns NULL).
+     * Go directly to pfn_wgpuBufferGetConstMappedRange (routes to doeNativeBufferGetConstMappedRange, fast). */
+    void* data = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
     if (!data) NAPI_THROW(env, "getMappedRange returned NULL");
 
     napi_value ab;
@@ -1201,10 +1200,7 @@ static napi_value doe_buffer_read_copy(napi_env env, napi_callback_info info) {
     napi_get_value_int64(env, _args[1], &offset_i);
     napi_get_value_int64(env, _args[2], &size_i);
 
-    void* data = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, (size_t)size_i);
-    if (!data) {
-        data = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
-    }
+    void* data = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
     if (!data) NAPI_THROW(env, "bufferReadCopy getMappedRange returned NULL");
 
     void* copy = NULL;
@@ -1242,7 +1238,9 @@ static napi_value doe_buffer_flush_staged_range(napi_env env, napi_callback_info
     napi_get_value_int64(env, _args[2], &offset_i);
     napi_get_value_int64(env, _args[3], &size_i);
     if (!staged || size_i <= 0) return NULL;
-    void* mapped = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    /* For Doe-native buffers pfn_wgpuBufferGetMappedRange resolves to Dawn (returns NULL, ~50us).
+     * pfn_wgpuBufferGetConstMappedRange routes to doeNativeBufferGetConstMappedRange (fast, writable). */
+    void* mapped = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
     if (!mapped) NAPI_THROW(env, "bufferFlushStagedRange: mapped range unavailable");
     memcpy(mapped, staged, (size_t)size_i);
     return NULL;
