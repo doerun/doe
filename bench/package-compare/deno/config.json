@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "description": "Deno WebGPU benchmark: Doe (@simulatte/webgpu via node-compat) vs deno-webgpu (built-in wgpu)",
+  "providers": {
+    "doe": {
+      "package": "@simulatte/webgpu",
+      "source": "packages/webgpu/src/index.js",
+      "notes": "Doe N-API provider loaded via Deno node-compat layer"
+    },
+    "deno-webgpu": {
+      "package": "built-in",
+      "notes": "Deno built-in WebGPU backed by wgpu (requires --unstable-webgpu)"
+    }
+  },
+  "run": {
+    "iterations": 50,
+    "warmup": 5,
+    "minTimedSamples": 19,
+    "outDir": "bench/out/deno-doe-vs-webgpu"
+  },
+  "comparability": {
+    "timingSource": "performance.now",
+    "timingClass": "operation",
+    "notes": "Both providers measured at JS API boundary via performance.now(). Apples-to-apples: same workload code, same dispatch geometry, same buffer sizes."
+  },
+  "claimability": {
+    "minSamples": 19,
+    "requireP50Faster": true,
+    "requireP95Faster": true,
+    "notes": "Doe must beat deno-webgpu at both p50 and p95 with >=19 timed samples."
+  }
+}

@@ -1,5 +1,5 @@
 import * as ffi from "../../src/bun-ffi.js";
-import { runSurfaceConformance } from "./test-integration-surface.js";
+import { runSurfaceConformance } from "../support/surface-conformance.js";
 
 const { passed, failed } = await runSurfaceConformance(ffi, "bun-ffi");
 

@@ -71,8 +71,8 @@
     "prebuild": "node scripts/prebuild.js",
     "test": "npm run test:smoke && npm run test:integration",
     "test:smoke": "node test/smoke/test-smoke-load.js",
-    "test:integration": "node test/integration/test-integration-runtime.js && node test/integration/test-integration-surface-node.js && node test/integration/test-integration-api.js && node test/integration/test-integration-pack.js && node test/integration/test-integration-layers.mjs && node test/integration/test-integration-worker-thread.js && node test/integration/test-integration-queue-submission.js",
-    "test:integration:bun": "bun test/integration/test-integration-surface-bun.js && bun test/integration/test-integration-bun-ffi.js"
+    "test:integration": "node test/integration/run-integration.js --runtime node",
+    "test:integration:bun": "bun test/integration/run-integration.js --runtime bun"
   },
   "keywords": [
     "webgpu",
