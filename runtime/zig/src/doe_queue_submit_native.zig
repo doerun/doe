@@ -17,6 +17,12 @@ const MAX_DEFERRED_RESOLVES = native.MAX_DEFERRED_RESOLVES;
 const VERTEX_BUFFER_SLOT_BASE = native.VERTEX_BUFFER_SLOT_BASE;
 const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
 
+const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
+// Metal buffer slot where _doe_sizes is bound — must match MSL_SIZES_SLOT in emit_msl_ir.zig.
+const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
+// Size of the _doe_sizes buffer: 32 uint32 slots × 4 bytes.
+const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
+
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
@@ -30,6 +36,7 @@ const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_co
 const metal_bridge_command_buffer_encode_signal_event = bridge.metal_bridge_command_buffer_encode_signal_event;
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
+const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_release = bridge.metal_bridge_release;
 const metal_bridge_render_encoder_set_bind_buffer = bridge.metal_bridge_render_encoder_set_bind_buffer;
@@ -145,11 +152,26 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
             switch (cmd) {
                 .dispatch => |d| {
                     var bufs_copy = d.bufs;
+                    var buf_count = d.buf_count;
+                    var sizes_mtl: ?*anyopaque = null;
+                    if (d.needs_sizes_buf) {
+                        // Allocate a shared MTLBuffer for _doe_sizes and fill it with byte sizes.
+                        sizes_mtl = metal_bridge_device_new_buffer_shared(q.dev.mtl_device, SIZES_BUF_BYTES);
+                        if (sizes_mtl) |smtl| {
+                            if (metal_bridge_buffer_contents(smtl)) |ptr| {
+                                const sizes: *[MSL_SIZES_SLOT + 1]u32 = @ptrCast(@alignCast(ptr));
+                                for (0..MSL_SIZES_SLOT + 1) |i| sizes[i] = 0;
+                                for (0..d.buf_count) |i| sizes[i] = @intCast(d.buf_sizes[i]);
+                            }
+                            bufs_copy[MSL_SIZES_SLOT] = smtl;
+                            if (buf_count <= MSL_SIZES_SLOT) buf_count = MSL_SIZES_SLOT + 1;
+                        }
+                    }
                     metal_bridge_cmd_buf_encode_compute_dispatch(
                         mtl_cmd,
                         d.pso,
                         @as(?[*]?*anyopaque, &bufs_copy),
-                        d.buf_count,
+                        buf_count,
                         d.x,
                         d.y,
                         d.z,
@@ -157,6 +179,7 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                         d.wg_y,
                         d.wg_z,
                     );
+                    if (sizes_mtl) |smtl| metal_bridge_release(smtl);
                     has_gpu_work = true;
                 },
                 .copy_buf => |c| {
@@ -246,6 +269,10 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                         r.target,
                         r.depth_target,
                         if (r.depth_write_enabled) 1 else 0,
+                        r.clear_r,
+                        r.clear_g,
+                        r.clear_b,
+                        r.clear_a,
                     );
                     if (renc) |e| {
                         metal_bridge_render_encoder_set_front_facing(e, r.front_face);

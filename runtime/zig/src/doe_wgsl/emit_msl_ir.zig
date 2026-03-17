@@ -12,6 +12,9 @@ pub const EmitError = error{
 
 pub const MAX_OUTPUT: usize = 128 * 1024;
 const BINDINGS_PER_GROUP: u32 = 16;
+// Reserved Metal buffer slot for the runtime array sizes buffer (_doe_sizes).
+// Must match MSL_SIZES_SLOT in doe_queue_submit_native.zig.
+pub const MSL_SIZES_SLOT: u32 = 30;
 
 pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
     var emitter = Emitter{ .module = module, .buf = out };
@@ -27,6 +30,18 @@ const Emitter = struct {
 
     fn msl_binding_slot(_: *Emitter, binding: ir.BindingPoint) u32 {
         return binding.group * BINDINGS_PER_GROUP + binding.binding;
+    }
+
+    // Returns true if any global runtime array uses arrayLength — signals that
+    // _doe_sizes [[buffer(MSL_SIZES_SLOT)]] must be added to the kernel signature.
+    fn module_needs_sizes_param(self: *Emitter) bool {
+        for (self.module.globals.items) |global| {
+            switch (self.module.types.get(global.ty)) {
+                .array => |arr| if (arr.len == null and stage_render.runtime_array_needs_size_param(self, global.name)) return true,
+                else => {},
+            }
+        }
+        return false;
     }
 
     fn emit_root(self: *Emitter) EmitError!void {
@@ -117,6 +132,14 @@ const Emitter = struct {
                 try self.emit_bound_global_param(global);
                 need_comma = true;
             }
+            // Add _doe_sizes buffer for runtime array length queries (arrayLength).
+            if (stage.? == .compute and self.module_needs_sizes_param()) {
+                if (need_comma) try self.write(", ");
+                try self.write("constant uint* _doe_sizes [[buffer(");
+                try self.write_u32(MSL_SIZES_SLOT);
+                try self.write(")]]");
+                need_comma = true;
+            }
         }
         for (function.params.items) |param| {
             if (need_comma) try self.write(", ");
@@ -164,16 +187,6 @@ const Emitter = struct {
                 try self.write(" [[buffer(");
                 try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
-                switch (self.module.types.get(global.ty)) {
-                    .array => |arr| if (arr.len == null and stage_render.runtime_array_needs_size_param(self, global.name)) {
-                        try self.write(", uint ");
-                        try self.write(global.name);
-                        try self.write("_size [[buffer_size(");
-                        try self.write_u32(self.msl_binding_slot(binding));
-                        try self.write(")]]");
-                    },
-                    else => {},
-                }
                 return;
             },
             else => {},
@@ -381,10 +394,20 @@ const Emitter = struct {
             },
             .call => |call| try self.emit_call(function, expr.ty, call),
             .construct => |construct| {
-                try self.emit_type(construct.ty);
-                try self.write("(");
-                try self.emit_expr_list(function, construct.args);
-                try self.write(")");
+                switch (self.module.types.get(construct.ty)) {
+                    .array => {
+                        // MSL array aggregate init: {a, b, c} — no constructor function syntax.
+                        try self.write("{");
+                        try self.emit_expr_list(function, construct.args);
+                        try self.write("}");
+                    },
+                    else => {
+                        try self.emit_type(construct.ty);
+                        try self.write("(");
+                        try self.emit_expr_list(function, construct.args);
+                        try self.write(")");
+                    },
+                }
             },
             .member => |member| {
                 try self.emit_expr(function, member.base);
@@ -595,9 +618,11 @@ const Emitter = struct {
                         switch (self.module.types.get(global.ty)) {
                             .array => |arr| {
                                 if (arr.len != null) return error.InvalidIr;
-                                try self.write("uint(");
-                                try self.write(global.name);
-                                try self.write("_size / sizeof(");
+                                const binding = global.binding orelse return error.InvalidIr;
+                                // _doe_sizes[N] contains the byte size of buffer slot N.
+                                try self.write("uint(_doe_sizes[");
+                                try self.write_u32(self.msl_binding_slot(binding));
+                                try self.write("] / sizeof(");
                                 try self.emit_type(arr.elem);
                                 try self.write("))");
                                 return;
@@ -619,6 +644,10 @@ const Emitter = struct {
                 try self.write("))");
                 return;
             }
+            if (std.mem.eql(u8, call.name, "min") or std.mem.eql(u8, call.name, "max") or std.mem.eql(u8, call.name, "clamp")) {
+                try self.emit_concrete_numeric_builtin(function, result_ty, call);
+                return;
+            }
             if (maps.msl_builtin_passthrough_name(call.name)) |mapped_name| {
                 try self.write(mapped_name);
                 try self.write("(");
@@ -634,6 +663,22 @@ const Emitter = struct {
         try self.write(")");
     }
 
+    fn emit_concrete_numeric_builtin(
+        self: *Emitter,
+        function: ir.Function,
+        result_ty: ir.TypeId,
+        call: @FieldType(ir.Expr, "call"),
+    ) EmitError!void {
+        try self.write(call.name);
+        try self.write("(");
+        var i: u32 = 0;
+        while (i < call.args.len) : (i += 1) {
+            if (i > 0) try self.write(", ");
+            try self.emit_expr_coerced(function, function.expr_args.items[call.args.start + i], result_ty);
+        }
+        try self.write(")");
+    }
+
     fn emit_atomic_fetch_explicit(self: *Emitter, function: ir.Function, call: @FieldType(ir.Expr, "call"), name: []const u8) EmitError!void {
         if (call.args.len != 2) return error.InvalidIr;
         try self.write(name);
@@ -642,6 +687,30 @@ const Emitter = struct {
         try self.write("), ");
         try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
         try self.write(", memory_order_relaxed)");
+    }
+
+    fn emit_expr_coerced(self: *Emitter, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId) EmitError!void {
+        if (self.expr_needs_concrete_numeric_cast(function, expr_id, target_ty)) {
+            try self.emit_type(target_ty);
+            try self.write("(");
+            try self.emit_expr(function, expr_id);
+            try self.write(")");
+            return;
+        }
+        try self.emit_expr(function, expr_id);
+    }
+
+    fn expr_needs_concrete_numeric_cast(self: *Emitter, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId) bool {
+        const expr_ty = function.exprs.items[expr_id].ty;
+        if (expr_ty == target_ty) return false;
+        return switch (self.module.types.get(expr_ty)) {
+            .scalar => |expr_scalar| switch (self.module.types.get(target_ty)) {
+                .scalar => |target_scalar| (expr_scalar == .abstract_int and (target_scalar == .i32 or target_scalar == .u32)) or
+                    (expr_scalar == .abstract_float and (target_scalar == .f32 or target_scalar == .f16)),
+                else => false,
+            },
+            else => false,
+        };
     }
 
     fn emit_expr_list(self: *Emitter, function: ir.Function, range: ir.Range) EmitError!void {

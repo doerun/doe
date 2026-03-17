@@ -60,6 +60,9 @@ pub const WGPUTextureViewDimension = u32;
 pub const WGPUBool = u32;
 pub const WGPUSType = u32;
 pub const WGPUSType_ShaderSourceWGSL: WGPUSType = 0x00000002;
+pub const WGPUSType_ShaderSourceMSL: WGPUSType = 0x00000003;
+pub const WGPUSType_ShaderSourceSPIRV: WGPUSType = 0x00000004;
+pub const WGPUSType_ShaderSourceHLSL: WGPUSType = 0x00000005;
 pub const WGPU_STRLEN = std.math.maxInt(usize);
 pub const WGPU_FALSE: WGPUBool = 0;
 pub const WGPU_TRUE: WGPUBool = 1;
@@ -600,6 +603,36 @@ pub const WGPUShaderModuleDescriptor = extern struct {
 pub const WGPUShaderSourceWGSL = extern struct {
     chain: WGPUChainedStruct,
     code: WGPUStringView,
+};
+
+/// Pre-translated MSL source (Metal backend). Skips WGSL compilation.
+/// Binding metadata is unavailable; binding_count on the resulting shader module is 0.
+pub const WGPUShaderSourceMSL = extern struct {
+    chain: WGPUChainedStruct,
+    code: WGPUStringView,
+    workgroup_size_x: u32, // 0 = unknown (defaults to 1)
+    workgroup_size_y: u32,
+    workgroup_size_z: u32,
+};
+
+/// Pre-compiled SPIR-V binary (Vulkan backend).
+/// code points to a u32 word array; code_size is byte count (must be multiple of 4).
+pub const WGPUShaderSourceSPIRV = extern struct {
+    chain: WGPUChainedStruct,
+    code: [*]const u32,
+    code_size: u32,
+    workgroup_size_x: u32,
+    workgroup_size_y: u32,
+    workgroup_size_z: u32,
+};
+
+/// Pre-translated HLSL source (D3D12 backend, goes through DXC at pipeline creation).
+pub const WGPUShaderSourceHLSL = extern struct {
+    chain: WGPUChainedStruct,
+    code: WGPUStringView,
+    workgroup_size_x: u32,
+    workgroup_size_y: u32,
+    workgroup_size_z: u32,
 };
 
 pub const WGPUComputeState = extern struct {

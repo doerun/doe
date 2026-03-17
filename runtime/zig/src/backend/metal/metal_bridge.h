@@ -143,7 +143,11 @@ MetalHandle metal_bridge_cmd_buf_render_encoder(
     MetalHandle pipeline,
     MetalHandle target,
     MetalHandle depth_target,
-    int         use_depth_store);
+    int         use_depth_store,
+    double      clear_r,
+    double      clear_g,
+    double      clear_b,
+    double      clear_a);
 void metal_bridge_render_encoder_set_bind_buffer(
     MetalHandle encoder,
     uint32_t    slot,

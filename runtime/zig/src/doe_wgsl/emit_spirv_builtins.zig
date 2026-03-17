@@ -26,6 +26,27 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
     if (std.mem.eql(u8, call.name, "textureSampleLevel")) {
         return try emit_texture_sample(self, call, result_ty, true);
     }
+    if (std.mem.eql(u8, call.name, "textureSampleCompare")) {
+        return try emit_texture_sample_compare(self, call, result_ty, false);
+    }
+    if (std.mem.eql(u8, call.name, "textureSampleCompareLevel")) {
+        return try emit_texture_sample_compare(self, call, result_ty, true);
+    }
+    if (std.mem.eql(u8, call.name, "textureGather")) {
+        return try emit_texture_gather(self, call, result_ty);
+    }
+    if (std.mem.eql(u8, call.name, "textureGatherCompare")) {
+        return try emit_texture_gather_compare(self, call, result_ty);
+    }
+    if (std.mem.eql(u8, call.name, "textureSampleGrad")) {
+        return try emit_texture_sample_grad(self, call, result_ty);
+    }
+    if (std.mem.eql(u8, call.name, "textureSampleOffset")) {
+        return try emit_texture_sample_offset(self, call, result_ty);
+    }
+    if (std.mem.eql(u8, call.name, "textureSampleLevelOffset")) {
+        return try emit_texture_sample_level_offset(self, call, result_ty);
+    }
     if (std.mem.eql(u8, call.name, "textureStore")) {
         try emit_texture_store(self, call);
         return 0;
@@ -129,7 +150,10 @@ const TextureOpcode = struct {
     const SampledImage: u16 = 86;
     const ImageSampleImplicitLod: u16 = 87;
     const ImageSampleExplicitLod: u16 = 88;
+    const ImageSampleDrefImplicitLod: u16 = 90;
+    const ImageSampleDrefExplicitLod: u16 = 91;
     const ImageGather: u16 = 96;
+    const ImageDrefGather: u16 = 97;
     const ImageQuerySizeLod: u16 = 103;
     const ImageQuerySize: u16 = 104;
 };
@@ -279,6 +303,182 @@ fn emit_texture_sample(self: anytype, call: anytype, result_ty: ir.TypeId, expli
             coords_id,
             spirv.ImageOperandsMask.Lod,
             try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]),
+        },
+    );
+}
+
+fn emit_texture_sample_compare(self: anytype, call: anytype, result_ty: ir.TypeId, explicit_lod: bool) !u32 {
+    const expected_arg_count: u32 = 4;
+    if (call.args.len != expected_arg_count) return error.InvalidIr;
+
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const sampler_expr = self.function.expr_args.items[call.args.start + 1];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const sampler_id = try self.emit_value_expr(sampler_expr);
+    const image_type = try self.emitter.lower_type(self.function.exprs.items[texture_expr].ty);
+    const sampled_image_type = try self.emitter.lower_sampled_image_type(image_type);
+    const sampled_image_id = try emit_result_inst(
+        self,
+        TextureOpcode.SampledImage,
+        sampled_image_type,
+        &.{ image_id, sampler_id },
+    );
+
+    const coords_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+    const dref_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]);
+
+    if (!explicit_lod) {
+        return try emit_result_inst(
+            self,
+            TextureOpcode.ImageSampleDrefImplicitLod,
+            try self.emitter.lower_type(result_ty),
+            &.{ sampled_image_id, coords_id, dref_id },
+        );
+    }
+
+    const lod_zero = try self.emitter.builder.const_f32_bits(@as(u32, @bitCast(@as(f32, 0.0))));
+    return try emit_result_inst(
+        self,
+        TextureOpcode.ImageSampleDrefExplicitLod,
+        try self.emitter.lower_type(result_ty),
+        &.{ sampled_image_id, coords_id, dref_id, spirv.ImageOperandsMask.Lod, lod_zero },
+    );
+}
+
+fn emit_texture_gather(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len != 4) return error.InvalidIr;
+
+    const component_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start]);
+    const texture_expr = self.function.expr_args.items[call.args.start + 1];
+    const sampler_expr = self.function.expr_args.items[call.args.start + 2];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const sampler_id = try self.emit_value_expr(sampler_expr);
+    const image_type = try self.emitter.lower_type(self.function.exprs.items[texture_expr].ty);
+    const sampled_image_type = try self.emitter.lower_sampled_image_type(image_type);
+    const sampled_image_id = try emit_result_inst(
+        self,
+        TextureOpcode.SampledImage,
+        sampled_image_type,
+        &.{ image_id, sampler_id },
+    );
+
+    const coords_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]);
+    return try emit_result_inst(
+        self,
+        TextureOpcode.ImageGather,
+        try self.emitter.lower_type(result_ty),
+        &.{ sampled_image_id, coords_id, component_id },
+    );
+}
+
+fn emit_texture_gather_compare(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len != 4) return error.InvalidIr;
+
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const sampler_expr = self.function.expr_args.items[call.args.start + 1];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const sampler_id = try self.emit_value_expr(sampler_expr);
+    const image_type = try self.emitter.lower_type(self.function.exprs.items[texture_expr].ty);
+    const sampled_image_type = try self.emitter.lower_sampled_image_type(image_type);
+    const sampled_image_id = try emit_result_inst(
+        self,
+        TextureOpcode.SampledImage,
+        sampled_image_type,
+        &.{ image_id, sampler_id },
+    );
+
+    const coords_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+    const dref_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]);
+    return try emit_result_inst(
+        self,
+        TextureOpcode.ImageDrefGather,
+        try self.emitter.lower_type(result_ty),
+        &.{ sampled_image_id, coords_id, dref_id },
+    );
+}
+
+fn emit_texture_sample_grad(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len != 5) return error.InvalidIr;
+
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const sampler_expr = self.function.expr_args.items[call.args.start + 1];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const sampler_id = try self.emit_value_expr(sampler_expr);
+    const image_type = try self.emitter.lower_type(self.function.exprs.items[texture_expr].ty);
+    const sampled_image_type = try self.emitter.lower_sampled_image_type(image_type);
+    const sampled_image_id = try emit_result_inst(
+        self,
+        TextureOpcode.SampledImage,
+        sampled_image_type,
+        &.{ image_id, sampler_id },
+    );
+
+    const coords_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+    const ddx_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]);
+    const ddy_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 4]);
+    return try emit_result_inst(
+        self,
+        TextureOpcode.ImageSampleExplicitLod,
+        try self.emitter.lower_type(result_ty),
+        &.{ sampled_image_id, coords_id, spirv.ImageOperandsMask.Grad, ddx_id, ddy_id },
+    );
+}
+
+fn emit_texture_sample_offset(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len != 4) return error.InvalidIr;
+
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const sampler_expr = self.function.expr_args.items[call.args.start + 1];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const sampler_id = try self.emit_value_expr(sampler_expr);
+    const image_type = try self.emitter.lower_type(self.function.exprs.items[texture_expr].ty);
+    const sampled_image_type = try self.emitter.lower_sampled_image_type(image_type);
+    const sampled_image_id = try emit_result_inst(
+        self,
+        TextureOpcode.SampledImage,
+        sampled_image_type,
+        &.{ image_id, sampler_id },
+    );
+
+    const coords_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+    const offset_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]);
+    return try emit_result_inst(
+        self,
+        TextureOpcode.ImageSampleImplicitLod,
+        try self.emitter.lower_type(result_ty),
+        &.{ sampled_image_id, coords_id, spirv.ImageOperandsMask.ConstOffset, offset_id },
+    );
+}
+
+fn emit_texture_sample_level_offset(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len != 5) return error.InvalidIr;
+
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const sampler_expr = self.function.expr_args.items[call.args.start + 1];
+    const image_id = try self.emit_value_expr(texture_expr);
+    const sampler_id = try self.emit_value_expr(sampler_expr);
+    const image_type = try self.emitter.lower_type(self.function.exprs.items[texture_expr].ty);
+    const sampled_image_type = try self.emitter.lower_sampled_image_type(image_type);
+    const sampled_image_id = try emit_result_inst(
+        self,
+        TextureOpcode.SampledImage,
+        sampled_image_type,
+        &.{ image_id, sampler_id },
+    );
+
+    const coords_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+    const level_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]);
+    const offset_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 4]);
+    return try emit_result_inst(
+        self,
+        TextureOpcode.ImageSampleExplicitLod,
+        try self.emitter.lower_type(result_ty),
+        &.{
+            sampled_image_id,
+            coords_id,
+            spirv.ImageOperandsMask.Lod | spirv.ImageOperandsMask.ConstOffset,
+            level_id,
+            offset_id,
         },
     );
 }

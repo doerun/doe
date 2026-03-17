@@ -34,6 +34,10 @@ const native_shader_render_test = @import("tests/core/native_shader_render_test.
 const execution_test = @import("tests/core/execution_test.zig");
 const multi_adapter_test = @import("tests/core/multi_adapter_test.zig");
 const pipeline_cache_test = @import("tests/core/pipeline_cache_test.zig");
+const native_api_core_test = @import("tests/core/native_api_core_test.zig");
+const capability_runtime_test = @import("tests/core/capability_runtime_test.zig");
+const handle_safety_test = @import("tests/core/handle_safety_test.zig");
+const precompiled_shader_test = @import("tests/core/precompiled_shader_test.zig");
 
 comptime {
     _ = metal_mod_integration_test;
@@ -72,4 +76,8 @@ comptime {
     _ = execution_test;
     _ = multi_adapter_test;
     _ = pipeline_cache_test;
+    _ = native_api_core_test;
+    _ = capability_runtime_test;
+    _ = handle_safety_test;
+    _ = precompiled_shader_test;
 }

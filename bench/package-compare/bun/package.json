@@ -1,0 +1,9 @@
+{
+  "name": "fawn-bench-bun-package-compare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "bun-webgpu": "^0.1.5"
+  }
+}

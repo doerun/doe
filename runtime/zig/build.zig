@@ -606,4 +606,42 @@ pub fn build(b: *std.Build) void {
     const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
     d3d12_test_step.dependOn(&import_fence_check.step);
     d3d12_test_step.dependOn(&run_d3d12_tests.step);
+
+    const shader_bench_exe = b.addExecutable(.{
+        .name = "doe-shader-bench",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/doe_wgsl/bench.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    shader_bench_exe.linkLibC();
+    const install_shader_bench = b.addInstallArtifact(shader_bench_exe, .{});
+    const shader_bench_step = b.step("bench-shader", "Build the WGSL shader compiler stage microbenchmark");
+    shader_bench_step.dependOn(&install_shader_bench.step);
+
+    const run_shader_bench = b.addRunArtifact(shader_bench_exe);
+    if (b.args) |args| run_shader_bench.addArgs(args);
+    const shader_bench_run_step = b.step("bench-shader-run", "Build and run the WGSL shader compiler stage microbenchmark");
+    shader_bench_run_step.dependOn(&install_shader_bench.step);
+    shader_bench_run_step.dependOn(&run_shader_bench.step);
+
+    const compilation_bench_exe = b.addExecutable(.{
+        .name = "doe-compilation-bench",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/doe_wgsl/bench_compilation.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    compilation_bench_exe.linkLibC();
+    const install_compilation_bench = b.addInstallArtifact(compilation_bench_exe, .{});
+    const compilation_bench_step = b.step("bench-compilation", "Build the WGSL compilation latency benchmark");
+    compilation_bench_step.dependOn(&install_compilation_bench.step);
+
+    const run_compilation_bench = b.addRunArtifact(compilation_bench_exe);
+    if (b.args) |args| run_compilation_bench.addArgs(args);
+    const compilation_bench_run_step = b.step("bench-compilation-run", "Build and run the WGSL compilation latency benchmark");
+    compilation_bench_run_step.dependOn(&install_compilation_bench.step);
+    compilation_bench_run_step.dependOn(&run_compilation_bench.step);
 }

@@ -1,9 +1,9 @@
 0
 15678 66713173 1760154801000000000 f0bdf7a0d76753ffab1319907ec69cf1 1 compiler/test_runner.zig
-18189 75967466 1773706839837355783 9ba942f1bc67325cf446c6d6af291abd 0 src/doe_wgsl/mod.zig
+19821 76089951 1773761706017314205 9a9f252ea06686c4df33e4e0f6ca959d 0 src/doe_wgsl/mod.zig
 22376 66732360 1760154801000000000 2d968f90418b6afe5ba91eaa2e18ba71 1 ubsan_rt.zig
 7957 66732289 1760154801000000000 0ebbb46b337b65e85e7d177cfc93d2ca 1 std/std.zig
-18189 75967466 1773706839837355783 9ba942f1bc67325cf446c6d6af291abd 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/mod.zig
+19821 76089951 1773761706017314205 9a9f252ea06686c4df33e4e0f6ca959d 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/mod.zig
 2525 66731745 1760154801000000000 71e0dabdb301ba10f8ca420941767e70 1 std/BitStack.zig
 100909 66731777 1760154801000000000 13a2e2104f4f0987e695d4e96ddf1e3d 1 std/Build.zig
 4266 66731857 1760154801000000000 16fdba428de22eb1305e855dec42f9a9 1 std/buf_map.zig
@@ -82,6 +82,7 @@
 13962 75966584 1773706706053311904 2c9c889025be93fcefae4b0056039b68 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/ir.zig
 26860 75087738 1773674524602505799 231eeca086594d162b88991f59ea8a0a 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/ir_builder.zig
 8473 75087768 1773674524626994566 de7a4eb31effdc465219a0934afc266c 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/ir_validate.zig
+16711 76089830 1773761634175401120 b6be375fc794936987c0a47a5792cc71 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/ir_transform_robustness.zig
 444 75087765 1773674524625773436 80a99b767589e4560287d38547b53406 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_msl.zig
 5116 75695578 1773698636379489297 7eaf720b8ec6c456d7afa5a7470fb9b3 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_msl_subgroups.zig
 30036 75966048 1773706660293876567 fcd77e76385d2ab491dff942dab531db 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_msl_shared.zig
@@ -93,10 +94,6 @@
 13939 75087766 1773674524626078812 bf96a2b5aded613f03af12e555cad883 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_spirv_stages.zig
 14317 75087755 1773674524608508282 e2708d116db8935b06f2f35257e76d55 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_dxil.zig
 23760 75087753 1773674524607754654 faf00980c92f91dcf8d6ff1bff221fc7 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/doe_wgsl_msl.zig
-58323 75087740 1773674524603469511 a34700ae9bd567e2ab7805fb5a1ed73e 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/mod_test.zig
-27734 75702851 1773705428568818444 5b11aefe575f5aa4aa57bd14ff07edb0 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/shader_emit_test.zig
-17949 75702867 1773705505484827011 febac80c7fdf39514882a663ec9ab67a 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/shader_sema_test.zig
-35803 75967368 1773706830285537793 9268404586a0cc266d3821c9bcb04a3d 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/shader_hlsl_spirv_test.zig
 59803 66731751 1760154801000000000 b6406a99c6bcfa6765bfb08eafcbff0d 1 std/Build/Cache.zig
 38694 66731771 1760154801000000000 4bafc6be1344a4b0b4bfce1abc099568 1 std/Build/Step.zig
 26376 66731753 1760154801000000000 bb934510edbc055949ffff1646e5e1e6 1 std/Build/Module.zig
@@ -366,7 +363,7 @@
 9629 75966588 1773706706054059111 58c44eeb3763d2100f8983efe7deb7d4 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/sema_helpers.zig
 4895 75117194 1773681392229519999 4108165127ae150064d426f42298f8c9 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/sema_resolve.zig
 3099 75696841 1773700181728821613 8bd26f8b1d3d041c5e74a2df1098035d 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/sema_typeutils.zig
-34815 75966580 1773706706052543154 65d3d7f16fb7c98678c9c00b4878dc7e 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_msl_ir.zig
+35300 76033739 1773758082143257283 a89f5c842360906947aa47d005e925f4 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_msl_ir.zig
 5369 75087764 1773674524625527518 b4f503348d23e4d9b9a7b7c50c1a71b1 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_hlsl_maps.zig
 4201 75087769 1773674524627511610 f0c40672b6fef3670383c0e1324e75f6 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/emit_hlsl_stage.zig
 31393 75966590 1773706706054491986 99fff9a3361523fffb7a2be222690e81 0 /Users/xyz/deco/fawn/runtime/zig/src/doe_wgsl/spirv_builder.zig

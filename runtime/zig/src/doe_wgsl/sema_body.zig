@@ -181,6 +181,9 @@ pub fn analyze_unary(self: anytype, node: Node, body: anytype) !ir.TypeId {
     return switch (self.module.tree.tokens.items[node.main_token].tag) {
         .@"-", .@"~" => operand_ty,
         .@"!" => self.module.bool_type,
+        // Address-of (&expr): pointer types are not tracked by sema; return the
+        // underlying type so callers (e.g. arrayLength(&buf)) can type-check.
+        .@"&" => operand_ty,
         else => error.InvalidWgsl,
     };
 }

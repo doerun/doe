@@ -38,7 +38,15 @@ pub export fn doeNativeComputePassSetBindGroup(pass_raw: ?*anyopaque, index: u32
 pub export fn doeNativeComputePassDispatch(pass_raw: ?*anyopaque, x: u32, y: u32, z: u32) callconv(.c) void {
     const pass = cast(DoeComputePass, pass_raw) orelse return;
     const pip = pass.pipeline orelse return;
-    var cmd = RecordedCmd{ .dispatch = .{ .pso = pip.mtl_pso, .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND, .buf_count = 0, .x = x, .y = y, .z = z, .wg_x = pip.wg_x, .wg_y = pip.wg_y, .wg_z = pip.wg_z } };
+    var cmd = RecordedCmd{ .dispatch = .{
+        .pso = pip.mtl_pso,
+        .needs_sizes_buf = pip.needs_sizes_buf,
+        .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
+        .buf_sizes = [_]u64{0} ** MAX_FLAT_BIND,
+        .buf_count = 0,
+        .x = x, .y = y, .z = z,
+        .wg_x = pip.wg_x, .wg_y = pip.wg_y, .wg_z = pip.wg_z,
+    } };
     var total: u32 = 0;
     for (pass.bind_groups, 0..) |maybe_bg, group_index| {
         const bg = maybe_bg orelse continue;
@@ -46,6 +54,7 @@ pub export fn doeNativeComputePassDispatch(pass_raw: ?*anyopaque, x: u32, y: u32
             const slot = group_index * MAX_BIND + i;
             if (slot < MAX_FLAT_BIND) {
                 cmd.dispatch.bufs[slot] = bg.buffers[i];
+                cmd.dispatch.buf_sizes[slot] = bg.buffer_sizes[i];
                 if (slot + 1 > total) total = @intCast(slot + 1);
             }
         }
@@ -88,7 +97,9 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
     const indirect_buf = cast(DoeBuffer, buf_raw) orelse return;
     var cmd = RecordedCmd{ .dispatch_indirect = .{
         .pso = pip.mtl_pso,
+        .needs_sizes_buf = pip.needs_sizes_buf,
         .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
+        .buf_sizes = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_count = 0,
         .indirect_buf = toOpaque(indirect_buf),
         .offset = offset,
@@ -103,6 +114,7 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
             const slot = group_index * MAX_BIND + i;
             if (slot < MAX_FLAT_BIND) {
                 cmd.dispatch_indirect.bufs[slot] = bg.buffers[i];
+                cmd.dispatch_indirect.buf_sizes[slot] = bg.buffer_sizes[i];
                 if (slot + 1 > total) total = @intCast(slot + 1);
             }
         }

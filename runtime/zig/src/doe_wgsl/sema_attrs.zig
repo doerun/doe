@@ -74,6 +74,46 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     if (std.mem.eql(u8, name, "workgroupBarrier") or std.mem.eql(u8, name, "storageBarrier")) return self.module.void_type;
     if (std.mem.eql(u8, name, "arrayLength")) return self.module.u32_type;
     if (std.mem.eql(u8, name, "textureStore")) return self.module.void_type;
+    if (std.mem.eql(u8, name, "textureSample") or std.mem.eql(u8, name, "textureSampleLevel") or std.mem.eql(u8, name, "textureSampleGrad") or std.mem.eql(u8, name, "textureSampleOffset") or std.mem.eql(u8, name, "textureSampleLevelOffset")) {
+        if (arg_types.len == 0) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_3d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_cube => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_2d_array => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            else => error.UnsupportedBuiltin,
+        };
+    }
+    if (std.mem.eql(u8, name, "textureSampleCompare") or std.mem.eql(u8, name, "textureSampleCompareLevel")) {
+        return try self.module.types.intern(.{ .scalar = .f32 });
+    }
+    if (std.mem.eql(u8, name, "textureGather")) {
+        if (arg_types.len < 2) return error.UnsupportedBuiltin;
+        // textureGather(component, texture, sampler, coords) — first arg is component u32
+        return switch (self.module.types.get(arg_types[1])) {
+            .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_cube => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_2d_array => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            else => error.UnsupportedBuiltin,
+        };
+    }
+    if (std.mem.eql(u8, name, "textureGatherCompare")) {
+        return try self.module.types.intern(.{ .vector = .{ .elem = try self.module.types.intern(.{ .scalar = .f32 }), .len = 4 } });
+    }
+    if (std.mem.eql(u8, name, "textureDimensions")) {
+        if (arg_types.len == 0) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .texture_2d, .texture_2d_array, .texture_depth_2d, .texture_multisampled_2d, .storage_texture_2d => blk: {
+                const u32_ty = try self.module.types.intern(.{ .scalar = .u32 });
+                break :blk try self.module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 2 } });
+            },
+            .texture_3d, .texture_cube, .texture_depth_cube => blk: {
+                const u32_ty = try self.module.types.intern(.{ .scalar = .u32 });
+                break :blk try self.module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 3 } });
+            },
+            else => error.UnsupportedBuiltin,
+        };
+    }
     if (std.mem.eql(u8, name, "dot")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         const first = self.module.types.get(arg_types[0]);

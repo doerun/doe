@@ -1000,7 +1000,7 @@ test "translate arrayLength to HLSL helper" {
     try std.testing.expect(std.mem.indexOf(u8, hlsl, "doe_arrayLength_data()") != null);
 }
 
-test "translate arrayLength to MSL buffer-size helper" {
+test "translate arrayLength to MSL runtime sizes helper" {
     const source =
         \\@group(0) @binding(0) var<storage, read> data: array<f32>;
         \\@group(0) @binding(1) var<storage, read_write> out: array<u32>;
@@ -1015,8 +1015,8 @@ test "translate arrayLength to MSL buffer-size helper" {
     const len = try translateToMsl(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
     const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "data_size [[buffer_size(0)]]") != null);
-    try std.testing.expect(std.mem.indexOf(u8, msl, "uint(data_size / sizeof(float))") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "constant uint* _doe_sizes [[buffer(30)]]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "uint(_doe_sizes[0] / sizeof(float))") != null);
 }
 
 test "translate arrayLength to SPIR-V" {

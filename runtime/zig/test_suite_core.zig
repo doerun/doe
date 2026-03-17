@@ -17,6 +17,10 @@ const execution_test = @import("tests/core/execution_test.zig");
 const multi_adapter_test = @import("tests/core/multi_adapter_test.zig");
 const pipeline_cache_test = @import("tests/core/pipeline_cache_test.zig");
 const render_bundle_test = @import("tests/core/render_bundle_test.zig");
+const native_api_core_test = @import("tests/core/native_api_core_test.zig");
+const capability_runtime_test = @import("tests/core/capability_runtime_test.zig");
+const handle_safety_test = @import("tests/core/handle_safety_test.zig");
+const precompiled_shader_test = @import("tests/core/precompiled_shader_test.zig");
 
 comptime {
     _ = common_artifact_meta_test;
@@ -38,4 +42,7 @@ comptime {
     _ = multi_adapter_test;
     _ = pipeline_cache_test;
     _ = render_bundle_test;
+    _ = native_api_core_test;
+    _ = capability_runtime_test;
+    _ = handle_safety_test;
 }

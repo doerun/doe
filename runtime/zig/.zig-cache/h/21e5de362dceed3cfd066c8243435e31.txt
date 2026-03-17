@@ -1,5 +1,5 @@
 0
-91432 75697202 1773700484472472248 25f2a4673ef5fae271fc232a555aec42 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.m
+92951 76033764 1773758109252924667 1d07fd9f3141f12d6f2b0f0a88d111cd 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.m
 3299 39704817 1754204360000000000 8909ff4eb50c9c3345cfd9917930061d 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/Metal.h
 847 39704805 1754204360000000000 6ae621f5e043f1fbc40548d53c299f30 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/MTLDefines.h
 14940 39607216 1754184064000000000 4ec834e4a95cf98ab2fd87a0c039787f 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/os/availability.h
@@ -1405,6 +1405,7 @@
 1374 39704850 1756264259000000000 4aad5fb4f4bb4d8285b44861c8a37082 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CATransformLayer.h
 3041 39704894 1756264258000000000 c6b3c5915f6bfadf7257635bc7c29c62 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CAValueFunction.h
 71231 39607376 1754191684000000000 4ad9665152fdf1def769d4d08ec131a5 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/objc/runtime.h
-23381 75697220 1773700494945138079 2f1df1a21107021de40512fbd34eb672 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.h
+23381 75966570 1773706706050373407 2f1df1a21107021de40512fbd34eb672 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.h
 1410 39665718 1754187265000000000 cce15b00641a986fdcb686b2b3ec9d92 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/sched.h
 1977 39665721 1754187266000000000 d399640d53899900253b1cd2cd417752 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/pthread/pthread_impl.h
+11970 39603990 1754455199000000000 4f97971fb614a64acc780a02f5592bd3 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/CommonCrypto/CommonDigest.h

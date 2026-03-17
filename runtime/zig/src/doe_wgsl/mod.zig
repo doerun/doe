@@ -11,6 +11,7 @@ pub const sema = @import("sema.zig");
 pub const ir = @import("ir.zig");
 pub const ir_builder = @import("ir_builder.zig");
 pub const ir_validate = @import("ir_validate.zig");
+pub const ir_transform_robustness = @import("ir_transform_robustness.zig");
 pub const emit_msl = @import("emit_msl.zig");
 pub const emit_msl_subgroups = @import("emit_msl_subgroups.zig");
 pub const emit_msl_shared = @import("emit_msl_shared.zig");
@@ -267,6 +268,9 @@ pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateErro
         setLastError(.ir_validate, TranslateError.InvalidIr, null, null);
         return TranslateError.InvalidIr;
     };
+    ir_transform_robustness.apply(allocator, &module) catch {
+        return TranslateError.OutOfMemory;
+    };
     return module;
 }
 
@@ -426,6 +430,7 @@ test {
     _ = ir;
     _ = ir_builder;
     _ = ir_validate;
+    _ = ir_transform_robustness;
     _ = emit_msl;
     _ = emit_msl_subgroups;
     _ = emit_msl_shared;
@@ -526,4 +531,52 @@ test "translate vertex shader with builtin vertex_index and instance_index to MS
     try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex]]") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "[[vertex_id]]") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "[[instance_id]]") != null);
+}
+
+test "robustness: sized array index emits min() in MSL output" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32, 16>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let idx = gid.x;
+        \\    data[idx] = 1.0;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    const msl = out[0..len];
+    // The robustness pass should have injected min(idx, 15) for the array index.
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min(") != null);
+}
+
+test "robustness: runtime-sized array index emits arrayLength in MSL output" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let idx = gid.x;
+        \\    buf[idx] = 42u;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    const msl = out[0..len];
+    // The robustness pass should have injected min(idx, arrayLength - 1).
+    // In MSL, arrayLength emits through the runtime sizes buffer.
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min(") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes") != null);
+}
+
+test "robustness: runtime-sized constant index coerces abstract int for MSL min()" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\    buf[0] = 42u;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min(uint(0), (uint(_doe_sizes[0] / sizeof(uint)) - 1))") != null);
 }

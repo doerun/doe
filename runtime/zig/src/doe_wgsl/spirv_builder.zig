@@ -35,7 +35,12 @@ pub const ImageFormat = struct {
     pub const Rgba8: u32 = 4;
 };
 
-pub const ImageOperandsMask = struct { pub const Lod: u32 = 0x00000002; };
+pub const ImageOperandsMask = struct {
+    pub const Lod: u32 = 0x00000002;
+    pub const Offset: u32 = 0x00000004;
+    pub const Grad: u32 = 0x00000008;
+    pub const ConstOffset: u32 = 0x00000010;
+};
 
 pub const ExecutionModel = struct {
     pub const Vertex: u32 = 0;

@@ -662,6 +662,9 @@ const fullSurfaceBackend = {
           cmds[1].do,
           cmds[1].sz,
         );
+        // submitComputeDispatchCopy is synchronous: spin-polls until GPU signals.
+        // Mark done so onSubmittedWorkDone() short-circuits rather than calling queueFlush.
+        queue.markSubmittedWorkDone();
         return;
       }
     }

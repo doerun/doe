@@ -157,6 +157,13 @@ pub const DoeShaderModule = struct {
     wg_x: u32 = 0, // @workgroup_size (0 = unknown)
     wg_y: u32 = 0,
     wg_z: u32 = 0,
+    // True when the WGSL source uses arrayLength() — dispatch must pass _doe_sizes buffer.
+    needs_sizes_buf: bool = false,
+    // Precompiled shader storage for non-Metal backends.
+    // SPIR-V binary (heap-allocated copy, owned by this module).
+    spirv_data: ?[]const u32 = null,
+    // HLSL source text (heap-allocated copy, owned by this module).
+    hlsl_source: ?[]const u8 = null,
 };
 
 pub const DoeComputePipeline = struct {
@@ -168,6 +175,7 @@ pub const DoeComputePipeline = struct {
     wg_x: u32 = 0,
     wg_y: u32 = 0,
     wg_z: u32 = 0,
+    needs_sizes_buf: bool = false,
 };
 
 pub const DoeBindGroupLayout = struct {
@@ -188,13 +196,15 @@ pub const DoeBindGroup = struct {
     textures: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
     samplers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
     offsets: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
+    // Byte size of each buffer — used to fill _doe_sizes for arrayLength.
+    buffer_sizes: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
     count: u32 = 0,
 };
 
 pub const CmdTag = enum { dispatch, dispatch_indirect, copy_buf, copy_buffer_to_texture, copy_texture_to_buffer, render_pass, write_timestamp, resolve_query_set };
 pub const RecordedCmd = union(CmdTag) {
-    dispatch: struct { pso: ?*anyopaque, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32 },
-    dispatch_indirect: struct { pso: ?*anyopaque, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, offset: u64, wg_x: u32 = 0, wg_y: u32 = 0, wg_z: u32 = 0 },
+    dispatch: struct { pso: ?*anyopaque, needs_sizes_buf: bool, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_sizes: [MAX_FLAT_BIND]u64, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32 },
+    dispatch_indirect: struct { pso: ?*anyopaque, needs_sizes_buf: bool, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_sizes: [MAX_FLAT_BIND]u64, buf_count: u32, indirect_buf: ?*anyopaque, offset: u64, wg_x: u32 = 0, wg_y: u32 = 0, wg_z: u32 = 0 },
     copy_buf: struct { src: ?*anyopaque, src_off: u64, dst: ?*anyopaque, dst_off: u64, size: u64 },
     copy_buffer_to_texture: struct {
         src_buffer: ?*anyopaque,
@@ -246,6 +256,10 @@ pub const RecordedCmd = union(CmdTag) {
         depth_compare: u32 = 0,
         depth_write_enabled: bool = false,
         unclipped_depth: bool = false,
+        clear_r: f64 = 0,
+        clear_g: f64 = 0,
+        clear_b: f64 = 0,
+        clear_a: f64 = 1,
     },
     write_timestamp: struct { counter_buffer: ?*anyopaque, query_index: u32 },
     resolve_query_set: struct { counter_buffer: ?*anyopaque, first_query: u32, query_count: u32, dst_mtl: ?*anyopaque, dst_offset: u64 },
@@ -318,6 +332,10 @@ pub const DoeRenderPass = struct {
     depth_target: ?*anyopaque = null,
     depth_compare: u32 = 0,
     depth_write_enabled: bool = false,
+    clear_r: f64 = 0,
+    clear_g: f64 = 0,
+    clear_b: f64 = 0,
+    clear_a: f64 = 1,
     bind_groups: [MAX_RENDER_BIND_GROUPS]?*DoeBindGroup = [_]?*DoeBindGroup{null} ** MAX_RENDER_BIND_GROUPS,
     vertex_buffers: [MAX_VERTEX_BUFFERS]?*DoeBuffer = [_]?*DoeBuffer{null} ** MAX_VERTEX_BUFFERS,
     vertex_buffer_offsets: [MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** MAX_VERTEX_BUFFERS,

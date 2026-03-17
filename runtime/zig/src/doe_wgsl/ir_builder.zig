@@ -364,7 +364,13 @@ const FunctionBuilder = struct {
         while (i < node.data.rhs) : (i += 1) {
             const arg_node = self.tree.extra_data.items[node.data.lhs + i];
             if (!is_constructor and kind == .builtin and i == 0 and (std.mem.startsWith(u8, name, "atomic") or std.mem.eql(u8, name, "arrayLength"))) {
-                try args.append(self.allocator, try self.lower_ref_expr(arg_node));
+                // arrayLength(&buf) and atomic builtins may write &ref — unwrap & to get the ref.
+                const ref_node = blk: {
+                    const an = self.tree.nodes.items[arg_node];
+                    if (an.tag == .unary_expr and self.tree.tokens.items[an.main_token].tag == .@"&") break :blk an.data.lhs;
+                    break :blk arg_node;
+                };
+                try args.append(self.allocator, try self.lower_ref_expr(ref_node));
             } else {
                 try args.append(self.allocator, try self.lower_value_expr(arg_node));
             }

@@ -11,17 +11,18 @@ const types = @import("core/abi/wgpu_types.zig");
 const BRIDGE_AVAILABLE = builtin.os.tag == .macos;
 
 // ============================================================
-// Feature name constants
+// Feature name constants — match wgpu_types.zig and capabilities.js
 // ============================================================
 
+const FEATURE_DEPTH_CLIP_CONTROL: u32 = types.WGPUFeatureName_DepthClipControl;
+const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = types.WGPUFeatureName_Depth32FloatStencil8;
+const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = types.WGPUFeatureName_TextureCompressionASTC;
+const FEATURE_BGRA8UNORM_STORAGE: u32 = types.WGPUFeatureName_BGRA8UnormStorage;
 const FEATURE_SHADER_F16: u32 = types.WGPUFeatureName_ShaderF16;
-
-// Extended feature constants not yet in wgpu_types.zig.
-// Values follow the WebGPU spec extension namespace.
-pub const FEATURE_SUBGROUPS: u32 = 0x0000000F;
-pub const FEATURE_SUBGROUP_UNIFORMITY: u32 = 0x00000010;
-pub const FEATURE_RW_STORAGE_TEXTURE: u32 = 0x00000014;
-pub const FEATURE_LARGE_BUFFER: u32 = 0x00000015;
+const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = types.WGPUFeatureName_IndirectFirstInstance;
+const FEATURE_FLOAT32_FILTERABLE: u32 = types.WGPUFeatureName_Float32Filterable;
+const FEATURE_FLOAT32_BLENDABLE: u32 = types.WGPUFeatureName_Float32Blendable;
+pub const FEATURE_SUBGROUPS: u32 = types.WGPUFeatureName_Subgroups;
 
 // ============================================================
 // Limits: Apple Silicon hardware-specific defaults.
@@ -109,11 +110,18 @@ fn build_limits(mtl_device: ?*anyopaque) types.WGPULimits {
 
 fn is_feature_supported(feature: u32) bool {
     return switch (feature) {
+        // Universally enabled on Doe.
         FEATURE_SHADER_F16 => true,
-        FEATURE_SUBGROUPS => BRIDGE_AVAILABLE,
-        FEATURE_SUBGROUP_UNIFORMITY => BRIDGE_AVAILABLE,
-        FEATURE_RW_STORAGE_TEXTURE => BRIDGE_AVAILABLE,
-        FEATURE_LARGE_BUFFER => BRIDGE_AVAILABLE,
+        // Apple Silicon Metal features — all supported on this target.
+        FEATURE_DEPTH_CLIP_CONTROL,
+        FEATURE_DEPTH32FLOAT_STENCIL8,
+        FEATURE_TEXTURE_COMPRESSION_ASTC,
+        FEATURE_BGRA8UNORM_STORAGE,
+        FEATURE_INDIRECT_FIRST_INSTANCE,
+        FEATURE_FLOAT32_FILTERABLE,
+        FEATURE_FLOAT32_BLENDABLE,
+        FEATURE_SUBGROUPS,
+        => BRIDGE_AVAILABLE,
         else => false,
     };
 }

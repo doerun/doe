@@ -6,10 +6,27 @@
 #include "metal_bridge.h"
 #include <string.h>
 #include <sched.h>
+#include <CommonCrypto/CommonDigest.h>
 
 // CFBridging provides correct ARC-safe transfer across the void* boundary.
 // Each returned MetalHandle is +1 retained and owned by the caller.
 // metal_bridge_release() must be called to balance.
+
+// ============================================================
+// MTLLibrary source cache (avoids recompiling identical MSL source)
+// ============================================================
+
+// Keyed by NSData SHA-256 hash of the MSL source bytes. Value is CFRetained id<MTLLibrary>.
+// One dictionary per process — sufficient because MTLLibrary is device-bound and Doe uses
+// a single MTLDevice per process in the common path.
+static NSMutableDictionary<NSData*, id<MTLLibrary>>* _mslLibraryCache = nil;
+
+static NSData* msl_source_hash(const char* src, size_t src_len) {
+    // Use CC_SHA256 via CommonCrypto (available on all Apple platforms).
+    unsigned char digest[32];
+    CC_SHA256(src, (CC_LONG)src_len, digest);
+    return [NSData dataWithBytes:digest length:32];
+}
 
 // ============================================================
 // Cached render pass descriptor (avoids alloc per render command)
@@ -569,15 +586,21 @@ void metal_bridge_shared_event_wait(MetalHandle event_h, uint64_t value) {
     id<MTLSharedEvent> event = (__bridge id<MTLSharedEvent>)event_h;
     // Quick check: often the GPU has already completed by the time we get here.
     if (event.signaledValue >= value) return;
-    // Spin with ARM yield hint. Covers ~500us of GPU scheduling delay at ~5ns/iter.
-    // Most dispatches complete within 50-200us; extended spin avoids sched_yield tail.
-    for (int i = 0; i < 100000; i++) {
+    // Phase 1: tight spin (~50us at ~5ns/check). No yield — avoids OS preempting this
+    // thread before catching a fast GPU completion. Tiny dispatches (≤4 workgroups)
+    // signal within 50-100us; yield spin allows the scheduler to context-switch away
+    // during that window, adding ~100us to tail latency.
+    for (int i = 0; i < 10000; i++) {
+        if (event.signaledValue >= value) return;
+    }
+    // Phase 2: yield spin (~450us). Covers standard GPU scheduling latency.
+    for (int i = 0; i < 90000; i++) {
         if (event.signaledValue >= value) return;
 #if defined(__aarch64__) || defined(__arm64__)
         __asm__ volatile ("yield");
 #endif
     }
-    // Fallback: yield to OS scheduler for truly long waits.
+    // Phase 3: OS fallback for truly long waits.
     while (event.signaledValue < value) {
         sched_yield();
     }
@@ -684,7 +707,11 @@ MetalHandle metal_bridge_cmd_buf_render_encoder(
     MetalHandle pipeline_h,
     MetalHandle target_h,
     MetalHandle depth_target_h,
-    int         use_depth_store)
+    int         use_depth_store,
+    double      clear_r,
+    double      clear_g,
+    double      clear_b,
+    double      clear_a)
 {
     id<MTLCommandBuffer>        cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
@@ -692,6 +719,7 @@ MetalHandle metal_bridge_cmd_buf_render_encoder(
     id<MTLTexture>              depth_target = (__bridge id<MTLTexture>)depth_target_h;
 
     MTLRenderPassDescriptor* pass = cachedRenderPassDescriptor(target, depth_target, use_depth_store ? YES : NO);
+    pass.colorAttachments[0].clearColor = MTLClearColorMake(clear_r, clear_g, clear_b, clear_a);
     id<MTLRenderCommandEncoder> encoder = [cmd_buf renderCommandEncoderWithDescriptor:pass];
     if (encoder == nil) return NULL;
     [encoder setRenderPipelineState:pipeline];
@@ -875,6 +903,17 @@ MetalHandle metal_bridge_device_new_library_msl(
     size_t      error_cap)
 {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
+
+    // Check source cache before invoking Metal driver compilation.
+    NSData* key = msl_source_hash(src, src_len);
+    if (_mslLibraryCache == nil) {
+        _mslLibraryCache = [NSMutableDictionary new];
+    }
+    id<MTLLibrary> cached = _mslLibraryCache[key];
+    if (cached != nil) {
+        return (MetalHandle)CFBridgingRetain(cached);
+    }
+
     NSString* source = [[NSString alloc] initWithBytes:src length:src_len encoding:NSUTF8StringEncoding];
     if (source == nil) {
         if (error_buf && error_cap) strncpy(error_buf, "invalid MSL source encoding", error_cap - 1);
@@ -886,6 +925,7 @@ MetalHandle metal_bridge_device_new_library_msl(
         write_error(err, error_buf, error_cap);
         return NULL;
     }
+    _mslLibraryCache[key] = library;
     return (MetalHandle)CFBridgingRetain(library);
 }
 

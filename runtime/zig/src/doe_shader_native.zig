@@ -153,25 +153,54 @@ pub export fn doeNativeShaderModuleGetBindings(raw: ?*anyopaque, out_ptr: ?[*]na
 }
 
 // ============================================================
-// Shader Module (WGSL → MSL → MTLLibrary)
+// Shader Module — sType dispatch
 // ============================================================
+
+/// Resolve a WGPUStringView to a byte slice, handling WGPU_STRLEN sentinel.
+fn resolveStringView(sv: types.WGPUStringView) ?[]const u8 {
+    const data = sv.data orelse return null;
+    const len = if (sv.length == types.WGPU_STRLEN)
+        std.mem.len(@as([*:0]const u8, @ptrCast(data)))
+    else
+        sv.length;
+    return data[0..len];
+}
+
+/// Normalize workgroup size from descriptor: 0 → 1 (unknown defaults to 1).
+fn normalizeWorkgroupDim(v: u32) u32 {
+    return if (v > 0) v else 1;
+}
 
 pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*const types.WGPUShaderModuleDescriptor) callconv(.c) ?*anyopaque {
     clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
-
-    // The WGSL source is in the chained struct (WGPUShaderSourceWGSL).
     const chain = d.nextInChain orelse return null;
-    const wgsl_chain: *const types.WGPUShaderSourceWGSL = @ptrCast(@alignCast(chain));
-    const wgsl_data = wgsl_chain.code.data orelse return null;
-    const wgsl_len = if (wgsl_chain.code.length == types.WGPU_STRLEN)
-        std.mem.len(@as([*:0]const u8, @ptrCast(wgsl_data)))
-    else
-        wgsl_chain.code.length;
-    const wgsl = wgsl_data[0..wgsl_len];
 
-    // Translate WGSL → MSL for Metal shader module creation.
+    return switch (chain.sType) {
+        types.WGPUSType_ShaderSourceWGSL => createFromWGSL(dev, chain),
+        types.WGPUSType_ShaderSourceMSL => createFromMSL(dev, chain),
+        types.WGPUSType_ShaderSourceSPIRV => createFromSPIRV(chain),
+        types.WGPUSType_ShaderSourceHLSL => createFromHLSL(chain),
+        else => {
+            set_last_error_stage_name("native_shader_create");
+            set_last_error_kind("UnsupportedShaderFormat");
+            set_last_error_fmt("unsupported shader source sType: 0x{x:0>8}", .{chain.sType});
+            std.log.err("doe: createShaderModule failed: unsupported sType 0x{x:0>8}", .{chain.sType});
+            return null;
+        },
+    };
+}
+
+// ============================================================
+// WGSL path (existing behavior, refactored into helper)
+// ============================================================
+
+fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyopaque {
+    const wgsl_chain: *const types.WGPUShaderSourceWGSL = @ptrCast(@alignCast(chain));
+    const wgsl = resolveStringView(wgsl_chain.code) orelse return null;
+
+    // Translate WGSL → MSL.
     var msl_buf: [wgsl_compiler.MAX_OUTPUT]u8 = undefined;
     const msl_len = wgsl_compiler.translateToMsl(alloc, wgsl, &msl_buf) catch |err| {
         set_last_error_stage(wgsl_compiler.lastErrorStage());
@@ -189,39 +218,19 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
 
     // Compile MSL → MTLLibrary.
     var err_buf: [ERR_CAP]u8 = undefined;
-    const lib = metal_bridge_device_new_library_msl(
-        dev.mtl_device,
-        &msl_buf,
-        msl_len,
-        &err_buf,
-        ERR_CAP,
-    ) orelse {
-        const err_msg = std.mem.sliceTo(&err_buf, 0);
-        set_last_error_stage_name("native_compile");
-        set_last_error_kind("MSLCompilationFailed");
-        if (err_msg.len > 0) {
-            set_last_error_fmt("MSL compilation failed: {s}", .{err_msg});
-            std.log.err("doe: createShaderModule failed: MSL compilation error: {s}", .{err_msg});
-        } else {
-            set_last_error("MSL compilation failed: MTLLibrary creation returned null");
-            std.log.err("doe: createShaderModule failed: MTLLibrary creation returned null", .{});
-        }
-        return null;
-    };
+    const lib = compileMslToLibrary(dev, &msl_buf, msl_len, &err_buf) orelse return null;
 
     const sm = make(DoeShaderModule) orelse {
         metal_bridge_release(lib);
         return null;
     };
     sm.* = .{ .mtl_library = lib };
-    // Extract workgroup size from WGSL for correct Metal threadgroup dispatch.
+    sm.needs_sizes_buf = std.mem.indexOf(u8, wgsl, "arrayLength") != null;
     const wg = native.extractWorkgroupSize(wgsl);
     sm.wg_x = wg.x;
     sm.wg_y = wg.y;
     sm.wg_z = wg.z;
-    // Extract binding metadata from WGSL for getBindGroupLayout support.
-    // Failure here is non-fatal: the shader compiled successfully, so we proceed with
-    // zero bindings as degraded behavior and record the error for caller inspection.
+    // Extract binding metadata (non-fatal on failure).
     var bind_meta: [native.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
     const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch |bind_err| blk: {
         set_last_error_stage(wgsl_compiler.lastErrorStage());
@@ -249,9 +258,158 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
     return toOpaque(sm);
 }
 
+// ============================================================
+// MSL path — pre-translated Metal Shading Language source
+// ============================================================
+
+fn createFromMSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyopaque {
+    const msl_chain: *const types.WGPUShaderSourceMSL = @ptrCast(@alignCast(chain));
+    const msl_src = resolveStringView(msl_chain.code) orelse {
+        set_last_error_stage_name("native_shader_create");
+        set_last_error_kind("InvalidInput");
+        set_last_error("pre-translated MSL source pointer is null");
+        return null;
+    };
+
+    // Compile MSL → MTLLibrary directly (skip WGSL translation).
+    var err_buf: [ERR_CAP]u8 = undefined;
+    const lib = metal_bridge_device_new_library_msl(
+        dev.mtl_device,
+        msl_src.ptr,
+        msl_src.len,
+        &err_buf,
+        ERR_CAP,
+    ) orelse {
+        const err_msg = std.mem.sliceTo(&err_buf, 0);
+        set_last_error_stage_name("native_compile");
+        set_last_error_kind("MSLCompilationFailed");
+        if (err_msg.len > 0) {
+            set_last_error_fmt("pre-translated MSL compilation failed: {s}", .{err_msg});
+            std.log.err("doe: createShaderModule (MSL) failed: {s}", .{err_msg});
+        } else {
+            set_last_error("pre-translated MSL compilation failed: MTLLibrary creation returned null");
+            std.log.err("doe: createShaderModule (MSL) failed: MTLLibrary returned null", .{});
+        }
+        return null;
+    };
+
+    const sm = make(DoeShaderModule) orelse {
+        metal_bridge_release(lib);
+        return null;
+    };
+    sm.* = .{ .mtl_library = lib };
+    // Binding metadata is unavailable from pre-translated MSL (degraded mode).
+    sm.binding_count = 0;
+    sm.needs_sizes_buf = false;
+    sm.wg_x = normalizeWorkgroupDim(msl_chain.workgroup_size_x);
+    sm.wg_y = normalizeWorkgroupDim(msl_chain.workgroup_size_y);
+    sm.wg_z = normalizeWorkgroupDim(msl_chain.workgroup_size_z);
+    return toOpaque(sm);
+}
+
+// ============================================================
+// SPIR-V path — store binary for Vulkan pipeline creation
+// ============================================================
+
+fn createFromSPIRV(chain: *const types.WGPUChainedStruct) ?*anyopaque {
+    const spirv_chain: *const types.WGPUShaderSourceSPIRV = @ptrCast(@alignCast(chain));
+
+    if (spirv_chain.code_size == 0 or spirv_chain.code_size % 4 != 0) {
+        set_last_error_stage_name("native_shader_create");
+        set_last_error_kind("InvalidSPIRV");
+        set_last_error("SPIR-V code_size must be a positive multiple of 4");
+        return null;
+    }
+
+    const word_count = spirv_chain.code_size / 4;
+    const spirv_copy = alloc.alloc(u32, word_count) catch {
+        set_last_error_stage_name("native_shader_create");
+        set_last_error_kind("OutOfMemory");
+        set_last_error("failed to allocate SPIR-V storage");
+        return null;
+    };
+    @memcpy(spirv_copy, spirv_chain.code[0..word_count]);
+
+    const sm = make(DoeShaderModule) orelse {
+        alloc.free(spirv_copy);
+        return null;
+    };
+    sm.* = .{};
+    sm.spirv_data = spirv_copy;
+    sm.binding_count = 0;
+    sm.needs_sizes_buf = false;
+    sm.wg_x = normalizeWorkgroupDim(spirv_chain.workgroup_size_x);
+    sm.wg_y = normalizeWorkgroupDim(spirv_chain.workgroup_size_y);
+    sm.wg_z = normalizeWorkgroupDim(spirv_chain.workgroup_size_z);
+    return toOpaque(sm);
+}
+
+// ============================================================
+// HLSL path — store source for D3D12 DXC compilation
+// ============================================================
+
+fn createFromHLSL(chain: *const types.WGPUChainedStruct) ?*anyopaque {
+    const hlsl_chain: *const types.WGPUShaderSourceHLSL = @ptrCast(@alignCast(chain));
+    const hlsl_src = resolveStringView(hlsl_chain.code) orelse {
+        set_last_error_stage_name("native_shader_create");
+        set_last_error_kind("InvalidInput");
+        set_last_error("HLSL source pointer is null");
+        return null;
+    };
+
+    const hlsl_copy = alloc.alloc(u8, hlsl_src.len) catch {
+        set_last_error_stage_name("native_shader_create");
+        set_last_error_kind("OutOfMemory");
+        set_last_error("failed to allocate HLSL storage");
+        return null;
+    };
+    @memcpy(hlsl_copy, hlsl_src);
+
+    const sm = make(DoeShaderModule) orelse {
+        alloc.free(hlsl_copy);
+        return null;
+    };
+    sm.* = .{};
+    sm.hlsl_source = hlsl_copy;
+    sm.binding_count = 0;
+    sm.needs_sizes_buf = false;
+    sm.wg_x = normalizeWorkgroupDim(hlsl_chain.workgroup_size_x);
+    sm.wg_y = normalizeWorkgroupDim(hlsl_chain.workgroup_size_y);
+    sm.wg_z = normalizeWorkgroupDim(hlsl_chain.workgroup_size_z);
+    return toOpaque(sm);
+}
+
+// ============================================================
+// Shared MSL compilation helper
+// ============================================================
+
+fn compileMslToLibrary(dev: *DoeDevice, msl_buf: [*]const u8, msl_len: usize, err_buf: *[ERR_CAP]u8) ?*anyopaque {
+    return metal_bridge_device_new_library_msl(
+        dev.mtl_device,
+        msl_buf,
+        msl_len,
+        err_buf,
+        ERR_CAP,
+    ) orelse {
+        const err_msg = std.mem.sliceTo(err_buf, 0);
+        set_last_error_stage_name("native_compile");
+        set_last_error_kind("MSLCompilationFailed");
+        if (err_msg.len > 0) {
+            set_last_error_fmt("MSL compilation failed: {s}", .{err_msg});
+            std.log.err("doe: createShaderModule failed: MSL compilation error: {s}", .{err_msg});
+        } else {
+            set_last_error("MSL compilation failed: MTLLibrary creation returned null");
+            std.log.err("doe: createShaderModule failed: MTLLibrary creation returned null", .{});
+        }
+        return null;
+    };
+}
+
 pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeShaderModule, raw)) |sm| {
         if (sm.mtl_library) |l| metal_bridge_release(l);
+        if (sm.spirv_data) |s| alloc.free(s);
+        if (sm.hlsl_source) |h| alloc.free(h);
         alloc.destroy(sm);
     }
 }
@@ -316,6 +474,7 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     cp.wg_x = sm.wg_x;
     cp.wg_y = sm.wg_y;
     cp.wg_z = sm.wg_z;
+    cp.needs_sizes_buf = sm.needs_sizes_buf;
     // Transfer binding metadata from shader module for getBindGroupLayout.
     cp.binding_count = sm.binding_count;
     for (0..sm.binding_count) |i| cp.bindings[i] = sm.bindings[i];

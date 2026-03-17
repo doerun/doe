@@ -15,15 +15,101 @@ const DoeDevice = native.DoeDevice;
 const DoeTexture = native.DoeTexture;
 const DoeTextureView = native.DoeTextureView;
 const DoeSampler = native.DoeSampler;
+const DoeShaderModule = native.DoeShaderModule;
 const DoeRenderPipeline = native.DoeRenderPipeline;
 const DoeRenderPass = native.DoeRenderPass;
 const DoeCommandEncoder = native.DoeCommandEncoder;
 
 // Metal bridge externs (resolved at link time from metal_bridge.m).
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, pixel_format: u32, usage: u32) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, mip_levels: u32, pixel_format: u32, usage: u32, dimension: u32) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_f: u32, mag_f: u32, mip_f: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_library_new_function(library: ?*anyopaque, name: [*:0]const u8) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_device_new_render_pipeline_functions(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_device_new_render_pipeline_full(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, depth_format: u32, vertex_layouts: ?[*]const MtlVertexBufferLayout, vertex_layout_count: u32, vertex_attributes: ?[*]const MtlVertexAttributeDesc, vertex_attribute_count: u32, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
+
+// Metal vertex descriptor types (mirrors metal_bridge_decls.zig MetalVertexBufferLayout/MetalVertexAttributeDesc).
+const MtlVertexBufferLayout = extern struct {
+    array_stride: u64,
+    step_mode: u32,
+    buffer_index: u32,
+};
+const MtlVertexAttributeDesc = extern struct {
+    format: u32,
+    offset: u64,
+    shader_location: u32,
+    buffer_index: u32,
+};
+
+// Mirror of the C structs passed by doe_napi.c for WGPURenderPipelineDescriptor.
+// Must match the C layout exactly (extern struct, same field order and types).
+const RenderStringView = extern struct { data: ?[*]const u8, length: usize };
+const RenderColorTargetState = extern struct {
+    nextInChain: ?*anyopaque,
+    format: u32,
+    blend: ?*anyopaque,
+    writeMask: u64,
+};
+const RenderVertexState = extern struct {
+    nextInChain: ?*anyopaque,
+    module: ?*anyopaque,
+    entryPoint: RenderStringView,
+    constantCount: usize,
+    constants: ?*anyopaque,
+    bufferCount: usize,
+    buffers: ?*anyopaque,
+};
+const RenderFragmentState = extern struct {
+    nextInChain: ?*anyopaque,
+    module: ?*anyopaque,
+    entryPoint: RenderStringView,
+    constantCount: usize,
+    constants: ?*anyopaque,
+    targetCount: usize,
+    targets: ?[*]const RenderColorTargetState,
+};
+const RenderPrimitiveState = extern struct {
+    nextInChain: ?*anyopaque,
+    topology: u32,
+    stripIndexFormat: u32,
+    frontFace: u32,
+    cullMode: u32,
+    unclippedDepth: u32,
+};
+const RenderMultisampleState = extern struct {
+    nextInChain: ?*anyopaque,
+    count: u32,
+    mask: u32,
+    alphaToCoverageEnabled: u32,
+};
+const RenderVertexAttribute = extern struct {
+    nextInChain: ?*anyopaque,
+    format: u32,
+    offset: u64,
+    shaderLocation: u32,
+};
+const RenderVertexBufferLayout = extern struct {
+    nextInChain: ?*anyopaque,
+    stepMode: u32,
+    arrayStride: u64,
+    attributeCount: usize,
+    attributes: ?[*]const RenderVertexAttribute,
+};
+const RenderDepthStencilDesc = extern struct {
+    nextInChain: ?*anyopaque,
+    format: u32,
+};
+const RenderPipelineDesc = extern struct {
+    nextInChain: ?*anyopaque,
+    label: RenderStringView,
+    layout: ?*anyopaque,
+    vertex: RenderVertexState,
+    primitive: RenderPrimitiveState,
+    depthStencil: ?*anyopaque,
+    multisample: RenderMultisampleState,
+    fragment: ?*const RenderFragmentState,
+};
 
 // ============================================================
 // Texture
@@ -32,7 +118,7 @@ extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_for
 pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const types.WGPUTextureDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
-    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.mipLevelCount, d.format, @intCast(d.usage)) orelse return null;
+    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.format, @intCast(d.usage), d.dimension) orelse return null;
     const tex = make(DoeTexture) orelse {
         metal_bridge_release(mtl);
         return null;
@@ -83,30 +169,141 @@ pub export fn doeNativeSamplerRelease(raw: ?*anyopaque) callconv(.c) void {
     }
 }
 
+// Null-terminate a WGPUStringView into caller-supplied buffer.
+// Returns null if the string is empty or buf is too small.
+fn nullTermView(sv: RenderStringView, buf: []u8) ?[*:0]const u8 {
+    const len = sv.length;
+    if (len == 0) return null;
+    if (len >= buf.len) return null;
+    const data = sv.data orelse return null;
+    @memcpy(buf[0..len], data[0..len]);
+    buf[len] = 0;
+    return buf[0..len :0];
+}
+
+const StageKind = enum { vertex, fragment };
+
+// Map a WGSL entry point name to its MSL function name, applying the same
+// renaming the WGSL→MSL emitter uses: "main" → "main_vertex"/"main_fragment".
+fn mslStageName(sv: RenderStringView, stage: StageKind, buf: []u8) [*:0]const u8 {
+    const data = sv.data orelse return switch (stage) {
+        .vertex => "main_vertex",
+        .fragment => "main_fragment",
+    };
+    const len = if (sv.length > 0) sv.length else std.mem.indexOfScalar(u8, data[0..256], 0) orelse 0;
+    const name = data[0..len];
+    if (std.mem.eql(u8, name, "main")) {
+        return switch (stage) {
+            .vertex => "main_vertex",
+            .fragment => "main_fragment",
+        };
+    }
+    if (len >= buf.len) return switch (stage) {
+        .vertex => "main_vertex",
+        .fragment => "main_fragment",
+    };
+    @memcpy(buf[0..len], name);
+    buf[len] = 0;
+    return buf[0..len :0];
+}
+
 // ============================================================
 // Render Pipeline
 // ============================================================
-//
-// Render pipeline descriptor parsing is not yet implemented.
-// The WGSL compiler currently covers compute shaders only; vertex/fragment
-// shader translation is planned. Until then, createRenderPipeline creates
-// a basic noop Metal render pipeline (RGBA8Unorm, no vertex/fragment shaders)
-// suitable for benchmark render passes. Callers passing a real descriptor
-// get a diagnostic so the limitation is visible.
 
-pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc: ?*anyopaque) callconv(.c) ?*anyopaque {
-    if (desc != null) {
-        std.debug.print("doe: createRenderPipeline: descriptor parsing not yet implemented; creating basic noop pipeline\n", .{});
-    }
+pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw: ?*anyopaque) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     var err_buf: [ERR_CAP]u8 = undefined;
-    const PIXEL_FORMAT_RGBA8_UNORM: u32 = 0x00000016;
-    const pso = metal_bridge_device_new_render_pipeline(dev.mtl_device, PIXEL_FORMAT_RGBA8_UNORM, 0, &err_buf, ERR_CAP) orelse return null;
-    const rp = make(DoeRenderPipeline) orelse {
-        metal_bridge_release(pso);
+    const d = @as(*const RenderPipelineDesc, @ptrCast(@alignCast(desc_raw orelse return null)));
+    const frag = d.fragment orelse return null;
+    const vert_mod = cast(DoeShaderModule, d.vertex.module) orelse return null;
+    const frag_mod = cast(DoeShaderModule, frag.module) orelse return null;
+
+    // Pixel format from the first fragment target (default rgba8unorm).
+    const pixel_format: u32 = if (frag.targetCount > 0)
+        if (frag.targets) |ts| ts[0].format else 0x00000016
+    else
+        0x00000016;
+
+    // Depth format (0 = no depth attachment).
+    const depth_format: u32 = if (d.depthStencil) |ds_raw|
+        (@as(*const RenderDepthStencilDesc, @ptrCast(@alignCast(ds_raw)))).format
+    else
+        0;
+
+    // MSL function lookup, applying the "main" → "main_vertex"/"main_fragment" rename.
+    var vert_entry_buf: [256]u8 = undefined;
+    var frag_entry_buf: [256]u8 = undefined;
+    const vert_entry = mslStageName(d.vertex.entryPoint, .vertex, &vert_entry_buf);
+    const frag_entry = mslStageName(frag.entryPoint, .fragment, &frag_entry_buf);
+    const vfn = metal_bridge_library_new_function(vert_mod.mtl_library, vert_entry);
+    const ffn = metal_bridge_library_new_function(frag_mod.mtl_library, frag_entry);
+
+    if (vfn == null or ffn == null) {
+        if (vfn) |f| metal_bridge_release(f);
+        if (ffn) |f| metal_bridge_release(f);
+        return null;
+    }
+
+    // Build flat Metal vertex layout + attribute arrays from the WGPU descriptor.
+    // Metal buffer slot = the index of the vertex buffer layout in the descriptor.
+    var mtl_layouts: [8]MtlVertexBufferLayout = undefined;
+    var mtl_attrs: [16]MtlVertexAttributeDesc = undefined;
+    var layout_count: u32 = 0;
+    var attr_count: u32 = 0;
+
+    const buf_count = @min(d.vertex.bufferCount, 8);
+    if (buf_count > 0) {
+        const bufs = @as(?[*]const RenderVertexBufferLayout, @ptrCast(@alignCast(d.vertex.buffers)));
+        if (bufs) |layouts| {
+            var i: usize = 0;
+            while (i < buf_count) : (i += 1) {
+                const layout = layouts[i];
+                mtl_layouts[layout_count] = .{
+                    .array_stride = layout.arrayStride,
+                    .step_mode = layout.stepMode,
+                    .buffer_index = @intCast(i),
+                };
+                layout_count += 1;
+                const ac = @min(layout.attributeCount, 16 - @as(usize, attr_count));
+                if (layout.attributes) |attrs| {
+                    var j: usize = 0;
+                    while (j < ac) : (j += 1) {
+                        const attr = attrs[j];
+                        mtl_attrs[attr_count] = .{
+                            .format = attr.format,
+                            .offset = attr.offset,
+                            .shader_location = attr.shaderLocation,
+                            .buffer_index = @intCast(i),
+                        };
+                        attr_count += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    const pso = metal_bridge_device_new_render_pipeline_full(
+        dev.mtl_device, vfn, ffn,
+        pixel_format, depth_format,
+        if (layout_count > 0) &mtl_layouts else null, layout_count,
+        if (attr_count > 0) &mtl_attrs else null, attr_count,
+        &err_buf, ERR_CAP,
+    ) orelse {
+        if (vfn) |f| metal_bridge_release(f);
+        if (ffn) |f| metal_bridge_release(f);
         return null;
     };
-    rp.* = .{ .mtl_pso = pso };
+    // Release function handles — PSO holds its own retain.
+    if (vfn) |f| metal_bridge_release(f);
+    if (ffn) |f| metal_bridge_release(f);
+    const rp = make(DoeRenderPipeline) orelse { metal_bridge_release(pso); return null; };
+    rp.* = .{
+        .mtl_pso = pso,
+        .topology = d.primitive.topology,
+        .front_face = d.primitive.frontFace,
+        .cull_mode = d.primitive.cullMode,
+    };
     return toOpaque(rp);
 }
 
@@ -128,8 +325,13 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
     if (desc) |d| {
         if (d.colorAttachmentCount > 0) {
             if (d.colorAttachments) |attachments| {
-                const tv = cast(DoeTextureView, attachments[0].view);
+                const att = attachments[0];
+                const tv = cast(DoeTextureView, att.view);
                 if (tv) |v| pass.target = v.tex.mtl;
+                pass.clear_r = att.clearValue.r;
+                pass.clear_g = att.clearValue.g;
+                pass.clear_b = att.clearValue.b;
+                pass.clear_a = att.clearValue.a;
             }
         }
     }
@@ -157,7 +359,48 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
         .instance_count = instance_count,
         .first_vertex = first_vertex,
         .first_instance = first_instance,
+        .clear_r = pass.clear_r,
+        .clear_g = pass.clear_g,
+        .clear_b = pass.clear_b,
+        .clear_a = pass.clear_a,
     } }) catch std.debug.panic("doe_render_native: OOM recording render command", .{});
+}
+
+pub export fn doeNativeRenderPassSetVertexBuffer(pass_raw: ?*anyopaque, slot: u32, buffer_raw: ?*anyopaque, offset: u64, size: u64) callconv(.c) void {
+    _ = cast(DoeRenderPass, pass_raw) orelse return;
+    _ = slot;
+    _ = buffer_raw;
+    _ = offset;
+    _ = size;
+    // TODO: implement vertex buffer assignment
+}
+
+pub export fn doeNativeRenderPassSetIndexBuffer(pass_raw: ?*anyopaque, buffer_raw: ?*anyopaque, format: u32, offset: u64, size: u64) callconv(.c) void {
+    _ = cast(DoeRenderPass, pass_raw) orelse return;
+    _ = buffer_raw;
+    _ = format;
+    _ = offset;
+    _ = size;
+    // TODO: implement index buffer assignment
+}
+
+pub export fn doeNativeRenderPassSetBindGroup(pass_raw: ?*anyopaque, group_index: u32, group_raw: ?*anyopaque, dynamic_offset_count: usize, dynamic_offsets: ?[*]const u32) callconv(.c) void {
+    _ = cast(DoeRenderPass, pass_raw) orelse return;
+    _ = group_index;
+    _ = group_raw;
+    _ = dynamic_offset_count;
+    _ = dynamic_offsets;
+    // TODO: implement render pass bind group assignment
+}
+
+pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count: u32, instance_count: u32, first_index: u32, base_vertex: i32, first_instance: u32) callconv(.c) void {
+    _ = cast(DoeRenderPass, pass_raw) orelse return;
+    _ = index_count;
+    _ = instance_count;
+    _ = first_index;
+    _ = base_vertex;
+    _ = first_instance;
+    // TODO: implement indexed draw
 }
 
 pub export fn doeNativeRenderPassEnd(raw: ?*anyopaque) callconv(.c) void {

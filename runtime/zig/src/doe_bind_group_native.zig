@@ -43,6 +43,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
             if (cast(DoeBuffer, e.buffer)) |doe_buf| {
                 bg.buffers[e.binding] = doe_buf.mtl;
                 bg.offsets[e.binding] = e.offset;
+                bg.buffer_sizes[e.binding] = doe_buf.size;
             } else if (cast(DoeTextureView, e.textureView)) |view| {
                 bg.textures[e.binding] = view.tex.mtl;
             } else if (cast(DoeSampler, e.sampler)) |sampler| {

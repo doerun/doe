@@ -996,3 +996,135 @@ test "spirv binding: Block decoration emitted for uniform buffer" {
     }
     try testing.expect(found_block);
 }
+
+// ============================================================
+// SPIR-V texture/sampler builtin tests (full pipeline)
+// ============================================================
+
+test "spirv texture: textureSample produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureSample(tex, samp, uv).x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureSampleLevel produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureSampleLevel(tex, samp, uv, 0.0).x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureSampleCompare produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var shadow_tex: texture_depth_2d;
+        \\@group(0) @binding(1) var shadow_samp: sampler_comparison;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureSampleCompare(shadow_tex, shadow_samp, uv, 0.5);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureSampleCompareLevel produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var shadow_tex: texture_depth_2d;
+        \\@group(0) @binding(1) var shadow_samp: sampler_comparison;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureSampleCompareLevel(shadow_tex, shadow_samp, uv, 0.5);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureGather produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureGather(0, tex, samp, uv).x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureGatherCompare produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var shadow_tex: texture_depth_2d;
+        \\@group(0) @binding(1) var shadow_samp: sampler_comparison;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureGatherCompare(shadow_tex, shadow_samp, uv, 0.5).x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureSampleGrad produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    let ddx = vec2f(0.01, 0.0);
+        \\    let ddy = vec2f(0.0, 0.01);
+        \\    out_data[id.x] = textureSampleGrad(tex, samp, uv, ddx, ddy).x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}

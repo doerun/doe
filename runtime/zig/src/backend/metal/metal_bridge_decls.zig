@@ -17,7 +17,7 @@ pub extern fn metal_bridge_command_buffer_setup_fast_wait(cmd_buf: ?*anyopaque) 
 pub extern fn metal_bridge_command_buffer_wait_fast() callconv(.c) void;
 pub extern fn metal_bridge_cmd_buf_encode_render_pass(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pipeline: c_int, redundant_bindgroup: c_int) callconv(.c) void;
 pub extern fn metal_bridge_cmd_buf_encode_icb_render_pass(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, icb: ?*anyopaque, target: ?*anyopaque, draw_count: u32) callconv(.c) void;
-pub extern fn metal_bridge_cmd_buf_render_encoder(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, depth_target: ?*anyopaque, use_depth_store: c_int) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_cmd_buf_render_encoder(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, target: ?*anyopaque, depth_target: ?*anyopaque, use_depth_store: c_int, clear_r: f64, clear_g: f64, clear_b: f64, clear_a: f64) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_render_encoder_set_bind_buffer(encoder: ?*anyopaque, slot: u32, buffer: ?*anyopaque, offset: u64) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_set_bind_texture(encoder: ?*anyopaque, slot: u32, texture: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_set_bind_sampler(encoder: ?*anyopaque, slot: u32, sampler: ?*anyopaque) callconv(.c) void;

@@ -2,7 +2,7 @@
 5512 75087592 1773674524559814833 d544f2ac9508e34c617cb29ce3ca348b 0 src/module_runner.zig
 15422 75133323 1773687690636089009 19acb4d1ad557785f2631f8ec41b79d2 2 c/c60f1dafd0cc19d53919f9ca113d8e30/options.zig
 22376 66732360 1760154801000000000 2d968f90418b6afe5ba91eaa2e18ba71 1 ubsan_rt.zig
-91432 75697202 1773700484472472248 25f2a4673ef5fae271fc232a555aec42 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.m
+92951 76033764 1773758109252924667 1d07fd9f3141f12d6f2b0f0a88d111cd 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.m
 17253 75695564 1773698636377362757 b8d6fadf25b3e2e257f1b9d96d4cddf1 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_render_state_bridge.m
 13333 75695566 1773698636377860715 9902b72665767ee359e04ef7137a82e6 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_surface_bridge.m
 53691 39704735 1754204352000000000 4dfa2dd5880f4d1d26cf8ce0ec2fa4b7 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Metal.tbd
@@ -75,11 +75,11 @@
 85999 66732304 1760154801000000000 a384b975bb355f986219464058d80145 1 std/unicode.zig
 12292 66732309 1760154801000000000 8757ba546e520503fcc6a58d9b0d0083 1 std/valgrind.zig
 17661 66732310 1760154801000000000 a8988138c7ee50f868cd1db24ab3d1d6 1 std/wasm.zig
+11083 66713475 1760154801000000000 3c8016eb348fede9a19b94ec4869d8a6 1 compiler_rt.zig
 37103 66732353 1760154801000000000 954dfee598538ddb98e9fc105c2e0a39 1 std/zig.zig
 26592 66732354 1760154801000000000 2d4666d88f0c60307ae5724c74a78854 1 std/zip.zig
 1242 66732359 1760154801000000000 c5e5cebc2cfc9353dc65aa5193442b60 1 std/zon.zig
 28071 66732287 1760154801000000000 76d2b688d1d45fbb74ca560efdaac238 1 std/start.zig
-5512 75087592 1773674524559814833 d544f2ac9508e34c617cb29ce3ca348b 0 /Users/xyz/deco/fawn/runtime/zig/src/module_runner.zig
 5929 66731993 1760154801000000000 a75e2588e1a73369810b6ba7657e4bfd 1 std/crypto/tlcsprng.zig
 59803 66731751 1760154801000000000 b6406a99c6bcfa6765bfb08eafcbff0d 1 std/Build/Cache.zig
 38694 66731771 1760154801000000000 4bafc6be1344a4b0b4bfce1abc099568 1 std/Build/Step.zig
@@ -149,7 +149,6 @@
 6617 66731867 1760154801000000000 d16786c18fabd57be5a8635a6ef08bb1 1 std/c/netbsd.zig
 3875 66731864 1760154801000000000 907c436f260d11e9f80420d838051111 1 std/c/dragonfly.zig
 15535 66731866 1760154801000000000 43ebba145dd0318d69788910b66220e7 1 std/c/haiku.zig
-11083 66713475 1760154801000000000 3c8016eb348fede9a19b94ec4869d8a6 1 compiler_rt.zig
 13681 66731868 1760154801000000000 06689937d111c195fd6baae889fc720b 1 std/c/openbsd.zig
 3099 66731869 1760154801000000000 6a897bb99820db129b41bc2b5d6046bb 1 std/c/serenity.zig
 6341 66731881 1760154801000000000 33490794e8bee84517ccfebe261d4eae 1 std/compress/flate.zig
@@ -842,6 +841,7 @@
 419 66732188 1760154801000000000 ed7dfc04a5d0c4f0853edb5414ce981e 1 std/os/linux/bpf/btf_ext.zig
 24293 66732189 1760154801000000000 0c7d3ee9ea8e698a843ee6039fd161c4 1 std/os/linux/bpf/helpers.zig
 3221 66731936 1760154801000000000 fda67b74062c7f535bb0a6d0f1fe74fb 1 std/crypto/codecs/asn1/der/ArrayListReverse.zig
+5512 75087592 1773674524559814833 d544f2ac9508e34c617cb29ce3ca348b 0 /Users/xyz/deco/fawn/runtime/zig/src/module_runner.zig
 6925 75087541 1773674524543210515 2983b683160c5e4a82b7879f824d0c06 0 /Users/xyz/deco/fawn/runtime/zig/src/full/modules/services/compute_services.zig
 7388 75087537 1773674524542136928 a3a580aa28f7a352c6ff0407667ea3ad 0 /Users/xyz/deco/fawn/runtime/zig/src/full/modules/rendering/effects_pipeline.zig
 6905 75087536 1773674524541871302 7fc77ce66acacfce927334e0b85b6cc9 0 /Users/xyz/deco/fawn/runtime/zig/src/full/modules/rendering/path_engine.zig
@@ -2259,6 +2259,7 @@
 1374 39704850 1756264259000000000 4aad5fb4f4bb4d8285b44861c8a37082 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CATransformLayer.h
 3041 39704894 1756264258000000000 c6b3c5915f6bfadf7257635bc7c29c62 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CAValueFunction.h
 71231 39607376 1754191684000000000 4ad9665152fdf1def769d4d08ec131a5 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/objc/runtime.h
-23381 75697220 1773700494945138079 2f1df1a21107021de40512fbd34eb672 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.h
+23381 75966570 1773706706050373407 2f1df1a21107021de40512fbd34eb672 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_bridge.h
 1410 39665718 1754187265000000000 cce15b00641a986fdcb686b2b3ec9d92 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/sched.h
 1977 39665721 1754187266000000000 d399640d53899900253b1cd2cd417752 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/pthread/pthread_impl.h
+11970 39603990 1754455199000000000 4f97971fb614a64acc780a02f5592bd3 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/CommonCrypto/CommonDigest.h

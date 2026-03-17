@@ -582,6 +582,92 @@ const Emitter = struct {
                 try self.write(")");
                 return;
             }
+            if (std.mem.eql(u8, call.name, "textureSampleCompare")) {
+                if (call.args.len != 4) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".SampleCmp(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureSampleCompareLevel")) {
+                if (call.args.len != 4) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".SampleCmpLevelZero(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureGather")) {
+                if (call.args.len != 4) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(".GatherRed(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureGatherCompare")) {
+                if (call.args.len != 4) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".GatherCmp(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureSampleGrad")) {
+                if (call.args.len != 5) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".SampleGrad(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 4]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureSampleOffset")) {
+                if (call.args.len != 4) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".Sample(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(")");
+                return;
+            }
+            if (std.mem.eql(u8, call.name, "textureSampleLevelOffset")) {
+                if (call.args.len != 5) return error.InvalidIr;
+                try self.emit_expr(function, function.expr_args.items[call.args.start]);
+                try self.write(".SampleLevel(");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+                try self.write(", ");
+                try self.emit_expr(function, function.expr_args.items[call.args.start + 4]);
+                try self.write(")");
+                return;
+            }
             if (std.mem.eql(u8, call.name, "textureStore")) {
                 if (call.args.len != 3) return error.InvalidIr;
                 try self.emit_expr(function, function.expr_args.items[call.args.start]);
