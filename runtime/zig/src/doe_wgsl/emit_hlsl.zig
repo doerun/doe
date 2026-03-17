@@ -438,7 +438,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_expr(self: *Emitter, function: ir.Function, expr_id: ir.ExprId) EmitError!void {
+    pub fn emit_expr(self: *Emitter, function: ir.Function, expr_id: ir.ExprId) EmitError!void {
         const expr = function.exprs.items[expr_id];
         switch (expr.data) {
             .bool_lit => |value| try self.write(if (value) "true" else "false"),

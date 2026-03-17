@@ -4,12 +4,37 @@ const ir = @import("ir.zig");
 pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Expr, "call")) !bool {
     if (std.mem.eql(u8, call.name, "textureLoad")) {
         if (call.args.len != 3) return error.InvalidIr;
-        try self.emit_expr(function, function.expr_args.items[call.args.start]);
-        try self.write(".read(");
-        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-        try self.write(", ");
-        try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
-        try self.write(")");
+        const texture_expr = function.expr_args.items[call.args.start];
+        const coord_expr = function.expr_args.items[call.args.start + 1];
+        const level_expr = function.expr_args.items[call.args.start + 2];
+        if (is_texture_2d(self.module, function, texture_expr)) {
+            try self.write("((all(int2(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(") >= int2(0)) && all(uint2(int2(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(")) < uint2(");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".get_width(uint(");
+            try self.emit_expr(function, level_expr);
+            try self.write(")), ");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".get_height(uint(");
+            try self.emit_expr(function, level_expr);
+            try self.write("))))) ? ");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".read(uint2(int2(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(")), uint(");
+            try self.emit_expr(function, level_expr);
+            try self.write(")) : float4(0.0))");
+        } else {
+            try self.emit_expr(function, texture_expr);
+            try self.write(".read(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(", ");
+            try self.emit_expr(function, level_expr);
+            try self.write(")");
+        }
         return true;
     }
     if (std.mem.eql(u8, call.name, "textureSample")) {
@@ -124,12 +149,33 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
     }
     if (std.mem.eql(u8, call.name, "textureStore")) {
         if (call.args.len != 3) return error.InvalidIr;
-        try self.emit_expr(function, function.expr_args.items[call.args.start]);
-        try self.write(".write(");
-        try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
-        try self.write(", ");
-        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-        try self.write(")");
+        const texture_expr = function.expr_args.items[call.args.start];
+        const coord_expr = function.expr_args.items[call.args.start + 1];
+        const value_expr = function.expr_args.items[call.args.start + 2];
+        if (is_storage_texture_2d(self.module, function, texture_expr)) {
+            try self.write("((all(int2(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(") >= int2(0)) && all(uint2(int2(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(")) < uint2(");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".get_width(), ");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".get_height()))) ? (");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".write(");
+            try self.emit_expr(function, value_expr);
+            try self.write(", uint2(int2(");
+            try self.emit_expr(function, coord_expr);
+            try self.write("))), 0) : 0)");
+        } else {
+            try self.emit_expr(function, texture_expr);
+            try self.write(".write(");
+            try self.emit_expr(function, value_expr);
+            try self.write(", ");
+            try self.emit_expr(function, coord_expr);
+            try self.write(")");
+        }
         return true;
     }
     if (std.mem.eql(u8, call.name, "textureDimensions")) {
@@ -185,4 +231,18 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
         }
     }
     return false;
+}
+
+fn is_texture_2d(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) bool {
+    return switch (module.types.get(function.exprs.items[expr_id].ty)) {
+        .texture_2d => true,
+        else => false,
+    };
+}
+
+fn is_storage_texture_2d(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) bool {
+    return switch (module.types.get(function.exprs.items[expr_id].ty)) {
+        .storage_texture_2d => true,
+        else => false,
+    };
 }

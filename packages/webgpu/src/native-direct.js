@@ -99,6 +99,10 @@ export function create(createArgs = null) {
   return addon.nativeDirectCreate();
 }
 
+export function createInstance(createArgs = null) {
+  return create(createArgs);
+}
+
 export function setupGlobals(target = globalThis, createArgs = null) {
   return setupGlobalsOnTarget(target, create(createArgs), globals);
 }
@@ -149,6 +153,7 @@ export { globals };
 
 export default {
   create,
+  createInstance,
   globals,
   setupGlobals,
   requestAdapter,

@@ -22,12 +22,33 @@ pub fn emit_texture_builtin(
 
     if (std.mem.eql(u8, call_name, "textureLoad")) {
         if (args.len != 3) return error.InvalidIr;
-        try ctx.emit_expr(function, function.expr_args.items[args.start]);
-        try ctx.write(".Load(int3(");
-        try ctx.emit_expr(function, function.expr_args.items[args.start + 1]);
-        try ctx.write(", ");
-        try ctx.emit_expr(function, function.expr_args.items[args.start + 2]);
-        try ctx.write("))");
+        const texture_expr = function.expr_args.items[args.start];
+        const coord_expr = function.expr_args.items[args.start + 1];
+        const level_expr = function.expr_args.items[args.start + 2];
+        if (texture_global_name(module, function, texture_expr)) |global_name| {
+            try ctx.write("((all(int2(");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write(") >= int2(0, 0)) && all(uint2(int2(");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write(")) < doe_textureDimensions_");
+            try ctx.write(global_name);
+            try ctx.write("(uint(");
+            try ctx.emit_expr(function, level_expr);
+            try ctx.write(")))) ? ");
+            try ctx.emit_expr(function, texture_expr);
+            try ctx.write(".Load(int3(int2(");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write("), int(");
+            try ctx.emit_expr(function, level_expr);
+            try ctx.write("))) : float4(0.0, 0.0, 0.0, 0.0))");
+        } else {
+            try ctx.emit_expr(function, texture_expr);
+            try ctx.write(".Load(int3(");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write(", ");
+            try ctx.emit_expr(function, level_expr);
+            try ctx.write("))");
+        }
         return true;
     }
     if (std.mem.eql(u8, call_name, "textureSample")) {
@@ -140,11 +161,30 @@ pub fn emit_texture_builtin(
     }
     if (std.mem.eql(u8, call_name, "textureStore")) {
         if (args.len != 3) return error.InvalidIr;
-        try ctx.emit_expr(function, function.expr_args.items[args.start]);
-        try ctx.write("[");
-        try ctx.emit_expr(function, function.expr_args.items[args.start + 1]);
-        try ctx.write("] = ");
-        try ctx.emit_expr(function, function.expr_args.items[args.start + 2]);
+        const texture_expr = function.expr_args.items[args.start];
+        const coord_expr = function.expr_args.items[args.start + 1];
+        const value_expr = function.expr_args.items[args.start + 2];
+        if (texture_global_name(module, function, texture_expr)) |global_name| {
+            try ctx.write("((all(int2(");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write(") >= int2(0, 0)) && all(uint2(int2(");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write(")) < doe_textureDimensions_");
+            try ctx.write(global_name);
+            try ctx.write("())) ? (");
+            try ctx.emit_expr(function, texture_expr);
+            try ctx.write("[uint2(int2(");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write("))] = ");
+            try ctx.emit_expr(function, value_expr);
+            try ctx.write(", 0) : 0)");
+        } else {
+            try ctx.emit_expr(function, texture_expr);
+            try ctx.write("[");
+            try ctx.emit_expr(function, coord_expr);
+            try ctx.write("] = ");
+            try ctx.emit_expr(function, value_expr);
+        }
         return true;
     }
     if (std.mem.eql(u8, call_name, "textureDimensions")) {
@@ -205,8 +245,19 @@ const WriteCtx = struct {
                     try self.write(".0");
                 }
             },
+            .param_ref => |index| {
+                const param = function.params.items[index];
+                if (param.io) |io_attr| {
+                    if (maps.hlsl_intrinsic_builtin(io_attr.builtin)) |intrinsic| {
+                        try self.write(intrinsic);
+                        return;
+                    }
+                }
+                try self.write(param.name);
+            },
             .global_ref => |index| try self.write(self.module.globals.items[index].name),
             .local_ref => |index| try self.write(function.locals.items[index].name),
+            .load => |inner| try self.emit_expr(function, inner),
             .call => |call| {
                 try self.write(call.name);
                 try self.write("(");
@@ -271,3 +322,10 @@ const WriteCtx = struct {
         }
     }
 };
+
+fn texture_global_name(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) ?[]const u8 {
+    return switch (function.exprs.items[expr_id].data) {
+        .global_ref => |index| module.globals.items[index].name,
+        else => null,
+    };
+}

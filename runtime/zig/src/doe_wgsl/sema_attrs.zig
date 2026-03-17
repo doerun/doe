@@ -59,6 +59,9 @@ pub fn parse_io_attr(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.IoAtt
         } else if (std.mem.eql(u8, name, "location")) {
             result.location = try parse_single_int_attr(self.module.tree, attr_idx);
             seen = true;
+        } else if (std.mem.eql(u8, name, "blend_src")) {
+            result.blend_src = try parse_single_int_attr(self.module.tree, attr_idx);
+            seen = true;
         } else if (std.mem.eql(u8, name, "flat")) {
             result.interpolation = .flat;
             seen = true;
@@ -166,12 +169,10 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
 
 fn is_subgroup_value_op(name: []const u8) bool {
     const ops = [_][]const u8{
-        "subgroupAdd", "subgroupMin", "subgroupMax", "subgroupMul",
-        "subgroupAnd", "subgroupOr", "subgroupXor",
-        "subgroupExclusiveAdd", "subgroupInclusiveAdd",
-        "subgroupShuffle", "subgroupShuffleDown",
-        "subgroupShuffleUp", "subgroupShuffleXor",
-        "subgroupBroadcast", "subgroupBroadcastFirst",
+        "subgroupAdd",          "subgroupMin",       "subgroupMax",            "subgroupMul",
+        "subgroupAnd",          "subgroupOr",        "subgroupXor",            "subgroupExclusiveAdd",
+        "subgroupInclusiveAdd", "subgroupShuffle",   "subgroupShuffleDown",    "subgroupShuffleUp",
+        "subgroupShuffleXor",   "subgroupBroadcast", "subgroupBroadcastFirst",
     };
     for (ops) |op| {
         if (std.mem.eql(u8, name, op)) return true;
@@ -181,8 +182,7 @@ fn is_subgroup_value_op(name: []const u8) bool {
 
 fn storage_format_scalar(format: ir.TextureFormat) ir.ScalarType {
     return switch (format) {
-        .rgba8unorm, .rgba8snorm, .rgba16float,
-        .r32float, .rg32float, .rgba32float => .f32,
+        .rgba8unorm, .rgba8snorm, .rgba16float, .r32float, .rg32float, .rgba32float => .f32,
         .rgba8uint, .rgba16uint, .r32uint, .rg32uint, .rgba32uint => .u32,
         .rgba8sint, .rgba16sint, .r32sint, .rg32sint, .rgba32sint => .i32,
     };
@@ -238,5 +238,7 @@ fn parse_builtin_attr(tree: *const Ast, attr_idx: u32) !ir.Builtin {
     if (std.mem.eql(u8, name, "instance_index")) return .instance_index;
     if (std.mem.eql(u8, name, "subgroup_size")) return .subgroup_size;
     if (std.mem.eql(u8, name, "subgroup_invocation_id")) return .subgroup_invocation_id;
+    if (std.mem.eql(u8, name, "clip_distances")) return .clip_distances;
+    if (std.mem.eql(u8, name, "primitive_index")) return .primitive_index;
     return error.InvalidAttribute;
 }

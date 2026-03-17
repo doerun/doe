@@ -1,0 +1,3523 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-03-17",
+  "specFamily": "webgpu-api",
+  "source": {
+    "kind": "npm-package",
+    "package": "@webgpu/types",
+    "version": "0.1.69",
+    "tarballUrl": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.69.tgz",
+    "apiReference": "https://gpuweb.github.io/types/"
+  },
+  "notes": [
+    "First-pass WebGPU API surface index generated from the official @webgpu/types package.",
+    "This file tracks WebGPU API interfaces and string-union spec enums; it does not yet cover WGSL builtins or CTS evidence.",
+    "CTS pass/fail evidence belongs in config/webgpu-cts-evidence.json."
+  ],
+  "stats": {
+    "interfaceCount": 106,
+    "interfaceMemberCount": 472,
+    "stringUnionCount": 34,
+    "stringUnionValueCount": 275
+  },
+  "interfaces": [
+    {
+      "name": "GPU",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPU.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "getPreferredCanvasFormat",
+          "memberKind": "method"
+        },
+        {
+          "name": "requestAdapter",
+          "memberKind": "method"
+        },
+        {
+          "name": "wgslLanguageFeatures",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUAdapter",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUAdapter.html",
+      "memberCount": 4,
+      "extends": [],
+      "members": [
+        {
+          "name": "requestDevice",
+          "memberKind": "method"
+        },
+        {
+          "name": "features",
+          "memberKind": "property"
+        },
+        {
+          "name": "info",
+          "memberKind": "property"
+        },
+        {
+          "name": "limits",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUAdapterInfo",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUAdapterInfo.html",
+      "memberCount": 7,
+      "extends": [],
+      "members": [
+        {
+          "name": "architecture",
+          "memberKind": "property"
+        },
+        {
+          "name": "description",
+          "memberKind": "property"
+        },
+        {
+          "name": "device",
+          "memberKind": "property"
+        },
+        {
+          "name": "isFallbackAdapter",
+          "memberKind": "property"
+        },
+        {
+          "name": "subgroupMaxSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "subgroupMinSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "vendor",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBindGroup",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindGroup.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBindGroupDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindGroupDescriptor.html",
+      "memberCount": 3,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "entries",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "layout",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBindGroupEntry",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindGroupEntry.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "binding",
+          "memberKind": "property"
+        },
+        {
+          "name": "resource",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBindGroupLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindGroupLayout.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBindGroupLayoutDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindGroupLayoutDescriptor.html",
+      "memberCount": 2,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "entries",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBindGroupLayoutEntry",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindGroupLayoutEntry.html",
+      "memberCount": 7,
+      "extends": [],
+      "members": [
+        {
+          "name": "binding",
+          "memberKind": "property"
+        },
+        {
+          "name": "buffer",
+          "memberKind": "property"
+        },
+        {
+          "name": "externalTexture",
+          "memberKind": "property"
+        },
+        {
+          "name": "sampler",
+          "memberKind": "property"
+        },
+        {
+          "name": "storageTexture",
+          "memberKind": "property"
+        },
+        {
+          "name": "texture",
+          "memberKind": "property"
+        },
+        {
+          "name": "visibility",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBindingCommandsMixin",
+      "interfaceKind": "mixin",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindingCommandsMixin.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "setBindGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "setImmediates",
+          "memberKind": "method"
+        }
+      ]
+    },
+    {
+      "name": "GPUBlendComponent",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBlendComponent.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "dstFactor",
+          "memberKind": "property"
+        },
+        {
+          "name": "operation",
+          "memberKind": "property"
+        },
+        {
+          "name": "srcFactor",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBlendState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBlendState.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "alpha",
+          "memberKind": "property"
+        },
+        {
+          "name": "color",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBuffer",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBuffer.html",
+      "memberCount": 8,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "destroy",
+          "memberKind": "method"
+        },
+        {
+          "name": "getMappedRange",
+          "memberKind": "method"
+        },
+        {
+          "name": "mapAsync",
+          "memberKind": "method"
+        },
+        {
+          "name": "unmap",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "mapState",
+          "memberKind": "property"
+        },
+        {
+          "name": "size",
+          "memberKind": "property"
+        },
+        {
+          "name": "usage",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBufferBinding",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBufferBinding.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "buffer",
+          "memberKind": "property"
+        },
+        {
+          "name": "offset",
+          "memberKind": "property"
+        },
+        {
+          "name": "size",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBufferBindingLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBufferBindingLayout.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "hasDynamicOffset",
+          "memberKind": "property"
+        },
+        {
+          "name": "minBindingSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "type",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBufferDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBufferDescriptor.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "mappedAtCreation",
+          "memberKind": "property"
+        },
+        {
+          "name": "size",
+          "memberKind": "property"
+        },
+        {
+          "name": "usage",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUBufferUsage",
+      "interfaceKind": "constant-interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBufferUsage.html",
+      "memberCount": 10,
+      "extends": [],
+      "members": [
+        {
+          "name": "COPY_DST",
+          "memberKind": "property"
+        },
+        {
+          "name": "COPY_SRC",
+          "memberKind": "property"
+        },
+        {
+          "name": "INDEX",
+          "memberKind": "property"
+        },
+        {
+          "name": "INDIRECT",
+          "memberKind": "property"
+        },
+        {
+          "name": "MAP_READ",
+          "memberKind": "property"
+        },
+        {
+          "name": "MAP_WRITE",
+          "memberKind": "property"
+        },
+        {
+          "name": "QUERY_RESOLVE",
+          "memberKind": "property"
+        },
+        {
+          "name": "STORAGE",
+          "memberKind": "property"
+        },
+        {
+          "name": "UNIFORM",
+          "memberKind": "property"
+        },
+        {
+          "name": "VERTEX",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCanvasConfiguration",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCanvasConfiguration.html",
+      "memberCount": 7,
+      "extends": [],
+      "members": [
+        {
+          "name": "alphaMode",
+          "memberKind": "property"
+        },
+        {
+          "name": "colorSpace",
+          "memberKind": "property"
+        },
+        {
+          "name": "device",
+          "memberKind": "property"
+        },
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "toneMapping",
+          "memberKind": "property"
+        },
+        {
+          "name": "usage",
+          "memberKind": "property"
+        },
+        {
+          "name": "viewFormats",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCanvasConfigurationOut",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCanvasConfigurationOut.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "toneMapping",
+          "memberKind": "property"
+        },
+        {
+          "name": "viewFormats",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCanvasContext",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCanvasContext.html",
+      "memberCount": 5,
+      "extends": [],
+      "members": [
+        {
+          "name": "configure",
+          "memberKind": "method"
+        },
+        {
+          "name": "getConfiguration",
+          "memberKind": "method"
+        },
+        {
+          "name": "getCurrentTexture",
+          "memberKind": "method"
+        },
+        {
+          "name": "unconfigure",
+          "memberKind": "method"
+        },
+        {
+          "name": "canvas",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCanvasToneMapping",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCanvasToneMapping.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "mode",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUColorDict",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUColorDict.html",
+      "memberCount": 4,
+      "extends": [],
+      "members": [
+        {
+          "name": "a",
+          "memberKind": "property"
+        },
+        {
+          "name": "b",
+          "memberKind": "property"
+        },
+        {
+          "name": "g",
+          "memberKind": "property"
+        },
+        {
+          "name": "r",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUColorTargetState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUColorTargetState.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "blend",
+          "memberKind": "property"
+        },
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "writeMask",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUColorWrite",
+      "interfaceKind": "constant-interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUColorWrite.html",
+      "memberCount": 5,
+      "extends": [],
+      "members": [
+        {
+          "name": "ALL",
+          "memberKind": "property"
+        },
+        {
+          "name": "ALPHA",
+          "memberKind": "property"
+        },
+        {
+          "name": "BLUE",
+          "memberKind": "property"
+        },
+        {
+          "name": "GREEN",
+          "memberKind": "property"
+        },
+        {
+          "name": "RED",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCommandBuffer",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCommandBuffer.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCommandEncoder",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCommandEncoder.html",
+      "memberCount": 13,
+      "extends": [
+        "GPUObjectBase",
+        "GPUCommandsMixin",
+        "GPUDebugCommandsMixin"
+      ],
+      "members": [
+        {
+          "name": "beginComputePass",
+          "memberKind": "method"
+        },
+        {
+          "name": "beginRenderPass",
+          "memberKind": "method"
+        },
+        {
+          "name": "clearBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "copyBufferToBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "copyBufferToTexture",
+          "memberKind": "method"
+        },
+        {
+          "name": "copyTextureToBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "copyTextureToTexture",
+          "memberKind": "method"
+        },
+        {
+          "name": "finish",
+          "memberKind": "method"
+        },
+        {
+          "name": "insertDebugMarker",
+          "memberKind": "method"
+        },
+        {
+          "name": "popDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "pushDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "resolveQuerySet",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCommandsMixin",
+      "interfaceKind": "mixin",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCommandsMixin.html",
+      "memberCount": 0,
+      "extends": [],
+      "members": []
+    },
+    {
+      "name": "GPUCompilationInfo",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCompilationInfo.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "messages",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCompilationMessage",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCompilationMessage.html",
+      "memberCount": 6,
+      "extends": [],
+      "members": [
+        {
+          "name": "length",
+          "memberKind": "property"
+        },
+        {
+          "name": "lineNum",
+          "memberKind": "property"
+        },
+        {
+          "name": "linePos",
+          "memberKind": "property"
+        },
+        {
+          "name": "message",
+          "memberKind": "property"
+        },
+        {
+          "name": "offset",
+          "memberKind": "property"
+        },
+        {
+          "name": "type",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUComputePassDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUComputePassDescriptor.html",
+      "memberCount": 2,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "timestampWrites",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUComputePassEncoder",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUComputePassEncoder.html",
+      "memberCount": 10,
+      "extends": [
+        "GPUObjectBase",
+        "GPUCommandsMixin",
+        "GPUDebugCommandsMixin",
+        "GPUBindingCommandsMixin"
+      ],
+      "members": [
+        {
+          "name": "dispatchWorkgroups",
+          "memberKind": "method"
+        },
+        {
+          "name": "dispatchWorkgroupsIndirect",
+          "memberKind": "method"
+        },
+        {
+          "name": "end",
+          "memberKind": "method"
+        },
+        {
+          "name": "insertDebugMarker",
+          "memberKind": "method"
+        },
+        {
+          "name": "popDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "pushDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "setBindGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "setImmediates",
+          "memberKind": "method"
+        },
+        {
+          "name": "setPipeline",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUComputePassTimestampWrites",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUComputePassTimestampWrites.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "beginningOfPassWriteIndex",
+          "memberKind": "property"
+        },
+        {
+          "name": "endOfPassWriteIndex",
+          "memberKind": "property"
+        },
+        {
+          "name": "querySet",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUComputePipeline",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUComputePipeline.html",
+      "memberCount": 2,
+      "extends": [
+        "GPUObjectBase",
+        "GPUPipelineBase"
+      ],
+      "members": [
+        {
+          "name": "getBindGroupLayout",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUComputePipelineDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUComputePipelineDescriptor.html",
+      "memberCount": 3,
+      "extends": [
+        "GPUPipelineDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "compute",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "layout",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCopyExternalImageDestInfo",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCopyExternalImageDestInfo.html",
+      "memberCount": 6,
+      "extends": [
+        "GPUTexelCopyTextureInfo"
+      ],
+      "members": [
+        {
+          "name": "aspect",
+          "memberKind": "property"
+        },
+        {
+          "name": "colorSpace",
+          "memberKind": "property"
+        },
+        {
+          "name": "mipLevel",
+          "memberKind": "property"
+        },
+        {
+          "name": "origin",
+          "memberKind": "property"
+        },
+        {
+          "name": "premultipliedAlpha",
+          "memberKind": "property"
+        },
+        {
+          "name": "texture",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUCopyExternalImageSourceInfo",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUCopyExternalImageSourceInfo.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "flipY",
+          "memberKind": "property"
+        },
+        {
+          "name": "origin",
+          "memberKind": "property"
+        },
+        {
+          "name": "source",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUDebugCommandsMixin",
+      "interfaceKind": "mixin",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUDebugCommandsMixin.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "insertDebugMarker",
+          "memberKind": "method"
+        },
+        {
+          "name": "popDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "pushDebugGroup",
+          "memberKind": "method"
+        }
+      ]
+    },
+    {
+      "name": "GPUDepthStencilState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUDepthStencilState.html",
+      "memberCount": 10,
+      "extends": [],
+      "members": [
+        {
+          "name": "depthBias",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthBiasClamp",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthBiasSlopeScale",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthCompare",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthWriteEnabled",
+          "memberKind": "property"
+        },
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilBack",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilFront",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilReadMask",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilWriteMask",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUDevice",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUDevice.html",
+      "memberCount": 27,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "addEventListener",
+          "memberKind": "method"
+        },
+        {
+          "name": "createBindGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "createBindGroupLayout",
+          "memberKind": "method"
+        },
+        {
+          "name": "createBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "createCommandEncoder",
+          "memberKind": "method"
+        },
+        {
+          "name": "createComputePipeline",
+          "memberKind": "method"
+        },
+        {
+          "name": "createComputePipelineAsync",
+          "memberKind": "method"
+        },
+        {
+          "name": "createPipelineLayout",
+          "memberKind": "method"
+        },
+        {
+          "name": "createQuerySet",
+          "memberKind": "method"
+        },
+        {
+          "name": "createRenderBundleEncoder",
+          "memberKind": "method"
+        },
+        {
+          "name": "createRenderPipeline",
+          "memberKind": "method"
+        },
+        {
+          "name": "createRenderPipelineAsync",
+          "memberKind": "method"
+        },
+        {
+          "name": "createSampler",
+          "memberKind": "method"
+        },
+        {
+          "name": "createShaderModule",
+          "memberKind": "method"
+        },
+        {
+          "name": "createTexture",
+          "memberKind": "method"
+        },
+        {
+          "name": "destroy",
+          "memberKind": "method"
+        },
+        {
+          "name": "importExternalTexture",
+          "memberKind": "method"
+        },
+        {
+          "name": "popErrorScope",
+          "memberKind": "method"
+        },
+        {
+          "name": "pushErrorScope",
+          "memberKind": "method"
+        },
+        {
+          "name": "removeEventListener",
+          "memberKind": "method"
+        },
+        {
+          "name": "adapterInfo",
+          "memberKind": "property"
+        },
+        {
+          "name": "features",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "limits",
+          "memberKind": "property"
+        },
+        {
+          "name": "lost",
+          "memberKind": "property"
+        },
+        {
+          "name": "onuncapturederror",
+          "memberKind": "property"
+        },
+        {
+          "name": "queue",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUDeviceDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUDeviceDescriptor.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "defaultQueue",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "requiredFeatures",
+          "memberKind": "property"
+        },
+        {
+          "name": "requiredLimits",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUDeviceLostInfo",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUDeviceLostInfo.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "message",
+          "memberKind": "property"
+        },
+        {
+          "name": "reason",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUError",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUError.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "message",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUExtent3DDict",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUExtent3DDict.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "depthOrArrayLayers",
+          "memberKind": "property"
+        },
+        {
+          "name": "height",
+          "memberKind": "property"
+        },
+        {
+          "name": "width",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUExtent3DDictStrict",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUExtent3DDictStrict.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUExtent3DDict"
+      ],
+      "members": [
+        {
+          "name": "depth",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthOrArrayLayers",
+          "memberKind": "property"
+        },
+        {
+          "name": "height",
+          "memberKind": "property"
+        },
+        {
+          "name": "width",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUExternalTexture",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUExternalTexture.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUExternalTextureBindingLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUExternalTextureBindingLayout.html",
+      "memberCount": 0,
+      "extends": [],
+      "members": []
+    },
+    {
+      "name": "GPUExternalTextureDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUExternalTextureDescriptor.html",
+      "memberCount": 3,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "colorSpace",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "source",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUFragmentState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUFragmentState.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUProgrammableStage"
+      ],
+      "members": [
+        {
+          "name": "constants",
+          "memberKind": "property"
+        },
+        {
+          "name": "entryPoint",
+          "memberKind": "property"
+        },
+        {
+          "name": "module",
+          "memberKind": "property"
+        },
+        {
+          "name": "targets",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUInternalError",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUInternalError.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUError"
+      ],
+      "members": [
+        {
+          "name": "message",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUMapMode",
+      "interfaceKind": "constant-interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUMapMode.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "READ",
+          "memberKind": "property"
+        },
+        {
+          "name": "WRITE",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUMultisampleState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUMultisampleState.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "alphaToCoverageEnabled",
+          "memberKind": "property"
+        },
+        {
+          "name": "count",
+          "memberKind": "property"
+        },
+        {
+          "name": "mask",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUObjectBase",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUObjectBase.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUObjectDescriptorBase",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUObjectDescriptorBase.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUOrigin2DDict",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUOrigin2DDict.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "x",
+          "memberKind": "property"
+        },
+        {
+          "name": "y",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUOrigin2DDictStrict",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUOrigin2DDictStrict.html",
+      "memberCount": 3,
+      "extends": [
+        "GPUOrigin2DDict"
+      ],
+      "members": [
+        {
+          "name": "x",
+          "memberKind": "property"
+        },
+        {
+          "name": "y",
+          "memberKind": "property"
+        },
+        {
+          "name": "z",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUOrigin3DDict",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUOrigin3DDict.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "x",
+          "memberKind": "property"
+        },
+        {
+          "name": "y",
+          "memberKind": "property"
+        },
+        {
+          "name": "z",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUOutOfMemoryError",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUOutOfMemoryError.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUError"
+      ],
+      "members": [
+        {
+          "name": "message",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUPipelineBase",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPipelineBase.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "getBindGroupLayout",
+          "memberKind": "method"
+        }
+      ]
+    },
+    {
+      "name": "GPUPipelineDescriptorBase",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPipelineDescriptorBase.html",
+      "memberCount": 2,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "layout",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUPipelineError",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPipelineError.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "reason",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUPipelineErrorInit",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPipelineErrorInit.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "reason",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUPipelineLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPipelineLayout.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUPipelineLayoutDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPipelineLayoutDescriptor.html",
+      "memberCount": 3,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "bindGroupLayouts",
+          "memberKind": "property"
+        },
+        {
+          "name": "immediateSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUPrimitiveState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPrimitiveState.html",
+      "memberCount": 5,
+      "extends": [],
+      "members": [
+        {
+          "name": "cullMode",
+          "memberKind": "property"
+        },
+        {
+          "name": "frontFace",
+          "memberKind": "property"
+        },
+        {
+          "name": "stripIndexFormat",
+          "memberKind": "property"
+        },
+        {
+          "name": "topology",
+          "memberKind": "property"
+        },
+        {
+          "name": "unclippedDepth",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUProgrammableStage",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUProgrammableStage.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "constants",
+          "memberKind": "property"
+        },
+        {
+          "name": "entryPoint",
+          "memberKind": "property"
+        },
+        {
+          "name": "module",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUQuerySet",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUQuerySet.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "destroy",
+          "memberKind": "method"
+        },
+        {
+          "name": "count",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "type",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUQuerySetDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUQuerySetDescriptor.html",
+      "memberCount": 3,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "count",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "type",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUQueue",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUQueue.html",
+      "memberCount": 6,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "copyExternalImageToTexture",
+          "memberKind": "method"
+        },
+        {
+          "name": "onSubmittedWorkDone",
+          "memberKind": "method"
+        },
+        {
+          "name": "submit",
+          "memberKind": "method"
+        },
+        {
+          "name": "writeBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "writeTexture",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderBundle",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderBundle.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderBundleEncoder",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderBundleEncoder.html",
+      "memberCount": 14,
+      "extends": [
+        "GPUObjectBase",
+        "GPUCommandsMixin",
+        "GPUDebugCommandsMixin",
+        "GPUBindingCommandsMixin",
+        "GPURenderCommandsMixin"
+      ],
+      "members": [
+        {
+          "name": "draw",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndexed",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndexedIndirect",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndirect",
+          "memberKind": "method"
+        },
+        {
+          "name": "finish",
+          "memberKind": "method"
+        },
+        {
+          "name": "insertDebugMarker",
+          "memberKind": "method"
+        },
+        {
+          "name": "popDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "pushDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "setBindGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "setImmediates",
+          "memberKind": "method"
+        },
+        {
+          "name": "setIndexBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "setPipeline",
+          "memberKind": "method"
+        },
+        {
+          "name": "setVertexBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderBundleEncoderDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderBundleEncoderDescriptor.html",
+      "memberCount": 6,
+      "extends": [
+        "GPURenderPassLayout"
+      ],
+      "members": [
+        {
+          "name": "colorFormats",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthReadOnly",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthStencilFormat",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "sampleCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilReadOnly",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderCommandsMixin",
+      "interfaceKind": "mixin",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderCommandsMixin.html",
+      "memberCount": 7,
+      "extends": [],
+      "members": [
+        {
+          "name": "draw",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndexed",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndexedIndirect",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndirect",
+          "memberKind": "method"
+        },
+        {
+          "name": "setIndexBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "setPipeline",
+          "memberKind": "method"
+        },
+        {
+          "name": "setVertexBuffer",
+          "memberKind": "method"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPassColorAttachment",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPassColorAttachment.html",
+      "memberCount": 6,
+      "extends": [],
+      "members": [
+        {
+          "name": "clearValue",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthSlice",
+          "memberKind": "property"
+        },
+        {
+          "name": "loadOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "resolveTarget",
+          "memberKind": "property"
+        },
+        {
+          "name": "storeOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "view",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPassDepthStencilAttachment",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPassDepthStencilAttachment.html",
+      "memberCount": 9,
+      "extends": [],
+      "members": [
+        {
+          "name": "depthClearValue",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthLoadOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthReadOnly",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthStoreOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilClearValue",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilLoadOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilReadOnly",
+          "memberKind": "property"
+        },
+        {
+          "name": "stencilStoreOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "view",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPassDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPassDescriptor.html",
+      "memberCount": 6,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "colorAttachments",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthStencilAttachment",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxDrawCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "occlusionQuerySet",
+          "memberKind": "property"
+        },
+        {
+          "name": "timestampWrites",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPassEncoder",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPassEncoder.html",
+      "memberCount": 21,
+      "extends": [
+        "GPUObjectBase",
+        "GPUCommandsMixin",
+        "GPUDebugCommandsMixin",
+        "GPUBindingCommandsMixin",
+        "GPURenderCommandsMixin"
+      ],
+      "members": [
+        {
+          "name": "beginOcclusionQuery",
+          "memberKind": "method"
+        },
+        {
+          "name": "draw",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndexed",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndexedIndirect",
+          "memberKind": "method"
+        },
+        {
+          "name": "drawIndirect",
+          "memberKind": "method"
+        },
+        {
+          "name": "end",
+          "memberKind": "method"
+        },
+        {
+          "name": "endOcclusionQuery",
+          "memberKind": "method"
+        },
+        {
+          "name": "executeBundles",
+          "memberKind": "method"
+        },
+        {
+          "name": "insertDebugMarker",
+          "memberKind": "method"
+        },
+        {
+          "name": "popDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "pushDebugGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "setBindGroup",
+          "memberKind": "method"
+        },
+        {
+          "name": "setBlendConstant",
+          "memberKind": "method"
+        },
+        {
+          "name": "setImmediates",
+          "memberKind": "method"
+        },
+        {
+          "name": "setIndexBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "setPipeline",
+          "memberKind": "method"
+        },
+        {
+          "name": "setScissorRect",
+          "memberKind": "method"
+        },
+        {
+          "name": "setStencilReference",
+          "memberKind": "method"
+        },
+        {
+          "name": "setVertexBuffer",
+          "memberKind": "method"
+        },
+        {
+          "name": "setViewport",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPassLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPassLayout.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "colorFormats",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthStencilFormat",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "sampleCount",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPassTimestampWrites",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPassTimestampWrites.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "beginningOfPassWriteIndex",
+          "memberKind": "property"
+        },
+        {
+          "name": "endOfPassWriteIndex",
+          "memberKind": "property"
+        },
+        {
+          "name": "querySet",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPipeline",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPipeline.html",
+      "memberCount": 2,
+      "extends": [
+        "GPUObjectBase",
+        "GPUPipelineBase"
+      ],
+      "members": [
+        {
+          "name": "getBindGroupLayout",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURenderPipelineDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURenderPipelineDescriptor.html",
+      "memberCount": 7,
+      "extends": [
+        "GPUPipelineDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "depthStencil",
+          "memberKind": "property"
+        },
+        {
+          "name": "fragment",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "layout",
+          "memberKind": "property"
+        },
+        {
+          "name": "multisample",
+          "memberKind": "property"
+        },
+        {
+          "name": "primitive",
+          "memberKind": "property"
+        },
+        {
+          "name": "vertex",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPURequestAdapterOptions",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPURequestAdapterOptions.html",
+      "memberCount": 4,
+      "extends": [],
+      "members": [
+        {
+          "name": "featureLevel",
+          "memberKind": "property"
+        },
+        {
+          "name": "forceFallbackAdapter",
+          "memberKind": "property"
+        },
+        {
+          "name": "powerPreference",
+          "memberKind": "property"
+        },
+        {
+          "name": "xrCompatible",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUSampler",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUSampler.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUSamplerBindingLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUSamplerBindingLayout.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "type",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUSamplerDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUSamplerDescriptor.html",
+      "memberCount": 11,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "addressModeU",
+          "memberKind": "property"
+        },
+        {
+          "name": "addressModeV",
+          "memberKind": "property"
+        },
+        {
+          "name": "addressModeW",
+          "memberKind": "property"
+        },
+        {
+          "name": "compare",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "lodMaxClamp",
+          "memberKind": "property"
+        },
+        {
+          "name": "lodMinClamp",
+          "memberKind": "property"
+        },
+        {
+          "name": "magFilter",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxAnisotropy",
+          "memberKind": "property"
+        },
+        {
+          "name": "minFilter",
+          "memberKind": "property"
+        },
+        {
+          "name": "mipmapFilter",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUShaderModule",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUShaderModule.html",
+      "memberCount": 2,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "getCompilationInfo",
+          "memberKind": "method"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUShaderModuleCompilationHint",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUShaderModuleCompilationHint.html",
+      "memberCount": 2,
+      "extends": [],
+      "members": [
+        {
+          "name": "entryPoint",
+          "memberKind": "property"
+        },
+        {
+          "name": "layout",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUShaderModuleDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUShaderModuleDescriptor.html",
+      "memberCount": 3,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "code",
+          "memberKind": "property"
+        },
+        {
+          "name": "compilationHints",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUShaderStage",
+      "interfaceKind": "constant-interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUShaderStage.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "COMPUTE",
+          "memberKind": "property"
+        },
+        {
+          "name": "FRAGMENT",
+          "memberKind": "property"
+        },
+        {
+          "name": "VERTEX",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUStencilFaceState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUStencilFaceState.html",
+      "memberCount": 4,
+      "extends": [],
+      "members": [
+        {
+          "name": "compare",
+          "memberKind": "property"
+        },
+        {
+          "name": "depthFailOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "failOp",
+          "memberKind": "property"
+        },
+        {
+          "name": "passOp",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUStorageTextureBindingLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUStorageTextureBindingLayout.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "access",
+          "memberKind": "property"
+        },
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "viewDimension",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUSupportedLimits",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUSupportedLimits.html",
+      "memberCount": 36,
+      "extends": [],
+      "members": [
+        {
+          "name": "maxBindGroups",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxBindGroupsPlusVertexBuffers",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxBindingsPerBindGroup",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxBufferSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxColorAttachmentBytesPerSample",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxColorAttachments",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxComputeInvocationsPerWorkgroup",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxComputeWorkgroupSizeX",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxComputeWorkgroupSizeY",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxComputeWorkgroupSizeZ",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxComputeWorkgroupStorageSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxComputeWorkgroupsPerDimension",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxDynamicStorageBuffersPerPipelineLayout",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxDynamicUniformBuffersPerPipelineLayout",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxImmediateSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxInterStageShaderVariables",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxSampledTexturesPerShaderStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxSamplersPerShaderStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxStorageBufferBindingSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxStorageBuffersInFragmentStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxStorageBuffersInVertexStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxStorageBuffersPerShaderStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxStorageTexturesInFragmentStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxStorageTexturesInVertexStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxStorageTexturesPerShaderStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxTextureArrayLayers",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxTextureDimension1D",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxTextureDimension2D",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxTextureDimension3D",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxUniformBufferBindingSize",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxUniformBuffersPerShaderStage",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxVertexAttributes",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxVertexBufferArrayStride",
+          "memberKind": "property"
+        },
+        {
+          "name": "maxVertexBuffers",
+          "memberKind": "property"
+        },
+        {
+          "name": "minStorageBufferOffsetAlignment",
+          "memberKind": "property"
+        },
+        {
+          "name": "minUniformBufferOffsetAlignment",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTexelCopyBufferInfo",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTexelCopyBufferInfo.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUTexelCopyBufferLayout"
+      ],
+      "members": [
+        {
+          "name": "buffer",
+          "memberKind": "property"
+        },
+        {
+          "name": "bytesPerRow",
+          "memberKind": "property"
+        },
+        {
+          "name": "offset",
+          "memberKind": "property"
+        },
+        {
+          "name": "rowsPerImage",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTexelCopyBufferLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTexelCopyBufferLayout.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "bytesPerRow",
+          "memberKind": "property"
+        },
+        {
+          "name": "offset",
+          "memberKind": "property"
+        },
+        {
+          "name": "rowsPerImage",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTexelCopyTextureInfo",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTexelCopyTextureInfo.html",
+      "memberCount": 4,
+      "extends": [],
+      "members": [
+        {
+          "name": "aspect",
+          "memberKind": "property"
+        },
+        {
+          "name": "mipLevel",
+          "memberKind": "property"
+        },
+        {
+          "name": "origin",
+          "memberKind": "property"
+        },
+        {
+          "name": "texture",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTexture",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTexture.html",
+      "memberCount": 12,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "createView",
+          "memberKind": "method"
+        },
+        {
+          "name": "destroy",
+          "memberKind": "method"
+        },
+        {
+          "name": "depthOrArrayLayers",
+          "memberKind": "property"
+        },
+        {
+          "name": "dimension",
+          "memberKind": "property"
+        },
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "height",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "mipLevelCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "sampleCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "textureBindingViewDimension",
+          "memberKind": "property"
+        },
+        {
+          "name": "usage",
+          "memberKind": "property"
+        },
+        {
+          "name": "width",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTextureBindingLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTextureBindingLayout.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "multisampled",
+          "memberKind": "property"
+        },
+        {
+          "name": "sampleType",
+          "memberKind": "property"
+        },
+        {
+          "name": "viewDimension",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTextureDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTextureDescriptor.html",
+      "memberCount": 9,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "dimension",
+          "memberKind": "property"
+        },
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "mipLevelCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "sampleCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "size",
+          "memberKind": "property"
+        },
+        {
+          "name": "textureBindingViewDimension",
+          "memberKind": "property"
+        },
+        {
+          "name": "usage",
+          "memberKind": "property"
+        },
+        {
+          "name": "viewFormats",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTextureUsage",
+      "interfaceKind": "constant-interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTextureUsage.html",
+      "memberCount": 6,
+      "extends": [],
+      "members": [
+        {
+          "name": "COPY_DST",
+          "memberKind": "property"
+        },
+        {
+          "name": "COPY_SRC",
+          "memberKind": "property"
+        },
+        {
+          "name": "RENDER_ATTACHMENT",
+          "memberKind": "property"
+        },
+        {
+          "name": "STORAGE_BINDING",
+          "memberKind": "property"
+        },
+        {
+          "name": "TEXTURE_BINDING",
+          "memberKind": "property"
+        },
+        {
+          "name": "TRANSIENT_ATTACHMENT",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTextureView",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTextureView.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUObjectBase"
+      ],
+      "members": [
+        {
+          "name": "label",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUTextureViewDescriptor",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUTextureViewDescriptor.html",
+      "memberCount": 10,
+      "extends": [
+        "GPUObjectDescriptorBase"
+      ],
+      "members": [
+        {
+          "name": "arrayLayerCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "aspect",
+          "memberKind": "property"
+        },
+        {
+          "name": "baseArrayLayer",
+          "memberKind": "property"
+        },
+        {
+          "name": "baseMipLevel",
+          "memberKind": "property"
+        },
+        {
+          "name": "dimension",
+          "memberKind": "property"
+        },
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "label",
+          "memberKind": "property"
+        },
+        {
+          "name": "mipLevelCount",
+          "memberKind": "property"
+        },
+        {
+          "name": "swizzle",
+          "memberKind": "property"
+        },
+        {
+          "name": "usage",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUUncapturedErrorEvent",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUUncapturedErrorEvent.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "error",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUUncapturedErrorEventInit",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUUncapturedErrorEventInit.html",
+      "memberCount": 1,
+      "extends": [],
+      "members": [
+        {
+          "name": "error",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUValidationError",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUValidationError.html",
+      "memberCount": 1,
+      "extends": [
+        "GPUError"
+      ],
+      "members": [
+        {
+          "name": "message",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUVertexAttribute",
+      "interfaceKind": "interface",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUVertexAttribute.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "format",
+          "memberKind": "property"
+        },
+        {
+          "name": "offset",
+          "memberKind": "property"
+        },
+        {
+          "name": "shaderLocation",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUVertexBufferLayout",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUVertexBufferLayout.html",
+      "memberCount": 3,
+      "extends": [],
+      "members": [
+        {
+          "name": "arrayStride",
+          "memberKind": "property"
+        },
+        {
+          "name": "attributes",
+          "memberKind": "property"
+        },
+        {
+          "name": "stepMode",
+          "memberKind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GPUVertexState",
+      "interfaceKind": "dictionary",
+      "specUrl": "https://gpuweb.github.io/types/interfaces/GPUVertexState.html",
+      "memberCount": 4,
+      "extends": [
+        "GPUProgrammableStage"
+      ],
+      "members": [
+        {
+          "name": "buffers",
+          "memberKind": "property"
+        },
+        {
+          "name": "constants",
+          "memberKind": "property"
+        },
+        {
+          "name": "entryPoint",
+          "memberKind": "property"
+        },
+        {
+          "name": "module",
+          "memberKind": "property"
+        }
+      ]
+    }
+  ],
+  "stringUnions": [
+    {
+      "name": "GPUAddressMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "clamp-to-edge",
+        "repeat",
+        "mirror-repeat"
+      ]
+    },
+    {
+      "name": "GPUAutoLayoutMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 1,
+      "values": [
+        "auto"
+      ]
+    },
+    {
+      "name": "GPUBlendFactor",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 17,
+      "values": [
+        "zero",
+        "one",
+        "src",
+        "one-minus-src",
+        "src-alpha",
+        "one-minus-src-alpha",
+        "dst",
+        "one-minus-dst",
+        "dst-alpha",
+        "one-minus-dst-alpha",
+        "src-alpha-saturated",
+        "constant",
+        "one-minus-constant",
+        "src1",
+        "one-minus-src1",
+        "src1-alpha",
+        "one-minus-src1-alpha"
+      ]
+    },
+    {
+      "name": "GPUBlendOperation",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 5,
+      "values": [
+        "add",
+        "subtract",
+        "reverse-subtract",
+        "min",
+        "max"
+      ]
+    },
+    {
+      "name": "GPUBufferBindingType",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "uniform",
+        "storage",
+        "read-only-storage"
+      ]
+    },
+    {
+      "name": "GPUBufferMapState",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "unmapped",
+        "pending",
+        "mapped"
+      ]
+    },
+    {
+      "name": "GPUCanvasAlphaMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "opaque",
+        "premultiplied"
+      ]
+    },
+    {
+      "name": "GPUCanvasToneMappingMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "standard",
+        "extended"
+      ]
+    },
+    {
+      "name": "GPUCompareFunction",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 8,
+      "values": [
+        "never",
+        "less",
+        "equal",
+        "less-equal",
+        "greater",
+        "not-equal",
+        "greater-equal",
+        "always"
+      ]
+    },
+    {
+      "name": "GPUCompilationMessageType",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "error",
+        "warning",
+        "info"
+      ]
+    },
+    {
+      "name": "GPUCullMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "none",
+        "front",
+        "back"
+      ]
+    },
+    {
+      "name": "GPUDeviceLostReason",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "unknown",
+        "destroyed"
+      ]
+    },
+    {
+      "name": "GPUErrorFilter",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "validation",
+        "out-of-memory",
+        "internal"
+      ]
+    },
+    {
+      "name": "GPUFeatureName",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 22,
+      "values": [
+        "core-features-and-limits",
+        "depth-clip-control",
+        "depth32float-stencil8",
+        "texture-compression-bc",
+        "texture-compression-bc-sliced-3d",
+        "texture-compression-etc2",
+        "texture-compression-astc",
+        "texture-compression-astc-sliced-3d",
+        "timestamp-query",
+        "indirect-first-instance",
+        "shader-f16",
+        "rg11b10ufloat-renderable",
+        "bgra8unorm-storage",
+        "float32-filterable",
+        "float32-blendable",
+        "clip-distances",
+        "dual-source-blending",
+        "subgroups",
+        "texture-formats-tier1",
+        "texture-formats-tier2",
+        "primitive-index",
+        "texture-component-swizzle"
+      ]
+    },
+    {
+      "name": "GPUFilterMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "nearest",
+        "linear"
+      ]
+    },
+    {
+      "name": "GPUFrontFace",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "ccw",
+        "cw"
+      ]
+    },
+    {
+      "name": "GPUIndexFormat",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "uint16",
+        "uint32"
+      ]
+    },
+    {
+      "name": "GPULoadOp",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "load",
+        "clear"
+      ]
+    },
+    {
+      "name": "GPUMipmapFilterMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "nearest",
+        "linear"
+      ]
+    },
+    {
+      "name": "GPUPipelineErrorReason",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "validation",
+        "internal"
+      ]
+    },
+    {
+      "name": "GPUPowerPreference",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "low-power",
+        "high-performance"
+      ]
+    },
+    {
+      "name": "GPUPrimitiveTopology",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 5,
+      "values": [
+        "point-list",
+        "line-list",
+        "line-strip",
+        "triangle-list",
+        "triangle-strip"
+      ]
+    },
+    {
+      "name": "GPUQueryType",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "occlusion",
+        "timestamp"
+      ]
+    },
+    {
+      "name": "GPUSamplerBindingType",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "filtering",
+        "non-filtering",
+        "comparison"
+      ]
+    },
+    {
+      "name": "GPUStencilOperation",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 8,
+      "values": [
+        "keep",
+        "zero",
+        "replace",
+        "invert",
+        "increment-clamp",
+        "decrement-clamp",
+        "increment-wrap",
+        "decrement-wrap"
+      ]
+    },
+    {
+      "name": "GPUStorageTextureAccess",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "write-only",
+        "read-only",
+        "read-write"
+      ]
+    },
+    {
+      "name": "GPUStoreOp",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "store",
+        "discard"
+      ]
+    },
+    {
+      "name": "GPUTextureAspect",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "all",
+        "stencil-only",
+        "depth-only"
+      ]
+    },
+    {
+      "name": "GPUTextureDimension",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 3,
+      "values": [
+        "1d",
+        "2d",
+        "3d"
+      ]
+    },
+    {
+      "name": "GPUTextureFormat",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 101,
+      "values": [
+        "r8unorm",
+        "r8snorm",
+        "r8uint",
+        "r8sint",
+        "r16unorm",
+        "r16snorm",
+        "r16uint",
+        "r16sint",
+        "r16float",
+        "rg8unorm",
+        "rg8snorm",
+        "rg8uint",
+        "rg8sint",
+        "r32uint",
+        "r32sint",
+        "r32float",
+        "rg16unorm",
+        "rg16snorm",
+        "rg16uint",
+        "rg16sint",
+        "rg16float",
+        "rgba8unorm",
+        "rgba8unorm-srgb",
+        "rgba8snorm",
+        "rgba8uint",
+        "rgba8sint",
+        "bgra8unorm",
+        "bgra8unorm-srgb",
+        "rgb9e5ufloat",
+        "rgb10a2uint",
+        "rgb10a2unorm",
+        "rg11b10ufloat",
+        "rg32uint",
+        "rg32sint",
+        "rg32float",
+        "rgba16unorm",
+        "rgba16snorm",
+        "rgba16uint",
+        "rgba16sint",
+        "rgba16float",
+        "rgba32uint",
+        "rgba32sint",
+        "rgba32float",
+        "stencil8",
+        "depth16unorm",
+        "depth24plus",
+        "depth24plus-stencil8",
+        "depth32float",
+        "depth32float-stencil8",
+        "bc1-rgba-unorm",
+        "bc1-rgba-unorm-srgb",
+        "bc2-rgba-unorm",
+        "bc2-rgba-unorm-srgb",
+        "bc3-rgba-unorm",
+        "bc3-rgba-unorm-srgb",
+        "bc4-r-unorm",
+        "bc4-r-snorm",
+        "bc5-rg-unorm",
+        "bc5-rg-snorm",
+        "bc6h-rgb-ufloat",
+        "bc6h-rgb-float",
+        "bc7-rgba-unorm",
+        "bc7-rgba-unorm-srgb",
+        "etc2-rgb8unorm",
+        "etc2-rgb8unorm-srgb",
+        "etc2-rgb8a1unorm",
+        "etc2-rgb8a1unorm-srgb",
+        "etc2-rgba8unorm",
+        "etc2-rgba8unorm-srgb",
+        "eac-r11unorm",
+        "eac-r11snorm",
+        "eac-rg11unorm",
+        "eac-rg11snorm",
+        "astc-4x4-unorm",
+        "astc-4x4-unorm-srgb",
+        "astc-5x4-unorm",
+        "astc-5x4-unorm-srgb",
+        "astc-5x5-unorm",
+        "astc-5x5-unorm-srgb",
+        "astc-6x5-unorm",
+        "astc-6x5-unorm-srgb",
+        "astc-6x6-unorm",
+        "astc-6x6-unorm-srgb",
+        "astc-8x5-unorm",
+        "astc-8x5-unorm-srgb",
+        "astc-8x6-unorm",
+        "astc-8x6-unorm-srgb",
+        "astc-8x8-unorm",
+        "astc-8x8-unorm-srgb",
+        "astc-10x5-unorm",
+        "astc-10x5-unorm-srgb",
+        "astc-10x6-unorm",
+        "astc-10x6-unorm-srgb",
+        "astc-10x8-unorm",
+        "astc-10x8-unorm-srgb",
+        "astc-10x10-unorm",
+        "astc-10x10-unorm-srgb",
+        "astc-12x10-unorm",
+        "astc-12x10-unorm-srgb",
+        "astc-12x12-unorm",
+        "astc-12x12-unorm-srgb"
+      ]
+    },
+    {
+      "name": "GPUTextureSampleType",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 5,
+      "values": [
+        "float",
+        "unfilterable-float",
+        "depth",
+        "sint",
+        "uint"
+      ]
+    },
+    {
+      "name": "GPUTextureViewDimension",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 6,
+      "values": [
+        "1d",
+        "2d",
+        "2d-array",
+        "cube",
+        "cube-array",
+        "3d"
+      ]
+    },
+    {
+      "name": "GPUVertexFormat",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 41,
+      "values": [
+        "uint8",
+        "uint8x2",
+        "uint8x4",
+        "sint8",
+        "sint8x2",
+        "sint8x4",
+        "unorm8",
+        "unorm8x2",
+        "unorm8x4",
+        "snorm8",
+        "snorm8x2",
+        "snorm8x4",
+        "uint16",
+        "uint16x2",
+        "uint16x4",
+        "sint16",
+        "sint16x2",
+        "sint16x4",
+        "unorm16",
+        "unorm16x2",
+        "unorm16x4",
+        "snorm16",
+        "snorm16x2",
+        "snorm16x4",
+        "float16",
+        "float16x2",
+        "float16x4",
+        "float32",
+        "float32x2",
+        "float32x3",
+        "float32x4",
+        "uint32",
+        "uint32x2",
+        "uint32x3",
+        "uint32x4",
+        "sint32",
+        "sint32x2",
+        "sint32x3",
+        "sint32x4",
+        "unorm10-10-10-2",
+        "unorm8x4-bgra"
+      ]
+    },
+    {
+      "name": "GPUVertexStepMode",
+      "unionKind": "string-union",
+      "specUrl": "https://gpuweb.github.io/types/",
+      "valueCount": 2,
+      "values": [
+        "vertex",
+        "instance"
+      ]
+    }
+  ]
+}

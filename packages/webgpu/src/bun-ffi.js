@@ -1869,6 +1869,10 @@ export function create(createArgs = null) {
     return new DoeGPU(instance);
 }
 
+export function createInstance(createArgs = null) {
+    return create(createArgs);
+}
+
 export function setupGlobals(target = globalThis, createArgs = null) {
     const gpu = create(createArgs);
     return setupGlobalsOnTarget(target, gpu, globals);
@@ -1909,6 +1913,7 @@ export function setNativeTimeoutMs(timeoutMs) {
 
 export default {
     create,
+    createInstance,
     globals,
     setupGlobals,
     requestAdapter,

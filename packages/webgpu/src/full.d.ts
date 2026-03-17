@@ -86,6 +86,7 @@ export interface FullDoeNamespace
 
 export const globals: Record<string, unknown>;
 export function create(createArgs?: string[] | null): GPU;
+export function createInstance(createArgs?: string[] | null): GPU;
 export function setupGlobals(target?: object, createArgs?: string[] | null): GPU;
 export function requestAdapter(
   adapterOptions?: GPURequestAdapterOptions,
@@ -113,6 +114,7 @@ export const doe: FullDoeNamespace;
 
 declare const _default: {
   create: typeof create;
+  createInstance: typeof createInstance;
   globals: typeof globals;
   setupGlobals: typeof setupGlobals;
   requestAdapter: typeof requestAdapter;

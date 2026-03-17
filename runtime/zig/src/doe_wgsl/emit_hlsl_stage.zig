@@ -2,6 +2,8 @@ const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_hlsl_maps.zig");
 
+const CLIP_DISTANCE_RESULT_NAME = "_doe_clip_distance";
+
 pub fn emit_stage_function(self: anytype, function_index: ir.FunctionId) !void {
     const function = self.module.functions.items[function_index];
     const stage = function.stage orelse return error.InvalidIr;
@@ -13,7 +15,11 @@ pub fn emit_stage_function(self: anytype, function_index: ir.FunctionId) !void {
         }) return error.InvalidIr;
     }
 
-    try emit_impl_function(self, function_index);
+    if (function.return_io.?.builtin == .clip_distances) {
+        try emit_clip_distance_impl_function(self, function_index);
+    } else {
+        try emit_impl_function(self, function_index);
+    }
     try emit_output_struct(self, function, stage);
     try emit_wrapper_function(self, function_index, stage);
 }
@@ -75,9 +81,25 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
     try self.write(function.name);
     try self.write("_stage_out out;\n");
     try self.write_indent();
-    try self.write("out.value = ");
-    try self.write(function.name);
-    try self.write("_impl(");
+    if (function.return_io.?.builtin == .clip_distances) {
+        try self.write(function.name);
+        try self.write("_impl(out.value, ");
+        try emit_wrapper_args(self, function);
+        try self.write(");\n");
+    } else {
+        try self.write("out.value = ");
+        try self.write(function.name);
+        try self.write("_impl(");
+        try emit_wrapper_args(self, function);
+        try self.write(");\n");
+    }
+    try self.write_indent();
+    try self.write("return out;\n");
+    self.indent -= 4;
+    try self.write("}\n");
+}
+
+fn emit_wrapper_args(self: anytype, function: ir.Function) !void {
     var first_arg = true;
     for (function.params.items) |param| {
         if (!first_arg) try self.write(", ");
@@ -91,11 +113,179 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
         try self.write(param.name);
         first_arg = false;
     }
-    try self.write(");\n");
-    try self.write_indent();
-    try self.write("return out;\n");
+}
+
+fn emit_clip_distance_impl_function(self: anytype, function_index: ir.FunctionId) !void {
+    const function = self.module.functions.items[function_index];
+    const return_array = switch (self.module.types.get(function.return_type)) {
+        .array => |arr| arr,
+        else => return error.InvalidIr,
+    };
+    if (return_array.len == null) return error.InvalidIr;
+
+    try self.write("\nvoid ");
+    try self.write(function.name);
+    try self.write("_impl(out ");
+    try self.emit_typed_name(function.return_type, CLIP_DISTANCE_RESULT_NAME);
+    for (function.params.items) |param| {
+        try self.write(", ");
+        try self.emit_typed_name(param.ty, param.name);
+    }
+    try self.write(") {\n");
+    self.indent += 4;
+    try emit_clip_distance_stmt(self, function, function.root_stmt, CLIP_DISTANCE_RESULT_NAME, return_array.len.?);
     self.indent -= 4;
     try self.write("}\n");
+}
+
+fn emit_clip_distance_stmt(self: anytype, function: ir.Function, stmt_id: ir.StmtId, result_name: []const u8, result_len: u32) !void {
+    const stmt = function.stmts.items[stmt_id];
+    switch (stmt) {
+        .block => |range| {
+            var i: u32 = 0;
+            while (i < range.len) : (i += 1) {
+                try emit_clip_distance_stmt(self, function, function.stmt_children.items[range.start + i], result_name, result_len);
+            }
+        },
+        .local_decl => |decl| {
+            const local = function.locals.items[decl.local];
+            try self.write_indent();
+            if (decl.is_const) try self.write("const ");
+            try self.emit_typed_name(local.ty, local.name);
+            if (decl.initializer) |expr_id| {
+                try self.write(" = ");
+                try self.emit_expr(function, expr_id);
+            }
+            try self.write(";\n");
+        },
+        .expr => |expr_id| {
+            try self.write_indent();
+            try self.emit_expr(function, expr_id);
+            try self.write(";\n");
+        },
+        .assign => |assign| {
+            try self.write_indent();
+            try self.emit_expr(function, assign.lhs);
+            try self.write(" ");
+            try self.write(maps.assign_op_text(assign.op));
+            try self.write(" ");
+            try self.emit_expr(function, assign.rhs);
+            try self.write(";\n");
+        },
+        .return_ => |value| {
+            if (value) |expr_id| {
+                var index: u32 = 0;
+                while (index < result_len) : (index += 1) {
+                    try self.write_indent();
+                    try self.write(result_name);
+                    try self.write("[");
+                    try self.write_u32(index);
+                    try self.write("] = ");
+                    try emit_clip_distance_element_expr(self, function, expr_id, index);
+                    try self.write(";\n");
+                }
+            }
+            try self.write_indent();
+            try self.write("return;\n");
+        },
+        .if_ => |if_stmt| {
+            try self.write_indent();
+            try self.write("if (");
+            try self.emit_expr(function, if_stmt.cond);
+            try self.write(") {\n");
+            self.indent += 4;
+            try emit_clip_distance_stmt(self, function, if_stmt.then_block, result_name, result_len);
+            self.indent -= 4;
+            try self.write_indent();
+            try self.write("}");
+            if (if_stmt.else_block) |else_block| {
+                try self.write(" else {\n");
+                self.indent += 4;
+                try emit_clip_distance_stmt(self, function, else_block, result_name, result_len);
+                self.indent -= 4;
+                try self.write_indent();
+                try self.write("}\n");
+            } else {
+                try self.write("\n");
+            }
+        },
+        .loop_ => |loop_stmt| {
+            if (loop_stmt.init) |init_stmt| try emit_clip_distance_stmt(self, function, init_stmt, result_name, result_len);
+            try self.write_indent();
+            try self.write("while (");
+            if (loop_stmt.cond) |cond| {
+                try self.emit_expr(function, cond);
+            } else {
+                try self.write("true");
+            }
+            try self.write(") {\n");
+            self.indent += 4;
+            try emit_clip_distance_stmt(self, function, loop_stmt.body, result_name, result_len);
+            if (loop_stmt.continuing) |continuing| try emit_clip_distance_stmt(self, function, continuing, result_name, result_len);
+            self.indent -= 4;
+            try self.write_indent();
+            try self.write("}\n");
+        },
+        .switch_ => |switch_stmt| {
+            try self.write_indent();
+            try self.write("switch (");
+            try self.emit_expr(function, switch_stmt.expr);
+            try self.write(") {\n");
+            self.indent += 4;
+            var case_index: u32 = 0;
+            while (case_index < switch_stmt.cases.len) : (case_index += 1) {
+                const case_node = function.switch_cases.items[switch_stmt.cases.start + case_index];
+                if (case_node.is_default) {
+                    try self.write_indent();
+                    try self.write("default:\n");
+                } else {
+                    var selector_index: usize = 0;
+                    while (selector_index < case_node.selectors.items.len) : (selector_index += 1) {
+                        try self.write_indent();
+                        try self.write("case ");
+                        try self.emit_expr(function, case_node.selectors.items[selector_index]);
+                        try self.write(":\n");
+                    }
+                }
+                self.indent += 4;
+                try emit_clip_distance_stmt(self, function, case_node.body, result_name, result_len);
+                try self.write_indent();
+                try self.write("break;\n");
+                self.indent -= 4;
+            }
+            self.indent -= 4;
+            try self.write_indent();
+            try self.write("}\n");
+        },
+        .break_ => {
+            try self.write_indent();
+            try self.write("break;\n");
+        },
+        .continue_ => {
+            try self.write_indent();
+            try self.write("continue;\n");
+        },
+        .discard_ => {
+            try self.write_indent();
+            try self.write("discard;\n");
+        },
+    }
+}
+
+fn emit_clip_distance_element_expr(self: anytype, function: ir.Function, expr_id: ir.ExprId, index: u32) !void {
+    const expr = function.exprs.items[expr_id];
+    switch (expr.data) {
+        .construct => |construct| {
+            if (construct.args.len <= index) return error.InvalidIr;
+            try self.emit_expr(function, function.expr_args.items[construct.args.start + index]);
+        },
+        else => {
+            try self.emit_expr(function, expr_id);
+            try self.write("[");
+            try self.write_u32(index);
+            try self.write("]");
+        },
+    }
 }
 
 fn write_input_semantic(self: anytype, io: ir.IoAttr) !void {

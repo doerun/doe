@@ -32,10 +32,11 @@ fn build_vertex_module(
     params: []const struct { name: []const u8, ty: ir.TypeId, io: ?ir.IoAttr },
     fn_name: []const u8,
 ) !ir.Function {
-    var struct_def = ir.StructDef{ .name = struct_name };
+    var struct_def = ir.StructDef{ .name = try ir.dup_string(allocator, struct_name) };
+    errdefer struct_def.deinit(allocator);
     for (fields) |f| {
         try struct_def.fields.append(allocator, .{
-            .name = f.name,
+            .name = try ir.dup_string(allocator, f.name),
             .ty = f.ty,
             .io = f.io,
         });
@@ -45,13 +46,14 @@ fn build_vertex_module(
     const struct_type = try module.types.intern(.{ .struct_ = struct_id });
 
     var function = ir.Function{
-        .name = fn_name,
+        .name = try ir.dup_string(allocator, fn_name),
         .return_type = struct_type,
         .stage = .vertex,
     };
+    errdefer allocator.free(function.name);
     for (params) |p| {
         try function.params.append(allocator, .{
-            .name = p.name,
+            .name = try ir.dup_string(allocator, p.name),
             .ty = p.ty,
             .io = p.io,
         });
@@ -72,10 +74,11 @@ fn build_fragment_module(
     params: []const struct { name: []const u8, ty: ir.TypeId, io: ?ir.IoAttr },
     fn_name: []const u8,
 ) !ir.Function {
-    var struct_def = ir.StructDef{ .name = struct_name };
+    var struct_def = ir.StructDef{ .name = try ir.dup_string(allocator, struct_name) };
+    errdefer struct_def.deinit(allocator);
     for (fields) |f| {
         try struct_def.fields.append(allocator, .{
-            .name = f.name,
+            .name = try ir.dup_string(allocator, f.name),
             .ty = f.ty,
             .io = f.io,
         });
@@ -85,13 +88,14 @@ fn build_fragment_module(
     const struct_type = try module.types.intern(.{ .struct_ = struct_id });
 
     var function = ir.Function{
-        .name = fn_name,
+        .name = try ir.dup_string(allocator, fn_name),
         .return_type = struct_type,
         .stage = .fragment,
     };
+    errdefer allocator.free(function.name);
     for (params) |p| {
         try function.params.append(allocator, .{
-            .name = p.name,
+            .name = try ir.dup_string(allocator, p.name),
             .ty = p.ty,
             .io = p.io,
         });
@@ -106,6 +110,7 @@ fn build_fragment_module(
 }
 
 fn cleanup_function(function: *ir.Function) void {
+    allocator.free(function.name);
     for (function.params.items) |*p| allocator.free(p.name);
     function.params.deinit(allocator);
     function.locals.deinit(allocator);
@@ -264,9 +269,10 @@ test "vertex emitter: struct input parameter gets [[stage_in]]" {
     const vec4f_type = try module.types.intern(.{ .vector = .{ .elem = f32_type, .len = 4 } });
     const vec2f_type = try module.types.intern(.{ .vector = .{ .elem = f32_type, .len = 2 } });
 
-    var input_struct = ir.StructDef{ .name = "VertIn" };
-    try input_struct.fields.append(allocator, .{ .name = "pos", .ty = vec4f_type, .io = .{ .location = 0 } });
-    try input_struct.fields.append(allocator, .{ .name = "uv", .ty = vec2f_type, .io = .{ .location = 1 } });
+    var input_struct = ir.StructDef{ .name = try ir.dup_string(allocator, "VertIn") };
+    errdefer input_struct.deinit(allocator);
+    try input_struct.fields.append(allocator, .{ .name = try ir.dup_string(allocator, "pos"), .ty = vec4f_type, .io = .{ .location = 0 } });
+    try input_struct.fields.append(allocator, .{ .name = try ir.dup_string(allocator, "uv"), .ty = vec2f_type, .io = .{ .location = 1 } });
     try module.structs.append(allocator, input_struct);
     const input_struct_id: ir.StructId = @intCast(module.structs.items.len - 1);
     const input_struct_type = try module.types.intern(.{ .struct_ = input_struct_id });
@@ -361,7 +367,7 @@ test "vertex emitter: void return type is rejected as InvalidIr" {
     const void_type = try module.types.intern(.{ .scalar = .void });
 
     var function = ir.Function{
-        .name = "vs_void",
+        .name = try ir.dup_string(allocator, "vs_void"),
         .return_type = void_type,
         .stage = .vertex,
     };
@@ -569,9 +575,10 @@ test "fragment emitter: struct input parameter receives [[stage_in]] with _verte
     const vec4f_type = try module.types.intern(.{ .vector = .{ .elem = f32_type, .len = 4 } });
     const vec2f_type = try module.types.intern(.{ .vector = .{ .elem = f32_type, .len = 2 } });
 
-    var varying_struct = ir.StructDef{ .name = "Varyings" };
-    try varying_struct.fields.append(allocator, .{ .name = "pos", .ty = vec4f_type, .io = .{ .builtin = .position } });
-    try varying_struct.fields.append(allocator, .{ .name = "uv", .ty = vec2f_type, .io = .{ .location = 0 } });
+    var varying_struct = ir.StructDef{ .name = try ir.dup_string(allocator, "Varyings") };
+    errdefer varying_struct.deinit(allocator);
+    try varying_struct.fields.append(allocator, .{ .name = try ir.dup_string(allocator, "pos"), .ty = vec4f_type, .io = .{ .builtin = .position } });
+    try varying_struct.fields.append(allocator, .{ .name = try ir.dup_string(allocator, "uv"), .ty = vec2f_type, .io = .{ .location = 0 } });
     try module.structs.append(allocator, varying_struct);
     const varying_struct_id: ir.StructId = @intCast(module.structs.items.len - 1);
     const varying_struct_type = try module.types.intern(.{ .struct_ = varying_struct_id });
@@ -640,7 +647,7 @@ test "fragment emitter: void return type is rejected as InvalidIr" {
     const void_type = try module.types.intern(.{ .scalar = .void });
 
     var function = ir.Function{
-        .name = "fs_void",
+        .name = try ir.dup_string(allocator, "fs_void"),
         .return_type = void_type,
         .stage = .fragment,
     };

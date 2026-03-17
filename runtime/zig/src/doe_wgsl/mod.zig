@@ -604,5 +604,3 @@ test "robustness: runtime-sized constant index coerces abstract int for MSL min(
     const msl = out[0..len];
     try std.testing.expect(std.mem.indexOf(u8, msl, "min(uint(0), (uint(_doe_sizes[0] / sizeof(uint)) - 1))") != null);
 }
-
-

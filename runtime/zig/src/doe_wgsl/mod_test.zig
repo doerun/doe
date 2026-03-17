@@ -377,6 +377,8 @@ test "translate texture builtins to MSL explicitly" {
     try std.testing.expect(std.mem.indexOf(u8, out[0..len], ".read(") != null);
     try std.testing.expect(std.mem.indexOf(u8, out[0..len], ".write(") != null);
     try std.testing.expect(std.mem.indexOf(u8, out[0..len], "texture2d<float, access::write>") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out[0..len], "?") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out[0..len], ".get_width(uint(") != null);
 }
 
 test "translate atomic builtins to MSL explicitly" {
@@ -929,6 +931,9 @@ test "translate texture builtins to HLSL" {
     const hlsl = out[0..len];
     try std.testing.expect(std.mem.indexOf(u8, hlsl, ".Load(") != null);
     try std.testing.expect(std.mem.indexOf(u8, hlsl, "RWTexture2D<float4>") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "?") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "doe_textureDimensions_tex(uint(0))") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "doe_textureDimensions_out_tex()") != null);
 }
 
 test "translate newly accepted math builtins end-to-end to HLSL" {
@@ -1352,6 +1357,48 @@ test "translate textureSampleLevel builtin to MSL HLSL and SPIR-V" {
     try std.testing.expect(spirv_len > 0);
 }
 
+test "translate textureSample builtin through aliases to HLSL" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let tex_alias = tex;
+        \\    let samp_alias = samp;
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureSample(tex_alias, samp_alias, uv).x;
+        \\}
+    ;
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], ".Sample(") != null);
+}
+
+test "translate textureSampleLevel builtin through aliases to HLSL" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var samp: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out_data: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let tex_alias = tex;
+        \\    let samp_alias = samp;
+        \\    let uv = vec2f(0.5, 0.5);
+        \\    out_data[id.x] = textureSampleLevel(tex_alias, samp_alias, uv, 0.0).x;
+        \\}
+    ;
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], ".SampleLevel(") != null);
+}
+
 test "translate textureDimensions builtin to MSL HLSL and SPIR-V" {
     const source =
         \\@group(0) @binding(0) var tex: texture_2d<f32>;
@@ -1418,7 +1465,7 @@ test "texture_depth_2d type is unsupported" {
     try std.testing.expect(result == error.UnknownType or result == error.InvalidType or result == error.UnsupportedConstruct);
 }
 
-test "clip_distances vertex shader builtin to MSL and SPIR-V" {
+test "clip_distances vertex shader builtin to MSL HLSL and SPIR-V" {
     const source =
         \\@vertex
         \\fn main(@builtin(vertex_index) vi: u32) -> @builtin(clip_distances) array<f32, 4> {
@@ -1434,8 +1481,12 @@ test "clip_distances vertex shader builtin to MSL and SPIR-V" {
     var msl_out: [MAX_OUTPUT]u8 = undefined;
     const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
     try std.testing.expect(msl_len > 0);
-    const msl = msl_out[0..msl_len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "clip_distance") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "clip_distance") != null);
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "SV_ClipDistance") != null);
 
     var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
     const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
@@ -1453,21 +1504,19 @@ test "primitive_index fragment shader builtin to MSL HLSL and SPIR-V" {
     var msl_out: [MAX_OUTPUT]u8 = undefined;
     const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
     try std.testing.expect(msl_len > 0);
-    const msl = msl_out[0..msl_len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "primitive_id") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "primitive_id") != null);
 
     var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
     const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
     try std.testing.expect(hlsl_len > 0);
-    const hlsl = hlsl_out[0..hlsl_len];
-    try std.testing.expect(std.mem.indexOf(u8, hlsl, "SV_PrimitiveID") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "SV_PrimitiveID") != null);
 
     var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
     const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
     try std.testing.expect(spirv_len > 0);
 }
 
-test "dual_source_blending fragment output with blend_src to MSL and SPIR-V" {
+test "dual_source_blending fragment output with blend_src to MSL HLSL and SPIR-V" {
     const source =
         \\@fragment
         \\fn main() -> @location(0) @blend_src(0) vec4f {
@@ -1478,9 +1527,11 @@ test "dual_source_blending fragment output with blend_src to MSL and SPIR-V" {
     var msl_out: [MAX_OUTPUT]u8 = undefined;
     const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
     try std.testing.expect(msl_len > 0);
-    const msl = msl_out[0..msl_len];
-    // blend_src(0) should map to [[color(0), index(0)]]
-    try std.testing.expect(std.mem.indexOf(u8, msl, "color(0), index(0)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "color(0), index(0)") != null);
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
 
     var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
     const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);

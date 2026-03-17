@@ -941,6 +941,10 @@ export function create(createArgs = null) {
   return new DoeGPU(instance);
 }
 
+export function createInstance(createArgs = null) {
+  return create(createArgs);
+}
+
 export function setNativeTimeoutMs(timeoutMs) {
   ensureLibrary();
   validatePositiveInteger(timeoutMs, 'native timeout');
@@ -1092,6 +1096,7 @@ export const runDawnVsDoeCompare = runDawnVsDoeCompareCli;
 
 export default {
   create,
+  createInstance,
   globals,
   setupGlobals,
   requestAdapter,

@@ -22,6 +22,14 @@
       "data": "config/webgpu-spec-coverage.json"
     },
     {
+      "schema": "config/webgpu-spec-index.schema.json",
+      "data": "config/webgpu-spec-index.json"
+    },
+    {
+      "schema": "config/webgpu-cts-evidence.schema.json",
+      "data": "config/webgpu-cts-evidence.json"
+    },
+    {
       "schema": "config/benchmark-methodology-thresholds.schema.json",
       "data": "config/benchmark-methodology-thresholds.json"
     },

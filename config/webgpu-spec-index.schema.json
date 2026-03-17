@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn WebGPU spec index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "lastUpdated",
+    "specFamily",
+    "source",
+    "notes",
+    "stats",
+    "interfaces",
+    "stringUnions"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "lastUpdated": { "type": "string" },
+    "specFamily": {
+      "type": "string",
+      "enum": ["webgpu-api"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "package", "version", "tarballUrl", "apiReference"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["npm-package"]
+        },
+        "package": { "type": "string" },
+        "version": { "type": "string" },
+        "tarballUrl": { "type": "string" },
+        "apiReference": { "type": "string" }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interfaceCount",
+        "interfaceMemberCount",
+        "stringUnionCount",
+        "stringUnionValueCount"
+      ],
+      "properties": {
+        "interfaceCount": { "type": "integer", "minimum": 0 },
+        "interfaceMemberCount": { "type": "integer", "minimum": 0 },
+        "stringUnionCount": { "type": "integer", "minimum": 0 },
+        "stringUnionValueCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "interfaceKind", "specUrl", "memberCount", "extends", "members"],
+        "properties": {
+          "name": { "type": "string" },
+          "interfaceKind": {
+            "type": "string",
+            "enum": ["interface", "dictionary", "mixin", "constant-interface"]
+          },
+          "specUrl": { "type": "string" },
+          "memberCount": { "type": "integer", "minimum": 0 },
+          "extends": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "memberKind"],
+              "properties": {
+                "name": { "type": "string" },
+                "memberKind": {
+                  "type": "string",
+                  "enum": ["method", "property"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stringUnions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "unionKind", "specUrl", "valueCount", "values"],
+        "properties": {
+          "name": { "type": "string" },
+          "unionKind": {
+            "type": "string",
+            "enum": ["string-union"]
+          },
+          "specUrl": { "type": "string" },
+          "valueCount": { "type": "integer", "minimum": 0 },
+          "values": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

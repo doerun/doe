@@ -112,9 +112,9 @@ fn clamp_sized(
 
 /// Clamp index for a runtime-sized array: min(index, arrayLength(&buf) - 1)
 ///
-/// Only applies when the base expression is a direct global_ref to an unsized
-/// storage buffer. More complex base patterns (nested members) are left
-/// unclamped — the GPU's buffer robustness handles those.
+/// Applies to direct globals and member-shaped bases rooted in the IR. The
+/// transform keeps the base expression intact and relies on backend emission to
+/// lower `arrayLength` for that base shape.
 fn clamp_runtime_sized(
     allocator: std.mem.Allocator,
     module: *ir.Module,
@@ -123,9 +123,8 @@ fn clamp_runtime_sized(
 ) TransformError!void {
     const index_data = function.exprs.items[expr_idx].data.index;
 
-    // Only handle direct global_ref bases — the arrayLength emitter requires this.
     switch (function.exprs.items[index_data.base].data) {
-        .global_ref => {},
+        .global_ref, .member => {},
         else => return,
     }
 
@@ -517,6 +516,81 @@ test "robustness: runtime-sized array uses arrayLength" {
     const al_expr = module.functions.items[0].exprs.items[sub_expr.data.binary.lhs];
     try testing.expect(al_expr.data == .call);
     try testing.expectEqualStrings("arrayLength", al_expr.data.call.name);
+}
+
+test "robustness: runtime-sized array member uses arrayLength" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+
+    const arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = null } });
+    const struct_ty = try add_struct_type(&module, allocator, "Wrapper", &.{
+        .{ .name = "data", .ty = arr_ty },
+    });
+    const ref_struct_ty = try module.types.intern(.{ .ref = .{
+        .elem = struct_ty,
+        .addr_space = .storage,
+        .access = .read_write,
+    } });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "buf"),
+        .ty = ref_struct_ty,
+        .class = .var_,
+        .addr_space = .storage,
+        .access = .read_write,
+        .binding = .{ .group = 0, .binding = 0 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+
+    const root_id = try function.append_expr(allocator, .{
+        .ty = ref_struct_ty,
+        .category = .ref,
+        .data = .{ .global_ref = 0 },
+    });
+    const member_id = try function.append_expr(allocator, .{
+        .ty = arr_ty,
+        .category = .ref,
+        .data = .{ .member = .{
+            .base = root_id,
+            .field_name = try ir.dup_string(allocator, "data"),
+            .field_index = 0,
+        } },
+    });
+    const idx_id = try function.append_expr(allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 9 },
+    });
+    const index_id = try function.append_expr(allocator, .{
+        .ty = f32_ty,
+        .category = .ref,
+        .data = .{ .index = .{
+            .base = member_id,
+            .index = idx_id,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+    try apply(allocator, &module);
+
+    const transformed = module.functions.items[0].exprs.items[index_id];
+    const min_id = transformed.data.index.index;
+    const min_expr = module.functions.items[0].exprs.items[min_id];
+    try testing.expectEqualStrings("min", min_expr.data.call.name);
+    const second_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
+    const second_arg_expr = module.functions.items[0].exprs.items[second_arg_id];
+    try testing.expect(second_arg_expr.data == .binary);
+    try testing.expectEqual(ir.BinaryOp.sub, second_arg_expr.data.binary.op);
+    const array_length_expr = module.functions.items[0].exprs.items[second_arg_expr.data.binary.lhs];
+    try testing.expect(array_length_expr.data == .call);
+    try testing.expectEqualStrings("arrayLength", array_length_expr.data.call.name);
+    const array_length_arg = module.functions.items[0].expr_args.items[array_length_expr.data.call.args.start];
+    try testing.expectEqual(member_id, array_length_arg);
 }
 
 test "robustness: non-index expressions are unchanged" {

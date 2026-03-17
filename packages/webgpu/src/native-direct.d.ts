@@ -86,6 +86,7 @@ export interface RequestDeviceOptions {
 
 export const globals: Record<string, unknown>;
 export function create(createArgs?: string[] | null): NativeDirectGPU;
+export function createInstance(createArgs?: string[] | null): NativeDirectGPU;
 export function setupGlobals(target?: object, createArgs?: string[] | null): NativeDirectGPU;
 export function requestAdapter(
   adapterOptions?: GPURequestAdapterOptions,
@@ -106,6 +107,7 @@ export function setNativeTimeoutMs(ms: number): void;
 
 declare const _default: {
   create: typeof create;
+  createInstance: typeof createInstance;
   globals: typeof globals;
   setupGlobals: typeof setupGlobals;
   requestAdapter: typeof requestAdapter;

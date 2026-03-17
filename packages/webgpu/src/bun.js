@@ -9,6 +9,7 @@ export const doe = createDoeNamespace({
 });
 
 export const create = runtime.create;
+export const createInstance = runtime.createInstance;
 export const globals = runtime.globals;
 export const setupGlobals = runtime.setupGlobals;
 export const requestAdapter = runtime.requestAdapter;

@@ -1,6 +1,7 @@
 const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_msl_maps.zig");
+const shared = @import("emit_msl_shared.zig");
 
 pub fn emit_stage_function(self: anytype, function_index: ir.FunctionId) !void {
     const function = self.module.functions.items[function_index];
@@ -29,6 +30,27 @@ pub fn runtime_array_needs_size_param(self: anytype, global_name: []const u8) bo
         }
     }
     return false;
+}
+
+pub fn clip_distance_array_len(module: *const ir.Module, return_type: ir.TypeId) u32 {
+    return switch (module.types.get(return_type)) {
+        .array => |arr| arr.len orelse 8,
+        else => 8,
+    };
+}
+
+pub fn write_output_io_attr_text(io: ir.IoAttr, stage: ir.ShaderStage, buf: []u8, pos: *usize) !void {
+    if (io.blend_src) |src_index| {
+        try shared.write_str(buf, pos, "color(0), index(");
+        try shared.write_u32(buf, pos, src_index);
+        try shared.write_str(buf, pos, ")");
+    } else if (io.location) |loc| {
+        try shared.write_str(buf, pos, if (stage == .fragment) "color(" else "user(loc");
+        try shared.write_u32(buf, pos, loc);
+        try shared.write_str(buf, pos, ")");
+    } else {
+        try shared.write_str(buf, pos, maps.msl_builtin_name(io.builtin));
+    }
 }
 
 // Returns true if an IO attribute designates a stage_in field (location or position builtin).
@@ -82,17 +104,10 @@ fn emit_input_io_attr(self: anytype, io: ir.IoAttr, stage: ir.ShaderStage) !void
 }
 
 fn emit_output_io_attr(self: anytype, io: ir.IoAttr, stage: ir.ShaderStage) !void {
-    if (io.blend_src) |src_index| {
-        try self.write("color(0), index(");
-        try self.write_u32(src_index);
-        try self.write(")");
-    } else if (io.location) |loc| {
-        try self.write(if (stage == .fragment) "color(" else "user(loc");
-        try self.write_u32(loc);
-        try self.write(")");
-    } else {
-        try self.write(maps.msl_builtin_name(io.builtin));
-    }
+    var buf: [64]u8 = undefined;
+    var pos: usize = 0;
+    try write_output_io_attr_text(io, stage, &buf, &pos);
+    try self.write(buf[0..pos]);
 }
 
 fn emit_stage_in_struct(self: anytype, function: ir.Function, stage: ir.ShaderStage) !void {
@@ -141,10 +156,7 @@ fn emit_stage_out_struct(self: anytype, function: ir.Function, stage: ir.ShaderS
     if (function.return_io) |io| {
         try self.write_indent();
         if (io.builtin == .clip_distances) {
-            const arr_len = switch (self.module.types.get(function.return_type)) {
-                .array => |arr| arr.len orelse 8,
-                else => 8,
-            };
+            const arr_len = clip_distance_array_len(self.module, function.return_type);
             try self.write("float value [[clip_distance]] [");
             try self.write_u32(arr_len);
             try self.write("];\n");
