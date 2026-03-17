@@ -51,7 +51,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--cts-config",
-        default="bench/cts_subset.webgpu-node.json",
+        default="bench/cts_subset.fawn-node.json",
         help="CTS subset config passed to run_cts_subset.py.",
     )
     parser.add_argument(

@@ -283,7 +283,7 @@ This flow is additive and does not replace blocking v0 runtime gates. Its role i
 - if build timing claims are made, include `--doe-build-cmd` and `--dawn-build-cmd` measured wall-time outputs.
 
 4. publish CTS trend evidence
-- run `bench/run_cts_subset.py` with a versioned query config (for example `bench/cts_subset.webgpu-node.json`).
+- run `bench/run_cts_subset.py` with a versioned query config (for example `bench/cts_subset.fawn-node.json`).
 - report exact pass/fail counts and query list used.
 
 5. publish model ceiling matrix (when AI/ML positioning is in scope)

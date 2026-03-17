@@ -166,7 +166,8 @@ async function main() {
     workgroups: 1,
   });
 
-  assert.equal(fake_device._state.submitted, 1);
+  // Dispatches are deferred — no submit yet
+  assert.equal(fake_device._state.submitted, 0);
   assert.equal(fake_device._state.bind_groups, 1);
   assert.equal(fake_device._state.compute_passes, 1);
   assert.equal(fake_device._state.dispatches, 1);
@@ -182,7 +183,7 @@ async function main() {
   });
 
   assert.equal(fake_device._state.bind_groups, 2);
-  assert.equal(fake_device._state.submitted, 2);
+  assert.equal(fake_device._state.submitted, 0);
   assert.equal(fake_device._state.compute_passes, 2);
   assert.equal(fake_device._state.dispatches, 2);
 
@@ -198,7 +199,7 @@ async function main() {
   await batch.submit();
 
   assert.equal(fake_device._state.bind_groups, 2);
-  assert.equal(fake_device._state.submitted, 3);
+  assert.equal(fake_device._state.submitted, 0);
   assert.equal(fake_device._state.compute_passes, 3);
   assert.equal(fake_device._state.dispatches, 4);
 
@@ -216,7 +217,7 @@ async function main() {
   await encoder.submit();
 
   assert.equal(fake_device._state.bind_groups, 2);
-  assert.equal(fake_device._state.submitted, 4);
+  assert.equal(fake_device._state.submitted, 0);
   assert.equal(fake_device._state.compute_passes, 4);
   assert.equal(fake_device._state.dispatches, 6);
 
@@ -225,9 +226,28 @@ async function main() {
     workgroups: [257, 1, 1],
   });
 
-  assert.equal(fake_device._state.submitted, 5);
+  assert.equal(fake_device._state.submitted, 0);
   assert.equal(fake_device._state.compute_passes, 5);
   assert.equal(fake_device._state.dispatches, 7);
+
+  // buffer.read on MAP_READ buffer flushes all 5 deferred command buffers
+  readable._data.set(new Uint8Array(Float32Array.of(9, 10, 11, 12).buffer));
+  const flush_readback = await bound.buffer.read({
+    buffer: readable,
+    type: Float32Array,
+  });
+  assert.deepEqual(Array.from(flush_readback), [9, 10, 11, 12]);
+  assert.equal(fake_device._state.submitted, 5);
+
+  // buffer.read on staging path reuses deferred encoder for copy (single cmd buffer)
+  await kernel.dispatch({
+    bindings: reusable_bindings,
+    workgroups: 1,
+  });
+  assert.equal(fake_device._state.submitted, 5);
+  const staging_readback = await bound.buffer.read(uploaded, Float32Array);
+  // Copy encoded into deferred encoder = 1 command buffer in single submit
+  assert.equal(fake_device._state.submitted, 6);
 
   const injected_namespace = createDoeNamespace({
     async requestDevice() {

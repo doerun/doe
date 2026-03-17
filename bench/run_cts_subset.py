@@ -13,11 +13,15 @@ from pathlib import Path
 from typing import Any
 
 
+def normalize_label(value: str) -> str:
+    return "".join(ch if ch.isalnum() else "_" for ch in value).strip("_") or "query"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/cts_subset.webgpu-node.json",
+        default="bench/cts_subset.fawn-node.json",
         help="CTS subset config JSON.",
     )
     parser.add_argument(
@@ -73,6 +77,83 @@ def ensure_string_list(value: Any, *, field: str) -> list[str]:
     return out
 
 
+def ensure_optional_string_list(value: Any, *, field: str) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"invalid {field}: expected string[]")
+    out: list[str] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError(f"invalid {field}[{index}]: expected non-empty string")
+        out.append(item.strip())
+    return out
+
+
+def load_query_entries(value: Any) -> list[dict[str, str]]:
+    if not isinstance(value, list):
+        raise ValueError("invalid queries: expected string[] or query object[]")
+    out: list[dict[str, str]] = []
+    for index, item in enumerate(value):
+        if isinstance(item, str):
+            query = item.strip()
+            if not query:
+                raise ValueError(f"invalid queries[{index}]: expected non-empty string")
+            out.append(
+                {
+                    "id": normalize_label(query),
+                    "query": query,
+                    "bucket": "",
+                    "notes": "",
+                }
+            )
+            continue
+        if not isinstance(item, dict):
+            raise ValueError(f"invalid queries[{index}]: expected string or object")
+        query = item.get("query")
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError(f"invalid queries[{index}].query: expected non-empty string")
+        raw_id = item.get("id")
+        raw_bucket = item.get("bucket")
+        raw_notes = item.get("notes")
+        entry_id = raw_id.strip() if isinstance(raw_id, str) and raw_id.strip() else normalize_label(query)
+        bucket = raw_bucket.strip() if isinstance(raw_bucket, str) and raw_bucket.strip() else ""
+        notes = raw_notes.strip() if isinstance(raw_notes, str) and raw_notes.strip() else ""
+        out.append(
+            {
+                "id": entry_id,
+                "query": query.strip(),
+                "bucket": bucket,
+                "notes": notes,
+            }
+        )
+    if not out:
+        raise ValueError("invalid queries: expected at least one query")
+    return out
+
+
+def summarize_buckets(rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    summary: dict[str, dict[str, int]] = {}
+    for row in rows:
+        bucket_raw = row.get("bucket")
+        bucket = bucket_raw if isinstance(bucket_raw, str) and bucket_raw else "unbucketed"
+        item = summary.setdefault(
+            bucket,
+            {
+                "queryCount": 0,
+                "passCount": 0,
+                "failCount": 0,
+            },
+        )
+        item["queryCount"] += 1
+        passed = row.get("pass")
+        if passed is True:
+            item["passCount"] += 1
+        elif passed is False:
+            item["failCount"] += 1
+    return summary
+
+
 def markdown(payload: dict[str, Any]) -> str:
     lines: list[str] = []
     lines.append("# CTS Subset Report")
@@ -88,9 +169,23 @@ def markdown(payload: dict[str, Any]) -> str:
     lines.append(f"- Query count: `{summary.get('queryCount', 0)}`")
     lines.append(f"- Pass count: `{summary.get('passCount', 0)}`")
     lines.append(f"- Fail count: `{summary.get('failCount', 0)}`")
+    requirement_note = payload.get("requirementsNote")
+    if isinstance(requirement_note, str) and requirement_note.strip():
+        lines.append(f"- Requirements: `{requirement_note.strip()}`")
+    bucket_summary = summary.get("bucketSummary")
+    if isinstance(bucket_summary, dict) and bucket_summary:
+        lines.append("")
+        lines.append("| Bucket | Queries | Pass | Fail |")
+        lines.append("|---|---:|---:|---:|")
+        for bucket, stats in bucket_summary.items():
+            if not isinstance(stats, dict):
+                continue
+            lines.append(
+                f"| `{bucket}` | {stats.get('queryCount', 0)} | {stats.get('passCount', 0)} | {stats.get('failCount', 0)} |"
+            )
     lines.append("")
-    lines.append("| Query | Exit | Wall ms | Pass |")
-    lines.append("|---|---:|---:|---:|")
+    lines.append("| Id | Bucket | Query | Exit | Wall ms | Pass |")
+    lines.append("|---|---|---|---:|---:|---:|")
     rows = payload.get("rows", [])
     if not isinstance(rows, list):
         rows = []
@@ -98,7 +193,7 @@ def markdown(payload: dict[str, Any]) -> str:
         if not isinstance(row, dict):
             continue
         lines.append(
-            f"| `{row.get('query', '')}` | {row.get('exitCode', '')} | "
+            f"| `{row.get('id', '')}` | `{row.get('bucket', '')}` | `{row.get('query', '')}` | {row.get('exitCode', '')} | "
             f"{row.get('wallMs', '')} | {row.get('pass', False)} |"
         )
     lines.append("")
@@ -138,6 +233,7 @@ def main() -> int:
 
     workdir_raw = config.get("workdir")
     command_template = config.get("commandTemplate")
+    requirement_note = config.get("requirementsNote")
     if not isinstance(workdir_raw, str) or not workdir_raw.strip():
         print("FAIL: invalid config workdir")
         return 1
@@ -145,7 +241,8 @@ def main() -> int:
         print("FAIL: invalid config commandTemplate (must include {query})")
         return 1
     try:
-        queries = ensure_string_list(config.get("queries"), field="queries")
+        queries = load_query_entries(config.get("queries"))
+        required_paths = ensure_optional_string_list(config.get("requiredPaths"), field="requiredPaths")
     except ValueError as exc:
         print(f"FAIL: {exc}")
         return 1
@@ -159,18 +256,34 @@ def main() -> int:
     if not workdir.exists():
         print(f"FAIL: configured CTS workdir does not exist: {workdir}")
         return 1
+    missing_required_paths = [item for item in required_paths if not (workdir / item).exists()]
+    if missing_required_paths and not args.dry_run:
+        print("FAIL: CTS preflight missing required paths:")
+        for item in missing_required_paths:
+            print(f"  - {workdir / item}")
+        if isinstance(requirement_note, str) and requirement_note.strip():
+            print(f"hint: {requirement_note.strip()}")
+        return 1
 
     rows: list[dict[str, Any]] = []
     fail_count = 0
     pass_count = 0
 
-    for query in queries:
-        rendered = command_template.format(query=query)
+    for entry in queries:
+        rendered = command_template.format(
+            query=entry["query"],
+            id=entry["id"],
+            bucket=entry["bucket"],
+            notes=entry["notes"],
+        )
         command = shlex.split(rendered)
         if args.dry_run:
             rows.append(
                 {
-                    "query": query,
+                    "id": entry["id"],
+                    "bucket": entry["bucket"],
+                    "query": entry["query"],
+                    "notes": entry["notes"],
                     "command": command,
                     "exitCode": None,
                     "wallMs": None,
@@ -189,7 +302,10 @@ def main() -> int:
             fail_count += 1
         rows.append(
             {
-                "query": query,
+                "id": entry["id"],
+                "bucket": entry["bucket"],
+                "query": entry["query"],
+                "notes": entry["notes"],
                 "command": command,
                 "exitCode": run["exitCode"],
                 "wallMs": run["wallMs"],
@@ -206,6 +322,7 @@ def main() -> int:
         "passCount": pass_count,
         "failCount": fail_count,
         "dryRun": bool(args.dry_run),
+        "bucketSummary": summarize_buckets(rows),
     }
     payload = {
         "schemaVersion": 1,
@@ -213,6 +330,7 @@ def main() -> int:
         "configPath": str(config_path),
         "workdir": str(workdir),
         "commandTemplate": command_template,
+        "requirementsNote": requirement_note if isinstance(requirement_note, str) else "",
         "summary": summary,
         "rows": rows,
     }
@@ -243,4 +361,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

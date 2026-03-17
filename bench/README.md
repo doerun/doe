@@ -161,6 +161,8 @@ That document defines:
   - emits JSON + markdown reports suitable for embedded/runtime sizing evidence.
 - `run_cts_subset.py`
   - executes a configured WebGPU CTS query subset and emits per-query pass/fail + wall-time artifacts (JSON + markdown).
+  - query configs can now carry structured query metadata (`id`, `bucket`, `notes`) plus preflight requirements, so reports include per-bucket pass/fail counts instead of a flat raw-query list.
+  - preferred Fawn-native config is `bench/cts_subset.fawn-node.json`, which drives the vendored WebGPU CTS through Doe via `bench/cts/fawn-node-gpu-provider.cjs`.
   - supports `--dry-run`, `--stop-on-fail`, and bounded query execution via `--max-queries`.
 - `build_model_capacity_matrix.py`
   - builds a hardware×model capacity matrix artifact from measured AI workload/Doe runs, including status classes (`pass`, `fail`, `oom`, `unsupported`) and per-hardware max passable model size.
@@ -968,7 +970,7 @@ Canonical command:
 python3 bench/run_market_readiness_bundle.py \
   --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
   --report bench/out/metal.npm.compare.json \
-  --cts-config bench/cts_subset.webgpu-node.json
+  --cts-config bench/cts_subset.fawn-node.json
 ```
 
 Outputs (prefix defaults to `<report>.market-readiness.*`):
@@ -984,9 +986,16 @@ Optional model ceiling matrix artifact:
 python3 bench/run_market_readiness_bundle.py \
   --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json \
   --report bench/out/metal.npm.compare.json \
-  --cts-config bench/cts_subset.webgpu-node.json \
+  --cts-config bench/cts_subset.fawn-node.json \
   --model-capacity-config bench/model_capacity_matrix.template.json
 ```
 
 Model matrix source contract (example template):
 - `bench/model_capacity_matrix.template.json`
+
+Vendored CTS prerequisite:
+
+```bash
+cd bench/vendor/dawn/third_party/webgpu-cts
+npm install
+```

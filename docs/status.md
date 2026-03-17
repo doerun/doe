@@ -330,7 +330,10 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - market-readiness evidence toolchain is now implemented under `bench/`:
   - `bench/build_claim_scope_report.py` for citation-scoped claim lines with workload/timing/backend context.
   - `bench/measure_runtime_footprint.py` for Doe-vs-Dawn size/dependency/build-wall evidence.
-  - `bench/run_cts_subset.py` + `bench/cts_subset.webgpu-node.json` for repeatable CTS subset trend artifacts.
+  - `bench/run_cts_subset.py` now supports structured CTS query configs (`id`, `bucket`, `notes`) plus preflight requirement checks, so CTS reports carry per-bucket pass/fail summaries instead of only raw query strings.
+  - preferred CTS lane is now `bench/cts_subset.fawn-node.json`: vendored WebGPU CTS (`bench/vendor/dawn/third_party/webgpu-cts`) driven through Doe via `bench/cts/fawn-node-gpu-provider.cjs`, with a broader Doe-core subset covering adapter/device, buffers, command encoding, queue, compute, validation, and shader builtin execution.
+  - legacy `bench/cts_subset.webgpu-node.json` remains available as the older narrow external-node example, but it is no longer the preferred market-readiness config.
+  - important distinction: Fawn now has CTS infrastructure, but it still does not yet have a published CTS pass-rate baseline or dashboard trend. The `config/webgpu-spec-coverage.json` `103/103 implemented` ledger remains an internal capability inventory, not external conformance proof.
   - `bench/build_model_capacity_matrix.py` for hardware×model ceiling disclosure artifacts (status + capacity summaries).
   - `bench/run_market_readiness_bundle.py` to orchestrate the full evidence bundle and emit a linked manifest.
 - Fawn fork maintenance policy is now documented for buyer/security review:

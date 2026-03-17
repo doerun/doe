@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "workdir": "bench/vendor/dawn/third_party/webgpu-cts",
+  "commandTemplate": "node tools/run_node --quiet --gpu-provider ../../../../cts/fawn-node-gpu-provider.cjs {query}",
+  "requiredPaths": [
+    "node_modules/ts-node",
+    "node_modules/typescript"
+  ],
+  "requirementsNote": "Install vendored CTS dependencies first: cd bench/vendor/dawn/third_party/webgpu-cts && npm install",
+  "queries": [
+    {
+      "id": "adapter_request",
+      "bucket": "adapter",
+      "query": "webgpu:api,operation,adapter,requestAdapter:*",
+      "notes": "RequestAdapter behavior and option handling."
+    },
+    {
+      "id": "adapter_request_device",
+      "bucket": "adapter",
+      "query": "webgpu:api,operation,adapter,requestDevice:*",
+      "notes": "RequestDevice behavior and feature/limit negotiation."
+    },
+    {
+      "id": "buffer_map",
+      "bucket": "buffer",
+      "query": "webgpu:api,operation,buffers,map:*",
+      "notes": "Core mapAsync and mapped range behavior."
+    },
+    {
+      "id": "buffer_bind_group",
+      "bucket": "buffer",
+      "query": "webgpu:api,operation,buffers,createBindGroup:*",
+      "notes": "Buffer binding compatibility inside bind groups."
+    },
+    {
+      "id": "command_buffer_basic",
+      "bucket": "command_buffer",
+      "query": "webgpu:api,operation,command_buffer,basic:*",
+      "notes": "Encoder lifecycle and basic command-buffer execution."
+    },
+    {
+      "id": "command_copy_buffer_to_buffer",
+      "bucket": "command_buffer",
+      "query": "webgpu:api,operation,command_buffer,copyBufferToBuffer:*",
+      "notes": "Core buffer copy semantics."
+    },
+    {
+      "id": "queue_write_buffer",
+      "bucket": "queue",
+      "query": "webgpu:api,operation,queue,writeBuffer:*",
+      "notes": "CPU-to-GPU upload path correctness."
+    },
+    {
+      "id": "queue_on_submitted_work_done",
+      "bucket": "queue",
+      "query": "webgpu:api,operation,onSubmittedWorkDone:*",
+      "notes": "Queue completion semantics."
+    },
+    {
+      "id": "compute_basic",
+      "bucket": "compute",
+      "query": "webgpu:api,operation,compute,basic:*",
+      "notes": "Basic compute pipeline and dispatch behavior."
+    },
+    {
+      "id": "validation_error_scope",
+      "bucket": "validation",
+      "query": "webgpu:api,validation,error_scope:*",
+      "notes": "Error scope push/pop correctness."
+    },
+    {
+      "id": "validation_buffer_create",
+      "bucket": "validation",
+      "query": "webgpu:api,validation,buffer,create:*",
+      "notes": "Buffer descriptor validation."
+    },
+    {
+      "id": "shader_texture_dimensions",
+      "bucket": "shader_execution",
+      "query": "webgpu:shader,execution,expression,call,builtin,textureDimensions:*",
+      "notes": "WGSL builtin execution coverage already used in the prior subset."
+    }
+  ]
+}
