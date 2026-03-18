@@ -1,23 +1,43 @@
-// doe_immediates_external_native.zig — Unsupported stubs for setImmediates and importExternalTexture.
-// Sharded from doe_wgpu_native.zig; groups newer WebGPU APIs not yet implemented in any backend.
-//
-// All exports here represent explicitly tracked gaps, not silent omissions.
-// Each function logs an actionable error so callers can diagnose missing support.
+// doe_immediates_external_native.zig — immediate-data forwarding and external-texture stubs.
+// Sharded from doe_wgpu_native.zig; groups newer WebGPU APIs that are not part of
+// the core command/resource path modules.
 
 const std = @import("std");
+const types = @import("core/abi/wgpu_types.zig");
+const resource_table_procs = @import("wgpu_p1_resource_table_procs.zig");
+
+extern fn wgpuComputePassEncoderSetImmediates(
+    encoder: types.WGPUComputePassEncoder,
+    index: u32,
+    data: ?*const anyopaque,
+    data_len: usize,
+) callconv(.c) void;
+extern fn wgpuRenderPassEncoderSetImmediates(
+    encoder: types.WGPURenderPassEncoder,
+    index: u32,
+    data: ?*const anyopaque,
+    data_len: usize,
+) callconv(.c) void;
+extern fn wgpuRenderBundleEncoderSetImmediates(
+    encoder: resource_table_procs.WGPURenderBundleEncoder,
+    index: u32,
+    data: ?*const anyopaque,
+    data_len: usize,
+) callconv(.c) void;
+
+fn as_anyopaque_const(data_ptr: ?[*]const u8) ?*const anyopaque {
+    return if (data_ptr) |ptr| @ptrCast(ptr) else null;
+}
 
 // ============================================================
 // setImmediates — push constants / immediate data upload
 // ============================================================
 
-// setImmediates is a newer WebGPU extension (analogous to push constants in Vulkan /
-// root constants in D3D12 / setBytes in Metal).  No Doe backend implements the
-// immediate-data upload path yet — Metal requires `setBytes:length:atIndex:` at
-// the encode site, which needs encoder-type dispatch (compute vs render) and a
-// slot-allocation contract that has not been specified in the Doe backend vTable.
-// Until the contract is established and implemented in all backends, these functions
-// fail explicitly rather than silently skipping the upload (which would produce
-// wrong results for any shader that reads immediates data).
+// setImmediates is the WebGPU immediate-data surface. There is no generic
+// proc for the abstract binding-commands mixin, so the concrete compute/render
+// pass entry points are forwarded directly to the provider WebGPU symbols below.
+// The mixin export remains an explicit unsupported entry because it has no
+// standalone runtime object or generic proc target.
 
 pub export fn doeNativeBindingCommandsSetImmediates(
     encoder_raw: ?*anyopaque,
@@ -29,11 +49,9 @@ pub export fn doeNativeBindingCommandsSetImmediates(
     _ = index;
     _ = data_ptr;
     _ = data_len;
-    // setImmediates (push constants) is not yet implemented in any Doe backend.
-    // Shader reads of immediates data will produce undefined values if this is called.
     std.log.err("doe: doeNativeBindingCommandsSetImmediates: unsupported — " ++
-        "setImmediates (push constants) has no backend implementation; " ++
-        "expected: encoder handle, slot index, data pointer and byte length", .{});
+        "abstract mixin entry has no standalone encoder type; use the concrete " ++
+        "compute/render pass setImmediates entry points", .{});
 }
 
 pub export fn doeNativeComputePassSetImmediates(
@@ -42,15 +60,8 @@ pub export fn doeNativeComputePassSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    _ = encoder_raw;
-    _ = index;
-    _ = data_ptr;
-    _ = data_len;
-    // setImmediates on compute pass encoders is not yet implemented.
-    // Metal equivalent is setBytes:length:atIndex: on MTLComputeCommandEncoder.
-    std.log.err("doe: doeNativeComputePassSetImmediates: unsupported — " ++
-        "setImmediates (push constants) has no compute backend implementation; " ++
-        "expected: compute pass encoder handle, slot index, data pointer and byte length", .{});
+    const encoder = encoder_raw orelse return;
+    wgpuComputePassEncoderSetImmediates(@ptrCast(encoder), index, as_anyopaque_const(data_ptr), data_len);
 }
 
 pub export fn doeNativeRenderPassSetImmediates(
@@ -59,15 +70,8 @@ pub export fn doeNativeRenderPassSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    _ = encoder_raw;
-    _ = index;
-    _ = data_ptr;
-    _ = data_len;
-    // setImmediates on render pass encoders is not yet implemented.
-    // Metal equivalent is setVertexBytes:length:atIndex: / setFragmentBytes:length:atIndex:.
-    std.log.err("doe: doeNativeRenderPassSetImmediates: unsupported — " ++
-        "setImmediates (push constants) has no render backend implementation; " ++
-        "expected: render pass encoder handle, slot index, data pointer and byte length", .{});
+    const encoder = encoder_raw orelse return;
+    wgpuRenderPassEncoderSetImmediates(@ptrCast(encoder), index, as_anyopaque_const(data_ptr), data_len);
 }
 
 pub export fn doeNativeRenderBundleEncoderSetImmediates(
@@ -76,16 +80,8 @@ pub export fn doeNativeRenderBundleEncoderSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    _ = encoder_raw;
-    _ = index;
-    _ = data_ptr;
-    _ = data_len;
-    // setImmediates on render bundle encoders is not yet implemented.
-    // Render bundles are pre-recorded; immediate data upload requires per-encode
-    // setBytes calls that are incompatible with the current bundle execution model.
-    std.log.err("doe: doeNativeRenderBundleEncoderSetImmediates: unsupported — " ++
-        "setImmediates (push constants) has no render bundle implementation; " ++
-        "expected: render bundle encoder handle, slot index, data pointer and byte length", .{});
+    const encoder = encoder_raw orelse return;
+    wgpuRenderBundleEncoderSetImmediates(@ptrCast(encoder), index, as_anyopaque_const(data_ptr), data_len);
 }
 
 // ============================================================

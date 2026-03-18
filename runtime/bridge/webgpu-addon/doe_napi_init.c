@@ -86,6 +86,7 @@ napi_value doe_command_encoder_resolve_query_set(napi_env env, napi_callback_inf
 napi_value doe_begin_compute_pass(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_set_pipeline(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_set_bind_group(napi_env env, napi_callback_info info);
+napi_value doe_compute_pass_set_immediates(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_dispatch(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_dispatch_indirect(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_end(napi_env env, napi_callback_info info);
@@ -118,6 +119,7 @@ napi_value doe_render_pipeline_get_bind_group_layout(napi_env env, napi_callback
 napi_value doe_begin_render_pass(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_pipeline(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_bind_group(napi_env env, napi_callback_info info);
+napi_value doe_render_pass_set_immediates(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_vertex_buffer(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_index_buffer(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_draw(napi_env env, napi_callback_info info);
@@ -136,6 +138,7 @@ napi_value doe_render_pass_insert_debug_marker(napi_env env, napi_callback_info 
 napi_value doe_create_render_bundle_encoder(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_set_pipeline(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_set_bind_group(napi_env env, napi_callback_info info);
+napi_value doe_render_bundle_encoder_set_immediates(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_set_vertex_buffer(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_set_index_buffer(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_draw(napi_env env, napi_callback_info info);
@@ -221,6 +224,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("beginComputePass",                         doe_begin_compute_pass),
         EXPORT_FN("computePassSetPipeline",                   doe_compute_pass_set_pipeline),
         EXPORT_FN("computePassSetBindGroup",                  doe_compute_pass_set_bind_group),
+        EXPORT_FN("computePassSetImmediates",                 doe_compute_pass_set_immediates),
         EXPORT_FN("computePassDispatchWorkgroups",            doe_compute_pass_dispatch),
         EXPORT_FN("computePassDispatchWorkgroupsIndirect",    doe_compute_pass_dispatch_indirect),
         EXPORT_FN("computePassEnd",                           doe_compute_pass_end),
@@ -245,6 +249,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("beginRenderPass",                          doe_begin_render_pass),
         EXPORT_FN("renderPassSetPipeline",                    doe_render_pass_set_pipeline),
         EXPORT_FN("renderPassSetBindGroup",                   doe_render_pass_set_bind_group),
+        EXPORT_FN("renderPassSetImmediates",                  doe_render_pass_set_immediates),
         EXPORT_FN("renderPassSetVertexBuffer",                doe_render_pass_set_vertex_buffer),
         EXPORT_FN("renderPassSetIndexBuffer",                 doe_render_pass_set_index_buffer),
         EXPORT_FN("renderPassDraw",                           doe_render_pass_draw),
@@ -261,6 +266,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("createRenderBundleEncoder",                doe_create_render_bundle_encoder),
         EXPORT_FN("renderBundleEncoderSetPipeline",           doe_render_bundle_encoder_set_pipeline),
         EXPORT_FN("renderBundleEncoderSetBindGroup",          doe_render_bundle_encoder_set_bind_group),
+        EXPORT_FN("renderBundleEncoderSetImmediates",         doe_render_bundle_encoder_set_immediates),
         EXPORT_FN("renderBundleEncoderSetVertexBuffer",       doe_render_bundle_encoder_set_vertex_buffer),
         EXPORT_FN("renderBundleEncoderSetIndexBuffer",        doe_render_bundle_encoder_set_index_buffer),
         EXPORT_FN("renderBundleEncoderDraw",                  doe_render_bundle_encoder_draw),

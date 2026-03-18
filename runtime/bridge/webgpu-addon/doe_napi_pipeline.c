@@ -399,7 +399,7 @@ napi_value doe_bind_group_release(napi_env env, napi_callback_info info) {
 
 /* ================================================================
  * Pipeline Layout
- * createPipelineLayout(device, bindGroupLayouts[])
+ * createPipelineLayout(device, bindGroupLayouts[], label?, immediateSize?)
  * ================================================================ */
 
 napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
@@ -419,16 +419,25 @@ napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
         layouts[i] = unwrap_ptr(env, elem);
     }
 
-    /* Read label (3rd arg) */
+    /* Read optional label / immediateSize */
     WGPUStringView label_view = { .data = NULL, .length = 0 };
     char label_buf[256] = {0};
+    uint32_t immediate_size = 0;
     if (_argc > 2) {
-        napi_valuetype lt; napi_typeof(env, _args[2], &lt);
-        if (lt == napi_string) {
+        napi_valuetype arg2_type; napi_typeof(env, _args[2], &arg2_type);
+        if (arg2_type == napi_string) {
             size_t label_len = 0;
             napi_get_value_string_utf8(env, _args[2], label_buf, sizeof(label_buf), &label_len);
             label_view.data = label_buf;
             label_view.length = label_len;
+        } else if (arg2_type == napi_number) {
+            napi_get_value_uint32(env, _args[2], &immediate_size);
+        }
+    }
+    if (_argc > 3) {
+        napi_valuetype arg3_type; napi_typeof(env, _args[3], &arg3_type);
+        if (arg3_type == napi_number) {
+            napi_get_value_uint32(env, _args[3], &immediate_size);
         }
     }
 
@@ -437,7 +446,7 @@ napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
         .label = label_view,
         .bindGroupLayoutCount = layout_count,
         .bindGroupLayouts = layouts,
-        .immediateSize = 0,
+        .immediateSize = immediate_size,
     };
 
     WGPUPipelineLayout pl = pfn_wgpuDeviceCreatePipelineLayout(device, &desc);

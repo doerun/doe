@@ -5,6 +5,22 @@ function unwrap(value) {
   return value && typeof value === 'object' && '_raw' in value ? value._raw : value;
 }
 
+function normalizeImmediateDataInput(data, dataOffset = 0, size) {
+  const isSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer;
+  if (!ArrayBuffer.isView(data) && !(data instanceof ArrayBuffer) && !isSharedArrayBuffer) {
+    throw new TypeError('setImmediates data must be an ArrayBuffer, SharedArrayBuffer, TypedArray, or DataView');
+  }
+  const bytes = ArrayBuffer.isView(data)
+    ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    : new Uint8Array(data);
+  const start = dataOffset >>> 0;
+  const end = size === undefined ? bytes.byteLength : start + (size >>> 0);
+  if (end > bytes.byteLength) {
+    throw new RangeError(`setImmediates range ${start}+${size ?? (bytes.byteLength - start)} exceeds source byteLength ${bytes.byteLength}`);
+  }
+  return bytes.subarray(start, end);
+}
+
 function wrapBuffer(raw) {
   return {
     _raw: raw,
@@ -172,6 +188,9 @@ function wrapComputePass(raw) {
      */
     setBindGroup(index, bindGroup) {
       return raw.setBindGroup(index, unwrap(bindGroup));
+    },
+    setImmediates(index, data, dataOffset = 0, size) {
+      return raw.setImmediates(index, normalizeImmediateDataInput(data, dataOffset, size));
     },
     /**
      * Record a direct compute dispatch.

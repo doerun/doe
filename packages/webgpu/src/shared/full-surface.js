@@ -615,7 +615,13 @@ function createFullSurfaceClasses({
       const layoutDescriptor = assertObject(descriptor, 'GPUDevice.createPipelineLayout', 'descriptor');
       const layouts = assertArray(layoutDescriptor.bindGroupLayouts ?? [], 'GPUDevice.createPipelineLayout', 'descriptor.bindGroupLayouts')
         .map((layout, index) => assertLiveResource(layout, 'GPUDevice.createPipelineLayout', `descriptor.bindGroupLayouts[${index}]`));
-      const native = backend.deviceCreatePipelineLayout(this, layouts, layoutDescriptor.label || undefined);
+      const immediateSize = assertIntegerInRange(
+        layoutDescriptor.immediateSize ?? 0,
+        'GPUDevice.createPipelineLayout',
+        'descriptor.immediateSize',
+        { min: 0, max: UINT32_MAX },
+      );
+      const native = backend.deviceCreatePipelineLayout(this, layouts, layoutDescriptor.label || undefined, immediateSize);
       const pl = new DoeGPUPipelineLayout(native, this);
       pl.label = layoutDescriptor.label ?? '';
       return pl;

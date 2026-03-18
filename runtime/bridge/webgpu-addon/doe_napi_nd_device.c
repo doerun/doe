@@ -312,14 +312,18 @@ napi_value native_direct_device_create_pipeline_layout(napi_env env, napi_callba
         layouts[i] = native_direct_unwrap_external_prop(env, elem, DOE_DIRECT_NATIVE);
     }
 
-    /* Read label */
+    /* Read label / immediateSize */
     WGPUStringView label_view = { .data = NULL, .length = 0 };
     char label_buf[256] = {0};
+    uint32_t immediate_size = 0;
     if (has_prop(env, argv[0], "label") && prop_type(env, argv[0], "label") == napi_string) {
         size_t label_len = 0;
         napi_get_value_string_utf8(env, get_prop(env, argv[0], "label"), label_buf, sizeof(label_buf), &label_len);
         label_view.data = label_buf;
         label_view.length = label_len;
+    }
+    if (has_prop(env, argv[0], "immediateSize") && prop_type(env, argv[0], "immediateSize") == napi_number) {
+        napi_get_value_uint32(env, get_prop(env, argv[0], "immediateSize"), &immediate_size);
     }
 
     WGPUPipelineLayoutDescriptor desc = {
@@ -327,7 +331,7 @@ napi_value native_direct_device_create_pipeline_layout(napi_env env, napi_callba
         .label = label_view,
         .bindGroupLayoutCount = layout_count,
         .bindGroupLayouts = layouts,
-        .immediateSize = 0,
+        .immediateSize = immediate_size,
     };
     WGPUPipelineLayout pipeline_layout = pfn_wgpuDeviceCreatePipelineLayout(device, &desc);
     free(layouts);

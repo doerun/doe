@@ -42,6 +42,7 @@ napi_value create_limits_object(napi_env env, const WGPULimits* limits) {
     SET_U32(maxComputeWorkgroupSizeY);
     SET_U32(maxComputeWorkgroupSizeZ);
     SET_U32(maxComputeWorkgroupsPerDimension);
+    SET_U32(maxImmediateSize);
 
 #undef SET_U32
 #undef SET_U64

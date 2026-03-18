@@ -58,6 +58,7 @@ const METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE: u64 = 65_536; // 64 KB
 
 // Metal subgroup (SIMD-group) size on Apple Silicon (all known variants).
 pub const METAL_SIMD_GROUP_SIZE: u32 = 32;
+const METAL_MAX_IMMEDIATE_SIZE: u32 = 64;
 
 // Default Metal limits (used when no device handle is available).
 const METAL_LIMITS_STATIC = types.WGPULimits{
@@ -93,7 +94,7 @@ const METAL_LIMITS_STATIC = types.WGPULimits{
     .maxComputeWorkgroupSizeY = 1024,
     .maxComputeWorkgroupSizeZ = 64,
     .maxComputeWorkgroupsPerDimension = 65535,
-    .maxImmediateSize = 0,
+    .maxImmediateSize = METAL_MAX_IMMEDIATE_SIZE,
 };
 
 // Conservative Vulkan limits matching Vulkan 1.0 minimum guarantees.

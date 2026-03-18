@@ -644,7 +644,7 @@ pub const doeNativeDeviceInjectError = error_scope_native.doeNativeDeviceInjectE
 // Pipeline cache, multi-adapter, and device-lost callbacks.
 const cache_adapter = @import("doe_cache_adapter_native.zig");
 
-// setImmediates (push constants) and importExternalTexture unsupported stubs in doe_immediates_external_native.zig.
+// setImmediates forwarding plus importExternalTexture unsupported stub in doe_immediates_external_native.zig.
 const immediates_external = @import("doe_immediates_external_native.zig");
 pub const doeNativeBindingCommandsSetImmediates = immediates_external.doeNativeBindingCommandsSetImmediates;
 pub const doeNativeComputePassSetImmediates = immediates_external.doeNativeComputePassSetImmediates;

@@ -9,6 +9,25 @@ import {
   destroyResource,
 } from './resource-lifecycle.js';
 
+function normalizeImmediateDataInput(data, dataOffset = 0, size, path) {
+  const isSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer;
+  if (!ArrayBuffer.isView(data) && !(data instanceof ArrayBuffer) && !isSharedArrayBuffer) {
+    failValidation(path, 'data must be an ArrayBuffer, SharedArrayBuffer, TypedArray, or DataView');
+  }
+  assertIntegerInRange(dataOffset, path, 'dataOffset', { min: 0 });
+  if (size !== undefined) {
+    assertIntegerInRange(size, path, 'size', { min: 0 });
+  }
+  const bytes = ArrayBuffer.isView(data)
+    ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    : new Uint8Array(data);
+  const end = size === undefined ? bytes.byteLength : dataOffset + size;
+  if (end > bytes.byteLength) {
+    failValidation(path, `data range ${dataOffset}+${size ?? (bytes.byteLength - dataOffset)} exceeds source byteLength ${bytes.byteLength}`);
+  }
+  return bytes.subarray(dataOffset, end);
+}
+
 function createEncoderClasses(backend) {
   let classes = null;
 
@@ -43,6 +62,16 @@ function createEncoderClasses(backend) {
         this,
         index,
         assertLiveResource(bindGroup, 'GPUComputePassEncoder.setBindGroup', 'GPUBindGroup'),
+      );
+    }
+
+    setImmediates(index, data, dataOffset = 0, size) {
+      this._assertOpen('GPUComputePassEncoder.setImmediates');
+      assertIntegerInRange(index, 'GPUComputePassEncoder.setImmediates', 'index', { min: 0, max: UINT32_MAX });
+      backend.computePassSetImmediates(
+        this,
+        index,
+        normalizeImmediateDataInput(data, dataOffset, size, 'GPUComputePassEncoder.setImmediates'),
       );
     }
 
@@ -103,6 +132,16 @@ function createEncoderClasses(backend) {
         this,
         index,
         assertLiveResource(bindGroup, 'GPURenderPassEncoder.setBindGroup', 'GPUBindGroup'),
+      );
+    }
+
+    setImmediates(index, data, dataOffset = 0, size) {
+      this._assertOpen('GPURenderPassEncoder.setImmediates');
+      assertIntegerInRange(index, 'GPURenderPassEncoder.setImmediates', 'index', { min: 0, max: UINT32_MAX });
+      backend.renderPassSetImmediates(
+        this,
+        index,
+        normalizeImmediateDataInput(data, dataOffset, size, 'GPURenderPassEncoder.setImmediates'),
       );
     }
 
@@ -277,6 +316,16 @@ function createEncoderClasses(backend) {
         this,
         index,
         assertLiveResource(bindGroup, 'GPURenderBundleEncoder.setBindGroup', 'GPUBindGroup'),
+      );
+    }
+
+    setImmediates(index, data, dataOffset = 0, size) {
+      this._assertOpen('GPURenderBundleEncoder.setImmediates');
+      assertIntegerInRange(index, 'GPURenderBundleEncoder.setImmediates', 'index', { min: 0, max: UINT32_MAX });
+      backend.renderBundleEncoderSetImmediates(
+        this,
+        index,
+        normalizeImmediateDataInput(data, dataOffset, size, 'GPURenderBundleEncoder.setImmediates'),
       );
     }
 

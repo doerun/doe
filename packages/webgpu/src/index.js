@@ -55,12 +55,13 @@ import {
   createEncoderClasses,
 } from './shared/encoder-surface.js';
 import {
+  createNativeBrowserCanvasBackend,
+  createBrowserSurfaceClasses,
+  normalizeOrigin2D,
+  normalizeCanvasConfiguration,
   CANVAS_ALPHA_MODES,
   CANVAS_TONE_MAPPING_MODES,
   CANVAS_COLOR_SPACES,
-  normalizeOrigin2D,
-  normalizeCanvasConfiguration,
-  createBrowserSurfaceClasses,
 } from './shared/browser-surface.js';
 import {
   createNativeBrowserCanvasBackend,
@@ -484,6 +485,26 @@ const nodeEncoderBackend = {
       bindGroupNative,
     );
   },
+  computePassSetImmediates(pass, index, data) {
+    if (pass._lazy) {
+      ensureNodeCommandEncoderNative(pass._encoder);
+      pass._lazy = false;
+      pass._native = addon.beginComputePass(pass._encoder._native);
+      if (pass._pipeline != null) {
+        addon.computePassSetPipeline(pass._native, pass._pipeline);
+      }
+      for (let i = 0; i < pass._bindGroups.length; i += 1) {
+        if (pass._bindGroups[i]) {
+          addon.computePassSetBindGroup(pass._native, i, pass._bindGroups[i]);
+        }
+      }
+    }
+    addon.computePassSetImmediates(
+      assertLiveResource(pass, 'GPUComputePassEncoder.setImmediates', 'GPUComputePassEncoder'),
+      index,
+      data,
+    );
+  },
   computePassDispatchWorkgroups(pass, x, y, z) {
     if (pass._lazy) {
       if (pass._pipeline == null) {
@@ -555,6 +576,13 @@ const nodeEncoderBackend = {
       assertLiveResource(pass, 'GPURenderPassEncoder.setBindGroup', 'GPURenderPassEncoder'),
       index,
       bindGroupNative,
+    );
+  },
+  renderPassSetImmediates(pass, index, data) {
+    addon.renderPassSetImmediates(
+      assertLiveResource(pass, 'GPURenderPassEncoder.setImmediates', 'GPURenderPassEncoder'),
+      index,
+      data,
     );
   },
   renderPassSetVertexBuffer(pass, slot, bufferNative, offset, size) {
@@ -647,6 +675,13 @@ const nodeEncoderBackend = {
   renderBundleEncoderSetBindGroup(enc, index, bindGroupNative) {
     addon.renderBundleEncoderSetBindGroup(enc._native, index, bindGroupNative);
   },
+  renderBundleEncoderSetImmediates(enc, index, data) {
+    addon.renderBundleEncoderSetImmediates(
+      assertLiveResource(enc, 'GPURenderBundleEncoder.setImmediates', 'GPURenderBundleEncoder'),
+      index,
+      data,
+    );
+  },
   renderBundleEncoderSetVertexBuffer(enc, slot, bufferNative, offset, size) {
     addon.renderBundleEncoderSetVertexBuffer(enc._native, slot, bufferNative, offset, size ?? 0);
   },
@@ -667,6 +702,21 @@ const nodeEncoderBackend = {
   renderBundleEncoderDrawIndexedIndirect(enc, indirectBufferNative, indirectOffset) {
     if (typeof addon.renderBundleEncoderDrawIndexedIndirect === 'function') {
       addon.renderBundleEncoderDrawIndexedIndirect(enc._native, indirectBufferNative, indirectOffset);
+    }
+  },
+  renderBundleEncoderPushDebugGroup(enc, label) {
+    if (typeof addon.renderBundleEncoderPushDebugGroup === 'function') {
+      addon.renderBundleEncoderPushDebugGroup(enc._native, label);
+    }
+  },
+  renderBundleEncoderPopDebugGroup(enc) {
+    if (typeof addon.renderBundleEncoderPopDebugGroup === 'function') {
+      addon.renderBundleEncoderPopDebugGroup(enc._native);
+    }
+  },
+  renderBundleEncoderInsertDebugMarker(enc, label) {
+    if (typeof addon.renderBundleEncoderInsertDebugMarker === 'function') {
+      addon.renderBundleEncoderInsertDebugMarker(enc._native, label);
     }
   },
   renderBundleEncoderFinish(enc, _descriptor, classes) {
@@ -1119,8 +1169,13 @@ const fullSurfaceBackend = {
       label,
     );
   },
-  deviceCreatePipelineLayout(device, layouts, label) {
-    return addon.createPipelineLayout(assertLiveResource(device, 'GPUDevice.createPipelineLayout', 'GPUDevice'), layouts, label);
+  deviceCreatePipelineLayout(device, layouts, label, immediateSize = 0) {
+    return addon.createPipelineLayout(
+      assertLiveResource(device, 'GPUDevice.createPipelineLayout', 'GPUDevice'),
+      layouts,
+      label,
+      immediateSize,
+    );
   },
   deviceCreateTexture(device, textureDescriptor, size, usage) {
     const desc = {
@@ -1477,4 +1532,5 @@ export default {
   providerInfo,
   createDoeRuntime,
   runDawnVsDoeCompare,
+  createBrowserSurfaceClasses,
 };

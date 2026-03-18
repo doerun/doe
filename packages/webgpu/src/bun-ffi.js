@@ -846,7 +846,7 @@ function buildBindGroupDescriptor(layoutPtr, entries) {
 
 // WGPUPipelineLayoutDescriptor: { nextInChain:ptr@0, label:sv@8, bindGroupLayoutCount:size_t@24,
 //   bindGroupLayouts:ptr@32, immediateSize:u32@40, pad@44 } = 48
-function buildPipelineLayoutDescriptor(layouts) {
+function buildPipelineLayoutDescriptor(layouts, immediateSize = 0) {
     const ptrs = new BigUint64Array(layouts.length);
     for (let i = 0; i < layouts.length; i++) {
         ptrs[i] = BigInt(layouts[i]);
@@ -858,7 +858,7 @@ function buildPipelineLayoutDescriptor(layouts) {
     writeStringView(descView, 8, null);
     descView.setBigUint64(24, BigInt(layouts.length), true);
     writePtr(descView, 32, layouts.length > 0 ? bunPtr(ptrs) : null);
-    descView.setUint32(40, 0, true); // immediateSize
+    descView.setUint32(40, immediateSize >>> 0, true);
 
     return { desc: new Uint8Array(descBuf), _refs: [ptrs] };
 }
@@ -1407,6 +1407,7 @@ const bunEncoderBackend = {
     computePassInit(pass) {
         pass._pipeline = null;
         pass._bindGroups = [];
+        pass._immediates = [];
         pass._ended = false;
     },
     computePassAssertOpen(pass, path) {
@@ -1419,18 +1420,38 @@ const bunEncoderBackend = {
     computePassSetBindGroup(pass, index, bindGroupNative) {
         pass._bindGroups[index] = bindGroupNative;
     },
+    computePassSetImmediates(pass, index, data) {
+        pass._immediates = pass._immediates.filter((entry) => entry.index !== index);
+        pass._immediates.push({ index, data: data.slice() });
+    },
     computePassDispatchWorkgroups(pass, x, y, z) {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroups", "setPipeline() must be called before dispatch");
         }
-        pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z });
+        pass._encoder._commands.push({
+            t: 0,
+            p: pass._pipeline,
+            bg: [...pass._bindGroups],
+            immediates: pass._immediates.map((entry) => ({ index: entry.index, data: entry.data.slice() })),
+            x,
+            y,
+            z,
+        });
     },
     computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroupsIndirect", "setPipeline() must be called before dispatch");
         }
         const counts = readIndirectDispatchCounts(indirectBufferNative, indirectOffset);
-        pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x: counts.x, y: counts.y, z: counts.z });
+        pass._encoder._commands.push({
+            t: 0,
+            p: pass._pipeline,
+            bg: [...pass._bindGroups],
+            immediates: pass._immediates.map((entry) => ({ index: entry.index, data: entry.data.slice() })),
+            x: counts.x,
+            y: counts.y,
+            z: counts.z,
+        });
     },
     computePassEnd(pass) {
         pass._ended = true;
@@ -1508,6 +1529,14 @@ const bunEncoderBackend = {
             colorBytes,
         );
     },
+    renderPassSetImmediates(pass, index, data) {
+        wgpu.symbols.wgpuRenderPassEncoderSetImmediates(
+            assertLiveResource(pass, "GPURenderPassEncoder.setImmediates", "GPURenderPassEncoder"),
+            index,
+            data,
+            BigInt(data.byteLength),
+        );
+    },
     renderPassSetStencilReference(pass, ref) {
         wgpu.symbols.wgpuRenderPassEncoderSetStencilReference(
             assertLiveResource(pass, "GPURenderPassEncoder.setStencilReference", "GPURenderPassEncoder"),
@@ -1556,6 +1585,14 @@ const bunEncoderBackend = {
             bindGroupNative,
             BigInt(0),
             null,
+        );
+    },
+    renderBundleEncoderSetImmediates(encoder, index, data) {
+        wgpu.symbols.wgpuRenderBundleEncoderSetImmediates(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.setImmediates", "GPURenderBundleEncoder"),
+            index,
+            data,
+            BigInt(data.byteLength),
         );
     },
     renderBundleEncoderSetVertexBuffer(encoder, slot, bufferNative, offset, size) {
@@ -1791,7 +1828,7 @@ const fullSurfaceBackend = {
         const dispatchFlush = wgpu.symbols.doeNativeComputeDispatchFlush;
         if (dispatchFlush && buffers.length === 1 && buffers[0]?._batched) {
             const cmds = buffers[0]._commands;
-            if (cmds.length >= 1 && cmds.length <= 2 && cmds[0]?.t === 0 && (cmds.length === 1 || cmds[1]?.t === 1)) {
+            if (cmds.length >= 1 && cmds.length <= 2 && cmds[0]?.t === 0 && !(cmds[0]?.immediates?.length) && (cmds.length === 1 || cmds[1]?.t === 1)) {
                 const cmd0 = cmds[0];
                 const bgPtrs = new BigUint64Array(cmd0.bg.length);
                 for (let i = 0; i < cmd0.bg.length; i += 1) {
@@ -1818,6 +1855,14 @@ const fullSurfaceBackend = {
                     wgpu.symbols.wgpuComputePassEncoderSetPipeline(pass, cmd.p);
                     for (let i = 0; i < cmd.bg.length; i += 1) {
                         if (cmd.bg[i]) wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass, i, cmd.bg[i], BigInt(0), null);
+                    }
+                    for (const immediate of cmd.immediates ?? []) {
+                        wgpu.symbols.wgpuComputePassEncoderSetImmediates(
+                            pass,
+                            immediate.index,
+                            immediate.data,
+                            BigInt(immediate.data.byteLength),
+                        );
                     }
                     wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(pass, cmd.x, cmd.y, cmd.z);
                     wgpu.symbols.wgpuComputePassEncoderEnd(pass);
@@ -1972,8 +2017,8 @@ const fullSurfaceBackend = {
         void _refs;
         return native;
     },
-    deviceCreatePipelineLayout(device, layouts, _label) {
-        const { desc, _refs } = buildPipelineLayoutDescriptor(layouts);
+    deviceCreatePipelineLayout(device, layouts, _label, immediateSize = 0) {
+        const { desc, _refs } = buildPipelineLayoutDescriptor(layouts, immediateSize);
         const native = wgpu.symbols.wgpuDeviceCreatePipelineLayout(assertLiveResource(device, "GPUDevice.createPipelineLayout", "GPUDevice"), desc);
         void _refs;
         return native;
