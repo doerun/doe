@@ -358,6 +358,9 @@ function assertBindGroupResource(resource, path) {
     if (describeResourceLabel(resource) === 'GPUTextureView') {
       return { textureView: assertLiveResource(resource, path, 'GPUTextureView') };
     }
+    if (describeResourceLabel(resource) === 'GPUExternalTexture') {
+      return { externalTexture: assertLiveResource(resource, path, 'GPUExternalTexture') };
+    }
     return {
       buffer: assertLiveResource(resource, path, 'GPUBuffer'),
       offset: 0,
@@ -370,7 +373,13 @@ function assertBindGroupResource(resource, path) {
   if ('textureView' in resource) {
     return { textureView: assertLiveResource(resource.textureView, path, 'GPUTextureView') };
   }
-  failValidation(path, 'entry.resource must be a GPUBuffer, GPUTextureView, GPUSampler, or { buffer|textureView|sampler, ... }');
+  if ('externalTexture' in resource) {
+    return { externalTexture: assertLiveResource(resource.externalTexture, path, 'GPUExternalTexture') };
+  }
+  failValidation(
+    path,
+    'entry.resource must be a GPUBuffer, GPUTextureView, GPUSampler, GPUExternalTexture, or { buffer|textureView|sampler|externalTexture, ... }',
+  );
 }
 
 function normalizeBindGroupLayoutEntry(entry, index, path) {
@@ -406,6 +415,10 @@ function normalizeBindGroupLayoutEntry(entry, index, path) {
       path,
       `descriptor.entries[${index}].storageTexture`,
     );
+  }
+  if (binding.externalTexture) {
+    assertObject(binding.externalTexture, path, `descriptor.entries[${index}].externalTexture`);
+    normalized.externalTexture = {};
   }
   return normalized;
 }

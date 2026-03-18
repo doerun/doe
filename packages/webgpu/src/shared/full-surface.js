@@ -597,6 +597,7 @@ function createFullSurfaceClasses({
             buffer: resource.buffer,
             sampler: resource.sampler,
             textureView: resource.textureView,
+            externalTexture: resource.externalTexture,
             offset: resource.offset ?? 0,
           };
           if (resource.size !== undefined) {

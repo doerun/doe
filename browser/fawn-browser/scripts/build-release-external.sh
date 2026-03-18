@@ -3,11 +3,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LANE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-EXTERNAL_ENV_FILE="${LANE_DIR}/.external-macos.env"
+EXTERNAL_ENV_FILE="${LANE_DIR}/.external-lane.env"
+EXTERNAL_ENV_FILE_LEGACY="${LANE_DIR}/.external-macos.env"
 
 if [[ -f "${EXTERNAL_ENV_FILE}" ]]; then
   # shellcheck disable=SC1090
   source "${EXTERNAL_ENV_FILE}"
+elif [[ -f "${EXTERNAL_ENV_FILE_LEGACY}" ]]; then
+  # shellcheck disable=SC1090
+  source "${EXTERNAL_ENV_FILE_LEGACY}"
 fi
 
 # shellcheck disable=SC1091

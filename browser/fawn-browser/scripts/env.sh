@@ -8,11 +8,16 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LANE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-EXTERNAL_ENV_FILE="${LANE_DIR}/.external-macos.env"
+EXTERNAL_ENV_FILE="${LANE_DIR}/.external-lane.env"
+EXTERNAL_ENV_FILE_LEGACY="${LANE_DIR}/.external-macos.env"
 
-if [[ -f "${EXTERNAL_ENV_FILE}" ]]; then
-  # shellcheck disable=SC1090
-  source "${EXTERNAL_ENV_FILE}"
+for env_file in "${EXTERNAL_ENV_FILE}" "${EXTERNAL_ENV_FILE_LEGACY}"; do
+  if [[ -f "${env_file}" ]]; then
+    # shellcheck disable=SC1090
+    source "${env_file}"
+    break
+  fi
+done
 fi
 
 prepend_path() {

@@ -98,6 +98,7 @@ browser/fawn-browser/artifacts/*
 !browser/fawn-browser/artifacts/fawn-icon-main.*
 !browser/fawn-browser/artifacts/fawn-icon-main.*/**
 browser/fawn-browser/.external-macos.env
+browser/fawn-browser/.external-lane.env
 
 # Nested mirror artifacts (accidental local copies)
 bench/vendor/

@@ -224,6 +224,9 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/native-compare/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`).
+  - package browser-helper exports now expose the shared browser-surface factory and normalization helpers from `packages/webgpu/src/shared/browser-surface.js` through the public package entrypoints (`createBrowserSurfaceClasses`, `normalizeOrigin2D`, `normalizeCanvasConfiguration`, `CANVAS_*` maps).
+  - bind-group validation now recognizes `GPUExternalTexture` resources and `externalTexture` layout entries on the shared JS surface, but the headless Doe runtime package surface still fails fast for those bindings without an explicit browser canvas backend provider.
+  - `GPUDevice.importExternalTexture` and `GPUQueue.copyExternalImageToTexture` remain helper-surface delegation points rather than native Doe runtime features; concrete canvas/video-frame interop is still pending browser-backend provider wiring.
   - `doe.runCompute()` now infers binding access from Doe helper-created buffer usage and fails fast when a bare binding lacks Doe helper metadata or resolves to non-bindable/ambiguous usage.
     - prebuild infrastructure for self-contained installs:
       - `scripts/install.js`: uses prebuilt binaries when present, falls back to node-gyp

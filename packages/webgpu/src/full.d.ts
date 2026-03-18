@@ -84,9 +84,31 @@ export interface FullDoeNamespace
     RequestDeviceOptions
   > {}
 
+export interface BrowserSurfaceCanvasBackend {
+  canvasContextConfigure(context: unknown, configuration: GPUCanvasConfiguration): void;
+  canvasContextGetCurrentTexture(
+    context: unknown,
+    configuration: GPUCanvasConfiguration,
+    fullClasses: Record<string, unknown>
+  ): GPUTexture;
+  canvasContextUnconfigure(context: unknown): void;
+  externalTextureDestroy(native: unknown): void;
+}
+
+export interface BrowserSurfaceFactoryOptions {
+  canvasBackend: BrowserSurfaceCanvasBackend;
+  fullClasses: Record<string, unknown>;
+}
+
 export const globals: Record<string, unknown>;
 export function create(createArgs?: string[] | null): GPU;
 export function createInstance(createArgs?: string[] | null): GPU;
+export function createBrowserSurfaceClasses(
+  options: BrowserSurfaceFactoryOptions
+): Record<string, unknown>;
+export function createNativeBrowserCanvasBackend(options?: {
+  contextFactory?: (canvas: unknown, context: unknown) => unknown;
+}): BrowserSurfaceCanvasBackend;
 export function setupGlobals(target?: object, createArgs?: string[] | null): GPU;
 export function requestAdapter(
   adapterOptions?: GPURequestAdapterOptions,
@@ -109,13 +131,36 @@ export function preflightShaderSource(code: string): {
   column?: number;
 };
 export function setNativeTimeoutMs(ms: number): void;
+export function normalizeOrigin2D(origin: GPUOrigin2D | null | undefined, path: string): { x: number; y: number };
+export function normalizeCanvasConfiguration(
+  config: GPUCanvasConfiguration,
+  path: string
+): {
+  device: GPUDevice;
+  format: GPUTextureFormat;
+  usage: number;
+  alphaMode: GPUCanvasAlphaMode;
+  colorSpace: PredefinedColorSpace;
+  toneMapping: { mode: GPUCanvasToneMappingMode };
+  viewFormats: GPUTextureFormat[];
+};
+export const CANVAS_ALPHA_MODES: Readonly<Record<string, GPUCanvasAlphaMode>>;
+export const CANVAS_TONE_MAPPING_MODES: Readonly<Record<string, GPUCanvasToneMappingMode>>;
+export const CANVAS_COLOR_SPACES: Readonly<Record<string, PredefinedColorSpace>>;
 
 export const doe: FullDoeNamespace;
 
 declare const _default: {
+  CANVAS_ALPHA_MODES: typeof CANVAS_ALPHA_MODES;
+  CANVAS_TONE_MAPPING_MODES: typeof CANVAS_TONE_MAPPING_MODES;
+  CANVAS_COLOR_SPACES: typeof CANVAS_COLOR_SPACES;
   create: typeof create;
   createInstance: typeof createInstance;
+  createBrowserSurfaceClasses: typeof createBrowserSurfaceClasses;
+  createNativeBrowserCanvasBackend: typeof createNativeBrowserCanvasBackend;
   globals: typeof globals;
+  normalizeCanvasConfiguration: typeof normalizeCanvasConfiguration;
+  normalizeOrigin2D: typeof normalizeOrigin2D;
   setupGlobals: typeof setupGlobals;
   requestAdapter: typeof requestAdapter;
   requestDevice: typeof requestDevice;

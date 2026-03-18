@@ -54,6 +54,17 @@ import {
 import {
   createEncoderClasses,
 } from './shared/encoder-surface.js';
+import {
+  CANVAS_ALPHA_MODES,
+  CANVAS_TONE_MAPPING_MODES,
+  CANVAS_COLOR_SPACES,
+  normalizeOrigin2D,
+  normalizeCanvasConfiguration,
+  createBrowserSurfaceClasses,
+} from './shared/browser-surface.js';
+import {
+  createNativeBrowserCanvasBackend,
+} from './shared/browser-native-canvas-backend.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -1086,9 +1097,21 @@ const fullSurfaceBackend = {
     }
   },
   deviceCreateBindGroupLayout(device, entries, label) {
+    if (entries.some((entry) => entry.externalTexture)) {
+      failValidation(
+        'GPUDevice.createBindGroupLayout',
+        'externalTexture bindings require a browser canvas backend provider, not the headless Doe runtime package surface',
+      );
+    }
     return addon.createBindGroupLayout(assertLiveResource(device, 'GPUDevice.createBindGroupLayout', 'GPUDevice'), entries, label);
   },
   deviceCreateBindGroup(device, layoutNative, entries, label) {
+    if (entries.some((entry) => entry.externalTexture)) {
+      failValidation(
+        'GPUDevice.createBindGroup',
+        'externalTexture resources require a browser canvas backend provider, not the headless Doe runtime package surface',
+      );
+    }
     return addon.createBindGroup(
       assertLiveResource(device, 'GPUDevice.createBindGroup', 'GPUDevice'),
       layoutNative,
@@ -1427,11 +1450,27 @@ export const createDoeRuntime = createDoeRuntimeCli;
  * - This is a tooling entrypoint, not the in-process `device` or `doe` helper path.
  */
 export const runDawnVsDoeCompare = runDawnVsDoeCompareCli;
+export {
+  CANVAS_ALPHA_MODES,
+  CANVAS_TONE_MAPPING_MODES,
+  CANVAS_COLOR_SPACES,
+  normalizeOrigin2D,
+  normalizeCanvasConfiguration,
+  createBrowserSurfaceClasses,
+  createNativeBrowserCanvasBackend,
+};
 
 export default {
+  CANVAS_ALPHA_MODES,
+  CANVAS_TONE_MAPPING_MODES,
+  CANVAS_COLOR_SPACES,
   create,
   createInstance,
+  createBrowserSurfaceClasses,
+  createNativeBrowserCanvasBackend,
   globals,
+  normalizeCanvasConfiguration,
+  normalizeOrigin2D,
   setupGlobals,
   requestAdapter,
   requestDevice,

@@ -51,6 +51,17 @@ import {
 import {
   createEncoderClasses,
 } from "./shared/encoder-surface.js";
+import {
+  CANVAS_ALPHA_MODES,
+  CANVAS_TONE_MAPPING_MODES,
+  CANVAS_COLOR_SPACES,
+  normalizeOrigin2D,
+  normalizeCanvasConfiguration,
+  createBrowserSurfaceClasses,
+} from "./shared/browser-surface.js";
+import {
+  createNativeBrowserCanvasBackend,
+} from "./shared/browser-native-canvas-backend.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, "..");
@@ -1930,12 +1941,24 @@ const fullSurfaceBackend = {
         return native;
     },
     deviceCreateBindGroupLayout(device, entries, _label) {
+        if (entries.some((entry) => entry.externalTexture)) {
+            failValidation(
+                "GPUDevice.createBindGroupLayout",
+                "externalTexture bindings require a browser canvas backend provider, not the headless Doe runtime package surface",
+            );
+        }
         const { desc, _refs } = buildBindGroupLayoutDescriptor(entries);
         const native = wgpu.symbols.wgpuDeviceCreateBindGroupLayout(assertLiveResource(device, "GPUDevice.createBindGroupLayout", "GPUDevice"), desc);
         void _refs;
         return native;
     },
     deviceCreateBindGroup(device, layoutNative, entries, _label) {
+        if (entries.some((entry) => entry.externalTexture)) {
+            failValidation(
+                "GPUDevice.createBindGroup",
+                "externalTexture resources require a browser canvas backend provider, not the headless Doe runtime package surface",
+            );
+        }
         const normalizedEntries = entries.map((entry) => ({
             binding: entry.binding,
             resource: entry.buffer
@@ -2163,6 +2186,15 @@ export function providerInfo() {
 export { createDoeRuntime, runDawnVsDoeCompare };
 export { preflightShaderSource };
 export { fastPathStats };
+export {
+    CANVAS_ALPHA_MODES,
+    CANVAS_TONE_MAPPING_MODES,
+    CANVAS_COLOR_SPACES,
+    normalizeOrigin2D,
+    normalizeCanvasConfiguration,
+    createBrowserSurfaceClasses,
+    createNativeBrowserCanvasBackend,
+};
 
 export function setNativeTimeoutMs(timeoutMs) {
     validatePositiveInteger(timeoutMs, 'native timeout');
@@ -2170,9 +2202,16 @@ export function setNativeTimeoutMs(timeoutMs) {
 }
 
 export default {
+    CANVAS_ALPHA_MODES,
+    CANVAS_TONE_MAPPING_MODES,
+    CANVAS_COLOR_SPACES,
     create,
     createInstance,
+    createBrowserSurfaceClasses,
+    createNativeBrowserCanvasBackend,
     globals,
+    normalizeCanvasConfiguration,
+    normalizeOrigin2D,
     setupGlobals,
     requestAdapter,
     requestDevice,

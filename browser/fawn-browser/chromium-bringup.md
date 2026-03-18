@@ -103,6 +103,38 @@ cd browser/fawn-browser
 ./scripts/build-release-external.sh
 ```
 
+## Linux external volume workflow (ext4/xfs)
+
+When local disk is constrained, keep the Chromium checkout and caches on an
+external path and sync only release artifacts back locally:
+
+From `` root:
+
+```bash
+cd browser/fawn-browser
+./scripts/setup-linux-external-lane.sh /mnt/fawn
+source ./scripts/env.sh
+
+# one-time checkout and sync (runs on external path via lane symlinks)
+fetch --nohooks chromium
+cd src
+gclient sync --nohooks --no-history --jobs 1
+gclient runhooks
+gn gen out/fawn_release --args='is_debug=false is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false'
+autoninja -C out/fawn_release chrome
+
+# copy runnable release artifacts to local lane output
+cd ..
+./scripts/sync-release-artifacts-local.sh
+```
+
+For incremental rebuilds after initial setup:
+
+```bash
+cd browser/fawn-browser
+./scripts/build-release-external.sh
+```
+
 Default local release artifact path:
 
 - `browser/fawn-browser/out/fawn_release_local`

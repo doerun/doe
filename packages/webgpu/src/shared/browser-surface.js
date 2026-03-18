@@ -127,12 +127,11 @@ function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
     }
   }
 
-  return {
-    ...fullClasses,
+  return Object.assign(fullClasses, {
     DoeGPUCanvasContext,
     DoeGPUExternalTexture,
     normalizeOrigin2D,
-  };
+  });
 }
 
 export {

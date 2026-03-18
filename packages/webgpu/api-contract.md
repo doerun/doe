@@ -32,6 +32,15 @@ This contract covers package-surface GPU access, provider metadata, and helper
 entrypoints. It does not promise DOM/canvas ownership or browser-process
 parity.
 
+Advanced browser-helper utilities may be exported for integration seams
+(`createBrowserSurfaceClasses`, canvas-configuration normalizers, and canvas
+enum maps), but those exports are adapter helpers only. They do not change the
+package contract into a browser-process or `navigator.gpu` ownership contract.
+`createNativeBrowserCanvasBackend(...)` is the concrete default helper for
+delegating `GPUCanvasContext` operations onto a browser-owned
+`canvas.getContext("webgpu")` object; it is still an integration helper, not a
+package-owned browser runtime.
+
 This is the contract for the current implemented API. It intentionally may
 differ from the future helper naming proposed in `doe-api-design.md`.
 
@@ -95,6 +104,13 @@ level:
   and returns structured compilation diagnostics.
 - `setNativeTimeoutMs(ms)` sets the native-side timeout for synchronous GPU
   operations (map, flush).
+- advanced browser-helper exports provide browser-surface normalization and
+  class-factory hooks for Track A adapters and browser-owned `GPUDevice`
+  integration, but require an explicit canvas backend provider and do not imply
+  package-owned DOM/canvas behavior.
+- `createNativeBrowserCanvasBackend(...)` provides the concrete browser-owned
+  `GPUCanvasContext` delegation helper for `configure`, `getCurrentTexture`,
+  and `unconfigure` over a real browser canvas context.
 
 On `@simulatte/webgpu/compute`, the returned device is intentionally
 compute-only:

@@ -323,6 +323,29 @@ Cross-owner signoff is required before any promotion from nursery to core paths.
 3. Tie every proposal to gates and measurable exit criteria.
 4. Promote to core directories only after passing promotion rules.
 
+## Quick start (browser lane + external drive)
+
+Lane setup for both macOS and Linux:
+
+1. Choose the platform flow and run setup:
+   - macOS: `./scripts/setup-macos-external-lane.sh /Volumes/fawn`
+   - Linux: `./scripts/setup-linux-external-lane.sh /mnt/fawn`
+2. Load lane env: `source ./scripts/env.sh`
+3. Build Chromium on Linux with release output:
+   - `./scripts/bringup-linux.sh --mode release --skip-fetch --skip-sync`
+   - or for fresh pull: `./scripts/bringup-linux.sh --mode release`
+4. Build/rebuild external release artifacts:
+   - `./scripts/build-release-external.sh`
+5. Run browser checks with lane defaults:
+   - `./scripts/run-smoke.sh --mode both`
+   - `./scripts/run-bench.sh --mode both`
+
+Notes:
+- Lane-local env file is `.external-lane.env` (mac helper also writes legacy `.external-macos.env` for compatibility).
+- External checkout/caches are stored at:
+  - `<external_volume>/fawn-browser/{src,depot_tools,cache}`
+- Local release sync remains in `browser/fawn-browser/out/fawn_release_local`.
+
 ## Current status
 
 This lane contains planning/contracts docs, lane-local bring-up scripts, and a lane-local Chromium workspace (`src/`) with in-flight Track A (browser) seam integration edits.

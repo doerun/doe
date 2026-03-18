@@ -2,7 +2,14 @@
 set -euo pipefail
 
 FAWN_LANE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FAWN_CHROMIUM_LANE_DIR="$(cd "${FAWN_LANE_SCRIPT_DIR}/.." && pwd)"
+FAWN_CHROMIUM_LANE_DIR="${FAWN_CHROMIUM_LANE_DIR:-${FAWN_LANE_SCRIPT_DIR}/..}"
+
+if [[ ! -d "${FAWN_CHROMIUM_LANE_DIR}" ]]; then
+  echo "missing lane directory: ${FAWN_CHROMIUM_LANE_DIR}" >&2
+  exit 1
+fi
+
+FAWN_CHROMIUM_LANE_DIR="$(cd "${FAWN_CHROMIUM_LANE_DIR}" && pwd)"
 FAWN_REPO_ROOT="$(cd "${FAWN_CHROMIUM_LANE_DIR}/../.." && pwd)"
 
 fawn_host_os() {
