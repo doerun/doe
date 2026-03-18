@@ -27,4 +27,11 @@ export const globals = {
     STORAGE_BINDING: 0x08,
     RENDER_ATTACHMENT: 0x10,
   },
+  GPUColorWrite: {
+    RED: 0x1,
+    GREEN: 0x2,
+    BLUE: 0x4,
+    ALPHA: 0x8,
+    ALL: 0xf,
+  },
 };

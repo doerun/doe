@@ -161,6 +161,15 @@ static napi_value native_direct_shader_module_get_compilation_info(napi_env env,
         messages = parsed;
     }
 
+    /* Ensure each message has all 5 required fields */
+    uint32_t msg_count = 0;
+    napi_get_array_length(env, messages, &msg_count);
+    for (uint32_t i = 0; i < msg_count; i++) {
+        napi_value msg_obj;
+        napi_get_element(env, messages, i, &msg_obj);
+        ensure_compilation_message_fields(env, msg_obj);
+    }
+
     napi_value compilation_info;
     napi_create_object(env, &compilation_info);
     napi_set_named_property(env, compilation_info, "messages", messages);

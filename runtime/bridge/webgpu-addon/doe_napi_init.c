@@ -45,6 +45,7 @@ napi_value doe_buffer_read_copy(napi_env env, napi_callback_info info);
 napi_value doe_buffer_write_mapped_range(napi_env env, napi_callback_info info);
 napi_value doe_buffer_read_indirect_counts(napi_env env, napi_callback_info info);
 napi_value doe_buffer_assert_mapped_prefix_f32(napi_env env, napi_callback_info info);
+napi_value doe_buffer_get_map_state(napi_env env, napi_callback_info info);
 
 /* Shader module (doe_napi_shader.c) */
 napi_value doe_check_shader_source(napi_env env, napi_callback_info info);
@@ -148,6 +149,8 @@ napi_value doe_adapter_get_limits(napi_env env, napi_callback_info info);
 napi_value doe_adapter_has_feature(napi_env env, napi_callback_info info);
 napi_value doe_device_get_limits(napi_env env, napi_callback_info info);
 napi_value doe_device_has_feature(napi_env env, napi_callback_info info);
+napi_value doe_device_get_label(napi_env env, napi_callback_info info);
+napi_value doe_device_set_label(napi_env env, napi_callback_info info);
 
 /* Query set */
 napi_value doe_create_query_set(napi_env env, napi_callback_info info);
@@ -191,6 +194,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("bufferWriteMappedRange",                   doe_buffer_write_mapped_range),
         EXPORT_FN("bufferReadIndirectCounts",                 doe_buffer_read_indirect_counts),
         EXPORT_FN("bufferAssertMappedPrefixF32",              doe_buffer_assert_mapped_prefix_f32),
+        EXPORT_FN("bufferGetMapState",                        doe_buffer_get_map_state),
         EXPORT_FN("checkShaderSource",                        doe_check_shader_source),
         EXPORT_FN("createShaderModule",                       doe_create_shader_module),
         EXPORT_FN("shaderModuleRelease",                      doe_shader_module_release),
@@ -268,6 +272,8 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("adapterHasFeature",                        doe_adapter_has_feature),
         EXPORT_FN("deviceGetLimits",                          doe_device_get_limits),
         EXPORT_FN("deviceHasFeature",                         doe_device_has_feature),
+        EXPORT_FN("deviceGetLabel",                           doe_device_get_label),
+        EXPORT_FN("deviceSetLabel",                           doe_device_set_label),
         EXPORT_FN("deviceSetLostCallback",                    doe_device_set_lost_callback_export),
         EXPORT_FN("createQuerySet",                           doe_create_query_set),
         EXPORT_FN("commandEncoderWriteTimestamp",             doe_command_encoder_write_timestamp),

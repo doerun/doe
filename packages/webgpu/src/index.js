@@ -411,7 +411,7 @@ function ensureNodeCommandEncoderNative(encoder) {
   if (encoder._native) {
     return;
   }
-  encoder._native = addon.createCommandEncoder(assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'));
+  encoder._native = addon.createCommandEncoder(assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'), encoder.label || undefined);
   for (const cmd of encoder._commands ?? []) {
     if (cmd.t === 0) {
       const pass = addon.beginComputePass(encoder._native);
@@ -1071,7 +1071,7 @@ const fullSurfaceBackend = {
       throw enrichNativeCompilerError(error, 'GPUDevice.createShaderModule', readLastErrorFields());
     }
   },
-  deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative, constants) {
+  deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative, constants, label) {
     try {
       return addon.createComputePipeline(
         assertLiveResource(device, 'GPUDevice.createComputePipeline', 'GPUDevice'),
@@ -1079,23 +1079,25 @@ const fullSurfaceBackend = {
         entryPoint,
         layoutNative,
         constants,
+        label,
       );
     } catch (error) {
       throw enrichNativeCompilerError(error, 'GPUDevice.createComputePipeline', readLastErrorFields());
     }
   },
-  deviceCreateBindGroupLayout(device, entries) {
-    return addon.createBindGroupLayout(assertLiveResource(device, 'GPUDevice.createBindGroupLayout', 'GPUDevice'), entries);
+  deviceCreateBindGroupLayout(device, entries, label) {
+    return addon.createBindGroupLayout(assertLiveResource(device, 'GPUDevice.createBindGroupLayout', 'GPUDevice'), entries, label);
   },
-  deviceCreateBindGroup(device, layoutNative, entries) {
+  deviceCreateBindGroup(device, layoutNative, entries, label) {
     return addon.createBindGroup(
       assertLiveResource(device, 'GPUDevice.createBindGroup', 'GPUDevice'),
       layoutNative,
       entries,
+      label,
     );
   },
-  deviceCreatePipelineLayout(device, layouts) {
-    return addon.createPipelineLayout(assertLiveResource(device, 'GPUDevice.createPipelineLayout', 'GPUDevice'), layouts);
+  deviceCreatePipelineLayout(device, layouts, label) {
+    return addon.createPipelineLayout(assertLiveResource(device, 'GPUDevice.createPipelineLayout', 'GPUDevice'), layouts, label);
   },
   deviceCreateTexture(device, textureDescriptor, size, usage) {
     return addon.createTexture(assertLiveResource(device, 'GPUDevice.createTexture', 'GPUDevice'), {

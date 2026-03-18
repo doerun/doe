@@ -356,32 +356,7 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
     return obj;
 }
 
-napi_value doe_shader_module_get_compilation_info(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
-    CHECK_LIB_LOADED(env);
-    void* shader_module = unwrap_ptr(env, _args[0]);
-
-    const char* json_str = "[]";
-    if (pfn_doeNativeShaderModuleGetCompilationInfo) {
-        const char* native_json = pfn_doeNativeShaderModuleGetCompilationInfo(shader_module);
-        if (native_json) json_str = native_json;
-    }
-
-    napi_value global, json_obj, json_parse_fn, json_str_val, parse_args[1], parsed, messages, compilation_info;
-    napi_get_global(env, &global);
-    napi_get_named_property(env, global, "JSON", &json_obj);
-    napi_get_named_property(env, json_obj, "parse", &json_parse_fn);
-    napi_create_string_utf8(env, json_str, NAPI_AUTO_LENGTH, &json_str_val);
-    parse_args[0] = json_str_val;
-    if (napi_call_function(env, json_obj, json_parse_fn, 1, parse_args, &parsed) != napi_ok) {
-        napi_create_array_with_length(env, 0, &messages);
-    } else {
-        messages = parsed;
-    }
-    napi_create_object(env, &compilation_info);
-    napi_set_named_property(env, compilation_info, "messages", messages);
-    return native_direct_resolved_promise(env, compilation_info);
-}
+/* doe_shader_module_get_compilation_info moved to doe_napi_shader.c */
 
 /* ================================================================
  * Sampler
@@ -398,9 +373,13 @@ napi_value doe_create_sampler(napi_env env, napi_callback_info info) {
     desc.lodMaxClamp = 32.0f;
     desc.maxAnisotropy = 1;
 
+    char* label_str = NULL;
+    size_t label_len = 0;
     napi_valuetype desc_type;
     napi_typeof(env, _args[1], &desc_type);
     if (desc_type == napi_object) {
+        if (has_prop(env, _args[1], "label"))
+            label_str = dup_string_value(env, get_prop(env, _args[1], "label"), &label_len);
         if (has_prop(env, _args[1], "magFilter"))
             desc.magFilter = filter_mode_from_string(env, get_prop(env, _args[1], "magFilter"));
         if (has_prop(env, _args[1], "minFilter"))
@@ -416,8 +395,11 @@ napi_value doe_create_sampler(napi_env env, napi_callback_info info) {
         if (has_prop(env, _args[1], "maxAnisotropy"))
             desc.maxAnisotropy = (uint16_t)get_uint32_prop(env, _args[1], "maxAnisotropy");
     }
+    desc.label.data = label_str;
+    desc.label.length = label_str ? label_len : 0;
 
     WGPUSampler sampler = pfn_wgpuDeviceCreateSampler(device, &desc);
+    free(label_str);
     if (!sampler) NAPI_THROW(env, "createSampler failed");
     return wrap_ptr(env, sampler);
 }
@@ -439,8 +421,15 @@ napi_value doe_create_texture(napi_env env, napi_callback_info info) {
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
+    char* label_str = NULL;
+    size_t label_len = 0;
+    if (has_prop(env, _args[1], "label"))
+        label_str = dup_string_value(env, get_prop(env, _args[1], "label"), &label_len);
+
     WGPUTextureDescriptor desc;
     memset(&desc, 0, sizeof(desc));
+    desc.label.data = label_str;
+    desc.label.length = label_str ? label_len : 0;
     desc.format = texture_format_from_string(env, get_prop(env, _args[1], "format"));
     desc.size.width = get_uint32_prop(env, _args[1], "width");
     desc.size.height = get_uint32_prop(env, _args[1], "height");
@@ -456,17 +445,74 @@ napi_value doe_create_texture(napi_env env, napi_callback_info info) {
     if (has_prop(env, _args[1], "dimension"))
         desc.dimension = get_uint32_prop(env, _args[1], "dimension");
 
+    uint32_t* view_formats = NULL;
+    uint32_t view_format_count = 0;
+    if (has_prop(env, _args[1], "viewFormats")) {
+        napi_value vf_arr = get_prop(env, _args[1], "viewFormats");
+        bool vf_is_array = false;
+        napi_is_array(env, vf_arr, &vf_is_array);
+        if (vf_is_array) {
+            napi_get_array_length(env, vf_arr, &view_format_count);
+            if (view_format_count > 0) {
+                view_formats = (uint32_t*)calloc(view_format_count, sizeof(uint32_t));
+                for (uint32_t i = 0; i < view_format_count; i++) {
+                    napi_value elem;
+                    napi_get_element(env, vf_arr, i, &elem);
+                    view_formats[i] = texture_format_from_string(env, elem);
+                }
+            }
+        }
+    }
+    desc.viewFormatCount = (size_t)view_format_count;
+    desc.viewFormats = view_formats;
+
     WGPUTexture tex = pfn_wgpuDeviceCreateTexture(device, &desc);
+    free(view_formats);
+    free(label_str);
     if (!tex) NAPI_THROW(env, "createTexture failed");
     return wrap_ptr(env, tex);
 }
 
 napi_value doe_texture_create_view(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
+    size_t argc = 3;
+    napi_value argv[3];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     CHECK_LIB_LOADED(env);
-    WGPUTexture tex = unwrap_ptr(env, _args[0]);
+    if (argc < 1) NAPI_THROW(env, "textureCreateView requires texture");
+    WGPUTexture tex = unwrap_ptr(env, argv[0]);
     if (!tex) NAPI_THROW(env, "Invalid texture");
-    WGPUTextureView view = pfn_wgpuTextureCreateView(tex, NULL);
+
+    /* Build a view descriptor when one is provided (argv[1] or argv[2]). */
+    napi_value desc_arg = NULL;
+    for (size_t i = 1; i < argc; i++) {
+        napi_valuetype vt; napi_typeof(env, argv[i], &vt);
+        if (vt == napi_object) { desc_arg = argv[i]; break; }
+    }
+
+    WGPUTextureViewDescriptor view_desc;
+    memset(&view_desc, 0, sizeof(view_desc));
+    const WGPUTextureViewDescriptor* view_desc_ptr = NULL;
+    if (desc_arg) {
+        if (has_prop(env, desc_arg, "format"))
+            view_desc.format = texture_format_from_string(env, get_prop(env, desc_arg, "format"));
+        if (has_prop(env, desc_arg, "dimension"))
+            view_desc.dimension = get_uint32_prop(env, desc_arg, "dimension");
+        if (has_prop(env, desc_arg, "baseMipLevel"))
+            view_desc.baseMipLevel = get_uint32_prop(env, desc_arg, "baseMipLevel");
+        if (has_prop(env, desc_arg, "mipLevelCount"))
+            view_desc.mipLevelCount = get_uint32_prop(env, desc_arg, "mipLevelCount");
+        if (has_prop(env, desc_arg, "baseArrayLayer"))
+            view_desc.baseArrayLayer = get_uint32_prop(env, desc_arg, "baseArrayLayer");
+        if (has_prop(env, desc_arg, "arrayLayerCount"))
+            view_desc.arrayLayerCount = get_uint32_prop(env, desc_arg, "arrayLayerCount");
+        if (has_prop(env, desc_arg, "aspect"))
+            view_desc.aspect = get_uint32_prop(env, desc_arg, "aspect");
+        if (has_prop(env, desc_arg, "usage"))
+            view_desc.usage = (uint64_t)get_int64_prop(env, desc_arg, "usage");
+        view_desc_ptr = &view_desc;
+    }
+
+    WGPUTextureView view = pfn_wgpuTextureCreateView(tex, view_desc_ptr);
     if (!view) NAPI_THROW(env, "textureCreateView failed");
     return wrap_ptr(env, view);
 }
@@ -538,6 +584,24 @@ napi_value doe_query_set_destroy(napi_env env, napi_callback_info info) {
     if (!pfn_doeNativeQuerySetDestroy) return NULL;
     WGPUQuerySet qs = unwrap_ptr(env, _args[0]);
     if (qs) pfn_doeNativeQuerySetDestroy(qs);
+    return NULL;
+}
+
+/* ================================================================
+ * Device label (stub — label tracking not implemented yet)
+ * ================================================================ */
+
+napi_value doe_device_get_label(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    (void)_args;
+    napi_value result;
+    napi_create_string_utf8(env, "", 0, &result);
+    return result;
+}
+
+napi_value doe_device_set_label(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    (void)_args;
     return NULL;
 }
 

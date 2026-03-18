@@ -11,12 +11,26 @@
  * ================================================================ */
 
 napi_value doe_create_command_encoder(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
+    NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
+
+    /* Read label (2nd arg) */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (_argc > 1) {
+        napi_valuetype lt; napi_typeof(env, _args[1], &lt);
+        if (lt == napi_string) {
+            size_t label_len = 0;
+            napi_get_value_string_utf8(env, _args[1], label_buf, sizeof(label_buf), &label_len);
+            label_view.data = label_buf;
+            label_view.length = label_len;
+        }
+    }
+
     WGPUCommandEncoderDescriptor desc = {
-        .nextInChain = NULL, .label = { .data = NULL, .length = 0 },
+        .nextInChain = NULL, .label = label_view,
     };
     WGPUCommandEncoder enc = pfn_wgpuDeviceCreateCommandEncoder(device, &desc);
     if (!enc) NAPI_THROW(env, "createCommandEncoder failed");
@@ -198,12 +212,32 @@ napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callba
  * ================================================================ */
 
 napi_value doe_begin_compute_pass(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     CHECK_LIB_LOADED(env);
-    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
+    if (argc < 1) NAPI_THROW(env, "beginComputePass requires encoder");
+    WGPUCommandEncoder enc = unwrap_ptr(env, argv[0]);
     if (!enc) NAPI_THROW(env, "Invalid encoder");
+
+    WGPUComputePassTimestampWrites ts_writes = {0};
+    WGPUComputePassTimestampWrites* ts_writes_ptr = NULL;
+    if (argc > 1) {
+        napi_valuetype desc_vt; napi_typeof(env, argv[1], &desc_vt);
+        if (desc_vt == napi_object &&
+            has_prop(env, argv[1], "timestampWrites") &&
+            prop_type(env, argv[1], "timestampWrites") == napi_object) {
+            napi_value tw = get_prop(env, argv[1], "timestampWrites");
+            ts_writes.querySet = unwrap_ptr(env, get_prop(env, tw, "querySet"));
+            ts_writes.beginningOfPassWriteIndex = get_uint32_prop(env, tw, "beginningOfPassWriteIndex");
+            ts_writes.endOfPassWriteIndex = get_uint32_prop(env, tw, "endOfPassWriteIndex");
+            ts_writes_ptr = &ts_writes;
+        }
+    }
+
     WGPUComputePassDescriptor desc = {
-        .nextInChain = NULL, .label = { .data = NULL, .length = 0 }, .timestampWrites = NULL,
+        .nextInChain = NULL, .label = { .data = NULL, .length = 0 },
+        .timestampWrites = ts_writes_ptr,
     };
     WGPUComputePassEncoder pass = pfn_wgpuCommandEncoderBeginComputePass(enc, &desc);
     if (!pass) NAPI_THROW(env, "beginComputePass failed");

@@ -120,8 +120,19 @@ napi_value native_direct_device_create_compute_pipeline(napi_env env, napi_callb
         override_count = parse_js_override_constants(env, constants_obj, &override_entries);
     }
 
+    /* Read label */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (has_prop(env, argv[0], "label") && prop_type(env, argv[0], "label") == napi_string) {
+        size_t label_len = 0;
+        napi_get_value_string_utf8(env, get_prop(env, argv[0], "label"), label_buf, sizeof(label_buf), &label_len);
+        label_view.data = label_buf;
+        label_view.length = label_len;
+    }
+
     WGPUComputePipelineDescriptor desc;
     memset(&desc, 0, sizeof(desc));
+    desc.label = label_view;
     desc.layout = layout;
     desc.compute.module = shader;
     desc.compute.entryPoint.data = entry_point;
@@ -207,9 +218,19 @@ napi_value native_direct_device_create_bind_group_layout(napi_env env, napi_call
         }
     }
 
+    /* Read label */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (has_prop(env, argv[0], "label") && prop_type(env, argv[0], "label") == napi_string) {
+        size_t label_len = 0;
+        napi_get_value_string_utf8(env, get_prop(env, argv[0], "label"), label_buf, sizeof(label_buf), &label_len);
+        label_view.data = label_buf;
+        label_view.length = label_len;
+    }
+
     WGPUBindGroupLayoutDescriptor desc = {
         .nextInChain = NULL,
-        .label = { .data = NULL, .length = 0 },
+        .label = label_view,
         .entryCount = entry_count,
         .entries = entries,
     };
@@ -248,9 +269,19 @@ napi_value native_direct_device_create_bind_group(napi_env env, napi_callback_in
         entries[i].size = has_prop(env, resource, "size") ? (uint64_t)get_int64_prop(env, resource, "size") : WGPU_WHOLE_SIZE;
     }
 
+    /* Read label */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (has_prop(env, argv[0], "label") && prop_type(env, argv[0], "label") == napi_string) {
+        size_t label_len = 0;
+        napi_get_value_string_utf8(env, get_prop(env, argv[0], "label"), label_buf, sizeof(label_buf), &label_len);
+        label_view.data = label_buf;
+        label_view.length = label_len;
+    }
+
     WGPUBindGroupDescriptor desc = {
         .nextInChain = NULL,
-        .label = { .data = NULL, .length = 0 },
+        .label = label_view,
         .layout = layout,
         .entryCount = entry_count,
         .entries = entries,
@@ -281,9 +312,19 @@ napi_value native_direct_device_create_pipeline_layout(napi_env env, napi_callba
         layouts[i] = native_direct_unwrap_external_prop(env, elem, DOE_DIRECT_NATIVE);
     }
 
+    /* Read label */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (has_prop(env, argv[0], "label") && prop_type(env, argv[0], "label") == napi_string) {
+        size_t label_len = 0;
+        napi_get_value_string_utf8(env, get_prop(env, argv[0], "label"), label_buf, sizeof(label_buf), &label_len);
+        label_view.data = label_buf;
+        label_view.length = label_len;
+    }
+
     WGPUPipelineLayoutDescriptor desc = {
         .nextInChain = NULL,
-        .label = { .data = NULL, .length = 0 },
+        .label = label_view,
         .bindGroupLayoutCount = layout_count,
         .bindGroupLayouts = layouts,
         .immediateSize = 0,
@@ -299,13 +340,26 @@ napi_value native_direct_device_create_command_encoder(napi_env env, napi_callba
     napi_value argv[1];
     napi_value this_arg;
     napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
-    (void)argv;
     NativeDirectHandleCache* device_cache = native_direct_get_handle_cache(env, this_arg);
     WGPUDevice device = device_cache ? (WGPUDevice)device_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
     if (!device) NAPI_THROW(env, "Invalid device");
+
+    /* Read label from optional descriptor */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (argc >= 1) {
+        napi_valuetype desc_vt; napi_typeof(env, argv[0], &desc_vt);
+        if (desc_vt == napi_object && has_prop(env, argv[0], "label") && prop_type(env, argv[0], "label") == napi_string) {
+            size_t label_len = 0;
+            napi_get_value_string_utf8(env, get_prop(env, argv[0], "label"), label_buf, sizeof(label_buf), &label_len);
+            label_view.data = label_buf;
+            label_view.length = label_len;
+        }
+    }
+
     WGPUCommandEncoderDescriptor desc = {
         .nextInChain = NULL,
-        .label = { .data = NULL, .length = 0 },
+        .label = label_view,
     };
     WGPUCommandEncoder encoder = pfn_wgpuDeviceCreateCommandEncoder(device, &desc);
     if (!encoder) NAPI_THROW(env, "createCommandEncoder failed");

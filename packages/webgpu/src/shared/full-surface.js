@@ -508,7 +508,8 @@ function createFullSurfaceClasses({
           'GPUDevice.createComputePipeline',
         );
       const constants = compute.constants ?? null;
-      const native = backend.deviceCreateComputePipeline(this, shaderNative, entryPoint, layout?._native ?? null, constants);
+      const label = pipelineDescriptor.label || undefined;
+      const native = backend.deviceCreateComputePipeline(this, shaderNative, entryPoint, layout?._native ?? null, constants, label);
       const pipeline = new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
       pipeline.label = pipelineDescriptor.label ?? '';
       return pipeline;
@@ -522,7 +523,7 @@ function createFullSurfaceClasses({
       const layoutDescriptor = assertObject(descriptor, 'GPUDevice.createBindGroupLayout', 'descriptor');
       const entries = assertArray(layoutDescriptor.entries ?? [], 'GPUDevice.createBindGroupLayout', 'descriptor.entries')
         .map((entry, index) => normalizeBindGroupLayoutEntry(entry, index, 'GPUDevice.createBindGroupLayout'));
-      const native = backend.deviceCreateBindGroupLayout(this, entries);
+      const native = backend.deviceCreateBindGroupLayout(this, entries, layoutDescriptor.label || undefined);
       const bgl = new DoeGPUBindGroupLayout(native, this);
       bgl.label = layoutDescriptor.label ?? '';
       return bgl;
@@ -547,7 +548,7 @@ function createFullSurfaceClasses({
           }
           return normalized;
         });
-      const native = backend.deviceCreateBindGroup(this, layoutNative, entries);
+      const native = backend.deviceCreateBindGroup(this, layoutNative, entries, bindGroupDescriptor.label || undefined);
       const bg = new DoeGPUBindGroup(native, this);
       bg.label = bindGroupDescriptor.label ?? '';
       return bg;
@@ -557,7 +558,7 @@ function createFullSurfaceClasses({
       const layoutDescriptor = assertObject(descriptor, 'GPUDevice.createPipelineLayout', 'descriptor');
       const layouts = assertArray(layoutDescriptor.bindGroupLayouts ?? [], 'GPUDevice.createPipelineLayout', 'descriptor.bindGroupLayouts')
         .map((layout, index) => assertLiveResource(layout, 'GPUDevice.createPipelineLayout', `descriptor.bindGroupLayouts[${index}]`));
-      const native = backend.deviceCreatePipelineLayout(this, layouts);
+      const native = backend.deviceCreatePipelineLayout(this, layouts, layoutDescriptor.label || undefined);
       const pl = new DoeGPUPipelineLayout(native, this);
       pl.label = layoutDescriptor.label ?? '';
       return pl;

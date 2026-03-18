@@ -1908,7 +1908,7 @@ const fullSurfaceBackend = {
         }
         return mod;
     },
-    deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative, _constants) {
+    deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative, _constants, _label) {
         const { desc, _refs } = buildComputePipelineDescriptor(shaderNative, entryPoint, layoutNative);
         let native;
         try {
@@ -1922,13 +1922,13 @@ const fullSurfaceBackend = {
         }
         return native;
     },
-    deviceCreateBindGroupLayout(device, entries) {
+    deviceCreateBindGroupLayout(device, entries, _label) {
         const { desc, _refs } = buildBindGroupLayoutDescriptor(entries);
         const native = wgpu.symbols.wgpuDeviceCreateBindGroupLayout(assertLiveResource(device, "GPUDevice.createBindGroupLayout", "GPUDevice"), desc);
         void _refs;
         return native;
     },
-    deviceCreateBindGroup(device, layoutNative, entries) {
+    deviceCreateBindGroup(device, layoutNative, entries, _label) {
         const normalizedEntries = entries.map((entry) => ({
             binding: entry.binding,
             resource: entry.buffer
@@ -1942,7 +1942,7 @@ const fullSurfaceBackend = {
         void _refs;
         return native;
     },
-    deviceCreatePipelineLayout(device, layouts) {
+    deviceCreatePipelineLayout(device, layouts, _label) {
         const { desc, _refs } = buildPipelineLayoutDescriptor(layouts);
         const native = wgpu.symbols.wgpuDeviceCreatePipelineLayout(assertLiveResource(device, "GPUDevice.createPipelineLayout", "GPUDevice"), desc);
         void _refs;

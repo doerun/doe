@@ -27,6 +27,13 @@ const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = types.WGPUFeatureName_IndirectFirst
 const FEATURE_FLOAT32_FILTERABLE: u32 = types.WGPUFeatureName_Float32Filterable;
 const FEATURE_FLOAT32_BLENDABLE: u32 = types.WGPUFeatureName_Float32Blendable;
 pub const FEATURE_SUBGROUPS: u32 = types.WGPUFeatureName_Subgroups;
+const FEATURE_TEXTURE_COMPRESSION_BC: u32 = types.WGPUFeatureName_TextureCompressionBC;
+const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = types.WGPUFeatureName_TextureCompressionETC2;
+const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = types.WGPUFeatureName_RG11B10UfloatRenderable;
+const FEATURE_TIMESTAMP_QUERY: u32 = types.WGPUFeatureName_TimestampQuery;
+const FEATURE_SUBGROUPS_F16: u32 = types.WGPUFeatureName_SubgroupsF16;
+const FEATURE_CLIP_DISTANCES: u32 = types.WGPUFeatureName_ClipDistances;
+const FEATURE_DUAL_SOURCE_BLENDING: u32 = types.WGPUFeatureName_DualSourceBlending;
 
 // ============================================================
 // Limits: Apple Silicon hardware-specific defaults.
@@ -162,12 +169,19 @@ fn is_metal_feature_supported(feature: u32) bool {
         // Apple Silicon Metal features — all supported on this target.
         FEATURE_DEPTH_CLIP_CONTROL,
         FEATURE_DEPTH32FLOAT_STENCIL8,
+        FEATURE_TEXTURE_COMPRESSION_BC,
+        FEATURE_TEXTURE_COMPRESSION_ETC2,
         FEATURE_TEXTURE_COMPRESSION_ASTC,
         FEATURE_BGRA8UNORM_STORAGE,
+        FEATURE_RG11B10UFLOAT_RENDERABLE,
+        FEATURE_TIMESTAMP_QUERY,
         FEATURE_INDIRECT_FIRST_INSTANCE,
         FEATURE_FLOAT32_FILTERABLE,
         FEATURE_FLOAT32_BLENDABLE,
         FEATURE_SUBGROUPS,
+        FEATURE_SUBGROUPS_F16,
+        FEATURE_CLIP_DISTANCES,
+        FEATURE_DUAL_SOURCE_BLENDING,
         => BRIDGE_AVAILABLE,
         else => false,
     };

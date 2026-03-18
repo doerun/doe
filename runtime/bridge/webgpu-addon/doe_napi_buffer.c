@@ -16,7 +16,16 @@ napi_value doe_create_buffer(napi_env env, napi_callback_info info) {
     desc.size = (uint64_t)get_int64_prop(env, _args[1], "size");
     desc.mappedAtCreation = get_bool_prop(env, _args[1], "mappedAtCreation") ? 1 : 0;
 
+    char* label_str = NULL;
+    size_t label_len = 0;
+    if (has_prop(env, _args[1], "label")) {
+        label_str = dup_string_value(env, get_prop(env, _args[1], "label"), &label_len);
+    }
+    desc.label.data = label_str;
+    desc.label.length = label_str ? label_len : 0;
+
     WGPUBuffer buf = pfn_wgpuDeviceCreateBuffer(device, &desc);
+    free(label_str);
     if (!buf) NAPI_THROW(env, "createBuffer failed");
     return wrap_ptr(env, buf);
 }
@@ -226,6 +235,16 @@ napi_value doe_buffer_read_indirect_counts(napi_env env, napi_callback_info info
     napi_set_named_property(env, result, "x", x);
     napi_set_named_property(env, result, "y", y);
     napi_set_named_property(env, result, "z", z);
+    return result;
+}
+
+/* bufferGetMapState(buffer) → "unmapped" | "pending" | "mapped"
+ * Doe's bufferMapAsync is synchronous, so state is binary. Returns "unmapped"
+ * as a stub; wire to native wgpuBufferGetMapState when exposed by the runtime. */
+napi_value doe_buffer_get_map_state(napi_env env, napi_callback_info info) {
+    (void)info;
+    napi_value result;
+    napi_create_string_utf8(env, "unmapped", NAPI_AUTO_LENGTH, &result);
     return result;
 }
 

@@ -74,10 +74,12 @@ static MTLPixelFormat wgpu_to_mtl_format(uint32_t wgpu) {
         case 0x00000003: return MTLPixelFormatR8Uint;
         case 0x00000004: return MTLPixelFormatR8Sint;
         // 16-bit single channel
+        case 0x00000005: return MTLPixelFormatR16Unorm;
+        case 0x00000006: return MTLPixelFormatR16Snorm;
         case 0x00000007: return MTLPixelFormatR16Uint;
         case 0x00000008: return MTLPixelFormatR16Sint;
         case 0x00000009: return MTLPixelFormatR16Float;
-        // 16-bit dual channel
+        // 8-bit dual channel
         case 0x0000000A: return MTLPixelFormatRG8Unorm;
         case 0x0000000B: return MTLPixelFormatRG8Snorm;
         case 0x0000000C: return MTLPixelFormatRG8Uint;
@@ -86,7 +88,9 @@ static MTLPixelFormat wgpu_to_mtl_format(uint32_t wgpu) {
         case 0x0000000E: return MTLPixelFormatR32Float;
         case 0x0000000F: return MTLPixelFormatR32Uint;
         case 0x00000010: return MTLPixelFormatR32Sint;
-        // 32-bit dual channel
+        // 16-bit dual channel
+        case 0x00000011: return MTLPixelFormatRG16Unorm;
+        case 0x00000012: return MTLPixelFormatRG16Snorm;
         case 0x00000013: return MTLPixelFormatRG16Uint;
         case 0x00000014: return MTLPixelFormatRG16Sint;
         case 0x00000015: return MTLPixelFormatRG16Float;

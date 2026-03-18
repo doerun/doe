@@ -136,7 +136,40 @@ typedef struct { void* nextInChain; WGPUStringView label; WGPUBindGroupLayout la
 typedef struct { void* nextInChain; WGPUStringView label; size_t bindGroupLayoutCount; const WGPUBindGroupLayout* bindGroupLayouts; uint32_t immediateSize; } WGPUPipelineLayoutDescriptor;
 
 typedef struct { uint32_t group; uint32_t binding; uint32_t kind; uint32_t addr_space; uint32_t access; } DoeShaderBindingInfo;
-typedef struct { void* nextInChain; WGPUStringView label; void* timestampWrites; } WGPUComputePassDescriptor;
+
+/* Compilation message types (WebGPU spec) */
+typedef enum {
+    WGPU_COMPILATION_MESSAGE_TYPE_ERROR   = 1,
+    WGPU_COMPILATION_MESSAGE_TYPE_WARNING = 2,
+    WGPU_COMPILATION_MESSAGE_TYPE_INFO    = 3,
+} WGPUCompilationMessageType;
+
+typedef struct {
+    const char* message;
+    WGPUCompilationMessageType type;
+    uint64_t lineNum;
+    uint64_t linePos;
+    uint64_t offset;
+    uint64_t length;
+} WGPUCompilationMessage;
+
+typedef struct {
+    size_t messageCount;
+    const WGPUCompilationMessage* messages;
+} WGPUCompilationInfo;
+typedef struct {
+    WGPUQuerySet querySet;
+    uint32_t beginningOfPassWriteIndex;
+    uint32_t endOfPassWriteIndex;
+} WGPUComputePassTimestampWrites;
+
+typedef struct {
+    WGPUQuerySet querySet;
+    uint32_t beginningOfPassWriteIndex;
+    uint32_t endOfPassWriteIndex;
+} WGPURenderPassTimestampWrites;
+
+typedef struct { void* nextInChain; WGPUStringView label; const WGPUComputePassTimestampWrites* timestampWrites; } WGPUComputePassDescriptor;
 typedef struct { uint32_t width; uint32_t height; uint32_t depthOrArrayLayers; } WGPUExtent3D;
 typedef struct { uint32_t x; uint32_t y; uint32_t z; } WGPUOrigin3D;
 typedef struct { uint64_t offset; uint32_t bytesPerRow; uint32_t rowsPerImage; } WGPUTexelCopyBufferLayout;
@@ -178,7 +211,7 @@ typedef struct {
 typedef struct {
     void* nextInChain; WGPUStringView label;
     size_t colorAttachmentCount; const WGPURenderPassColorAttachment* colorAttachments;
-    void* depthStencilAttachment; WGPUQuerySet occlusionQuerySet; void* timestampWrites;
+    void* depthStencilAttachment; WGPUQuerySet occlusionQuerySet; const WGPURenderPassTimestampWrites* timestampWrites;
 } WGPURenderPassDescriptor;
 
 typedef struct { void* nextInChain; WGPUStringView key; double value; } WGPUConstantEntry;
@@ -249,6 +282,13 @@ typedef struct {
     void (*callback)(uint32_t error_type, WGPUStringView message, void* userdata1, void* userdata2);
     void* userdata1; void* userdata2;
 } WGPUPopErrorScopeCallbackInfo2;
+
+typedef struct {
+    void* nextInChain;
+    void* compatibleSurface;  /* NULL for headless */
+    uint32_t powerPreference;
+    WGPUBool forceFallbackAdapter;
+} WGPURequestAdapterOptions;
 
 /* ================================================================
  * Function pointer types — DECL_PFN creates typedef + extern decl
@@ -612,6 +652,13 @@ const char* texture_format_u32_to_string(uint32_t fmt);
 const char* doe_binding_kind_name(uint32_t kind);
 const char* doe_binding_space_name(uint32_t addr_space);
 const char* doe_binding_access_name(uint32_t access);
+
+/* Compilation message helpers (doe_napi_shader.c) */
+void ensure_compilation_message_fields(napi_env env, napi_value msg);
+
+/* Device label stubs */
+napi_value doe_device_get_label(napi_env env, napi_callback_info info);
+napi_value doe_device_set_label(napi_env env, napi_callback_info info);
 
 /* Limits helper */
 napi_value create_limits_object(napi_env env, const WGPULimits* limits);

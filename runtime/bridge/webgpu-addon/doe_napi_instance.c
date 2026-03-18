@@ -24,17 +24,65 @@ napi_value doe_instance_release(napi_env env, napi_callback_info info) {
  * Adapter (synchronous requestAdapter via callback + processEvents)
  * ================================================================ */
 
+/* Power preference string values match WGPUPowerPreference enum:
+ * 0 = undefined, 2 = low-power, 3 = high-performance */
+#define WGPU_POWER_PREFERENCE_LOW_POWER      2
+#define WGPU_POWER_PREFERENCE_HIGH_PERFORMANCE 3
+
 napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
+    /* Accept 1 or 2 args: (instance[, options]) */
+    size_t actual_argc = 2;
+    napi_value args[2];
+    if (napi_get_cb_info(env, info, &actual_argc, args, NULL, NULL) != napi_ok)
+        NAPI_THROW(env, "napi_get_cb_info failed");
     CHECK_LIB_LOADED(env);
-    WGPUInstance inst = unwrap_ptr(env, _args[0]);
+    WGPUInstance inst = unwrap_ptr(env, args[0]);
     if (!inst) NAPI_THROW(env, "Invalid instance");
+
+    WGPURequestAdapterOptions opts;
+    memset(&opts, 0, sizeof(opts));
+    const WGPURequestAdapterOptions* opts_ptr = NULL;
+
+    if (actual_argc >= 2) {
+        napi_valuetype vt = napi_undefined;
+        napi_typeof(env, args[1], &vt);
+        if (vt == napi_object) {
+            /* powerPreference */
+            napi_valuetype pp_type = napi_undefined;
+            napi_value pp_val;
+            if (napi_get_named_property(env, args[1], "powerPreference", &pp_val) == napi_ok) {
+                napi_typeof(env, pp_val, &pp_type);
+            }
+            if (pp_type == napi_string) {
+                char pp_str[32];
+                size_t pp_len = 0;
+                napi_get_value_string_utf8(env, pp_val, pp_str, sizeof(pp_str), &pp_len);
+                if (strcmp(pp_str, "low-power") == 0) {
+                    opts.powerPreference = WGPU_POWER_PREFERENCE_LOW_POWER;
+                } else if (strcmp(pp_str, "high-performance") == 0) {
+                    opts.powerPreference = WGPU_POWER_PREFERENCE_HIGH_PERFORMANCE;
+                }
+            }
+            /* forceFallbackAdapter */
+            napi_value ffa_val;
+            napi_valuetype ffa_type = napi_undefined;
+            if (napi_get_named_property(env, args[1], "forceFallbackAdapter", &ffa_val) == napi_ok) {
+                napi_typeof(env, ffa_val, &ffa_type);
+            }
+            if (ffa_type == napi_boolean) {
+                bool ffa = false;
+                napi_get_value_bool(env, ffa_val, &ffa);
+                opts.forceFallbackAdapter = ffa ? 1 : 0;
+            }
+            opts_ptr = &opts;
+        }
+    }
 
     AdapterRequestResult result = {0};
     WGPUFuture future;
     if (pfn_doeRequestAdapterFlat) {
         future = pfn_doeRequestAdapterFlat(
-            inst, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, adapter_callback, &result, NULL);
+            inst, opts_ptr, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, adapter_callback, &result, NULL);
     } else {
         const WGPURequestAdapterCallbackInfo callback_info = {
             .nextInChain = NULL,
@@ -43,7 +91,7 @@ napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
             .userdata1 = &result,
             .userdata2 = NULL,
         };
-        future = pfn_wgpuInstanceRequestAdapter(inst, NULL, callback_info);
+        future = pfn_wgpuInstanceRequestAdapter(inst, opts_ptr, callback_info);
     }
     if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
     if (!process_events_until(inst, &result.done, current_timeout_ns()))

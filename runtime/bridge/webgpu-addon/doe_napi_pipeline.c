@@ -52,7 +52,7 @@ void free_override_constants(WGPUConstantEntry* entries, size_t count) {
 }
 
 napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 5);
+    NAPI_ASSERT_ARGC(env, info, 6);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     WGPUShaderModule shader = unwrap_ptr(env, _args[1]);
@@ -80,8 +80,22 @@ napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info info) {
         }
     }
 
+    /* Read label (6th arg) */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (_argc > 5) {
+        napi_valuetype lt; napi_typeof(env, _args[5], &lt);
+        if (lt == napi_string) {
+            size_t label_len = 0;
+            napi_get_value_string_utf8(env, _args[5], label_buf, sizeof(label_buf), &label_len);
+            label_view.data = label_buf;
+            label_view.length = label_len;
+        }
+    }
+
     WGPUComputePipelineDescriptor desc;
     memset(&desc, 0, sizeof(desc));
+    desc.label = label_view;
     desc.layout = layout;
     desc.compute.module = shader;
     desc.compute.entryPoint.data = ep;
@@ -216,7 +230,7 @@ uint32_t storage_texture_access_from_string(napi_env env, napi_value val) {
 }
 
 napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 2);
+    NAPI_ASSERT_ARGC(env, info, 3);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
@@ -268,9 +282,22 @@ napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
         }
     }
 
+    /* Read label (3rd arg) */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (_argc > 2) {
+        napi_valuetype lt; napi_typeof(env, _args[2], &lt);
+        if (lt == napi_string) {
+            size_t label_len = 0;
+            napi_get_value_string_utf8(env, _args[2], label_buf, sizeof(label_buf), &label_len);
+            label_view.data = label_buf;
+            label_view.length = label_len;
+        }
+    }
+
     WGPUBindGroupLayoutDescriptor desc = {
         .nextInChain = NULL,
-        .label = { .data = NULL, .length = 0 },
+        .label = label_view,
         .entryCount = entry_count,
         .entries = entries,
     };
@@ -295,7 +322,7 @@ napi_value doe_bind_group_layout_release(napi_env env, napi_callback_info info) 
  * ================================================================ */
 
 napi_value doe_create_bind_group(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 3);
+    NAPI_ASSERT_ARGC(env, info, 4);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     WGPUBindGroupLayout layout = unwrap_ptr(env, _args[1]);
@@ -330,9 +357,22 @@ napi_value doe_create_bind_group(napi_env env, napi_callback_info info) {
             entries[i].size = (uint64_t)get_int64_prop(env, elem, "size");
     }
 
+    /* Read label (4th arg) */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (_argc > 3) {
+        napi_valuetype lt; napi_typeof(env, _args[3], &lt);
+        if (lt == napi_string) {
+            size_t label_len = 0;
+            napi_get_value_string_utf8(env, _args[3], label_buf, sizeof(label_buf), &label_len);
+            label_view.data = label_buf;
+            label_view.length = label_len;
+        }
+    }
+
     WGPUBindGroupDescriptor desc = {
         .nextInChain = NULL,
-        .label = { .data = NULL, .length = 0 },
+        .label = label_view,
         .layout = layout,
         .entryCount = entry_count,
         .entries = entries,
@@ -357,7 +397,7 @@ napi_value doe_bind_group_release(napi_env env, napi_callback_info info) {
  * ================================================================ */
 
 napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 2);
+    NAPI_ASSERT_ARGC(env, info, 3);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
@@ -373,9 +413,22 @@ napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
         layouts[i] = unwrap_ptr(env, elem);
     }
 
+    /* Read label (3rd arg) */
+    WGPUStringView label_view = { .data = NULL, .length = 0 };
+    char label_buf[256] = {0};
+    if (_argc > 2) {
+        napi_valuetype lt; napi_typeof(env, _args[2], &lt);
+        if (lt == napi_string) {
+            size_t label_len = 0;
+            napi_get_value_string_utf8(env, _args[2], label_buf, sizeof(label_buf), &label_len);
+            label_view.data = label_buf;
+            label_view.length = label_len;
+        }
+    }
+
     WGPUPipelineLayoutDescriptor desc = {
         .nextInChain = NULL,
-        .label = { .data = NULL, .length = 0 },
+        .label = label_view,
         .bindGroupLayoutCount = layout_count,
         .bindGroupLayouts = layouts,
         .immediateSize = 0,

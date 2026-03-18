@@ -159,6 +159,102 @@ const char* doe_binding_access_name(uint32_t access) {
     }
 }
 
+/* ================================================================
+ * Compilation info
+ * ================================================================ */
+
+void ensure_compilation_message_fields(napi_env env, napi_value msg) {
+    /* Ensure lineNum (uint32, default 0) */
+    bool has_line_num = false;
+    napi_has_named_property(env, msg, "lineNum", &has_line_num);
+    if (!has_line_num) {
+        napi_value zero;
+        napi_create_uint32(env, 0, &zero);
+        napi_set_named_property(env, msg, "lineNum", zero);
+    }
+
+    /* Ensure linePos (uint32, default 0) */
+    bool has_line_pos = false;
+    napi_has_named_property(env, msg, "linePos", &has_line_pos);
+    if (!has_line_pos) {
+        napi_value zero;
+        napi_create_uint32(env, 0, &zero);
+        napi_set_named_property(env, msg, "linePos", zero);
+    }
+
+    /* Ensure offset (uint64 via double, default 0) */
+    bool has_offset = false;
+    napi_has_named_property(env, msg, "offset", &has_offset);
+    if (!has_offset) {
+        napi_value zero;
+        napi_create_int64(env, 0, &zero);
+        napi_set_named_property(env, msg, "offset", zero);
+    }
+
+    /* Ensure length (uint64 via double, default 0) */
+    bool has_length = false;
+    napi_has_named_property(env, msg, "length", &has_length);
+    if (!has_length) {
+        napi_value zero;
+        napi_create_int64(env, 0, &zero);
+        napi_set_named_property(env, msg, "length", zero);
+    }
+
+    /* Ensure type (string: "error", "warning", "info"; default "error") */
+    bool has_type = false;
+    napi_has_named_property(env, msg, "type", &has_type);
+    if (!has_type) {
+        napi_value type_val;
+        napi_create_string_utf8(env, "error", NAPI_AUTO_LENGTH, &type_val);
+        napi_set_named_property(env, msg, "type", type_val);
+    }
+}
+
+napi_value doe_shader_module_get_compilation_info(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    void* shader_module = unwrap_ptr(env, _args[0]);
+
+    const char* json_str = "[]";
+    if (pfn_doeNativeShaderModuleGetCompilationInfo) {
+        const char* native_json = pfn_doeNativeShaderModuleGetCompilationInfo(shader_module);
+        if (native_json) json_str = native_json;
+    }
+
+    /* Parse the JSON array from the native layer */
+    napi_value global, json_obj, json_parse_fn, json_str_val, parse_args[1], parsed;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, "JSON", &json_obj);
+    napi_get_named_property(env, json_obj, "parse", &json_parse_fn);
+    napi_create_string_utf8(env, json_str, NAPI_AUTO_LENGTH, &json_str_val);
+    parse_args[0] = json_str_val;
+
+    napi_value messages;
+    if (napi_call_function(env, json_obj, json_parse_fn, 1, parse_args, &parsed) != napi_ok) {
+        napi_create_array_with_length(env, 0, &messages);
+    } else {
+        messages = parsed;
+    }
+
+    /* Ensure each message has all 5 required fields */
+    uint32_t msg_count = 0;
+    napi_get_array_length(env, messages, &msg_count);
+    for (uint32_t i = 0; i < msg_count; i++) {
+        napi_value msg_obj;
+        napi_get_element(env, messages, i, &msg_obj);
+        ensure_compilation_message_fields(env, msg_obj);
+    }
+
+    napi_value compilation_info;
+    napi_create_object(env, &compilation_info);
+    napi_set_named_property(env, compilation_info, "messages", messages);
+    return native_direct_resolved_promise(env, compilation_info);
+}
+
+/* ================================================================
+ * Bindings
+ * ================================================================ */
+
 napi_value doe_shader_module_get_bindings(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     WGPUShaderModule shader_module = unwrap_ptr(env, _args[0]);
