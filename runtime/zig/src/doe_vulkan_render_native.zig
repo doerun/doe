@@ -19,6 +19,7 @@ const DoeTextureView = native.DoeTextureView;
 const DoeSampler = native.DoeSampler;
 const DoeRenderPipeline = native.DoeRenderPipeline;
 const DoeRenderPass = native.DoeRenderPass;
+const DoeBuffer = native.DoeBuffer;
 
 // WebGPU filter values (from the WebGPU spec enum order used by doe_napi.c).
 const WGPU_FILTER_NEAREST: u32 = 1;
@@ -28,6 +29,7 @@ const WGPU_FILTER_LINEAR: u32 = 2;
 const WGPU_ADDRESS_MODE_CLAMP_TO_EDGE: u32 = 1;
 const WGPU_ADDRESS_MODE_REPEAT: u32 = 2;
 const WGPU_ADDRESS_MODE_MIRROR_REPEAT: u32 = 3;
+const WGPU_COMPARE_UNDEFINED: u32 = 0;
 
 // Vulkan address mode constants not already in vk_constants.
 const VK_SAMPLER_ADDRESS_MODE_REPEAT: u32 = 0;
@@ -35,6 +37,13 @@ const VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT: u32 = 1;
 // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE = 2 (already in vk_constants)
 const VK_FILTER_LINEAR: u32 = 1;
 const VK_SAMPLER_MIPMAP_MODE_LINEAR: u32 = 1;
+const VK_COMPARE_OP_LESS: u32 = 1;
+const VK_COMPARE_OP_EQUAL: u32 = 2;
+const VK_COMPARE_OP_LESS_OR_EQUAL: u32 = 3;
+const VK_COMPARE_OP_GREATER: u32 = 4;
+const VK_COMPARE_OP_NOT_EQUAL: u32 = 5;
+const VK_COMPARE_OP_GREATER_OR_EQUAL: u32 = 6;
+const VK_COMPARE_OP_ALWAYS: u32 = 7;
 
 // ============================================================
 // Internal helpers
@@ -57,6 +66,19 @@ fn wgpu_address_to_vk(mode: u32) u32 {
         WGPU_ADDRESS_MODE_REPEAT => VK_SAMPLER_ADDRESS_MODE_REPEAT,
         WGPU_ADDRESS_MODE_MIRROR_REPEAT => VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
         else => c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    };
+}
+
+fn wgpu_compare_to_vk(compare: u32) u32 {
+    return switch (compare) {
+        0x00000002 => VK_COMPARE_OP_LESS,
+        0x00000003 => VK_COMPARE_OP_EQUAL,
+        0x00000004 => VK_COMPARE_OP_LESS_OR_EQUAL,
+        0x00000005 => VK_COMPARE_OP_GREATER,
+        0x00000006 => VK_COMPARE_OP_NOT_EQUAL,
+        0x00000007 => VK_COMPARE_OP_GREATER_OR_EQUAL,
+        0x00000008 => VK_COMPARE_OP_ALWAYS,
+        else => c.VK_COMPARE_OP_NEVER,
     };
 }
 
@@ -195,8 +217,8 @@ pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const
         .mipLodBias = 0.0,
         .anisotropyEnable = c.VK_FALSE,
         .maxAnisotropy = 1.0,
-        .compareEnable = c.VK_FALSE,
-        .compareOp = c.VK_COMPARE_OP_NEVER,
+        .compareEnable = if (desc.compare != WGPU_COMPARE_UNDEFINED) c.VK_TRUE else c.VK_FALSE,
+        .compareOp = if (desc.compare != WGPU_COMPARE_UNDEFINED) wgpu_compare_to_vk(desc.compare) else c.VK_COMPARE_OP_NEVER,
         .minLod = desc.lodMinClamp,
         .maxLod = desc.lodMaxClamp,
         .borderColor = c.VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
@@ -294,19 +316,32 @@ pub fn vulkan_create_render_pipeline(
         cullMode: u32,
         unclippedDepth: u32,
     };
+    const RenderVertexAttribute = extern struct {
+        nextInChain: ?*anyopaque,
+        format: u32,
+        offset: u64,
+        shaderLocation: u32,
+    };
+    const RenderVertexBufferLayout = extern struct {
+        nextInChain: ?*anyopaque,
+        stepMode: u32,
+        arrayStride: u64,
+        attributeCount: usize,
+        attributes: ?[*]const RenderVertexAttribute,
+    };
+    const RenderStencilFaceState = extern struct {
+        compare: u32,
+        failOp: u32,
+        depthFailOp: u32,
+        passOp: u32,
+    };
     const RenderDepthStencilDesc = extern struct {
         nextInChain: ?*anyopaque,
         format: u32,
         depthWriteEnabled: u32,
         depthCompare: u32,
-        stencilFront_compare: u32,
-        stencilFront_failOp: u32,
-        stencilFront_depthFailOp: u32,
-        stencilFront_passOp: u32,
-        stencilBack_compare: u32,
-        stencilBack_failOp: u32,
-        stencilBack_depthFailOp: u32,
-        stencilBack_passOp: u32,
+        stencilFront: RenderStencilFaceState,
+        stencilBack: RenderStencilFaceState,
         stencilReadMask: u32,
         stencilWriteMask: u32,
         depthBias: i32,
@@ -342,11 +377,49 @@ pub fn vulkan_create_render_pipeline(
     pip.cull_mode = d.primitive.cullMode;
     pip.unclipped_depth = (d.primitive.unclippedDepth != 0);
     pip.sample_count = if (d.multisample_count == 0) 1 else d.multisample_count;
+    pip.vertex_buffer_count = 0;
+    pip.vertex_attribute_count = 0;
+    if (d.vertex_bufferCount > 0 and d.vertex_buffers != null) {
+        const buffer_count = @min(d.vertex_bufferCount, native.MAX_VERTEX_BUFFERS);
+        const buffers = @as([*]const RenderVertexBufferLayout, @ptrCast(@alignCast(d.vertex_buffers)));
+        var buffer_index: usize = 0;
+        while (buffer_index < buffer_count) : (buffer_index += 1) {
+            const layout = buffers[buffer_index];
+            pip.vertex_buffer_strides[buffer_index] = layout.arrayStride;
+            pip.vertex_step_modes[buffer_index] = layout.stepMode;
+            pip.vertex_buffer_count += 1;
+            if (layout.attributes) |attrs| {
+                const available = native.MAX_VERTEX_ATTRIBUTES - pip.vertex_attribute_count;
+                const attr_count = @min(layout.attributeCount, available);
+                var attr_index: usize = 0;
+                while (attr_index < attr_count) : (attr_index += 1) {
+                    const dst = pip.vertex_attribute_count;
+                    const attr = attrs[attr_index];
+                    pip.vertex_attribute_formats[dst] = attr.format;
+                    pip.vertex_attribute_offsets[dst] = attr.offset;
+                    pip.vertex_attribute_locations[dst] = attr.shaderLocation;
+                    pip.vertex_attribute_buffer_slots[dst] = @intCast(buffer_index);
+                    pip.vertex_attribute_count += 1;
+                }
+            }
+        }
+    }
 
     if (d.depthStencil) |ds_raw| {
         const ds = @as(*const RenderDepthStencilDesc, @ptrCast(@alignCast(ds_raw)));
+        pip.depth_stencil_format = ds.format;
         pip.depth_compare = ds.depthCompare;
         pip.depth_write_enabled = ds.depthWriteEnabled != 0;
+        pip.stencil_front_compare = ds.stencilFront.compare;
+        pip.stencil_front_fail_op = ds.stencilFront.failOp;
+        pip.stencil_front_depth_fail_op = ds.stencilFront.depthFailOp;
+        pip.stencil_front_pass_op = ds.stencilFront.passOp;
+        pip.stencil_back_compare = ds.stencilBack.compare;
+        pip.stencil_back_fail_op = ds.stencilBack.failOp;
+        pip.stencil_back_depth_fail_op = ds.stencilBack.depthFailOp;
+        pip.stencil_back_pass_op = ds.stencilBack.passOp;
+        pip.stencil_read_mask = ds.stencilReadMask;
+        pip.stencil_write_mask = ds.stencilWriteMask;
     }
 
     if (d.fragment) |frag| {
@@ -407,7 +480,7 @@ pub fn vulkan_render_pass_draw(
         }
     }
 
-    const cmd = model.RenderDrawCommand{
+    var cmd = model.RenderDrawCommand{
         .draw_count = 1,
         .vertex_count = vertex_count,
         .instance_count = instance_count,
@@ -444,8 +517,49 @@ pub fn vulkan_render_pass_draw(
         .stencil_reference = pass.stencil_reference,
         .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
         .occlusion_query_index = if (occlusion_qs != null) pass.occlusion_query_index else null,
+        .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
+        .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
+        .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
+        .depth_stencil_format = if (pass.pipeline) |pip| pip.depth_stencil_format else 0,
+        .depth_compare = if (pass.pipeline) |pip| pip.depth_compare else pass.depth_compare,
+        .depth_write_enabled = if (pass.pipeline) |pip| pip.depth_write_enabled else pass.depth_write_enabled,
+        .stencil_front_compare = if (pass.pipeline) |pip| pip.stencil_front_compare else 0x00000008,
+        .stencil_front_fail_op = if (pass.pipeline) |pip| pip.stencil_front_fail_op else 0,
+        .stencil_front_depth_fail_op = if (pass.pipeline) |pip| pip.stencil_front_depth_fail_op else 0,
+        .stencil_front_pass_op = if (pass.pipeline) |pip| pip.stencil_front_pass_op else 0,
+        .stencil_back_compare = if (pass.pipeline) |pip| pip.stencil_back_compare else 0x00000008,
+        .stencil_back_fail_op = if (pass.pipeline) |pip| pip.stencil_back_fail_op else 0,
+        .stencil_back_depth_fail_op = if (pass.pipeline) |pip| pip.stencil_back_depth_fail_op else 0,
+        .stencil_back_pass_op = if (pass.pipeline) |pip| pip.stencil_back_pass_op else 0,
+        .stencil_read_mask = if (pass.pipeline) |pip| pip.stencil_read_mask else 0xFFFF_FFFF,
+        .stencil_write_mask = if (pass.pipeline) |pip| pip.stencil_write_mask else 0xFFFF_FFFF,
         .unclipped_depth = pip_unclipped,
     };
+    if (pass.pipeline) |pip| {
+        cmd.vertex_layout_count = pip.vertex_buffer_count;
+        cmd.vertex_buffer_strides = pip.vertex_buffer_strides;
+        cmd.vertex_step_modes = pip.vertex_step_modes;
+        cmd.vertex_attribute_count = pip.vertex_attribute_count;
+        cmd.vertex_attribute_formats = pip.vertex_attribute_formats;
+        cmd.vertex_attribute_offsets = pip.vertex_attribute_offsets;
+        cmd.vertex_attribute_locations = pip.vertex_attribute_locations;
+        cmd.vertex_attribute_buffer_slots = pip.vertex_attribute_buffer_slots;
+    }
+    var bound_vertex_count: u32 = 0;
+    var slot: usize = 0;
+    while (slot < native.MAX_VERTEX_BUFFERS) : (slot += 1) {
+        if (pass.vertex_buffers[slot]) |buffer| {
+            cmd.vertex_buffer_handles[slot] = buffer.vk_id;
+            cmd.vertex_buffer_offsets[slot] = pass.vertex_buffer_offsets[slot];
+            bound_vertex_count = @intCast(slot + 1);
+        }
+    }
+    cmd.vertex_buffer_count = bound_vertex_count;
+    if (pass.index_buffer) |buffer| {
+        cmd.index_buffer_handle = buffer.vk_id;
+        cmd.index_buffer_offset = pass.index_offset;
+        cmd.index_format = pass.index_format;
+    }
 
     _ = rt.run_render_draw(cmd) catch |err| {
         std.debug.print("doe_vulkan_render_native: run_render_draw failed: {}\n", .{err});
@@ -486,7 +600,7 @@ pub fn vulkan_render_pass_draw_indexed(
         }
     }
 
-    const cmd = model.RenderDrawCommand{
+    var cmd = model.RenderDrawCommand{
         .draw_count = 1,
         .vertex_count = 0,
         .instance_count = instance_count,
@@ -531,8 +645,49 @@ pub fn vulkan_render_pass_draw_indexed(
         .stencil_reference = pass.stencil_reference,
         .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
         .occlusion_query_index = if (occlusion_qs != null) pass.occlusion_query_index else null,
+        .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
+        .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
+        .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
+        .depth_stencil_format = if (pass.pipeline) |pip| pip.depth_stencil_format else 0,
+        .depth_compare = if (pass.pipeline) |pip| pip.depth_compare else pass.depth_compare,
+        .depth_write_enabled = if (pass.pipeline) |pip| pip.depth_write_enabled else pass.depth_write_enabled,
+        .stencil_front_compare = if (pass.pipeline) |pip| pip.stencil_front_compare else 0x00000008,
+        .stencil_front_fail_op = if (pass.pipeline) |pip| pip.stencil_front_fail_op else 0,
+        .stencil_front_depth_fail_op = if (pass.pipeline) |pip| pip.stencil_front_depth_fail_op else 0,
+        .stencil_front_pass_op = if (pass.pipeline) |pip| pip.stencil_front_pass_op else 0,
+        .stencil_back_compare = if (pass.pipeline) |pip| pip.stencil_back_compare else 0x00000008,
+        .stencil_back_fail_op = if (pass.pipeline) |pip| pip.stencil_back_fail_op else 0,
+        .stencil_back_depth_fail_op = if (pass.pipeline) |pip| pip.stencil_back_depth_fail_op else 0,
+        .stencil_back_pass_op = if (pass.pipeline) |pip| pip.stencil_back_pass_op else 0,
+        .stencil_read_mask = if (pass.pipeline) |pip| pip.stencil_read_mask else 0xFFFF_FFFF,
+        .stencil_write_mask = if (pass.pipeline) |pip| pip.stencil_write_mask else 0xFFFF_FFFF,
         .unclipped_depth = pip_unclipped,
     };
+    if (pass.pipeline) |pip| {
+        cmd.vertex_layout_count = pip.vertex_buffer_count;
+        cmd.vertex_buffer_strides = pip.vertex_buffer_strides;
+        cmd.vertex_step_modes = pip.vertex_step_modes;
+        cmd.vertex_attribute_count = pip.vertex_attribute_count;
+        cmd.vertex_attribute_formats = pip.vertex_attribute_formats;
+        cmd.vertex_attribute_offsets = pip.vertex_attribute_offsets;
+        cmd.vertex_attribute_locations = pip.vertex_attribute_locations;
+        cmd.vertex_attribute_buffer_slots = pip.vertex_attribute_buffer_slots;
+    }
+    var bound_vertex_count: u32 = 0;
+    var slot: usize = 0;
+    while (slot < native.MAX_VERTEX_BUFFERS) : (slot += 1) {
+        if (pass.vertex_buffers[slot]) |buffer| {
+            cmd.vertex_buffer_handles[slot] = buffer.vk_id;
+            cmd.vertex_buffer_offsets[slot] = pass.vertex_buffer_offsets[slot];
+            bound_vertex_count = @intCast(slot + 1);
+        }
+    }
+    cmd.vertex_buffer_count = bound_vertex_count;
+    if (pass.index_buffer) |buffer| {
+        cmd.index_buffer_handle = buffer.vk_id;
+        cmd.index_buffer_offset = pass.index_offset;
+        cmd.index_format = pass.index_format;
+    }
 
     _ = rt.run_render_draw(cmd) catch |err| {
         std.debug.print("doe_vulkan_render_native: run_render_draw (indexed) failed: {}\n", .{err});

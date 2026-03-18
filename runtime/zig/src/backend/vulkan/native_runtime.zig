@@ -918,6 +918,7 @@ pub const NativeVulkanRuntime = struct {
         surface.usage = if (cmd_arg.usage == 0) model.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
         surface.alpha_mode = if (cmd_arg.alpha_mode == 0) c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR else cmd_arg.alpha_mode;
         surface.present_mode = if (cmd_arg.present_mode == 0) c.VK_PRESENT_MODE_FIFO_KHR else cmd_arg.present_mode;
+        surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0) model.WGPUCanvasToneMappingMode_Standard else cmd_arg.tone_mapping_mode;
         surface.desired_maximum_frame_latency = if (cmd_arg.desired_maximum_frame_latency == 0) c.DEFAULT_SURFACE_MAX_FRAME_LATENCY else cmd_arg.desired_maximum_frame_latency;
         // Create a real swapchain when a VkSurfaceKHR is available
         if (surface.vk_surface != 0) {

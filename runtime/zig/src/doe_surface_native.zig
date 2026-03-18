@@ -133,6 +133,7 @@ pub export fn doeNativeSurfaceConfigure(
     usage: u32,
     alpha_mode: u32,
     present_mode: u32,
+    tone_mapping_mode: u32,
 ) callconv(.c) void {
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
@@ -147,6 +148,7 @@ pub export fn doeNativeSurfaceConfigure(
         .usage = usage,
         .alpha_mode = alpha_mode,
         .present_mode = present_mode,
+        .tone_mapping_mode = tone_mapping_mode,
     }) catch |err| {
         std.log.err("doe_surface_native: configure_surface failed: {s}", .{@errorName(err)});
     };

@@ -291,6 +291,7 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
         alloc.destroy(sm);
         return null;
     };
+    sm.wgsl_source = alloc.dupe(u8, wgsl) catch null;
 
     // Extract binding metadata for getBindGroupLayout (non-fatal on failure).
     var bind_meta: [native.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;

@@ -38,6 +38,115 @@ var out_buf: [OUT_CAP]u8 = undefined;
 // Static NUL-terminated empty-array result.
 const EMPTY_JSON: [*:0]const u8 = "[]";
 
+const WgslDirectiveDiagnostics = struct {
+    line: u32 = 0,
+    column: u32 = 0,
+    name: [32]u8 = [_]u8{0} ** 32,
+    name_len: usize = 0,
+};
+
+fn append_json_escaped(writer: anytype, text: []const u8) !void {
+    for (text) |c| {
+        switch (c) {
+            '"' => try writer.writeAll("\\\""),
+            '\\' => try writer.writeAll("\\\\"),
+            '\n', '\r', '\t' => try writer.writeByte(' '),
+            else => {
+                if (c < 0x20) {
+                    try writer.writeByte(' ');
+                } else {
+                    try writer.writeByte(c);
+                }
+            },
+        }
+    }
+}
+
+fn write_json_message(
+    writer: anytype,
+    first: *bool,
+    kind: []const u8,
+    message: []const u8,
+    line: u32,
+    column: u32,
+) !void {
+    if (!first.*) try writer.writeByte(',');
+    first.* = false;
+    try writer.writeAll("{\"message\":\"");
+    try append_json_escaped(writer, message);
+    try writer.writeAll("\",\"type\":\"");
+    try writer.writeAll(kind);
+    try writer.writeAll("\",\"lineNum\":");
+    try writer.print("{d}", .{line});
+    try writer.writeAll(",\"linePos\":");
+    try writer.print("{d}", .{column});
+    try writer.writeAll(",\"offset\":0,\"length\":0}");
+}
+
+fn scan_enable_directive(line_text: []const u8, line_no: u32) ?WgslDirectiveDiagnostics {
+    const trimmed = std.mem.trimLeft(u8, line_text, " \t");
+    if (!std.mem.startsWith(u8, trimmed, "enable ")) return null;
+    const column_offset = line_text.len - trimmed.len;
+    const name_start = "enable ".len;
+    var name_end = name_start;
+    while (name_end < trimmed.len) : (name_end += 1) {
+        const c = trimmed[name_end];
+        if (!std.ascii.isAlphabetic(c) and !std.ascii.isDigit(c) and c != '_' and c != '-') break;
+    }
+    if (name_end == name_start) return null;
+    var result = WgslDirectiveDiagnostics{
+        .line = line_no,
+        .column = @intCast(column_offset + name_start + 1),
+    };
+    result.name_len = @min(name_end - name_start, result.name.len);
+    @memcpy(result.name[0..result.name_len], trimmed[name_start .. name_start + result.name_len]);
+    return result;
+}
+
+fn find_diagnostic_directive(line_text: []const u8, line_no: u32) ?WgslDirectiveDiagnostics {
+    const idx = std.mem.indexOf(u8, line_text, "diagnostic(") orelse return null;
+    return .{
+        .line = line_no,
+        .column = @intCast(idx + 1),
+    };
+}
+
+fn build_wgsl_diagnostic_json(wgsl: []const u8) ?[*:0]const u8 {
+    var stream = std.io.fixedBufferStream(&out_buf);
+    const writer = stream.writer();
+    writer.writeByte('[') catch return null;
+    var first = true;
+    var line_no: u32 = 1;
+    var line_iter = std.mem.splitScalar(u8, wgsl, '\n');
+    while (line_iter.next()) |line_text| : (line_no += 1) {
+        if (scan_enable_directive(line_text, line_no)) |enable_info| {
+            const name = enable_info.name[0..enable_info.name_len];
+            var msg_buf: [96]u8 = undefined;
+            const msg = std.fmt.bufPrint(
+                &msg_buf,
+                "WGSL enable directive `{s}` accepted by the Doe compiler.",
+                .{name},
+            ) catch return null;
+            write_json_message(writer, &first, "info", msg, enable_info.line, enable_info.column) catch return null;
+        }
+        if (find_diagnostic_directive(line_text, line_no)) |diag_info| {
+            write_json_message(
+                writer,
+                &first,
+                "warning",
+                "WGSL diagnostic directives are parsed, but Doe does not yet enforce diagnostic filtering semantics during compilation.",
+                diag_info.line,
+                diag_info.column,
+            ) catch return null;
+        }
+    }
+    writer.writeByte(']') catch return null;
+    const json = stream.getWritten();
+    if (json.len >= out_buf.len) return null;
+    out_buf[json.len] = 0;
+    return @ptrCast(out_buf[0..].ptr);
+}
+
 // ============================================================
 // Exported API
 // ============================================================
@@ -50,18 +159,21 @@ const EMPTY_JSON: [*:0]const u8 = "[]";
 // valid until the next call to this function.  Callers must NOT free it.
 //
 // Behaviour:
-//   - If the module handle is valid and the last WGSL compiler error is empty,
-//     returns "[]" (no diagnostics — the module compiled cleanly).
+//   - If the module handle is valid, returns informational diagnostics for
+//     successful compilation. Non-Metal native shader modules also receive an
+//     advisory warning that only fatal compiler diagnostics are preserved.
 //   - If the module handle is null (e.g. createShaderModule returned null and
 //     the caller is querying diagnostics on a null handle), returns the last
 //     recorded WGSL error as a single-entry error array.
-//   - The message type is always "error" since Doe does not currently surface
-//     warnings separately; extend when advisory messages are tracked.
 pub export fn doeNativeShaderModuleGetCompilationInfo(
     module_raw: ?*anyopaque,
 ) callconv(.c) [*:0]const u8 {
-    // A valid module means compilation succeeded — no errors to report.
-    if (cast(DoeShaderModule, module_raw) != null) {
+    if (cast(DoeShaderModule, module_raw)) |module| {
+        if (module.wgsl_source) |wgsl| {
+            if (build_wgsl_diagnostic_json(wgsl)) |json| {
+                return json;
+            }
+        }
         return EMPTY_JSON;
     }
 

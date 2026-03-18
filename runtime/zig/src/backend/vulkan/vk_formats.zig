@@ -84,6 +84,58 @@ pub const VK_FORMAT_D32_SFLOAT: u32 = 126;
 pub const VK_FORMAT_S8_UINT: u32 = 127;
 pub const VK_FORMAT_D24_UNORM_S8_UINT: u32 = 129;
 pub const VK_FORMAT_D32_SFLOAT_S8_UINT: u32 = 130;
+pub const VK_FORMAT_BC1_RGBA_UNORM_BLOCK: u32 = 133;
+pub const VK_FORMAT_BC1_RGBA_SRGB_BLOCK: u32 = 134;
+pub const VK_FORMAT_BC2_UNORM_BLOCK: u32 = 135;
+pub const VK_FORMAT_BC2_SRGB_BLOCK: u32 = 136;
+pub const VK_FORMAT_BC3_UNORM_BLOCK: u32 = 137;
+pub const VK_FORMAT_BC3_SRGB_BLOCK: u32 = 138;
+pub const VK_FORMAT_BC4_UNORM_BLOCK: u32 = 139;
+pub const VK_FORMAT_BC4_SNORM_BLOCK: u32 = 140;
+pub const VK_FORMAT_BC5_UNORM_BLOCK: u32 = 141;
+pub const VK_FORMAT_BC5_SNORM_BLOCK: u32 = 142;
+pub const VK_FORMAT_BC6H_UFLOAT_BLOCK: u32 = 143;
+pub const VK_FORMAT_BC6H_SFLOAT_BLOCK: u32 = 144;
+pub const VK_FORMAT_BC7_UNORM_BLOCK: u32 = 145;
+pub const VK_FORMAT_BC7_SRGB_BLOCK: u32 = 146;
+pub const VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK: u32 = 147;
+pub const VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK: u32 = 148;
+pub const VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK: u32 = 149;
+pub const VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK: u32 = 150;
+pub const VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK: u32 = 151;
+pub const VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK: u32 = 152;
+pub const VK_FORMAT_EAC_R11_UNORM_BLOCK: u32 = 153;
+pub const VK_FORMAT_EAC_R11_SNORM_BLOCK: u32 = 154;
+pub const VK_FORMAT_EAC_R11G11_UNORM_BLOCK: u32 = 155;
+pub const VK_FORMAT_EAC_R11G11_SNORM_BLOCK: u32 = 156;
+pub const VK_FORMAT_ASTC_4X4_UNORM_BLOCK: u32 = 157;
+pub const VK_FORMAT_ASTC_4X4_SRGB_BLOCK: u32 = 158;
+pub const VK_FORMAT_ASTC_5X4_UNORM_BLOCK: u32 = 159;
+pub const VK_FORMAT_ASTC_5X4_SRGB_BLOCK: u32 = 160;
+pub const VK_FORMAT_ASTC_5X5_UNORM_BLOCK: u32 = 161;
+pub const VK_FORMAT_ASTC_5X5_SRGB_BLOCK: u32 = 162;
+pub const VK_FORMAT_ASTC_6X5_UNORM_BLOCK: u32 = 163;
+pub const VK_FORMAT_ASTC_6X5_SRGB_BLOCK: u32 = 164;
+pub const VK_FORMAT_ASTC_6X6_UNORM_BLOCK: u32 = 165;
+pub const VK_FORMAT_ASTC_6X6_SRGB_BLOCK: u32 = 166;
+pub const VK_FORMAT_ASTC_8X5_UNORM_BLOCK: u32 = 167;
+pub const VK_FORMAT_ASTC_8X5_SRGB_BLOCK: u32 = 168;
+pub const VK_FORMAT_ASTC_8X6_UNORM_BLOCK: u32 = 169;
+pub const VK_FORMAT_ASTC_8X6_SRGB_BLOCK: u32 = 170;
+pub const VK_FORMAT_ASTC_8X8_UNORM_BLOCK: u32 = 171;
+pub const VK_FORMAT_ASTC_8X8_SRGB_BLOCK: u32 = 172;
+pub const VK_FORMAT_ASTC_10X5_UNORM_BLOCK: u32 = 173;
+pub const VK_FORMAT_ASTC_10X5_SRGB_BLOCK: u32 = 174;
+pub const VK_FORMAT_ASTC_10X6_UNORM_BLOCK: u32 = 175;
+pub const VK_FORMAT_ASTC_10X6_SRGB_BLOCK: u32 = 176;
+pub const VK_FORMAT_ASTC_10X8_UNORM_BLOCK: u32 = 177;
+pub const VK_FORMAT_ASTC_10X8_SRGB_BLOCK: u32 = 178;
+pub const VK_FORMAT_ASTC_10X10_UNORM_BLOCK: u32 = 179;
+pub const VK_FORMAT_ASTC_10X10_SRGB_BLOCK: u32 = 180;
+pub const VK_FORMAT_ASTC_12X10_UNORM_BLOCK: u32 = 181;
+pub const VK_FORMAT_ASTC_12X10_SRGB_BLOCK: u32 = 182;
+pub const VK_FORMAT_ASTC_12X12_UNORM_BLOCK: u32 = 183;
+pub const VK_FORMAT_ASTC_12X12_SRGB_BLOCK: u32 = 184;
 
 // --- Aspect mask constants ---
 
@@ -137,6 +189,8 @@ pub fn wgpu_format_to_vk_format(format: model.WGPUTextureFormat) !u32 {
         model.WGPUTextureFormat_RG16Float => VK_FORMAT_R16G16_SFLOAT,
 
         // 4-channel 16-bit
+        model.WGPUTextureFormat_RGBA16Unorm => VK_FORMAT_R16G16B16A16_UNORM,
+        model.WGPUTextureFormat_RGBA16Snorm => VK_FORMAT_R16G16B16A16_SNORM,
         model.WGPUTextureFormat_RGBA16Uint => VK_FORMAT_R16G16B16A16_UINT,
         model.WGPUTextureFormat_RGBA16Sint => VK_FORMAT_R16G16B16A16_SINT,
         model.WGPUTextureFormat_RGBA16Float => VK_FORMAT_R16G16B16A16_SFLOAT,
@@ -164,6 +218,58 @@ pub fn wgpu_format_to_vk_format(format: model.WGPUTextureFormat) !u32 {
         model.WGPUTextureFormat_Depth24PlusStencil8,
         => VK_FORMAT_D24_UNORM_S8_UINT,
         model.WGPUTextureFormat_Depth32FloatStencil8 => VK_FORMAT_D32_SFLOAT_S8_UINT,
+        model.WGPUTextureFormat_BC1RGBAUnorm => VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
+        model.WGPUTextureFormat_BC1RGBAUnormSrgb => VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
+        model.WGPUTextureFormat_BC2RGBAUnorm => VK_FORMAT_BC2_UNORM_BLOCK,
+        model.WGPUTextureFormat_BC2RGBAUnormSrgb => VK_FORMAT_BC2_SRGB_BLOCK,
+        model.WGPUTextureFormat_BC3RGBAUnorm => VK_FORMAT_BC3_UNORM_BLOCK,
+        model.WGPUTextureFormat_BC3RGBAUnormSrgb => VK_FORMAT_BC3_SRGB_BLOCK,
+        model.WGPUTextureFormat_BC4RUnorm => VK_FORMAT_BC4_UNORM_BLOCK,
+        model.WGPUTextureFormat_BC4RSnorm => VK_FORMAT_BC4_SNORM_BLOCK,
+        model.WGPUTextureFormat_BC5RGUnorm => VK_FORMAT_BC5_UNORM_BLOCK,
+        model.WGPUTextureFormat_BC5RGSnorm => VK_FORMAT_BC5_SNORM_BLOCK,
+        model.WGPUTextureFormat_BC6HRGBUfloat => VK_FORMAT_BC6H_UFLOAT_BLOCK,
+        model.WGPUTextureFormat_BC6HRGBFloat => VK_FORMAT_BC6H_SFLOAT_BLOCK,
+        model.WGPUTextureFormat_BC7RGBAUnorm => VK_FORMAT_BC7_UNORM_BLOCK,
+        model.WGPUTextureFormat_BC7RGBAUnormSrgb => VK_FORMAT_BC7_SRGB_BLOCK,
+        model.WGPUTextureFormat_ETC2RGB8Unorm => VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+        model.WGPUTextureFormat_ETC2RGB8UnormSrgb => VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+        model.WGPUTextureFormat_ETC2RGB8A1Unorm => VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+        model.WGPUTextureFormat_ETC2RGB8A1UnormSrgb => VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+        model.WGPUTextureFormat_ETC2RGBA8Unorm => VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+        model.WGPUTextureFormat_ETC2RGBA8UnormSrgb => VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+        model.WGPUTextureFormat_EACR11Unorm => VK_FORMAT_EAC_R11_UNORM_BLOCK,
+        model.WGPUTextureFormat_EACR11Snorm => VK_FORMAT_EAC_R11_SNORM_BLOCK,
+        model.WGPUTextureFormat_EACRG11Unorm => VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+        model.WGPUTextureFormat_EACRG11Snorm => VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC4x4Unorm => VK_FORMAT_ASTC_4X4_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC4x4UnormSrgb => VK_FORMAT_ASTC_4X4_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC5x4Unorm => VK_FORMAT_ASTC_5X4_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC5x4UnormSrgb => VK_FORMAT_ASTC_5X4_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC5x5Unorm => VK_FORMAT_ASTC_5X5_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC5x5UnormSrgb => VK_FORMAT_ASTC_5X5_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC6x5Unorm => VK_FORMAT_ASTC_6X5_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC6x5UnormSrgb => VK_FORMAT_ASTC_6X5_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC6x6Unorm => VK_FORMAT_ASTC_6X6_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC6x6UnormSrgb => VK_FORMAT_ASTC_6X6_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC8x5Unorm => VK_FORMAT_ASTC_8X5_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC8x5UnormSrgb => VK_FORMAT_ASTC_8X5_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC8x6Unorm => VK_FORMAT_ASTC_8X6_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC8x6UnormSrgb => VK_FORMAT_ASTC_8X6_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC8x8Unorm => VK_FORMAT_ASTC_8X8_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC8x8UnormSrgb => VK_FORMAT_ASTC_8X8_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC10x5Unorm => VK_FORMAT_ASTC_10X5_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC10x5UnormSrgb => VK_FORMAT_ASTC_10X5_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC10x6Unorm => VK_FORMAT_ASTC_10X6_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC10x6UnormSrgb => VK_FORMAT_ASTC_10X6_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC10x8Unorm => VK_FORMAT_ASTC_10X8_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC10x8UnormSrgb => VK_FORMAT_ASTC_10X8_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC10x10Unorm => VK_FORMAT_ASTC_10X10_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC10x10UnormSrgb => VK_FORMAT_ASTC_10X10_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC12x10Unorm => VK_FORMAT_ASTC_12X10_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC12x10UnormSrgb => VK_FORMAT_ASTC_12X10_SRGB_BLOCK,
+        model.WGPUTextureFormat_ASTC12x12Unorm => VK_FORMAT_ASTC_12X12_UNORM_BLOCK,
+        model.WGPUTextureFormat_ASTC12x12UnormSrgb => VK_FORMAT_ASTC_12X12_SRGB_BLOCK,
 
         else => error.UnsupportedFeature,
     };
@@ -220,6 +326,8 @@ pub fn bytes_per_pixel(format: model.WGPUTextureFormat) !u32 {
         => 4,
 
         // 8 bytes per pixel
+        model.WGPUTextureFormat_RGBA16Unorm,
+        model.WGPUTextureFormat_RGBA16Snorm,
         model.WGPUTextureFormat_RGBA16Uint,
         model.WGPUTextureFormat_RGBA16Sint,
         model.WGPUTextureFormat_RGBA16Float,
@@ -228,6 +336,64 @@ pub fn bytes_per_pixel(format: model.WGPUTextureFormat) !u32 {
         model.WGPUTextureFormat_RG32Float,
         model.WGPUTextureFormat_Depth32FloatStencil8,
         => 8,
+
+        // 8 bytes per block
+        model.WGPUTextureFormat_BC1RGBAUnorm,
+        model.WGPUTextureFormat_BC1RGBAUnormSrgb,
+        model.WGPUTextureFormat_BC4RUnorm,
+        model.WGPUTextureFormat_BC4RSnorm,
+        model.WGPUTextureFormat_ETC2RGB8Unorm,
+        model.WGPUTextureFormat_ETC2RGB8UnormSrgb,
+        model.WGPUTextureFormat_ETC2RGB8A1Unorm,
+        model.WGPUTextureFormat_ETC2RGB8A1UnormSrgb,
+        model.WGPUTextureFormat_EACR11Unorm,
+        model.WGPUTextureFormat_EACR11Snorm,
+        => 8,
+
+        // 16 bytes per block
+        model.WGPUTextureFormat_BC2RGBAUnorm,
+        model.WGPUTextureFormat_BC2RGBAUnormSrgb,
+        model.WGPUTextureFormat_BC3RGBAUnorm,
+        model.WGPUTextureFormat_BC3RGBAUnormSrgb,
+        model.WGPUTextureFormat_BC5RGUnorm,
+        model.WGPUTextureFormat_BC5RGSnorm,
+        model.WGPUTextureFormat_BC6HRGBUfloat,
+        model.WGPUTextureFormat_BC6HRGBFloat,
+        model.WGPUTextureFormat_BC7RGBAUnorm,
+        model.WGPUTextureFormat_BC7RGBAUnormSrgb,
+        model.WGPUTextureFormat_ETC2RGBA8Unorm,
+        model.WGPUTextureFormat_ETC2RGBA8UnormSrgb,
+        model.WGPUTextureFormat_EACRG11Unorm,
+        model.WGPUTextureFormat_EACRG11Snorm,
+        model.WGPUTextureFormat_ASTC4x4Unorm,
+        model.WGPUTextureFormat_ASTC4x4UnormSrgb,
+        model.WGPUTextureFormat_ASTC5x4Unorm,
+        model.WGPUTextureFormat_ASTC5x4UnormSrgb,
+        model.WGPUTextureFormat_ASTC5x5Unorm,
+        model.WGPUTextureFormat_ASTC5x5UnormSrgb,
+        model.WGPUTextureFormat_ASTC6x5Unorm,
+        model.WGPUTextureFormat_ASTC6x5UnormSrgb,
+        model.WGPUTextureFormat_ASTC6x6Unorm,
+        model.WGPUTextureFormat_ASTC6x6UnormSrgb,
+        model.WGPUTextureFormat_ASTC8x5Unorm,
+        model.WGPUTextureFormat_ASTC8x5UnormSrgb,
+        model.WGPUTextureFormat_ASTC8x6Unorm,
+        model.WGPUTextureFormat_ASTC8x6UnormSrgb,
+        model.WGPUTextureFormat_ASTC8x8Unorm,
+        model.WGPUTextureFormat_ASTC8x8UnormSrgb,
+        model.WGPUTextureFormat_ASTC10x5Unorm,
+        model.WGPUTextureFormat_ASTC10x5UnormSrgb,
+        model.WGPUTextureFormat_ASTC10x6Unorm,
+        model.WGPUTextureFormat_ASTC10x6UnormSrgb,
+        model.WGPUTextureFormat_ASTC10x8Unorm,
+        model.WGPUTextureFormat_ASTC10x8UnormSrgb,
+        model.WGPUTextureFormat_ASTC10x10Unorm,
+        model.WGPUTextureFormat_ASTC10x10UnormSrgb,
+        model.WGPUTextureFormat_ASTC12x10Unorm,
+        model.WGPUTextureFormat_ASTC12x10UnormSrgb,
+        model.WGPUTextureFormat_ASTC12x12Unorm,
+        model.WGPUTextureFormat_ASTC12x12UnormSrgb,
+        => 16,
 
         // 16 bytes per pixel
         model.WGPUTextureFormat_RGBA32Uint,

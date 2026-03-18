@@ -14,6 +14,7 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
+const vk_formats = @import("vk_formats.zig");
 
 const VK_QUERY_CONTROL_NONE: u32 = 0;
 const vk_upload = @import("vk_upload.zig");
@@ -28,6 +29,66 @@ const VK_NULL_U64 = c.VK_NULL_U64;
 const native_runtime = @import("native_runtime.zig");
 const Runtime = native_runtime.NativeVulkanRuntime;
 const DispatchMetrics = native_runtime.DispatchMetrics;
+const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
+const VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: u32 = 3;
+const VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT: u32 = 0x00000100;
+const VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT: u32 = 0x00000200;
+const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT: u32 = 0x00000200;
+const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT: u32 = 0x00000400;
+const VK_PRIMITIVE_TOPOLOGY_POINT_LIST: u32 = 0;
+const VK_PRIMITIVE_TOPOLOGY_LINE_LIST: u32 = 1;
+const VK_PRIMITIVE_TOPOLOGY_LINE_STRIP: u32 = 2;
+const VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP: u32 = 4;
+const VK_CULL_MODE_FRONT_BIT: u32 = 0x00000001;
+const VK_CULL_MODE_BACK_BIT: u32 = 0x00000002;
+const VK_FRONT_FACE_CLOCKWISE: u32 = 1;
+const VK_COMPARE_OP_LESS: u32 = 1;
+const VK_COMPARE_OP_EQUAL: u32 = 2;
+const VK_COMPARE_OP_LESS_OR_EQUAL: u32 = 3;
+const VK_COMPARE_OP_GREATER: u32 = 4;
+const VK_COMPARE_OP_NOT_EQUAL: u32 = 5;
+const VK_COMPARE_OP_GREATER_OR_EQUAL: u32 = 6;
+const VK_COMPARE_OP_ALWAYS: u32 = 7;
+const VK_STENCIL_OP_KEEP: u32 = 0;
+const VK_STENCIL_OP_ZERO: u32 = 1;
+const VK_STENCIL_OP_REPLACE: u32 = 2;
+const VK_STENCIL_OP_INCREMENT_AND_CLAMP: u32 = 3;
+const VK_STENCIL_OP_DECREMENT_AND_CLAMP: u32 = 4;
+const VK_STENCIL_OP_INVERT: u32 = 5;
+const VK_STENCIL_OP_INCREMENT_AND_WRAP: u32 = 6;
+const VK_STENCIL_OP_DECREMENT_AND_WRAP: u32 = 7;
+const VK_VERTEX_INPUT_RATE_VERTEX: u32 = 0;
+const VK_VERTEX_INPUT_RATE_INSTANCE: u32 = 1;
+const VK_INDEX_TYPE_UINT16: u32 = 0;
+const VK_INDEX_TYPE_UINT32: u32 = 1;
+const WGPU_VERTEX_STEP_MODE_INSTANCE: u32 = 0x00000002;
+const WGPU_INDEX_FORMAT_UINT16: u32 = 0x00000001;
+const WGPU_INDEX_FORMAT_UINT32: u32 = 0x00000002;
+
+const VkStencilOpState = extern struct {
+    failOp: u32,
+    passOp: u32,
+    depthFailOp: u32,
+    compareOp: u32,
+    compareMask: u32,
+    writeMask: u32,
+    reference: u32,
+};
+
+const VkPipelineDepthStencilStateCreateInfo = extern struct {
+    sType: i32,
+    pNext: ?*const anyopaque,
+    flags: u32,
+    depthTestEnable: u32,
+    depthWriteEnable: u32,
+    depthCompareOp: u32,
+    depthBoundsTestEnable: u32,
+    stencilTestEnable: u32,
+    front: VkStencilOpState,
+    back: VkStencilOpState,
+    minDepthBounds: f32,
+    maxDepthBounds: f32,
+};
 
 // Passthrough vertex+fragment WGSL: vertex_index generates a fullscreen triangle,
 // fragment outputs a UV-gradient color. Single combined source for both entry points.
@@ -64,6 +125,7 @@ pub const RenderState = struct {
     vertex_shader: c.VkShaderModule = VK_NULL_U64,
     fragment_shader: c.VkShaderModule = VK_NULL_U64,
     render_target: ?vk_resources.TextureResource = null,
+    depth_stencil_target: ?vk_resources.TextureResource = null,
     render_target_handle: u64 = 0,
     target_width: u32 = 0,
     target_height: u32 = 0,
@@ -99,6 +161,68 @@ pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
         vk_resources.release_texture_resource_with_device(device, target);
         state.render_target = null;
     }
+    if (state.depth_stencil_target) |target| {
+        vk_resources.release_texture_resource_with_device(device, target);
+        state.depth_stencil_target = null;
+    }
+}
+
+fn wgpu_primitive_topology_to_vk(topology: u32) u32 {
+    return switch (topology) {
+        0x00000001 => VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+        0x00000002 => VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+        0x00000003 => VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+        0x00000005 => VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        else => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    };
+}
+
+fn wgpu_front_face_to_vk(front_face: u32) u32 {
+    return if (front_face == 0x00000002) VK_FRONT_FACE_CLOCKWISE else c.VK_FRONT_FACE_COUNTER_CLOCKWISE;
+}
+
+fn wgpu_cull_mode_to_vk(cull_mode: u32) u32 {
+    return switch (cull_mode) {
+        0x00000002 => VK_CULL_MODE_FRONT_BIT,
+        0x00000003 => VK_CULL_MODE_BACK_BIT,
+        else => c.VK_CULL_MODE_NONE,
+    };
+}
+
+fn wgpu_compare_to_vk(compare: u32) u32 {
+    return switch (compare) {
+        0x00000002 => VK_COMPARE_OP_LESS,
+        0x00000003 => VK_COMPARE_OP_EQUAL,
+        0x00000004 => VK_COMPARE_OP_LESS_OR_EQUAL,
+        0x00000005 => VK_COMPARE_OP_GREATER,
+        0x00000006 => VK_COMPARE_OP_NOT_EQUAL,
+        0x00000007 => VK_COMPARE_OP_GREATER_OR_EQUAL,
+        0x00000008 => VK_COMPARE_OP_ALWAYS,
+        else => c.VK_COMPARE_OP_NEVER,
+    };
+}
+
+fn wgpu_stencil_op_to_vk(op: u32) u32 {
+    return switch (op) {
+        0x00000001 => VK_STENCIL_OP_ZERO,
+        0x00000002 => VK_STENCIL_OP_REPLACE,
+        0x00000003 => VK_STENCIL_OP_INVERT,
+        0x00000004 => VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+        0x00000005 => VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+        0x00000006 => VK_STENCIL_OP_INCREMENT_AND_WRAP,
+        0x00000007 => VK_STENCIL_OP_DECREMENT_AND_WRAP,
+        else => VK_STENCIL_OP_KEEP,
+    };
+}
+
+fn format_has_stencil(format: model.WGPUTextureFormat) bool {
+    return switch (format) {
+        model.WGPUTextureFormat_Stencil8,
+        model.WGPUTextureFormat_Depth24PlusStencil8,
+        model.WGPUTextureFormat_Depth32FloatStencil8,
+        => true,
+        else => false,
+    };
 }
 
 pub fn execute_render_draw(
@@ -120,10 +244,12 @@ pub fn execute_render_draw(
     // Phase 1: create render target texture
     const encode_start = common_timing.now_ns();
 
-    try ensure_render_target(self, &render_state, target_width, target_height, cmd.target_format);
+    try ensure_render_target(self, &render_state, target_width, target_height, cmd.target_format, cmd.depth_stencil_format);
 
     // Phase 2: create render pass
-    try create_render_pass(self, &render_state, vk_format);
+    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
+    const depth_stencil_vk_format = if (has_depth_stencil) try vk_resources.texture_format_to_vk(cmd.depth_stencil_format) else 0;
+    try create_render_pass(self, &render_state, vk_format, has_depth_stencil, depth_stencil_vk_format);
 
     // Phase 3: create framebuffer
     try create_framebuffer(self, &render_state, target_width, target_height);
@@ -156,6 +282,7 @@ fn ensure_render_target(
     width: u32,
     height: u32,
     format: model.WGPUTextureFormat,
+    depth_stencil_format: model.WGPUTextureFormat,
 ) !void {
     const usage = model.WGPUTextureUsage_RenderAttachment | model.WGPUTextureUsage_CopyDst;
     const texture_spec = model.CopyTextureResource{
@@ -169,6 +296,19 @@ fn ensure_render_target(
         .rows_per_image = 0,
     };
     state.render_target = try create_render_target_texture(self, texture_spec);
+    if (depth_stencil_format != model.WGPUTextureFormat_Undefined) {
+        const depth_texture_spec = model.CopyTextureResource{
+            .handle = 0,
+            .width = width,
+            .height = height,
+            .format = depth_stencil_format,
+            .usage = model.WGPUTextureUsage_RenderAttachment,
+            .mip_level = 0,
+            .bytes_per_row = 0,
+            .rows_per_image = 0,
+        };
+        state.depth_stencil_target = try create_render_target_texture(self, depth_texture_spec);
+    }
     state.target_width = width;
     state.target_height = height;
 }
@@ -182,6 +322,7 @@ fn create_render_target_texture(
     var view: c.VkImageView = VK_NULL_U64;
     const vk_format = try vk_resources.texture_format_to_vk(spec.format);
 
+    const is_depth_stencil = vk_formats.is_depth_stencil(spec.format);
     var image_info = c.VkImageCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = null,
@@ -193,7 +334,10 @@ fn create_render_target_texture(
         .arrayLayers = 1,
         .samples = c.VK_SAMPLE_COUNT_1_BIT,
         .tiling = c.VK_IMAGE_TILING_OPTIMAL,
-        .usage = c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | c.VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .usage = if (is_depth_stencil)
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+        else
+            c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | c.VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = null,
@@ -233,7 +377,7 @@ fn create_render_target_texture(
             .a = c.VK_COMPONENT_SWIZZLE_IDENTITY,
         },
         .subresourceRange = .{
-            .aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask = vk_formats.aspect_mask_for_format(spec.format),
             .baseMipLevel = 0,
             .levelCount = 1,
             .baseArrayLayer = 0,
@@ -260,22 +404,42 @@ fn create_render_pass(
     self: *Runtime,
     state: *RenderState,
     vk_format: u32,
+    has_depth_stencil: bool,
+    depth_stencil_vk_format: u32,
 ) !void {
-    var attachment = c.VkAttachmentDescription{
-        .flags = 0,
-        .format = vk_format,
-        .samples = c.VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = c.VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = c.VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = c.VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    _ = state;
+    var attachments = [_]c.VkAttachmentDescription{
+        .{
+            .flags = 0,
+            .format = vk_format,
+            .samples = c.VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = c.VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = c.VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = c.VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        },
+        .{
+            .flags = 0,
+            .format = depth_stencil_vk_format,
+            .samples = c.VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = c.VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = c.VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .stencilStoreOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        },
     };
 
     var color_ref = c.VkAttachmentReference{
         .attachment = 0,
         .layout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+    var depth_stencil_ref = c.VkAttachmentReference{
+        .attachment = 1,
+        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
     };
 
     var subpass = c.VkSubpassDescription{
@@ -286,7 +450,7 @@ fn create_render_pass(
         .colorAttachmentCount = 1,
         .pColorAttachments = @ptrCast(&color_ref),
         .pResolveAttachments = null,
-        .pDepthStencilAttachment = null,
+        .pDepthStencilAttachment = if (has_depth_stencil) @ptrCast(&depth_stencil_ref) else null,
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = null,
     };
@@ -295,9 +459,19 @@ fn create_render_pass(
         .srcSubpass = c.VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
         .srcStageMask = c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstStageMask = if (has_depth_stencil)
+            c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT
+        else
+            c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         .srcAccessMask = 0,
-        .dstAccessMask = c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dstAccessMask = if (has_depth_stencil)
+            c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+        else
+            c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         .dependencyFlags = 0,
     };
 
@@ -305,8 +479,8 @@ fn create_render_pass(
         .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .attachmentCount = 1,
-        .pAttachments = @ptrCast(&attachment),
+        .attachmentCount = if (has_depth_stencil) 2 else 1,
+        .pAttachments = attachments[0..if (has_depth_stencil) 2 else 1].ptr,
         .subpassCount = 1,
         .pSubpasses = @ptrCast(&subpass),
         .dependencyCount = 1,
@@ -322,14 +496,18 @@ fn create_framebuffer(
     height: u32,
 ) !void {
     const target = state.render_target orelse return error.InvalidState;
+    var attachments = [_]c.VkImageView{
+        target.view,
+        if (state.depth_stencil_target) |depth| depth.view else VK_NULL_U64,
+    };
 
     var fb_info = c.VkFramebufferCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .pNext = null,
         .flags = 0,
         .renderPass = state.render_pass,
-        .attachmentCount = 1,
-        .pAttachments = @ptrCast(&target.view),
+        .attachmentCount = if (state.depth_stencil_target != null) 2 else 1,
+        .pAttachments = attachments[0..if (state.depth_stencil_target != null) 2 else 1].ptr,
         .width = width,
         .height = height,
         .layers = 1,
@@ -538,6 +716,38 @@ fn create_graphics_pipeline(
         .dynamicStateCount = dynamic_states.len,
         .pDynamicStates = &dynamic_states,
     };
+    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
+    const has_stencil = has_depth_stencil and format_has_stencil(cmd.depth_stencil_format);
+    var depth_stencil_state = VkPipelineDepthStencilStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .depthTestEnable = if (cmd.depth_compare != 0) c.VK_TRUE else c.VK_FALSE,
+        .depthWriteEnable = if (cmd.depth_write_enabled) c.VK_TRUE else c.VK_FALSE,
+        .depthCompareOp = wgpu_compare_to_vk(cmd.depth_compare),
+        .depthBoundsTestEnable = c.VK_FALSE,
+        .stencilTestEnable = if (has_stencil) c.VK_TRUE else c.VK_FALSE,
+        .front = .{
+            .failOp = wgpu_stencil_op_to_vk(cmd.stencil_front_fail_op),
+            .passOp = wgpu_stencil_op_to_vk(cmd.stencil_front_pass_op),
+            .depthFailOp = wgpu_stencil_op_to_vk(cmd.stencil_front_depth_fail_op),
+            .compareOp = wgpu_compare_to_vk(cmd.stencil_front_compare),
+            .compareMask = cmd.stencil_read_mask,
+            .writeMask = cmd.stencil_write_mask,
+            .reference = cmd.stencil_reference,
+        },
+        .back = .{
+            .failOp = wgpu_stencil_op_to_vk(cmd.stencil_back_fail_op),
+            .passOp = wgpu_stencil_op_to_vk(cmd.stencil_back_pass_op),
+            .depthFailOp = wgpu_stencil_op_to_vk(cmd.stencil_back_depth_fail_op),
+            .compareOp = wgpu_compare_to_vk(cmd.stencil_back_compare),
+            .compareMask = cmd.stencil_read_mask,
+            .writeMask = cmd.stencil_write_mask,
+            .reference = cmd.stencil_reference,
+        },
+        .minDepthBounds = 0.0,
+        .maxDepthBounds = 1.0,
+    };
 
     var pipeline_info = c.VkGraphicsPipelineCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -551,7 +761,7 @@ fn create_graphics_pipeline(
         .pViewportState = &viewport_state,
         .pRasterizationState = &rasterization,
         .pMultisampleState = &multisample,
-        .pDepthStencilState = null,
+        .pDepthStencilState = if (has_depth_stencil) @ptrCast(&depth_stencil_state) else null,
         .pColorBlendState = &color_blend,
         .pDynamicState = &dynamic_state,
         .layout = state.graphics_pipeline_layout,
@@ -679,8 +889,13 @@ fn record_and_submit_draws(
 ) !void {
     try begin_primary_recording(self);
 
-    var clear_value = c.VkClearValue{
+    var clear_values = [_]c.VkClearValue{
+        .{
         .color = .{ .float32 = .{ 0.0, 0.0, 0.0, 1.0 } },
+        },
+        .{
+            .depthStencil = .{ .depth = 1.0, .stencil = 0 },
+        },
     };
     var render_pass_begin = c.VkRenderPassBeginInfo{
         .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -691,8 +906,8 @@ fn record_and_submit_draws(
             .offset = .{ .x = 0, .y = 0 },
             .extent = .{ .width = target_width, .height = target_height },
         },
-        .clearValueCount = 1,
-        .pClearValues = @ptrCast(&clear_value),
+        .clearValueCount = if (state.depth_stencil_target != null) 2 else 1,
+        .pClearValues = clear_values[0..if (state.depth_stencil_target != null) 2 else 1].ptr,
     };
     c.vkCmdBeginRenderPass(self.primary_command_buffer, &render_pass_begin, c.VK_SUBPASS_CONTENTS_INLINE);
     if (cmd.occlusion_query_pool != 0) {
@@ -732,6 +947,28 @@ fn record_and_submit_draws(
 
     // Bind graphics pipeline
     c.vkCmdBindPipeline(self.primary_command_buffer, c.VK_PIPELINE_BIND_POINT_GRAPHICS, state.graphics_pipeline);
+
+    if (cmd.vertex_buffer_count > 0) {
+        var vk_buffers: [8]c.VkBuffer = [_]c.VkBuffer{VK_NULL_U64} ** 8;
+        var vk_offsets: [8]u64 = [_]u64{0} ** 8;
+        var bound_count: u32 = 0;
+        while (bound_count < cmd.vertex_buffer_count and bound_count < vk_buffers.len) : (bound_count += 1) {
+            const handle = cmd.vertex_buffer_handles[bound_count];
+            if (handle == 0) break;
+            const compute_buffer = self.compute_buffers.get(handle) orelse return error.InvalidArgument;
+            vk_buffers[bound_count] = compute_buffer.buffer;
+            vk_offsets[bound_count] = cmd.vertex_buffer_offsets[bound_count];
+        }
+        if (bound_count > 0) {
+            c.vkCmdBindVertexBuffers(
+                self.primary_command_buffer,
+                0,
+                bound_count,
+                vk_buffers[0..bound_count].ptr,
+                vk_offsets[0..bound_count].ptr,
+            );
+        }
+    }
 
     // Issue draw calls
     const vertex_count = cmd.vertex_count;

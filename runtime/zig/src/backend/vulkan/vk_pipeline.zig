@@ -444,6 +444,9 @@ pub fn validate_texture_binding(binding: model.KernelBinding, texture: vk_resour
                 model.WGPUTextureSampleType_Undefined,
                 model.WGPUTextureSampleType_Float,
                 model.WGPUTextureSampleType_UnfilterableFloat,
+                model.WGPUTextureSampleType_Depth,
+                model.WGPUTextureSampleType_Sint,
+                model.WGPUTextureSampleType_Uint,
                 => {},
                 else => return error.UnsupportedFeature,
             }
@@ -453,6 +456,8 @@ pub fn validate_texture_binding(binding: model.KernelBinding, texture: vk_resour
             switch (binding.storage_texture_access) {
                 model.WGPUStorageTextureAccess_Undefined,
                 model.WGPUStorageTextureAccess_WriteOnly,
+                model.WGPUStorageTextureAccess_ReadOnly,
+                model.WGPUStorageTextureAccess_ReadWrite,
                 => {},
                 else => return error.UnsupportedFeature,
             }

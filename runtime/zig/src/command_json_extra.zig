@@ -75,6 +75,13 @@ fn parseSurfacePresentMode(raw: ?[]const u8) ParseError!u32 {
     return ParseError.InvalidCommandPayload;
 }
 
+fn parseSurfaceToneMappingMode(raw: ?[]const u8) ParseError!u32 {
+    const value = raw orelse return model.WGPUCanvasToneMappingMode_Standard;
+    if (commandKindEqualsFn(value, "standard")) return model.WGPUCanvasToneMappingMode_Standard;
+    if (commandKindEqualsFn(value, "extended")) return model.WGPUCanvasToneMappingMode_Extended;
+    return ParseError.InvalidCommandPayload;
+}
+
 fn parseAsyncDiagnosticsMode(raw: ?[]const u8) ParseError!model.AsyncDiagnosticsMode {
     const value = raw orelse return .pipeline_async;
     if (commandKindEqualsFn(value, "pipeline_async") or commandKindEqualsFn(value, "pipeline-async")) return .pipeline_async;
@@ -239,6 +246,7 @@ pub fn parseSurfaceConfigureCommand(raw: anytype) ParseError!model.SurfaceConfig
     const usage = raw.usage orelse model.WGPUTextureUsage_RenderAttachment;
     const alpha_mode = try parseSurfaceAlphaMode(raw.alpha_mode orelse raw.alphaMode);
     const present_mode = try parseSurfacePresentMode(raw.present_mode orelse raw.presentMode);
+    const tone_mapping_mode = try parseSurfaceToneMappingMode(raw.tone_mapping_mode orelse raw.toneMappingMode);
     const desired_maximum_frame_latency = raw.desired_maximum_frame_latency orelse raw.desiredMaximumFrameLatency orelse 2;
     if (width == 0 or height == 0) return ParseError.InvalidCommandPayload;
 
@@ -250,6 +258,7 @@ pub fn parseSurfaceConfigureCommand(raw: anytype) ParseError!model.SurfaceConfig
         .usage = usage,
         .alpha_mode = alpha_mode,
         .present_mode = present_mode,
+        .tone_mapping_mode = tone_mapping_mode,
         .desired_maximum_frame_latency = desired_maximum_frame_latency,
     };
 }

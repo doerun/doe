@@ -58,6 +58,9 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
 - Linux package/drop-in integration is now corrected for workspace-local Doe loads:
   - `runtime/zig/src/wgpu_dropin_lib.zig` now opens a target WebGPU provider via `openDropinTargetLibrary()` instead of re-opening `libwebgpu_doe.so`, which had been causing recursive proc resolution and package smoke crashes on Linux.
   - latest Linux Vulkan package validation now passes from `packages/webgpu/`: `npm run build:addon`, `npm run smoke`, `npm test`, `npm run prebuild -- --skip-addon-build`, and `npm run test:bun`.
+- Vulkan graphics/resource promotion advanced locally:
+  - `vk_render.zig` now consumes render-pipeline primitive front-face/topology state and depth/stencil operation state instead of hardcoding triangle-list / counter-clockwise / null depth-stencil.
+  - Vulkan sampler creation now honors comparison samplers, sampled/storage texture binding validation now accepts depth/sint/uint and read-only/read-write modes, and Vulkan format mapping now covers `rgba16{u,s}norm` plus BC / ETC2-EAC / ASTC texture families.
 - latest AMD Vulkan strict release rerun on this host remains non-claimable for upload-heavy release evidence:
   - artifact: `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json`
   - status: `comparisonStatus=comparable`, `claimStatus=diagnostic`
@@ -2040,6 +2043,15 @@ Backend-specific emitters for all three backends:
   `powerPreference`, and `forceFallbackAdapter`.
 - Vulkan sampler creation now honors compare samplers instead of hardcoding
   compare disabled.
+- Vulkan render pipelines now retain vertex-buffer layouts and attributes, and
+  Vulkan render passes bind recorded vertex/index buffers instead of dropping
+  those assignments on the native path.
+- Vulkan `getCompilationInfo()` now publishes real WGSL directive diagnostics: `error` for fatal compiler failures, `warning` for parsed-but-unenforced `diagnostic(...)` directives, and `info` for accepted `enable ...` directives
+  message kinds on the repo-local runtime path.
+- Repo-local Vulkan canvas paths now count `alphaMode` and `toneMapping.mode`
+  as implemented native surfaces: Vulkan surface configuration stores the
+  chosen alpha mode, and `toneMapping.mode` now participates in swapchain
+  format selection instead of existing only as wrapper metadata.
 - Pipeline-creation failures now normalize to `GPUPipelineError` with a
   concrete `reason` on Node/addon and Bun package paths.
 - Doe pipeline-layout handles now retain `immediateSize`, and compute/render

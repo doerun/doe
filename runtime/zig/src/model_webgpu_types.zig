@@ -72,12 +72,42 @@ pub const WGPUTextureFormat_RGBA16Float: WGPUTextureFormat = 0x00000026;
 pub const WGPUTextureFormat_RGBA32Float: WGPUTextureFormat = 0x00000027;
 pub const WGPUTextureFormat_RGBA32Uint: WGPUTextureFormat = 0x00000028;
 pub const WGPUTextureFormat_RGBA32Sint: WGPUTextureFormat = 0x00000029;
+pub const WGPUTextureFormat_RGBA16Unorm: WGPUTextureFormat = 0x0000002A;
+pub const WGPUTextureFormat_RGBA16Snorm: WGPUTextureFormat = 0x0000002B;
 pub const WGPUTextureFormat_Stencil8: WGPUTextureFormat = 0x0000002C;
 pub const WGPUTextureFormat_Depth16Unorm: WGPUTextureFormat = 0x0000002D;
 pub const WGPUTextureFormat_Depth24Plus: WGPUTextureFormat = 0x0000002E;
 pub const WGPUTextureFormat_Depth24PlusStencil8: WGPUTextureFormat = 0x0000002F;
 pub const WGPUTextureFormat_Depth32Float: WGPUTextureFormat = 0x00000030;
 pub const WGPUTextureFormat_Depth32FloatStencil8: WGPUTextureFormat = 0x00000031;
+
+// BC compressed texture formats (texture-compression-bc feature)
+pub const WGPUTextureFormat_BC1RGBAUnorm: WGPUTextureFormat = 0x00000032;
+pub const WGPUTextureFormat_BC1RGBAUnormSrgb: WGPUTextureFormat = 0x00000033;
+pub const WGPUTextureFormat_BC2RGBAUnorm: WGPUTextureFormat = 0x00000034;
+pub const WGPUTextureFormat_BC2RGBAUnormSrgb: WGPUTextureFormat = 0x00000035;
+pub const WGPUTextureFormat_BC3RGBAUnorm: WGPUTextureFormat = 0x00000036;
+pub const WGPUTextureFormat_BC3RGBAUnormSrgb: WGPUTextureFormat = 0x00000037;
+pub const WGPUTextureFormat_BC4RUnorm: WGPUTextureFormat = 0x00000038;
+pub const WGPUTextureFormat_BC4RSnorm: WGPUTextureFormat = 0x00000039;
+pub const WGPUTextureFormat_BC5RGUnorm: WGPUTextureFormat = 0x0000003A;
+pub const WGPUTextureFormat_BC5RGSnorm: WGPUTextureFormat = 0x0000003B;
+pub const WGPUTextureFormat_BC6HRGBUfloat: WGPUTextureFormat = 0x0000003C;
+pub const WGPUTextureFormat_BC6HRGBFloat: WGPUTextureFormat = 0x0000003D;
+pub const WGPUTextureFormat_BC7RGBAUnorm: WGPUTextureFormat = 0x0000003E;
+pub const WGPUTextureFormat_BC7RGBAUnormSrgb: WGPUTextureFormat = 0x0000003F;
+
+// ETC2/EAC compressed texture formats (texture-compression-etc2 feature)
+pub const WGPUTextureFormat_ETC2RGB8Unorm: WGPUTextureFormat = 0x00000040;
+pub const WGPUTextureFormat_ETC2RGB8UnormSrgb: WGPUTextureFormat = 0x00000041;
+pub const WGPUTextureFormat_ETC2RGB8A1Unorm: WGPUTextureFormat = 0x00000042;
+pub const WGPUTextureFormat_ETC2RGB8A1UnormSrgb: WGPUTextureFormat = 0x00000043;
+pub const WGPUTextureFormat_ETC2RGBA8Unorm: WGPUTextureFormat = 0x00000044;
+pub const WGPUTextureFormat_ETC2RGBA8UnormSrgb: WGPUTextureFormat = 0x00000045;
+pub const WGPUTextureFormat_EACR11Unorm: WGPUTextureFormat = 0x00000046;
+pub const WGPUTextureFormat_EACR11Snorm: WGPUTextureFormat = 0x00000047;
+pub const WGPUTextureFormat_EACRG11Unorm: WGPUTextureFormat = 0x00000048;
+pub const WGPUTextureFormat_EACRG11Snorm: WGPUTextureFormat = 0x00000049;
 
 // ASTC compressed texture formats (texture-compression-astc feature)
 pub const WGPUTextureFormat_ASTC4x4Unorm: WGPUTextureFormat = 0x0000004A;
@@ -344,6 +374,36 @@ pub const RenderDrawCommand = struct {
     occlusion_query_pool: u64 = 0,
     occlusion_query_index: ?u32 = null,
     bind_group_dynamic_offsets: ?[]const u32 = null,
+    vertex_buffer_count: u32 = 0,
+    vertex_buffer_handles: [8]u64 = [_]u64{0} ** 8,
+    vertex_buffer_offsets: [8]u64 = [_]u64{0} ** 8,
+    index_buffer_handle: u64 = 0,
+    index_buffer_offset: u64 = 0,
+    index_format: u32 = 0,
+    vertex_layout_count: u32 = 0,
+    vertex_buffer_strides: [8]u64 = [_]u64{0} ** 8,
+    vertex_step_modes: [8]u32 = [_]u32{0} ** 8,
+    vertex_attribute_count: u32 = 0,
+    vertex_attribute_formats: [16]u32 = [_]u32{0} ** 16,
+    vertex_attribute_offsets: [16]u64 = [_]u64{0} ** 16,
+    vertex_attribute_locations: [16]u32 = [_]u32{0} ** 16,
+    vertex_attribute_buffer_slots: [16]u32 = [_]u32{0} ** 16,
+    topology: u32 = 0x00000004,
+    front_face: u32 = 0x00000001,
+    cull_mode: u32 = 0x00000001,
+    depth_stencil_format: WGPUTextureFormat = WGPUTextureFormat_Undefined,
+    depth_compare: u32 = 0,
+    depth_write_enabled: bool = false,
+    stencil_front_compare: u32 = 0x00000008,
+    stencil_front_fail_op: u32 = 0,
+    stencil_front_depth_fail_op: u32 = 0,
+    stencil_front_pass_op: u32 = 0,
+    stencil_back_compare: u32 = 0x00000008,
+    stencil_back_fail_op: u32 = 0,
+    stencil_back_depth_fail_op: u32 = 0,
+    stencil_back_pass_op: u32 = 0,
+    stencil_read_mask: u32 = 0xFFFF_FFFF,
+    stencil_write_mask: u32 = 0xFFFF_FFFF,
     unclipped_depth: bool = false,
 };
 
@@ -398,6 +458,9 @@ pub const SurfaceCapabilitiesCommand = struct {
     handle: u64,
 };
 
+pub const WGPUCanvasToneMappingMode_Standard: u32 = 0x00000001;
+pub const WGPUCanvasToneMappingMode_Extended: u32 = 0x00000002;
+
 pub const SurfaceConfigureCommand = struct {
     handle: u64,
     width: u32,
@@ -406,6 +469,7 @@ pub const SurfaceConfigureCommand = struct {
     usage: WGPUFlags = WGPUTextureUsage_RenderAttachment,
     alpha_mode: u32 = 0x00000001,
     present_mode: u32 = 0x00000002,
+    tone_mapping_mode: u32 = WGPUCanvasToneMappingMode_Standard,
     desired_maximum_frame_latency: u32 = 2,
 };
 
