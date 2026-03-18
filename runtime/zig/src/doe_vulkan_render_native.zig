@@ -258,12 +258,15 @@ pub fn vulkan_render_pass_draw(
         return;
     };
 
+    const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
+
     const cmd = model.RenderDrawCommand{
         .draw_count = 1,
         .vertex_count = vertex_count,
         .instance_count = instance_count,
         .first_vertex = first_vertex,
         .first_instance = first_instance,
+        .unclipped_depth = pip_unclipped,
     };
 
     _ = rt.run_render_draw(cmd) catch |err| {
@@ -284,6 +287,8 @@ pub fn vulkan_render_pass_draw_indexed(
         return;
     };
 
+    const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
+
     const cmd = model.RenderDrawCommand{
         .draw_count = 1,
         .vertex_count = 0,
@@ -293,6 +298,7 @@ pub fn vulkan_render_pass_draw_indexed(
         .index_count = index_count,
         .first_index = first_index,
         .base_vertex = base_vertex,
+        .unclipped_depth = pip_unclipped,
     };
 
     _ = rt.run_render_draw(cmd) catch |err| {

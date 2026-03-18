@@ -65,7 +65,7 @@ pub export fn doeNativeRenderBundleEncoderSetPipeline(
 ) callconv(.c) void {
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const pip = cast(DoeRenderPipeline, pip_raw) orelse return;
-    bundle.bundle_encoder_push(enc, .{ .set_pipeline = .{ .mtl_pso = pip.mtl_pso } });
+    bundle.bundle_encoder_push(enc, .{ .set_pipeline = .{ .pipeline_handle = pip.mtl_pso } });
 }
 
 pub export fn doeNativeRenderBundleEncoderSetBindGroup(
@@ -87,7 +87,7 @@ pub export fn doeNativeRenderBundleEncoderSetBindGroup(
     const copy_count = @min(@as(usize, bg.count), bundle.MAX_BINDINGS_PER_GROUP);
     for (0..copy_count) |i| {
         bg_entry.entries[i] = .{
-            .mtl_buffer = bg.buffers[i],
+            .handle = bg.buffers[i],
             .offset = bg.offsets[i],
         };
     }
@@ -109,7 +109,7 @@ pub export fn doeNativeRenderBundleEncoderSetVertexBuffer(
     const buf = cast(DoeBuffer, buf_raw) orelse return;
     bundle.bundle_encoder_push(enc, .{ .set_vertex_buffer = .{
         .slot = slot,
-        .mtl_buffer = buf.mtl,
+        .buffer_handle = buf.mtl,
         .offset = offset,
     } });
 }
@@ -124,7 +124,7 @@ pub export fn doeNativeRenderBundleEncoderSetIndexBuffer(
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
     bundle.bundle_encoder_push(enc, .{ .set_index_buffer = .{
-        .mtl_buffer = buf.mtl,
+        .buffer_handle = buf.mtl,
         .format = format,
         .offset = offset,
         .size = size,
@@ -346,25 +346,25 @@ pub export fn doeNativeRenderPassExecuteBundles(
         for (b.cmds) |cmd| {
             switch (cmd) {
                 .set_pipeline => |p| {
-                    state.pso = p.mtl_pso;
+                    state.pso = p.pipeline_handle;
                 },
                 .set_bind_group => |bg_cmd| {
                     const base = @as(usize, bg_cmd.group) * MAX_BIND;
                     const count = @min(@as(usize, bg_cmd.bg.count), bundle.MAX_BINDINGS_PER_GROUP);
                     for (0..count) |i| {
                         if (base + i < MAX_FLAT_BIND) {
-                            state.bind_buffers[base + i] = bg_cmd.bg.entries[i].mtl_buffer;
+                            state.bind_buffers[base + i] = bg_cmd.bg.entries[i].handle;
                             state.bind_buffer_offsets[base + i] = bg_cmd.bg.entries[i].offset;
                         }
                     }
                 },
                 .set_vertex_buffer => |vb| {
                     const slot = @as(usize, @min(vb.slot, MAX_VERTEX_BUFFERS - 1));
-                    state.vertex_buffers[slot] = vb.mtl_buffer;
+                    state.vertex_buffers[slot] = vb.buffer_handle;
                     state.vertex_buffer_offsets[slot] = vb.offset;
                 },
                 .set_index_buffer => |ib| {
-                    state.index_buffer = ib.mtl_buffer;
+                    state.index_buffer = ib.buffer_handle;
                     state.index_offset = ib.offset;
                     state.index_format = ib.format;
                 },

@@ -71,17 +71,33 @@ pub fn flush_queue(self: *Runtime) !u64 {
             .signalSemaphoreCount = 0,
             .pSignalSemaphores = null,
         };
-        // Fence-based wait targets only this submission; vkQueueWaitIdle
-        // synchronizes the entire queue and carries higher driver overhead
-        // on RADV, which dominates tiny-upload latency.
-        try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit), self.fence));
-        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+
+        // Timeline semaphore path: signal the timeline and wait on it
+        // instead of fence reset/wait. Falls back to fence when unavailable.
+        if (self.has_timeline_semaphore) {
+            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+            tsi.patch();
+            submit.pNext = @ptrCast(&tsi.timeline_info);
+            submit.signalSemaphoreCount = 1;
+            submit.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit), VK_NULL_U64));
+            try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+        } else {
+            // Fence-based wait targets only this submission; vkQueueWaitIdle
+            // synchronizes the entire queue and carries higher driver overhead
+            // on RADV, which dominates tiny-upload latency.
+            try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit), self.fence));
+            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+        }
         self.has_deferred_submissions = false;
     } else if (self.has_deferred_submissions) {
         // No pending uploads but earlier deferred work exists; drain via
+        // timeline semaphore (single wait for all prior submissions) or
         // fence pool (per-submission waits) instead of vkQueueWaitIdle.
-        if (self.has_fence_pool) {
+        if (self.has_timeline_semaphore) {
+            try self.timeline_semaphore.drain(self.device);
+        } else if (self.has_fence_pool) {
             try self.fence_pool_state.drain(self.device);
         } else {
             try c.check_vk(c.vkQueueWaitIdle(self.queue));
@@ -519,7 +535,21 @@ pub fn flush_streaming_copy(self: *Runtime, wait: bool) !void {
         .pSignalSemaphores = null,
     };
 
-    if (wait) {
+    if (self.has_timeline_semaphore) {
+        // Timeline path: signal the semaphore on every submission.
+        // For immediate-wait, follow with a CPU wait on the signaled value.
+        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+        tsi.patch();
+        submit_info.pNext = @ptrCast(&tsi.timeline_info);
+        submit_info.signalSemaphoreCount = 1;
+        submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+        if (wait) {
+            try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+        } else {
+            self.has_deferred_submissions = true;
+        }
+    } else if (wait) {
         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
         try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));

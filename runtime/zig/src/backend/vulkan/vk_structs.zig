@@ -112,11 +112,22 @@ pub const VkMemoryRequirements = extern struct {
     memoryTypeBits: u32,
 };
 
+pub const VkCommandBufferInheritanceInfo = extern struct {
+    sType: vk.VkStructureType,
+    pNext: ?*const anyopaque,
+    renderPass: vk.VkRenderPass,
+    subpass: u32,
+    framebuffer: vk.VkFramebuffer,
+    occlusionQueryEnable: vk.VkBool32,
+    queryFlags: vk.VkFlags,
+    pipelineStatistics: vk.VkFlags,
+};
+
 pub const VkCommandBufferBeginInfo = extern struct {
     sType: vk.VkStructureType,
     pNext: ?*const anyopaque,
     flags: vk.VkFlags,
-    pInheritanceInfo: ?*const anyopaque,
+    pInheritanceInfo: ?*const VkCommandBufferInheritanceInfo,
 };
 
 pub const VkSubmitInfo = extern struct {
@@ -293,6 +304,14 @@ pub const VkBufferImageCopy = extern struct {
     imageSubresource: VkImageSubresourceLayers,
     imageOffset: VkOffset3D,
     imageExtent: VkExtent3D,
+};
+
+pub const VkImageCopy = extern struct {
+    srcSubresource: VkImageSubresourceLayers,
+    srcOffset: VkOffset3D,
+    dstSubresource: VkImageSubresourceLayers,
+    dstOffset: VkOffset3D,
+    extent: VkExtent3D,
 };
 
 pub const VkImageMemoryBarrier = extern struct {
@@ -586,4 +605,18 @@ pub const VkPhysicalDeviceMemoryProperties = extern struct {
     memoryTypes: [32]VkMemoryType,
     memoryHeapCount: u32,
     memoryHeaps: [16]VkMemoryHeap,
+};
+
+// VK_EXT_depth_clip_enable: extension struct chained into rasterization state
+// to explicitly disable depth clipping (unclippedDepth in WebGPU).
+pub const VkPipelineRasterizationDepthClipStateCreateInfoEXT = extern struct {
+    sType: vk.VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: vk.VkFlags,
+    depthClipEnable: vk.VkBool32,
+};
+
+pub const VkExtensionProperties = extern struct {
+    extensionName: [256]u8,
+    specVersion: u32,
 };

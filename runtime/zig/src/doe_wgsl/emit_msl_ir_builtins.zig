@@ -25,6 +25,10 @@ pub fn emit_call(self: anytype, function: ir.Function, result_ty: ir.TypeId, cal
             try self.write("threadgroup_barrier(mem_flags::mem_device)");
             return;
         }
+        if (std.mem.eql(u8, call.name, "textureBarrier")) {
+            try self.write("threadgroup_barrier(mem_flags::mem_texture)");
+            return;
+        }
         if (std.mem.eql(u8, call.name, "bitcast")) {
             if (call.args.len != 1) return error.InvalidIr;
             try self.write("as_type<");

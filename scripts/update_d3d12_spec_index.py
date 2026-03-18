@@ -101,6 +101,11 @@ MEMBER_IMPLEMENTED = {
     ("GPUCommandEncoder", "resolveQuerySet"),
 }
 
+# Specific feature-flag values to mark as implemented
+VALUE_IMPLEMENTED = {
+    ("GPUFeatureName", "dual-source-blending"),
+}
+
 
 def get_d3d12(row):
     return row.setdefault("d3d12", {})
@@ -136,6 +141,16 @@ def update_member(row):
                 d3d12["correct"] = "unit"
 
 
+def update_value(row):
+    key = (row["parent"], row["name"])
+    d3d12 = get_d3d12(row)
+    status = d3d12.get("impl", "unreviewed")
+
+    if key in VALUE_IMPLEMENTED:
+        if status in ("unreviewed", "partial", "not_wired", "blocked"):
+            d3d12["impl"] = "implemented"
+
+
 def main():
     with open(SPEC_INDEX_PATH) as f:
         lines = f.readlines()
@@ -145,11 +160,13 @@ def main():
     for row in rows:
         kind = row.get("kind")
         if kind == "header":
-            row["lastUpdated"] = "2026-03-17"
+            row["lastUpdated"] = "2026-03-18"
         elif kind == "interface":
             update_interface(row)
         elif kind == "member":
             update_member(row)
+        elif kind == "value":
+            update_value(row)
 
     with open(SPEC_INDEX_PATH, "w") as f:
         for row in rows:

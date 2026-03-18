@@ -34,6 +34,11 @@ const FEATURE_TIMESTAMP_QUERY: u32 = types.WGPUFeatureName_TimestampQuery;
 const FEATURE_SUBGROUPS_F16: u32 = types.WGPUFeatureName_SubgroupsF16;
 const FEATURE_CLIP_DISTANCES: u32 = types.WGPUFeatureName_ClipDistances;
 const FEATURE_DUAL_SOURCE_BLENDING: u32 = types.WGPUFeatureName_DualSourceBlending;
+const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = types.WGPUFeatureName_CoreFeaturesAndLimits;
+const FEATURE_TEXTURE_FORMATS_TIER1: u32 = types.WGPUFeatureName_TextureFormatsTier1;
+const FEATURE_TEXTURE_FORMATS_TIER2: u32 = types.WGPUFeatureName_TextureFormatsTier2;
+const FEATURE_PRIMITIVE_INDEX: u32 = types.WGPUFeatureName_PrimitiveIndex;
+const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = types.WGPUFeatureName_TextureComponentSwizzle;
 
 // ============================================================
 // Limits: Apple Silicon hardware-specific defaults.
@@ -182,6 +187,11 @@ fn is_metal_feature_supported(feature: u32) bool {
         FEATURE_SUBGROUPS_F16,
         FEATURE_CLIP_DISTANCES,
         FEATURE_DUAL_SOURCE_BLENDING,
+        FEATURE_CORE_FEATURES_AND_LIMITS,
+        FEATURE_TEXTURE_FORMATS_TIER1,
+        FEATURE_TEXTURE_FORMATS_TIER2,
+        FEATURE_PRIMITIVE_INDEX,
+        FEATURE_TEXTURE_COMPONENT_SWIZZLE,
         => BRIDGE_AVAILABLE,
         else => false,
     };

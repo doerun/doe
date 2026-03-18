@@ -76,6 +76,15 @@ void d3d12_bridge_command_list_draw_indexed_instanced(D3D12Handle cmd_list, uint
                                                        uint32_t instance_count, uint32_t start_index,
                                                        int32_t base_vertex, uint32_t start_instance);
 
+/* Vertex/index buffer binding for render bundles */
+void d3d12_bridge_command_list_ia_set_vertex_buffers(D3D12Handle cmd_list, uint32_t start_slot,
+                                                      uint32_t num_views, D3D12Handle buffer,
+                                                      uint32_t size_in_bytes, uint32_t stride_in_bytes,
+                                                      uint64_t offset);
+void d3d12_bridge_command_list_ia_set_index_buffer(D3D12Handle cmd_list, D3D12Handle buffer,
+                                                    uint32_t format, uint32_t size_in_bytes,
+                                                    uint64_t offset);
+
 /* Indirect execution */
 D3D12Handle d3d12_bridge_device_create_command_signature_dispatch(D3D12Handle device, D3D12Handle root_sig);
 D3D12Handle d3d12_bridge_device_create_command_signature_draw(D3D12Handle device, D3D12Handle root_sig);
@@ -171,6 +180,17 @@ void d3d12_bridge_command_list_begin_query(D3D12Handle cmd_list, D3D12Handle que
 D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device, uint32_t width, uint32_t height,
                                                     uint32_t depth, uint32_t mip_levels,
                                                     uint32_t format, uint32_t usage_flags);
+
+/* Hardware capability queries for runtime feature detection.
+ * TODO: On actual Windows hardware these should query:
+ *   - D3D12_FEATURE_DATA_D3D12_OPTIONS1 for WaveLaneCountMin/WaveLaneCountMax
+ *   - D3D12_FEATURE_DATA_SHADER_MODEL for HighestShaderModel
+ *   - D3D12_FEATURE_DATA_D3D12_OPTIONS4 for Native16BitShaderOpsSupported
+ * Currently returns conservative defaults for cross-compilation. */
+int  d3d12_bridge_device_get_shader_model(D3D12Handle device);
+int  d3d12_bridge_device_get_wave_lane_count_min(D3D12Handle device);
+int  d3d12_bridge_device_get_wave_lane_count_max(D3D12Handle device);
+int  d3d12_bridge_device_supports_native_16bit(D3D12Handle device);
 
 /* DXGI swap chain (surface) */
 D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue, uint32_t width, uint32_t height, uint32_t format);

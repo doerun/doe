@@ -1,4 +1,5 @@
-// Render pass, graphics pipeline, and draw call execution for the Vulkan backend.
+// Render pass, graphics pipeline, draw call execution, and render bundle
+// replay for the Vulkan backend.
 //
 // Handles:
 //   - VkRenderPass creation for offscreen color attachments
@@ -6,17 +7,20 @@
 //   - VkFramebuffer creation bound to a render target image view
 //   - Vertex buffer upload and binding
 //   - Draw call recording (non-indexed and indexed)
+//   - Render bundle replay into active render passes
 //   - Render state cleanup
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
+const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
 const model = @import("../../model.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const common_timing = @import("../common/timing.zig");
+const render_bundle = @import("../../render_bundle.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 const native_runtime = @import("native_runtime.zig");
@@ -121,7 +125,7 @@ pub fn execute_render_draw(
     try create_framebuffer(self, &render_state, target_width, target_height);
 
     // Phase 4: compile shaders and create graphics pipeline
-    try create_graphics_pipeline(self, &render_state, vk_format);
+    try create_graphics_pipeline(self, &render_state, vk_format, cmd.unclipped_depth);
 
     const encode_end = common_timing.now_ns();
     const setup_ns = common_timing.ns_delta(encode_end, encode_start);
@@ -333,6 +337,7 @@ fn create_graphics_pipeline(
     self: *Runtime,
     state: *RenderState,
     vk_format: u32,
+    unclipped_depth: bool,
 ) !void {
     _ = vk_format;
 
@@ -419,15 +424,25 @@ fn create_graphics_pipeline(
         .pScissors = null,
     };
 
-    // TODO: when unclippedDepth is piped through the Vulkan render pipeline
-    // descriptor, set depthClampEnable = VK_TRUE and chain
-    // VkPipelineRasterizationDepthClipStateCreateInfoEXT with
-    // depthClipEnable = VK_FALSE (requires VK_EXT_depth_clip_enable).
-    var rasterization = c.VkPipelineRasterizationStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    // When unclippedDepth is requested and VK_EXT_depth_clip_enable is available,
+    // enable depth clamping and chain the depth clip disable struct. Without the
+    // extension, fall back to standard depth clipping and log a warning.
+    const use_unclipped = unclipped_depth and self.has_depth_clip_enable_ext;
+    if (unclipped_depth and !self.has_depth_clip_enable_ext) {
+        std.debug.print("vk_render: unclippedDepth requested but VK_EXT_depth_clip_enable unavailable; falling back to standard clipping\n", .{});
+    }
+
+    var depth_clip_state = c.VkPipelineRasterizationDepthClipStateCreateInfoEXT{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
         .pNext = null,
         .flags = 0,
-        .depthClampEnable = c.VK_FALSE,
+        .depthClipEnable = c.VK_FALSE,
+    };
+    var rasterization = c.VkPipelineRasterizationStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext = if (use_unclipped) @ptrCast(&depth_clip_state) else null,
+        .flags = 0,
+        .depthClampEnable = if (use_unclipped) c.VK_TRUE else c.VK_FALSE,
         .rasterizerDiscardEnable = c.VK_FALSE,
         .polygonMode = c.VK_POLYGON_MODE_FILL,
         .cullMode = c.VK_CULL_MODE_NONE,
@@ -529,17 +544,8 @@ fn record_and_submit_draws(
     target_width: u32,
     target_height: u32,
 ) !void {
-    try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+    try begin_primary_recording(self);
 
-    var begin_info = c.VkCommandBufferBeginInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = null,
-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = null,
-    };
-    try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
-
-    // Begin render pass
     var clear_value = c.VkClearValue{
         .color = .{ .float32 = .{ 0.0, 0.0, 0.0, 1.0 } },
     };
@@ -608,8 +614,22 @@ fn record_and_submit_draws(
 
     c.vkCmdEndRenderPass(self.primary_command_buffer);
     try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
+    try submit_and_wait(self);
+}
 
-    // Submit
+// Reset the command pool and begin recording on the primary command buffer.
+fn begin_primary_recording(self: *Runtime) !void {
+    try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+    var begin_info = c.VkCommandBufferBeginInfo{
+        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext = null,
+        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .pInheritanceInfo = null,
+    };
+    try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+}
+
+fn submit_and_wait(self: *Runtime) !void {
     var submit_info = c.VkSubmitInfo{
         .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .pNext = null,
@@ -621,9 +641,19 @@ fn record_and_submit_draws(
         .signalSemaphoreCount = 0,
         .pSignalSemaphores = null,
     };
-    try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-    try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
-    try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+    if (self.has_timeline_semaphore) {
+        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+        tsi.patch();
+        submit_info.pNext = @ptrCast(&tsi.timeline_info);
+        submit_info.signalSemaphoreCount = 1;
+        submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+        try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+    } else {
+        try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+    }
 }
 
 fn record_indexed_draws(
@@ -675,4 +705,64 @@ fn record_indexed_draws(
             cmd.first_instance,
         );
     }
+}
+
+// Replay render bundles into a standalone render pass. Creates render target,
+// render pass + framebuffer, then replays each bundle's command list.
+pub fn execute_render_bundles(
+    self: *Runtime,
+    bundles: []const *const render_bundle.DoeRenderBundle,
+    target_width: u32,
+    target_height: u32,
+    color_format: u32,
+    sample_count: u32,
+) !DispatchMetrics {
+    if (bundles.len == 0) return .{};
+    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0)
+        _ = try vk_upload.flush_queue(self);
+    const width = if (target_width > 0) target_width else model.DEFAULT_RENDER_TARGET_WIDTH;
+    const height = if (target_height > 0) target_height else model.DEFAULT_RENDER_TARGET_HEIGHT;
+    const vk_format = try vk_resources.texture_format_to_vk(color_format);
+    const pass_sample_count = if (sample_count == 0) @as(u32, 1) else sample_count;
+    var state = RenderState{};
+    defer release_render_state(self.device, &state);
+    const encode_start = common_timing.now_ns();
+    try ensure_render_target(self, &state, width, height, color_format);
+    try create_render_pass(self, &state, vk_format);
+    try create_framebuffer(self, &state, width, height);
+    const encode_end = common_timing.now_ns();
+    const draw_start = common_timing.now_ns();
+    try begin_primary_recording(self);
+
+    var clear_value = c.VkClearValue{
+        .color = .{ .float32 = .{ 0.0, 0.0, 0.0, 1.0 } },
+    };
+    var render_pass_begin = c.VkRenderPassBeginInfo{
+        .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .pNext = null,
+        .renderPass = state.render_pass,
+        .framebuffer = state.framebuffer,
+        .renderArea = .{
+            .offset = .{ .x = 0, .y = 0 },
+            .extent = .{ .width = width, .height = height },
+        },
+        .clearValueCount = 1,
+        .pClearValues = @ptrCast(&clear_value),
+    };
+    c.vkCmdBeginRenderPass(self.primary_command_buffer, &render_pass_begin, c.VK_SUBPASS_CONTENTS_INLINE);
+    var viewport = c.VkViewport{ .x = 0, .y = 0, .width = @floatFromInt(width), .height = @floatFromInt(height), .minDepth = 0, .maxDepth = 1 };
+    c.vkCmdSetViewport(self.primary_command_buffer, 0, 1, @ptrCast(&viewport));
+    var scissor = c.VkRect2D{ .offset = .{ .x = 0, .y = 0 }, .extent = .{ .width = width, .height = height } };
+    c.vkCmdSetScissor(self.primary_command_buffer, 0, 1, @ptrCast(&scissor));
+    for (bundles) |b| {
+        render_bundle.replay_bundle_vk(b, self.primary_command_buffer, color_format, pass_sample_count) catch |err| {
+            std.debug.print("vk_render: bundle replay failed: {}\n", .{err});
+            continue;
+        };
+    }
+    c.vkCmdEndRenderPass(self.primary_command_buffer);
+    try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
+    try submit_and_wait(self);
+    const draw_end = common_timing.now_ns();
+    return .{ .encode_ns = common_timing.ns_delta(encode_end, encode_start), .submit_wait_ns = common_timing.ns_delta(draw_end, draw_start) };
 }

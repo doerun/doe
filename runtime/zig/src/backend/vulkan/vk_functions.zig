@@ -1,5 +1,5 @@
-const common_errors = @import("../common/errors.zig");
 const vk = @import("vk_constants.zig");
+const vulkan_errors = @import("vulkan_errors.zig");
 const structs = @import("vk_structs.zig");
 
 pub extern fn vkCreateInstance(pCreateInfo: *const structs.VkInstanceCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pInstance: *vk.VkInstance) callconv(.c) vk.VkResult;
@@ -27,6 +27,8 @@ pub extern fn vkCmdBindPipeline(commandBuffer: vk.VkCommandBuffer, pipelineBindP
 pub extern fn vkCmdDispatch(commandBuffer: vk.VkCommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32) callconv(.c) void;
 pub extern fn vkCmdCopyBuffer(commandBuffer: vk.VkCommandBuffer, srcBuffer: vk.VkBuffer, dstBuffer: vk.VkBuffer, regionCount: u32, pRegions: [*]const structs.VkBufferCopy) callconv(.c) void;
 pub extern fn vkCmdCopyBufferToImage(commandBuffer: vk.VkCommandBuffer, srcBuffer: vk.VkBuffer, dstImage: vk.VkImage, dstImageLayout: u32, regionCount: u32, pRegions: [*]const structs.VkBufferImageCopy) callconv(.c) void;
+pub extern fn vkCmdCopyImageToBuffer(commandBuffer: vk.VkCommandBuffer, srcImage: vk.VkImage, srcImageLayout: u32, dstBuffer: vk.VkBuffer, regionCount: u32, pRegions: [*]const structs.VkBufferImageCopy) callconv(.c) void;
+pub extern fn vkCmdCopyImage(commandBuffer: vk.VkCommandBuffer, srcImage: vk.VkImage, srcImageLayout: u32, dstImage: vk.VkImage, dstImageLayout: u32, regionCount: u32, pRegions: [*]const structs.VkImageCopy) callconv(.c) void;
 pub extern fn vkCmdPipelineBarrier(commandBuffer: vk.VkCommandBuffer, srcStageMask: vk.VkFlags, dstStageMask: vk.VkFlags, dependencyFlags: vk.VkFlags, memoryBarrierCount: u32, pMemoryBarriers: ?*const anyopaque, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: ?*const anyopaque, imageMemoryBarrierCount: u32, pImageMemoryBarriers: ?[*]const structs.VkImageMemoryBarrier) callconv(.c) void;
 pub extern fn vkCreateBuffer(device: vk.VkDevice, pCreateInfo: *const structs.VkBufferCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pBuffer: *vk.VkBuffer) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyBuffer(device: vk.VkDevice, buffer: vk.VkBuffer, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
@@ -77,53 +79,11 @@ pub extern fn vkCmdBindVertexBuffers(commandBuffer: vk.VkCommandBuffer, firstBin
 pub extern fn vkCmdBindIndexBuffer(commandBuffer: vk.VkCommandBuffer, buffer: vk.VkBuffer, offset: vk.VkDeviceSize, indexType: u32) callconv(.c) void;
 pub extern fn vkCmdDraw(commandBuffer: vk.VkCommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32) callconv(.c) void;
 pub extern fn vkCmdDrawIndexed(commandBuffer: vk.VkCommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32) callconv(.c) void;
+pub extern fn vkCmdDrawIndirect(commandBuffer: vk.VkCommandBuffer, buffer: vk.VkBuffer, offset: vk.VkDeviceSize, drawCount: u32, stride: u32) callconv(.c) void;
+pub extern fn vkCmdDrawIndexedIndirect(commandBuffer: vk.VkCommandBuffer, buffer: vk.VkBuffer, offset: vk.VkDeviceSize, drawCount: u32, stride: u32) callconv(.c) void;
+pub extern fn vkCmdExecuteCommands(commandBuffer: vk.VkCommandBuffer, commandBufferCount: u32, pCommandBuffers: [*]const vk.VkCommandBuffer) callconv(.c) void;
+pub extern fn vkEnumerateDeviceExtensionProperties(physicalDevice: vk.VkPhysicalDevice, pLayerName: ?[*:0]const u8, pPropertyCount: *u32, pProperties: ?[*]structs.VkExtensionProperties) callconv(.c) vk.VkResult;
 
-pub fn check_vk(result: vk.VkResult) common_errors.BackendNativeError!void {
-    if (result == vk.VK_SUCCESS) return;
-    return map_vk_result(result);
-}
-
-pub fn map_vk_result(result: vk.VkResult) common_errors.BackendNativeError {
-    return switch (result) {
-        vk.VK_ERROR_TOO_MANY_OBJECTS,
-        vk.VK_ERROR_FORMAT_NOT_SUPPORTED,
-        vk.VK_ERROR_FRAGMENTED_POOL,
-        vk.VK_ERROR_UNKNOWN,
-        => error.UnsupportedFeature,
-        else => error.InvalidState,
-    };
-}
-
-const std = @import("std");
-
-test "check_vk succeeds on VK_SUCCESS" {
-    try check_vk(vk.VK_SUCCESS);
-}
-
-test "check_vk returns error on failure code" {
-    const result = check_vk(vk.VK_ERROR_TOO_MANY_OBJECTS);
-    try std.testing.expectEqual(error.UnsupportedFeature, result);
-}
-
-test "map_vk_result maps TOO_MANY_OBJECTS to UnsupportedFeature" {
-    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_TOO_MANY_OBJECTS));
-}
-
-test "map_vk_result maps FORMAT_NOT_SUPPORTED to UnsupportedFeature" {
-    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_FORMAT_NOT_SUPPORTED));
-}
-
-test "map_vk_result maps FRAGMENTED_POOL to UnsupportedFeature" {
-    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_FRAGMENTED_POOL));
-}
-
-test "map_vk_result maps UNKNOWN to UnsupportedFeature" {
-    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(vk.VK_ERROR_UNKNOWN));
-}
-
-test "map_vk_result maps other errors to InvalidState" {
-    // VK_ERROR_OUT_OF_HOST_MEMORY = -1, not in the UnsupportedFeature set
-    try std.testing.expectEqual(error.InvalidState, map_vk_result(-1));
-    // VK_ERROR_OUT_OF_DEVICE_MEMORY = -2
-    try std.testing.expectEqual(error.InvalidState, map_vk_result(-2));
-}
+// Delegate to vulkan_errors.zig — the single source of truth for VkResult mapping.
+pub const check_vk = vulkan_errors.check_vk;
+pub const map_vk_result = vulkan_errors.map_vk_result;

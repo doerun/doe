@@ -194,6 +194,7 @@ fn native_capability_set() capabilities.CapabilitySet {
         .depth_stencil,
         .texture_view,
         .descriptor_binding,
+        .render_bundle,
     });
     return set;
 }

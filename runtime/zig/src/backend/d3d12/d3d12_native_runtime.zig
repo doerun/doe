@@ -21,6 +21,7 @@ const d3d12_query_set = @import("d3d12_query_set.zig");
 const d3d12_descriptors = @import("d3d12_descriptors.zig");
 const d3d12_device_caps = @import("d3d12_device_caps.zig");
 const dc = @import("d3d12_constants.zig");
+const render_bundle = @import("../../render_bundle.zig");
 
 pub const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
 pub const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
@@ -93,6 +94,8 @@ pub const NativeD3D12Runtime = struct {
     has_root_signature: bool = false,
     has_compute_pipeline: bool = false,
     has_compute_cmd: bool = false,
+
+    device_caps: d3d12_device_caps.D3D12DeviceCaps = .{},
 
     texture_map: d3d12_texture.TextureMap = .{},
     sampler_state: d3d12_sampler.SamplerState = .{},
@@ -349,6 +352,19 @@ pub const NativeD3D12Runtime = struct {
         return self.render_state.execute_render_draw(self.device, self.queue, self.fence, &self.fence_value, cmd, is_indirect, is_indexed_indirect);
     }
 
+    pub fn execute_render_bundles(
+        self: *NativeD3D12Runtime,
+        bundles: []const *const render_bundle.DoeRenderBundle,
+        target_width: u32,
+        target_height: u32,
+        color_format: u32,
+        sample_count: u32,
+    ) !d3d12_render.RenderMetrics {
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0)
+            _ = try self.flush_queue();
+        return self.render_state.execute_render_bundles(self.device, self.queue, self.fence, &self.fence_value, bundles, target_width, target_height, color_format, sample_count);
+    }
+
     pub fn surface_create(self: *NativeD3D12Runtime, cmd: model.SurfaceCreateCommand) !u64 {
         return self.surface_state.create_surface(self.allocator, cmd);
     }
@@ -398,7 +414,9 @@ pub const NativeD3D12Runtime = struct {
     }
 
     pub fn has_feature(self: *const NativeD3D12Runtime, feature: u32) bool {
-        _ = self;
+        if (self.has_device) {
+            return d3d12_device_caps.d3d12_device_has_feature_with_caps(feature, self.device_caps);
+        }
         return d3d12_device_caps.d3d12_device_has_feature(feature);
     }
 
@@ -430,6 +448,7 @@ pub const NativeD3D12Runtime = struct {
         self.queue = d3d12_bridge_device_create_command_queue(self.device) orelse return error.InvalidState;
         self.fence = d3d12_bridge_device_create_fence(self.device) orelse return error.InvalidState;
         self.has_device = true;
+        self.device_caps = d3d12_device_caps.query_device_caps(self.device);
     }
 
     fn resolve_kernel_source_path(self: *const NativeD3D12Runtime, alloc: std.mem.Allocator, kernel_name: []const u8) ![]u8 {

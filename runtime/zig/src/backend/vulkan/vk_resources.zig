@@ -464,6 +464,10 @@ pub fn texture_transition_source(layout: u32) TextureTransitionSource {
             .src_access_mask = 0,
             .src_stage = c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
         },
+        c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL => .{
+            .src_access_mask = c.VK_ACCESS_TRANSFER_READ_BIT,
+            .src_stage = c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        },
         c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL => .{
             .src_access_mask = c.VK_ACCESS_TRANSFER_WRITE_BIT,
             .src_stage = c.VK_PIPELINE_STAGE_TRANSFER_BIT,

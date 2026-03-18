@@ -87,6 +87,7 @@ pub const ZigVulkanBackend = struct {
         caps.declare_all(&.{
             .kernel_dispatch,
             .buffer_upload,
+            .buffer_copy,
             .barrier_sync,
             .sampler_lifecycle,
             .render_draw,
@@ -102,6 +103,7 @@ pub const ZigVulkanBackend = struct {
             .async_lifecycle_refcount,
             .async_pixel_local_storage,
             .gpu_timestamps,
+            .render_bundle,
         });
 
         const owned_kernel_root = if (kernel_root) |root| try allocator.dupe(u8, root) else null;
@@ -232,7 +234,6 @@ pub fn present_capable_from_context(ctx: *anyopaque) ?bool {
 fn deinit(ctx: *anyopaque) void {
     const self = cast(ctx);
     const allocator = self.allocator;
-
     if (self.runtime) |*runtime| {
         runtime.deinit();
         self.runtime = null;
@@ -646,6 +647,7 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
     caps.declare_all(&.{
         .kernel_dispatch,
         .buffer_upload,
+        .buffer_copy,
         .barrier_sync,
         .sampler_lifecycle,
         .render_draw,
@@ -661,6 +663,7 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .async_lifecycle_refcount,
         .async_pixel_local_storage,
         .gpu_timestamps,
+        .render_bundle,
     });
 
     var backend = ZigVulkanBackend{

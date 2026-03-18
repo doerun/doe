@@ -40,6 +40,7 @@ const SUBGROUP_MAP = [_]SubgroupMapping{
     .{ .wgsl_name = "subgroupShuffleXor",     .msl_name = "simd_shuffle_xor",           .arity = 2 },
     .{ .wgsl_name = "subgroupBroadcast",      .msl_name = "simd_broadcast",             .arity = 2 },
     .{ .wgsl_name = "subgroupBroadcastFirst", .msl_name = "simd_broadcast_first",       .arity = 1 },
+    .{ .wgsl_name = "subgroupElect",         .msl_name = "simd_is_first",              .arity = 0 },
 };
 
 // Subgroup built-ins that map to [[thread_index_in_simdgroup]] parameter

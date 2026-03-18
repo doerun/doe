@@ -441,6 +441,10 @@ fn try_write_special_builtin(module: *const ir.Module, function: ir.Function, re
         try write_str(buf, pos, "threadgroup_barrier(mem_flags::mem_device)");
         return true;
     }
+    if (std.mem.eql(u8, call.name, "textureBarrier")) {
+        try write_str(buf, pos, "threadgroup_barrier(mem_flags::mem_texture)");
+        return true;
+    }
     // min/max/clamp: cast all arguments to the result type to avoid MSL
     // overload ambiguity when argument types differ (e.g. int vs uint,
     // abstract_int vs concrete, or mixed vector element types).

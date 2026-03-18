@@ -53,6 +53,8 @@ uint32_t texture_format_from_string(napi_env env, napi_value val) {
     if (strcmp(buf, "rgba32float") == 0)       return 0x00000027;
     if (strcmp(buf, "rgba32uint") == 0)        return 0x00000028;
     if (strcmp(buf, "rgba32sint") == 0)        return 0x00000029;
+    if (strcmp(buf, "rgba16unorm") == 0)      return 0x0000002A;
+    if (strcmp(buf, "rgba16snorm") == 0)      return 0x0000002B;
     if (strcmp(buf, "stencil8") == 0)          return 0x0000002C;
     if (strcmp(buf, "depth16unorm") == 0)      return 0x0000002D;
     if (strcmp(buf, "depth24plus") == 0)       return 0x0000002E;
@@ -139,7 +141,9 @@ const char* texture_format_u32_to_string(uint32_t fmt) {
         case 0x00000023: return "rg32sint";     case 0x00000024: return "rgba16uint";
         case 0x00000025: return "rgba16sint";   case 0x00000026: return "rgba16float";
         case 0x00000027: return "rgba32float";  case 0x00000028: return "rgba32uint";
-        case 0x00000029: return "rgba32sint";   case 0x0000002C: return "stencil8";
+        case 0x00000029: return "rgba32sint";
+        case 0x0000002A: return "rgba16unorm";  case 0x0000002B: return "rgba16snorm";
+        case 0x0000002C: return "stencil8";
         case 0x0000002D: return "depth16unorm"; case 0x0000002E: return "depth24plus";
         case 0x0000002F: return "depth24plus-stencil8";
         case 0x00000030: return "depth32float"; case 0x00000031: return "depth32float-stencil8";

@@ -196,7 +196,7 @@ pub fn emit_texture_builtin(
                 try ctx.write("doe_textureDimensions_");
                 try ctx.write(global.name);
                 switch (module.types.get(global.ty)) {
-                    .texture_2d, .texture_cube, .texture_depth_cube, .texture_2d_array => {
+                    .texture_2d, .texture_cube, .texture_depth_cube, .texture_2d_array, .texture_3d => {
                         if (args.len != 2) return error.InvalidIr;
                         try ctx.write("(uint(");
                         try ctx.emit_expr(function, function.expr_args.items[args.start + 1]);
@@ -210,6 +210,34 @@ pub fn emit_texture_builtin(
                     },
                     else => return error.InvalidIr,
                 }
+            },
+            else => return error.InvalidIr,
+        }
+    }
+    if (std.mem.eql(u8, call_name, "textureNumLevels")) {
+        if (args.len != 1) return error.InvalidIr;
+        const target_expr = function.expr_args.items[args.start];
+        switch (function.exprs.items[target_expr].data) {
+            .global_ref => |index| {
+                const global = module.globals.items[index];
+                try ctx.write("doe_textureNumLevels_");
+                try ctx.write(global.name);
+                try ctx.write("()");
+                return true;
+            },
+            else => return error.InvalidIr,
+        }
+    }
+    if (std.mem.eql(u8, call_name, "textureNumLayers")) {
+        if (args.len != 1) return error.InvalidIr;
+        const target_expr = function.expr_args.items[args.start];
+        switch (function.exprs.items[target_expr].data) {
+            .global_ref => |index| {
+                const global = module.globals.items[index];
+                try ctx.write("doe_textureNumLayers_");
+                try ctx.write(global.name);
+                try ctx.write("()");
+                return true;
             },
             else => return error.InvalidIr,
         }
@@ -329,3 +357,105 @@ fn texture_global_name(module: *const ir.Module, function: ir.Function, expr_id:
         else => null,
     };
 }
+
+/// Emit HLSL helper functions for texture metadata intrinsics (GetDimensions,
+/// numLevels, numLayers) for all bound texture globals.
+pub fn emit_texture_global_helpers(
+    module: *const ir.Module,
+    buf: []u8,
+    pos: *usize,
+) EmitError!void {
+    var ctx = HelperCtx{ .buf = buf, .pos = pos };
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        switch (module.types.get(global.ty)) {
+            .texture_2d, .texture_cube, .texture_depth_cube => {
+                try ctx.emit_dims_2d(global.name);
+                try ctx.emit_num_levels(global.name, false, false);
+            },
+            .texture_2d_array => {
+                try ctx.emit_dims_2d_array(global.name);
+                try ctx.emit_num_levels(global.name, true, false);
+                try ctx.emit_num_layers(global.name);
+            },
+            .texture_3d => {
+                try ctx.emit_dims_3d(global.name);
+                try ctx.emit_num_levels(global.name, false, true);
+            },
+            .storage_texture_2d => {
+                try ctx.emit_dims_storage(global.name);
+            },
+            else => {},
+        }
+    }
+}
+
+const HelperCtx = struct {
+    buf: []u8,
+    pos: *usize,
+
+    fn w(self: *HelperCtx, text: []const u8) EmitError!void {
+        if (self.pos.* + text.len > self.buf.len) return error.OutputTooLarge;
+        @memcpy(self.buf[self.pos.* .. self.pos.* + text.len], text);
+        self.pos.* += text.len;
+    }
+
+    fn emit_dims_2d(self: *HelperCtx, name: []const u8) EmitError!void {
+        try self.w("\nuint2 doe_textureDimensions_");
+        try self.w(name);
+        try self.w("(uint level) {\n    uint w = 0u; uint h = 0u; uint lvls = 0u;\n    ");
+        try self.w(name);
+        try self.w(".GetDimensions(level, w, h, lvls);\n    return uint2(w, h);\n}\n");
+    }
+
+    fn emit_dims_2d_array(self: *HelperCtx, name: []const u8) EmitError!void {
+        try self.w("\nuint2 doe_textureDimensions_");
+        try self.w(name);
+        try self.w("(uint level) {\n    uint w = 0u; uint h = 0u; uint elems = 0u; uint lvls = 0u;\n    ");
+        try self.w(name);
+        try self.w(".GetDimensions(level, w, h, elems, lvls);\n    return uint2(w, h);\n}\n");
+    }
+
+    fn emit_dims_3d(self: *HelperCtx, name: []const u8) EmitError!void {
+        try self.w("\nuint3 doe_textureDimensions_");
+        try self.w(name);
+        try self.w("(uint level) {\n    uint w = 0u; uint h = 0u; uint d = 0u; uint lvls = 0u;\n    ");
+        try self.w(name);
+        try self.w(".GetDimensions(level, w, h, d, lvls);\n    return uint3(w, h, d);\n}\n");
+    }
+
+    fn emit_dims_storage(self: *HelperCtx, name: []const u8) EmitError!void {
+        try self.w("\nuint2 doe_textureDimensions_");
+        try self.w(name);
+        try self.w("() {\n    uint w = 0u; uint h = 0u;\n    ");
+        try self.w(name);
+        try self.w(".GetDimensions(w, h);\n    return uint2(w, h);\n}\n");
+    }
+
+    fn emit_num_levels(self: *HelperCtx, name: []const u8, is_array: bool, is_3d: bool) EmitError!void {
+        try self.w("\nuint doe_textureNumLevels_");
+        try self.w(name);
+        if (is_3d) {
+            try self.w("() {\n    uint w = 0u; uint h = 0u; uint d = 0u; uint lvls = 0u;\n    ");
+            try self.w(name);
+            try self.w(".GetDimensions(0, w, h, d, lvls);\n");
+        } else if (is_array) {
+            try self.w("() {\n    uint w = 0u; uint h = 0u; uint elems = 0u; uint lvls = 0u;\n    ");
+            try self.w(name);
+            try self.w(".GetDimensions(0, w, h, elems, lvls);\n");
+        } else {
+            try self.w("() {\n    uint w = 0u; uint h = 0u; uint lvls = 0u;\n    ");
+            try self.w(name);
+            try self.w(".GetDimensions(0, w, h, lvls);\n");
+        }
+        try self.w("    return lvls;\n}\n");
+    }
+
+    fn emit_num_layers(self: *HelperCtx, name: []const u8) EmitError!void {
+        try self.w("\nuint doe_textureNumLayers_");
+        try self.w(name);
+        try self.w("() {\n    uint w = 0u; uint h = 0u; uint elems = 0u; uint lvls = 0u;\n    ");
+        try self.w(name);
+        try self.w(".GetDimensions(0, w, h, elems, lvls);\n    return elems;\n}\n");
+    }
+};

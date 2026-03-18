@@ -333,15 +333,19 @@ pub const Emitter = struct {
                 );
             },
             .storage_texture_2d => |storage_tex| blk: {
-                if (storage_tex.format != .rgba8unorm) return error.UnsupportedConstruct;
+                const sampled_type = try storage_texture_sampled_type(self, storage_tex.format);
+                const image_format = storage_texture_format_to_spirv(storage_tex.format);
+                if (image_format != spirv.ImageFormat.Rgba8) {
+                    try self.builder.emit_capability(spirv.Capability.StorageImageExtendedFormats);
+                }
                 break :blk try self.builder.type_image(
-                    try self.builder.type_f32(),
+                    sampled_type,
                     spirv.Dim._2D,
                     0,
                     0,
                     0,
                     2,
-                    spirv.ImageFormat.Rgba8,
+                    image_format,
                 );
             },
             .texture_3d => |sample_ty| blk: {
@@ -697,6 +701,35 @@ pub fn addr_space_to_storage_class(addr_space: ir.AddressSpace) u32 {
         .uniform => spirv.StorageClass.Uniform,
         .storage => spirv.StorageClass.StorageBuffer,
         .handle => spirv.StorageClass.UniformConstant,
+    };
+}
+
+fn storage_texture_sampled_type(self: *Emitter, format: ir.TextureFormat) EmitError!u32 {
+    return switch (format) {
+        .rgba8unorm, .rgba8snorm, .rgba16float, .r32float, .rg32float, .rgba32float => try self.builder.type_f32(),
+        .rgba8uint, .rgba16uint, .r32uint, .rg32uint, .rgba32uint => try self.builder.type_u32(),
+        .rgba8sint, .rgba16sint, .r32sint, .rg32sint, .rgba32sint => try self.builder.type_i32(),
+    };
+}
+
+fn storage_texture_format_to_spirv(format: ir.TextureFormat) u32 {
+    return switch (format) {
+        .rgba8unorm => spirv.ImageFormat.Rgba8,
+        .rgba8snorm => spirv.ImageFormat.Rgba8Snorm,
+        .rgba8uint => spirv.ImageFormat.Rgba8ui,
+        .rgba8sint => spirv.ImageFormat.Rgba8i,
+        .rgba16uint => spirv.ImageFormat.Rgba16ui,
+        .rgba16sint => spirv.ImageFormat.Rgba16i,
+        .rgba16float => spirv.ImageFormat.Rgba16f,
+        .r32uint => spirv.ImageFormat.R32ui,
+        .r32sint => spirv.ImageFormat.R32i,
+        .r32float => spirv.ImageFormat.R32f,
+        .rg32uint => spirv.ImageFormat.Rg32ui,
+        .rg32sint => spirv.ImageFormat.Rg32i,
+        .rg32float => spirv.ImageFormat.Rg32f,
+        .rgba32uint => spirv.ImageFormat.Rgba32ui,
+        .rgba32sint => spirv.ImageFormat.Rgba32i,
+        .rgba32float => spirv.ImageFormat.Rgba32f,
     };
 }
 

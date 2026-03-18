@@ -1,14 +1,17 @@
-// render_bundle.zig — GPURenderBundle encoder and handle for Doe native Metal backend.
+// render_bundle.zig — GPURenderBundle encoder and handle for Doe WebGPU runtime.
 //
 // A render bundle records a fixed set of render commands (draw calls, pipeline
 // binds, bind group binds, vertex/index buffer binds) that can be replayed into
 // any compatible render pass with executeBundles.
 //
-// Metal implementation: commands are stored as a typed command list and replayed
-// into the open MTLRenderCommandEncoder of the enclosing render pass. For workloads
-// where the draw parameters are static, the replay can be optimised later into an
-// MTLIndirectCommandBuffer (ICB); that path is not taken here to avoid the
-// inheritPipelineState complexity for user-supplied pipelines.
+// Commands are stored as a backend-agnostic typed command list. Handle fields
+// store opaque pointers that each backend interprets accordingly:
+//   - Metal: native Objective-C object pointers (MTLBuffer, MTLRenderPipelineState)
+//   - Vulkan: VkBuffer/VkPipeline u64 handles stored via @ptrFromInt
+//
+// Replay functions are provided per backend:
+//   - replay_bundle_metal() — replays into an open MTLRenderCommandEncoder
+//   - replay_bundle_vk()    — replays into an active VkCommandBuffer render pass
 //
 // Compatibility check: the bundle's colorFormats[0] must match the render pass
 // attachment format. sampleCount must match. Mismatches fail fast with an
@@ -52,7 +55,7 @@ pub const BundleCmdTag = enum {
 };
 
 pub const BundleBindEntry = struct {
-    mtl_buffer: ?*anyopaque,
+    handle: ?*anyopaque,
     offset: u64,
 };
 
@@ -63,7 +66,7 @@ pub const BundleBindGroup = struct {
 
 pub const BundleCmd = union(BundleCmdTag) {
     set_pipeline: struct {
-        mtl_pso: ?*anyopaque,
+        pipeline_handle: ?*anyopaque,
     },
     set_bind_group: struct {
         group: u32,
@@ -71,11 +74,11 @@ pub const BundleCmd = union(BundleCmdTag) {
     },
     set_vertex_buffer: struct {
         slot: u32,
-        mtl_buffer: ?*anyopaque,
+        buffer_handle: ?*anyopaque,
         offset: u64,
     },
     set_index_buffer: struct {
-        mtl_buffer: ?*anyopaque,
+        buffer_handle: ?*anyopaque,
         format: u32, // WGPUIndexFormat: 0x1=uint16, 0x2=uint32
         offset: u64,
         size: u64,
@@ -217,7 +220,7 @@ pub fn check_compatibility(
 // `pass_color_format` and `pass_sample_count` must match the bundle's signature;
 // we fail fast rather than silently producing incorrect draws.
 // `encoder` must be a valid, open MTLRenderCommandEncoder — never null.
-pub fn replay_bundle(
+pub fn replay_bundle_metal(
     b: *const DoeRenderBundle,
     encoder: ?*anyopaque,
     pass_color_format: types.WGPUTextureFormat,
@@ -233,22 +236,22 @@ pub fn replay_bundle(
     for (b.cmds) |cmd| {
         switch (cmd) {
             .set_pipeline => |p| {
-                metal_bridge_render_encoder_set_pipeline(encoder, p.mtl_pso);
+                metal_bridge_render_encoder_set_pipeline(encoder, p.pipeline_handle);
             },
             .set_bind_group => |bg_cmd| {
                 // Metal buffer indices: group*MAX_BINDINGS_PER_GROUP + binding.
                 for (bg_cmd.bg.entries[0..bg_cmd.bg.count]) |entry| {
                     const slot: u32 = bg_cmd.group * MAX_BINDINGS_PER_GROUP;
-                    metal_bridge_render_encoder_set_buffer(encoder, entry.mtl_buffer, entry.offset, slot);
+                    metal_bridge_render_encoder_set_buffer(encoder, entry.handle, entry.offset, slot);
                 }
             },
             .set_vertex_buffer => |vb| {
                 // Metal vertex buffers start at index 16 (after fragment/vertex uniform slots).
                 const metal_slot: u32 = 16 + vb.slot;
-                metal_bridge_render_encoder_set_buffer(encoder, vb.mtl_buffer, vb.offset, metal_slot);
+                metal_bridge_render_encoder_set_buffer(encoder, vb.buffer_handle, vb.offset, metal_slot);
             },
             .set_index_buffer => |ib| {
-                cur_index_buf = ib.mtl_buffer;
+                cur_index_buf = ib.buffer_handle;
                 cur_index_off = ib.offset;
                 cur_index_fmt = ib.format;
             },
@@ -288,6 +291,218 @@ pub fn replay_bundle(
                     d.indirect_buffer,
                     d.indirect_offset,
                 );
+            },
+        }
+    }
+}
+
+// ============================================================
+// Vulkan replay
+// ============================================================
+
+// Vulkan vkCmd* externs used by replay_bundle_vk. Declared here to avoid
+// importing the full Vulkan backend module tree from render_bundle.zig.
+const VkCommandBuffer = ?*opaque {};
+const VkBuffer = u64;
+const VkPipeline = u64;
+const VK_PIPELINE_BIND_POINT_GRAPHICS: i32 = 0;
+const VK_INDEX_TYPE_UINT16: u32 = 0;
+const VK_INDEX_TYPE_UINT32: u32 = 1;
+
+extern fn vkCmdBindPipeline(commandBuffer: VkCommandBuffer, pipelineBindPoint: i32, pipeline: VkPipeline) callconv(.c) void;
+extern fn vkCmdBindVertexBuffers(commandBuffer: VkCommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: [*]const VkBuffer, pOffsets: [*]const u64) callconv(.c) void;
+extern fn vkCmdBindIndexBuffer(commandBuffer: VkCommandBuffer, buffer: VkBuffer, offset: u64, indexType: u32) callconv(.c) void;
+extern fn vkCmdDraw(commandBuffer: VkCommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32) callconv(.c) void;
+extern fn vkCmdDrawIndexed(commandBuffer: VkCommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32) callconv(.c) void;
+extern fn vkCmdDrawIndirect(commandBuffer: VkCommandBuffer, buffer: VkBuffer, offset: u64, drawCount: u32, stride: u32) callconv(.c) void;
+extern fn vkCmdDrawIndexedIndirect(commandBuffer: VkCommandBuffer, buffer: VkBuffer, offset: u64, drawCount: u32, stride: u32) callconv(.c) void;
+
+// Convert an opaque handle pointer back to a Vulkan u64 handle.
+// Vulkan non-dispatchable handles (VkBuffer, VkPipeline) are stored in
+// BundleCmd ?*anyopaque fields via @ptrFromInt at recording time; this
+// reverses that encoding.
+fn opaque_to_vk_handle(ptr: ?*anyopaque) u64 {
+    return if (ptr) |p| @intFromPtr(p) else 0;
+}
+
+// WGPUIndexFormat (0x1=uint16, 0x2=uint32) to VkIndexType.
+fn wgpu_index_format_to_vk(format: u32) u32 {
+    return if (format == 0x1) VK_INDEX_TYPE_UINT16 else VK_INDEX_TYPE_UINT32;
+}
+
+// Vulkan draw-indirect command stride (matches VkDrawIndirectCommand size).
+const VK_DRAW_INDIRECT_STRIDE: u32 = 16;
+// Vulkan draw-indexed-indirect command stride (VkDrawIndexedIndirectCommand).
+const VK_DRAW_INDEXED_INDIRECT_STRIDE: u32 = 20;
+
+// Replay all recorded commands into an active Vulkan render pass.
+// `cmd_buf` must be a VkCommandBuffer with an active render pass (between
+// vkCmdBeginRenderPass and vkCmdEndRenderPass). The caller is responsible
+// for setting up viewport, scissor, and the initial render pass state.
+pub fn replay_bundle_vk(
+    b: *const DoeRenderBundle,
+    cmd_buf: VkCommandBuffer,
+    pass_color_format: types.WGPUTextureFormat,
+    pass_sample_count: u32,
+) ReplayError!void {
+    try check_compatibility(b, pass_color_format, pass_sample_count);
+
+    var cur_index_buf: VkBuffer = 0;
+    var cur_index_off: u64 = 0;
+    var cur_index_fmt: u32 = 0x2; // default uint32
+
+    for (b.cmds) |cmd| {
+        switch (cmd) {
+            .set_pipeline => |p| {
+                const vk_pipeline = opaque_to_vk_handle(p.pipeline_handle);
+                if (vk_pipeline != 0) {
+                    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline);
+                }
+            },
+            .set_bind_group => {
+                // Vulkan bind groups require descriptor sets which are managed
+                // externally. Bundle bind group commands are a no-op for the
+                // replay-into-primary path; the caller must ensure descriptor
+                // state is bound before executing bundles.
+            },
+            .set_vertex_buffer => |vb| {
+                const vk_buf = opaque_to_vk_handle(vb.buffer_handle);
+                if (vk_buf != 0) {
+                    const buffers = [1]VkBuffer{vk_buf};
+                    const offsets = [1]u64{vb.offset};
+                    vkCmdBindVertexBuffers(cmd_buf, vb.slot, 1, &buffers, &offsets);
+                }
+            },
+            .set_index_buffer => |ib| {
+                cur_index_buf = opaque_to_vk_handle(ib.buffer_handle);
+                cur_index_off = ib.offset;
+                cur_index_fmt = ib.format;
+                if (cur_index_buf != 0) {
+                    vkCmdBindIndexBuffer(cmd_buf, cur_index_buf, cur_index_off, wgpu_index_format_to_vk(cur_index_fmt));
+                }
+            },
+            .draw => |d| {
+                vkCmdDraw(cmd_buf, d.vertex_count, d.instance_count, d.first_vertex, d.first_instance);
+            },
+            .draw_indexed => |d| {
+                if (cur_index_buf != 0) {
+                    vkCmdDrawIndexed(cmd_buf, d.index_count, d.instance_count, d.first_index, d.base_vertex, d.first_instance);
+                }
+            },
+            .draw_indirect => |d| {
+                const vk_buf = opaque_to_vk_handle(d.indirect_buffer);
+                if (vk_buf != 0) {
+                    vkCmdDrawIndirect(cmd_buf, vk_buf, d.indirect_offset, 1, VK_DRAW_INDIRECT_STRIDE);
+                }
+            },
+            .draw_indexed_indirect => |d| {
+                const vk_buf = opaque_to_vk_handle(d.indirect_buffer);
+                if (vk_buf != 0 and cur_index_buf != 0) {
+                    vkCmdDrawIndexedIndirect(cmd_buf, vk_buf, d.indirect_offset, 1, VK_DRAW_INDEXED_INDIRECT_STRIDE);
+                }
+            },
+        }
+    }
+}
+
+// ============================================================
+// D3D12 replay
+// ============================================================
+
+// D3D12 bridge externs used by replay_bundle_d3d12. Declared here to avoid
+// importing the full D3D12 backend module tree from render_bundle.zig.
+const D3D12Handle = ?*anyopaque;
+const DXGI_FORMAT_R16_UINT: u32 = 56;
+const DXGI_FORMAT_R32_UINT: u32 = 42;
+
+// D3D12 draw-indirect command stride (matches D3D12_DRAW_ARGUMENTS size: 4x u32).
+const D3D12_DRAW_INDIRECT_STRIDE: u32 = 16;
+// D3D12 draw-indexed-indirect command stride (D3D12_DRAW_INDEXED_ARGUMENTS: 5x u32).
+const D3D12_DRAW_INDEXED_INDIRECT_STRIDE: u32 = 20;
+
+extern fn d3d12_bridge_command_list_set_pipeline_state(cmd_list: D3D12Handle, pipeline: D3D12Handle) callconv(.c) void;
+extern fn d3d12_bridge_command_list_ia_set_vertex_buffers(cmd_list: D3D12Handle, start_slot: u32, num_views: u32, buffer: D3D12Handle, size_in_bytes: u32, stride_in_bytes: u32, offset: u64) callconv(.c) void;
+extern fn d3d12_bridge_command_list_ia_set_index_buffer(cmd_list: D3D12Handle, buffer: D3D12Handle, format: u32, size_in_bytes: u32, offset: u64) callconv(.c) void;
+extern fn d3d12_bridge_command_list_draw_instanced(cmd_list: D3D12Handle, vertex_count: u32, instance_count: u32, start_vertex: u32, start_instance: u32) callconv(.c) void;
+extern fn d3d12_bridge_command_list_draw_indexed_instanced(cmd_list: D3D12Handle, index_count: u32, instance_count: u32, start_index: u32, base_vertex: i32, start_instance: u32) callconv(.c) void;
+extern fn d3d12_bridge_command_list_execute_indirect(cmd_list: D3D12Handle, command_sig: D3D12Handle, max_count: u32, arg_buffer: D3D12Handle, arg_offset: u64) callconv(.c) void;
+
+// WGPUIndexFormat (0x1=uint16, 0x2=uint32) to DXGI_FORMAT.
+fn wgpu_index_format_to_dxgi(format: u32) u32 {
+    return if (format == 0x1) DXGI_FORMAT_R16_UINT else DXGI_FORMAT_R32_UINT;
+}
+
+// Replay all recorded commands into an active D3D12 command list within a render pass.
+// `cmd_list` must be a ID3D12GraphicsCommandList in recording state with a render target
+// already set (between resource barrier transitions). The caller is responsible for
+// viewport, scissor, topology, and root signature setup.
+//
+// For indirect draws, `draw_cmd_sig` and `draw_indexed_cmd_sig` are optional command
+// signature handles created by the caller. If null, indirect draws are skipped.
+pub fn replay_bundle_d3d12(
+    b: *const DoeRenderBundle,
+    cmd_list: D3D12Handle,
+    pass_color_format: types.WGPUTextureFormat,
+    pass_sample_count: u32,
+    draw_cmd_sig: D3D12Handle,
+    draw_indexed_cmd_sig: D3D12Handle,
+) ReplayError!void {
+    try check_compatibility(b, pass_color_format, pass_sample_count);
+
+    var cur_index_buf: D3D12Handle = null;
+    var cur_index_off: u64 = 0;
+    var cur_index_fmt: u32 = 0x2; // default uint32
+    var cur_index_size: u64 = 0;
+
+    for (b.cmds) |cmd| {
+        switch (cmd) {
+            .set_pipeline => |p| {
+                if (p.pipeline_handle != null) {
+                    d3d12_bridge_command_list_set_pipeline_state(cmd_list, p.pipeline_handle);
+                }
+            },
+            .set_bind_group => {
+                // D3D12 bind groups require descriptor tables which are managed
+                // externally. Bundle bind group commands are a no-op for the
+                // replay-into-primary path; the caller must ensure descriptor
+                // state is bound before executing bundles.
+            },
+            .set_vertex_buffer => |vb| {
+                if (vb.buffer_handle != null) {
+                    // Size and stride are not tracked in the bundle command; pass 0
+                    // to let the bridge use the full buffer. The caller's pipeline
+                    // state defines the input layout stride.
+                    d3d12_bridge_command_list_ia_set_vertex_buffers(cmd_list, vb.slot, 1, vb.buffer_handle, 0, 0, vb.offset);
+                }
+            },
+            .set_index_buffer => |ib| {
+                cur_index_buf = ib.buffer_handle;
+                cur_index_off = ib.offset;
+                cur_index_fmt = ib.format;
+                cur_index_size = ib.size;
+                if (cur_index_buf != null) {
+                    const dxgi_fmt = wgpu_index_format_to_dxgi(cur_index_fmt);
+                    const size_bytes: u32 = if (cur_index_size > 0) @intCast(@min(cur_index_size, std.math.maxInt(u32))) else 0;
+                    d3d12_bridge_command_list_ia_set_index_buffer(cmd_list, cur_index_buf, dxgi_fmt, size_bytes, cur_index_off);
+                }
+            },
+            .draw => |d| {
+                d3d12_bridge_command_list_draw_instanced(cmd_list, d.vertex_count, d.instance_count, d.first_vertex, d.first_instance);
+            },
+            .draw_indexed => |d| {
+                if (cur_index_buf != null) {
+                    d3d12_bridge_command_list_draw_indexed_instanced(cmd_list, d.index_count, d.instance_count, d.first_index, d.base_vertex, d.first_instance);
+                }
+            },
+            .draw_indirect => |d| {
+                if (d.indirect_buffer != null and draw_cmd_sig != null) {
+                    d3d12_bridge_command_list_execute_indirect(cmd_list, draw_cmd_sig, 1, d.indirect_buffer, d.indirect_offset);
+                }
+            },
+            .draw_indexed_indirect => |d| {
+                if (d.indirect_buffer != null and cur_index_buf != null and draw_indexed_cmd_sig != null) {
+                    d3d12_bridge_command_list_execute_indirect(cmd_list, draw_indexed_cmd_sig, 1, d.indirect_buffer, d.indirect_offset);
+                }
             },
         }
     }

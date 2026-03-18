@@ -293,6 +293,7 @@ pub const RenderDrawCommand = struct {
     blend_constant: [4]f32 = .{ 0, 0, 0, 0 },
     stencil_reference: u32 = 0,
     bind_group_dynamic_offsets: ?[]const u32 = null,
+    unclipped_depth: bool = false,
 };
 
 pub const DrawIndirectCommand = RenderDrawCommand;

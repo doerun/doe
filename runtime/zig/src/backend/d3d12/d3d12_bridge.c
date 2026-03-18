@@ -1048,6 +1048,37 @@ D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device_h, uint32_t
     return (D3D12Handle)tex;
 }
 
+/* --- Hardware capability queries ---
+ * TODO: On actual Windows hardware, query the device for real values:
+ *   - CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, ...) for HighestShaderModel
+ *   - CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, ...) for WaveLaneCountMin/Max
+ *   - CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, ...) for Native16BitShaderOpsSupported
+ * These stubs return conservative defaults for cross-compilation environments. */
+
+int d3d12_bridge_device_get_shader_model(D3D12Handle device) {
+    (void)device;
+    /* SM6.0 — minimum for D3D12 wave intrinsics */
+    return 0x60;
+}
+
+int d3d12_bridge_device_get_wave_lane_count_min(D3D12Handle device) {
+    (void)device;
+    /* Conservative minimum; real hardware is typically 32 (NVIDIA/Intel) or 64 (AMD) */
+    return 4;
+}
+
+int d3d12_bridge_device_get_wave_lane_count_max(D3D12Handle device) {
+    (void)device;
+    /* Conservative maximum covering NVIDIA (32), Intel (8-32), AMD (64) */
+    return 64;
+}
+
+int d3d12_bridge_device_supports_native_16bit(D3D12Handle device) {
+    (void)device;
+    /* Conservative: 0 (false). Native 16-bit ops require SM6.2+ and hardware support. */
+    return 0;
+}
+
 /* --- DXGI swap chain (surface) --- */
 
 D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue_h, uint32_t width, uint32_t height, uint32_t format) {

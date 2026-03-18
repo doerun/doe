@@ -11,6 +11,7 @@ const model = @import("../../model.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const vk = @import("vulkan_types.zig");
+const vulkan_errors = @import("vulkan_errors.zig");
 
 const VkResult = vk.VkResult;
 const VkBool32 = vk.VkBool32;
@@ -32,7 +33,7 @@ const VkStructureType = vk.VkStructureType;
 
 const VK_SUCCESS = vk.VK_SUCCESS;
 const VK_SUBOPTIMAL_KHR: i32 = 1000001003;
-const VK_ERROR_OUT_OF_DATE_KHR: i32 = -1000001004;
+const VK_ERROR_OUT_OF_DATE_KHR = vulkan_errors.VK_ERROR_OUT_OF_DATE_KHR;
 const VK_NULL_U64 = vk.VK_NULL_U64;
 const VK_TRUE = vk.VK_TRUE;
 const VK_FALSE = vk.VK_FALSE;
@@ -669,25 +670,5 @@ pub fn destroy_all(
     surface_state.acquired = false;
 }
 
-fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
-    if (result == VK_SUCCESS) return;
-    return map_vk_result(result);
-}
-
-// VkResult error codes (named for fail-fast error mapping)
-const VK_ERROR_TOO_MANY_OBJECTS: VkResult = -7;
-const VK_ERROR_FORMAT_NOT_SUPPORTED: VkResult = -9;
-const VK_ERROR_FRAGMENTED_POOL: VkResult = -10;
-const VK_ERROR_UNKNOWN: VkResult = -11;
-
-fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
-    return switch (result) {
-        VK_ERROR_TOO_MANY_OBJECTS,
-        VK_ERROR_FORMAT_NOT_SUPPORTED,
-        VK_ERROR_FRAGMENTED_POOL,
-        VK_ERROR_UNKNOWN,
-        => error.UnsupportedFeature,
-        VK_ERROR_OUT_OF_DATE_KHR => error.SurfaceUnavailable,
-        else => error.InvalidState,
-    };
-}
+// Delegate to vulkan_errors.zig — single source of truth for VkResult mapping.
+const check_vk = vulkan_errors.check_vk;

@@ -47,6 +47,38 @@ function validateWriteBufferInput(data, dataOffset, size, path) {
 }
 
 const NEVER_RESOLVED = new Promise(() => {});
+
+class GPUError extends Error {
+  constructor(message) { super(message); this.name = 'GPUError'; }
+}
+class GPUValidationError extends GPUError {
+  constructor(message) { super(message); this.name = 'GPUValidationError'; }
+}
+class GPUOutOfMemoryError extends GPUError {
+  constructor(message) { super(message ?? ''); this.name = 'GPUOutOfMemoryError'; }
+}
+class GPUInternalError extends GPUError {
+  constructor(message) { super(message ?? ''); this.name = 'GPUInternalError'; }
+}
+class GPUPipelineError extends DOMException {
+  constructor(message, options) {
+    super(message, 'GPUPipelineError');
+    this.reason = options?.reason ?? 'internal';
+  }
+}
+class GPUDeviceLostInfo {
+  constructor(reason, message) {
+    this.reason = reason ?? 'unknown';
+    this.message = message ?? '';
+  }
+}
+class GPUUncapturedErrorEvent extends Event {
+  constructor(type, init) {
+    super(type);
+    this.error = init?.error ?? null;
+  }
+}
+
 const EMPTY_ADAPTER_INFO = Object.freeze({
   vendor: '',
   architecture: '',
@@ -670,8 +702,8 @@ function createFullSurfaceClasses({
     createQuerySet(descriptor) {
       assertLiveResource(this, 'GPUDevice.createQuerySet', 'GPUDevice');
       const queryDescriptor = assertObject(descriptor, 'GPUDevice.createQuerySet', 'descriptor');
-      if (queryDescriptor.type !== 'timestamp') {
-        failValidation('GPUDevice.createQuerySet', `unsupported query type "${queryDescriptor.type}"; only "timestamp" is supported`);
+      if (queryDescriptor.type !== 'timestamp' && queryDescriptor.type !== 'occlusion') {
+        failValidation('GPUDevice.createQuerySet', `unsupported query type "${queryDescriptor.type}"; only "timestamp" and "occlusion" are supported`);
       }
       assertIntegerInRange(queryDescriptor.count, 'GPUDevice.createQuerySet', 'descriptor.count', { min: 1, max: UINT32_MAX });
       const native = backend.deviceCreateQuerySet(this, queryDescriptor);
@@ -793,4 +825,11 @@ function createFullSurfaceClasses({
 
 export {
   createFullSurfaceClasses,
+  GPUError,
+  GPUValidationError,
+  GPUOutOfMemoryError,
+  GPUInternalError,
+  GPUPipelineError,
+  GPUDeviceLostInfo,
+  GPUUncapturedErrorEvent,
 };

@@ -103,6 +103,11 @@ pub const WGPUFeatureName_SubgroupsF16: WGPUFeatureName = 0x0000000F;
 pub const WGPUFeatureName_Float32Blendable: WGPUFeatureName = 0x00000010;
 pub const WGPUFeatureName_ClipDistances: WGPUFeatureName = 0x00000011;
 pub const WGPUFeatureName_DualSourceBlending: WGPUFeatureName = 0x00000012;
+pub const WGPUFeatureName_CoreFeaturesAndLimits: WGPUFeatureName = 0x00000013;
+pub const WGPUFeatureName_TextureFormatsTier1: WGPUFeatureName = 0x00000014;
+pub const WGPUFeatureName_TextureFormatsTier2: WGPUFeatureName = 0x00000015;
+pub const WGPUFeatureName_PrimitiveIndex: WGPUFeatureName = 0x00000016;
+pub const WGPUFeatureName_TextureComponentSwizzle: WGPUFeatureName = 0x00000017;
 // Chromium-specific extension features
 pub const WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses: WGPUFeatureName = 0x00050003;
 pub const WGPUFeatureName_PixelLocalStorageCoherent: WGPUFeatureName = 0x0005000A;

@@ -224,6 +224,7 @@ typedef struct {
     void* nextInChain; WGPUStringView label;
     size_t colorAttachmentCount; const WGPURenderPassColorAttachment* colorAttachments;
     void* depthStencilAttachment; WGPUQuerySet occlusionQuerySet; const WGPURenderPassTimestampWrites* timestampWrites;
+    uint64_t maxDrawCount;
 } WGPURenderPassDescriptor;
 
 typedef struct { void* nextInChain; WGPUStringView key; double value; } WGPUConstantEntry;

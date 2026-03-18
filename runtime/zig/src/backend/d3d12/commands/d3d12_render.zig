@@ -2,6 +2,7 @@ const std = @import("std");
 const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
+const render_bundle = @import("../../../render_bundle.zig");
 
 extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_graphics_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, vs_bytecode: [*]const u8, vs_size: usize, ps_bytecode: [*]const u8, ps_size: usize, target_format: u32) callconv(.c) ?*anyopaque;
@@ -233,4 +234,67 @@ fn noop_ps_bytecode() []const u8 {
         0x3E, 0x00, 0x00, 0x01,
     };
     return &bytecode;
+}
+
+// Replay render bundles into a standalone render pass. Creates render target,
+// sets up the command list, then replays each bundle's command list via
+// replay_bundle_d3d12 from the shared render_bundle module.
+pub fn execute_render_bundles(
+    self: *RenderState,
+    device: ?*anyopaque,
+    queue: ?*anyopaque,
+    fence: ?*anyopaque,
+    fence_value: *u64,
+    bundles: []const *const render_bundle.DoeRenderBundle,
+    target_width: u32,
+    target_height: u32,
+    color_format: u32,
+    sample_count: u32,
+) !RenderMetrics {
+    if (bundles.len == 0) return .{};
+
+    const width = if (target_width > 0) target_width else 256;
+    const height = if (target_height > 0) target_height else 256;
+    const pass_sample_count: u32 = if (sample_count == 0) 1 else sample_count;
+
+    const setup_start = common_timing.now_ns();
+    try self.ensure_pipeline(device, color_format, width, height);
+    const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
+
+    const encode_start = common_timing.now_ns();
+    if (d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
+    if (d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+
+    d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_PRESENT, dc.RESOURCE_STATE_RENDER_TARGET);
+    d3d12_bridge_command_list_set_graphics_root_signature(self.cmd_list, self.root_signature);
+    d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.graphics_pipeline);
+    d3d12_bridge_command_list_set_render_target(self.cmd_list, self.rtv_heap, 0);
+
+    const vp_w: f32 = @floatFromInt(width);
+    const vp_h: f32 = @floatFromInt(height);
+    d3d12_bridge_command_list_set_viewport(self.cmd_list, 0, 0, vp_w, vp_h, 0, 1);
+    d3d12_bridge_command_list_set_scissor(self.cmd_list, 0, 0, @intCast(width), @intCast(height));
+    d3d12_bridge_command_list_ia_set_primitive_topology(self.cmd_list, dc.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    var draw_count: u32 = 0;
+    for (bundles) |b| {
+        render_bundle.replay_bundle_d3d12(b, self.cmd_list, color_format, pass_sample_count, self.draw_cmd_sig, self.draw_indexed_cmd_sig) catch |err| {
+            std.debug.print("d3d12_render: bundle replay failed: {}\n", .{err});
+            continue;
+        };
+        draw_count += 1;
+    }
+
+    d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
+    d3d12_bridge_command_list_close(self.cmd_list);
+    const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
+
+    d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+    fence_value.* +|= 1;
+    d3d12_bridge_queue_signal(queue, fence, fence_value.*);
+    const submit_start = common_timing.now_ns();
+    d3d12_bridge_fence_wait(fence, fence_value.*);
+    const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+
+    return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = draw_count };
 }

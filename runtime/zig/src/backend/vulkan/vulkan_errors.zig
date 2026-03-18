@@ -1,44 +1,43 @@
 // Vulkan VkResult error mapping and diagnostic name lookup.
+//
+// Single source of truth for all VkResult-to-Zig-error mapping in the
+// Vulkan backend. Other modules should import check_vk / map_vk_result
+// from here (or via vk_constants re-exports) instead of defining their own.
 
 const common_errors = @import("../common/errors.zig");
+const vk = @import("vulkan_types.zig");
 
-pub const VulkanError = error{
-    OutOfHostMemory,
-    OutOfDeviceMemory,
-    InitializationFailed,
-    DeviceLost,
-    MemoryMapFailed,
-    LayerNotPresent,
-    ExtensionNotPresent,
-    FeatureNotPresent,
-    TooManyObjects,
-    FormatNotSupported,
-    SurfaceLost,
-};
+pub const VkResult = vk.VkResult;
 
-/// Map a raw VkResult (i32) to a Zig error on failure, or return void on
-/// VK_SUCCESS. Unknown negative codes conservatively map to DeviceLost.
-pub fn mapVkResult(result: i32) VulkanError!void {
-    if (result == 0) return; // VK_SUCCESS
+// --- VkResult error codes (named for fail-fast error mapping) ---
+pub const VK_ERROR_TOO_MANY_OBJECTS: VkResult = -7;
+pub const VK_ERROR_FORMAT_NOT_SUPPORTED: VkResult = -9;
+pub const VK_ERROR_FRAGMENTED_POOL: VkResult = -10;
+pub const VK_ERROR_UNKNOWN: VkResult = -11;
+pub const VK_ERROR_OUT_OF_DATE_KHR: VkResult = -1000001004;
+
+/// Check a VkResult and return a Zig error on failure, or void on VK_SUCCESS.
+pub fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
+    if (result == vk.VK_SUCCESS) return;
+    return map_vk_result(result);
+}
+
+/// Map a raw VkResult (i32) to a BackendNativeError. Called for non-success codes.
+pub fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
     return switch (result) {
-        -1 => error.OutOfHostMemory,
-        -2 => error.OutOfDeviceMemory,
-        -3 => error.InitializationFailed,
-        -4 => error.DeviceLost,
-        -5 => error.MemoryMapFailed,
-        -6 => error.LayerNotPresent,
-        -7 => error.ExtensionNotPresent,
-        -8 => error.FeatureNotPresent,
-        -9 => error.TooManyObjects,
-        -10 => error.FormatNotSupported,
-        -1000000000 => error.SurfaceLost,
-        else => error.DeviceLost,
+        VK_ERROR_TOO_MANY_OBJECTS,
+        VK_ERROR_FORMAT_NOT_SUPPORTED,
+        VK_ERROR_FRAGMENTED_POOL,
+        VK_ERROR_UNKNOWN,
+        => error.UnsupportedFeature,
+        VK_ERROR_OUT_OF_DATE_KHR => error.SurfaceUnavailable,
+        else => error.InvalidState,
     };
 }
 
 /// Return a human-readable name for common VkResult codes. Useful for
 /// structured log output without pulling in the full Vulkan header names.
-pub fn vulkanResultName(result: i32) []const u8 {
+pub fn vulkanResultName(result: VkResult) []const u8 {
     return switch (result) {
         0 => "VK_SUCCESS",
         1 => "VK_NOT_READY",
@@ -52,11 +51,58 @@ pub fn vulkanResultName(result: i32) []const u8 {
         -4 => "VK_ERROR_DEVICE_LOST",
         -5 => "VK_ERROR_MEMORY_MAP_FAILED",
         -6 => "VK_ERROR_LAYER_NOT_PRESENT",
-        -7 => "VK_ERROR_EXTENSION_NOT_PRESENT",
+        VK_ERROR_TOO_MANY_OBJECTS => "VK_ERROR_TOO_MANY_OBJECTS",
         -8 => "VK_ERROR_FEATURE_NOT_PRESENT",
-        -9 => "VK_ERROR_TOO_MANY_OBJECTS",
-        -10 => "VK_ERROR_FORMAT_NOT_SUPPORTED",
+        VK_ERROR_FORMAT_NOT_SUPPORTED => "VK_ERROR_FORMAT_NOT_SUPPORTED",
+        VK_ERROR_FRAGMENTED_POOL => "VK_ERROR_FRAGMENTED_POOL",
+        VK_ERROR_UNKNOWN => "VK_ERROR_UNKNOWN",
         -1000000000 => "VK_ERROR_SURFACE_LOST_KHR",
+        VK_ERROR_OUT_OF_DATE_KHR => "VK_ERROR_OUT_OF_DATE_KHR",
         else => "VK_UNKNOWN",
     };
+}
+
+const std = @import("std");
+
+test "check_vk succeeds on VK_SUCCESS" {
+    try check_vk(vk.VK_SUCCESS);
+}
+
+test "check_vk returns error on failure code" {
+    const result = check_vk(VK_ERROR_TOO_MANY_OBJECTS);
+    try std.testing.expectEqual(error.UnsupportedFeature, result);
+}
+
+test "map_vk_result maps TOO_MANY_OBJECTS to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(VK_ERROR_TOO_MANY_OBJECTS));
+}
+
+test "map_vk_result maps FORMAT_NOT_SUPPORTED to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(VK_ERROR_FORMAT_NOT_SUPPORTED));
+}
+
+test "map_vk_result maps FRAGMENTED_POOL to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(VK_ERROR_FRAGMENTED_POOL));
+}
+
+test "map_vk_result maps UNKNOWN to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(VK_ERROR_UNKNOWN));
+}
+
+test "map_vk_result maps OUT_OF_DATE_KHR to SurfaceUnavailable" {
+    try std.testing.expectEqual(error.SurfaceUnavailable, map_vk_result(VK_ERROR_OUT_OF_DATE_KHR));
+}
+
+test "map_vk_result maps other errors to InvalidState" {
+    // VK_ERROR_OUT_OF_HOST_MEMORY = -1
+    try std.testing.expectEqual(error.InvalidState, map_vk_result(-1));
+    // VK_ERROR_OUT_OF_DEVICE_MEMORY = -2
+    try std.testing.expectEqual(error.InvalidState, map_vk_result(-2));
+}
+
+test "vulkanResultName returns known names" {
+    try std.testing.expectEqualStrings("VK_SUCCESS", vulkanResultName(0));
+    try std.testing.expectEqualStrings("VK_ERROR_DEVICE_LOST", vulkanResultName(-4));
+    try std.testing.expectEqualStrings("VK_ERROR_OUT_OF_DATE_KHR", vulkanResultName(VK_ERROR_OUT_OF_DATE_KHR));
+    try std.testing.expectEqualStrings("VK_UNKNOWN", vulkanResultName(9999));
 }

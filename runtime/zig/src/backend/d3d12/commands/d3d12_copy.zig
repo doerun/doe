@@ -12,6 +12,8 @@ extern fn d3d12_bridge_command_list_copy_buffer(cmd_list: ?*anyopaque, dst: ?*an
 extern fn d3d12_bridge_command_list_copy_texture_region(cmd_list: ?*anyopaque, dst: ?*anyopaque, src: ?*anyopaque, src_offset: u64, width: u32, height: u32, bytes_per_row: u32, format: u32) callconv(.c) void;
 extern fn d3d12_bridge_command_list_resource_barrier_transition(cmd_list: ?*anyopaque, resource: ?*anyopaque, state_before: c_int, state_after: c_int) callconv(.c) void;
 extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_command_allocator_reset(allocator_h: ?*anyopaque) callconv(.c) c_int;
+extern fn d3d12_bridge_command_list_reset(cmd_list: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) c_int;
 extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
@@ -21,58 +23,83 @@ pub const CopyMetrics = struct {
     submit_wait_ns: u64 = 0,
 };
 
-pub fn execute_copy(
-    device: ?*anyopaque,
-    queue: ?*anyopaque,
-    texture_map: *d3d12_texture.TextureMap,
-    allocator: std.mem.Allocator,
-    cmd: model.CopyCommand,
-) !CopyMetrics {
-    if (cmd.bytes == 0) return error.InvalidArgument;
+pub const CopyState = struct {
+    cmd_allocator: ?*anyopaque = null,
+    cmd_list: ?*anyopaque = null,
+    has_cmd: bool = false,
 
-    const setup_start = common_timing.now_ns();
+    pub fn execute_copy(
+        self: *CopyState,
+        device: ?*anyopaque,
+        queue: ?*anyopaque,
+        texture_map: *d3d12_texture.TextureMap,
+        allocator: std.mem.Allocator,
+        cmd: model.CopyCommand,
+    ) !CopyMetrics {
+        if (cmd.bytes == 0) return error.InvalidArgument;
 
-    const src_resource = resolve_resource(device, texture_map, allocator, cmd.src) orelse return error.InvalidState;
-    const dst_resource = resolve_resource(device, texture_map, allocator, cmd.dst) orelse return error.InvalidState;
+        const setup_start = common_timing.now_ns();
 
-    const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
+        const src_resource = resolve_resource(device, texture_map, allocator, cmd.src) orelse return error.InvalidState;
+        const dst_resource = resolve_resource(device, texture_map, allocator, cmd.dst) orelse return error.InvalidState;
 
-    const encode_start = common_timing.now_ns();
+        const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
-    // TODO(perf): allocate a persistent cmd_allocator/cmd_list on a CopyState struct (same pattern
-    // as DispatchState.ensure_cmd) and reset+reuse instead of creating a fresh allocator per call.
-    const cmd_alloc = d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
-    defer d3d12_bridge_release(cmd_alloc);
+        const encode_start = common_timing.now_ns();
 
-    const cmd_list = d3d12_bridge_device_create_command_list(device, cmd_alloc) orelse return error.InvalidState;
-    defer d3d12_bridge_release(cmd_list);
+        try self.ensure_cmd(device);
 
-    switch (cmd.direction) {
-        .buffer_to_buffer => {
-            d3d12_bridge_command_list_copy_buffer(cmd_list, dst_resource, src_resource, cmd.bytes);
-        },
-        .buffer_to_texture => {
-            const width = if (cmd.dst.width > 0) cmd.dst.width else 1;
-            const height = if (cmd.dst.height > 0) cmd.dst.height else 1;
-            const bpr = if (cmd.dst.bytes_per_row > 0) cmd.dst.bytes_per_row else @as(u32, @intCast(cmd.bytes / height));
-            const format: u32 = if (cmd.dst.format != model.WGPUTextureFormat_Undefined) cmd.dst.format else model.WGPUTextureFormat_RGBA8Unorm;
-            d3d12_bridge_command_list_copy_texture_region(cmd_list, dst_resource, src_resource, cmd.src.offset, width, height, bpr, format);
-        },
-        .texture_to_buffer, .texture_to_texture => {
-            d3d12_bridge_command_list_copy_buffer(cmd_list, dst_resource, src_resource, cmd.bytes);
-        },
+        if (d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
+        if (d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+
+        switch (cmd.direction) {
+            .buffer_to_buffer => {
+                d3d12_bridge_command_list_copy_buffer(self.cmd_list, dst_resource, src_resource, cmd.bytes);
+            },
+            .buffer_to_texture => {
+                const width = if (cmd.dst.width > 0) cmd.dst.width else 1;
+                const height = if (cmd.dst.height > 0) cmd.dst.height else 1;
+                const bpr = if (cmd.dst.bytes_per_row > 0) cmd.dst.bytes_per_row else @as(u32, @intCast(cmd.bytes / height));
+                const format: u32 = if (cmd.dst.format != model.WGPUTextureFormat_Undefined) cmd.dst.format else model.WGPUTextureFormat_RGBA8Unorm;
+                d3d12_bridge_command_list_copy_texture_region(self.cmd_list, dst_resource, src_resource, cmd.src.offset, width, height, bpr, format);
+            },
+            .texture_to_buffer, .texture_to_texture => {
+                d3d12_bridge_command_list_copy_buffer(self.cmd_list, dst_resource, src_resource, cmd.bytes);
+            },
+        }
+
+        d3d12_bridge_command_list_close(self.cmd_list);
+
+        const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
+
+        const submit_start = common_timing.now_ns();
+        d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+
+        return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns };
     }
 
-    d3d12_bridge_command_list_close(cmd_list);
+    fn ensure_cmd(self: *CopyState, device: ?*anyopaque) !void {
+        if (self.has_cmd) return;
+        self.cmd_allocator = d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
+        self.cmd_list = d3d12_bridge_device_create_command_list(device, self.cmd_allocator) orelse {
+            d3d12_bridge_release(self.cmd_allocator);
+            self.cmd_allocator = null;
+            return error.InvalidState;
+        };
+        d3d12_bridge_command_list_close(self.cmd_list);
+        self.has_cmd = true;
+    }
 
-    const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-
-    const submit_start = common_timing.now_ns();
-    d3d12_bridge_queue_execute_command_list(queue, cmd_list);
-    const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
-
-    return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns };
-}
+    pub fn deinit(self: *CopyState) void {
+        if (self.has_cmd) {
+            d3d12_bridge_release(self.cmd_list);
+            d3d12_bridge_release(self.cmd_allocator);
+            self.has_cmd = false;
+        }
+        self.* = .{};
+    }
+};
 
 fn resolve_resource(
     device: ?*anyopaque,

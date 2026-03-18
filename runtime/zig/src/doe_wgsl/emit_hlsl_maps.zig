@@ -102,6 +102,10 @@ pub fn hlsl_renamed_builtin(name: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, name, "fract")) return "frac";
     if (std.mem.eql(u8, name, "inverseSqrt")) return "rsqrt";
     if (std.mem.eql(u8, name, "mix")) return "lerp";
+    if (std.mem.eql(u8, name, "countOneBits")) return "countbits";
+    if (std.mem.eql(u8, name, "reverseBits")) return "reversebits";
+    if (std.mem.eql(u8, name, "firstLeadingBit")) return "firstbithigh";
+    if (std.mem.eql(u8, name, "firstTrailingBit")) return "firstbitlow";
     if (std.mem.eql(u8, name, "atomicLoad")) return "doe_atomicLoad";
     if (std.mem.eql(u8, name, "atomicStore")) return "doe_atomicStore";
     if (std.mem.eql(u8, name, "atomicAdd")) return "doe_atomicAdd";
@@ -124,18 +128,24 @@ pub fn hlsl_renamed_builtin(name: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, name, "subgroupMax")) return "WaveActiveMax";
     if (std.mem.eql(u8, name, "subgroupBroadcast")) return "WaveReadLaneAt";
     if (std.mem.eql(u8, name, "subgroupShuffle")) return "WaveReadLaneAt";
+    if (std.mem.eql(u8, name, "subgroupAnd")) return "WaveActiveBitAnd";
+    if (std.mem.eql(u8, name, "subgroupOr")) return "WaveActiveBitOr";
+    if (std.mem.eql(u8, name, "subgroupXor")) return "WaveActiveBitXor";
+    if (std.mem.eql(u8, name, "subgroupAll")) return "WaveActiveAllTrue";
+    if (std.mem.eql(u8, name, "subgroupAny")) return "WaveActiveAnyTrue";
     return null;
 }
 
 pub fn hlsl_builtin_passthrough(name: []const u8) bool {
     const list = [_][]const u8{
-        "abs",      "acos",  "asin",      "atan",       "atan2",
-        "ceil",     "clamp", "cos",       "cosh",       "cross",
-        "distance", "dot",   "exp",       "exp2",       "floor",
-        "fma",      "ldexp", "length",    "log",        "log2",
-        "max",      "min",   "normalize", "pow",        "round",
-        "sign",     "sin",   "sinh",      "smoothstep", "sqrt",
-        "step",     "tan",   "tanh",      "trunc",
+        "abs",         "acos",      "asin",      "atan",       "atan2",
+        "ceil",        "clamp",     "cos",       "cosh",       "cross",
+        "determinant", "distance",  "dot",       "exp",        "exp2",
+        "floor",       "fma",       "ldexp",     "length",     "log",
+        "log2",        "max",       "min",       "normalize",  "pow",
+        "reflect",     "refract",   "round",     "saturate",   "sign",
+        "sin",         "sinh",      "smoothstep", "sqrt",      "step",
+        "tan",         "tanh",      "transpose", "trunc",
     };
     inline for (list) |candidate| {
         if (std.mem.eql(u8, name, candidate)) return true;

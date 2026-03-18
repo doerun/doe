@@ -16,6 +16,11 @@ const FEATURE_SUBGROUPS_F16 = 0x0000000F;
 const FEATURE_FLOAT32_BLENDABLE = 0x00000010;
 const FEATURE_CLIP_DISTANCES = 0x00000011;
 const FEATURE_DUAL_SOURCE_BLENDING = 0x00000012;
+const FEATURE_CORE_FEATURES_AND_LIMITS = 0x00000013;
+const FEATURE_TEXTURE_FORMATS_TIER1 = 0x00000014;
+const FEATURE_TEXTURE_FORMATS_TIER2 = 0x00000015;
+const FEATURE_PRIMITIVE_INDEX = 0x00000016;
+const FEATURE_TEXTURE_COMPONENT_SWIZZLE = 0x00000017;
 
 const SHADER_F16_FEATURE = FEATURE_SHADER_F16;
 
@@ -38,6 +43,11 @@ const KNOWN_FEATURES = Object.freeze([
   ['float32-blendable', FEATURE_FLOAT32_BLENDABLE],
   ['clip-distances', FEATURE_CLIP_DISTANCES],
   ['dual-source-blending', FEATURE_DUAL_SOURCE_BLENDING],
+  ['core-features-and-limits', FEATURE_CORE_FEATURES_AND_LIMITS],
+  ['texture-formats-tier1', FEATURE_TEXTURE_FORMATS_TIER1],
+  ['texture-formats-tier2', FEATURE_TEXTURE_FORMATS_TIER2],
+  ['primitive-index', FEATURE_PRIMITIVE_INDEX],
+  ['texture-component-swizzle', FEATURE_TEXTURE_COMPONENT_SWIZZLE],
 ]);
 
 const DOE_LIMITS = Object.freeze({
@@ -72,6 +82,10 @@ const DOE_LIMITS = Object.freeze({
   maxComputeWorkgroupSizeY: 1024,
   maxComputeWorkgroupSizeZ: 64,
   maxComputeWorkgroupsPerDimension: 65535,
+  maxStorageBuffersInVertexStage: 8,
+  maxStorageBuffersInFragmentStage: 8,
+  maxStorageTexturesInVertexStage: 4,
+  maxStorageTexturesInFragmentStage: 4,
 });
 
 const DOE_LIMIT_NAMES = Object.freeze(Object.keys(DOE_LIMITS));
@@ -133,6 +147,11 @@ export {
   FEATURE_FLOAT32_BLENDABLE,
   FEATURE_CLIP_DISTANCES,
   FEATURE_DUAL_SOURCE_BLENDING,
+  FEATURE_CORE_FEATURES_AND_LIMITS,
+  FEATURE_TEXTURE_FORMATS_TIER1,
+  FEATURE_TEXTURE_FORMATS_TIER2,
+  FEATURE_PRIMITIVE_INDEX,
+  FEATURE_TEXTURE_COMPONENT_SWIZZLE,
   SHADER_F16_FEATURE,
   KNOWN_FEATURES,
   DOE_LIMITS,

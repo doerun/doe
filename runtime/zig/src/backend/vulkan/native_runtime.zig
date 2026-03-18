@@ -24,6 +24,7 @@ const vk_pipeline = @import("vk_pipeline.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_render = @import("vk_render.zig");
+const render_bundle = @import("../../render_bundle.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 
@@ -104,6 +105,7 @@ pub const NativeVulkanRuntime = struct {
     has_pipeline: bool = false,
     has_descriptor_pool: bool = false,
     has_deferred_submissions: bool = false,
+    has_depth_clip_enable_ext: bool = false,
     upload_recording_active: bool = false,
     // Tracks whether flush_queue left the command buffer in reset state,
     // avoiding a redundant vkResetCommandBuffer in ensure_upload_recording.
@@ -303,7 +305,22 @@ pub const NativeVulkanRuntime = struct {
         };
 
         const submit_start = common_timing.now_ns();
-        if (queue_sync_mode == .per_command) {
+        if (self.has_timeline_semaphore) {
+            // Timeline semaphore path: signal the timeline on every
+            // submission. For per_command mode, follow with a CPU wait
+            // on the signaled value; deferred mode lets drain handle it.
+            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+            tsi.patch();
+            submit_info.pNext = @ptrCast(&tsi.timeline_info);
+            submit_info.signalSemaphoreCount = 1;
+            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+            if (queue_sync_mode == .per_command) {
+                try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+            } else {
+                self.has_deferred_submissions = true;
+            }
+        } else if (queue_sync_mode == .per_command) {
             try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
             try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
             const wait_all: c.VkBool32 = if (queue_wait_mode == .wait_any) c.VK_FALSE else c.VK_TRUE;
@@ -347,6 +364,17 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn run_render_draw(self: *NativeVulkanRuntime, cmd: model.RenderDrawCommand) !DispatchMetrics {
         return vk_render.execute_render_draw(self, cmd);
+    }
+
+    pub fn run_execute_bundles(
+        self: *NativeVulkanRuntime,
+        bundles: []const *const render_bundle.DoeRenderBundle,
+        target_width: u32,
+        target_height: u32,
+        color_format: u32,
+        sample_count: u32,
+    ) !DispatchMetrics {
+        return vk_render.execute_render_bundles(self, bundles, target_width, target_height, color_format, sample_count);
     }
 
     // --- Queue management ---
@@ -550,10 +578,279 @@ pub const NativeVulkanRuntime = struct {
             .signalSemaphoreCount = 0,
             .pSignalSemaphores = null,
         };
-        try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
-        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+        if (self.has_timeline_semaphore) {
+            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+            tsi.patch();
+            submit_info.pNext = @ptrCast(&tsi.timeline_info);
+            submit_info.signalSemaphoreCount = 1;
+            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+            try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+        } else {
+            try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+        }
         resource.layout = c.VK_IMAGE_LAYOUT_GENERAL;
+    }
+
+    pub fn texture_read(self: *NativeVulkanRuntime, args: struct {
+        handle: u64,
+        mip_level: u32,
+        width: u32,
+        height: u32,
+        format: model.WGPUTextureFormat,
+        dst_buffer: *anyopaque,
+        dst_offset: u64,
+        dst_bytes_per_row: u32,
+        dst_rows_per_image: u32,
+    }) !void {
+        const texture = self.textures.getPtr(args.handle) orelse return error.InvalidState;
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+            _ = try self.flush_queue();
+        }
+
+        const rows = if (args.dst_rows_per_image > 0) args.dst_rows_per_image else args.height;
+        const bpp = vk_resources.bytes_per_pixel_for_texture_format(args.format);
+        const byte_count: u64 = @as(u64, args.dst_bytes_per_row) * rows;
+        const staging = try vk_resources.create_host_visible_buffer(self, byte_count, c.VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        defer vk_resources.destroy_host_visible_buffer(self, staging);
+
+        try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+        var begin_info = c.VkCommandBufferBeginInfo{
+            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = null,
+        };
+        try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+
+        const prev_layout = texture.layout;
+        vk_resources.transition_texture_layout(
+            self.primary_command_buffer,
+            texture.*,
+            prev_layout,
+            c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            vk_resources.texture_transition_source(prev_layout).src_access_mask,
+            c.VK_ACCESS_TRANSFER_READ_BIT,
+            vk_resources.texture_transition_source(prev_layout).src_stage,
+            c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        );
+
+        var region = c.VkBufferImageCopy{
+            .bufferOffset = 0,
+            .bufferRowLength = if (args.dst_bytes_per_row > 0) args.dst_bytes_per_row / bpp else 0,
+            .bufferImageHeight = rows,
+            .imageSubresource = .{
+                .aspectMask = vk_formats.aspect_mask_for_format(args.format),
+                .mipLevel = args.mip_level,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .imageOffset = .{ .x = 0, .y = 0, .z = 0 },
+            .imageExtent = .{
+                .width = @max(args.width >> @intCast(args.mip_level), 1),
+                .height = @max(args.height >> @intCast(args.mip_level), 1),
+                .depth = 1,
+            },
+        };
+        c.vkCmdCopyImageToBuffer(
+            self.primary_command_buffer,
+            texture.image,
+            c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            staging.buffer,
+            1,
+            @ptrCast(&region),
+        );
+
+        vk_resources.transition_texture_layout(
+            self.primary_command_buffer,
+            texture.*,
+            c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            c.VK_IMAGE_LAYOUT_GENERAL,
+            c.VK_ACCESS_TRANSFER_READ_BIT,
+            c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
+            c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+            c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        );
+        try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
+
+        var submit_info = c.VkSubmitInfo{
+            .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = null,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = null,
+            .pWaitDstStageMask = null,
+            .commandBufferCount = 1,
+            .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = null,
+        };
+        if (self.has_timeline_semaphore) {
+            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+            tsi.patch();
+            submit_info.pNext = @ptrCast(&tsi.timeline_info);
+            submit_info.signalSemaphoreCount = 1;
+            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+            try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+        } else {
+            try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+        }
+        texture.layout = c.VK_IMAGE_LAYOUT_GENERAL;
+
+        // Copy staging buffer contents to destination mapped buffer.
+        if (staging.mapped) |raw| {
+            const dst: [*]u8 = @ptrCast(args.dst_buffer);
+            const off: usize = @intCast(args.dst_offset);
+            const n: usize = @intCast(byte_count);
+            @memcpy(dst[off .. off + n], @as([*]const u8, @ptrCast(raw))[0..n]);
+        }
+    }
+
+    pub fn texture_copy(self: *NativeVulkanRuntime, args: struct {
+        src_handle: u64,
+        src_mip: u32,
+        src_x: u32,
+        src_y: u32,
+        src_z: u32,
+        dst_handle: u64,
+        dst_mip: u32,
+        dst_x: u32,
+        dst_y: u32,
+        dst_z: u32,
+        width: u32,
+        height: u32,
+        depth_or_layers: u32,
+    }) !void {
+        const src = self.textures.getPtr(args.src_handle) orelse return error.InvalidState;
+        const dst = self.textures.getPtr(args.dst_handle) orelse return error.InvalidState;
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+            _ = try self.flush_queue();
+        }
+
+        try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+        var begin_info = c.VkCommandBufferBeginInfo{
+            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = null,
+        };
+        try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+
+        const src_prev = src.layout;
+        const dst_prev = dst.layout;
+        vk_resources.transition_texture_layout(
+            self.primary_command_buffer,
+            src.*,
+            src_prev,
+            c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            vk_resources.texture_transition_source(src_prev).src_access_mask,
+            c.VK_ACCESS_TRANSFER_READ_BIT,
+            vk_resources.texture_transition_source(src_prev).src_stage,
+            c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        );
+        vk_resources.transition_texture_layout(
+            self.primary_command_buffer,
+            dst.*,
+            dst_prev,
+            c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            vk_resources.texture_transition_source(dst_prev).src_access_mask,
+            c.VK_ACCESS_TRANSFER_WRITE_BIT,
+            vk_resources.texture_transition_source(dst_prev).src_stage,
+            c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        );
+
+        const layers = if (args.depth_or_layers > 0) args.depth_or_layers else 1;
+        var region = c.VkImageCopy{
+            .srcSubresource = .{
+                .aspectMask = vk_formats.aspect_mask_for_format(src.format),
+                .mipLevel = args.src_mip,
+                .baseArrayLayer = 0,
+                .layerCount = layers,
+            },
+            .srcOffset = .{
+                .x = @intCast(args.src_x),
+                .y = @intCast(args.src_y),
+                .z = @intCast(args.src_z),
+            },
+            .dstSubresource = .{
+                .aspectMask = vk_formats.aspect_mask_for_format(dst.format),
+                .mipLevel = args.dst_mip,
+                .baseArrayLayer = 0,
+                .layerCount = layers,
+            },
+            .dstOffset = .{
+                .x = @intCast(args.dst_x),
+                .y = @intCast(args.dst_y),
+                .z = @intCast(args.dst_z),
+            },
+            .extent = .{
+                .width = args.width,
+                .height = args.height,
+                .depth = if (args.depth_or_layers > 0) 1 else 1,
+            },
+        };
+        c.vkCmdCopyImage(
+            self.primary_command_buffer,
+            src.image,
+            c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            dst.image,
+            c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            @ptrCast(&region),
+        );
+
+        vk_resources.transition_texture_layout(
+            self.primary_command_buffer,
+            src.*,
+            c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            c.VK_IMAGE_LAYOUT_GENERAL,
+            c.VK_ACCESS_TRANSFER_READ_BIT,
+            c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
+            c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+            c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        );
+        vk_resources.transition_texture_layout(
+            self.primary_command_buffer,
+            dst.*,
+            c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            c.VK_IMAGE_LAYOUT_GENERAL,
+            c.VK_ACCESS_TRANSFER_WRITE_BIT,
+            c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
+            c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+            c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        );
+        try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
+
+        var submit_info = c.VkSubmitInfo{
+            .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = null,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = null,
+            .pWaitDstStageMask = null,
+            .commandBufferCount = 1,
+            .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = null,
+        };
+        if (self.has_timeline_semaphore) {
+            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+            tsi.patch();
+            submit_info.pNext = @ptrCast(&tsi.timeline_info);
+            submit_info.signalSemaphoreCount = 1;
+            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+            try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+        } else {
+            try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+        }
+        src.layout = c.VK_IMAGE_LAYOUT_GENERAL;
+        dst.layout = c.VK_IMAGE_LAYOUT_GENERAL;
     }
 
     pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model.TextureQueryCommand) !void {
@@ -730,9 +1027,19 @@ pub const NativeVulkanRuntime = struct {
             .signalSemaphoreCount = 0,
             .pSignalSemaphores = null,
         };
-        try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
-        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+        if (self.has_timeline_semaphore) {
+            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+            tsi.patch();
+            submit_info.pNext = @ptrCast(&tsi.timeline_info);
+            submit_info.signalSemaphoreCount = 1;
+            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+            try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+        } else {
+            try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+        }
 
         var results: [2]u64 = .{ 0, 0 };
         try c.check_vk(c.vkGetQueryPoolResults(

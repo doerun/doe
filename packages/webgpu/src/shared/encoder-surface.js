@@ -64,6 +64,10 @@ function createEncoderClasses(backend) {
       );
     }
 
+    pushDebugGroup(_groupLabel) {}
+    popDebugGroup() {}
+    insertDebugMarker(_markerLabel) {}
+
     end() {
       this._assertOpen('GPUComputePassEncoder.end');
       backend.computePassEnd(this);
@@ -210,6 +214,10 @@ function createEncoderClasses(backend) {
       backend.renderPassEndOcclusionQuery(this);
     }
 
+    pushDebugGroup(_groupLabel) {}
+    popDebugGroup() {}
+    insertDebugMarker(_markerLabel) {}
+
     executeBundles(bundles) {
       this._assertOpen('GPURenderPassEncoder.executeBundles');
       backend.renderPassExecuteBundles(
@@ -340,6 +348,10 @@ function createEncoderClasses(backend) {
         indirectOffset,
       );
     }
+
+    pushDebugGroup(_groupLabel) {}
+    popDebugGroup() {}
+    insertDebugMarker(_markerLabel) {}
 
     finish(descriptor) {
       this._assertOpen('GPURenderBundleEncoder.finish');
@@ -551,6 +563,10 @@ function createEncoderClasses(backend) {
       assertIntegerInRange(destinationOffset, 'GPUCommandEncoder.resolveQuerySet', 'destinationOffset', { min: 0 });
       backend.commandEncoderResolveQuerySet(this, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
     }
+
+    pushDebugGroup(_groupLabel) {}
+    popDebugGroup() {}
+    insertDebugMarker(_markerLabel) {}
 
     finish(descriptor) {
       this._assertOpen('GPUCommandEncoder.finish');

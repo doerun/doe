@@ -1540,3 +1540,821 @@ test "spirv vertex: interpolation decorations on outputs" {
     try testing.expect(found_flat);
     try testing.expect(found_noperspective);
 }
+
+// ============================================================
+// SPIR-V builtin function coverage tests
+// ============================================================
+
+test "spirv builtin: countOneBits produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = countOneBits(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: reverseBits produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = reverseBits(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: extractBits produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = extractBits(buf[id.x], 4u, 8u);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: insertBits produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = insertBits(buf[id.x], 0xFFu, 4u, 8u);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: countLeadingZeros produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = countLeadingZeros(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: countTrailingZeros produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = countTrailingZeros(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: firstLeadingBit produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = firstLeadingBit(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: firstTrailingBit produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = firstTrailingBit(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: saturate produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = saturate(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: reflect produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let a = vec3f(1.0, 0.0, 0.0);
+        \\    let n = vec3f(0.0, 1.0, 0.0);
+        \\    let r = reflect(a, n);
+        \\    buf[id.x] = r.x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: refract produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let a = vec3f(1.0, 0.0, 0.0);
+        \\    let n = vec3f(0.0, 1.0, 0.0);
+        \\    let r = refract(a, n, 1.0);
+        \\    buf[id.x] = r.x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: select produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = select(0.0, 1.0, buf[id.x] > 0.5);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: storage texture r32float format produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_storage_2d<r32float, write>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    textureStore(tex, vec2i(0, 0), vec4f(1.0, 0.0, 0.0, 1.0));
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: storage texture rgba32float format produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_storage_2d<rgba32float, write>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    textureStore(tex, vec2i(0, 0), vec4f(1.0, 0.0, 0.0, 1.0));
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: storage texture rgba8uint format produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_storage_2d<rgba8uint, write>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    textureStore(tex, vec2i(0, 0), vec4u(255, 0, 0, 255));
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: storage texture rgba8sint format produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_storage_2d<rgba8sint, write>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    textureStore(tex, vec2i(0, 0), vec4i(127, 0, 0, 127));
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv texture: textureDimensions produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> out_data: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(tex, 0);
+        \\    out_data[id.x] = dims.x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroupBroadcast produces valid SPIR-V" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupBroadcast(buf[id.x], 0u);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroupShuffle produces valid SPIR-V" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupShuffle(buf[id.x], id.x ^ 1u);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: workgroupBarrier produces valid SPIR-V" {
+    const source =
+        \\var<workgroup> shared: array<f32, 64>;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(local_invocation_index) lid: u32) {
+        \\    shared[lid] = buf[lid];
+        \\    workgroupBarrier();
+        \\    buf[lid] = shared[63u - lid];
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: bitcast produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let f = bitcast<f32>(buf[id.x]);
+        \\    buf[id.x] = bitcast<u32>(f + 1.0);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: pack2x16float and unpack2x16float produce valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let v = unpack2x16float(buf[id.x]);
+        \\    buf[id.x] = pack2x16float(v + vec2f(1.0, 1.0));
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: atomicAdd produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> counter: atomic<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    atomicAdd(&counter, 1u);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: multiple math builtins produce valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    var v = buf[id.x];
+        \\    v = sin(v);
+        \\    v = cos(v);
+        \\    v = exp(v);
+        \\    v = log(v);
+        \\    v = sqrt(v);
+        \\    v = abs(v);
+        \\    v = floor(v);
+        \\    v = ceil(v);
+        \\    v = round(v);
+        \\    v = trunc(v);
+        \\    v = fract(v);
+        \\    v = pow(v, 2.0);
+        \\    v = min(v, 1.0);
+        \\    v = max(v, 0.0);
+        \\    v = clamp(v, 0.0, 1.0);
+        \\    buf[id.x] = v;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: transpose produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    var m: mat2x2<f32> = mat2x2<f32>(vec2f(1.0, 0.0), vec2f(0.0, 1.0));
+        \\    let t: mat2x2<f32> = transpose(m);
+        \\    buf[id.x] = t[0].x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: determinant produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    var m: mat2x2<f32> = mat2x2<f32>(vec2f(1.0, 0.0), vec2f(0.0, 1.0));
+        \\    buf[id.x] = determinant(m);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: textureNumLevels produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> out_data: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    out_data[id.x] = textureNumLevels(tex);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: textureNumLayers produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d_array<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> out_data: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    out_data[id.x] = textureNumLayers(tex);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+// ============================================================
+// HLSL subgroup builtins
+// ============================================================
+
+test "hlsl renamed: subgroupAnd maps to WaveActiveBitAnd" {
+    try testing.expectEqualStrings("WaveActiveBitAnd", maps.hlsl_renamed_builtin("subgroupAnd").?);
+}
+
+test "hlsl renamed: subgroupOr maps to WaveActiveBitOr" {
+    try testing.expectEqualStrings("WaveActiveBitOr", maps.hlsl_renamed_builtin("subgroupOr").?);
+}
+
+test "hlsl renamed: subgroupXor maps to WaveActiveBitXor" {
+    try testing.expectEqualStrings("WaveActiveBitXor", maps.hlsl_renamed_builtin("subgroupXor").?);
+}
+
+test "hlsl renamed: subgroupAll maps to WaveActiveAllTrue" {
+    try testing.expectEqualStrings("WaveActiveAllTrue", maps.hlsl_renamed_builtin("subgroupAll").?);
+}
+
+test "hlsl renamed: subgroupAny maps to WaveActiveAnyTrue" {
+    try testing.expectEqualStrings("WaveActiveAnyTrue", maps.hlsl_renamed_builtin("subgroupAny").?);
+}
+
+test "hlsl subgroup: subgroupAdd emits WaveActiveSum in HLSL" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupAdd(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "WaveActiveSum"));
+}
+
+test "hlsl subgroup: subgroupAll emits WaveActiveAllTrue in HLSL" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let val = buf[id.x] > 0u;
+        \\    if (subgroupAll(val)) {
+        \\        buf[id.x] = 1u;
+        \\    }
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "WaveActiveAllTrue"));
+}
+
+test "hlsl subgroup: subgroupAny emits WaveActiveAnyTrue in HLSL" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let val = buf[id.x] > 0u;
+        \\    if (subgroupAny(val)) {
+        \\        buf[id.x] = 1u;
+        \\    }
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "WaveActiveAnyTrue"));
+}
+
+test "hlsl subgroup: subgroupBallot emits WaveActiveBallot in HLSL" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<vec4u>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupBallot(id.x < 32u);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "WaveActiveBallot"));
+}
+
+test "hlsl subgroup: subgroupElect emits WaveIsFirstLane in HLSL" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    if (subgroupElect()) {
+        \\        buf[0] = 1u;
+        \\    }
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "WaveIsFirstLane()"));
+}
+
+test "hlsl subgroup: subgroupShuffleXor emits WaveReadLaneAt with XOR in HLSL" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupShuffleXor(buf[id.x], 1u);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "WaveReadLaneAt("));
+    try testing.expect(contains(hlsl, "WaveGetLaneIndex() ^ "));
+}
+
+test "hlsl subgroup: subgroupAnd emits WaveActiveBitAnd in HLSL" {
+    const source =
+        \\enable subgroups;
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupAnd(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "WaveActiveBitAnd"));
+}
+
+// ============================================================
+// HLSL barrier intrinsics
+// ============================================================
+
+test "hlsl barrier: workgroupBarrier emits GroupMemoryBarrierWithGroupSync" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\var<workgroup> shared_data: array<f32, 64>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(local_invocation_index) idx: u32) {
+        \\    shared_data[idx] = buf[idx];
+        \\    workgroupBarrier();
+        \\    buf[idx] = shared_data[63u - idx];
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "GroupMemoryBarrierWithGroupSync()"));
+}
+
+test "hlsl barrier: storageBarrier emits AllMemoryBarrierWithGroupSync" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = buf[id.x] + 1.0;
+        \\    storageBarrier();
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "AllMemoryBarrierWithGroupSync()"));
+}
+
+test "hlsl barrier: textureBarrier emits DeviceMemoryBarrierWithGroupSync" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = buf[id.x] + 1.0;
+        \\    textureBarrier();
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "DeviceMemoryBarrierWithGroupSync()"));
+}
+
+// ============================================================
+// HLSL bit manipulation builtins
+// ============================================================
+
+test "hlsl bit: countOneBits maps to countbits" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = countOneBits(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "countbits("));
+}
+
+test "hlsl bit: reverseBits maps to reversebits" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = reverseBits(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "reversebits("));
+}
+
+test "hlsl bit: firstLeadingBit maps to firstbithigh" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = firstLeadingBit(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "firstbithigh("));
+}
+
+test "hlsl bit: firstTrailingBit maps to firstbitlow" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = firstTrailingBit(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "firstbitlow("));
+}
+
+test "hlsl bit: countLeadingZeros emits ternary with firstbithigh" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = countLeadingZeros(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "== 0u) ? 32u : (31u - firstbithigh("));
+}
+
+test "hlsl bit: countTrailingZeros emits ternary with firstbitlow" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = countTrailingZeros(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "== 0u) ? 32u : firstbitlow("));
+}
+
+test "hlsl bit: extractBits emits shift-and-mask expression" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = extractBits(buf[id.x], 4u, 8u);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, ">> "));
+    try testing.expect(contains(hlsl, "(1u << "));
+}
+
+test "hlsl bit: insertBits emits mask-and-or expression" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = insertBits(buf[id.x], 255u, 8u, 8u);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "& ~("));
+    try testing.expect(contains(hlsl, "(1u << "));
+}
+
+// ============================================================
+// HLSL texture metadata builtins
+// ============================================================
+
+test "hlsl texture: textureNumLevels emits helper call" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[0] = textureNumLevels(tex);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "doe_textureNumLevels_tex()"));
+    try testing.expect(contains(hlsl, "uint doe_textureNumLevels_tex()"));
+    try testing.expect(contains(hlsl, "GetDimensions(0, w, h, lvls)"));
+    try testing.expect(contains(hlsl, "return lvls;"));
+}
+
+test "hlsl texture: textureNumLayers emits helper call for 2d array" {
+    const source =
+        \\@group(0) @binding(0) var tex: texture_2d_array<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[0] = textureNumLayers(tex);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "doe_textureNumLayers_tex()"));
+    try testing.expect(contains(hlsl, "uint doe_textureNumLayers_tex()"));
+    try testing.expect(contains(hlsl, "return elems;"));
+}
+
+// ============================================================
+// HLSL additional passthrough builtins
+// ============================================================
+
+test "hlsl passthrough: saturate returns true" {
+    try testing.expect(maps.hlsl_builtin_passthrough("saturate"));
+}
+
+test "hlsl passthrough: reflect returns true" {
+    try testing.expect(maps.hlsl_builtin_passthrough("reflect"));
+}
+
+test "hlsl passthrough: refract returns true" {
+    try testing.expect(maps.hlsl_builtin_passthrough("refract"));
+}
+
+test "hlsl passthrough: transpose returns true" {
+    try testing.expect(maps.hlsl_builtin_passthrough("transpose"));
+}
+
+test "hlsl passthrough: determinant returns true" {
+    try testing.expect(maps.hlsl_builtin_passthrough("determinant"));
+}
+
+test "hlsl renamed: countOneBits maps to countbits" {
+    try testing.expectEqualStrings("countbits", maps.hlsl_renamed_builtin("countOneBits").?);
+}
+
+test "hlsl renamed: reverseBits maps to reversebits" {
+    try testing.expectEqualStrings("reversebits", maps.hlsl_renamed_builtin("reverseBits").?);
+}
+
+test "hlsl renamed: firstLeadingBit maps to firstbithigh" {
+    try testing.expectEqualStrings("firstbithigh", maps.hlsl_renamed_builtin("firstLeadingBit").?);
+}
+
+test "hlsl renamed: firstTrailingBit maps to firstbitlow" {
+    try testing.expectEqualStrings("firstbitlow", maps.hlsl_renamed_builtin("firstTrailingBit").?);
+}

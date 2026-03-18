@@ -89,6 +89,8 @@ MEMBER_IMPLEMENTED = {
     ("GPUCommandEncoder", "beginRenderPass"),
     ("GPUCommandEncoder", "copyBufferToBuffer"),
     ("GPUCommandEncoder", "copyBufferToTexture"),
+    ("GPUCommandEncoder", "copyTextureToBuffer"),
+    ("GPUCommandEncoder", "copyTextureToTexture"),
     ("GPUCommandEncoder", "finish"),
     ("GPUCommandEncoder", "clearBuffer"),
     ("GPUCommandEncoder", "writeTimestamp"),
@@ -99,9 +101,13 @@ MEMBER_IMPLEMENTED = {
 }
 
 # Members explicitly unsupported on Vulkan (won't be marked implemented)
-MEMBER_UNSUPPORTED = {
-    ("GPUCommandEncoder", "copyTextureToBuffer"),
-    ("GPUCommandEncoder", "copyTextureToTexture"),
+MEMBER_UNSUPPORTED = set()
+
+# Specific feature-flag values to mark as implemented
+VALUE_IMPLEMENTED = {
+    ("GPUFeatureName", "clip-distances"),
+    ("GPUFeatureName", "rg11b10ufloat-renderable"),
+    ("GPUFeatureName", "timestamp-query"),
 }
 
 
@@ -143,6 +149,16 @@ def update_member(row):
             vulkan["notes"] = ["Explicit unsupported on Vulkan — logs warning."]
 
 
+def update_value(row):
+    key = (row["parent"], row["name"])
+    vulkan = get_vulkan(row)
+    status = vulkan.get("impl", "unreviewed")
+
+    if key in VALUE_IMPLEMENTED:
+        if status in ("unreviewed", "partial", "not_wired", "blocked"):
+            vulkan["impl"] = "implemented"
+
+
 def main():
     with open(SPEC_INDEX_PATH) as f:
         lines = f.readlines()
@@ -152,11 +168,13 @@ def main():
     for row in rows:
         kind = row.get("kind")
         if kind == "header":
-            row["lastUpdated"] = "2026-03-17"
+            row["lastUpdated"] = "2026-03-18"
         elif kind == "interface":
             update_interface(row)
         elif kind == "member":
             update_member(row)
+        elif kind == "value":
+            update_value(row)
 
     with open(SPEC_INDEX_PATH, "w") as f:
         for row in rows:

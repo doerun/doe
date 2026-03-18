@@ -80,7 +80,26 @@ pub export fn doeNativeCommandEncoderCopyTextureToTexture(
     const src = cast(DoeTexture, src_texture_raw) orelse return;
     const dst = cast(DoeTexture, dst_texture_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
-        std.log.warn("doe_command_texture_native: copyTextureToTexture not yet supported on Vulkan path", .{});
+        const rt = native.device_vk_runtime(enc.dev) orelse return;
+        if (src.vk_id != 0 and dst.vk_id != 0) {
+            rt.texture_copy(.{
+                .src_handle = src.vk_id,
+                .src_mip = src_mip,
+                .src_x = src_x,
+                .src_y = src_y,
+                .src_z = src_z,
+                .dst_handle = dst.vk_id,
+                .dst_mip = dst_mip,
+                .dst_x = dst_x,
+                .dst_y = dst_y,
+                .dst_z = dst_z,
+                .width = width,
+                .height = height,
+                .depth_or_layers = depth_or_layers,
+            }) catch |err| {
+                std.log.err("doe_command_texture_native: copyTextureToTexture Vulkan failed: {s}", .{@errorName(err)});
+            };
+        }
         return;
     }
     enc.cmds.append(alloc, .{ .copy_texture_to_texture = .{

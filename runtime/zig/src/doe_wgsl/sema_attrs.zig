@@ -78,7 +78,7 @@ pub fn parse_io_attr(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.IoAtt
 }
 
 pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir.TypeId) !ir.TypeId {
-    if (std.mem.eql(u8, name, "workgroupBarrier") or std.mem.eql(u8, name, "storageBarrier")) return self.module.void_type;
+    if (std.mem.eql(u8, name, "workgroupBarrier") or std.mem.eql(u8, name, "storageBarrier") or std.mem.eql(u8, name, "textureBarrier")) return self.module.void_type;
     if (std.mem.eql(u8, name, "arrayLength")) return self.module.u32_type;
     if (std.mem.eql(u8, name, "textureStore")) return self.module.void_type;
     if (std.mem.eql(u8, name, "textureSample") or std.mem.eql(u8, name, "textureSampleLevel") or std.mem.eql(u8, name, "textureSampleGrad") or std.mem.eql(u8, name, "textureSampleOffset") or std.mem.eql(u8, name, "textureSampleLevelOffset")) {
@@ -133,8 +133,8 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         const first = self.module.types.get(arg_types[0]);
         return switch (first) {
-            .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
-            // storage_texture_2d textureLoad returns a vec4 of the format's element type.
+            .texture_2d, .texture_3d, .texture_2d_array => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_multisampled_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .storage_texture_2d => |storage| {
                 const elem_scalar = storage_format_scalar(storage.format);
                 const elem_ty = try self.module.types.intern(.{ .scalar = elem_scalar });
@@ -164,8 +164,8 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
         const u32_ty = try self.module.types.intern(.{ .scalar = .u32 });
         return try self.module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 4 } });
     }
-    // subgroupAll / subgroupAny return bool.
-    if (std.mem.eql(u8, name, "subgroupAll") or std.mem.eql(u8, name, "subgroupAny")) {
+    // subgroupAll / subgroupAny / subgroupElect return bool.
+    if (std.mem.eql(u8, name, "subgroupAll") or std.mem.eql(u8, name, "subgroupAny") or std.mem.eql(u8, name, "subgroupElect")) {
         return try self.module.types.intern(.{ .scalar = .bool });
     }
     // Pack builtins return u32.
@@ -180,6 +180,26 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     if (is_unpack_4_builtin(name)) {
         const f32_ty = try self.module.types.intern(.{ .scalar = .f32 });
         return try self.module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    }
+    // transpose(mat<C,R>) returns mat<R,C> (dimensions swapped).
+    if (std.mem.eql(u8, name, "transpose")) {
+        if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .matrix => |mat| try self.module.types.intern(.{ .matrix = .{ .elem = mat.elem, .columns = mat.rows, .rows = mat.columns } }),
+            else => error.UnsupportedBuiltin,
+        };
+    }
+    // determinant(mat<N,N>) returns the scalar element type.
+    if (std.mem.eql(u8, name, "determinant")) {
+        if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .matrix => |mat| mat.elem,
+            else => error.UnsupportedBuiltin,
+        };
+    }
+    // textureNumLevels / textureNumLayers return u32.
+    if (std.mem.eql(u8, name, "textureNumLevels") or std.mem.eql(u8, name, "textureNumLayers")) {
+        return self.module.u32_type;
     }
     return error.UnsupportedBuiltin;
 }
@@ -200,15 +220,17 @@ fn is_subgroup_value_op(name: []const u8) bool {
 /// Math/comparison builtins that return the same type as their first argument.
 fn is_passthrough_math(name: []const u8) bool {
     const ops = [_][]const u8{
-        "min",          "max",          "clamp",        "select",       "abs",
-        "sqrt",         "sin",          "cos",          "normalize",    "length",
-        "distance",     "fract",        "mix",          "inverseSqrt",  "degrees",
-        "radians",      "atan2",        "ldexp",        "fma",          "smoothstep",
-        "sign",         "floor",        "ceil",         "round",        "trunc",
-        "exp",          "exp2",         "log",          "log2",         "pow",
-        "step",         "tan",          "asin",         "acos",         "atan",
-        "sinh",         "cosh",         "tanh",         "saturate",     "dot",
-        "cross",        "reflect",      "refract",      "modf",         "frexp",
+        "min",               "max",              "clamp",             "select",          "abs",
+        "sqrt",              "sin",              "cos",               "normalize",       "length",
+        "distance",          "fract",            "mix",               "inverseSqrt",     "degrees",
+        "radians",           "atan2",            "ldexp",             "fma",             "smoothstep",
+        "sign",              "floor",            "ceil",              "round",           "trunc",
+        "exp",               "exp2",             "log",               "log2",            "pow",
+        "step",              "tan",              "asin",              "acos",            "atan",
+        "sinh",              "cosh",             "tanh",              "saturate",        "dot",
+        "cross",             "reflect",          "refract",           "modf",            "frexp",
+        "countOneBits",      "reverseBits",      "extractBits",       "insertBits",
+        "countLeadingZeros", "countTrailingZeros", "firstLeadingBit", "firstTrailingBit",
     };
     for (ops) |op| {
         if (std.mem.eql(u8, name, op)) return true;

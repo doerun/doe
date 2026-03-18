@@ -257,6 +257,52 @@ pub const TimelineSemaphore = struct {
     }
 };
 
+/// Pre-built chain of VkTimelineSemaphoreSubmitInfo + semaphore/value arrays
+/// ready to attach to a VkSubmitInfo. Callers set `submit.pNext`,
+/// `submit.signalSemaphoreCount`, and `submit.pSignalSemaphores` from the
+/// returned fields before calling vkQueueSubmit.
+///
+/// Usage:
+///   var tsi = TimelineSubmitHelper.prepare(&timeline_sem);
+///   if (tsi.ready) {
+///       submit.pNext = @ptrCast(&tsi.timeline_info);
+///       submit.signalSemaphoreCount = 1;
+///       submit.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+///   }
+pub const TimelineSubmitHelper = struct {
+    timeline_info: VkTimelineSemaphoreSubmitInfo = .{},
+    semaphore: c.VkSemaphore = VK_NULL_U64,
+    signal_value: u64 = 0,
+    ready: bool = false,
+
+    /// Prepare a timeline signal for the next queue submission.
+    /// Increments the timeline value and populates the helper fields.
+    /// Returns a helper with ready=false if the timeline is unavailable.
+    pub fn prepare(ts: *TimelineSemaphore) TimelineSubmitHelper {
+        if (!ts.available) return .{};
+        const value = ts.next_signal_value();
+        return .{
+            .timeline_info = .{
+                .waitSemaphoreValueCount = 0,
+                .pWaitSemaphoreValues = null,
+                .signalSemaphoreValueCount = 1,
+                .pSignalSemaphoreValues = null, // patched below
+            },
+            .semaphore = ts.semaphore,
+            .signal_value = value,
+            .ready = true,
+        };
+    }
+
+    /// Patch the signal value pointer to point at our own signal_value field.
+    /// Must be called after prepare() and before passing to vkQueueSubmit,
+    /// since the struct address is stable only after the caller has placed it.
+    pub fn patch(self: *TimelineSubmitHelper) void {
+        if (!self.ready) return;
+        self.timeline_info.pSignalSemaphoreValues = @ptrCast(&self.signal_value);
+    }
+};
+
 /// Detect timeline semaphore support by querying
 /// VkPhysicalDeviceTimelineSemaphoreFeatures via the Vulkan 1.1+
 /// vkGetPhysicalDeviceFeatures2 entry point.

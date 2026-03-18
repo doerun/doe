@@ -1,0 +1,567 @@
+// WebGPU-to-DXGI format translation.
+//
+// Maps WGPUTextureFormat values to DXGI_FORMAT constants and provides
+// per-format metadata (bytes per pixel, depth/stencil classification).
+// Also maps WebGPU vertex format enum values to DXGI_FORMAT for vertex input.
+// Mirrors the structure of vk_formats.zig for the D3D12 backend.
+
+const model = @import("../../model.zig");
+const compressed_formats = @import("../../core/abi/wgpu_type_texture_formats.zig");
+
+// --- DXGI_FORMAT constants (Microsoft DXGI 1.0+ spec values) ---
+
+// 4-channel 32-bit
+pub const DXGI_FORMAT_R32G32B32A32_FLOAT: u32 = 2;
+pub const DXGI_FORMAT_R32G32B32A32_UINT: u32 = 3;
+pub const DXGI_FORMAT_R32G32B32A32_SINT: u32 = 4;
+
+// 3-channel 32-bit (vertex-only; not valid for render targets or textures)
+pub const DXGI_FORMAT_R32G32B32_FLOAT: u32 = 6;
+pub const DXGI_FORMAT_R32G32B32_UINT: u32 = 7;
+pub const DXGI_FORMAT_R32G32B32_SINT: u32 = 8;
+
+// 4-channel 16-bit
+pub const DXGI_FORMAT_R16G16B16A16_FLOAT: u32 = 10;
+pub const DXGI_FORMAT_R16G16B16A16_UNORM: u32 = 11;
+pub const DXGI_FORMAT_R16G16B16A16_UINT: u32 = 12;
+pub const DXGI_FORMAT_R16G16B16A16_SNORM: u32 = 13;
+pub const DXGI_FORMAT_R16G16B16A16_SINT: u32 = 14;
+
+// 2-channel 32-bit
+pub const DXGI_FORMAT_R32G32_FLOAT: u32 = 16;
+pub const DXGI_FORMAT_R32G32_UINT: u32 = 17;
+pub const DXGI_FORMAT_R32G32_SINT: u32 = 18;
+
+// Depth 32 + stencil 8
+pub const DXGI_FORMAT_D32_FLOAT_S8X24_UINT: u32 = 20;
+
+// Packed 10/10/10/2
+pub const DXGI_FORMAT_R10G10B10A2_UNORM: u32 = 24;
+pub const DXGI_FORMAT_R10G10B10A2_UINT: u32 = 25;
+
+// Packed float
+pub const DXGI_FORMAT_R11G11B10_FLOAT: u32 = 26;
+
+// 4-channel 8-bit
+pub const DXGI_FORMAT_R8G8B8A8_UNORM: u32 = 28;
+pub const DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: u32 = 29;
+pub const DXGI_FORMAT_R8G8B8A8_UINT: u32 = 30;
+pub const DXGI_FORMAT_R8G8B8A8_SNORM: u32 = 31;
+pub const DXGI_FORMAT_R8G8B8A8_SINT: u32 = 32;
+
+// 2-channel 16-bit
+pub const DXGI_FORMAT_R16G16_FLOAT: u32 = 34;
+pub const DXGI_FORMAT_R16G16_UNORM: u32 = 35;
+pub const DXGI_FORMAT_R16G16_UINT: u32 = 36;
+pub const DXGI_FORMAT_R16G16_SNORM: u32 = 37;
+pub const DXGI_FORMAT_R16G16_SINT: u32 = 38;
+
+// Depth 32
+pub const DXGI_FORMAT_D32_FLOAT: u32 = 40;
+
+// 1-channel 32-bit
+pub const DXGI_FORMAT_R32_FLOAT: u32 = 41;
+pub const DXGI_FORMAT_R32_UINT: u32 = 42;
+pub const DXGI_FORMAT_R32_SINT: u32 = 43;
+
+// Depth 24 + stencil 8
+pub const DXGI_FORMAT_D24_UNORM_S8_UINT: u32 = 45;
+
+// 2-channel 8-bit
+pub const DXGI_FORMAT_R8G8_UNORM: u32 = 49;
+pub const DXGI_FORMAT_R8G8_UINT: u32 = 50;
+pub const DXGI_FORMAT_R8G8_SNORM: u32 = 51;
+pub const DXGI_FORMAT_R8G8_SINT: u32 = 52;
+
+// 1-channel 16-bit
+pub const DXGI_FORMAT_R16_FLOAT: u32 = 54;
+pub const DXGI_FORMAT_D16_UNORM: u32 = 55;
+pub const DXGI_FORMAT_R16_UNORM: u32 = 56;
+pub const DXGI_FORMAT_R16_SNORM: u32 = 57;
+pub const DXGI_FORMAT_R16_UINT: u32 = 58;
+pub const DXGI_FORMAT_R16_SINT: u32 = 59;
+
+// 1-channel 8-bit
+pub const DXGI_FORMAT_R8_UNORM: u32 = 61;
+pub const DXGI_FORMAT_R8_SNORM: u32 = 62;
+pub const DXGI_FORMAT_R8_UINT: u32 = 63;
+pub const DXGI_FORMAT_R8_SINT: u32 = 64;
+
+// Shared exponent
+pub const DXGI_FORMAT_R9G9B9E5_SHAREDEXP: u32 = 67;
+
+// BC compressed formats
+pub const DXGI_FORMAT_BC1_UNORM: u32 = 71;
+pub const DXGI_FORMAT_BC1_UNORM_SRGB: u32 = 72;
+pub const DXGI_FORMAT_BC2_UNORM: u32 = 74;
+pub const DXGI_FORMAT_BC2_UNORM_SRGB: u32 = 75;
+pub const DXGI_FORMAT_BC3_UNORM: u32 = 77;
+pub const DXGI_FORMAT_BC3_UNORM_SRGB: u32 = 78;
+pub const DXGI_FORMAT_BC4_UNORM: u32 = 80;
+pub const DXGI_FORMAT_BC4_SNORM: u32 = 81;
+pub const DXGI_FORMAT_BC5_UNORM: u32 = 83;
+pub const DXGI_FORMAT_BC5_SNORM: u32 = 84;
+
+// BGRA 8-bit
+pub const DXGI_FORMAT_B8G8R8A8_UNORM: u32 = 87;
+pub const DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: u32 = 91;
+
+// BC6H / BC7 compressed formats
+pub const DXGI_FORMAT_BC6H_UF16: u32 = 95;
+pub const DXGI_FORMAT_BC6H_SF16: u32 = 96;
+pub const DXGI_FORMAT_BC7_UNORM: u32 = 98;
+pub const DXGI_FORMAT_BC7_UNORM_SRGB: u32 = 99;
+
+// Stencil-only (DXGI uses the depth-stencil typeless family; D3D12 exposes
+// stencil-only views via X24_TYPELESS_G8_UINT = 47, but the closest
+// standalone format for an 8-bit stencil surface is the D24+S8 layout).
+pub const DXGI_FORMAT_D24_X8_STENCIL8: u32 = 45; // same resource, stencil-only view
+
+// --- Format translation ---
+
+pub fn wgpu_format_to_dxgi(format: model.WGPUTextureFormat) !u32 {
+    return switch (format) {
+        // 1-channel 8-bit
+        model.WGPUTextureFormat_R8Unorm => DXGI_FORMAT_R8_UNORM,
+        model.WGPUTextureFormat_R8Snorm => DXGI_FORMAT_R8_SNORM,
+        model.WGPUTextureFormat_R8Uint => DXGI_FORMAT_R8_UINT,
+        model.WGPUTextureFormat_R8Sint => DXGI_FORMAT_R8_SINT,
+
+        // 2-channel 8-bit
+        model.WGPUTextureFormat_RG8Unorm => DXGI_FORMAT_R8G8_UNORM,
+        model.WGPUTextureFormat_RG8Snorm => DXGI_FORMAT_R8G8_SNORM,
+        model.WGPUTextureFormat_RG8Uint => DXGI_FORMAT_R8G8_UINT,
+        model.WGPUTextureFormat_RG8Sint => DXGI_FORMAT_R8G8_SINT,
+
+        // 4-channel 8-bit
+        model.WGPUTextureFormat_RGBA8Unorm => DXGI_FORMAT_R8G8B8A8_UNORM,
+        model.WGPUTextureFormat_RGBA8UnormSrgb => DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+        model.WGPUTextureFormat_RGBA8Snorm => DXGI_FORMAT_R8G8B8A8_SNORM,
+        model.WGPUTextureFormat_RGBA8Uint => DXGI_FORMAT_R8G8B8A8_UINT,
+        model.WGPUTextureFormat_RGBA8Sint => DXGI_FORMAT_R8G8B8A8_SINT,
+        model.WGPUTextureFormat_BGRA8Unorm => DXGI_FORMAT_B8G8R8A8_UNORM,
+        model.WGPUTextureFormat_BGRA8UnormSrgb => DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
+
+        // Packed 32-bit color
+        model.WGPUTextureFormat_RGB10A2Uint => DXGI_FORMAT_R10G10B10A2_UINT,
+        model.WGPUTextureFormat_RGB10A2Unorm => DXGI_FORMAT_R10G10B10A2_UNORM,
+        model.WGPUTextureFormat_RG11B10Ufloat => DXGI_FORMAT_R11G11B10_FLOAT,
+        model.WGPUTextureFormat_RGB9E5Ufloat => DXGI_FORMAT_R9G9B9E5_SHAREDEXP,
+
+        // 1-channel 16-bit
+        model.WGPUTextureFormat_R16Unorm => DXGI_FORMAT_R16_UNORM,
+        model.WGPUTextureFormat_R16Snorm => DXGI_FORMAT_R16_SNORM,
+        model.WGPUTextureFormat_R16Uint => DXGI_FORMAT_R16_UINT,
+        model.WGPUTextureFormat_R16Sint => DXGI_FORMAT_R16_SINT,
+        model.WGPUTextureFormat_R16Float => DXGI_FORMAT_R16_FLOAT,
+
+        // 2-channel 16-bit
+        model.WGPUTextureFormat_RG16Unorm => DXGI_FORMAT_R16G16_UNORM,
+        model.WGPUTextureFormat_RG16Snorm => DXGI_FORMAT_R16G16_SNORM,
+        model.WGPUTextureFormat_RG16Uint => DXGI_FORMAT_R16G16_UINT,
+        model.WGPUTextureFormat_RG16Sint => DXGI_FORMAT_R16G16_SINT,
+        model.WGPUTextureFormat_RG16Float => DXGI_FORMAT_R16G16_FLOAT,
+
+        // 4-channel 16-bit
+        model.WGPUTextureFormat_RGBA16Uint => DXGI_FORMAT_R16G16B16A16_UINT,
+        model.WGPUTextureFormat_RGBA16Sint => DXGI_FORMAT_R16G16B16A16_SINT,
+        model.WGPUTextureFormat_RGBA16Float => DXGI_FORMAT_R16G16B16A16_FLOAT,
+
+        // 1-channel 32-bit
+        model.WGPUTextureFormat_R32Uint => DXGI_FORMAT_R32_UINT,
+        model.WGPUTextureFormat_R32Sint => DXGI_FORMAT_R32_SINT,
+        model.WGPUTextureFormat_R32Float => DXGI_FORMAT_R32_FLOAT,
+
+        // 2-channel 32-bit
+        model.WGPUTextureFormat_RG32Uint => DXGI_FORMAT_R32G32_UINT,
+        model.WGPUTextureFormat_RG32Sint => DXGI_FORMAT_R32G32_SINT,
+        model.WGPUTextureFormat_RG32Float => DXGI_FORMAT_R32G32_FLOAT,
+
+        // 4-channel 32-bit
+        model.WGPUTextureFormat_RGBA32Uint => DXGI_FORMAT_R32G32B32A32_UINT,
+        model.WGPUTextureFormat_RGBA32Sint => DXGI_FORMAT_R32G32B32A32_SINT,
+        model.WGPUTextureFormat_RGBA32Float => DXGI_FORMAT_R32G32B32A32_FLOAT,
+
+        // Depth/stencil
+        model.WGPUTextureFormat_Depth16Unorm => DXGI_FORMAT_D16_UNORM,
+        model.WGPUTextureFormat_Depth32Float => DXGI_FORMAT_D32_FLOAT,
+        model.WGPUTextureFormat_Stencil8 => DXGI_FORMAT_D24_X8_STENCIL8,
+        model.WGPUTextureFormat_Depth24Plus,
+        model.WGPUTextureFormat_Depth24PlusStencil8,
+        => DXGI_FORMAT_D24_UNORM_S8_UINT,
+        model.WGPUTextureFormat_Depth32FloatStencil8 => DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
+
+        // BC compressed formats
+        compressed_formats.WGPUTextureFormat_BC1RGBAUnorm => DXGI_FORMAT_BC1_UNORM,
+        compressed_formats.WGPUTextureFormat_BC1RGBAUnormSrgb => DXGI_FORMAT_BC1_UNORM_SRGB,
+        compressed_formats.WGPUTextureFormat_BC2RGBAUnorm => DXGI_FORMAT_BC2_UNORM,
+        compressed_formats.WGPUTextureFormat_BC2RGBAUnormSrgb => DXGI_FORMAT_BC2_UNORM_SRGB,
+        compressed_formats.WGPUTextureFormat_BC3RGBAUnorm => DXGI_FORMAT_BC3_UNORM,
+        compressed_formats.WGPUTextureFormat_BC3RGBAUnormSrgb => DXGI_FORMAT_BC3_UNORM_SRGB,
+        compressed_formats.WGPUTextureFormat_BC4RUnorm => DXGI_FORMAT_BC4_UNORM,
+        compressed_formats.WGPUTextureFormat_BC4RSnorm => DXGI_FORMAT_BC4_SNORM,
+        compressed_formats.WGPUTextureFormat_BC5RGUnorm => DXGI_FORMAT_BC5_UNORM,
+        compressed_formats.WGPUTextureFormat_BC5RGSnorm => DXGI_FORMAT_BC5_SNORM,
+        compressed_formats.WGPUTextureFormat_BC6HRGBUfloat => DXGI_FORMAT_BC6H_UF16,
+        compressed_formats.WGPUTextureFormat_BC6HRGBFloat => DXGI_FORMAT_BC6H_SF16,
+        compressed_formats.WGPUTextureFormat_BC7RGBAUnorm => DXGI_FORMAT_BC7_UNORM,
+        compressed_formats.WGPUTextureFormat_BC7RGBAUnormSrgb => DXGI_FORMAT_BC7_UNORM_SRGB,
+
+        else => error.UnsupportedFeature,
+    };
+}
+
+/// Returns the number of bytes per pixel for a given WebGPU texture format.
+/// Depth/stencil formats return the total byte footprint per texel.
+/// Compressed (BC) formats return the block byte size (per 4x4 block).
+pub fn bytes_per_pixel(format: model.WGPUTextureFormat) !u32 {
+    return switch (format) {
+        // 1 byte per pixel
+        model.WGPUTextureFormat_R8Unorm,
+        model.WGPUTextureFormat_R8Snorm,
+        model.WGPUTextureFormat_R8Uint,
+        model.WGPUTextureFormat_R8Sint,
+        model.WGPUTextureFormat_Stencil8,
+        => 1,
+
+        // 2 bytes per pixel
+        model.WGPUTextureFormat_R16Unorm,
+        model.WGPUTextureFormat_R16Snorm,
+        model.WGPUTextureFormat_R16Uint,
+        model.WGPUTextureFormat_R16Sint,
+        model.WGPUTextureFormat_R16Float,
+        model.WGPUTextureFormat_RG8Unorm,
+        model.WGPUTextureFormat_RG8Snorm,
+        model.WGPUTextureFormat_RG8Uint,
+        model.WGPUTextureFormat_RG8Sint,
+        model.WGPUTextureFormat_Depth16Unorm,
+        => 2,
+
+        // 4 bytes per pixel
+        model.WGPUTextureFormat_RGBA8Unorm,
+        model.WGPUTextureFormat_RGBA8UnormSrgb,
+        model.WGPUTextureFormat_RGBA8Snorm,
+        model.WGPUTextureFormat_RGBA8Uint,
+        model.WGPUTextureFormat_RGBA8Sint,
+        model.WGPUTextureFormat_BGRA8Unorm,
+        model.WGPUTextureFormat_BGRA8UnormSrgb,
+        model.WGPUTextureFormat_RGB10A2Uint,
+        model.WGPUTextureFormat_RGB10A2Unorm,
+        model.WGPUTextureFormat_RG11B10Ufloat,
+        model.WGPUTextureFormat_RGB9E5Ufloat,
+        model.WGPUTextureFormat_RG16Unorm,
+        model.WGPUTextureFormat_RG16Snorm,
+        model.WGPUTextureFormat_RG16Uint,
+        model.WGPUTextureFormat_RG16Sint,
+        model.WGPUTextureFormat_RG16Float,
+        model.WGPUTextureFormat_R32Uint,
+        model.WGPUTextureFormat_R32Sint,
+        model.WGPUTextureFormat_R32Float,
+        model.WGPUTextureFormat_Depth32Float,
+        model.WGPUTextureFormat_Depth24Plus,
+        model.WGPUTextureFormat_Depth24PlusStencil8,
+        => 4,
+
+        // 8 bytes per pixel
+        model.WGPUTextureFormat_RGBA16Uint,
+        model.WGPUTextureFormat_RGBA16Sint,
+        model.WGPUTextureFormat_RGBA16Float,
+        model.WGPUTextureFormat_RG32Uint,
+        model.WGPUTextureFormat_RG32Sint,
+        model.WGPUTextureFormat_RG32Float,
+        model.WGPUTextureFormat_Depth32FloatStencil8,
+        => 8,
+
+        // 16 bytes per pixel
+        model.WGPUTextureFormat_RGBA32Uint,
+        model.WGPUTextureFormat_RGBA32Sint,
+        model.WGPUTextureFormat_RGBA32Float,
+        => 16,
+
+        // BC compressed: bytes per 4x4 block
+        // BC1/BC4: 8 bytes per block
+        compressed_formats.WGPUTextureFormat_BC1RGBAUnorm,
+        compressed_formats.WGPUTextureFormat_BC1RGBAUnormSrgb,
+        compressed_formats.WGPUTextureFormat_BC4RUnorm,
+        compressed_formats.WGPUTextureFormat_BC4RSnorm,
+        => 8,
+
+        // BC2/BC3/BC5/BC6H/BC7: 16 bytes per block
+        compressed_formats.WGPUTextureFormat_BC2RGBAUnorm,
+        compressed_formats.WGPUTextureFormat_BC2RGBAUnormSrgb,
+        compressed_formats.WGPUTextureFormat_BC3RGBAUnorm,
+        compressed_formats.WGPUTextureFormat_BC3RGBAUnormSrgb,
+        compressed_formats.WGPUTextureFormat_BC5RGUnorm,
+        compressed_formats.WGPUTextureFormat_BC5RGSnorm,
+        compressed_formats.WGPUTextureFormat_BC6HRGBUfloat,
+        compressed_formats.WGPUTextureFormat_BC6HRGBFloat,
+        compressed_formats.WGPUTextureFormat_BC7RGBAUnorm,
+        compressed_formats.WGPUTextureFormat_BC7RGBAUnormSrgb,
+        => 16,
+
+        else => error.UnsupportedFeature,
+    };
+}
+
+/// Returns true if the format is a depth or depth-stencil format.
+pub fn is_depth_stencil(format: model.WGPUTextureFormat) bool {
+    return switch (format) {
+        model.WGPUTextureFormat_Depth16Unorm,
+        model.WGPUTextureFormat_Depth24Plus,
+        model.WGPUTextureFormat_Depth24PlusStencil8,
+        model.WGPUTextureFormat_Depth32Float,
+        model.WGPUTextureFormat_Depth32FloatStencil8,
+        model.WGPUTextureFormat_Stencil8,
+        => true,
+        else => false,
+    };
+}
+
+/// Returns true when the format carries a stencil channel.
+pub fn has_stencil(format: model.WGPUTextureFormat) bool {
+    return switch (format) {
+        model.WGPUTextureFormat_Stencil8,
+        model.WGPUTextureFormat_Depth24PlusStencil8,
+        model.WGPUTextureFormat_Depth32FloatStencil8,
+        => true,
+        else => false,
+    };
+}
+
+/// Returns true when the format is a BC block-compressed format.
+pub fn is_bc_compressed(format: model.WGPUTextureFormat) bool {
+    return compressed_formats.isBCFormat(format);
+}
+
+// --- Vertex format translation ---
+//
+// WebGPU vertex format enum values (from doe_napi_formats.c):
+//   0x01..0x0C  8-bit (uint8..snorm8x4)
+//   0x0D..0x18  16-bit (uint16..snorm16x4)
+//   0x19..0x1C  32-bit float (float32..float32x4)
+//   0x1D..0x1F  16-bit float (float16..float16x4)
+//   0x21..0x28  32-bit int (uint32..sint32x4)  — note 0x20 is skipped
+//   0x29        unorm10-10-10-2
+//   0x2A        unorm8x4-bgra
+
+const WGPU_VERTEX_FORMAT_UINT8: u32 = 0x01;
+const WGPU_VERTEX_FORMAT_UINT8X2: u32 = 0x02;
+const WGPU_VERTEX_FORMAT_UINT8X4: u32 = 0x03;
+const WGPU_VERTEX_FORMAT_SINT8: u32 = 0x04;
+const WGPU_VERTEX_FORMAT_SINT8X2: u32 = 0x05;
+const WGPU_VERTEX_FORMAT_SINT8X4: u32 = 0x06;
+const WGPU_VERTEX_FORMAT_UNORM8: u32 = 0x07;
+const WGPU_VERTEX_FORMAT_UNORM8X2: u32 = 0x08;
+const WGPU_VERTEX_FORMAT_UNORM8X4: u32 = 0x09;
+const WGPU_VERTEX_FORMAT_SNORM8: u32 = 0x0A;
+const WGPU_VERTEX_FORMAT_SNORM8X2: u32 = 0x0B;
+const WGPU_VERTEX_FORMAT_SNORM8X4: u32 = 0x0C;
+const WGPU_VERTEX_FORMAT_UINT16: u32 = 0x0D;
+const WGPU_VERTEX_FORMAT_UINT16X2: u32 = 0x0E;
+const WGPU_VERTEX_FORMAT_UINT16X4: u32 = 0x0F;
+const WGPU_VERTEX_FORMAT_SINT16: u32 = 0x10;
+const WGPU_VERTEX_FORMAT_SINT16X2: u32 = 0x11;
+const WGPU_VERTEX_FORMAT_SINT16X4: u32 = 0x12;
+const WGPU_VERTEX_FORMAT_UNORM16: u32 = 0x13;
+const WGPU_VERTEX_FORMAT_UNORM16X2: u32 = 0x14;
+const WGPU_VERTEX_FORMAT_UNORM16X4: u32 = 0x15;
+const WGPU_VERTEX_FORMAT_SNORM16: u32 = 0x16;
+const WGPU_VERTEX_FORMAT_SNORM16X2: u32 = 0x17;
+const WGPU_VERTEX_FORMAT_SNORM16X4: u32 = 0x18;
+const WGPU_VERTEX_FORMAT_FLOAT32: u32 = 0x19;
+const WGPU_VERTEX_FORMAT_FLOAT32X2: u32 = 0x1A;
+const WGPU_VERTEX_FORMAT_FLOAT32X3: u32 = 0x1B;
+const WGPU_VERTEX_FORMAT_FLOAT32X4: u32 = 0x1C;
+const WGPU_VERTEX_FORMAT_FLOAT16: u32 = 0x1D;
+const WGPU_VERTEX_FORMAT_FLOAT16X2: u32 = 0x1E;
+const WGPU_VERTEX_FORMAT_FLOAT16X4: u32 = 0x1F;
+const WGPU_VERTEX_FORMAT_UINT32: u32 = 0x21;
+const WGPU_VERTEX_FORMAT_UINT32X2: u32 = 0x22;
+const WGPU_VERTEX_FORMAT_UINT32X3: u32 = 0x23;
+const WGPU_VERTEX_FORMAT_UINT32X4: u32 = 0x24;
+const WGPU_VERTEX_FORMAT_SINT32: u32 = 0x25;
+const WGPU_VERTEX_FORMAT_SINT32X2: u32 = 0x26;
+const WGPU_VERTEX_FORMAT_SINT32X3: u32 = 0x27;
+const WGPU_VERTEX_FORMAT_SINT32X4: u32 = 0x28;
+const WGPU_VERTEX_FORMAT_UNORM10_10_10_2: u32 = 0x29;
+const WGPU_VERTEX_FORMAT_UNORM8X4_BGRA: u32 = 0x2A;
+
+/// Maps a WebGPU vertex format enum value to the corresponding DXGI_FORMAT.
+pub fn wgpu_vertex_format_to_dxgi(format: u32) !u32 {
+    return switch (format) {
+        // 8-bit uint
+        WGPU_VERTEX_FORMAT_UINT8 => DXGI_FORMAT_R8_UINT,
+        WGPU_VERTEX_FORMAT_UINT8X2 => DXGI_FORMAT_R8G8_UINT,
+        WGPU_VERTEX_FORMAT_UINT8X4 => DXGI_FORMAT_R8G8B8A8_UINT,
+        // 8-bit sint
+        WGPU_VERTEX_FORMAT_SINT8 => DXGI_FORMAT_R8_SINT,
+        WGPU_VERTEX_FORMAT_SINT8X2 => DXGI_FORMAT_R8G8_SINT,
+        WGPU_VERTEX_FORMAT_SINT8X4 => DXGI_FORMAT_R8G8B8A8_SINT,
+        // 8-bit unorm
+        WGPU_VERTEX_FORMAT_UNORM8 => DXGI_FORMAT_R8_UNORM,
+        WGPU_VERTEX_FORMAT_UNORM8X2 => DXGI_FORMAT_R8G8_UNORM,
+        WGPU_VERTEX_FORMAT_UNORM8X4 => DXGI_FORMAT_R8G8B8A8_UNORM,
+        // 8-bit snorm
+        WGPU_VERTEX_FORMAT_SNORM8 => DXGI_FORMAT_R8_SNORM,
+        WGPU_VERTEX_FORMAT_SNORM8X2 => DXGI_FORMAT_R8G8_SNORM,
+        WGPU_VERTEX_FORMAT_SNORM8X4 => DXGI_FORMAT_R8G8B8A8_SNORM,
+        // 16-bit uint
+        WGPU_VERTEX_FORMAT_UINT16 => DXGI_FORMAT_R16_UINT,
+        WGPU_VERTEX_FORMAT_UINT16X2 => DXGI_FORMAT_R16G16_UINT,
+        WGPU_VERTEX_FORMAT_UINT16X4 => DXGI_FORMAT_R16G16B16A16_UINT,
+        // 16-bit sint
+        WGPU_VERTEX_FORMAT_SINT16 => DXGI_FORMAT_R16_SINT,
+        WGPU_VERTEX_FORMAT_SINT16X2 => DXGI_FORMAT_R16G16_SINT,
+        WGPU_VERTEX_FORMAT_SINT16X4 => DXGI_FORMAT_R16G16B16A16_SINT,
+        // 16-bit unorm
+        WGPU_VERTEX_FORMAT_UNORM16 => DXGI_FORMAT_R16_UNORM,
+        WGPU_VERTEX_FORMAT_UNORM16X2 => DXGI_FORMAT_R16G16_UNORM,
+        WGPU_VERTEX_FORMAT_UNORM16X4 => DXGI_FORMAT_R16G16B16A16_UNORM,
+        // 16-bit snorm
+        WGPU_VERTEX_FORMAT_SNORM16 => DXGI_FORMAT_R16_SNORM,
+        WGPU_VERTEX_FORMAT_SNORM16X2 => DXGI_FORMAT_R16G16_SNORM,
+        WGPU_VERTEX_FORMAT_SNORM16X4 => DXGI_FORMAT_R16G16B16A16_SNORM,
+        // 32-bit float
+        WGPU_VERTEX_FORMAT_FLOAT32 => DXGI_FORMAT_R32_FLOAT,
+        WGPU_VERTEX_FORMAT_FLOAT32X2 => DXGI_FORMAT_R32G32_FLOAT,
+        WGPU_VERTEX_FORMAT_FLOAT32X3 => DXGI_FORMAT_R32G32B32_FLOAT,
+        WGPU_VERTEX_FORMAT_FLOAT32X4 => DXGI_FORMAT_R32G32B32A32_FLOAT,
+        // 16-bit float
+        WGPU_VERTEX_FORMAT_FLOAT16 => DXGI_FORMAT_R16_FLOAT,
+        WGPU_VERTEX_FORMAT_FLOAT16X2 => DXGI_FORMAT_R16G16_FLOAT,
+        WGPU_VERTEX_FORMAT_FLOAT16X4 => DXGI_FORMAT_R16G16B16A16_FLOAT,
+        // 32-bit uint
+        WGPU_VERTEX_FORMAT_UINT32 => DXGI_FORMAT_R32_UINT,
+        WGPU_VERTEX_FORMAT_UINT32X2 => DXGI_FORMAT_R32G32_UINT,
+        WGPU_VERTEX_FORMAT_UINT32X3 => DXGI_FORMAT_R32G32B32_UINT,
+        WGPU_VERTEX_FORMAT_UINT32X4 => DXGI_FORMAT_R32G32B32A32_UINT,
+        // 32-bit sint
+        WGPU_VERTEX_FORMAT_SINT32 => DXGI_FORMAT_R32_SINT,
+        WGPU_VERTEX_FORMAT_SINT32X2 => DXGI_FORMAT_R32G32_SINT,
+        WGPU_VERTEX_FORMAT_SINT32X3 => DXGI_FORMAT_R32G32B32_SINT,
+        WGPU_VERTEX_FORMAT_SINT32X4 => DXGI_FORMAT_R32G32B32A32_SINT,
+        // Packed
+        WGPU_VERTEX_FORMAT_UNORM10_10_10_2 => DXGI_FORMAT_R10G10B10A2_UNORM,
+        WGPU_VERTEX_FORMAT_UNORM8X4_BGRA => DXGI_FORMAT_B8G8R8A8_UNORM,
+
+        else => error.UnsupportedFeature,
+    };
+}
+
+// --- Tests ---
+
+const std = @import("std");
+const testing = std.testing;
+
+test "wgpu_format_to_dxgi maps basic color formats" {
+    try testing.expectEqual(DXGI_FORMAT_R8_UNORM, try wgpu_format_to_dxgi(model.WGPUTextureFormat_R8Unorm));
+    try testing.expectEqual(DXGI_FORMAT_R8G8B8A8_UNORM, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RGBA8Unorm));
+    try testing.expectEqual(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RGBA8UnormSrgb));
+    try testing.expectEqual(DXGI_FORMAT_B8G8R8A8_UNORM, try wgpu_format_to_dxgi(model.WGPUTextureFormat_BGRA8Unorm));
+    try testing.expectEqual(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, try wgpu_format_to_dxgi(model.WGPUTextureFormat_BGRA8UnormSrgb));
+    try testing.expectEqual(DXGI_FORMAT_R32_FLOAT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_R32Float));
+    try testing.expectEqual(DXGI_FORMAT_R16G16_UNORM, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RG16Unorm));
+    try testing.expectEqual(DXGI_FORMAT_R32G32B32A32_FLOAT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RGBA32Float));
+}
+
+test "wgpu_format_to_dxgi maps packed formats" {
+    try testing.expectEqual(DXGI_FORMAT_R10G10B10A2_UNORM, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RGB10A2Unorm));
+    try testing.expectEqual(DXGI_FORMAT_R10G10B10A2_UINT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RGB10A2Uint));
+    try testing.expectEqual(DXGI_FORMAT_R11G11B10_FLOAT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RG11B10Ufloat));
+    try testing.expectEqual(DXGI_FORMAT_R9G9B9E5_SHAREDEXP, try wgpu_format_to_dxgi(model.WGPUTextureFormat_RGB9E5Ufloat));
+}
+
+test "wgpu_format_to_dxgi maps depth/stencil formats" {
+    try testing.expectEqual(DXGI_FORMAT_D16_UNORM, try wgpu_format_to_dxgi(model.WGPUTextureFormat_Depth16Unorm));
+    try testing.expectEqual(DXGI_FORMAT_D32_FLOAT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_Depth32Float));
+    try testing.expectEqual(DXGI_FORMAT_D24_UNORM_S8_UINT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_Depth24Plus));
+    try testing.expectEqual(DXGI_FORMAT_D24_UNORM_S8_UINT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_Depth24PlusStencil8));
+    try testing.expectEqual(DXGI_FORMAT_D32_FLOAT_S8X24_UINT, try wgpu_format_to_dxgi(model.WGPUTextureFormat_Depth32FloatStencil8));
+}
+
+test "wgpu_format_to_dxgi maps BC compressed formats" {
+    try testing.expectEqual(DXGI_FORMAT_BC1_UNORM, try wgpu_format_to_dxgi(compressed_formats.WGPUTextureFormat_BC1RGBAUnorm));
+    try testing.expectEqual(DXGI_FORMAT_BC7_UNORM_SRGB, try wgpu_format_to_dxgi(compressed_formats.WGPUTextureFormat_BC7RGBAUnormSrgb));
+    try testing.expectEqual(DXGI_FORMAT_BC6H_UF16, try wgpu_format_to_dxgi(compressed_formats.WGPUTextureFormat_BC6HRGBUfloat));
+}
+
+test "wgpu_format_to_dxgi returns error for unsupported format" {
+    try testing.expectError(error.UnsupportedFeature, wgpu_format_to_dxgi(0xFFFF));
+}
+
+test "bytes_per_pixel returns correct sizes" {
+    try testing.expectEqual(@as(u32, 1), try bytes_per_pixel(model.WGPUTextureFormat_R8Unorm));
+    try testing.expectEqual(@as(u32, 2), try bytes_per_pixel(model.WGPUTextureFormat_R16Float));
+    try testing.expectEqual(@as(u32, 4), try bytes_per_pixel(model.WGPUTextureFormat_RGBA8Unorm));
+    try testing.expectEqual(@as(u32, 8), try bytes_per_pixel(model.WGPUTextureFormat_RGBA16Float));
+    try testing.expectEqual(@as(u32, 16), try bytes_per_pixel(model.WGPUTextureFormat_RGBA32Float));
+}
+
+test "bytes_per_pixel returns block sizes for BC formats" {
+    try testing.expectEqual(@as(u32, 8), try bytes_per_pixel(compressed_formats.WGPUTextureFormat_BC1RGBAUnorm));
+    try testing.expectEqual(@as(u32, 16), try bytes_per_pixel(compressed_formats.WGPUTextureFormat_BC7RGBAUnorm));
+}
+
+test "is_depth_stencil identifies depth formats" {
+    try testing.expect(is_depth_stencil(model.WGPUTextureFormat_Depth16Unorm));
+    try testing.expect(is_depth_stencil(model.WGPUTextureFormat_Depth24Plus));
+    try testing.expect(is_depth_stencil(model.WGPUTextureFormat_Depth32FloatStencil8));
+    try testing.expect(!is_depth_stencil(model.WGPUTextureFormat_RGBA8Unorm));
+}
+
+test "has_stencil distinguishes stencil formats" {
+    try testing.expect(!has_stencil(model.WGPUTextureFormat_Depth16Unorm));
+    try testing.expect(has_stencil(model.WGPUTextureFormat_Depth24PlusStencil8));
+    try testing.expect(has_stencil(model.WGPUTextureFormat_Depth32FloatStencil8));
+    try testing.expect(has_stencil(model.WGPUTextureFormat_Stencil8));
+}
+
+test "wgpu_vertex_format_to_dxgi maps 8-bit formats" {
+    try testing.expectEqual(DXGI_FORMAT_R8_UINT, try wgpu_vertex_format_to_dxgi(0x01));
+    try testing.expectEqual(DXGI_FORMAT_R8G8_UINT, try wgpu_vertex_format_to_dxgi(0x02));
+    try testing.expectEqual(DXGI_FORMAT_R8G8B8A8_UINT, try wgpu_vertex_format_to_dxgi(0x03));
+    try testing.expectEqual(DXGI_FORMAT_R8_SINT, try wgpu_vertex_format_to_dxgi(0x04));
+    try testing.expectEqual(DXGI_FORMAT_R8_UNORM, try wgpu_vertex_format_to_dxgi(0x07));
+    try testing.expectEqual(DXGI_FORMAT_R8G8B8A8_UNORM, try wgpu_vertex_format_to_dxgi(0x09));
+    try testing.expectEqual(DXGI_FORMAT_R8_SNORM, try wgpu_vertex_format_to_dxgi(0x0A));
+    try testing.expectEqual(DXGI_FORMAT_R8G8B8A8_SNORM, try wgpu_vertex_format_to_dxgi(0x0C));
+}
+
+test "wgpu_vertex_format_to_dxgi maps 16-bit formats" {
+    try testing.expectEqual(DXGI_FORMAT_R16_UINT, try wgpu_vertex_format_to_dxgi(0x0D));
+    try testing.expectEqual(DXGI_FORMAT_R16G16B16A16_SINT, try wgpu_vertex_format_to_dxgi(0x12));
+    try testing.expectEqual(DXGI_FORMAT_R16_UNORM, try wgpu_vertex_format_to_dxgi(0x13));
+    try testing.expectEqual(DXGI_FORMAT_R16G16B16A16_SNORM, try wgpu_vertex_format_to_dxgi(0x18));
+}
+
+test "wgpu_vertex_format_to_dxgi maps 32-bit float formats" {
+    try testing.expectEqual(DXGI_FORMAT_R32_FLOAT, try wgpu_vertex_format_to_dxgi(0x19));
+    try testing.expectEqual(DXGI_FORMAT_R32G32_FLOAT, try wgpu_vertex_format_to_dxgi(0x1A));
+    try testing.expectEqual(DXGI_FORMAT_R32G32B32_FLOAT, try wgpu_vertex_format_to_dxgi(0x1B));
+    try testing.expectEqual(DXGI_FORMAT_R32G32B32A32_FLOAT, try wgpu_vertex_format_to_dxgi(0x1C));
+}
+
+test "wgpu_vertex_format_to_dxgi maps 16-bit float formats" {
+    try testing.expectEqual(DXGI_FORMAT_R16_FLOAT, try wgpu_vertex_format_to_dxgi(0x1D));
+    try testing.expectEqual(DXGI_FORMAT_R16G16_FLOAT, try wgpu_vertex_format_to_dxgi(0x1E));
+    try testing.expectEqual(DXGI_FORMAT_R16G16B16A16_FLOAT, try wgpu_vertex_format_to_dxgi(0x1F));
+}
+
+test "wgpu_vertex_format_to_dxgi maps 32-bit int formats" {
+    try testing.expectEqual(DXGI_FORMAT_R32_UINT, try wgpu_vertex_format_to_dxgi(0x21));
+    try testing.expectEqual(DXGI_FORMAT_R32G32B32_UINT, try wgpu_vertex_format_to_dxgi(0x23));
+    try testing.expectEqual(DXGI_FORMAT_R32G32B32A32_UINT, try wgpu_vertex_format_to_dxgi(0x24));
+    try testing.expectEqual(DXGI_FORMAT_R32_SINT, try wgpu_vertex_format_to_dxgi(0x25));
+    try testing.expectEqual(DXGI_FORMAT_R32G32B32A32_SINT, try wgpu_vertex_format_to_dxgi(0x28));
+}
+
+test "wgpu_vertex_format_to_dxgi maps packed formats" {
+    try testing.expectEqual(DXGI_FORMAT_R10G10B10A2_UNORM, try wgpu_vertex_format_to_dxgi(0x29));
+    try testing.expectEqual(DXGI_FORMAT_B8G8R8A8_UNORM, try wgpu_vertex_format_to_dxgi(0x2A));
+}
+
+test "wgpu_vertex_format_to_dxgi rejects invalid format" {
+    try testing.expectError(error.UnsupportedFeature, wgpu_vertex_format_to_dxgi(0x00));
+    try testing.expectError(error.UnsupportedFeature, wgpu_vertex_format_to_dxgi(0x20));
+    try testing.expectError(error.UnsupportedFeature, wgpu_vertex_format_to_dxgi(0xFF));
+}

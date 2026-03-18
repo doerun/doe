@@ -55,6 +55,12 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
     if (std.mem.eql(u8, call.name, "textureDimensions")) {
         return try texture.emit_texture_dimensions(self, call, result_ty);
     }
+    if (std.mem.eql(u8, call.name, "textureNumLevels")) {
+        return try texture.emit_texture_num_levels(self, call, result_ty);
+    }
+    if (std.mem.eql(u8, call.name, "textureNumLayers")) {
+        return try texture.emit_texture_num_layers(self, call, result_ty);
+    }
     if (std.mem.eql(u8, call.name, "dot")) {
         return try emit_dot(self, call, result_ty);
     }
@@ -124,6 +130,98 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
         return result_id;
     }
 
+    // Bit manipulation builtins — native SPIR-V opcodes.
+    if (std.mem.eql(u8, call.name, "countOneBits")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        return try emit_result_inst(self, spirv.Opcode.BitCount, try self.emitter.lower_type(result_ty), &.{
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        });
+    }
+    if (std.mem.eql(u8, call.name, "reverseBits")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        return try emit_result_inst(self, spirv.Opcode.BitReverse, try self.emitter.lower_type(result_ty), &.{
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        });
+    }
+    if (std.mem.eql(u8, call.name, "extractBits")) {
+        if (call.args.len != 3) return error.InvalidIr;
+        const opcode: u16 = switch (self.scalar_kind(result_ty)) {
+            .signed => spirv.Opcode.BitFieldSExtract,
+            else => spirv.Opcode.BitFieldUExtract,
+        };
+        return try emit_result_inst(self, opcode, try self.emitter.lower_type(result_ty), &.{
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start + 1]),
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]),
+        });
+    }
+    if (std.mem.eql(u8, call.name, "insertBits")) {
+        if (call.args.len != 4) return error.InvalidIr;
+        return try emit_result_inst(self, spirv.Opcode.BitFieldInsert, try self.emitter.lower_type(result_ty), &.{
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start + 1]),
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]),
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start + 3]),
+        });
+    }
+    if (std.mem.eql(u8, call.name, "transpose")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        return try emit_result_inst(self, spirv.Opcode.Transpose, try self.emitter.lower_type(result_ty), &.{
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        });
+    }
+    // saturate(x) = clamp(x, 0.0, 1.0) via NClamp(x, 0, 1) GLSL.std.450 inst 44
+    if (std.mem.eql(u8, call.name, "saturate")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        const result_type = try self.emitter.lower_type(result_ty);
+        const result_id = self.emitter.builder.reserve_id();
+        const import_id = try self.emitter.builder.glsl450_import_id();
+        const zero = try self.emitter.builder.const_f32_bits(@as(u32, @bitCast(@as(f32, 0.0))));
+        const one = try self.emitter.builder.const_f32_bits(@as(u32, @bitCast(@as(f32, 1.0))));
+        var operands = std.ArrayListUnmanaged(u32){};
+        defer operands.deinit(self.emitter.alloc);
+        try operands.append(self.emitter.alloc, result_type);
+        try operands.append(self.emitter.alloc, result_id);
+        try operands.append(self.emitter.alloc, import_id);
+        try operands.append(self.emitter.alloc, 44); // NClamp
+        try operands.append(self.emitter.alloc, try self.emit_value_expr(self.function.expr_args.items[call.args.start]));
+        try operands.append(self.emitter.alloc, zero);
+        try operands.append(self.emitter.alloc, one);
+        try self.emitter.builder.append_function_inst(spirv.Opcode.ExtInst, operands.items);
+        return result_id;
+    }
+    // Subgroup vote builtins.
+    if (std.mem.eql(u8, call.name, "subgroupAll")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformVote);
+        const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
+        return try emit_result_inst(self, spirv.Opcode.GroupNonUniformAll, try self.emitter.lower_type(result_ty), &.{
+            scope_id,
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        });
+    }
+    if (std.mem.eql(u8, call.name, "subgroupAny")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformVote);
+        const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
+        return try emit_result_inst(self, spirv.Opcode.GroupNonUniformAny, try self.emitter.lower_type(result_ty), &.{
+            scope_id,
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        });
+    }
+    if (std.mem.eql(u8, call.name, "subgroupBallot")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformBallot);
+        const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
+        return try emit_result_inst(self, spirv.Opcode.GroupNonUniformBallot, try self.emitter.lower_type(result_ty), &.{
+            scope_id,
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        });
+    }
+
     if (builtin_inst_1(call.name, self.scalar_kind(result_ty))) |inst| {
         return try emit_glsl_ext_inst_args(self, call, result_ty, inst);
     }
@@ -142,6 +240,37 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
     }
     if (std.mem.eql(u8, call.name, "cross")) {
         return try emit_glsl_ext_inst_args(self, call, result_ty, 68);
+    }
+    if (std.mem.eql(u8, call.name, "reflect")) {
+        return try emit_glsl_ext_inst_args(self, call, result_ty, 71);
+    }
+    if (std.mem.eql(u8, call.name, "refract")) {
+        return try emit_glsl_ext_inst_args(self, call, result_ty, 72);
+    }
+    if (std.mem.eql(u8, call.name, "determinant")) {
+        return try emit_glsl_ext_inst_args(self, call, result_ty, 33);
+    }
+    // GLSL.std.450 FindSMsb / FindUMsb for firstLeadingBit.
+    if (std.mem.eql(u8, call.name, "firstLeadingBit")) {
+        return try emit_glsl_ext_inst_args(self, call, result_ty, switch (self.scalar_kind(result_ty)) {
+            .signed => 44, // FindSMsb
+            else => 42, // FindUMsb
+        });
+    }
+    if (std.mem.eql(u8, call.name, "firstTrailingBit")) {
+        return try emit_glsl_ext_inst_args(self, call, result_ty, 73); // FindILsb
+    }
+    // countLeadingZeros and countTrailingZeros are not direct GLSL.std.450 ops,
+    // but WGSL specifies them. For SPIR-V we can approximate using FindUMsb/FindILsb
+    // but the exact semantics differ. For now, map them through GLSL.std.450.
+    if (std.mem.eql(u8, call.name, "countLeadingZeros")) {
+        // CLZ(x) = x == 0 ? 32 : (31 - FindUMsb(x))
+        // For simplicity and correctness, emit as a single FindUMsb and subtract.
+        return try emit_count_leading_zeros(self, call, result_ty);
+    }
+    if (std.mem.eql(u8, call.name, "countTrailingZeros")) {
+        // CTZ(x) = x == 0 ? 32 : FindILsb(x)
+        return try emit_count_trailing_zeros(self, call, result_ty);
     }
 
     return null;
@@ -456,7 +585,7 @@ fn emit_dot(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
             if (lhs_vec.len != rhs_vec.len) return error.UnsupportedConstruct;
             if (lhs_vec.elem != rhs_vec.elem) return error.UnsupportedConstruct;
             switch (self.emitter.module.types.get(lhs_vec.elem)) {
-                .scalar => |scalar| if (scalar != .f32 and scalar != .abstract_float) return error.UnsupportedConstruct,
+                .scalar => |scalar| if (scalar != .f32 and scalar != .f16 and scalar != .abstract_float) return error.UnsupportedConstruct,
                 else => return error.UnsupportedConstruct,
             }
         },
@@ -472,6 +601,70 @@ fn emit_dot(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
             try self.emit_value_expr(rhs_expr),
         },
     );
+}
+
+fn emit_count_leading_zeros(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    // CLZ(x) = select(31u - FindUMsb(x), 32u, x == 0u)
+    if (call.args.len != 1) return error.InvalidIr;
+    const result_type = try self.emitter.lower_type(result_ty);
+    const val_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start]);
+
+    // FindUMsb(x)
+    const import_id = try self.emitter.builder.glsl450_import_id();
+    const msb_id = self.emitter.builder.reserve_id();
+    {
+        var ops = std.ArrayListUnmanaged(u32){};
+        defer ops.deinit(self.emitter.alloc);
+        try ops.append(self.emitter.alloc, result_type);
+        try ops.append(self.emitter.alloc, msb_id);
+        try ops.append(self.emitter.alloc, import_id);
+        try ops.append(self.emitter.alloc, 42); // FindUMsb
+        try ops.append(self.emitter.alloc, val_id);
+        try self.emitter.builder.append_function_inst(spirv.Opcode.ExtInst, ops.items);
+    }
+
+    // 31u - FindUMsb(x)
+    const const_31 = try self.emitter.builder.const_u32(31);
+    const sub_id = try emit_result_inst(self, spirv.Opcode.ISub, result_type, &.{ const_31, msb_id });
+
+    // x == 0u
+    const const_0 = try self.emitter.builder.const_u32(0);
+    const bool_type = try self.emitter.builder.type_bool();
+    const is_zero = try emit_result_inst(self, spirv.Opcode.IEqual, bool_type, &.{ val_id, const_0 });
+
+    // select(31u - msb, 32u, x == 0u)
+    const const_32 = try self.emitter.builder.const_u32(32);
+    return try emit_result_inst(self, spirv.Opcode.Select, result_type, &.{ is_zero, const_32, sub_id });
+}
+
+fn emit_count_trailing_zeros(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    // CTZ(x) = select(FindILsb(x), 32u, x == 0u)
+    if (call.args.len != 1) return error.InvalidIr;
+    const result_type = try self.emitter.lower_type(result_ty);
+    const val_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start]);
+
+    // FindILsb(x)
+    const import_id = try self.emitter.builder.glsl450_import_id();
+    const lsb_id = self.emitter.builder.reserve_id();
+    {
+        var ops = std.ArrayListUnmanaged(u32){};
+        defer ops.deinit(self.emitter.alloc);
+        try ops.append(self.emitter.alloc, result_type);
+        try ops.append(self.emitter.alloc, lsb_id);
+        try ops.append(self.emitter.alloc, import_id);
+        try ops.append(self.emitter.alloc, 73); // FindILsb
+        try ops.append(self.emitter.alloc, val_id);
+        try self.emitter.builder.append_function_inst(spirv.Opcode.ExtInst, ops.items);
+    }
+
+    // x == 0u
+    const const_0 = try self.emitter.builder.const_u32(0);
+    const bool_type = try self.emitter.builder.type_bool();
+    const is_zero = try emit_result_inst(self, spirv.Opcode.IEqual, bool_type, &.{ val_id, const_0 });
+
+    // select(lsb, 32u, x == 0u)
+    const const_32 = try self.emitter.builder.const_u32(32);
+    return try emit_result_inst(self, spirv.Opcode.Select, result_type, &.{ is_zero, const_32, lsb_id });
 }
 
 fn atomic_memory_operands(self: anytype, ref_expr_id: ir.ExprId) !AtomicMemoryOperands {

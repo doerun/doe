@@ -1,6 +1,7 @@
 const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_hlsl_maps.zig");
+const builtins = @import("emit_hlsl_builtins.zig");
 const stage_render = @import("emit_hlsl_stage.zig");
 const texture = @import("emit_hlsl_texture.zig");
 const layout = @import("layout_utils.zig");
@@ -150,69 +151,7 @@ const Emitter = struct {
                 else => {},
             }
         }
-        for (self.module.globals.items) |global| {
-            if (global.binding == null) continue;
-            switch (self.module.types.get(global.ty)) {
-                .texture_2d, .texture_cube, .texture_depth_cube => {
-                    try self.write("\nuint2 doe_textureDimensions_");
-                    try self.write(global.name);
-                    try self.write("(uint level) {\n");
-                    self.indent += 4;
-                    try self.write_indent();
-                    try self.write("uint width = 0u;\n");
-                    try self.write_indent();
-                    try self.write("uint height = 0u;\n");
-                    try self.write_indent();
-                    try self.write("uint levels = 0u;\n");
-                    try self.write_indent();
-                    try self.write(global.name);
-                    try self.write(".GetDimensions(level, width, height, levels);\n");
-                    try self.write_indent();
-                    try self.write("return uint2(width, height);\n");
-                    self.indent -= 4;
-                    try self.write("}\n");
-                },
-                .texture_2d_array => {
-                    try self.write("\nuint2 doe_textureDimensions_");
-                    try self.write(global.name);
-                    try self.write("(uint level) {\n");
-                    self.indent += 4;
-                    try self.write_indent();
-                    try self.write("uint width = 0u;\n");
-                    try self.write_indent();
-                    try self.write("uint height = 0u;\n");
-                    try self.write_indent();
-                    try self.write("uint elements = 0u;\n");
-                    try self.write_indent();
-                    try self.write("uint levels = 0u;\n");
-                    try self.write_indent();
-                    try self.write(global.name);
-                    try self.write(".GetDimensions(level, width, height, elements, levels);\n");
-                    try self.write_indent();
-                    try self.write("return uint2(width, height);\n");
-                    self.indent -= 4;
-                    try self.write("}\n");
-                },
-                .storage_texture_2d => {
-                    try self.write("\nuint2 doe_textureDimensions_");
-                    try self.write(global.name);
-                    try self.write("() {\n");
-                    self.indent += 4;
-                    try self.write_indent();
-                    try self.write("uint width = 0u;\n");
-                    try self.write_indent();
-                    try self.write("uint height = 0u;\n");
-                    try self.write_indent();
-                    try self.write(global.name);
-                    try self.write(".GetDimensions(width, height);\n");
-                    try self.write_indent();
-                    try self.write("return uint2(width, height);\n");
-                    self.indent -= 4;
-                    try self.write("}\n");
-                },
-                else => {},
-            }
-        }
+        try texture.emit_texture_global_helpers(self.module, self.buf, &self.pos);
     }
 
     /// Generate arrayLength helpers for runtime-sized array fields inside
@@ -582,110 +521,8 @@ const Emitter = struct {
 
     fn emit_call(self: *Emitter, function: ir.Function, result_ty: ir.TypeId, call: anytype) EmitError!void {
         if (call.kind == .builtin) {
-            if (std.mem.eql(u8, call.name, "workgroupBarrier")) {
-                try self.write("GroupMemoryBarrierWithGroupSync()");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "storageBarrier")) {
-                try self.write("AllMemoryBarrierWithGroupSync()");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "bitcast")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write(maps.hlsl_bitcast_fn(self.module, result_ty));
-                try self.write("(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "arrayLength")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                const target_expr = function.expr_args.items[call.args.start];
-                switch (function.exprs.items[target_expr].data) {
-                    .global_ref => |index| {
-                        const global = self.module.globals.items[index];
-                        switch (self.module.types.get(global.ty)) {
-                            .array => |arr| {
-                                if (arr.len != null) return error.InvalidIr;
-                                try self.write("doe_arrayLength_");
-                                try self.write(global.name);
-                                try self.write("()");
-                                return;
-                            },
-                            else => return error.InvalidIr,
-                        }
-                    },
-                    .member => |member| {
-                        // arrayLength(&buf.data) — struct field runtime-sized array.
-                        const global_index = layout.resolve_member_global(function, member.base) orelse return error.InvalidIr;
-                        const global = self.module.globals.items[global_index];
-                        const struct_id = switch (self.module.types.get(global.ty)) {
-                            .struct_ => |sid| sid,
-                            else => return error.InvalidIr,
-                        };
-                        const struct_def = self.module.structs.items[struct_id];
-                        if (member.field_index >= struct_def.fields.items.len) return error.InvalidIr;
-                        const field = struct_def.fields.items[member.field_index];
-                        try self.write("doe_arrayLength_");
-                        try self.write(global.name);
-                        try self.write("_");
-                        try self.write(field.name);
-                        try self.write("()");
-                        return;
-                    },
-                    else => return error.InvalidIr,
-                }
-            }
-            if (std.mem.eql(u8, call.name, "select")) {
-                if (call.args.len != 3) return error.InvalidIr;
-                try self.write("((");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
-                try self.write(") ? (");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(") : (");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write("))");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupShuffleXor")) {
-                if (call.args.len != 2) return error.InvalidIr;
-                try self.write("WaveReadLaneAt(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(", WaveGetLaneIndex() ^ ");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(")");
-                return;
-            }
-            if (try texture.emit_texture_builtin(self.module, self.buf, &self.pos, function, call.name, call.args)) return;
-            if (std.mem.eql(u8, call.name, "degrees")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(" * 57.29577951308232)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "radians")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(" * 0.017453292519943295)");
-                return;
-            }
-            if (maps.hlsl_renamed_builtin(call.name)) |mapped| {
-                try self.write(mapped);
-                try self.write("(");
-                try self.emit_expr_list(function, call.args);
-                try self.write(")");
-                return;
-            }
-            if (maps.hlsl_builtin_passthrough(call.name)) {
-                try self.write(call.name);
-                try self.write("(");
-                try self.emit_expr_list(function, call.args);
-                try self.write(")");
-                return;
-            }
-            return error.InvalidIr;
+            try builtins.emit_builtin_call(self, function, result_ty, call.name, call.args);
+            return;
         }
         try self.write(call.name);
         try self.write("(");
@@ -693,7 +530,7 @@ const Emitter = struct {
         try self.write(")");
     }
 
-    fn emit_expr_list(self: *Emitter, function: ir.Function, range: ir.Range) EmitError!void {
+    pub fn emit_expr_list(self: *Emitter, function: ir.Function, range: ir.Range) EmitError!void {
         var i: u32 = 0;
         while (i < range.len) : (i += 1) {
             if (i > 0) try self.write(", ");

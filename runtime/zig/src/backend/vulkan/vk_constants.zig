@@ -7,6 +7,7 @@ const std = @import("std");
 const vk = @import("vulkan_types.zig");
 const structs = @import("vk_structs.zig");
 const functions = @import("vk_functions.zig");
+const vulkan_errors = @import("vulkan_errors.zig");
 
 pub const VkBool32 = vk.VkBool32;
 pub const VkFlags = vk.VkFlags;
@@ -51,6 +52,7 @@ pub const VkExtent3D = structs.VkExtent3D;
 pub const VkImageCreateInfo = structs.VkImageCreateInfo;
 pub const VkMemoryAllocateInfo = structs.VkMemoryAllocateInfo;
 pub const VkMemoryRequirements = structs.VkMemoryRequirements;
+pub const VkCommandBufferInheritanceInfo = structs.VkCommandBufferInheritanceInfo;
 pub const VkCommandBufferBeginInfo = structs.VkCommandBufferBeginInfo;
 pub const VkSubmitInfo = structs.VkSubmitInfo;
 pub const VkShaderModuleCreateInfo = structs.VkShaderModuleCreateInfo;
@@ -73,6 +75,7 @@ pub const VkImageViewCreateInfo = structs.VkImageViewCreateInfo;
 pub const VkImageSubresourceLayers = structs.VkImageSubresourceLayers;
 pub const VkOffset3D = structs.VkOffset3D;
 pub const VkBufferImageCopy = structs.VkBufferImageCopy;
+pub const VkImageCopy = structs.VkImageCopy;
 pub const VkImageMemoryBarrier = structs.VkImageMemoryBarrier;
 pub const VkAttachmentDescription = structs.VkAttachmentDescription;
 pub const VkAttachmentReference = structs.VkAttachmentReference;
@@ -104,6 +107,8 @@ pub const VkQueueFamilyProperties = structs.VkQueueFamilyProperties;
 pub const VkMemoryType = structs.VkMemoryType;
 pub const VkMemoryHeap = structs.VkMemoryHeap;
 pub const VkPhysicalDeviceMemoryProperties = structs.VkPhysicalDeviceMemoryProperties;
+pub const VkPipelineRasterizationDepthClipStateCreateInfoEXT = structs.VkPipelineRasterizationDepthClipStateCreateInfoEXT;
+pub const VkExtensionProperties = structs.VkExtensionProperties;
 
 pub const vkCreateInstance = functions.vkCreateInstance;
 pub const vkDestroyInstance = functions.vkDestroyInstance;
@@ -130,6 +135,8 @@ pub const vkCmdBindPipeline = functions.vkCmdBindPipeline;
 pub const vkCmdDispatch = functions.vkCmdDispatch;
 pub const vkCmdCopyBuffer = functions.vkCmdCopyBuffer;
 pub const vkCmdCopyBufferToImage = functions.vkCmdCopyBufferToImage;
+pub const vkCmdCopyImageToBuffer = functions.vkCmdCopyImageToBuffer;
+pub const vkCmdCopyImage = functions.vkCmdCopyImage;
 pub const vkCmdPipelineBarrier = functions.vkCmdPipelineBarrier;
 pub const vkCreateBuffer = functions.vkCreateBuffer;
 pub const vkDestroyBuffer = functions.vkDestroyBuffer;
@@ -180,6 +187,10 @@ pub const vkCmdBindVertexBuffers = functions.vkCmdBindVertexBuffers;
 pub const vkCmdBindIndexBuffer = functions.vkCmdBindIndexBuffer;
 pub const vkCmdDraw = functions.vkCmdDraw;
 pub const vkCmdDrawIndexed = functions.vkCmdDrawIndexed;
+pub const vkCmdDrawIndirect = functions.vkCmdDrawIndirect;
+pub const vkCmdDrawIndexedIndirect = functions.vkCmdDrawIndexedIndirect;
+pub const vkCmdExecuteCommands = functions.vkCmdExecuteCommands;
+pub const vkEnumerateDeviceExtensionProperties = functions.vkEnumerateDeviceExtensionProperties;
 pub const check_vk = functions.check_vk;
 pub const map_vk_result = functions.map_vk_result;
 
@@ -210,6 +221,7 @@ pub const VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO: i32 = 34;
 pub const VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET: i32 = 35;
 pub const VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO: i32 = 39;
 pub const VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO: i32 = 40;
+pub const VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO: i32 = 41;
 pub const VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO: i32 = 42;
 pub const VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER: i32 = 45;
 
@@ -218,7 +230,9 @@ pub const VK_QUEUE_GRAPHICS_BIT: u32 = 0x00000001;
 pub const VK_QUEUE_COMPUTE_BIT: u32 = 0x00000002;
 pub const VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT: u32 = 0x00000002;
 pub const VK_COMMAND_BUFFER_LEVEL_PRIMARY: i32 = 0;
+pub const VK_COMMAND_BUFFER_LEVEL_SECONDARY: i32 = 1;
 pub const VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: u32 = 0x00000001;
+pub const VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT: u32 = 0x00000002;
 pub const VK_PIPELINE_BIND_POINT_COMPUTE: i32 = 1;
 
 // --- Shader and pipeline stage bits ---
@@ -262,6 +276,7 @@ pub const VK_ACCESS_SHADER_READ_BIT: u32 = 0x00000020;
 pub const VK_ACCESS_SHADER_WRITE_BIT: u32 = 0x00000040;
 pub const VK_ACCESS_COLOR_ATTACHMENT_READ_BIT: u32 = 0x00000080;
 pub const VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT: u32 = 0x00000100;
+pub const VK_ACCESS_TRANSFER_READ_BIT: u32 = 0x00000800;
 pub const VK_ACCESS_TRANSFER_WRITE_BIT: u32 = 0x00001000;
 
 // --- Descriptor types ---
@@ -281,17 +296,18 @@ pub const VK_IMAGE_TILING_OPTIMAL: u32 = 0;
 pub const VK_IMAGE_LAYOUT_UNDEFINED: u32 = 0;
 pub const VK_IMAGE_LAYOUT_GENERAL: u32 = 1;
 pub const VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: u32 = 2;
+pub const VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: u32 = 6;
 pub const VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: u32 = 7;
 pub const VK_IMAGE_ASPECT_COLOR_BIT: u32 = 0x00000001;
 pub const VK_SAMPLE_COUNT_1_BIT: u32 = 0x00000001;
 pub const VK_COMPONENT_SWIZZLE_IDENTITY: u32 = 0;
 pub const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
 
-// --- VkResult error codes (named for fail-fast error mapping) ---
-pub const VK_ERROR_TOO_MANY_OBJECTS: VkResult = -7;
-pub const VK_ERROR_FORMAT_NOT_SUPPORTED: VkResult = -9;
-pub const VK_ERROR_FRAGMENTED_POOL: VkResult = -10;
-pub const VK_ERROR_UNKNOWN: VkResult = -11;
+// --- VkResult error codes (canonical definitions in vulkan_errors.zig) ---
+pub const VK_ERROR_TOO_MANY_OBJECTS = vulkan_errors.VK_ERROR_TOO_MANY_OBJECTS;
+pub const VK_ERROR_FORMAT_NOT_SUPPORTED = vulkan_errors.VK_ERROR_FORMAT_NOT_SUPPORTED;
+pub const VK_ERROR_FRAGMENTED_POOL = vulkan_errors.VK_ERROR_FRAGMENTED_POOL;
+pub const VK_ERROR_UNKNOWN = vulkan_errors.VK_ERROR_UNKNOWN;
 
 // --- Surface / present mode constants (shared with configure_surface) ---
 pub const VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR: u32 = 0x00000001;
@@ -323,6 +339,10 @@ pub const VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO: i32 = 27;
 pub const VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO: i32 = 43;
 pub const VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO: i32 = 31;
 pub const VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO: i32 = 25;
+
+// --- VK_EXT_depth_clip_enable ---
+pub const VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT: i32 = 1000102000;
+pub const VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME: [*:0]const u8 = "VK_EXT_depth_clip_enable";
 
 // --- Graphics topology and polygon mode ---
 pub const VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: u32 = 3;
@@ -360,3 +380,8 @@ pub const VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: u32 = 1;
 
 // --- Subpass contents ---
 pub const VK_SUBPASS_CONTENTS_INLINE: u32 = 0;
+pub const VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS: u32 = 1;
+
+// --- Indirect draw command strides ---
+pub const VK_DRAW_INDIRECT_COMMAND_STRIDE: u32 = 16; // sizeof(VkDrawIndirectCommand)
+pub const VK_DRAW_INDEXED_INDIRECT_COMMAND_STRIDE: u32 = 20; // sizeof(VkDrawIndexedIndirectCommand)

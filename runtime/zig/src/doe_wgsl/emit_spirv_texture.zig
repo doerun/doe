@@ -12,6 +12,7 @@ const TextureOpcode = struct {
     const ImageDrefGather: u16 = 97;
     const ImageQuerySizeLod: u16 = 103;
     const ImageQuerySize: u16 = 104;
+    const ImageQueryLevels: u16 = 109;
 };
 
 fn emit_result_inst(self: anytype, opcode: u16, result_type: u32, operands: []const u32) !u32 {
@@ -174,6 +175,7 @@ pub fn emit_texture_sample_level_offset(self: anytype, call: anytype, result_ty:
 
 pub fn emit_texture_dimensions(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
     if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
+    try self.emitter.builder.emit_capability(spirv.Capability.ImageQuery);
     const texture_expr = self.function.expr_args.items[call.args.start];
     const image_id = try self.emit_value_expr(texture_expr);
     const opcode: u16 = if (call.args.len == 2) TextureOpcode.ImageQuerySizeLod else TextureOpcode.ImageQuerySize;
@@ -197,32 +199,82 @@ pub fn emit_texture_dimensions(self: anytype, call: anytype, result_ty: ir.TypeI
 }
 
 pub fn emit_texture_load(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
-    if (call.args.len != 3) return error.InvalidIr;
+    if (call.args.len < 2 or call.args.len > 3) return error.InvalidIr;
 
     const texture_expr = self.function.expr_args.items[call.args.start];
     const coords_expr = self.function.expr_args.items[call.args.start + 1];
-    const level_expr = self.function.expr_args.items[call.args.start + 2];
 
-    switch (self.emitter.module.types.get(self.function.exprs.items[texture_expr].ty)) {
-        .texture_2d => |sample_ty| switch (self.emitter.module.types.get(sample_ty)) {
-            .scalar => |scalar| {
-                if (scalar != .f32) return error.UnsupportedConstruct;
-            },
-            else => return error.UnsupportedConstruct,
-        },
+    const tex_ty = self.emitter.module.types.get(self.function.exprs.items[texture_expr].ty);
+    switch (tex_ty) {
+        .texture_2d, .texture_3d, .texture_2d_array, .texture_multisampled_2d => {},
+        .storage_texture_2d => {},
         else => return error.UnsupportedConstruct,
     }
 
+    const image_id = try self.emit_value_expr(texture_expr);
+    const coords_id = try self.emit_value_expr(coords_expr);
+
+    // Storage textures and multisampled textures use ImageRead (no Lod operand).
+    // Multisampled uses Sample operand instead.
+    switch (tex_ty) {
+        .storage_texture_2d => {
+            return try emit_result_inst(
+                self,
+                spirv.Opcode.ImageFetch,
+                try self.emitter.lower_type(result_ty),
+                &.{ image_id, coords_id },
+            );
+        },
+        .texture_multisampled_2d => {
+            if (call.args.len != 3) return error.InvalidIr;
+            const sample_index_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+            return try emit_result_inst(
+                self,
+                spirv.Opcode.ImageFetch,
+                try self.emitter.lower_type(result_ty),
+                &.{ image_id, coords_id, spirv.ImageOperandsMask.Sample, sample_index_id },
+            );
+        },
+        else => {
+            if (call.args.len != 3) return error.InvalidIr;
+            const level_id = try self.emit_value_expr(self.function.expr_args.items[call.args.start + 2]);
+            return try emit_result_inst(
+                self,
+                spirv.Opcode.ImageFetch,
+                try self.emitter.lower_type(result_ty),
+                &.{ image_id, coords_id, spirv.ImageOperandsMask.Lod, level_id },
+            );
+        },
+    }
+}
+
+pub fn emit_texture_num_levels(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len != 1) return error.InvalidIr;
+    try self.emitter.builder.emit_capability(spirv.Capability.ImageQuery);
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const image_id = try self.emit_value_expr(texture_expr);
     return try emit_result_inst(
         self,
-        spirv.Opcode.ImageFetch,
+        TextureOpcode.ImageQueryLevels,
         try self.emitter.lower_type(result_ty),
-        &.{
-            try self.emit_value_expr(texture_expr),
-            try self.emit_value_expr(coords_expr),
-            spirv.ImageOperandsMask.Lod,
-            try self.emit_value_expr(level_expr),
-        },
+        &.{image_id},
+    );
+}
+
+pub fn emit_texture_num_layers(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
+    if (call.args.len != 1) return error.InvalidIr;
+    try self.emitter.builder.emit_capability(spirv.Capability.ImageQuery);
+    const texture_expr = self.function.expr_args.items[call.args.start];
+    const image_id = try self.emit_value_expr(texture_expr);
+    // ImageQuerySize returns vec3(width, height, layers) for arrayed images.
+    // We extract the last component (z) for the layer count.
+    const size_type = try self.emitter.builder.type_vector(try self.emitter.builder.type_u32(), 3);
+    const size_id = try emit_result_inst(self, TextureOpcode.ImageQuerySize, size_type, &.{image_id});
+    return try emit_result_inst(
+        self,
+        spirv.Opcode.CompositeExtract,
+        try self.emitter.lower_type(result_ty),
+        &.{ size_id, 2 },
     );
 }
 
@@ -232,7 +284,7 @@ pub fn emit_texture_store(self: anytype, call: anytype) !void {
     const texture_expr = self.function.expr_args.items[call.args.start];
     switch (self.emitter.module.types.get(self.function.exprs.items[texture_expr].ty)) {
         .storage_texture_2d => |storage_tex| {
-            if (storage_tex.format != .rgba8unorm or storage_tex.access == .read) {
+            if (storage_tex.access == .read) {
                 return error.UnsupportedConstruct;
             }
         },

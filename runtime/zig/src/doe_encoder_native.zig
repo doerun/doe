@@ -161,7 +161,26 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     const src_texture = cast(DoeTexture, src_texture_raw) orelse return;
     const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
-        std.log.warn("doe_encoder_native: copyTextureToBuffer not yet supported on Vulkan path", .{});
+        const rt = native.device_vk_runtime(enc.dev) orelse return;
+        if (src_texture.vk_id != 0 and dst_buffer.vk_id != 0) {
+            if (rt.compute_buffers.get(dst_buffer.vk_id)) |dcb| {
+                if (dcb.mapped) |mapped_ptr| {
+                    rt.texture_read(.{
+                        .handle = src_texture.vk_id,
+                        .mip_level = src_mip_level,
+                        .width = width,
+                        .height = height,
+                        .format = src_texture.format,
+                        .dst_buffer = @ptrCast(mapped_ptr),
+                        .dst_offset = dst_offset,
+                        .dst_bytes_per_row = dst_bytes_per_row,
+                        .dst_rows_per_image = dst_rows_per_image,
+                    }) catch |err| {
+                        std.log.err("doe_encoder_native: copyTextureToBuffer Vulkan failed: {s}", .{@errorName(err)});
+                    };
+                }
+            }
+        }
         return;
     }
     enc.cmds.append(alloc, .{ .copy_texture_to_buffer = .{

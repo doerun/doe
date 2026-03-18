@@ -17,6 +17,10 @@ pub const Capability = struct {
     pub const GroupNonUniform: u32 = 61;
     pub const GroupNonUniformArithmetic: u32 = 63;
     pub const GroupNonUniformShuffle: u32 = 65;
+    pub const GroupNonUniformVote: u32 = 62;
+    pub const GroupNonUniformBallot: u32 = 64;
+    pub const StorageImageExtendedFormats: u32 = 49;
+    pub const ImageQuery: u32 = 50;
 };
 
 pub const AddressingModel = struct { pub const Logical: u32 = 0; };
@@ -30,7 +34,25 @@ pub const Dim = struct {
 
 pub const ImageFormat = struct {
     pub const Unknown: u32 = 0;
+    pub const Rgba32f: u32 = 1;
+    pub const Rgba16f: u32 = 2;
+    pub const R32f: u32 = 3;
     pub const Rgba8: u32 = 4;
+    pub const Rgba8Snorm: u32 = 5;
+    pub const Rg32f: u32 = 6;
+    pub const Rg16f: u32 = 7;
+    pub const R16f: u32 = 9;
+    pub const Rgba16: u32 = 10;
+    pub const Rgba32i: u32 = 36;
+    pub const Rgba16i: u32 = 37;
+    pub const Rgba8i: u32 = 39;
+    pub const R32i: u32 = 40;
+    pub const Rg32i: u32 = 41;
+    pub const Rgba32ui: u32 = 44;
+    pub const Rgba16ui: u32 = 45;
+    pub const Rgba8ui: u32 = 47;
+    pub const R32ui: u32 = 48;
+    pub const Rg32ui: u32 = 49;
 };
 
 pub const ImageOperandsMask = struct {
@@ -38,6 +60,7 @@ pub const ImageOperandsMask = struct {
     pub const Offset: u32 = 0x00000004;
     pub const Grad: u32 = 0x00000008;
     pub const ConstOffset: u32 = 0x00000010;
+    pub const Sample: u32 = 0x00000040;
 };
 
 pub const ExecutionModel = struct {
@@ -173,6 +196,10 @@ pub const Opcode = struct {
     pub const CompositeExtract: u16 = 81;
     pub const ImageFetch: u16 = 95;
     pub const ImageWrite: u16 = 99;
+    pub const ImageQuerySizeLod: u16 = 103;
+    pub const ImageQuerySize: u16 = 104;
+    pub const ImageQueryLevels: u16 = 109;
+    pub const Transpose: u16 = 84;
     pub const SNegate: u16 = 126;
     pub const Bitcast: u16 = 124;
     pub const FNegate: u16 = 127;
@@ -219,6 +246,11 @@ pub const Opcode = struct {
     pub const BitwiseXor: u16 = 198;
     pub const BitwiseAnd: u16 = 199;
     pub const Not: u16 = 200;
+    pub const BitFieldInsert: u16 = 201;
+    pub const BitFieldSExtract: u16 = 202;
+    pub const BitFieldUExtract: u16 = 203;
+    pub const BitReverse: u16 = 204;
+    pub const BitCount: u16 = 205;
     pub const ControlBarrier: u16 = 224;
     pub const MemoryBarrier: u16 = 225;
     pub const AtomicLoad: u16 = 227;
@@ -233,6 +265,9 @@ pub const Opcode = struct {
     pub const AtomicAnd: u16 = 240;
     pub const AtomicOr: u16 = 241;
     pub const AtomicXor: u16 = 242;
+    pub const GroupNonUniformAll: u16 = 334;
+    pub const GroupNonUniformAny: u16 = 335;
+    pub const GroupNonUniformBallot: u16 = 339;
     pub const GroupNonUniformBroadcast: u16 = 337;
     pub const GroupNonUniformShuffle: u16 = 345;
     pub const GroupNonUniformShuffleXor: u16 = 346;

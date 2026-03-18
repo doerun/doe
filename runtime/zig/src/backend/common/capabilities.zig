@@ -32,6 +32,7 @@ pub const Capability = enum {
     depth_stencil,
     texture_view,
     descriptor_binding,
+    render_bundle,
 };
 
 pub const CapabilitySet = struct {
@@ -144,5 +145,6 @@ pub fn capability_name(cap: Capability) []const u8 {
         .depth_stencil => "depth_stencil",
         .texture_view => "texture_view",
         .descriptor_binding => "descriptor_binding",
+        .render_bundle => "render_bundle",
     };
 }
