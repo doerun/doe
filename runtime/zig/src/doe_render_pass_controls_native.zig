@@ -1,6 +1,7 @@
 // doe_render_pass_controls_native.zig — RenderPassEncoder control method C-ABI exports.
 // Implements: setViewport, setScissorRect, setBlendConstant, setStencilReference,
-//             pushDebugGroup, popDebugGroup, insertDebugMarker.
+//             beginOcclusionQuery, endOcclusionQuery, pushDebugGroup,
+//             popDebugGroup, insertDebugMarker.
 //
 // These exports accept an opaque render encoder handle (a +1-retained MTL render
 // command encoder returned by metal_bridge_cmd_buf_render_encoder or equivalent).
@@ -8,6 +9,15 @@
 // Zig-side state — the encoder carries all GPU state.
 
 const render_state_native = @import("doe_render_state_native.zig");
+const types = @import("core/abi/wgpu_types.zig");
+
+extern fn wgpuRenderPassEncoderBeginOcclusionQuery(
+    encoder: types.WGPURenderPassEncoder,
+    query_index: u32,
+) callconv(.c) void;
+extern fn wgpuRenderPassEncoderEndOcclusionQuery(
+    encoder: types.WGPURenderPassEncoder,
+) callconv(.c) void;
 
 // ============================================================
 // setViewport
@@ -70,6 +80,29 @@ pub export fn doeNativeRenderPassSetStencilReference(
     render_state_native.doeNativeRenderPassEncoderSetStencilReference(
         encoder_raw, reference,
     );
+}
+
+// ============================================================
+// beginOcclusionQuery
+// ============================================================
+
+pub export fn doeNativeRenderPassBeginOcclusionQuery(
+    encoder_raw: ?*anyopaque,
+    query_index: u32,
+) callconv(.c) void {
+    const encoder = encoder_raw orelse return;
+    wgpuRenderPassEncoderBeginOcclusionQuery(@ptrCast(encoder), query_index);
+}
+
+// ============================================================
+// endOcclusionQuery
+// ============================================================
+
+pub export fn doeNativeRenderPassEndOcclusionQuery(
+    encoder_raw: ?*anyopaque,
+) callconv(.c) void {
+    const encoder = encoder_raw orelse return;
+    wgpuRenderPassEncoderEndOcclusionQuery(@ptrCast(encoder));
 }
 
 // ============================================================

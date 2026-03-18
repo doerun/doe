@@ -279,6 +279,7 @@ function openLibrary(path) {
         wgpuRenderBundleEncoderFinish: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuRenderBundleEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuRenderBundleRelease: { args: [FFIType.ptr], returns: FFIType.void },
+        doeNativeObjectSetLabel: { args: [FFIType.ptr, FFIType.cstring, FFIType.u64], returns: FFIType.void },
 
         // Render pipeline bind group layout
         wgpuRenderPipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
@@ -1671,6 +1672,11 @@ const bunEncoderBackend = {
     renderBundleDestroy(native) {
         wgpu.symbols.wgpuRenderBundleRelease(native);
     },
+    renderBundleSetLabel(bundle, label) {
+        if (typeof wgpu.symbols.doeNativeObjectSetLabel === "function") {
+            wgpu.symbols.doeNativeObjectSetLabel(bundle._native, label, BigInt(Buffer.byteLength(label)));
+        }
+    },
     commandEncoderInit(encoder) {
         encoder._commands = [];
         encoder._native = null;
@@ -2097,6 +2103,11 @@ const fullSurfaceBackend = {
     querySetDestroy(native) {
         if (typeof wgpu.symbols.doeNativeQuerySetDestroy === "function") {
             wgpu.symbols.doeNativeQuerySetDestroy(native);
+        }
+    },
+    querySetSetLabel(querySet, label) {
+        if (typeof wgpu.symbols.doeNativeObjectSetLabel === "function") {
+            wgpu.symbols.doeNativeObjectSetLabel(querySet._native, label, BigInt(Buffer.byteLength(label)));
         }
     },
     deviceCreateCommandEncoder(device) {

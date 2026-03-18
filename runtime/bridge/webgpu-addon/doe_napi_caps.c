@@ -611,6 +611,17 @@ napi_value doe_device_set_label(napi_env env, napi_callback_info info) {
     return NULL;
 }
 
+napi_value doe_object_set_label(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* handle = unwrap_ptr(env, _args[0]);
+    if (!handle || !pfn_doeNativeObjectSetLabel) return NULL;
+    size_t label_len = 0;
+    char* label = dup_string_value(env, _args[1], &label_len);
+    pfn_doeNativeObjectSetLabel(handle, (const uint8_t*)label, label_len);
+    free(label);
+    return NULL;
+}
+
 /* ================================================================
  * Timeout
  * ================================================================ */

@@ -130,6 +130,8 @@ napi_value doe_render_pass_set_viewport(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_scissor_rect(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_blend_constant(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_stencil_reference(napi_env env, napi_callback_info info);
+napi_value doe_render_pass_begin_occlusion_query(napi_env env, napi_callback_info info);
+napi_value doe_render_pass_end_occlusion_query(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_push_debug_group(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_pop_debug_group(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_insert_debug_marker(napi_env env, napi_callback_info info);
@@ -157,6 +159,7 @@ napi_value doe_device_get_limits(napi_env env, napi_callback_info info);
 napi_value doe_device_has_feature(napi_env env, napi_callback_info info);
 napi_value doe_device_get_label(napi_env env, napi_callback_info info);
 napi_value doe_device_set_label(napi_env env, napi_callback_info info);
+napi_value doe_object_set_label(napi_env env, napi_callback_info info);
 
 /* Query set */
 napi_value doe_create_query_set(napi_env env, napi_callback_info info);
@@ -263,6 +266,8 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderPassSetScissorRect",                 doe_render_pass_set_scissor_rect),
         EXPORT_FN("renderPassSetBlendConstant",               doe_render_pass_set_blend_constant),
         EXPORT_FN("renderPassSetStencilReference",            doe_render_pass_set_stencil_reference),
+        EXPORT_FN("renderPassBeginOcclusionQuery",            doe_render_pass_begin_occlusion_query),
+        EXPORT_FN("renderPassEndOcclusionQuery",              doe_render_pass_end_occlusion_query),
         EXPORT_FN("renderPassPushDebugGroup",                 doe_render_pass_push_debug_group),
         EXPORT_FN("renderPassPopDebugGroup",                  doe_render_pass_pop_debug_group),
         EXPORT_FN("renderPassInsertDebugMarker",              doe_render_pass_insert_debug_marker),
@@ -286,6 +291,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("deviceHasFeature",                         doe_device_has_feature),
         EXPORT_FN("deviceGetLabel",                           doe_device_get_label),
         EXPORT_FN("deviceSetLabel",                           doe_device_set_label),
+        EXPORT_FN("objectSetLabel",                           doe_object_set_label),
         EXPORT_FN("deviceSetLostCallback",                    doe_device_set_lost_callback_export),
         EXPORT_FN("createQuerySet",                           doe_create_query_set),
         EXPORT_FN("commandEncoderWriteTimestamp",             doe_command_encoder_write_timestamp),

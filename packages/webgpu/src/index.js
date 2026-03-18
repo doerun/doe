@@ -729,6 +729,11 @@ const nodeEncoderBackend = {
       addon.renderBundleRelease(native);
     }
   },
+  renderBundleSetLabel(bundle, label) {
+    if (typeof addon.objectSetLabel === 'function') {
+      addon.objectSetLabel(bundle._native, label);
+    }
+  },
   commandEncoderInit(encoder) {
     encoder._commands = [];
     encoder._native = null;
@@ -1239,6 +1244,11 @@ const fullSurfaceBackend = {
   },
   querySetDestroy(native) {
     addon.querySetDestroy(native);
+  },
+  querySetSetLabel(querySet, label) {
+    if (typeof addon.objectSetLabel === 'function') {
+      addon.objectSetLabel(querySet._native, label);
+    }
   },
   deviceCreateCommandEncoder(device) {
     return new DoeGPUCommandEncoder(null, device);

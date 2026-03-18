@@ -472,6 +472,23 @@ napi_value doe_render_pass_set_stencil_reference(napi_env env, napi_callback_inf
     return NULL;
 }
 
+napi_value doe_render_pass_begin_occlusion_query(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassBeginOcclusionQuery) return NULL;
+    uint32_t query_index = 0; napi_get_value_uint32(env, _args[1], &query_index);
+    pfn_doeNativeRenderPassBeginOcclusionQuery(pass, query_index);
+    return NULL;
+}
+
+napi_value doe_render_pass_end_occlusion_query(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassEndOcclusionQuery) return NULL;
+    pfn_doeNativeRenderPassEndOcclusionQuery(pass);
+    return NULL;
+}
+
 /* Debug markers */
 
 napi_value doe_render_pass_push_debug_group(napi_env env, napi_callback_info info) {

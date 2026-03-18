@@ -719,6 +719,7 @@ function createFullSurfaceClasses({
       }
       const qs = new DoeGPUQuerySet(native, queryDescriptor.type, queryDescriptor.count, this);
       qs.label = queryDescriptor.label ?? '';
+      backend.querySetSetLabel?.(qs, qs.label);
       return qs;
     }
 

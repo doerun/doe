@@ -427,6 +427,7 @@ function createEncoderClasses(backend) {
         classes,
       );
       bundle.label = descriptor?.label ?? '';
+      backend.renderBundleSetLabel?.(bundle, bundle.label);
       this._finished = true;
       return bundle;
     }
