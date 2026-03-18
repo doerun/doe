@@ -345,8 +345,8 @@ DECL_PFN(void, doeNativeCommandEncoderResolveQuerySet, (WGPUCommandEncoder, WGPU
 DECL_PFN(void, doeNativeQuerySetDestroy, (WGPUQuerySet));
 DECL_PFN(WGPUFuture, doeNativeBufferMapAsync, (WGPUBuffer, uint64_t, size_t, size_t, WGPUBufferMapCallbackInfo));
 
-extern PFN_wgpuBufferMapAsync2 pfn_wgpuBufferMapAsync2;
 typedef WGPUFuture (*PFN_wgpuBufferMapAsync2)(WGPUBuffer, uint64_t, size_t, size_t, WGPUBufferMapCallbackInfo);
+extern PFN_wgpuBufferMapAsync2 pfn_wgpuBufferMapAsync2;
 
 /* Manual function pointer typedefs */
 typedef uint32_t (*FnAdapterGetPreferredCanvasFormat)(void* adapter);
