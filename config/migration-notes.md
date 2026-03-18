@@ -77,7 +77,7 @@
 
 ### WebGPU backend checklist reconciliation
 
-- Reconciled `config/webgpu-spec-index.json` against the current backend/runtime
+- Reconciled `config/webgpu-spec-index.jsonl` against the current backend/runtime
   state in `docs/status.md`.
 - D3D12 checklist notes were promoted out of the stale "first compute-first
   Windows subset" wording for surfaces now backed by the real Windows runtime:
@@ -947,7 +947,7 @@
 ### `webgpu-spec-index` backend checklist schema
 
 - Updated `config/webgpu-spec-index.schema.json` from schema version `1` to `3`.
-- `config/webgpu-spec-index.json` remains generated from the official `@webgpu/types` API surface, but now also carries the canonical per-backend checklist layer for `metal`, `vulkan`, `d3d12`, and `browser`.
+- `config/webgpu-spec-index.jsonl` (migrated from `.json` in schema v4) is generated from the official `@webgpu/types` API surface, carrying the canonical per-backend checklist for `metal`, `vulkan`, `d3d12`, and `browser`.
 - Added root-level checklist metadata:
   - `checklist.backends`
   - `checklist.implementationStatusVocabulary`

@@ -8,71 +8,66 @@ If some members are 'implemented' but some are still 'unreviewed', promote to 'p
 
 import json
 
-SPEC_INDEX_PATH = "config/webgpu-spec-index.json"
+SPEC_INDEX_PATH = "config/webgpu-spec-index.jsonl"
 
 
 def main():
-    with open(SPEC_INDEX_PATH, "r") as f:
-        data = json.load(f)
+    with open(SPEC_INDEX_PATH) as f:
+        rows = [json.loads(line) for line in f]
+
+    # Group members by parent interface
+    members_by_parent = {}
+    for row in rows:
+        if row.get("kind") == "member":
+            members_by_parent.setdefault(row["parent"], []).append(row)
 
     promoted = 0
-    for iface in data.get("interfaces", []):
-        metal = iface.get("checklist", {}).get("metal")
-        if not metal:
+    for row in rows:
+        if row.get("kind") != "interface":
             continue
 
-        iface_status = metal.get("implementation", {}).get("status")
+        name = row["name"]
+        metal = row.get("metal", {})
+        iface_status = metal.get("impl", "unreviewed")
         if iface_status == "implemented":
-            continue  # already done
+            continue
 
-        members = iface.get("members", [])
+        members = members_by_parent.get(name, [])
         if not members:
             continue
 
-        member_statuses = []
-        for member in members:
-            mm = member.get("checklist", {}).get("metal", {})
-            ms = mm.get("implementation", {}).get("status", "missing")
-            member_statuses.append(ms)
-
-        if not member_statuses:
-            continue
-
+        member_statuses = [
+            m.get("metal", {}).get("impl", "unreviewed") for m in members
+        ]
         implemented_count = member_statuses.count("implemented")
         total = len(member_statuses)
 
         if implemented_count == 0:
             continue
 
-        # All members implemented → interface implemented
-        # Mix of implemented + (partial|not_wired|out_of_scope|blocked) → partial
-        non_implemented = [s for s in member_statuses if s != "implemented"]
-        all_accounted = all(s in ("implemented", "partial", "not_wired", "out_of_scope", "blocked") for s in member_statuses)
-
         if implemented_count == total:
             new_status = "implemented"
-        elif all_accounted and implemented_count > 0:
-            new_status = "partial"
         elif implemented_count > 0:
             new_status = "partial"
         else:
             continue
 
         if iface_status != new_status:
-            metal["implementation"]["status"] = new_status
-            if "notes" not in metal["implementation"]:
-                metal["implementation"]["notes"] = []
-            metal["implementation"]["notes"] = [
-                f"Auto-promoted: {implemented_count}/{total} members implemented."
-            ]
+            metal = row.setdefault("metal", {})
+            metal["impl"] = new_status
+            metal["notes"] = [f"Auto-promoted: {implemented_count}/{total} members implemented."]
             promoted += 1
-            print(f"  {iface['name']}: {iface_status} → {new_status} ({implemented_count}/{total} members)")
+            print(f"  {name}: {iface_status} -> {new_status} ({implemented_count}/{total} members)")
 
-    data["lastUpdated"] = "2026-03-17"
+    # Update header timestamp
+    for row in rows:
+        if row.get("kind") == "header":
+            row["lastUpdated"] = "2026-03-17"
+            break
 
     with open(SPEC_INDEX_PATH, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
+        for row in rows:
+            f.write(json.dumps(row, separators=(",", ":")) + "\n")
 
     print(f"\n{promoted} Metal interface(s) promoted.")
 

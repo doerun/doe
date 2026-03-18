@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Batch-update Vulkan cells in webgpu-spec-index.json for newly implemented features."""
+"""Batch-update Vulkan cells in webgpu-spec-index.jsonl for newly implemented features."""
 
 import json
-import sys
 
-SPEC_INDEX_PATH = "config/webgpu-spec-index.json"
+SPEC_INDEX_PATH = "config/webgpu-spec-index.jsonl"
 
 # Interfaces whose Vulkan implementation status should be "implemented"
 INTERFACE_IMPLEMENTED = {
@@ -96,98 +95,63 @@ MEMBER_UNSUPPORTED = {
     ("GPUCommandEncoder", "copyTextureToTexture"),
 }
 
-SOURCE_REFS = [
-    "runtime/zig/src/backend/vulkan/mod.zig:1",
-    "runtime/zig/src/backend/vulkan/native_runtime.zig:1",
-]
 
-MEMBER_SOURCE_REFS = {
-    "limits": ["runtime/zig/src/doe_device_caps.zig:1"],
-    "features": ["runtime/zig/src/doe_device_caps.zig:1"],
-    "onSubmittedWorkDone": ["runtime/zig/src/doe_queue_submit_native.zig:1"],
-    "mapAsync": ["runtime/zig/src/backend/vulkan/native_runtime.zig:1"],
-    "getMappedRange": ["runtime/zig/src/backend/vulkan/native_runtime.zig:1"],
-    "unmap": ["runtime/zig/src/backend/vulkan/native_runtime.zig:1"],
-    "copyBufferToBuffer": ["runtime/zig/src/doe_encoder_native.zig:1"],
-    "copyBufferToTexture": ["runtime/zig/src/doe_encoder_native.zig:1"],
-    "clearBuffer": ["runtime/zig/src/doe_command_texture_native.zig:1"],
-    "writeBuffer": ["runtime/zig/src/doe_queue_submit_native.zig:1"],
-    "writeTexture": ["runtime/zig/src/doe_command_texture_native.zig:1"],
-    "dispatchWorkgroupsIndirect": ["runtime/zig/src/doe_vulkan_compute_native.zig:1"],
-    "createView": ["runtime/zig/src/backend/vulkan/native_runtime.zig:1"],
-    "drawIndirect": ["runtime/zig/src/doe_vulkan_render_native.zig:1"],
-    "drawIndexedIndirect": ["runtime/zig/src/doe_vulkan_render_native.zig:1"],
-}
+def get_vulkan(row):
+    return row.setdefault("vulkan", {})
 
 
-def update_cell(cell, status, notes=None, source_refs=None):
-    """Update a Vulkan checklist cell."""
-    cell["status"] = status
-    if notes:
-        cell["notes"] = notes
-    if source_refs:
-        cell["sourceRefs"] = source_refs
+def update_interface(row):
+    name = row["name"]
+    vulkan = get_vulkan(row)
+    status = vulkan.get("impl", "unreviewed")
 
-
-def process_interface(iface, data):
-    """Process a single interface entry."""
-    name = iface["name"]
-    vulkan = iface["checklist"].get("vulkan")
-    if not vulkan:
-        return
-
-    # Update interface-level Vulkan cell
     if name in INTERFACE_IMPLEMENTED:
-        if vulkan["implementation"]["status"] in ("unreviewed", "partial", "not_wired", "blocked"):
-            update_cell(vulkan["implementation"], "implemented",
-                       notes=[], source_refs=SOURCE_REFS[:2])
-            if vulkan["correctness"]["status"] == "unreviewed":
-                update_cell(vulkan["correctness"], "unit",
-                           notes=["Vulkan native runtime test coverage."],
-                           source_refs=["runtime/zig/tests/vulkan/"])
+        if status in ("unreviewed", "partial", "not_wired", "blocked"):
+            vulkan["impl"] = "implemented"
+            if vulkan.get("correct", "unreviewed") == "unreviewed":
+                vulkan["correct"] = "unit"
+                vulkan["notes"] = ["Vulkan native runtime test coverage."]
     elif name in INTERFACE_PARTIAL:
-        if vulkan["implementation"]["status"] in ("unreviewed", "blocked"):
-            update_cell(vulkan["implementation"], "partial",
-                       notes=[], source_refs=SOURCE_REFS)
-            if vulkan["correctness"]["status"] == "unreviewed":
-                update_cell(vulkan["correctness"], "unit",
-                           notes=[], source_refs=["runtime/zig/tests/vulkan/"])
+        if status in ("unreviewed", "blocked"):
+            vulkan["impl"] = "partial"
+            if vulkan.get("correct", "unreviewed") == "unreviewed":
+                vulkan["correct"] = "unit"
 
-    # Update member-level Vulkan cells
-    for member in iface.get("members", []):
-        member_name = member["name"]
-        mvulkan = member["checklist"].get("vulkan")
-        if not mvulkan:
-            continue
 
-        key = (name, member_name)
-        if key in MEMBER_IMPLEMENTED:
-            if mvulkan["implementation"]["status"] in ("unreviewed", "partial", "not_wired", "blocked"):
-                refs = MEMBER_SOURCE_REFS.get(member_name, SOURCE_REFS[:2])
-                update_cell(mvulkan["implementation"], "implemented",
-                           notes=[], source_refs=refs)
-                if mvulkan["correctness"]["status"] == "unreviewed":
-                    update_cell(mvulkan["correctness"], "unit",
-                               notes=[], source_refs=refs[:1])
-        elif key in MEMBER_UNSUPPORTED:
-            if mvulkan["implementation"]["status"] in ("unreviewed", "partial", "not_wired", "blocked"):
-                update_cell(mvulkan["implementation"], "not_wired",
-                           notes=["Explicit unsupported on Vulkan — logs warning."],
-                           source_refs=SOURCE_REFS[:1])
+def update_member(row):
+    key = (row["parent"], row["name"])
+    vulkan = get_vulkan(row)
+    status = vulkan.get("impl", "unreviewed")
+
+    if key in MEMBER_IMPLEMENTED:
+        if status in ("unreviewed", "partial", "not_wired", "blocked"):
+            vulkan["impl"] = "implemented"
+            if vulkan.get("correct", "unreviewed") == "unreviewed":
+                vulkan["correct"] = "unit"
+    elif key in MEMBER_UNSUPPORTED:
+        if status in ("unreviewed", "partial", "not_wired", "blocked"):
+            vulkan["impl"] = "not_wired"
+            vulkan["notes"] = ["Explicit unsupported on Vulkan — logs warning."]
 
 
 def main():
-    with open(SPEC_INDEX_PATH, "r") as f:
-        data = json.load(f)
+    with open(SPEC_INDEX_PATH) as f:
+        lines = f.readlines()
 
-    for iface in data.get("interfaces", []):
-        process_interface(iface, data)
+    rows = [json.loads(line) for line in lines]
 
-    data["lastUpdated"] = "2026-03-17"
+    for row in rows:
+        kind = row.get("kind")
+        if kind == "header":
+            row["lastUpdated"] = "2026-03-17"
+        elif kind == "interface":
+            update_interface(row)
+        elif kind == "member":
+            update_member(row)
 
     with open(SPEC_INDEX_PATH, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
+        for row in rows:
+            f.write(json.dumps(row, separators=(",", ":")) + "\n")
 
     print("Vulkan spec index updated.")
 

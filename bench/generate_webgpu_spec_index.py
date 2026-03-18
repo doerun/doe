@@ -64,147 +64,77 @@ CONSTANT_INTERFACES = {
     "GPUTextureUsage",
 }
 
-
-def default_backend_cell() -> dict:
-    return {
-        "implementation": {
-            "status": "unreviewed",
-            "notes": [],
-            "sourceRefs": [],
-        },
-        "correctness": {
-            "status": "unreviewed",
-            "notes": [],
-            "sourceRefs": [],
-        },
-        "performance": {
-            "status": "unreviewed",
-            "notes": [],
-            "sourceRefs": [],
-        },
-    }
+DEFAULTS = {"impl": "unreviewed", "correct": "unreviewed", "perf": "unreviewed"}
 
 
-def default_checklist() -> dict:
-    return {
-        "metal": default_backend_cell(),
-        "vulkan": default_backend_cell(),
-        "d3d12": default_backend_cell(),
-        "browser": default_backend_cell(),
-    }
+def compact_cell(verbose_cell):
+    """Convert a verbose backend cell to compact form, omitting defaults."""
+    result = {}
+    s = verbose_cell.get("implementation", {}).get("status", "unreviewed")
+    if s != DEFAULTS["impl"]:
+        result["impl"] = s
+    s = verbose_cell.get("correctness", {}).get("status", "unreviewed")
+    if s != DEFAULTS["correct"]:
+        result["correct"] = s
+    s = verbose_cell.get("performance", {}).get("status", "unreviewed")
+    if s != DEFAULTS["perf"]:
+        result["perf"] = s
+    notes = []
+    for dim in ["implementation", "correctness", "performance"]:
+        for n in verbose_cell.get(dim, {}).get("notes", []):
+            if n and n not in notes:
+                notes.append(n)
+    if notes:
+        result["notes"] = notes
+    return result
 
 
-def normalize_evidence_cell(raw: dict | None, *, vocabulary: tuple[str, ...]) -> dict:
-    cell = {
-        "status": "unreviewed",
-        "notes": [],
-        "sourceRefs": [],
-    }
-    if not isinstance(raw, dict):
-        return cell
-    status = raw.get("status")
-    if status in vocabulary:
-        cell["status"] = status
-    notes = raw.get("notes")
-    if isinstance(notes, list):
-        cell["notes"] = [item for item in notes if isinstance(item, str)]
-    source_refs = raw.get("sourceRefs")
-    if isinstance(source_refs, list):
-        cell["sourceRefs"] = [item for item in source_refs if isinstance(item, str)]
-    return cell
-
-
-def normalize_checklist(raw: dict | None) -> dict:
-    checklist = default_checklist()
-    if not isinstance(raw, dict):
-        return checklist
+def compact_checklist(verbose_checklist):
+    """Convert verbose checklist dict to flat backend keys, omitting all-default backends."""
+    result = {}
     for backend in CHECKLIST_BACKENDS:
-        value = raw.get(backend)
-        if isinstance(value, str) and value in IMPLEMENTATION_STATUS:
-            # Preserve v2 data shape by migrating the old flat backend status into
-            # the new implementation layer.
-            checklist[backend]["implementation"]["status"] = value
-            notes = raw.get("notes")
-            if isinstance(notes, list):
-                checklist[backend]["implementation"]["notes"] = [
-                    item for item in notes if isinstance(item, str)
-                ]
-            source_refs = raw.get("sourceRefs")
-            if isinstance(source_refs, list):
-                checklist[backend]["implementation"]["sourceRefs"] = [
-                    item for item in source_refs if isinstance(item, str)
-                ]
-            continue
-        if isinstance(value, dict):
-            checklist[backend] = {
-                "implementation": normalize_evidence_cell(
-                    value.get("implementation"),
-                    vocabulary=IMPLEMENTATION_STATUS,
-                ),
-                "correctness": normalize_evidence_cell(
-                    value.get("correctness"),
-                    vocabulary=CORRECTNESS_STATUS,
-                ),
-                "performance": normalize_evidence_cell(
-                    value.get("performance"),
-                    vocabulary=PERFORMANCE_STATUS,
-                ),
-            }
-    return checklist
+        cell = verbose_checklist.get(backend, {})
+        cc = compact_cell(cell)
+        if cc:
+            result[backend] = cc
+    return result
 
 
-def load_existing_index(output_path: Path) -> dict | None:
+def load_existing_jsonl(output_path):
+    """Load existing JSONL and build lookup maps for preserving checklist data."""
     if not output_path.exists():
-        return None
+        return {}, {}, {}, {}
+    interface_cells = {}
+    member_cells = {}
+    union_cells = {}
+    value_cells = {}
     try:
-        return json.loads(output_path.read_text())
-    except json.JSONDecodeError:
-        return None
+        with open(output_path) as f:
+            for line in f:
+                row = json.loads(line)
+                kind = row.get("kind")
+                if kind == "interface":
+                    backends = {b: row[b] for b in CHECKLIST_BACKENDS if b in row}
+                    if backends:
+                        interface_cells[row["name"]] = backends
+                elif kind == "member":
+                    backends = {b: row[b] for b in CHECKLIST_BACKENDS if b in row}
+                    if backends:
+                        member_cells[f"{row['parent']}::{row['memberKind']}::{row['name']}"] = backends
+                elif kind == "union":
+                    backends = {b: row[b] for b in CHECKLIST_BACKENDS if b in row}
+                    if backends:
+                        union_cells[row["name"]] = backends
+                elif kind == "value":
+                    backends = {b: row[b] for b in CHECKLIST_BACKENDS if b in row}
+                    if backends:
+                        value_cells[f"{row['parent']}::{row['name']}"] = backends
+    except (json.JSONDecodeError, KeyError):
+        return {}, {}, {}, {}
+    return interface_cells, member_cells, union_cells, value_cells
 
 
-def build_existing_checklists(existing_index: dict | None) -> tuple[dict[str, dict], dict[str, dict], dict[str, dict], dict[str, dict]]:
-    interface_checklists: dict[str, dict] = {}
-    member_checklists: dict[str, dict] = {}
-    string_union_checklists: dict[str, dict] = {}
-    string_union_value_checklists: dict[str, dict] = {}
-    if not isinstance(existing_index, dict):
-        return interface_checklists, member_checklists, string_union_checklists, string_union_value_checklists
-
-    for interface in existing_index.get("interfaces", []):
-        if not isinstance(interface, dict):
-            continue
-        interface_name = interface.get("name")
-        if isinstance(interface_name, str):
-            interface_checklists[interface_name] = normalize_checklist(interface.get("checklist"))
-        for member in interface.get("members", []):
-            if not isinstance(member, dict):
-                continue
-            member_name = member.get("name")
-            member_kind = member.get("memberKind")
-            if isinstance(interface_name, str) and isinstance(member_name, str) and isinstance(member_kind, str):
-                member_checklists[f"{interface_name}::{member_kind}::{member_name}"] = normalize_checklist(member.get("checklist"))
-
-    for string_union in existing_index.get("stringUnions", []):
-        if not isinstance(string_union, dict):
-            continue
-        union_name = string_union.get("name")
-        if isinstance(union_name, str):
-            string_union_checklists[union_name] = normalize_checklist(string_union.get("checklist"))
-        for value in string_union.get("values", []):
-            if isinstance(value, dict):
-                value_name = value.get("name")
-                if isinstance(union_name, str) and isinstance(value_name, str):
-                    string_union_value_checklists[f"{union_name}::{value_name}"] = normalize_checklist(value.get("checklist"))
-
-    return (
-        interface_checklists,
-        member_checklists,
-        string_union_checklists,
-        string_union_value_checklists,
-    )
-
-
-def load_package_metadata() -> dict:
+def load_package_metadata():
     output = subprocess.check_output(
         ["npm", "view", NPM_PACKAGE, "version", "dist.tarball", "--json"],
         text=True,
@@ -212,7 +142,7 @@ def load_package_metadata() -> dict:
     return json.loads(output)
 
 
-def download_types_file(tarball_url: str) -> str:
+def download_types_file(tarball_url):
     with urllib.request.urlopen(tarball_url) as response:
         payload = response.read()
     with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
@@ -223,7 +153,7 @@ def download_types_file(tarball_url: str) -> str:
         return extracted.read().decode("utf-8")
 
 
-def interface_kind(name: str) -> str:
+def interface_kind(name):
     if name.endswith("Mixin"):
         return "mixin"
     if name in CONSTANT_INTERFACES:
@@ -233,9 +163,8 @@ def interface_kind(name: str) -> str:
     return "interface"
 
 
-def parse_interfaces(types_text: str, existing_index: dict | None = None) -> list[dict]:
-    interface_checklists, member_checklists, _, _ = build_existing_checklists(existing_index)
-    interfaces: dict[str, dict] = {}
+def parse_interfaces(types_text, existing_members, existing_interfaces):
+    interfaces = {}
     lines = types_text.splitlines()
     index = 0
     while index < len(lines):
@@ -250,7 +179,7 @@ def parse_interfaces(types_text: str, existing_index: dict | None = None) -> lis
             index += 1
             header.append(lines[index])
         header_text = " ".join(part.strip() for part in header)
-        extends: list[str] = []
+        extends = []
         extends_match = re.search(r"\bextends\s+(.+?)\s*\{", header_text)
         if extends_match:
             extends = [
@@ -259,7 +188,7 @@ def parse_interfaces(types_text: str, existing_index: dict | None = None) -> lis
                 if part.strip().startswith("GPU")
             ]
         brace_depth = sum(part.count("{") - part.count("}") for part in header)
-        body: list[str] = []
+        body = []
         index += 1
         while index < len(lines):
             body.append(lines[index])
@@ -267,40 +196,26 @@ def parse_interfaces(types_text: str, existing_index: dict | None = None) -> lis
             if brace_depth == 0:
                 break
             index += 1
-        direct_members: list[dict] = []
+        direct_members = []
         for raw_line in body[:-1]:
             if not raw_line.startswith("  ") or raw_line.startswith("    "):
                 continue
-            line = raw_line.strip()
-            if not line or line.startswith("/**") or line.startswith("*") or line.startswith("//"):
+            mline = raw_line.strip()
+            if not mline or mline.startswith("/**") or mline.startswith("*") or mline.startswith("//"):
                 continue
-            property_match = re.match(r"^(?:readonly\s+)?([A-Za-z0-9_]+)\??\s*:", line)
+            property_match = re.match(r"^(?:readonly\s+)?([A-Za-z0-9_]+)\??\s*:", mline)
             if property_match:
                 member_name = property_match.group(1)
                 if member_name == "__brand":
                     continue
-                entry = {
-                    "name": member_name,
-                    "memberKind": "property",
-                    "checklist": member_checklists.get(
-                        f"{name}::property::{member_name}",
-                        default_checklist(),
-                    ),
-                }
+                entry = {"name": member_name, "memberKind": "property"}
                 if entry not in direct_members:
                     direct_members.append(entry)
                 continue
-            method_match = re.match(r"^([A-Za-z0-9_]+)\??(?:<[^>]*)?\s*\(", line)
+            method_match = re.match(r"^([A-Za-z0-9_]+)\??(?:<[^>]*)?\s*\(", mline)
             if method_match:
                 method_name = method_match.group(1)
-                entry = {
-                    "name": method_name,
-                    "memberKind": "method",
-                    "checklist": member_checklists.get(
-                        f"{name}::method::{method_name}",
-                        default_checklist(),
-                    ),
-                }
+                entry = {"name": method_name, "memberKind": "method"}
                 if entry not in direct_members:
                     direct_members.append(entry)
         entry = interfaces.setdefault(name, {"extends": [], "directMembers": []})
@@ -312,9 +227,9 @@ def parse_interfaces(types_text: str, existing_index: dict | None = None) -> lis
                 entry["directMembers"].append(member)
         index += 1
 
-    resolved_cache: dict[str, list[dict]] = {}
+    resolved_cache = {}
 
-    def effective_members(name: str, stack: set[str] | None = None) -> list[dict]:
+    def effective_members(name, stack=None):
         if name in resolved_cache:
             return resolved_cache[name]
         if stack is None:
@@ -331,70 +246,104 @@ def parse_interfaces(types_text: str, existing_index: dict | None = None) -> lis
         resolved_cache[name] = merged_members
         return merged_members
 
-    entries = []
+    results = []
     for name in sorted(interfaces):
         members = sorted(effective_members(name), key=lambda item: (item["memberKind"], item["name"]))
-        entries.append(
-            {
-                "name": name,
-                "interfaceKind": interface_kind(name),
-                "specUrl": f"{INTERFACE_REFERENCE_ROOT}/{name}.html",
-                "memberCount": len(members),
-                "extends": interfaces[name]["extends"],
-                "checklist": interface_checklists.get(name, default_checklist()),
-                "members": members,
+        iface_row = {
+            "kind": "interface",
+            "name": name,
+            "interfaceKind": interface_kind(name),
+            "specUrl": f"{INTERFACE_REFERENCE_ROOT}/{name}.html",
+            "memberCount": len(members),
+        }
+        if interfaces[name]["extends"]:
+            iface_row["extends"] = interfaces[name]["extends"]
+        # Preserve existing checklist data
+        existing = existing_interfaces.get(name, {})
+        for backend in CHECKLIST_BACKENDS:
+            if backend in existing:
+                iface_row[backend] = existing[backend]
+
+        member_rows = []
+        for m in members:
+            mrow = {
+                "kind": "member",
+                "parent": name,
+                "name": m["name"],
+                "memberKind": m["memberKind"],
             }
-        )
-    return entries
+            key = f"{name}::{m['memberKind']}::{m['name']}"
+            existing_m = existing_members.get(key, {})
+            for backend in CHECKLIST_BACKENDS:
+                if backend in existing_m:
+                    mrow[backend] = existing_m[backend]
+            member_rows.append(mrow)
+
+        results.append((iface_row, member_rows))
+
+    return results
 
 
-def parse_string_unions(types_text: str, existing_index: dict | None = None) -> list[dict]:
-    _, _, string_union_checklists, string_union_value_checklists = build_existing_checklists(existing_index)
+def parse_string_unions(types_text, existing_unions, existing_values):
     pattern = re.compile(
         r"^type\s+(GPU[A-Za-z0-9_]+)\s*=\n([\s\S]*?);\n",
         re.MULTILINE,
     )
-    entries = []
+    results = []
     for name, body in pattern.findall(types_text):
         values = re.findall(r'"([^"]+)"', body)
         if not values:
             continue
-        value_entries = [
-            {
+        union_row = {
+            "kind": "union",
+            "name": name,
+            "specUrl": API_REFERENCE_ROOT,
+            "valueCount": len(values),
+        }
+        existing_u = existing_unions.get(name, {})
+        for backend in CHECKLIST_BACKENDS:
+            if backend in existing_u:
+                union_row[backend] = existing_u[backend]
+
+        value_rows = []
+        for value in values:
+            vrow = {
+                "kind": "value",
+                "parent": name,
                 "name": value,
-                "checklist": string_union_value_checklists.get(
-                    f"{name}::{value}",
-                    default_checklist(),
-                ),
             }
-            for value in values
-        ]
-        entries.append(
-            {
-                "name": name,
-                "unionKind": "string-union",
-                "specUrl": API_REFERENCE_ROOT,
-                "valueCount": len(values),
-                "checklist": string_union_checklists.get(name, default_checklist()),
-                "values": value_entries,
-            }
-        )
-    entries.sort(key=lambda item: item["name"])
-    return entries
+            key = f"{name}::{value}"
+            existing_v = existing_values.get(key, {})
+            for backend in CHECKLIST_BACKENDS:
+                if backend in existing_v:
+                    vrow[backend] = existing_v[backend]
+            value_rows.append(vrow)
+
+        results.append((union_row, value_rows))
+
+    results.sort(key=lambda item: item[0]["name"])
+    return results
 
 
-def build_index(output_path: Path) -> dict:
+def build_index(output_path):
     metadata = load_package_metadata()
     version = metadata["version"]
     tarball_url = metadata["dist.tarball"]
     types_text = download_types_file(tarball_url)
-    existing_index = load_existing_index(output_path)
-    interfaces = parse_interfaces(types_text, existing_index)
-    string_unions = parse_string_unions(types_text, existing_index)
-    interface_member_count = sum(entry["memberCount"] for entry in interfaces)
-    string_union_value_count = sum(entry["valueCount"] for entry in string_unions)
-    return {
-        "schemaVersion": 3,
+
+    existing_interfaces, existing_members, existing_unions, existing_values = load_existing_jsonl(output_path)
+
+    interfaces = parse_interfaces(types_text, existing_members, existing_interfaces)
+    string_unions = parse_string_unions(types_text, existing_unions, existing_values)
+
+    interface_count = len(interfaces)
+    member_count = sum(len(members) for _, members in interfaces)
+    union_count = len(string_unions)
+    value_count = sum(len(values) for _, values in string_unions)
+
+    header = {
+        "kind": "header",
+        "schemaVersion": 4,
         "lastUpdated": date.today().isoformat(),
         "specFamily": "webgpu-api",
         "source": {
@@ -404,54 +353,51 @@ def build_index(output_path: Path) -> dict:
             "tarballUrl": tarball_url,
             "apiReference": API_REFERENCE_ROOT,
         },
-        "notes": [
-            "First-pass WebGPU API surface index generated from the official @webgpu/types package.",
-            "This file tracks WebGPU API interfaces and string-union spec enums, and now carries per-backend checklist cells for implementation, correctness, and performance review.",
-            "Checklist cells default to unreviewed until reviewed statuses and sourceRefs are attached.",
-            "CTS pass/fail evidence belongs in config/webgpu-cts-evidence.json.",
-        ],
-        "checklist": {
-            "backends": list(CHECKLIST_BACKENDS),
-            "implementationStatusVocabulary": list(IMPLEMENTATION_STATUS),
-            "correctnessStatusVocabulary": list(CORRECTNESS_STATUS),
-            "performanceStatusVocabulary": list(PERFORMANCE_STATUS),
-            "defaultImplementationStatus": "unreviewed",
-            "defaultCorrectnessStatus": "unreviewed",
-            "defaultPerformanceStatus": "unreviewed",
-            "notes": [
-                "The checklist is the canonical backend review layer for the WebGPU API spec index.",
-                "Keep implementation, correctness, and performance statuses separate for every backend cell.",
-                "Use implemented, partial, not_wired, blocked, or out_of_scope only when sourceRefs justify the implementation classification.",
-            ],
-        },
+        "backends": list(CHECKLIST_BACKENDS),
+        "defaults": DEFAULTS,
+        "implVocab": list(IMPLEMENTATION_STATUS),
+        "correctVocab": list(CORRECTNESS_STATUS),
+        "perfVocab": list(PERFORMANCE_STATUS),
         "stats": {
-            "interfaceCount": len(interfaces),
-            "interfaceMemberCount": interface_member_count,
-            "stringUnionCount": len(string_unions),
-            "stringUnionValueCount": string_union_value_count,
+            "interfaceCount": interface_count,
+            "interfaceMemberCount": member_count,
+            "stringUnionCount": union_count,
+            "stringUnionValueCount": value_count,
         },
-        "interfaces": interfaces,
-        "stringUnions": string_unions,
     }
 
+    rows = [header]
+    for iface_row, member_rows in interfaces:
+        rows.append(iface_row)
+        rows.extend(member_rows)
+    for union_row, value_rows in string_unions:
+        rows.append(union_row)
+        rows.extend(value_rows)
 
-def main() -> int:
+    return rows
+
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--output",
-        default="config/webgpu-spec-index.json",
-        help="path to write the generated spec index JSON",
+        default="config/webgpu-spec-index.jsonl",
+        help="path to write the generated spec index JSONL",
     )
     args = parser.parse_args()
     output_path = Path(args.output)
-    index = build_index(output_path)
-    output_path.write_text(json.dumps(index, indent=2) + "\n")
+    rows = build_index(output_path)
+    with open(output_path, "w") as f:
+        for row in rows:
+            f.write(json.dumps(row, separators=(",", ":")) + "\n")
+    header = rows[0]
+    stats = header["stats"]
     print(f"wrote {output_path}")
     print(
-        f"interfaces={index['stats']['interfaceCount']} "
-        f"members={index['stats']['interfaceMemberCount']} "
-        f"string_unions={index['stats']['stringUnionCount']} "
-        f"union_values={index['stats']['stringUnionValueCount']}"
+        f"interfaces={stats['interfaceCount']} "
+        f"members={stats['interfaceMemberCount']} "
+        f"string_unions={stats['stringUnionCount']} "
+        f"union_values={stats['stringUnionValueCount']}"
     )
     return 0
 

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Batch-update D3D12 cells in webgpu-spec-index.json for newly implemented features."""
+"""Batch-update D3D12 cells in webgpu-spec-index.jsonl for newly implemented features."""
 
 import json
-import sys
 
-SPEC_INDEX_PATH = "config/webgpu-spec-index.json"
+SPEC_INDEX_PATH = "config/webgpu-spec-index.jsonl"
 
 # Interfaces whose D3D12 implementation status should be "implemented"
 INTERFACE_IMPLEMENTED = {
@@ -99,97 +98,59 @@ MEMBER_IMPLEMENTED = {
     ("GPUCommandEncoder", "resolveQuerySet"),
 }
 
-SOURCE_REFS = [
-    "runtime/zig/src/backend/d3d12/mod.zig:221",
-    "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig:1",
-    "runtime/zig/src/backend/d3d12/d3d12_device_caps.zig:1",
-]
 
-MEMBER_SOURCE_REFS = {
-    "limits": ["runtime/zig/src/backend/d3d12/d3d12_device_caps.zig:1"],
-    "features": ["runtime/zig/src/backend/d3d12/d3d12_device_caps.zig:1"],
-    "onSubmittedWorkDone": ["runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig:380"],
-    "mapAsync": ["runtime/zig/src/backend/d3d12/commands/d3d12_map_async.zig:14"],
-    "getMappedRange": ["runtime/zig/src/backend/d3d12/commands/d3d12_map_async.zig:14"],
-    "unmap": ["runtime/zig/src/backend/d3d12/commands/d3d12_map_async.zig:14"],
-    "dispatchWorkgroupsIndirect": ["runtime/zig/src/backend/d3d12/commands/d3d12_dispatch.zig:76"],
-    "createView": ["runtime/zig/src/backend/d3d12/resources/d3d12_texture_view.zig:1"],
-    "createQuerySet": ["runtime/zig/src/backend/d3d12/d3d12_query_set.zig:1"],
-    "createBindGroup": ["runtime/zig/src/backend/d3d12/d3d12_descriptors.zig:1"],
-    "createBindGroupLayout": ["runtime/zig/src/backend/d3d12/d3d12_descriptors.zig:1"],
-    "beginRenderPass": ["runtime/zig/src/backend/d3d12/commands/d3d12_render.zig:60"],
-    "draw": ["runtime/zig/src/backend/d3d12/commands/d3d12_render.zig:60"],
-    "drawIndexed": ["runtime/zig/src/backend/d3d12/commands/d3d12_render.zig:60"],
-    "drawIndirect": ["runtime/zig/src/backend/d3d12/commands/d3d12_render.zig:60"],
-    "drawIndexedIndirect": ["runtime/zig/src/backend/d3d12/commands/d3d12_render.zig:60"],
-    "writeTimestamp": ["runtime/zig/src/backend/d3d12/commands/d3d12_gpu_timestamps.zig:1"],
-    "resolveQuerySet": ["runtime/zig/src/backend/d3d12/d3d12_query_set.zig:1"],
-}
+def get_d3d12(row):
+    return row.setdefault("d3d12", {})
 
 
-def update_cell(cell, status, notes=None, source_refs=None):
-    """Update a D3D12 checklist cell."""
-    cell["status"] = status
-    if notes:
-        cell["notes"] = notes
-    if source_refs:
-        cell["sourceRefs"] = source_refs
+def update_interface(row):
+    name = row["name"]
+    d3d12 = get_d3d12(row)
+    status = d3d12.get("impl", "unreviewed")
 
-
-def process_interface(iface, data):
-    """Process a single interface entry."""
-    name = iface["name"]
-    d3d12 = iface["checklist"].get("d3d12")
-    if not d3d12:
-        return
-
-    # Update interface-level D3D12 cell
     if name in INTERFACE_IMPLEMENTED:
-        if d3d12["implementation"]["status"] in ("unreviewed", "partial", "not_wired", "blocked"):
-            update_cell(d3d12["implementation"], "implemented",
-                       notes=[], source_refs=SOURCE_REFS[:2])
-            if d3d12["correctness"]["status"] == "unreviewed":
-                update_cell(d3d12["correctness"], "unit",
-                           notes=["Contract-path test coverage via run_contract_path_for_test."],
-                           source_refs=["runtime/zig/src/backend/d3d12/mod.zig:619"])
+        if status in ("unreviewed", "partial", "not_wired", "blocked"):
+            d3d12["impl"] = "implemented"
+            if d3d12.get("correct", "unreviewed") == "unreviewed":
+                d3d12["correct"] = "unit"
+                d3d12["notes"] = ["Contract-path test coverage via run_contract_path_for_test."]
     elif name in INTERFACE_PARTIAL:
-        if d3d12["implementation"]["status"] in ("unreviewed", "blocked"):
-            update_cell(d3d12["implementation"], "partial",
-                       notes=[], source_refs=SOURCE_REFS)
-            if d3d12["correctness"]["status"] == "unreviewed":
-                update_cell(d3d12["correctness"], "unit",
-                           notes=[], source_refs=["runtime/zig/src/backend/d3d12/mod.zig:619"])
+        if status in ("unreviewed", "blocked"):
+            d3d12["impl"] = "partial"
+            if d3d12.get("correct", "unreviewed") == "unreviewed":
+                d3d12["correct"] = "unit"
 
-    # Update member-level D3D12 cells
-    for member in iface.get("members", []):
-        member_name = member["name"]
-        md3d12 = member["checklist"].get("d3d12")
-        if not md3d12:
-            continue
 
-        key = (name, member_name)
-        if key in MEMBER_IMPLEMENTED:
-            if md3d12["implementation"]["status"] in ("unreviewed", "partial", "not_wired", "blocked"):
-                refs = MEMBER_SOURCE_REFS.get(member_name, SOURCE_REFS[:2])
-                update_cell(md3d12["implementation"], "implemented",
-                           notes=[], source_refs=refs)
-                if md3d12["correctness"]["status"] == "unreviewed":
-                    update_cell(md3d12["correctness"], "unit",
-                               notes=[], source_refs=refs[:1])
+def update_member(row):
+    key = (row["parent"], row["name"])
+    d3d12 = get_d3d12(row)
+    status = d3d12.get("impl", "unreviewed")
+
+    if key in MEMBER_IMPLEMENTED:
+        if status in ("unreviewed", "partial", "not_wired", "blocked"):
+            d3d12["impl"] = "implemented"
+            if d3d12.get("correct", "unreviewed") == "unreviewed":
+                d3d12["correct"] = "unit"
 
 
 def main():
-    with open(SPEC_INDEX_PATH, "r") as f:
-        data = json.load(f)
+    with open(SPEC_INDEX_PATH) as f:
+        lines = f.readlines()
 
-    for iface in data.get("interfaces", []):
-        process_interface(iface, data)
+    rows = [json.loads(line) for line in lines]
 
-    data["lastUpdated"] = "2026-03-17"
+    for row in rows:
+        kind = row.get("kind")
+        if kind == "header":
+            row["lastUpdated"] = "2026-03-17"
+        elif kind == "interface":
+            update_interface(row)
+        elif kind == "member":
+            update_member(row)
 
     with open(SPEC_INDEX_PATH, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
+        for row in rows:
+            f.write(json.dumps(row, separators=(",", ":")) + "\n")
 
     print("D3D12 spec index updated.")
 

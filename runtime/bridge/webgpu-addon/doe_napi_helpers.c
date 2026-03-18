@@ -493,18 +493,6 @@ void queue_work_done_callback(uint32_t status, WGPUStringView message,
 }
 
 /* ================================================================
- * Pop error scope synchronous callback
- * ================================================================ */
-
-void pop_error_scope_callback(uint32_t error_type, WGPUStringView message, void* userdata1, void* userdata2) {
-    (void)userdata2;
-    DevicePopErrorScopeResult* result = (DevicePopErrorScopeResult*)userdata1;
-    result->done = 1;
-    result->error_type = error_type;
-    copy_string_view_message(message, result->message, sizeof(result->message));
-}
-
-/* ================================================================
  * Buffer data extraction helper (ArrayBuffer / TypedArray / Buffer)
  * ================================================================ */
 
