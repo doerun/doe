@@ -122,9 +122,9 @@ pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
     // Subgroups (wave intrinsics) require SM6.0+.
     const subgroups = sm >= SM_6_0;
     // ShaderF16 requires both SM6.2+ and hardware native 16-bit op support.
-    const f16 = sm >= SM_6_2 and native_16 == 1;
+    const shader_f16 = sm >= SM_6_2 and native_16 == 1;
     // SubgroupsF16 requires both ShaderF16 and Subgroups.
-    const sub_f16 = subgroups and f16;
+    const sub_f16 = subgroups and shader_f16;
 
     return .{
         .shader_model = sm,
@@ -132,7 +132,7 @@ pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
         .wave_lane_count_max = wl_max,
         .supports_native_16bit = native_16 == 1,
         .has_subgroups = subgroups,
-        .has_shader_f16 = f16,
+        .has_shader_f16 = shader_f16,
         .has_subgroups_f16 = sub_f16,
     };
 }

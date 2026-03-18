@@ -36,10 +36,16 @@ Advanced browser-helper utilities may be exported for integration seams
 (`createBrowserSurfaceClasses`, canvas-configuration normalizers, and canvas
 enum maps), but those exports are adapter helpers only. They do not change the
 package contract into a browser-process or `navigator.gpu` ownership contract.
+The explicit `@simulatte/webgpu/browser` subpath is the supported composition
+entrypoint for wrapping browser-owned `navigator.gpu`, `GPUAdapter`,
+`GPUDevice`, and `GPUCanvasContext` objects onto the shared package surface;
+it remains an integration seam over browser-owned resources, not a package-
+owned browser runtime.
 `createNativeBrowserCanvasBackend(...)` is the concrete default helper for
-delegating `GPUCanvasContext` operations onto a browser-owned
-`canvas.getContext("webgpu")` object; it is still an integration helper, not a
-package-owned browser runtime.
+delegating `GPUCanvasContext` operations plus browser-native
+`importExternalTexture(...)` / `copyExternalImageToTexture(...)` calls onto a
+browser-owned `canvas.getContext("webgpu")` object; it is still an integration
+helper, not a package-owned browser runtime.
 
 This is the contract for the current implemented API. It intentionally may
 differ from the future helper naming proposed in `doe-api-design.md`.
@@ -104,13 +110,19 @@ level:
   and returns structured compilation diagnostics.
 - `setNativeTimeoutMs(ms)` sets the native-side timeout for synchronous GPU
   operations (map, flush).
+- `@simulatte/webgpu/browser` provides the explicit browser-owned composition
+  surface: `createBrowserRuntime(...)`, `create(...)`, `requestAdapter(...)`,
+  `requestDevice(...)`, `bindAdapter(...)`, `bindDevice(...)`, and
+  `createCanvasContext(...)` over a real browser `navigator.gpu` backend.
 - advanced browser-helper exports provide browser-surface normalization and
   class-factory hooks for Track A adapters and browser-owned `GPUDevice`
   integration, but require an explicit canvas backend provider and do not imply
   package-owned DOM/canvas behavior.
 - `createNativeBrowserCanvasBackend(...)` provides the concrete browser-owned
   `GPUCanvasContext` delegation helper for `configure`, `getCurrentTexture`,
-  and `unconfigure` over a real browser canvas context.
+  and `unconfigure` over a real browser canvas context, and also forwards the
+  browser-native external-image interop methods used by the shared browser
+  surface.
 
 On `@simulatte/webgpu/compute`, the returned device is intentionally
 compute-only:

@@ -292,6 +292,8 @@ pub const RenderDrawCommand = struct {
     scissor_height: ?u32 = null,
     blend_constant: [4]f32 = .{ 0, 0, 0, 0 },
     stencil_reference: u32 = 0,
+    occlusion_query_pool: u64 = 0,
+    occlusion_query_index: ?u32 = null,
     bind_group_dynamic_offsets: ?[]const u32 = null,
     unclipped_depth: bool = false,
 };

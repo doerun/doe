@@ -1,9 +1,11 @@
 import { globals } from '../webgpu_constants.js';
+import { KNOWN_FEATURES } from './capabilities.js';
 import {
   UINT32_MAX,
   failValidation,
   describeResourceLabel,
   assertObject,
+  assertArray,
   assertBoolean,
   assertNonEmptyString,
   assertIntegerInRange,
@@ -15,6 +17,110 @@ const SAMPLER_BINDING_TYPES = Object.freeze({
   filtering: 'filtering',
   'non-filtering': 'non-filtering',
   comparison: 'comparison',
+});
+
+const FILTER_MODES = Object.freeze({
+  nearest: 'nearest',
+  linear: 'linear',
+});
+
+const FRONT_FACES = Object.freeze({
+  ccw: 'ccw',
+  cw: 'cw',
+});
+
+const INDEX_FORMATS = Object.freeze({
+  uint16: 'uint16',
+  uint32: 'uint32',
+});
+
+const MIPMAP_FILTER_MODES = Object.freeze({
+  nearest: 'nearest',
+  linear: 'linear',
+});
+
+const POWER_PREFERENCES = Object.freeze({
+  'low-power': 'low-power',
+  'high-performance': 'high-performance',
+});
+
+const PRIMITIVE_TOPOLOGIES = Object.freeze({
+  'point-list': 'point-list',
+  'line-list': 'line-list',
+  'line-strip': 'line-strip',
+  'triangle-list': 'triangle-list',
+  'triangle-strip': 'triangle-strip',
+});
+
+const QUERY_TYPES = Object.freeze({
+  occlusion: 'occlusion',
+  timestamp: 'timestamp',
+});
+
+const STENCIL_OPERATIONS = Object.freeze({
+  keep: 'keep',
+  zero: 'zero',
+  replace: 'replace',
+  invert: 'invert',
+  'increment-clamp': 'increment-clamp',
+  'decrement-clamp': 'decrement-clamp',
+  'increment-wrap': 'increment-wrap',
+  'decrement-wrap': 'decrement-wrap',
+});
+
+const TEXTURE_ASPECTS = Object.freeze({
+  all: 'all',
+  'stencil-only': 'stencil-only',
+  'depth-only': 'depth-only',
+});
+
+const VERTEX_STEP_MODES = Object.freeze({
+  vertex: 'vertex',
+  instance: 'instance',
+});
+
+const VERTEX_FORMATS = Object.freeze({
+  uint8: 'uint8',
+  uint8x2: 'uint8x2',
+  uint8x4: 'uint8x4',
+  sint8: 'sint8',
+  sint8x2: 'sint8x2',
+  sint8x4: 'sint8x4',
+  unorm8: 'unorm8',
+  unorm8x2: 'unorm8x2',
+  unorm8x4: 'unorm8x4',
+  snorm8: 'snorm8',
+  snorm8x2: 'snorm8x2',
+  snorm8x4: 'snorm8x4',
+  uint16: 'uint16',
+  uint16x2: 'uint16x2',
+  uint16x4: 'uint16x4',
+  sint16: 'sint16',
+  sint16x2: 'sint16x2',
+  sint16x4: 'sint16x4',
+  unorm16: 'unorm16',
+  unorm16x2: 'unorm16x2',
+  unorm16x4: 'unorm16x4',
+  snorm16: 'snorm16',
+  snorm16x2: 'snorm16x2',
+  snorm16x4: 'snorm16x4',
+  float16: 'float16',
+  float16x2: 'float16x2',
+  float16x4: 'float16x4',
+  float32: 'float32',
+  float32x2: 'float32x2',
+  float32x3: 'float32x3',
+  float32x4: 'float32x4',
+  uint32: 'uint32',
+  uint32x2: 'uint32x2',
+  uint32x3: 'uint32x3',
+  uint32x4: 'uint32x4',
+  sint32: 'sint32',
+  sint32x2: 'sint32x2',
+  sint32x3: 'sint32x3',
+  sint32x4: 'sint32x4',
+  'unorm10-10-10-2': 'unorm10-10-10-2',
+  'unorm8x4-bgra': 'unorm8x4-bgra',
 });
 
 const TEXTURE_SAMPLE_TYPES = Object.freeze({
@@ -45,6 +151,50 @@ const STORAGE_TEXTURE_ACCESS = Object.freeze({
   'read-only': 'read-only',
   'read-write': 'read-write',
 });
+
+const KNOWN_TEXTURE_FORMATS = Object.freeze(new Set([
+  'r8unorm', 'r8snorm', 'r8uint', 'r8sint',
+  'r16unorm', 'r16snorm', 'r16uint', 'r16sint', 'r16float',
+  'rg8unorm', 'rg8snorm', 'rg8uint', 'rg8sint',
+  'r32uint', 'r32sint', 'r32float',
+  'rg16unorm', 'rg16snorm', 'rg16uint', 'rg16sint', 'rg16float',
+  'rgba8unorm', 'rgba8unorm-srgb', 'rgba8snorm', 'rgba8uint', 'rgba8sint',
+  'bgra8unorm', 'bgra8unorm-srgb',
+  'rgb9e5ufloat', 'rgb10a2uint', 'rgb10a2unorm', 'rg11b10ufloat',
+  'rg32uint', 'rg32sint', 'rg32float',
+  'rgba16unorm', 'rgba16snorm', 'rgba16uint', 'rgba16sint', 'rgba16float',
+  'rgba32uint', 'rgba32sint', 'rgba32float',
+  'stencil8', 'depth16unorm', 'depth24plus', 'depth24plus-stencil8', 'depth32float', 'depth32float-stencil8',
+  'bc1-rgba-unorm', 'bc1-rgba-unorm-srgb',
+  'bc2-rgba-unorm', 'bc2-rgba-unorm-srgb',
+  'bc3-rgba-unorm', 'bc3-rgba-unorm-srgb',
+  'bc4-r-unorm', 'bc4-r-snorm',
+  'bc5-rg-unorm', 'bc5-rg-snorm',
+  'bc6h-rgb-ufloat', 'bc6h-rgb-float',
+  'bc7-rgba-unorm', 'bc7-rgba-unorm-srgb',
+  'etc2-rgb8unorm', 'etc2-rgb8unorm-srgb',
+  'etc2-rgb8a1unorm', 'etc2-rgb8a1unorm-srgb',
+  'etc2-rgba8unorm', 'etc2-rgba8unorm-srgb',
+  'eac-r11unorm', 'eac-r11snorm', 'eac-rg11unorm', 'eac-rg11snorm',
+  'astc-4x4-unorm', 'astc-4x4-unorm-srgb',
+  'astc-5x4-unorm', 'astc-5x4-unorm-srgb',
+  'astc-5x5-unorm', 'astc-5x5-unorm-srgb',
+  'astc-6x5-unorm', 'astc-6x5-unorm-srgb',
+  'astc-6x6-unorm', 'astc-6x6-unorm-srgb',
+  'astc-8x5-unorm', 'astc-8x5-unorm-srgb',
+  'astc-8x6-unorm', 'astc-8x6-unorm-srgb',
+  'astc-8x8-unorm', 'astc-8x8-unorm-srgb',
+  'astc-10x5-unorm', 'astc-10x5-unorm-srgb',
+  'astc-10x6-unorm', 'astc-10x6-unorm-srgb',
+  'astc-10x8-unorm', 'astc-10x8-unorm-srgb',
+  'astc-10x10-unorm', 'astc-10x10-unorm-srgb',
+  'astc-12x10-unorm', 'astc-12x10-unorm-srgb',
+  'astc-12x12-unorm', 'astc-12x12-unorm-srgb',
+]));
+
+const KNOWN_FEATURE_NAMES = Object.freeze(new Set(
+  KNOWN_FEATURES.map(([name]) => name),
+));
 
 const ALL_BUFFER_USAGE_BITS = Object.values(globals.GPUBufferUsage)
   .reduce((mask, bit) => mask | bit, 0);
@@ -246,6 +396,98 @@ function normalizeEnumKey(value, path, label) {
   return assertNonEmptyString(value, path, label).trim().toLowerCase().replaceAll('_', '-');
 }
 
+function hasFeature(features, name) {
+  return features != null && typeof features.has === 'function' && features.has(name);
+}
+
+function normalizeKnownEnum(value, defaultValue, values, path, label) {
+  const normalized = normalizeEnumKey(value ?? defaultValue, path, label);
+  if (!(normalized in values)) {
+    failValidation(path, `${label} must be one of: ${Object.keys(values).join(', ')}`);
+  }
+  return normalized;
+}
+
+function normalizeFeatureName(value, path, label) {
+  const name = normalizeEnumKey(value, path, label);
+  if (!KNOWN_FEATURE_NAMES.has(name)) {
+    failValidation(path, `${label} must be one of: ${[...KNOWN_FEATURE_NAMES].join(', ')}`);
+  }
+  return name;
+}
+
+function normalizePowerPreference(value, path, label = 'options.powerPreference') {
+  return normalizeKnownEnum(value, 'low-power', POWER_PREFERENCES, path, label);
+}
+
+function normalizeFrontFace(value, path, label = 'descriptor.primitive.frontFace') {
+  return normalizeKnownEnum(value, 'ccw', FRONT_FACES, path, label);
+}
+
+function normalizeIndexFormat(value, path, label) {
+  return normalizeKnownEnum(value, 'uint16', INDEX_FORMATS, path, label);
+}
+
+function normalizePrimitiveTopology(value, path, label = 'descriptor.primitive.topology') {
+  return normalizeKnownEnum(value, 'triangle-list', PRIMITIVE_TOPOLOGIES, path, label);
+}
+
+function normalizeQueryType(value, path, label = 'descriptor.type') {
+  return normalizeKnownEnum(value, 'timestamp', QUERY_TYPES, path, label);
+}
+
+function normalizeMipmapFilterMode(value, path, label = 'descriptor.mipmapFilter') {
+  return normalizeKnownEnum(value, 'nearest', MIPMAP_FILTER_MODES, path, label);
+}
+
+function normalizeStencilOperation(value, path, label) {
+  return normalizeKnownEnum(value, 'keep', STENCIL_OPERATIONS, path, label);
+}
+
+function normalizeTextureAspect(value, path, label = 'descriptor.aspect') {
+  return normalizeKnownEnum(value, 'all', TEXTURE_ASPECTS, path, label);
+}
+
+function normalizeTextureViewDimension(value, path, label = 'descriptor.dimension') {
+  return normalizeKnownEnum(value, '2d', TEXTURE_VIEW_DIMENSIONS, path, label);
+}
+
+function normalizeTextureSampleType(value, path, label = 'descriptor.sampleType') {
+  return normalizeKnownEnum(value, 'float', TEXTURE_SAMPLE_TYPES, path, label);
+}
+
+function normalizeStorageTextureAccess(value, path, label = 'descriptor.access') {
+  return normalizeKnownEnum(value, 'write-only', STORAGE_TEXTURE_ACCESS, path, label);
+}
+
+function normalizeVertexFormat(value, path, label) {
+  return normalizeKnownEnum(value, 'float32', VERTEX_FORMATS, path, label);
+}
+
+function normalizeVertexStepMode(value, path, label = 'descriptor.stepMode') {
+  return normalizeKnownEnum(value, 'vertex', VERTEX_STEP_MODES, path, label);
+}
+
+function normalizeTextureFormat(value, path, label, features = null) {
+  const format = normalizeEnumKey(value, path, label);
+  if (!KNOWN_TEXTURE_FORMATS.has(format)) {
+    failValidation(path, `${label} must be a known GPUTextureFormat`);
+  }
+  if (isBCFormat(format) && !hasFeature(features, 'texture-compression-bc')) {
+    failValidation(path, `${label} requires feature "texture-compression-bc"`);
+  }
+  if (isETC2Format(format) && !hasFeature(features, 'texture-compression-etc2')) {
+    failValidation(path, `${label} requires feature "texture-compression-etc2"`);
+  }
+  if (isASTCFormat(format) && !hasFeature(features, 'texture-compression-astc')) {
+    failValidation(path, `${label} requires feature "texture-compression-astc"`);
+  }
+  if (format === DEPTH_STENCIL_FORMAT_DEPTH32FLOAT_STENCIL8 && !hasFeature(features, 'depth32float-stencil8')) {
+    failValidation(path, `${label} requires feature "depth32float-stencil8"`);
+  }
+  return format;
+}
+
 function normalizeSamplerLayout(binding, path, label) {
   const sampler = assertObject(binding, path, label);
   const type = normalizeEnumKey(sampler.type ?? 'filtering', path, `${label}.type`);
@@ -257,14 +499,8 @@ function normalizeSamplerLayout(binding, path, label) {
 
 function normalizeTextureLayout(binding, path, label) {
   const texture = assertObject(binding, path, label);
-  const sampleType = normalizeEnumKey(texture.sampleType ?? 'float', path, `${label}.sampleType`);
-  const viewDimension = normalizeEnumKey(texture.viewDimension ?? '2d', path, `${label}.viewDimension`);
-  if (!(sampleType in TEXTURE_SAMPLE_TYPES)) {
-    failValidation(path, `${label}.sampleType must be one of: ${Object.keys(TEXTURE_SAMPLE_TYPES).join(', ')}`);
-  }
-  if (!(viewDimension in TEXTURE_VIEW_DIMENSIONS)) {
-    failValidation(path, `${label}.viewDimension must be one of: ${Object.keys(TEXTURE_VIEW_DIMENSIONS).join(', ')}`);
-  }
+  const sampleType = normalizeTextureSampleType(texture.sampleType ?? 'float', path, `${label}.sampleType`);
+  const viewDimension = normalizeTextureViewDimension(texture.viewDimension ?? '2d', path, `${label}.viewDimension`);
   const result = {
     sampleType,
     viewDimension,
@@ -282,29 +518,228 @@ function normalizeTextureLayout(binding, path, label) {
   return result;
 }
 
-function normalizeStorageTextureLayout(binding, path, label) {
+function normalizeStorageTextureLayout(binding, path, label, features = null) {
   const storageTexture = assertObject(binding, path, label);
-  const access = normalizeEnumKey(storageTexture.access ?? 'write-only', path, `${label}.access`);
-  const viewDimension = normalizeEnumKey(storageTexture.viewDimension ?? '2d', path, `${label}.viewDimension`);
-  if (!(access in STORAGE_TEXTURE_ACCESS)) {
-    failValidation(path, `${label}.access must be one of: ${Object.keys(STORAGE_TEXTURE_ACCESS).join(', ')}`);
-  }
-  if (!(viewDimension in TEXTURE_VIEW_DIMENSIONS)) {
-    failValidation(path, `${label}.viewDimension must be one of: ${Object.keys(TEXTURE_VIEW_DIMENSIONS).join(', ')}`);
+  const access = normalizeStorageTextureAccess(storageTexture.access ?? 'write-only', path, `${label}.access`);
+  const viewDimension = normalizeTextureViewDimension(storageTexture.viewDimension ?? '2d', path, `${label}.viewDimension`);
+  const format = normalizeTextureFormat(storageTexture.format, path, `${label}.format`, features);
+  if (!isStorageTextureFormat(format, features)) {
+    failValidation(path, `${label}.format is not valid for storageTexture on this device/package surface`);
   }
   return {
     access,
-    format: assertNonEmptyString(storageTexture.format, path, `${label}.format`),
+    format,
     viewDimension,
   };
 }
 
 function normalizeTextureDimension(value, path, label = 'descriptor.dimension') {
-  const dimension = normalizeEnumKey(value ?? '2d', path, label);
-  if (!(dimension in TEXTURE_DIMENSIONS)) {
-    failValidation(path, `${label} must be one of: ${Object.keys(TEXTURE_DIMENSIONS).join(', ')}`);
+  return normalizeKnownEnum(value, '2d', TEXTURE_DIMENSIONS, path, label);
+}
+
+function normalizeRequestAdapterOptions(options, path = 'GPU.requestAdapter') {
+  if (options === undefined) {
+    return undefined;
   }
-  return dimension;
+  const normalized = assertObject(options, path, 'options');
+  const result = { ...normalized };
+  if (normalized.powerPreference !== undefined) {
+    result.powerPreference = normalizePowerPreference(normalized.powerPreference, path, 'options.powerPreference');
+  }
+  if (normalized.forceFallbackAdapter !== undefined) {
+    result.forceFallbackAdapter = assertBoolean(normalized.forceFallbackAdapter, path, 'options.forceFallbackAdapter');
+  }
+  return result;
+}
+
+function normalizeRequestDeviceDescriptor(descriptor, path = 'GPUAdapter.requestDevice') {
+  if (descriptor === undefined) {
+    return undefined;
+  }
+  const normalized = assertObject(descriptor, path, 'descriptor');
+  const result = { ...normalized };
+  if (normalized.requiredFeatures !== undefined) {
+    const values = Array.isArray(normalized.requiredFeatures)
+      ? normalized.requiredFeatures
+      : Array.from(normalized.requiredFeatures ?? []);
+    result.requiredFeatures = values.map((value, index) => normalizeFeatureName(
+      value,
+      path,
+      `descriptor.requiredFeatures[${index}]`,
+    ));
+  }
+  return result;
+}
+
+function normalizeSamplerDescriptor(descriptor, path = 'GPUDevice.createSampler') {
+  const normalized = assertObject(descriptor, path, 'descriptor');
+  const result = { ...normalized };
+  if (normalized.magFilter !== undefined) {
+    result.magFilter = normalizeKnownEnum(normalized.magFilter, 'nearest', FILTER_MODES, path, 'descriptor.magFilter');
+  }
+  if (normalized.minFilter !== undefined) {
+    result.minFilter = normalizeKnownEnum(normalized.minFilter, 'nearest', FILTER_MODES, path, 'descriptor.minFilter');
+  }
+  if (normalized.mipmapFilter !== undefined) {
+    result.mipmapFilter = normalizeMipmapFilterMode(normalized.mipmapFilter, path, 'descriptor.mipmapFilter');
+  }
+  return result;
+}
+
+function normalizeTextureViewDescriptor(descriptor, texture, features, path = 'GPUTexture.createView') {
+  const normalized = descriptor === undefined ? {} : assertObject(descriptor, path, 'descriptor');
+  const result = { ...normalized };
+  if (normalized.dimension !== undefined) {
+    result.dimension = normalizeTextureViewDimension(normalized.dimension, path, 'descriptor.dimension');
+  }
+  if (normalized.aspect !== undefined) {
+    result.aspect = normalizeTextureAspect(normalized.aspect, path, 'descriptor.aspect');
+  }
+  if (normalized.format !== undefined) {
+    result.format = normalizeTextureFormat(normalized.format, path, 'descriptor.format', features);
+  } else if (texture?.format) {
+    result.format = normalizeTextureFormat(texture.format, path, 'descriptor.format', features);
+  }
+  return result;
+}
+
+function normalizeTextureDescriptor(descriptor, size, usage, features, path = 'GPUDevice.createTexture') {
+  const normalized = assertObject(descriptor, path, 'descriptor');
+  const result = {
+    ...normalized,
+    size,
+    usage,
+    dimension: normalizeTextureDimension(normalized.dimension, path),
+    format: normalizeTextureFormat(normalized.format ?? 'rgba8unorm', path, 'descriptor.format', features),
+  };
+  if (normalized.viewFormats !== undefined) {
+    result.viewFormats = assertArray(normalized.viewFormats, path, 'descriptor.viewFormats')
+      .map((value, index) => normalizeTextureFormat(value, path, `descriptor.viewFormats[${index}]`, features));
+  }
+  return result;
+}
+
+function normalizeQuerySetDescriptor(descriptor, path = 'GPUDevice.createQuerySet') {
+  const normalized = assertObject(descriptor, path, 'descriptor');
+  return {
+    ...normalized,
+    type: normalizeQueryType(normalized.type, path, 'descriptor.type'),
+  };
+}
+
+function normalizePrimitiveState(primitive, path = 'GPUDevice.createRenderPipeline') {
+  if (primitive == null) {
+    return null;
+  }
+  const normalized = assertObject(primitive, path, 'descriptor.primitive');
+  const result = {
+    ...normalized,
+    topology: normalizePrimitiveTopology(normalized.topology, path, 'descriptor.primitive.topology'),
+    frontFace: normalizeFrontFace(normalized.frontFace, path, 'descriptor.primitive.frontFace'),
+  };
+  if (normalized.stripIndexFormat !== undefined) {
+    result.stripIndexFormat = normalizeIndexFormat(
+      normalized.stripIndexFormat,
+      path,
+      'descriptor.primitive.stripIndexFormat',
+    );
+  }
+  return result;
+}
+
+function normalizeStencilFaceState(face, path, label) {
+  if (face == null) {
+    return face;
+  }
+  const normalized = assertObject(face, path, label);
+  const result = { ...normalized };
+  if (normalized.failOp !== undefined) {
+    result.failOp = normalizeStencilOperation(normalized.failOp, path, `${label}.failOp`);
+  }
+  if (normalized.depthFailOp !== undefined) {
+    result.depthFailOp = normalizeStencilOperation(normalized.depthFailOp, path, `${label}.depthFailOp`);
+  }
+  if (normalized.passOp !== undefined) {
+    result.passOp = normalizeStencilOperation(normalized.passOp, path, `${label}.passOp`);
+  }
+  return result;
+}
+
+function normalizeDepthStencilState(depthStencil, features, path = 'GPUDevice.createRenderPipeline') {
+  if (depthStencil == null) {
+    return null;
+  }
+  const normalized = assertObject(depthStencil, path, 'descriptor.depthStencil');
+  const result = {
+    ...normalized,
+    format: normalizeTextureFormat(normalized.format, path, 'descriptor.depthStencil.format', features),
+  };
+  if (normalized.stencilFront !== undefined) {
+    result.stencilFront = normalizeStencilFaceState(
+      normalized.stencilFront,
+      path,
+      'descriptor.depthStencil.stencilFront',
+    );
+  }
+  if (normalized.stencilBack !== undefined) {
+    result.stencilBack = normalizeStencilFaceState(
+      normalized.stencilBack,
+      path,
+      'descriptor.depthStencil.stencilBack',
+    );
+  }
+  return result;
+}
+
+function normalizeVertexBufferLayouts(layouts, path = 'GPUDevice.createRenderPipeline') {
+  return assertArray(layouts, path, 'descriptor.vertex.buffers').map((layout, layoutIndex) => {
+    const normalized = assertObject(layout, path, `descriptor.vertex.buffers[${layoutIndex}]`);
+    return {
+      ...normalized,
+      arrayStride: assertIntegerInRange(
+        normalized.arrayStride ?? 0,
+        path,
+        `descriptor.vertex.buffers[${layoutIndex}].arrayStride`,
+        { min: 0, max: UINT32_MAX },
+      ),
+      stepMode: normalizeVertexStepMode(
+        normalized.stepMode ?? 'vertex',
+        path,
+        `descriptor.vertex.buffers[${layoutIndex}].stepMode`,
+      ),
+      attributes: assertArray(
+        normalized.attributes ?? [],
+        path,
+        `descriptor.vertex.buffers[${layoutIndex}].attributes`,
+      ).map((attribute, attributeIndex) => {
+        const item = assertObject(
+          attribute,
+          path,
+          `descriptor.vertex.buffers[${layoutIndex}].attributes[${attributeIndex}]`,
+        );
+        return {
+          ...item,
+          format: normalizeVertexFormat(
+            item.format,
+            path,
+            `descriptor.vertex.buffers[${layoutIndex}].attributes[${attributeIndex}].format`,
+          ),
+          offset: assertIntegerInRange(
+            item.offset ?? 0,
+            path,
+            `descriptor.vertex.buffers[${layoutIndex}].attributes[${attributeIndex}].offset`,
+            { min: 0, max: UINT32_MAX },
+          ),
+          shaderLocation: assertIntegerInRange(
+            item.shaderLocation,
+            path,
+            `descriptor.vertex.buffers[${layoutIndex}].attributes[${attributeIndex}].shaderLocation`,
+            { min: 0, max: UINT32_MAX },
+          ),
+        };
+      }),
+    };
+  });
 }
 
 function assertTextureSize(size, path) {
@@ -382,7 +817,7 @@ function assertBindGroupResource(resource, path) {
   );
 }
 
-function normalizeBindGroupLayoutEntry(entry, index, path) {
+function normalizeBindGroupLayoutEntry(entry, index, path, features = null) {
   const binding = assertObject(entry, path, `descriptor.entries[${index}]`);
   const normalized = {
     binding: assertIntegerInRange(binding.binding, path, `descriptor.entries[${index}].binding`, { min: 0, max: UINT32_MAX }),
@@ -414,6 +849,7 @@ function normalizeBindGroupLayoutEntry(entry, index, path) {
       binding.storageTexture,
       path,
       `descriptor.entries[${index}].storageTexture`,
+      features,
     );
   }
   if (binding.externalTexture) {
@@ -480,10 +916,23 @@ function autoLayoutEntriesFromNativeBindings(bindings, visibility) {
 export {
   ALL_BUFFER_USAGE_BITS,
   SAMPLER_BINDING_TYPES,
+  FILTER_MODES,
+  FRONT_FACES,
+  INDEX_FORMATS,
+  MIPMAP_FILTER_MODES,
+  POWER_PREFERENCES,
+  PRIMITIVE_TOPOLOGIES,
+  QUERY_TYPES,
+  STENCIL_OPERATIONS,
+  TEXTURE_ASPECTS,
   TEXTURE_SAMPLE_TYPES,
   TEXTURE_DIMENSIONS,
   TEXTURE_VIEW_DIMENSIONS,
   STORAGE_TEXTURE_ACCESS,
+  VERTEX_STEP_MODES,
+  VERTEX_FORMATS,
+  KNOWN_TEXTURE_FORMATS,
+  KNOWN_FEATURE_NAMES,
   DEPTH_STENCIL_FORMATS_BASE,
   STORAGE_TEXTURE_FORMATS_BASE,
   FLOAT32_FORMATS,
@@ -505,7 +954,31 @@ export {
   astcBlockSize,
   assertBufferDescriptor,
   normalizeEnumKey,
+  normalizeFeatureName,
+  normalizePowerPreference,
+  normalizeFrontFace,
+  normalizeIndexFormat,
+  normalizePrimitiveTopology,
+  normalizeQueryType,
+  normalizeMipmapFilterMode,
+  normalizeStencilOperation,
+  normalizeTextureAspect,
+  normalizeTextureViewDimension,
+  normalizeTextureSampleType,
+  normalizeStorageTextureAccess,
+  normalizeVertexFormat,
+  normalizeVertexStepMode,
+  normalizeTextureFormat,
   normalizeTextureDimension,
+  normalizeRequestAdapterOptions,
+  normalizeRequestDeviceDescriptor,
+  normalizeSamplerDescriptor,
+  normalizeTextureViewDescriptor,
+  normalizeTextureDescriptor,
+  normalizeQuerySetDescriptor,
+  normalizePrimitiveState,
+  normalizeDepthStencilState,
+  normalizeVertexBufferLayouts,
   normalizeSamplerLayout,
   normalizeTextureLayout,
   normalizeStorageTextureLayout,

@@ -1,5 +1,9 @@
 #include "doe_napi_internal.h"
 
+/* String values match WGPUPowerPreference enums in the local addon ABI. */
+#define DOE_NATIVE_DIRECT_POWER_PREFERENCE_LOW_POWER 2
+#define DOE_NATIVE_DIRECT_POWER_PREFERENCE_HIGH_PERFORMANCE 3
+
 napi_value native_direct_resolved_promise(napi_env env, napi_value value) {
     napi_deferred deferred;
     napi_value promise;
@@ -216,14 +220,53 @@ void native_direct_invalidate_buffer_mapped_range_cache(napi_env env, NativeDire
     cache->mapped_ptr = NULL;
 }
 
-WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst) {
+WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst, napi_value options) {
     if (!inst) NAPI_THROW(env, "nativeDirect.requestAdapter requires instance");
+
+    WGPURequestAdapterOptions opts;
+    memset(&opts, 0, sizeof(opts));
+    const WGPURequestAdapterOptions* opts_ptr = NULL;
+
+    if (options != NULL) {
+        napi_valuetype vt = napi_undefined;
+        napi_typeof(env, options, &vt);
+        if (vt == napi_object) {
+            napi_valuetype pp_type = napi_undefined;
+            napi_value pp_val;
+            if (napi_get_named_property(env, options, "powerPreference", &pp_val) == napi_ok) {
+                napi_typeof(env, pp_val, &pp_type);
+            }
+            if (pp_type == napi_string) {
+                char pp_str[32];
+                size_t pp_len = 0;
+                napi_get_value_string_utf8(env, pp_val, pp_str, sizeof(pp_str), &pp_len);
+                if (strcmp(pp_str, "low-power") == 0) {
+                    opts.powerPreference = DOE_NATIVE_DIRECT_POWER_PREFERENCE_LOW_POWER;
+                } else if (strcmp(pp_str, "high-performance") == 0) {
+                    opts.powerPreference = DOE_NATIVE_DIRECT_POWER_PREFERENCE_HIGH_PERFORMANCE;
+                }
+            }
+
+            napi_value ffa_val;
+            napi_valuetype ffa_type = napi_undefined;
+            if (napi_get_named_property(env, options, "forceFallbackAdapter", &ffa_val) == napi_ok) {
+                napi_typeof(env, ffa_val, &ffa_type);
+            }
+            if (ffa_type == napi_boolean) {
+                bool ffa = false;
+                napi_get_value_bool(env, ffa_val, &ffa);
+                opts.forceFallbackAdapter = ffa ? 1 : 0;
+            }
+
+            opts_ptr = &opts;
+        }
+    }
 
     AdapterRequestResult result = {0};
     WGPUFuture future;
     if (pfn_doeRequestAdapterFlat) {
         future = pfn_doeRequestAdapterFlat(
-            inst, NULL, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, adapter_callback, &result, NULL);
+            inst, opts_ptr, WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS, adapter_callback, &result, NULL);
     } else {
         const WGPURequestAdapterCallbackInfo callback_info = {
             .nextInChain = NULL,
@@ -232,7 +275,7 @@ WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst) 
             .userdata1 = &result,
             .userdata2 = NULL,
         };
-        future = pfn_wgpuInstanceRequestAdapter(inst, NULL, callback_info);
+        future = pfn_wgpuInstanceRequestAdapter(inst, opts_ptr, callback_info);
     }
     if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
     if (!process_events_until(inst, &result.done, current_timeout_ns())) {

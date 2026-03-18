@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import http from "node:http";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -69,6 +69,7 @@ const DEFAULT_CHROME = defaultChromePath();
 const DEFAULT_DOE_LIB = defaultDoeLibPath();
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const DEFAULT_OUT_FILE = "dawn-vs-doe.browser.playwright-smoke.diagnostic.json";
+const DEFAULT_API_SURFACE = "native";
 const DEFAULT_UPLOAD_ITERS = 500;
 const DEFAULT_DISPATCH_ITERS = 200;
 const DEFAULT_SUITE_TIMEOUT_MS = 120000;
@@ -118,6 +119,7 @@ Options:
   --out PATH                JSON report output path (default: browser/fawn-browser/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out
   --headless true|false     Launch headless (default: true)
+  --api-surface SURFACE     Browser API surface: native|package-browser (default: ${DEFAULT_API_SURFACE})
   --chrome-arg ARG          Extra Chromium arg (repeatable)
   --upload-iters N          queue.writeBuffer timed iterations (default: 500)
   --dispatch-iters N        compute dispatch timed iterations (default: 200)
@@ -166,6 +168,7 @@ function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error
   const errorText = String(error?.stack ?? error);
   return {
     mode,
+    apiSurface: args.apiSurface,
     runtimeArgs: runtimeArgs(mode, args.doeLibPath),
     launchArgs,
     browserVersion,
@@ -262,6 +265,7 @@ function parseArgs(argv) {
     outPath: defaultOutPath(),
     allowBenchOut: false,
     headless: true,
+    apiSurface: DEFAULT_API_SURFACE,
     chromeArgs: [],
     uploadIters: DEFAULT_UPLOAD_ITERS,
     dispatchIters: DEFAULT_DISPATCH_ITERS,
@@ -293,6 +297,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (token === "--headless") {
       args.headless = parseBool(readOptionValue(argv, i, "--headless"), "--headless");
+      i += 1;
+    } else if (token === "--api-surface") {
+      args.apiSurface = readOptionValue(argv, i, "--api-surface").toLowerCase();
       i += 1;
     } else if (token === "--chrome-arg") {
       args.chromeArgs.push(readOptionValue(argv, i, "--chrome-arg"));
@@ -326,6 +333,9 @@ function parseArgs(argv) {
   if (!["dawn", "doe", "both"].includes(args.mode)) {
     throw new Error("--mode must be one of dawn, doe, both");
   }
+  if (!["native", "package-browser"].includes(args.apiSurface)) {
+    throw new Error("--api-surface must be one of native, package-browser");
+  }
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
   if (!existsSync(args.chromePath)) {
     throw new Error(`chrome binary not found: ${args.chromePath}`);
@@ -358,7 +368,29 @@ async function loadChromiumDriver() {
 
 function startLocalServer() {
   const html = "<!doctype html><meta charset='utf-8'><title>doe-webgpu-smoke</title>";
-  const server = http.createServer((_, res) => {
+  const server = http.createServer((req, res) => {
+    const requestPath = new URL(req.url ?? "/", "http://127.0.0.1").pathname;
+    if (requestPath !== "/") {
+      const relativePath = requestPath.replace(/^\/+/, "");
+      const absolutePath = resolve(ROOT, relativePath);
+      if (!pathWithin(absolutePath, ROOT) || !existsSync(absolutePath)) {
+        res.statusCode = 404;
+        res.end("not found");
+        return;
+      }
+      const extension = extname(absolutePath).toLowerCase();
+      const contentType = extension === ".js" || extension === ".mjs"
+        ? "text/javascript; charset=utf-8"
+        : extension === ".json"
+          ? "application/json; charset=utf-8"
+          : extension === ".html"
+            ? "text/html; charset=utf-8"
+            : "text/plain; charset=utf-8";
+      res.statusCode = 200;
+      res.setHeader("content-type", contentType);
+      res.end(readFileSync(absolutePath));
+      return;
+    }
     res.statusCode = 200;
     res.setHeader("content-type", "text/html; charset=utf-8");
     res.end(html);
@@ -413,6 +445,10 @@ function extractModeResult(modeResults, mode) {
   return modeResults.find((entry) => entry.mode === mode) ?? null;
 }
 
+function browserSurfaceModuleUrl(baseUrl) {
+  return new URL("/packages/webgpu/src/browser.js", baseUrl).href;
+}
+
 async function runMode(chromium, mode, args, localUrl, localPort) {
   const launchArgs = [
     ...baseLaunchArgs(localPort),
@@ -444,7 +480,16 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           dispatchWarmupIters,
           adapterLimitKeys,
           opTimeoutMs,
+          apiSurface,
+          browserModuleUrl,
         }) => {
+          const browserSurface = apiSurface === "package-browser"
+            ? await import(browserModuleUrl)
+            : null;
+          const browserRuntime = browserSurface?.createBrowserRuntime?.() ?? null;
+          const gpu = browserRuntime?.gpu ?? navigator.gpu;
+          const getCanvasContext = (canvas) =>
+            browserRuntime ? browserRuntime.createCanvasContext(canvas) : canvas.getContext("webgpu");
           const withOpTimeout = async (label, promiseFactory) => {
             let timeoutId = null;
             try {
@@ -465,8 +510,9 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           };
 
         const result = {
+          apiSurface,
           userAgent: navigator.userAgent,
-          webgpuAvailable: typeof navigator.gpu !== "undefined",
+          webgpuAvailable: typeof gpu !== "undefined",
           adapterAvailable: false,
           adapterInfo: null,
           features: [],
@@ -498,14 +544,14 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
         };
 
           if (!result.webgpuAvailable) {
-            result.errors.push("navigator.gpu is unavailable");
+            result.errors.push("WebGPU surface is unavailable");
             return result;
           }
 
         let adapter = null;
         let device = null;
         try {
-          adapter = await withOpTimeout("requestAdapter", () => navigator.gpu.requestAdapter());
+          adapter = await withOpTimeout("requestAdapter", () => gpu.requestAdapter());
           if (!adapter) {
             result.errors.push("requestAdapter returned null");
             return result;
@@ -521,15 +567,15 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
               result.limits[key] = value;
             }
           }
-          if ("wgslLanguageFeatures" in navigator.gpu) {
-            result.wgslLanguageFeatures = Array.from(navigator.gpu.wgslLanguageFeatures).sort();
+          if ("wgslLanguageFeatures" in gpu) {
+            result.wgslLanguageFeatures = Array.from(gpu.wgslLanguageFeatures).sort();
           }
 
           result.webgpuCanvasApi.preferredCanvasFormatSupported =
-            typeof navigator.gpu.getPreferredCanvasFormat === "function";
+            typeof gpu.getPreferredCanvasFormat === "function";
           if (result.webgpuCanvasApi.preferredCanvasFormatSupported) {
             try {
-              result.webgpuCanvasApi.preferredCanvasFormat = navigator.gpu.getPreferredCanvasFormat();
+              result.webgpuCanvasApi.preferredCanvasFormat = gpu.getPreferredCanvasFormat();
             } catch (error) {
               result.errors.push(`getPreferredCanvasFormat failed: ${String(error)}`);
             }
@@ -538,7 +584,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           if (typeof OffscreenCanvas !== "undefined") {
             result.webgpuCanvasApi.offscreenCanvasAvailable = true;
             const canvas = new OffscreenCanvas(1, 1);
-            const context = canvas.getContext("webgpu");
+            const context = getCanvasContext(canvas);
             result.webgpuCanvasApi.webgpuContextAvailable = Boolean(context);
             if (context) {
               result.webgpuCanvasApi.webgpuContextHasConfigure = typeof context.configure === "function";
@@ -786,6 +832,8 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           dispatchWarmupIters: DISPATCH_WARMUP_ITERS,
           adapterLimitKeys: ADAPTER_LIMIT_KEYS,
           opTimeoutMs: args.opTimeoutMs,
+          apiSurface: args.apiSurface,
+          browserModuleUrl: browserSurfaceModuleUrl(localUrl),
         },
       ),
       args.suiteTimeoutMs,

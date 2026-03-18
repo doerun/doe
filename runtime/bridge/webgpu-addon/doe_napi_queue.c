@@ -122,8 +122,10 @@ napi_value doe_command_encoder_copy_texture_to_buffer(napi_env env, napi_callbac
         pfn_doeNativeCommandEncoderCopyTextureToBuffer(enc, src.texture, src.mipLevel,
             dst.buffer, dst.layout.offset, dst.layout.bytesPerRow, dst.layout.rowsPerImage,
             size.width, size.height, size.depthOrArrayLayers);
-    } else {
+    } else if (pfn_wgpuCommandEncoderCopyTextureToBuffer) {
         pfn_wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &size);
+    } else {
+        NAPI_THROW(env, "commandEncoderCopyTextureToBuffer: no implementation available in loaded library");
     }
     return NULL;
 }
@@ -194,7 +196,7 @@ napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callba
             src_texture, src_mip, 0, src_x, src_y, src_z,
             dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
             width, height, depth_or_layers);
-    } else {
+    } else if (pfn_wgpuCommandEncoderCopyTextureToTexture) {
         WGPUTexelCopyTextureInfo s, d; WGPUExtent3D sz;
         memset(&s, 0, sizeof(s)); memset(&d, 0, sizeof(d));
         s.texture = src_texture; s.mipLevel = src_mip;
@@ -203,6 +205,8 @@ napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callba
         d.origin.x = dst_x; d.origin.y = dst_y; d.origin.z = dst_z;
         sz.width = width; sz.height = height; sz.depthOrArrayLayers = depth_or_layers;
         pfn_wgpuCommandEncoderCopyTextureToTexture(enc, &s, &d, &sz);
+    } else {
+        NAPI_THROW(env, "commandEncoderCopyTextureToTexture: no implementation available in loaded library");
     }
     return NULL;
 }

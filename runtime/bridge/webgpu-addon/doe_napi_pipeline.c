@@ -403,7 +403,7 @@ napi_value doe_bind_group_release(napi_env env, napi_callback_info info) {
  * ================================================================ */
 
 napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 3);
+    NAPI_ASSERT_ARGC(env, info, 4);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
@@ -423,7 +423,7 @@ napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
     WGPUStringView label_view = { .data = NULL, .length = 0 };
     char label_buf[256] = {0};
     uint32_t immediate_size = 0;
-    if (_argc > 2) {
+    if (_argc >= 3) {
         napi_valuetype arg2_type; napi_typeof(env, _args[2], &arg2_type);
         if (arg2_type == napi_string) {
             size_t label_len = 0;
@@ -434,7 +434,7 @@ napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
             napi_get_value_uint32(env, _args[2], &immediate_size);
         }
     }
-    if (_argc > 3) {
+    if (_argc >= 4) {
         napi_valuetype arg3_type; napi_typeof(env, _args[3], &arg3_type);
         if (arg3_type == napi_number) {
             napi_get_value_uint32(env, _args[3], &immediate_size);

@@ -10,6 +10,14 @@ const async_procs = @import("wgpu_async_procs.zig");
 
 extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn;
+extern fn doeNativeRenderPassBeginOcclusionQuery(pass_raw: ?*anyopaque, query_index: u32) callconv(.c) void;
+extern fn doeNativeRenderPassEndOcclusionQuery(pass_raw: ?*anyopaque) callconv(.c) void;
+extern fn doeNativeRenderPassSetBlendConstant(pass_raw: ?*anyopaque, r: f64, g: f64, b: f64, a: f64) callconv(.c) void;
+extern fn doeNativeRenderPassSetImmediates(pass_raw: ?*anyopaque, index: u32, data_ptr: ?[*]const u8, data_len: usize) callconv(.c) void;
+extern fn doeNativeRenderPassSetScissorRect(pass_raw: ?*anyopaque, x: u32, y: u32, width: u32, height: u32) callconv(.c) void;
+extern fn doeNativeRenderPassSetStencilReference(pass_raw: ?*anyopaque, reference: u32) callconv(.c) void;
+extern fn doeNativeRenderPassSetViewport(pass_raw: ?*anyopaque, x: f64, y: f64, width: f64, height: f64, min_depth: f64, max_depth: f64) callconv(.c) void;
+extern fn doeNativeRenderBundleEncoderSetImmediates(encoder_raw: ?*anyopaque, index: u32, data_ptr: ?[*]const u8, data_len: usize) callconv(.c) void;
 
 fn symbolView(comptime name: []const u8) types.WGPUStringView {
     return .{ .data = name.ptr, .length = name.len };
@@ -22,8 +30,7 @@ fn resolveRequiredProc(comptime FnType: type, comptime symbol_name: []const u8) 
 }
 
 pub export fn wgpuRenderBundleEncoderSetImmediates(a0: p1res.WGPURenderBundleEncoder, a1: u32, a2: ?*const anyopaque, a3: usize) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (p1res.WGPURenderBundleEncoder, u32, ?*const anyopaque, usize) callconv(.c) void, "wgpuRenderBundleEncoderSetImmediates");
-    proc(a0, a1, a2, a3);
+    doeNativeRenderBundleEncoderSetImmediates(a0, a1, if (a2) |ptr| @as([*]const u8, @ptrCast(ptr)) else null, a3);
 }
 
 pub export fn wgpuRenderBundleEncoderSetIndexBuffer(a0: render.RenderBundleEncoder, a1: types.WGPUBuffer, a2: u32, a3: u64, a4: u64) callconv(.c) void {
@@ -67,13 +74,11 @@ pub export fn wgpuRenderPassEncoderAddRef(a0: types.WGPURenderPassEncoder) callc
 }
 
 pub export fn wgpuRenderPassEncoderBeginOcclusionQuery(a0: types.WGPURenderPassEncoder, a1: u32) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, u32) callconv(.c) void, "wgpuRenderPassEncoderBeginOcclusionQuery");
-    proc(a0, a1);
+    doeNativeRenderPassBeginOcclusionQuery(a0, a1);
 }
 
 pub export fn wgpuRenderPassEncoderEndOcclusionQuery(a0: types.WGPURenderPassEncoder) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder) callconv(.c) void, "wgpuRenderPassEncoderEndOcclusionQuery");
-    proc(a0);
+    doeNativeRenderPassEndOcclusionQuery(a0);
 }
 
 pub export fn wgpuRenderPassEncoderExecuteBundles(a0: types.WGPURenderPassEncoder, a1: usize, a2: [*]const render.RenderBundle) callconv(.c) void {
@@ -97,13 +102,11 @@ pub export fn wgpuRenderPassEncoderPixelLocalStorageBarrier(a0: types.WGPURender
 }
 
 pub export fn wgpuRenderPassEncoderSetBlendConstant(a0: types.WGPURenderPassEncoder, a1: *const render.BlendColor) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, *const render.BlendColor) callconv(.c) void, "wgpuRenderPassEncoderSetBlendConstant");
-    proc(a0, a1);
+    doeNativeRenderPassSetBlendConstant(a0, a1.r, a1.g, a1.b, a1.a);
 }
 
 pub export fn wgpuRenderPassEncoderSetImmediates(a0: types.WGPURenderPassEncoder, a1: u32, a2: ?*const anyopaque, a3: usize) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, u32, ?*const anyopaque, usize) callconv(.c) void, "wgpuRenderPassEncoderSetImmediates");
-    proc(a0, a1, a2, a3);
+    doeNativeRenderPassSetImmediates(a0, a1, if (a2) |ptr| @as([*]const u8, @ptrCast(ptr)) else null, a3);
 }
 
 pub export fn wgpuRenderPassEncoderSetResourceTable(a0: types.WGPURenderPassEncoder, a1: p1res.WGPUResourceTable) callconv(.c) void {
@@ -112,18 +115,15 @@ pub export fn wgpuRenderPassEncoderSetResourceTable(a0: types.WGPURenderPassEnco
 }
 
 pub export fn wgpuRenderPassEncoderSetScissorRect(a0: types.WGPURenderPassEncoder, a1: u32, a2: u32, a3: u32, a4: u32) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, u32, u32, u32, u32) callconv(.c) void, "wgpuRenderPassEncoderSetScissorRect");
-    proc(a0, a1, a2, a3, a4);
+    doeNativeRenderPassSetScissorRect(a0, a1, a2, a3, a4);
 }
 
 pub export fn wgpuRenderPassEncoderSetStencilReference(a0: types.WGPURenderPassEncoder, a1: u32) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, u32) callconv(.c) void, "wgpuRenderPassEncoderSetStencilReference");
-    proc(a0, a1);
+    doeNativeRenderPassSetStencilReference(a0, a1);
 }
 
 pub export fn wgpuRenderPassEncoderSetViewport(a0: types.WGPURenderPassEncoder, a1: f32, a2: f32, a3: f32, a4: f32, a5: f32, a6: f32) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, f32, f32, f32, f32, f32, f32) callconv(.c) void, "wgpuRenderPassEncoderSetViewport");
-    proc(a0, a1, a2, a3, a4, a5, a6);
+    doeNativeRenderPassSetViewport(a0, a1, a2, a3, a4, a5, a6);
 }
 
 pub export fn wgpuRenderPassEncoderWriteTimestamp(a0: types.WGPURenderPassEncoder, a1: types.WGPUQuerySet, a2: u32) callconv(.c) void {

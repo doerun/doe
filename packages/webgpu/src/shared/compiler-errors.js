@@ -71,8 +71,62 @@ function compilerErrorFromMessage(path, message, fields = null) {
   return enrichNativeCompilerError(new Error(message), path, fields);
 }
 
+function pipelineErrorReason(error, fields = null) {
+  if (error?.reason === 'validation' || error?.reason === 'internal') {
+    return error.reason;
+  }
+  const kind = fields?.kind ?? error?.kind ?? error?.code ?? '';
+  if (typeof kind === 'string' && kind.length > 0) {
+    if (kind === 'OutOfMemory') {
+      return 'internal';
+    }
+    if (
+      kind.startsWith('Invalid')
+      || kind === 'EntryPointNotFound'
+      || kind === 'OverrideConstantsUnavailable'
+      || kind === 'InvalidOverrideConstants'
+      || kind === 'UnsupportedShaderFormat'
+    ) {
+      return 'validation';
+    }
+  }
+  const message = error?.message ?? '';
+  if (typeof message === 'string' && message.length > 0) {
+    if (/out of memory/i.test(message)) {
+      return 'internal';
+    }
+    if (
+      message.startsWith('GPUDevice.createComputePipeline')
+      || message.startsWith('GPUDevice.createComputePipelineAsync')
+      || message.startsWith('GPUDevice.createRenderPipeline')
+      || message.startsWith('GPUDevice.createRenderPipelineAsync')
+      || message.startsWith('createComputePipeline requires')
+      || message.startsWith('createRenderPipeline requires')
+      || message.startsWith('createComputePipeline:')
+      || message.startsWith('createRenderPipeline:')
+    ) {
+      return 'validation';
+    }
+  }
+  return 'internal';
+}
+
+function pipelineErrorFromError(error, path, fields = null) {
+  if (!(error instanceof Error)) return error;
+  const enriched = enrichNativeCompilerError(error, path, fields);
+  enriched.name = 'GPUPipelineError';
+  enriched.reason = pipelineErrorReason(enriched, fields);
+  return enriched;
+}
+
+function pipelineErrorFromMessage(path, message, fields = null) {
+  return pipelineErrorFromError(new Error(message), path, fields);
+}
+
 export {
   shaderCheckFailure,
   enrichNativeCompilerError,
   compilerErrorFromMessage,
+  pipelineErrorFromError,
+  pipelineErrorFromMessage,
 };

@@ -10,7 +10,6 @@ const command_requirements = @import("../common/command_requirements.zig");
 const capabilities = @import("../common/capabilities.zig");
 const artifact_meta = @import("../common/artifact_meta.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
-const artifact_state = @import("../common/artifact_state.zig");
 const hash_utils = @import("../common/hash_utils.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const native_runtime = @import("d3d12_native_runtime.zig");
@@ -197,22 +196,6 @@ fn native_capability_set() capabilities.CapabilitySet {
         .render_bundle,
     });
     return set;
-}
-
-fn manifest_signature_matches(
-    self: *const ZigD3D12Backend,
-    module: []const u8,
-    meta: artifact_meta.ArtifactMeta,
-    status_code: []const u8,
-) bool {
-    return artifact_state.manifest_signature_matches(
-        self.last_manifest_meta,
-        self.last_manifest_module_storage[0..self.last_manifest_module_len],
-        self.last_manifest_status_storage[0..self.last_manifest_status_len],
-        module,
-        meta,
-        status_code,
-    );
 }
 
 fn write_status(self: *ZigD3D12Backend, comptime fmt: []const u8, args: anytype) []const u8 {

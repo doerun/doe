@@ -17,6 +17,7 @@ const DoeTexture = native.DoeTexture;
 const DoeTextureView = native.DoeTextureView;
 const DoeSampler = native.DoeSampler;
 const DoeShaderModule = native.DoeShaderModule;
+const DoePipelineLayout = native.DoePipelineLayout;
 const DoeRenderPipeline = native.DoeRenderPipeline;
 const DoeRenderPass = native.DoeRenderPass;
 const DoeCommandEncoder = native.DoeCommandEncoder;
@@ -111,6 +112,17 @@ const RenderPipelineDesc = extern struct {
     multisample: RenderMultisampleState,
     fragment: ?*const RenderFragmentState,
 };
+
+const DEFAULT_MAX_DRAW_COUNT: u64 = 50_000_000;
+
+fn reserve_render_draw(pass: *DoeRenderPass) bool {
+    if (pass.recorded_draw_count >= pass.max_draw_count) {
+        std.log.err("doe: render pass draw rejected: maxDrawCount={} exhausted", .{pass.max_draw_count});
+        return false;
+    }
+    pass.recorded_draw_count += 1;
+    return true;
+}
 
 // ============================================================
 // Texture
@@ -261,21 +273,19 @@ fn mslStageName(sv: RenderStringView, stage: StageKind, buf: []u8) [*:0]const u8
 
 pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw: ?*anyopaque) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    const d = @as(*const RenderPipelineDesc, @ptrCast(@alignCast(desc_raw orelse return null)));
     const pip = make(DoeRenderPipeline) orelse return null;
     pip.* = .{};
+    pip.layout = cast(DoePipelineLayout, d.layout);
     if (dev.backend == .vulkan) {
         const vk_render = @import("doe_vulkan_render_native.zig");
-        if (!vk_render.vulkan_create_render_pipeline(dev, pip, desc_raw orelse {
-            alloc.destroy(pip);
-            return null;
-        })) {
+        if (!vk_render.vulkan_create_render_pipeline(dev, pip, @ptrCast(d))) {
             alloc.destroy(pip);
             return null;
         }
         return toOpaque(pip);
     }
     var err_buf: [ERR_CAP]u8 = undefined;
-    const d = @as(*const RenderPipelineDesc, @ptrCast(@alignCast(desc_raw orelse { alloc.destroy(pip); return null; })));
     const frag = d.fragment orelse { alloc.destroy(pip); return null; };
     const vert_mod = cast(DoeShaderModule, d.vertex.module) orelse { alloc.destroy(pip); return null; };
     const frag_mod = cast(DoeShaderModule, frag.module) orelse { alloc.destroy(pip); return null; };
@@ -386,6 +396,8 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
     const pass = make(DoeRenderPass) orelse return null;
     pass.* = .{ .enc = enc };
     if (desc) |d| {
+        pass.max_draw_count = if (d.maxDrawCount == 0) DEFAULT_MAX_DRAW_COUNT else d.maxDrawCount;
+        pass.occlusion_query_set = d.occlusionQuerySet;
         if (d.colorAttachmentCount > 0) {
             if (d.colorAttachments) |attachments| {
                 const att = attachments[0];
@@ -406,8 +418,65 @@ pub export fn doeNativeRenderPassSetPipeline(pass_raw: ?*anyopaque, pip_raw: ?*a
     pass.pipeline = cast(DoeRenderPipeline, pip_raw);
 }
 
+pub export fn doeNativeRenderPassRecordViewportState(
+    pass_raw: ?*anyopaque,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    min_depth: f64,
+    max_depth: f64,
+) callconv(.c) void {
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    pass.viewport_x = @floatCast(x);
+    pass.viewport_y = @floatCast(y);
+    pass.viewport_width = @floatCast(width);
+    pass.viewport_height = @floatCast(height);
+    pass.viewport_min_depth = @floatCast(min_depth);
+    pass.viewport_max_depth = @floatCast(max_depth);
+}
+
+pub export fn doeNativeRenderPassRecordScissorState(
+    pass_raw: ?*anyopaque,
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
+) callconv(.c) void {
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    pass.scissor_x = x;
+    pass.scissor_y = y;
+    pass.scissor_width = width;
+    pass.scissor_height = height;
+}
+
+pub export fn doeNativeRenderPassRecordBlendConstantState(
+    pass_raw: ?*anyopaque,
+    r: f64,
+    g: f64,
+    b: f64,
+    a: f64,
+) callconv(.c) void {
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    pass.blend_constant = .{
+        @floatCast(r),
+        @floatCast(g),
+        @floatCast(b),
+        @floatCast(a),
+    };
+}
+
+pub export fn doeNativeRenderPassRecordStencilReferenceState(
+    pass_raw: ?*anyopaque,
+    reference: u32,
+) callconv(.c) void {
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    pass.stencil_reference = reference;
+}
+
 pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, instance_count: u32, first_vertex: u32, first_instance: u32) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    if (!reserve_render_draw(pass)) return;
     if (pass.enc.dev.backend == .vulkan) {
         const vk_render = @import("doe_vulkan_render_native.zig");
         vk_render.vulkan_render_pass_draw(pass, vertex_count, instance_count, first_vertex, first_instance);
@@ -463,6 +532,7 @@ pub export fn doeNativeRenderPassSetBindGroup(pass_raw: ?*anyopaque, group_index
 
 pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count: u32, instance_count: u32, first_index: u32, base_vertex: i32, first_instance: u32) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    if (!reserve_render_draw(pass)) return;
     if (pass.enc.dev.backend == .vulkan) {
         const vk_render = @import("doe_vulkan_render_native.zig");
         vk_render.vulkan_render_pass_draw_indexed(pass, index_count, instance_count, first_index, base_vertex, first_instance);

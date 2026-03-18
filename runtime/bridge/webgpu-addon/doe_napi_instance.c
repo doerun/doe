@@ -28,7 +28,6 @@ napi_value doe_instance_release(napi_env env, napi_callback_info info) {
  * 0 = undefined, 2 = low-power, 3 = high-performance */
 #define WGPU_POWER_PREFERENCE_LOW_POWER      2
 #define WGPU_POWER_PREFERENCE_HIGH_PERFORMANCE 3
-
 napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
     /* Accept 1 or 2 args: (instance[, options]) */
     size_t actual_argc = 2;

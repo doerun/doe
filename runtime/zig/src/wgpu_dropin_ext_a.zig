@@ -10,6 +10,15 @@ const async_procs = @import("wgpu_async_procs.zig");
 
 extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn;
+extern fn doeNativeComputePassSetImmediates(
+    encoder_raw: ?*anyopaque,
+    index: u32,
+    data_ptr: ?[*]const u8,
+    data_len: usize,
+) callconv(.c) void;
+extern fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void;
+extern fn doeNativeQuerySetGetCount(qs_raw: ?*anyopaque) callconv(.c) u32;
+extern fn doeNativeQuerySetGetType(qs_raw: ?*anyopaque) callconv(.c) types.WGPUQueryType;
 
 fn symbolView(comptime name: []const u8) types.WGPUStringView {
     return .{ .data = name.ptr, .length = name.len };
@@ -117,8 +126,7 @@ pub export fn wgpuComputePassEncoderDispatchWorkgroupsIndirect(a0: types.WGPUCom
 }
 
 pub export fn wgpuComputePassEncoderSetImmediates(a0: types.WGPUComputePassEncoder, a1: u32, a2: ?*const anyopaque, a3: usize) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUComputePassEncoder, u32, ?*const anyopaque, usize) callconv(.c) void, "wgpuComputePassEncoderSetImmediates");
-    proc(a0, a1, a2, a3);
+    doeNativeComputePassSetImmediates(a0, a1, if (a2) |ptr| @as([*]const u8, @ptrCast(ptr)) else null, a3);
 }
 
 pub export fn wgpuComputePassEncoderSetResourceTable(a0: types.WGPUComputePassEncoder, a1: p1res.WGPUResourceTable) callconv(.c) void {
@@ -252,18 +260,15 @@ pub export fn wgpuQuerySetAddRef(a0: types.WGPUQuerySet) callconv(.c) void {
 }
 
 pub export fn wgpuQuerySetDestroy(a0: types.WGPUQuerySet) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUQuerySet) callconv(.c) void, "wgpuQuerySetDestroy");
-    proc(a0);
+    doeNativeQuerySetDestroy(a0);
 }
 
 pub export fn wgpuQuerySetGetCount(a0: types.WGPUQuerySet) callconv(.c) u32 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUQuerySet) callconv(.c) u32, "wgpuQuerySetGetCount");
-    return proc(a0);
+    return doeNativeQuerySetGetCount(a0);
 }
 
 pub export fn wgpuQuerySetGetType(a0: types.WGPUQuerySet) callconv(.c) types.WGPUQueryType {
-    const proc = resolveRequiredProc(*const fn (types.WGPUQuerySet) callconv(.c) types.WGPUQueryType, "wgpuQuerySetGetType");
-    return proc(a0);
+    return doeNativeQuerySetGetType(a0);
 }
 
 pub export fn wgpuQueueAddRef(a0: types.WGPUQueue) callconv(.c) void {

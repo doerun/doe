@@ -11,6 +11,7 @@ const vk_resources = @import("vk_resources.zig");
 const model = @import("../../model.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const common_errors = @import("../common/errors.zig");
+const path_utils = @import("../common/path_utils.zig");
 
 const VkBuffer = c.VkBuffer;
 const VkDeviceMemory = c.VkDeviceMemory;
@@ -516,24 +517,19 @@ pub fn words_from_spirv_bytes(allocator: std.mem.Allocator, bytes: []const u8) !
     return words;
 }
 
-fn file_exists(path: []const u8) bool {
-    std.fs.cwd().access(path, .{}) catch return false;
-    return true;
-}
-
 fn resolve_kernel_path(self: *const Runtime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
     const direct = try allocator.dupe(u8, kernel_name);
-    if (file_exists(direct)) return direct;
+    if (path_utils.file_exists(direct)) return direct;
     allocator.free(direct);
 
     const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
     const rooted = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ root, kernel_name });
-    if (file_exists(rooted)) return rooted;
+    if (path_utils.file_exists(rooted)) return rooted;
     allocator.free(rooted);
 
     if (!std.mem.endsWith(u8, kernel_name, ".wgsl")) {
         const with_suffix = try std.fmt.allocPrint(allocator, "{s}/{s}.wgsl", .{ root, kernel_name });
-        if (file_exists(with_suffix)) return with_suffix;
+        if (path_utils.file_exists(with_suffix)) return with_suffix;
         allocator.free(with_suffix);
     }
     return error.ShaderCompileFailed;
@@ -548,12 +544,12 @@ fn resolve_kernel_spirv_path(self: *const Runtime, allocator: std.mem.Allocator,
     }
 
     const sibling_spv = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path});
-    if (file_exists(sibling_spv)) return sibling_spv;
+    if (path_utils.file_exists(sibling_spv)) return sibling_spv;
     allocator.free(sibling_spv);
 
     if (std.mem.lastIndexOfScalar(u8, source_path, '.')) |idx| {
         const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0..idx]});
-        if (file_exists(replaced)) return replaced;
+        if (path_utils.file_exists(replaced)) return replaced;
         allocator.free(replaced);
     }
 

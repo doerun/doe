@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -48,6 +48,15 @@ function readTraceMeta(path) {
     if (!path || !existsSync(path)) return null;
     const raw = readFileSync(path, "utf8");
     return JSON.parse(raw);
+}
+
+function clearOutputPath(path) {
+    if (!path || !existsSync(path)) return;
+    try {
+        unlinkSync(path);
+    } catch {
+        // Leave the stale file in place rather than failing the run setup.
+    }
 }
 
 function buildBenchArgs(options) {
@@ -157,6 +166,8 @@ export function createDoeRuntime(options = {}) {
         }
         requireExistingPath("commandsPath", runOptions.commandsPath);
         if (runOptions.quirksPath) requireExistingPath("quirksPath", runOptions.quirksPath);
+        clearOutputPath(runOptions.traceJsonlPath);
+        clearOutputPath(runOptions.traceMetaPath);
         const args = buildBenchArgs(runOptions);
         const result = runRaw(args, {
             cwd: runOptions.cwd || WORKSPACE_ROOT,

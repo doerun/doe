@@ -8,6 +8,7 @@ const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const model = @import("model.zig");
+const query_native = @import("doe_query_native.zig");
 const c = @import("backend/vulkan/vk_constants.zig");
 const vk_resources = @import("backend/vulkan/vk_resources.zig");
 const NativeVulkanRuntime = native.NativeVulkanRuntime;
@@ -257,6 +258,10 @@ pub fn vulkan_render_pass_draw(
         std.debug.print("doe_vulkan_render_native: render pass draw: no Vulkan runtime\n", .{});
         return;
     };
+    const occlusion_qs = if (pass.occlusion_query_active and pass.occlusion_query_set != null)
+        native.cast(query_native.DoeQuerySet, pass.occlusion_query_set)
+    else
+        null;
 
     const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
 
@@ -266,6 +271,20 @@ pub fn vulkan_render_pass_draw(
         .instance_count = instance_count,
         .first_vertex = first_vertex,
         .first_instance = first_instance,
+        .viewport_x = pass.viewport_x,
+        .viewport_y = pass.viewport_y,
+        .viewport_width = pass.viewport_width,
+        .viewport_height = pass.viewport_height,
+        .viewport_min_depth = pass.viewport_min_depth,
+        .viewport_max_depth = pass.viewport_max_depth,
+        .scissor_x = pass.scissor_x,
+        .scissor_y = pass.scissor_y,
+        .scissor_width = pass.scissor_width,
+        .scissor_height = pass.scissor_height,
+        .blend_constant = pass.blend_constant,
+        .stencil_reference = pass.stencil_reference,
+        .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
+        .occlusion_query_index = if (occlusion_qs != null) pass.occlusion_query_index else null,
         .unclipped_depth = pip_unclipped,
     };
 
@@ -286,6 +305,10 @@ pub fn vulkan_render_pass_draw_indexed(
         std.debug.print("doe_vulkan_render_native: render pass draw_indexed: no Vulkan runtime\n", .{});
         return;
     };
+    const occlusion_qs = if (pass.occlusion_query_active and pass.occlusion_query_set != null)
+        native.cast(query_native.DoeQuerySet, pass.occlusion_query_set)
+    else
+        null;
 
     const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
 
@@ -298,6 +321,20 @@ pub fn vulkan_render_pass_draw_indexed(
         .index_count = index_count,
         .first_index = first_index,
         .base_vertex = base_vertex,
+        .viewport_x = pass.viewport_x,
+        .viewport_y = pass.viewport_y,
+        .viewport_width = pass.viewport_width,
+        .viewport_height = pass.viewport_height,
+        .viewport_min_depth = pass.viewport_min_depth,
+        .viewport_max_depth = pass.viewport_max_depth,
+        .scissor_x = pass.scissor_x,
+        .scissor_y = pass.scissor_y,
+        .scissor_width = pass.scissor_width,
+        .scissor_height = pass.scissor_height,
+        .blend_constant = pass.blend_constant,
+        .stencil_reference = pass.stencil_reference,
+        .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
+        .occlusion_query_index = if (occlusion_qs != null) pass.occlusion_query_index else null,
         .unclipped_depth = pip_unclipped,
     };
 

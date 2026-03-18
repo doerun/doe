@@ -64,6 +64,8 @@ pub extern fn vkCmdWriteTimestamp(commandBuffer: vk.VkCommandBuffer, pipelineSta
 pub extern fn vkCmdResetQueryPool(commandBuffer: vk.VkCommandBuffer, queryPool: vk.VkQueryPool, firstQuery: u32, queryCount: u32) callconv(.c) void;
 pub extern fn vkCmdCopyQueryPoolResults(commandBuffer: vk.VkCommandBuffer, queryPool: vk.VkQueryPool, firstQuery: u32, queryCount: u32, dstBuffer: vk.VkBuffer, dstOffset: vk.VkDeviceSize, stride: vk.VkDeviceSize, flags: vk.VkFlags) callconv(.c) void;
 pub extern fn vkGetQueryPoolResults(device: vk.VkDevice, queryPool: vk.VkQueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: ?*anyopaque, stride: vk.VkDeviceSize, flags: vk.VkFlags) callconv(.c) vk.VkResult;
+pub extern fn vkCmdBeginQuery(commandBuffer: vk.VkCommandBuffer, queryPool: vk.VkQueryPool, query: u32, flags: vk.VkFlags) callconv(.c) void;
+pub extern fn vkCmdEndQuery(commandBuffer: vk.VkCommandBuffer, queryPool: vk.VkQueryPool, query: u32) callconv(.c) void;
 pub extern fn vkCreateRenderPass(device: vk.VkDevice, pCreateInfo: *const structs.VkRenderPassCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pRenderPass: *vk.VkRenderPass) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyRenderPass(device: vk.VkDevice, renderPass: vk.VkRenderPass, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkCreateFramebuffer(device: vk.VkDevice, pCreateInfo: *const structs.VkFramebufferCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pFramebuffer: *vk.VkFramebuffer) callconv(.c) vk.VkResult;

@@ -33,6 +33,8 @@ comptime {
         _ = @import("doe_wgpu_native.zig");
         // Multi-queue management: doeNativeMultiQueueDevice*, doeNativeQueueSubmit, etc.
         _ = @import("multi_queue.zig");
+    } else {
+        _ = @import("doe_dropin_optional_linux_exports.zig");
     }
 }
 

@@ -16,6 +16,7 @@ const DIAG_RENDER_TARGET_HEIGHT: u32 = 4;
 const DIAG_PLS_ATTACHMENT_HANDLE: u64 = 0x8C9F_2D00_0000_0000;
 const DIAG_PLS_TOTAL_SIZE_BYTES: u64 = 4;
 const DIAG_PLS_SLOT_OFFSET_BYTES: u64 = 0;
+const DIAG_MAX_DRAW_COUNT: u64 = 50_000_000;
 const DIAG_PLS_ATTACHMENT_FORMAT: types.WGPUTextureFormat = model.WGPUTextureFormat_R32Uint;
 
 const DIAGNOSTIC_PIXEL_LOCAL_SHADER_SOURCE =
@@ -154,6 +155,7 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
             .depthStencilAttachment = null,
             .occlusionQuerySet = null,
             .timestampWrites = null,
+            .maxDrawCount = DIAG_MAX_DRAW_COUNT,
         },
     );
     if (render_pass == null) return error.RenderPassCreationFailed;
@@ -214,6 +216,7 @@ pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: ty
             .depthStencilAttachment = null,
             .occlusionQuerySet = null,
             .timestampWrites = null,
+            .maxDrawCount = DIAG_MAX_DRAW_COUNT,
         },
     );
     if (render_pass == null) return error.RenderPassCreationFailed;

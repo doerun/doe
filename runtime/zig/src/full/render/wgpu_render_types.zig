@@ -88,6 +88,7 @@ pub const RenderPassDescriptor = extern struct {
     depthStencilAttachment: ?*const anyopaque,
     occlusionQuerySet: types.WGPUQuerySet,
     timestampWrites: ?*const types.WGPUPassTimestampWrites,
+    maxDrawCount: u64,
 };
 
 pub const RenderPassDepthStencilAttachment = extern struct {

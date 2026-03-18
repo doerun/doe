@@ -44,7 +44,7 @@ function resolveBufferUsageToken(token, combined = false) {
     case 'readback':
       return combined
         ? DOE_GPU_BUFFER_USAGE.COPY_SRC
-        : DOE_GPU_BUFFER_USAGE.COPY_SRC | DOE_GPU_BUFFER_USAGE.COPY_DST | DOE_GPU_BUFFER_USAGE.MAP_READ;
+        : DOE_GPU_BUFFER_USAGE.COPY_DST | DOE_GPU_BUFFER_USAGE.MAP_READ;
     case 'uniform':
       return DOE_GPU_BUFFER_USAGE.UNIFORM | DOE_GPU_BUFFER_USAGE.COPY_DST;
     case 'storageRead':
@@ -739,19 +739,31 @@ class DoeKernel {
 function createKernel(device, options) {
   const bindings = (options.bindings ?? []).map(normalizeBinding);
   const shader = device.createShaderModule({ code: options.code });
-  const bindGroupLayout = device.createBindGroupLayout({
-    entries: bindings.map(bindGroupLayoutEntry),
+  const compute = {
+    module: shader,
+    entryPoint: options.entryPoint ?? 'main',
+  };
+  let pipeline = device.createComputePipeline({
+    layout: 'auto',
+    compute,
   });
-  const pipelineLayout = device.createPipelineLayout({
-    bindGroupLayouts: [bindGroupLayout],
-  });
-  const pipeline = device.createComputePipeline({
-    layout: pipelineLayout,
-    compute: {
-      module: shader,
-      entryPoint: options.entryPoint ?? 'main',
-    },
-  });
+  let bindGroupLayout = null;
+  if (bindings.length === 0) {
+    bindGroupLayout = device.createBindGroupLayout({ entries: [] });
+  } else if (typeof pipeline?.getBindGroupLayout === 'function') {
+    bindGroupLayout = pipeline.getBindGroupLayout(0);
+  } else {
+    bindGroupLayout = device.createBindGroupLayout({
+      entries: bindings.map(bindGroupLayoutEntry),
+    });
+    const pipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout],
+    });
+    pipeline = device.createComputePipeline({
+      layout: pipelineLayout,
+      compute,
+    });
+  }
   return new DoeKernel(device, pipeline, bindGroupLayout, options.entryPoint ?? 'main', bindings.length);
 }
 
@@ -813,6 +825,9 @@ async function readBuffer(device, buffer, type, options = {}) {
     const pendingCommands = drainPendingEncoders(device);
     if (pendingCommands.length > 0) {
       device.queue.submit(pendingCommands);
+      if (typeof device.queue.onSubmittedWorkDone === 'function') {
+        await device.queue.onSubmittedWorkDone();
+      }
     }
     await buffer.mapAsync(DOE_GPU_MAP_MODE.READ, offset, size);
     const copy = typeof buffer._readCopy === 'function'
@@ -839,6 +854,9 @@ async function readBuffer(device, buffer, type, options = {}) {
   encoder.copyBufferToBuffer(buffer, offset, staging, 0, size);
   commands.push(encoder.finish());
   device.queue.submit(commands);
+  if (typeof device.queue.onSubmittedWorkDone === 'function') {
+    await device.queue.onSubmittedWorkDone();
+  }
   await staging.mapAsync(DOE_GPU_MAP_MODE.READ);
   const copy = typeof staging._readCopy === 'function'
     ? staging._readCopy(0, size)

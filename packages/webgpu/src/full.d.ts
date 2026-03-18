@@ -95,6 +95,22 @@ export interface BrowserSurfaceCanvasBackend {
   externalTextureDestroy(native: unknown): void;
 }
 
+export interface NativeBrowserCanvasBackend extends BrowserSurfaceCanvasBackend {
+  deviceImportExternalTexture(
+    device: GPUDevice,
+    native: unknown,
+    descriptor: GPUExternalTextureDescriptor,
+    classes: Record<string, unknown>
+  ): GPUExternalTexture;
+  queueCopyExternalImageToTexture(
+    queue: GPUQueue,
+    native: unknown,
+    source: GPUImageCopyExternalImage,
+    destination: GPUImageCopyTextureTagged,
+    copySize: GPUExtent3DStrict
+  ): void;
+}
+
 export interface BrowserSurfaceFactoryOptions {
   canvasBackend: BrowserSurfaceCanvasBackend;
   fullClasses: Record<string, unknown>;
@@ -108,7 +124,7 @@ export function createBrowserSurfaceClasses(
 ): Record<string, unknown>;
 export function createNativeBrowserCanvasBackend(options?: {
   contextFactory?: (canvas: unknown, context: unknown) => unknown;
-}): BrowserSurfaceCanvasBackend;
+}): NativeBrowserCanvasBackend;
 export function setupGlobals(target?: object, createArgs?: string[] | null): GPU;
 export function requestAdapter(
   adapterOptions?: GPURequestAdapterOptions,

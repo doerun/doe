@@ -13,12 +13,15 @@ const c = @import("backend/vulkan/vk_constants.zig");
 
 const MAGIC_QUERY_SET: u32 = 0xD0E1_0020;
 const TIMESTAMP_BYTES: usize = @sizeOf(u64);
+const WGPU_QUERY_TYPE_OCCLUSION: u32 = 0x00000001;
 const WGPU_QUERY_TYPE_TIMESTAMP: u32 = 0x00000002;
+const VK_QUERY_TYPE_OCCLUSION: u32 = 1;
 
 pub const DoeQuerySet = struct {
     pub const TYPE_MAGIC = MAGIC_QUERY_SET;
     magic: u32 = TYPE_MAGIC,
     count: u32 = 0,
+    query_type: u32 = WGPU_QUERY_TYPE_TIMESTAMP,
     backend: native.BackendKind = .metal,
     /// Metal: opaque handle to MTLCounterSampleBuffer for GPU timestamp sampling.
     counter_sample_buffer: ?*anyopaque = null,
@@ -39,18 +42,22 @@ pub export fn doeNativeDeviceCreateQuerySet(
     query_type: u32,
     count: u32,
 ) callconv(.c) ?*anyopaque {
-    if (query_type != WGPU_QUERY_TYPE_TIMESTAMP) return null;
+    if (query_type != WGPU_QUERY_TYPE_TIMESTAMP and query_type != WGPU_QUERY_TYPE_OCCLUSION) return null;
     if (count == 0) return null;
 
     const dev = native.cast(native.DoeDevice, dev_raw) orelse return null;
 
     if (dev.backend == .vulkan) {
-        return vulkan_create_query_set(dev, count);
+        return vulkan_create_query_set(dev, query_type, count);
+    }
+
+    if (query_type != WGPU_QUERY_TYPE_TIMESTAMP) {
+        return null;
     }
 
     // Metal path.
     const qs = native.make(DoeQuerySet) orelse return null;
-    qs.* = .{ .count = count, .backend = .metal };
+    qs.* = .{ .count = count, .query_type = query_type, .backend = .metal };
 
     qs.counter_sample_buffer = bridge.metal_bridge_create_counter_sample_buffer(dev.mtl_device, count);
     if (qs.counter_sample_buffer == null) {
@@ -144,13 +151,23 @@ pub export fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void {
     native.alloc.destroy(qs);
 }
 
+pub export fn doeNativeQuerySetGetCount(qs_raw: ?*anyopaque) callconv(.c) u32 {
+    const qs = native.cast(DoeQuerySet, qs_raw) orelse return 0;
+    return qs.count;
+}
+
+pub export fn doeNativeQuerySetGetType(qs_raw: ?*anyopaque) callconv(.c) u32 {
+    const qs = native.cast(DoeQuerySet, qs_raw) orelse return 0;
+    return qs.query_type;
+}
+
 // ============================================================
 // Vulkan implementation
 // ============================================================
 
 const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 
-fn vulkan_create_query_set(dev: *native.DoeDevice, count: u32) ?*anyopaque {
+fn vulkan_create_query_set(dev: *native.DoeDevice, query_type: u32, count: u32) ?*anyopaque {
     const rt = native.device_vk_runtime(dev) orelse return null;
     if (!rt.has_device) return null;
 
@@ -159,7 +176,7 @@ fn vulkan_create_query_set(dev: *native.DoeDevice, count: u32) ?*anyopaque {
         .sType = c.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .queryType = c.VK_QUERY_TYPE_TIMESTAMP,
+        .queryType = if (query_type == WGPU_QUERY_TYPE_OCCLUSION) VK_QUERY_TYPE_OCCLUSION else c.VK_QUERY_TYPE_TIMESTAMP,
         .queryCount = count,
         .pipelineStatistics = 0,
     };
@@ -175,6 +192,7 @@ fn vulkan_create_query_set(dev: *native.DoeDevice, count: u32) ?*anyopaque {
     };
     qs.* = .{
         .count = count,
+        .query_type = query_type,
         .backend = .vulkan,
         .vk_query_pool = query_pool,
         .vk_device = rt.device,
@@ -335,4 +353,24 @@ fn submit_one_shot_command_buffer(rt: *native.NativeVulkanRuntime, command_buffe
     try c.check_vk(c.vkResetFences(rt.device, 1, @ptrCast(&rt.fence)));
     try c.check_vk(c.vkQueueSubmit(rt.queue, 1, @ptrCast(&submit_info), rt.fence));
     try c.check_vk(c.vkWaitForFences(rt.device, 1, @ptrCast(&rt.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+}
+
+pub export fn doeNativeRenderPassBeginOcclusionQuery(
+    pass_raw: ?*anyopaque,
+    query_index: u32,
+) callconv(.c) void {
+    const pass = native.cast(native.DoeRenderPass, pass_raw) orelse return;
+    const qs_raw = pass.occlusion_query_set orelse return;
+    const qs = native.cast(DoeQuerySet, qs_raw) orelse return;
+    if (qs.query_type != WGPU_QUERY_TYPE_OCCLUSION) return;
+    if (query_index >= qs.count) return;
+    pass.occlusion_query_active = true;
+    pass.occlusion_query_index = query_index;
+}
+
+pub export fn doeNativeRenderPassEndOcclusionQuery(
+    pass_raw: ?*anyopaque,
+) callconv(.c) void {
+    const pass = native.cast(native.DoeRenderPass, pass_raw) orelse return;
+    pass.occlusion_query_active = false;
 }

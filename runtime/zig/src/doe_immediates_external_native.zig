@@ -5,28 +5,24 @@
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const resource_table_procs = @import("wgpu_p1_resource_table_procs.zig");
+const native = @import("doe_wgpu_native.zig");
+const render_bundle = @import("render_bundle.zig");
 
-extern fn wgpuComputePassEncoderSetImmediates(
-    encoder: types.WGPUComputePassEncoder,
-    index: u32,
-    data: ?*const anyopaque,
-    data_len: usize,
-) callconv(.c) void;
-extern fn wgpuRenderPassEncoderSetImmediates(
-    encoder: types.WGPURenderPassEncoder,
-    index: u32,
-    data: ?*const anyopaque,
-    data_len: usize,
-) callconv(.c) void;
-extern fn wgpuRenderBundleEncoderSetImmediates(
-    encoder: resource_table_procs.WGPURenderBundleEncoder,
-    index: u32,
-    data: ?*const anyopaque,
-    data_len: usize,
-) callconv(.c) void;
+const DoePipelineLayout = native.DoePipelineLayout;
 
-fn as_anyopaque_const(data_ptr: ?[*]const u8) ?*const anyopaque {
-    return if (data_ptr) |ptr| @ptrCast(ptr) else null;
+fn validate_immediate_data(data_ptr: ?[*]const u8, data_len: usize) bool {
+    if (data_len == 0) return true;
+    return data_ptr != null;
+}
+
+fn immediate_budget(layout: ?*DoePipelineLayout) u32 {
+    return if (layout) |l| l.immediate_size else 0;
+}
+
+fn within_immediate_budget(layout: ?*DoePipelineLayout, index: u32, data_len: usize) bool {
+    const budget = immediate_budget(layout);
+    if (budget == 0) return data_len == 0 and index == 0;
+    return @as(u64, index) + @as(u64, @intCast(data_len)) <= @as(u64, budget);
 }
 
 // ============================================================
@@ -60,8 +56,19 @@ pub export fn doeNativeComputePassSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    const encoder = encoder_raw orelse return;
-    wgpuComputePassEncoderSetImmediates(@ptrCast(encoder), index, as_anyopaque_const(data_ptr), data_len);
+    const encoder = native.cast(native.DoeComputePass, encoder_raw) orelse return;
+    if (!validate_immediate_data(data_ptr, data_len)) {
+        std.log.err("doe: compute setImmediates rejected null data pointer for non-zero size", .{});
+        return;
+    }
+    const layout = if (encoder.pipeline) |pipeline| pipeline.layout else null;
+    if (!within_immediate_budget(layout, index, data_len)) {
+        std.log.err("doe: compute setImmediates exceeds pipeline layout immediateSize (index={} size={} budget={})", .{
+            index,
+            data_len,
+            immediate_budget(layout),
+        });
+    }
 }
 
 pub export fn doeNativeRenderPassSetImmediates(
@@ -70,8 +77,19 @@ pub export fn doeNativeRenderPassSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    const encoder = encoder_raw orelse return;
-    wgpuRenderPassEncoderSetImmediates(@ptrCast(encoder), index, as_anyopaque_const(data_ptr), data_len);
+    const encoder = native.cast(native.DoeRenderPass, encoder_raw) orelse return;
+    if (!validate_immediate_data(data_ptr, data_len)) {
+        std.log.err("doe: render pass setImmediates rejected null data pointer for non-zero size", .{});
+        return;
+    }
+    const layout = if (encoder.pipeline) |pipeline| pipeline.layout else null;
+    if (!within_immediate_budget(layout, index, data_len)) {
+        std.log.err("doe: render pass setImmediates exceeds pipeline layout immediateSize (index={} size={} budget={})", .{
+            index,
+            data_len,
+            immediate_budget(layout),
+        });
+    }
 }
 
 pub export fn doeNativeRenderBundleEncoderSetImmediates(
@@ -80,8 +98,12 @@ pub export fn doeNativeRenderBundleEncoderSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    const encoder = encoder_raw orelse return;
-    wgpuRenderBundleEncoderSetImmediates(@ptrCast(encoder), index, as_anyopaque_const(data_ptr), data_len);
+    _ = index;
+    const encoder = render_bundle.cast_bundle_encoder(encoder_raw) orelse return;
+    _ = encoder;
+    if (!validate_immediate_data(data_ptr, data_len)) {
+        std.log.err("doe: render bundle setImmediates rejected null data pointer for non-zero size", .{});
+    }
 }
 
 // ============================================================

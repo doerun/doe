@@ -188,6 +188,7 @@ pub const DoeComputePipeline = struct {
     pub const TYPE_MAGIC = MAGIC_COMPUTE_PIPE;
     magic: u32 = TYPE_MAGIC,
     mtl_pso: ?*anyopaque = null,
+    layout: ?*DoePipelineLayout = null,
     bindings: [MAX_SHADER_BINDINGS]BindingInfo = undefined,
     binding_count: u32 = 0,
     wg_x: u32 = 0,
@@ -207,6 +208,7 @@ pub const DoeBindGroupLayout = struct {
 pub const DoePipelineLayout = struct {
     const TYPE_MAGIC = MAGIC_PIPE_LAYOUT;
     magic: u32 = TYPE_MAGIC,
+    immediate_size: u32 = 0,
 };
 
 pub const DoeBindGroup = struct {
@@ -365,6 +367,7 @@ pub const DoeRenderPipeline = struct {
     const TYPE_MAGIC = MAGIC_RENDER_PIPE;
     magic: u32 = TYPE_MAGIC,
     mtl_pso: ?*anyopaque = null,
+    layout: ?*DoePipelineLayout = null,
     depth_state: ?*anyopaque = null,
     topology: u32 = 0x00000004,
     front_face: u32 = 0x00000001,
@@ -379,6 +382,8 @@ pub const DoeRenderPass = struct {
     magic: u32 = TYPE_MAGIC,
     enc: *DoeCommandEncoder,
     pipeline: ?*DoeRenderPipeline = null,
+    max_draw_count: u64 = 50_000_000,
+    recorded_draw_count: u64 = 0,
     target: ?*anyopaque = null, // MTLTexture for the render target
     depth_target: ?*anyopaque = null,
     depth_compare: u32 = 0,
@@ -393,6 +398,21 @@ pub const DoeRenderPass = struct {
     index_buffer: ?*DoeBuffer = null,
     index_offset: u64 = 0,
     index_format: u32 = 0,
+    viewport_x: f32 = 0,
+    viewport_y: f32 = 0,
+    viewport_width: ?f32 = null,
+    viewport_height: ?f32 = null,
+    viewport_min_depth: f32 = 0,
+    viewport_max_depth: f32 = 1,
+    scissor_x: u32 = 0,
+    scissor_y: u32 = 0,
+    scissor_width: ?u32 = null,
+    scissor_height: ?u32 = null,
+    blend_constant: [4]f32 = .{ 0, 0, 0, 0 },
+    stencil_reference: u32 = 0,
+    occlusion_query_set: ?*anyopaque = null,
+    occlusion_query_active: bool = false,
+    occlusion_query_index: u32 = 0,
 };
 
 pub fn make(comptime T: type) ?*T {
@@ -627,6 +647,10 @@ pub const doeNativeDeviceCreateQuerySet = query.doeNativeDeviceCreateQuerySet;
 pub const doeNativeCommandEncoderWriteTimestamp = query.doeNativeCommandEncoderWriteTimestamp;
 pub const doeNativeCommandEncoderResolveQuerySet = query.doeNativeCommandEncoderResolveQuerySet;
 pub const doeNativeQuerySetDestroy = query.doeNativeQuerySetDestroy;
+pub const doeNativeQuerySetGetCount = query.doeNativeQuerySetGetCount;
+pub const doeNativeQuerySetGetType = query.doeNativeQuerySetGetType;
+pub const doeNativeRenderPassBeginOcclusionQuery = query.doeNativeRenderPassBeginOcclusionQuery;
+pub const doeNativeRenderPassEndOcclusionQuery = query.doeNativeRenderPassEndOcclusionQuery;
 
 // Canvas format query and DOM EventTarget stubs in doe_canvas_event_native.zig.
 const canvas_event = @import("doe_canvas_event_native.zig");
@@ -659,8 +683,6 @@ pub const doeNativeRenderPassSetViewport = render_pass_controls.doeNativeRenderP
 pub const doeNativeRenderPassSetScissorRect = render_pass_controls.doeNativeRenderPassSetScissorRect;
 pub const doeNativeRenderPassSetBlendConstant = render_pass_controls.doeNativeRenderPassSetBlendConstant;
 pub const doeNativeRenderPassSetStencilReference = render_pass_controls.doeNativeRenderPassSetStencilReference;
-pub const doeNativeRenderPassBeginOcclusionQuery = render_pass_controls.doeNativeRenderPassBeginOcclusionQuery;
-pub const doeNativeRenderPassEndOcclusionQuery = render_pass_controls.doeNativeRenderPassEndOcclusionQuery;
 pub const doeNativeRenderPassPushDebugGroup = render_pass_controls.doeNativeRenderPassPushDebugGroup;
 pub const doeNativeRenderPassPopDebugGroup = render_pass_controls.doeNativeRenderPassPopDebugGroup;
 pub const doeNativeRenderPassInsertDebugMarker = render_pass_controls.doeNativeRenderPassInsertDebugMarker;

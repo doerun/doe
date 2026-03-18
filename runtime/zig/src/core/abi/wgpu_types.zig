@@ -815,6 +815,7 @@ pub const WGPURenderPassDescriptor = extern struct {
     depthStencilAttachment: ?*const WGPURenderPassDepthStencilAttachment,
     occlusionQuerySet: WGPUQuerySet,
     timestampWrites: ?*const WGPUPassTimestampWrites,
+    maxDrawCount: u64,
 };
 
 pub fn initLimits() WGPULimits {

@@ -15,6 +15,7 @@ const render_temp_texture = @import("wgpu_render_temp_texture.zig");
 const ffi = @import("../../webgpu_ffi.zig");
 const rc = @import("wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
+const DEFAULT_MAX_DRAW_COUNT: u64 = 50_000_000;
 
 pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types.NativeExecutionResult {
     if (render.draw_count == 0) {
@@ -550,6 +551,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         .depthStencilAttachment = &depth_stencil_attachment,
         .occlusionQuerySet = occlusion_query_set,
         .timestampWrites = null,
+        .maxDrawCount = DEFAULT_MAX_DRAW_COUNT,
     });
     if (render_pass == null) {
         return .{ .status = .@"error", .status_message = "render_draw begin render pass failed" };

@@ -2,6 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const common_errors = @import("../common/errors.zig");
+const path_utils = @import("../common/path_utils.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const model = @import("../../model.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
@@ -229,19 +230,19 @@ pub const NativeD3D12Runtime = struct {
 
         const dxil_path = try std.fmt.allocPrint(alloc, "{s}/{s}.dxil", .{ root, strip_extension(kernel_name) });
         defer alloc.free(dxil_path);
-        if (file_exists(dxil_path)) {
+        if (path_utils.file_exists(dxil_path)) {
             return std.fs.cwd().readFileAlloc(alloc, dxil_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
         }
 
         const cso_path = try std.fmt.allocPrint(alloc, "{s}/{s}.cso", .{ root, strip_extension(kernel_name) });
         defer alloc.free(cso_path);
-        if (file_exists(cso_path)) {
+        if (path_utils.file_exists(cso_path)) {
             return std.fs.cwd().readFileAlloc(alloc, cso_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
         }
 
         const dxbc_path = try std.fmt.allocPrint(alloc, "{s}/{s}.dxbc", .{ root, strip_extension(kernel_name) });
         defer alloc.free(dxbc_path);
-        if (file_exists(dxbc_path)) {
+        if (path_utils.file_exists(dxbc_path)) {
             return std.fs.cwd().readFileAlloc(alloc, dxbc_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
         }
 
@@ -453,23 +454,23 @@ pub const NativeD3D12Runtime = struct {
 
     fn resolve_kernel_source_path(self: *const NativeD3D12Runtime, alloc: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
         const direct = try alloc.dupe(u8, kernel_name);
-        if (file_exists(direct)) return direct;
+        if (path_utils.file_exists(direct)) return direct;
         alloc.free(direct);
 
         const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
         const rooted = try std.fmt.allocPrint(alloc, "{s}/{s}", .{ root, kernel_name });
-        if (file_exists(rooted)) return rooted;
+        if (path_utils.file_exists(rooted)) return rooted;
         alloc.free(rooted);
 
         if (!std.mem.endsWith(u8, kernel_name, ".wgsl")) {
             const wgsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.wgsl", .{ root, kernel_name });
-            if (file_exists(wgsl_path)) return wgsl_path;
+            if (path_utils.file_exists(wgsl_path)) return wgsl_path;
             alloc.free(wgsl_path);
         }
 
         if (!std.mem.endsWith(u8, kernel_name, ".hlsl")) {
             const hlsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.hlsl", .{ root, kernel_name });
-            if (file_exists(hlsl_path)) return hlsl_path;
+            if (path_utils.file_exists(hlsl_path)) return hlsl_path;
             alloc.free(hlsl_path);
         }
 
@@ -556,11 +557,6 @@ pub fn strip_extension(name: []const u8) []const u8 {
     return name;
 }
 
-pub fn file_exists(path: []const u8) bool {
-    std.fs.cwd().access(path, .{}) catch return false;
-    return true;
-}
-
 fn compile_hlsl_to_bytecode(alloc: std.mem.Allocator, hlsl_source: []const u8) ![]u8 {
     std.fs.cwd().makePath(GENERATED_SHADER_DIR) catch return error.ShaderCompileFailed;
 
@@ -572,7 +568,7 @@ fn compile_hlsl_to_bytecode(alloc: std.mem.Allocator, hlsl_source: []const u8) !
     const cso_path = try std.fmt.allocPrint(alloc, "{s}.generated.cso", .{stem});
     defer alloc.free(cso_path);
 
-    if (!file_exists(cso_path)) {
+    if (!path_utils.file_exists(cso_path)) {
         const file = std.fs.cwd().createFile(hlsl_path, .{ .truncate = true }) catch return error.ShaderCompileFailed;
         defer file.close();
         file.writeAll(hlsl_source) catch return error.ShaderCompileFailed;

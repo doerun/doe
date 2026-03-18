@@ -85,7 +85,10 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
     const pl = make(DoePipelineLayout) orelse return null;
     pl.* = .{};
     const pl_result = toOpaque(pl);
-    if (desc) |pd| label_store.set(pl_result, pd.label.data, pd.label.length);
+    if (desc) |pd| {
+        pl.immediate_size = pd.immediateSize;
+        label_store.set(pl_result, pd.label.data, pd.label.length);
+    }
     return pl_result;
 }
 

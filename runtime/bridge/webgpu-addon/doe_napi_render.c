@@ -78,12 +78,20 @@ napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
     size_t vertex_entry_len = 0, fragment_entry_len = 0;
     char* vertex_entry = has_prop(env, vertex, "entryPoint")
         ? dup_string_value(env, get_prop(env, vertex, "entryPoint"), &vertex_entry_len)
-        : strdup("main");
+        : NULL;
     if (!has_prop(env, vertex, "entryPoint")) vertex_entry_len = 4;
+    if (!has_prop(env, vertex, "entryPoint")) {
+        vertex_entry = (char*)malloc(vertex_entry_len + 1);
+        if (vertex_entry) memcpy(vertex_entry, "main", vertex_entry_len + 1);
+    }
     char* fragment_entry = has_prop(env, fragment, "entryPoint")
         ? dup_string_value(env, get_prop(env, fragment, "entryPoint"), &fragment_entry_len)
-        : strdup("main");
+        : NULL;
     if (!has_prop(env, fragment, "entryPoint")) fragment_entry_len = 4;
+    if (!has_prop(env, fragment, "entryPoint")) {
+        fragment_entry = (char*)malloc(fragment_entry_len + 1);
+        if (fragment_entry) memcpy(fragment_entry, "main", fragment_entry_len + 1);
+    }
     if (!vertex_entry || !fragment_entry) {
         free(vertex_entry); free(fragment_entry);
         NAPI_THROW(env, "createRenderPipeline: out of memory");
@@ -249,7 +257,28 @@ napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
     free_override_constants(fragment_constants, fragment_constant_count);
     free(blend_state); free(depth_stencil); free(vertex_attributes); free(vertex_buffers);
     free(vertex_entry); free(fragment_entry); free(label_str);
-    if (!rp) NAPI_THROW(env, "createRenderPipeline failed");
+    if (!rp) {
+        char msg[DOE_ERROR_BUF_CAP];
+        char stage[64];
+        char kind[64];
+        copy_library_error_message(msg, sizeof(msg));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorStage, stage, sizeof(stage));
+        copy_library_error_meta(pfn_doeNativeCopyLastErrorKind, kind, sizeof(kind));
+        if (msg[0] != '\0') {
+            char full_msg[DOE_ERROR_BUF_CAP];
+            if (stage[0] != '\0' && kind[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s/%s] %s", stage, kind, msg);
+            } else if (stage[0] != '\0') {
+                snprintf(full_msg, sizeof(full_msg), "[%s] %s", stage, msg);
+            } else {
+                snprintf(full_msg, sizeof(full_msg), "%s", msg);
+            }
+            napi_throw_error(env, "DOE_RENDER_PIPELINE_ERROR", full_msg);
+        } else {
+            napi_throw_error(env, "DOE_RENDER_PIPELINE_ERROR", "createRenderPipeline failed");
+        }
+        return NULL;
+    }
     return wrap_ptr(env, rp);
 }
 
@@ -469,23 +498,6 @@ napi_value doe_render_pass_set_stencil_reference(napi_env env, napi_callback_inf
     if (!pass || !pfn_doeNativeRenderPassSetStencilReference) return NULL;
     uint32_t reference = 0; napi_get_value_uint32(env, _args[1], &reference);
     pfn_doeNativeRenderPassSetStencilReference(pass, reference);
-    return NULL;
-}
-
-napi_value doe_render_pass_begin_occlusion_query(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 2);
-    void* pass = unwrap_ptr(env, _args[0]);
-    if (!pass || !pfn_doeNativeRenderPassBeginOcclusionQuery) return NULL;
-    uint32_t query_index = 0; napi_get_value_uint32(env, _args[1], &query_index);
-    pfn_doeNativeRenderPassBeginOcclusionQuery(pass, query_index);
-    return NULL;
-}
-
-napi_value doe_render_pass_end_occlusion_query(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
-    void* pass = unwrap_ptr(env, _args[0]);
-    if (!pass || !pfn_doeNativeRenderPassEndOcclusionQuery) return NULL;
-    pfn_doeNativeRenderPassEndOcclusionQuery(pass);
     return NULL;
 }
 

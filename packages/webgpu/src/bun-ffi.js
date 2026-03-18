@@ -44,6 +44,8 @@ import {
   shaderCheckFailure,
   enrichNativeCompilerError,
   compilerErrorFromMessage,
+  pipelineErrorFromError,
+  pipelineErrorFromMessage,
 } from "./shared/compiler-errors.js";
 import {
   createFullSurfaceClasses,
@@ -113,7 +115,7 @@ const WGPU_RENDER_PIPELINE_DESCRIPTOR_SIZE = 168;
 const WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_SIZE = 40;
 const WGPU_BIND_GROUP_DESCRIPTOR_SIZE = 48;
 const WGPU_PIPELINE_LAYOUT_DESCRIPTOR_SIZE = 48;
-const WGPU_RENDER_PASS_DESCRIPTOR_SIZE = 64;
+const WGPU_RENDER_PASS_DESCRIPTOR_SIZE = 72;
 const WGPU_LIMITS_SIZE = 152;
 const WGPU_RENDER_VERTEX_STATE_SIZE = 64;
 const WGPU_RENDER_COLOR_TARGET_STATE_SIZE = 32;
@@ -260,6 +262,12 @@ function openLibrary(path) {
         wgpuRenderPassEncoderPushDebugGroup: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuRenderPassEncoderPopDebugGroup: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuRenderPassEncoderInsertDebugMarker: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuCommandEncoderPushDebugGroup: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuCommandEncoderPopDebugGroup: { args: [FFIType.ptr], returns: FFIType.void },
+        wgpuCommandEncoderInsertDebugMarker: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuComputePassEncoderPushDebugGroup: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuComputePassEncoderPopDebugGroup: { args: [FFIType.ptr], returns: FFIType.void },
+        wgpuComputePassEncoderInsertDebugMarker: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuRenderPassEncoderEnd: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuRenderPassEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
 
@@ -270,6 +278,9 @@ function openLibrary(path) {
         wgpuRenderBundleEncoderSetVertexBuffer: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.void },
         wgpuRenderBundleEncoderSetIndexBuffer: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.u64, FFIType.u64], returns: FFIType.void },
         wgpuRenderBundleEncoderDraw: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
+        wgpuRenderBundleEncoderPushDebugGroup: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuRenderBundleEncoderPopDebugGroup: { args: [FFIType.ptr], returns: FFIType.void },
+        wgpuRenderBundleEncoderInsertDebugMarker: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuRenderBundleEncoderDrawIndexed: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.i32, FFIType.u32], returns: FFIType.void },
         wgpuRenderBundleEncoderDrawIndirect: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuRenderBundleEncoderDrawIndexedIndirect: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
@@ -279,7 +290,6 @@ function openLibrary(path) {
         wgpuRenderBundleEncoderFinish: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuRenderBundleEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuRenderBundleRelease: { args: [FFIType.ptr], returns: FFIType.void },
-        doeNativeObjectSetLabel: { args: [FFIType.ptr, FFIType.cstring, FFIType.u64], returns: FFIType.void },
 
         // Render pipeline bind group layout
         wgpuRenderPipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
@@ -978,6 +988,16 @@ const COMPARE_FUNC_MAP = {
     always: 0x00000008,
 };
 
+const POWER_PREFERENCE_MAP = {
+    "low-power": 1,
+    "high-performance": 2,
+};
+
+const FEATURE_LEVEL_MAP = {
+    compatibility: 1,
+    core: 2,
+};
+
 const INDEX_FORMAT_MAP = {
     uint16: 0x00000001,
     uint32: 0x00000002,
@@ -1018,6 +1038,8 @@ function buildTextureDescriptor(descriptor) {
 //   magFilter:u32@36, minFilter:u32@40, mipmapFilter:u32@44, lodMinClamp:f32@48, lodMaxClamp:f32@52,
 //   compare:u32@56, maxAnisotropy:u16@60 } = 64 (with padding)
 const SAMPLER_DESC_SIZE = 64;
+const REQUEST_ADAPTER_OPTIONS_SIZE = 32;
+const PASS_TIMESTAMP_WRITES_SIZE = 24;
 
 function buildSamplerDescriptor(descriptor) {
     const buf = new ArrayBuffer(SAMPLER_DESC_SIZE);
@@ -1033,8 +1055,31 @@ function buildSamplerDescriptor(descriptor) {
     v.setUint32(44, 0, true); // mipmapFilter = nearest
     v.setFloat32(48, 0.0, true);
     v.setFloat32(52, 32.0, true);
-    v.setUint32(56, 0, true); // compare = undefined
+    v.setUint32(56, descriptor.compare ? (COMPARE_FUNC_MAP[descriptor.compare] ?? 0) : 0, true);
     v.setUint16(60, 1, true); // maxAnisotropy
+    return new Uint8Array(buf);
+}
+
+function buildRequestAdapterOptions(options) {
+    if (!options) return null;
+    const buf = new ArrayBuffer(REQUEST_ADAPTER_OPTIONS_SIZE);
+    const v = new DataView(buf);
+    writePtr(v, 0, null);
+    v.setUint32(8, options.featureLevel ? (FEATURE_LEVEL_MAP[options.featureLevel] ?? 0) : 0, true);
+    v.setUint32(12, options.powerPreference ? (POWER_PREFERENCE_MAP[options.powerPreference] ?? 0) : 0, true);
+    v.setUint32(16, options.forceFallbackAdapter ? 1 : 0, true);
+    v.setUint32(20, 0, true); // backendType = undefined
+    writePtr(v, 24, null); // compatibleSurface
+    return new Uint8Array(buf);
+}
+
+function buildPassTimestampWrites(timestampWrites) {
+    const buf = new ArrayBuffer(PASS_TIMESTAMP_WRITES_SIZE);
+    const v = new DataView(buf);
+    writePtr(v, 0, null);
+    writePtr(v, 8, timestampWrites.querySet?._native ?? null);
+    v.setUint32(16, timestampWrites.beginningOfPassWriteIndex ?? 0xFFFFFFFF, true);
+    v.setUint32(20, timestampWrites.endOfPassWriteIndex ?? 0xFFFFFFFF, true);
     return new Uint8Array(buf);
 }
 
@@ -1046,9 +1091,12 @@ const TEXEL_COPY_TEXTURE_INFO_SIZE = 32;
 const TEXEL_COPY_BUFFER_INFO_SIZE = 24;
 const EXTENT3D_SIZE = 12;
 
+const DEFAULT_MAX_DRAW_COUNT = 50_000_000;
+
 // WGPURenderPassDescriptor:
 // { nextInChain:ptr@0, label:sv@8, colorAttachmentCount:size_t@24, colorAttachments:ptr@32,
-//   depthStencilAttachment:ptr@40, occlusionQuerySet:ptr@48, timestampWrites:ptr@56 } = 64
+//   depthStencilAttachment:ptr@40, occlusionQuerySet:ptr@48, timestampWrites:ptr@56,
+//   maxDrawCount:u64@64 } = 72
 function buildRenderPassDescriptor(descriptor) {
     const colorAttachments = descriptor.colorAttachments || [];
     const attBuf = new Uint8Array(colorAttachments.length * RENDER_PASS_COLOR_ATTACHMENT_SIZE);
@@ -1071,6 +1119,7 @@ function buildRenderPassDescriptor(descriptor) {
     }
 
     let depthStencilAttachmentArr = null;
+    let timestampWritesArr = null;
     if (descriptor.depthStencilAttachment?.view) {
         const depthBuf = new ArrayBuffer(WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_SIZE);
         const depthView = new DataView(depthBuf);
@@ -1085,6 +1134,9 @@ function buildRenderPassDescriptor(descriptor) {
         depthView.setUint32(36, descriptor.depthStencilAttachment.stencilReadOnly ? 1 : 0, true);
         depthStencilAttachmentArr = new Uint8Array(depthBuf);
     }
+    if (descriptor.timestampWrites?.querySet) {
+        timestampWritesArr = buildPassTimestampWrites(descriptor.timestampWrites);
+    }
 
     const descBuf = new ArrayBuffer(WGPU_RENDER_PASS_DESCRIPTOR_SIZE);
     const descView = new DataView(descBuf);
@@ -1093,10 +1145,11 @@ function buildRenderPassDescriptor(descriptor) {
     descView.setBigUint64(24, BigInt(colorAttachments.length), true);
     writePtr(descView, 32, colorAttachments.length > 0 ? bunPtr(attBuf) : null);
     writePtr(descView, 40, depthStencilAttachmentArr ? bunPtr(depthStencilAttachmentArr) : null);
-    writePtr(descView, 48, null); // occlusionQuerySet
-    writePtr(descView, 56, null); // timestampWrites
+    writePtr(descView, 48, descriptor.occlusionQuerySet?._native ?? null);
+    writePtr(descView, 56, timestampWritesArr ? bunPtr(timestampWritesArr) : null);
+    descView.setBigUint64(64, BigInt(descriptor.maxDrawCount ?? DEFAULT_MAX_DRAW_COUNT), true);
 
-    return { desc: new Uint8Array(descBuf), _refs: [attBuf, depthStencilAttachmentArr].filter(Boolean) };
+    return { desc: new Uint8Array(descBuf), _refs: [attBuf, depthStencilAttachmentArr, timestampWritesArr].filter(Boolean) };
 }
 
 function buildTexelCopyTextureInfo(source) {
@@ -1247,10 +1300,11 @@ function nativeFailureMessage(prefix) {
     return detail ? `${prefix}: ${detail}` : prefix;
 }
 
-function requestAdapterSync(instancePtr) {
+function requestAdapterSync(instancePtr, options) {
     let resolvedAdapter = null;
     let resolvedStatus = null;
     let done = false;
+    const optionsBytes = buildRequestAdapterOptions(options);
     const cb = new JSCallback(
         (status, adapter, _msgData, _msgLen, _ud1, _ud2) => {
             resolvedStatus = status;
@@ -1261,7 +1315,7 @@ function requestAdapterSync(instancePtr) {
     );
     try {
         const futureId = wgpu.symbols.doeRequestAdapterFlat(
-            instancePtr, null, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
+            instancePtr, optionsBytes ? bunPtr(optionsBytes) : null, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
         if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] requestAdapter future unavailable");
         processEventsUntilDone(instancePtr, () => done);
         if (resolvedStatus !== REQUEST_ADAPTER_STATUS_SUCCESS || !resolvedAdapter) {
@@ -1568,6 +1622,27 @@ const bunEncoderBackend = {
             BigInt(len),
         );
     },
+    computePassPushDebugGroup(pass, label) {
+        const { bytes, len } = encodeStringView(label);
+        wgpu.symbols.wgpuComputePassEncoderPushDebugGroup(
+            assertLiveResource(pass, "GPUComputePassEncoder.pushDebugGroup", "GPUComputePassEncoder"),
+            bytes,
+            BigInt(len),
+        );
+    },
+    computePassPopDebugGroup(pass) {
+        wgpu.symbols.wgpuComputePassEncoderPopDebugGroup(
+            assertLiveResource(pass, "GPUComputePassEncoder.popDebugGroup", "GPUComputePassEncoder"),
+        );
+    },
+    computePassInsertDebugMarker(pass, label) {
+        const { bytes, len } = encodeStringView(label);
+        wgpu.symbols.wgpuComputePassEncoderInsertDebugMarker(
+            assertLiveResource(pass, "GPUComputePassEncoder.insertDebugMarker", "GPUComputePassEncoder"),
+            bytes,
+            BigInt(len),
+        );
+    },
     renderPassEnd(pass) {
         wgpu.symbols.wgpuRenderPassEncoderEnd(assertLiveResource(pass, "GPURenderPassEncoder.end", "GPURenderPassEncoder"));
         pass._ended = true;
@@ -1644,9 +1719,11 @@ const bunEncoderBackend = {
         );
     },
     renderBundleEncoderPushDebugGroup(encoder, label) {
+        const { bytes, len } = encodeStringView(label);
         wgpu.symbols.wgpuRenderBundleEncoderPushDebugGroup(
             assertLiveResource(encoder, "GPURenderBundleEncoder.pushDebugGroup", "GPURenderBundleEncoder"),
-            label,
+            bytes,
+            BigInt(len),
         );
     },
     renderBundleEncoderPopDebugGroup(encoder) {
@@ -1655,9 +1732,11 @@ const bunEncoderBackend = {
         );
     },
     renderBundleEncoderInsertDebugMarker(encoder, label) {
+        const { bytes, len } = encodeStringView(label);
         wgpu.symbols.wgpuRenderBundleEncoderInsertDebugMarker(
             assertLiveResource(encoder, "GPURenderBundleEncoder.insertDebugMarker", "GPURenderBundleEncoder"),
-            label,
+            bytes,
+            BigInt(len),
         );
     },
     renderBundleEncoderFinish(encoder, _descriptor, classes) {
@@ -1671,11 +1750,6 @@ const bunEncoderBackend = {
     },
     renderBundleDestroy(native) {
         wgpu.symbols.wgpuRenderBundleRelease(native);
-    },
-    renderBundleSetLabel(bundle, label) {
-        if (typeof wgpu.symbols.doeNativeObjectSetLabel === "function") {
-            wgpu.symbols.doeNativeObjectSetLabel(bundle._native, label, BigInt(Buffer.byteLength(label)));
-        }
     },
     commandEncoderInit(encoder) {
         encoder._commands = [];
@@ -2003,11 +2077,11 @@ const fullSurfaceBackend = {
         try {
             native = wgpu.symbols.wgpuDeviceCreateComputePipeline(assertLiveResource(device, "GPUDevice.createComputePipeline", "GPUDevice"), desc);
         } catch (error) {
-            throw enrichNativeCompilerError(error, "GPUDevice.createComputePipeline", readLastErrorFields());
+            throw pipelineErrorFromError(error, "GPUDevice.createComputePipeline", readLastErrorFields());
         }
         void _refs;
         if (!native) {
-            throw compilerErrorFromMessage("GPUDevice.createComputePipeline", nativeFailureMessage("createComputePipeline failed"), readLastErrorFields());
+            throw pipelineErrorFromMessage("GPUDevice.createComputePipeline", nativeFailureMessage("createComputePipeline failed"), readLastErrorFields());
         }
         return native;
     },
@@ -2076,17 +2150,23 @@ const fullSurfaceBackend = {
             depthStencil: descriptor.depthStencil ?? null,
             multisample: descriptor.multisample ?? null,
         });
-        const native = wgpu.symbols.wgpuDeviceCreateRenderPipeline(
-            assertLiveResource(device, "GPUDevice.createRenderPipeline", "GPUDevice"),
-            desc,
-        );
+        let native;
+        try {
+            native = wgpu.symbols.wgpuDeviceCreateRenderPipeline(
+                assertLiveResource(device, "GPUDevice.createRenderPipeline", "GPUDevice"),
+                desc,
+            );
+        } catch (error) {
+            throw pipelineErrorFromError(error, "GPUDevice.createRenderPipeline", readLastErrorFields());
+        }
         void _refs;
         if (!native) {
-            throw compilerErrorFromMessage("GPUDevice.createRenderPipeline", nativeFailureMessage("createRenderPipeline failed"));
+            throw pipelineErrorFromMessage("GPUDevice.createRenderPipeline", nativeFailureMessage("createRenderPipeline failed"), readLastErrorFields());
         }
         return native;
     },
     deviceCreateQuerySet(device, descriptor) {
+        const QUERY_TYPE_OCCLUSION = 1;
         const QUERY_TYPE_TIMESTAMP = 2;
         const fn = wgpu.symbols.doeNativeDeviceCreateQuerySet;
         if (typeof fn !== "function") {
@@ -2094,7 +2174,7 @@ const fullSurfaceBackend = {
         }
         const native = fn(
             assertLiveResource(device, "GPUDevice.createQuerySet", "GPUDevice"),
-            QUERY_TYPE_TIMESTAMP,
+            descriptor.type === "occlusion" ? QUERY_TYPE_OCCLUSION : QUERY_TYPE_TIMESTAMP,
             descriptor.count,
         );
         if (!native) throw new Error("[fawn-webgpu] createQuerySet failed");
@@ -2105,10 +2185,26 @@ const fullSurfaceBackend = {
             wgpu.symbols.doeNativeQuerySetDestroy(native);
         }
     },
-    querySetSetLabel(querySet, label) {
-        if (typeof wgpu.symbols.doeNativeObjectSetLabel === "function") {
-            wgpu.symbols.doeNativeObjectSetLabel(querySet._native, label, BigInt(Buffer.byteLength(label)));
-        }
+    commandEncoderPushDebugGroup(encoder, label) {
+        const { bytes, len } = encodeStringView(label);
+        wgpu.symbols.wgpuCommandEncoderPushDebugGroup(
+            assertLiveResource(encoder, "GPUCommandEncoder.pushDebugGroup", "GPUCommandEncoder"),
+            bytes,
+            BigInt(len),
+        );
+    },
+    commandEncoderPopDebugGroup(encoder) {
+        wgpu.symbols.wgpuCommandEncoderPopDebugGroup(
+            assertLiveResource(encoder, "GPUCommandEncoder.popDebugGroup", "GPUCommandEncoder"),
+        );
+    },
+    commandEncoderInsertDebugMarker(encoder, label) {
+        const { bytes, len } = encodeStringView(label);
+        wgpu.symbols.wgpuCommandEncoderInsertDebugMarker(
+            assertLiveResource(encoder, "GPUCommandEncoder.insertDebugMarker", "GPUCommandEncoder"),
+            bytes,
+            BigInt(len),
+        );
     },
     deviceCreateCommandEncoder(device) {
         return new DoeGPUCommandEncoder(null, device);
@@ -2172,8 +2268,8 @@ const fullSurfaceBackend = {
     adapterDestroy(native) {
         wgpu.symbols.wgpuAdapterRelease(native);
     },
-    gpuRequestAdapter(gpu, _options, classes) {
-        const adapter = requestAdapterSync(gpu._instance);
+    gpuRequestAdapter(gpu, options, classes) {
+        const adapter = requestAdapterSync(gpu._instance, options);
         return new classes.DoeGPUAdapter(adapter, gpu._instance);
     },
 };

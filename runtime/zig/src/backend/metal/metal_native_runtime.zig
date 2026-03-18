@@ -5,6 +5,7 @@ const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const copy_runtime = @import("metal_copy_runtime.zig");
 const dispatch_runtime = @import("metal_dispatch_runtime.zig");
+const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const resource_runtime = @import("metal_runtime_resources.zig");
 const surface_runtime = @import("metal_surface_runtime.zig");
 const kernel_dispatch = @import("metal_kernel_dispatch.zig");
@@ -46,7 +47,7 @@ pub const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
 pub const MAX_BINDING_SLOTS: usize = 32;
 pub const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024;
 pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;
-pub const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
+pub const MAX_POOL_ENTRIES_PER_SIZE: usize = metal_buffer_pool.MAX_POOL_ENTRIES_PER_SIZE;
 pub const DispatchMetrics = kernel_dispatch.DispatchMetrics;
 
 pub const RenderMetrics = struct {
@@ -743,7 +744,7 @@ pub const NativeMetalRuntime = struct {
 
 };
 
-pub const BufferPool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));
+pub const BufferPool = metal_buffer_pool.BufferPool;
 
 pub inline fn release_ref(ref: *?*anyopaque) void {
     if (ref.*) |obj| {
@@ -753,25 +754,9 @@ pub inline fn release_ref(ref: *?*anyopaque) void {
 }
 
 pub fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
-    if (pool.getPtr(size)) |list| {
-        if (list.items.len > 0) return list.pop() orelse null;
-    }
-    return null;
+    return metal_buffer_pool.pool_pop(pool, size);
 }
 
 fn pool_push_or_release(pool: *BufferPool, allocator: std.mem.Allocator, size: usize, buf: ?*anyopaque) void {
-    const entry = pool.getOrPut(allocator, size) catch {
-        metal_bridge_release(buf);
-        return;
-    };
-    if (!entry.found_existing) {
-        entry.value_ptr.* = .{};
-    }
-    if (entry.value_ptr.items.len >= MAX_POOL_ENTRIES_PER_SIZE) {
-        metal_bridge_release(buf);
-        return;
-    }
-    entry.value_ptr.append(allocator, buf) catch {
-        metal_bridge_release(buf);
-    };
+    metal_buffer_pool.pool_push_or_release(pool, allocator, size, buf);
 }

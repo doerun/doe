@@ -21,6 +21,11 @@ Track A (browser) claimability now has a repeated-window local claim lane
 `config/browser-claim-policy.json`; single-window browser gates remain
 diagnostic, while the claim lane is the only path allowed to emit browser
 `claimStatus=claimable`.
+The `@simulatte/webgpu/browser` surface now validates and forwards the later
+enum/value unions used by browser-owned adapters and textures
+(`GPUFeatureName`, `GPUTextureFormat`, texture/view/sample/layout enums, and
+render-pipeline primitive/vertex state), and preserves native browser
+`GPUPipelineError.reason` through async pipeline creation.
 macOS browser maintenance now has scheduled workflow and retention wiring:
 - `.github/workflows/macos-browser-refresh.yml`
 - `browser/fawn-browser/scripts/cleanup-browser-artifacts.py`
@@ -225,7 +230,9 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/native-compare/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`).
   - package browser-helper exports now expose the shared browser-surface factory and normalization helpers from `packages/webgpu/src/shared/browser-surface.js` through the public package entrypoints (`createBrowserSurfaceClasses`, `normalizeOrigin2D`, `normalizeCanvasConfiguration`, `CANVAS_*` maps).
+  - package now also exports a concrete browser-owned canvas provider helper in `packages/webgpu/src/shared/browser-native-canvas-backend.js` (`createNativeBrowserCanvasBackend`), which delegates `GPUCanvasContext.configure/getCurrentTexture/unconfigure` plus browser-native `importExternalTexture` / `copyExternalImageToTexture` calls onto real browser WebGPU objects for Track A/offscreen adapter use.
   - bind-group validation now recognizes `GPUExternalTexture` resources and `externalTexture` layout entries on the shared JS surface, but the headless Doe runtime package surface still fails fast for those bindings without an explicit browser canvas backend provider.
+  - package now exposes an explicit browser composition subpath at `@simulatte/webgpu/browser` (`packages/webgpu/src/browser.js`), which assembles the shared full surface, encoder surface, browser surface classes, and native browser canvas backend into a browser-owned wrapper for `navigator.gpu`, `GPUAdapter`, `GPUDevice`, and `GPUCanvasContext` without changing the default headless package contract.
   - `GPUDevice.importExternalTexture` and `GPUQueue.copyExternalImageToTexture` remain helper-surface delegation points rather than native Doe runtime features; concrete canvas/video-frame interop is still pending browser-backend provider wiring.
   - `doe.runCompute()` now infers binding access from Doe helper-created buffer usage and fails fast when a bare binding lacks Doe helper metadata or resolves to non-bindable/ambiguous usage.
     - prebuild infrastructure for self-contained installs:
@@ -360,8 +367,6 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - `GPUComputePassEncoder.setImmediates`, `GPURenderPassEncoder.setImmediates`, and `GPURenderBundleEncoder.setImmediates` now forward through Doe native exports/package surfaces to the provider WebGPU procs on Metal.
   - Metal limits now report `maxImmediateSize=64`, and the abstract `GPUBindingCommandsMixin.setImmediates` spec-index row is tracked as satisfied via those concrete encoder methods.
   - `GPURenderBundleEncoder.pushDebugGroup`, `popDebugGroup`, and `insertDebugMarker` now flow through the addon and JS package layers; the runtime already exported the underlying symbols, so Vulkan bundle debug-marker rows can now be tracked as implemented instead of blocked on stale package evidence.
-  - `GPURenderPassEncoder.beginOcclusionQuery` and `endOcclusionQuery` now forward through Doe native exports and the addon path to the provider render-pass occlusion-query procs, removing the remaining Vulkan-side package bridge gap for those methods.
-  - Initial `GPUQuerySet.label` and `GPURenderBundle.label` values now propagate into Doe native object label storage through a shared `objectSetLabel` addon/runtime path instead of existing only on the JS wrapper.
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off|require`; `auto` degrades to non-timestamp operation timing on invalid/unavailable timestamp capture, while `require` fails fast for strict timestamp lanes.
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.apple.metal.extended.json` (no hard-coded 19-workload subset filter).
@@ -779,6 +784,7 @@ Config and CI:
 - new Dawn ResourceTable + immediates proc surface is implemented in `runtime/zig/src/wgpu_p1_resource_table_procs.zig` and exercised via `async_diagnostics` mode routing in `runtime/zig/src/wgpu_async_diagnostics_command.zig`.
 - covered APIs include:
   `wgpuComputePassEncoderSetImmediates`, `wgpuComputePassEncoderSetResourceTable`, `wgpuDeviceCreateResourceTable`, `wgpuRenderBundleEncoderSetImmediates`, `wgpuRenderBundleEncoderSetResourceTable`, `wgpuRenderPassEncoderSetImmediates`, `wgpuRenderPassEncoderSetResourceTable`, `wgpuResourceTableDestroy`, `wgpuResourceTableGetSize`, `wgpuResourceTableInsertBinding`, `wgpuResourceTableRelease`, `wgpuResourceTableRemoveBinding`, `wgpuResourceTableUpdate`.
+- current Doe-native `setImmediates` coverage is explicit proc-surface emulation for the `resource_table_immediates` contract: zero-length payloads are accepted across compute/render pass/render-bundle encoders, non-zero payloads are validated at the API boundary, and Vulkan does not yet publish shader-visible push-constant semantics through this path.
 - explicit feature gating is now enforced for ResourceTable flow (`WGPUFeatureName_ChromiumExperimentalSamplingResourceTable`): unsupported adapters return deterministic `unsupported` status rather than silent fallback.
 - new lifecycle/AddRef proc surface is implemented in `runtime/zig/src/wgpu_p2_lifecycle_procs.zig`; all requested AddRef symbols are dynamically loaded and available:
   `wgpuAdapterAddRef`, `wgpuBindGroupAddRef`, `wgpuBindGroupLayoutAddRef`, `wgpuBufferAddRef`, `wgpuCommandBufferAddRef`, `wgpuCommandEncoderAddRef`, `wgpuComputePassEncoderAddRef`, `wgpuComputePipelineAddRef`, `wgpuDeviceAddRef`, `wgpuExternalTextureAddRef`, `wgpuInstanceAddRef`, `wgpuPipelineLayoutAddRef`, `wgpuQuerySetAddRef`, `wgpuQueueAddRef`, `wgpuRenderPassEncoderAddRef`, `wgpuRenderPipelineAddRef`, `wgpuResourceTableAddRef`, `wgpuSamplerAddRef`, `wgpuShaderModuleAddRef`, `wgpuSharedBufferMemoryAddRef`, `wgpuSharedFenceAddRef`, `wgpuSharedTextureMemoryAddRef`, `wgpuSurfaceAddRef`, `wgpuTexelBufferViewAddRef`, `wgpuTextureAddRef`, `wgpuTextureViewAddRef`.
@@ -1455,6 +1461,10 @@ Execution gap list:
   `capability_introspection`, `lifecycle_refcount`, and `pipeline_async`
   directly; `resource_table_immediates` and `pixel_local_storage` now execute
   through explicit Doe-native emulation when `featurePolicy=emulate_when_unavailable`.
+  For `resource_table_immediates`, the current native/emulated coverage closes the
+  proc surface and accepts the contract's zero-length `setImmediates` calls, but
+  it does not yet expose shader-visible immediate-data/push-constant semantics on
+  Vulkan.
   `full` remains explicit unsupported for strict mode until all submodes have
   native or contract-approved emulated coverage.
 - 2026-03-06 timing follow-up: native Vulkan per-command dispatch now records
@@ -2000,3 +2010,19 @@ Backend-specific emitters for all three backends:
 ### Gates config cleanup
 
 - `config/gates.json`: performance `thresholdStatus` changed from `bootstrap_placeholder` to `active`
+
+### Vulkan package-surface alignment
+
+- Node/addon and Bun now both forward render-pass `occlusionQuerySet` and
+  `timestampWrites` into the Vulkan begin-render-pass path.
+- Node/addon, native-direct, and Bun now forward `requestAdapter` option
+  structs through the Vulkan request-adapter ABI for `featureLevel`,
+  `powerPreference`, and `forceFallbackAdapter`.
+- Vulkan sampler creation now honors compare samplers instead of hardcoding
+  compare disabled.
+- Pipeline-creation failures now normalize to `GPUPipelineError` with a
+  concrete `reason` on Node/addon and Bun package paths.
+- Doe pipeline-layout handles now retain `immediateSize`, and compute/render
+  `setImmediates` rejects writes that exceed the bound layout budget.
+- Vulkan render-pass descriptors now carry `maxDrawCount` through the Doe ABI,
+  and Doe render-pass recording rejects draws beyond that declared limit.

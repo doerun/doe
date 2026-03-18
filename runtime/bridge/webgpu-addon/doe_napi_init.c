@@ -27,11 +27,7 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info);
 napi_value doe_request_device(napi_env env, napi_callback_info info);
 napi_value doe_device_release(napi_env env, napi_callback_info info);
 napi_value doe_device_get_queue(napi_env env, napi_callback_info info);
-napi_value doe_device_push_error_scope_export(napi_env env, napi_callback_info info);
-napi_value doe_device_pop_error_scope_export(napi_env env, napi_callback_info info);
-napi_value doe_device_set_uncaptured_error_callback_export(napi_env env, napi_callback_info info);
 napi_value doe_device_register_lost_callback(napi_env env, napi_callback_info info);
-napi_value doe_device_set_lost_callback_export(napi_env env, napi_callback_info info);
 
 /* Buffer */
 napi_value doe_create_buffer(napi_env env, napi_callback_info info);
@@ -75,8 +71,8 @@ napi_value doe_command_encoder_release(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_copy_buffer_to_buffer(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_copy_buffer_to_texture(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_copy_texture_to_buffer(napi_env env, napi_callback_info info);
-napi_value doe_command_encoder_clear_buffer_export(napi_env env, napi_callback_info info);
-napi_value doe_command_encoder_copy_texture_to_texture_export(napi_env env, napi_callback_info info);
+napi_value doe_command_encoder_clear_buffer(napi_env env, napi_callback_info info);
+napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_finish(napi_env env, napi_callback_info info);
 napi_value doe_command_buffer_release(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_write_timestamp(napi_env env, napi_callback_info info);
@@ -97,9 +93,9 @@ napi_value doe_queue_submit(napi_env env, napi_callback_info info);
 napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info);
 napi_value doe_queue_write_texture(napi_env env, napi_callback_info info);
 napi_value doe_queue_flush(napi_env env, napi_callback_info info);
-napi_value doe_submit_batched(napi_env env, napi_callback_info info);
-napi_value doe_submit_compute_dispatch_copy(napi_env env, napi_callback_info info);
-napi_value doe_flush_and_map_sync(napi_env env, napi_callback_info info);
+napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info);
+napi_value doe_queue_submit_compute_dispatch_copy(napi_env env, napi_callback_info info);
+napi_value doe_compute_dispatch_flush_and_map_sync(napi_env env, napi_callback_info info);
 napi_value doe_queue_release(napi_env env, napi_callback_info info);
 
 /* Texture / sampler */
@@ -130,8 +126,6 @@ napi_value doe_render_pass_set_viewport(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_scissor_rect(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_blend_constant(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_stencil_reference(napi_env env, napi_callback_info info);
-napi_value doe_render_pass_begin_occlusion_query(napi_env env, napi_callback_info info);
-napi_value doe_render_pass_end_occlusion_query(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_push_debug_group(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_pop_debug_group(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_insert_debug_marker(napi_env env, napi_callback_info info);
@@ -159,18 +153,13 @@ napi_value doe_device_get_limits(napi_env env, napi_callback_info info);
 napi_value doe_device_has_feature(napi_env env, napi_callback_info info);
 napi_value doe_device_get_label(napi_env env, napi_callback_info info);
 napi_value doe_device_set_label(napi_env env, napi_callback_info info);
-napi_value doe_object_set_label(napi_env env, napi_callback_info info);
 
 /* Query set */
-napi_value doe_create_query_set(napi_env env, napi_callback_info info);
+napi_value doe_device_create_query_set(napi_env env, napi_callback_info info);
 napi_value doe_query_set_destroy(napi_env env, napi_callback_info info);
 
 /* Diagnostics / error inspection */
 napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info);
-napi_value doe_get_last_error_stage(napi_env env, napi_callback_info info);
-napi_value doe_get_last_error_kind(napi_env env, napi_callback_info info);
-napi_value doe_get_last_error_line(napi_env env, napi_callback_info info);
-napi_value doe_get_last_error_column(napi_env env, napi_callback_info info);
 
 /* ================================================================
  * Module initialization
@@ -188,9 +177,6 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("requestDevice",                            doe_request_device),
         EXPORT_FN("deviceRelease",                            doe_device_release),
         EXPORT_FN("deviceGetQueue",                           doe_device_get_queue),
-        EXPORT_FN("devicePushErrorScope",                     doe_device_push_error_scope_export),
-        EXPORT_FN("devicePopErrorScope",                      doe_device_pop_error_scope_export),
-        EXPORT_FN("deviceSetUncapturedErrorCallback",         doe_device_set_uncaptured_error_callback_export),
         EXPORT_FN("deviceRegisterLostCallback",               doe_device_register_lost_callback),
         EXPORT_FN("createBuffer",                             doe_create_buffer),
         EXPORT_FN("bufferRelease",                            doe_buffer_release),
@@ -223,8 +209,8 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("commandEncoderCopyBufferToBuffer",         doe_command_encoder_copy_buffer_to_buffer),
         EXPORT_FN("commandEncoderCopyBufferToTexture",        doe_command_encoder_copy_buffer_to_texture),
         EXPORT_FN("commandEncoderCopyTextureToBuffer",        doe_command_encoder_copy_texture_to_buffer),
-        EXPORT_FN("commandEncoderClearBuffer",                doe_command_encoder_clear_buffer_export),
-        EXPORT_FN("commandEncoderCopyTextureToTexture",       doe_command_encoder_copy_texture_to_texture_export),
+        EXPORT_FN("commandEncoderClearBuffer",                doe_command_encoder_clear_buffer),
+        EXPORT_FN("commandEncoderCopyTextureToTexture",       doe_command_encoder_copy_texture_to_texture),
         EXPORT_FN("commandEncoderFinish",                     doe_command_encoder_finish),
         EXPORT_FN("commandBufferRelease",                     doe_command_buffer_release),
         EXPORT_FN("beginComputePass",                         doe_begin_compute_pass),
@@ -239,9 +225,9 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("queueWriteBuffer",                         doe_queue_write_buffer),
         EXPORT_FN("queueWriteTexture",                        doe_queue_write_texture),
         EXPORT_FN("queueFlush",                               doe_queue_flush),
-        EXPORT_FN("submitBatched",                            doe_submit_batched),
-        EXPORT_FN("submitComputeDispatchCopy",                doe_submit_compute_dispatch_copy),
-        EXPORT_FN("flushAndMapSync",                          doe_flush_and_map_sync),
+        EXPORT_FN("submitBatched",                            doe_queue_submit_batched),
+        EXPORT_FN("submitComputeDispatchCopy",                doe_queue_submit_compute_dispatch_copy),
+        EXPORT_FN("flushAndMapSync",                          doe_compute_dispatch_flush_and_map_sync),
         EXPORT_FN("queueRelease",                             doe_queue_release),
         EXPORT_FN("createTexture",                            doe_create_texture),
         EXPORT_FN("textureRelease",                           doe_texture_release),
@@ -266,8 +252,6 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderPassSetScissorRect",                 doe_render_pass_set_scissor_rect),
         EXPORT_FN("renderPassSetBlendConstant",               doe_render_pass_set_blend_constant),
         EXPORT_FN("renderPassSetStencilReference",            doe_render_pass_set_stencil_reference),
-        EXPORT_FN("renderPassBeginOcclusionQuery",            doe_render_pass_begin_occlusion_query),
-        EXPORT_FN("renderPassEndOcclusionQuery",              doe_render_pass_end_occlusion_query),
         EXPORT_FN("renderPassPushDebugGroup",                 doe_render_pass_push_debug_group),
         EXPORT_FN("renderPassPopDebugGroup",                  doe_render_pass_pop_debug_group),
         EXPORT_FN("renderPassInsertDebugMarker",              doe_render_pass_insert_debug_marker),
@@ -291,17 +275,11 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("deviceHasFeature",                         doe_device_has_feature),
         EXPORT_FN("deviceGetLabel",                           doe_device_get_label),
         EXPORT_FN("deviceSetLabel",                           doe_device_set_label),
-        EXPORT_FN("objectSetLabel",                           doe_object_set_label),
-        EXPORT_FN("deviceSetLostCallback",                    doe_device_set_lost_callback_export),
-        EXPORT_FN("createQuerySet",                           doe_create_query_set),
+        EXPORT_FN("createQuerySet",                           doe_device_create_query_set),
         EXPORT_FN("commandEncoderWriteTimestamp",             doe_command_encoder_write_timestamp),
         EXPORT_FN("commandEncoderResolveQuerySet",            doe_command_encoder_resolve_query_set),
         EXPORT_FN("querySetDestroy",                          doe_query_set_destroy),
         EXPORT_FN("setTimeoutMs",                             doe_set_timeout_ms),
-        EXPORT_FN("getLastErrorStage",                        doe_get_last_error_stage),
-        EXPORT_FN("getLastErrorKind",                         doe_get_last_error_kind),
-        EXPORT_FN("getLastErrorLine",                         doe_get_last_error_line),
-        EXPORT_FN("getLastErrorColumn",                       doe_get_last_error_column),
     };
 
     size_t count = sizeof(descriptors) / sizeof(descriptors[0]);

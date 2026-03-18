@@ -79,6 +79,37 @@ function createNativeBrowserCanvasBackend({ contextFactory = default_context_fac
         native.destroy();
       }
     },
+
+    deviceImportExternalTexture(device, native, descriptor, classes) {
+      if (!native || typeof native.importExternalTexture !== 'function') {
+        failValidation(
+          'GPUDevice.importExternalTexture',
+          'native browser device does not support importExternalTexture',
+        );
+      }
+      const native_external_texture = native.importExternalTexture(descriptor);
+      if (!native_external_texture) {
+        failValidation('GPUDevice.importExternalTexture', 'native browser device failed to import external texture');
+      }
+      return new classes.DoeGPUExternalTexture(native_external_texture, device);
+    },
+
+    queueCopyExternalImageToTexture(_queue, native, source, destination, copySize) {
+      if (!native || typeof native.copyExternalImageToTexture !== 'function') {
+        failValidation(
+          'GPUQueue.copyExternalImageToTexture',
+          'native browser queue does not support copyExternalImageToTexture',
+        );
+      }
+      return native.copyExternalImageToTexture(
+        source,
+        {
+          ...destination,
+          texture: destination.texture?._native ?? destination.texture,
+        },
+        copySize,
+      );
+    },
   };
 }
 

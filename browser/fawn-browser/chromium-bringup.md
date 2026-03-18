@@ -233,6 +233,11 @@ By default the harness writes to timestamped lane-local artifacts:
 
 - `browser/fawn-browser/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
 
+Optional browser-surface seam:
+
+- pass `--api-surface package-browser` to route the Playwright page through `@simulatte/webgpu/browser` instead of talking directly to native `navigator.gpu`
+- this path requires the local harness HTTP server because the page imports `packages/webgpu/src/browser.js`; the layered harness will fail fast instead of falling back to `data:` URLs in that mode
+
 Guardrail:
 
 - writing under `bench/out` is blocked by default for this harness to avoid accidental claim-lane mixing.
@@ -270,6 +275,12 @@ Run from repo root:
 
 ```bash
 ./browser/fawn-browser/scripts/run-bench.sh --mode both
+```
+
+To exercise the package browser surface explicitly:
+
+```bash
+./browser/fawn-browser/scripts/run-bench.sh --mode both --api-surface package-browser
 ```
 
 Environment note:

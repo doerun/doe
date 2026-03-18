@@ -185,9 +185,9 @@ static napi_value native_direct_gpu_request_adapter(napi_env env, napi_callback_
     napi_value argv[1];
     napi_value this_arg;
     napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
-    (void)argv;
     WGPUInstance inst = native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
-    WGPUAdapter adapter = native_direct_request_adapter_sync(env, inst);
+    napi_value options = (argc >= 1) ? argv[0] : NULL;
+    WGPUAdapter adapter = native_direct_request_adapter_sync(env, inst, options);
     if (!adapter) return NULL;
     return native_direct_resolved_promise(env, create_native_direct_adapter_object(env, inst, adapter));
 }

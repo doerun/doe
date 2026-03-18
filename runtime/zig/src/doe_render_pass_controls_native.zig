@@ -1,22 +1,41 @@
 // doe_render_pass_controls_native.zig — RenderPassEncoder control method C-ABI exports.
 // Implements: setViewport, setScissorRect, setBlendConstant, setStencilReference,
-//             beginOcclusionQuery, endOcclusionQuery, pushDebugGroup,
-//             popDebugGroup, insertDebugMarker.
+//             pushDebugGroup, popDebugGroup, insertDebugMarker.
 //
 // These exports accept an opaque render encoder handle (a +1-retained MTL render
 // command encoder returned by metal_bridge_cmd_buf_render_encoder or equivalent).
 // They forward directly to the metal_render_state_bridge functions without any
 // Zig-side state — the encoder carries all GPU state.
 
+const builtin = @import("builtin");
 const render_state_native = @import("doe_render_state_native.zig");
-const types = @import("core/abi/wgpu_types.zig");
 
-extern fn wgpuRenderPassEncoderBeginOcclusionQuery(
-    encoder: types.WGPURenderPassEncoder,
-    query_index: u32,
+extern fn doeNativeRenderPassRecordViewportState(
+    pass_raw: ?*anyopaque,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    min_depth: f64,
+    max_depth: f64,
 ) callconv(.c) void;
-extern fn wgpuRenderPassEncoderEndOcclusionQuery(
-    encoder: types.WGPURenderPassEncoder,
+extern fn doeNativeRenderPassRecordScissorState(
+    pass_raw: ?*anyopaque,
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
+) callconv(.c) void;
+extern fn doeNativeRenderPassRecordBlendConstantState(
+    pass_raw: ?*anyopaque,
+    r: f64,
+    g: f64,
+    b: f64,
+    a: f64,
+) callconv(.c) void;
+extern fn doeNativeRenderPassRecordStencilReferenceState(
+    pass_raw: ?*anyopaque,
+    reference: u32,
 ) callconv(.c) void;
 
 // ============================================================
@@ -32,7 +51,13 @@ pub export fn doeNativeRenderPassSetViewport(
     min_depth: f64,
     max_depth: f64,
 ) callconv(.c) void {
-    render_state_native.doeNativeRenderPassEncoderSetViewport(
+    if (builtin.os.tag == .macos) {
+        render_state_native.doeNativeRenderPassEncoderSetViewport(
+            encoder_raw, x, y, width, height, min_depth, max_depth,
+        );
+        return;
+    }
+    doeNativeRenderPassRecordViewportState(
         encoder_raw, x, y, width, height, min_depth, max_depth,
     );
 }
@@ -48,9 +73,13 @@ pub export fn doeNativeRenderPassSetScissorRect(
     width: u32,
     height: u32,
 ) callconv(.c) void {
-    render_state_native.doeNativeRenderPassEncoderSetScissorRect(
-        encoder_raw, x, y, width, height,
-    );
+    if (builtin.os.tag == .macos) {
+        render_state_native.doeNativeRenderPassEncoderSetScissorRect(
+            encoder_raw, x, y, width, height,
+        );
+        return;
+    }
+    doeNativeRenderPassRecordScissorState(encoder_raw, x, y, width, height);
 }
 
 // ============================================================
@@ -64,9 +93,13 @@ pub export fn doeNativeRenderPassSetBlendConstant(
     b: f64,
     a: f64,
 ) callconv(.c) void {
-    render_state_native.doeNativeRenderPassEncoderSetBlendConstant(
-        encoder_raw, r, g, b, a,
-    );
+    if (builtin.os.tag == .macos) {
+        render_state_native.doeNativeRenderPassEncoderSetBlendConstant(
+            encoder_raw, r, g, b, a,
+        );
+        return;
+    }
+    doeNativeRenderPassRecordBlendConstantState(encoder_raw, r, g, b, a);
 }
 
 // ============================================================
@@ -77,32 +110,13 @@ pub export fn doeNativeRenderPassSetStencilReference(
     encoder_raw: ?*anyopaque,
     reference: u32,
 ) callconv(.c) void {
-    render_state_native.doeNativeRenderPassEncoderSetStencilReference(
-        encoder_raw, reference,
-    );
-}
-
-// ============================================================
-// beginOcclusionQuery
-// ============================================================
-
-pub export fn doeNativeRenderPassBeginOcclusionQuery(
-    encoder_raw: ?*anyopaque,
-    query_index: u32,
-) callconv(.c) void {
-    const encoder = encoder_raw orelse return;
-    wgpuRenderPassEncoderBeginOcclusionQuery(@ptrCast(encoder), query_index);
-}
-
-// ============================================================
-// endOcclusionQuery
-// ============================================================
-
-pub export fn doeNativeRenderPassEndOcclusionQuery(
-    encoder_raw: ?*anyopaque,
-) callconv(.c) void {
-    const encoder = encoder_raw orelse return;
-    wgpuRenderPassEncoderEndOcclusionQuery(@ptrCast(encoder));
+    if (builtin.os.tag == .macos) {
+        render_state_native.doeNativeRenderPassEncoderSetStencilReference(
+            encoder_raw, reference,
+        );
+        return;
+    }
+    doeNativeRenderPassRecordStencilReferenceState(encoder_raw, reference);
 }
 
 // ============================================================

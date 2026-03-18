@@ -1,6 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const bridge = @import("metal_bridge_decls.zig");
+const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
 const _unused_mpc = if (HAS_PIPELINE_CACHE) metal_pipeline_cache
@@ -25,7 +26,7 @@ const BRIDGE_ERROR_CAP: usize = 512;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 
 pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8) !?*anyopaque {
-    const base = strip_extension(kernel);
+    const base = metal_buffer_pool.strip_extension(kernel);
     if (self.kernel_pipelines.get(base)) |kp| return kp.pipeline;
 
     const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
@@ -127,14 +128,6 @@ pub fn ensure_icb(self: anytype, draw_count: u32, vertex_count: u32, instance_co
     self.cached_icb = icb;
     self.cached_icb_key = key;
     return icb;
-}
-
-fn strip_extension(name: []const u8) []const u8 {
-    const suffixes = [_][]const u8{ ".wgsl", ".spv", ".metal" };
-    for (suffixes) |suffix| {
-        if (std.mem.endsWith(u8, name, suffix)) return name[0 .. name.len - suffix.len];
-    }
-    return name;
 }
 
 // Resolve compute PSO via binary archive cache if available, else compile fresh.

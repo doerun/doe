@@ -47,6 +47,7 @@ import {
   shaderCheckFailure,
   enrichNativeCompilerError,
   compilerErrorFromMessage,
+  pipelineErrorFromError,
 } from './shared/compiler-errors.js';
 import {
   createFullSurfaceClasses,
@@ -55,7 +56,6 @@ import {
   createEncoderClasses,
 } from './shared/encoder-surface.js';
 import {
-  createNativeBrowserCanvasBackend,
   createBrowserSurfaceClasses,
   normalizeOrigin2D,
   normalizeCanvasConfiguration,
@@ -661,6 +661,21 @@ const nodeEncoderBackend = {
       addon.renderPassInsertDebugMarker(pass._native, label);
     }
   },
+  computePassPushDebugGroup(pass, label) {
+    if (typeof addon.computePassPushDebugGroup === 'function') {
+      addon.computePassPushDebugGroup(pass._native, label);
+    }
+  },
+  computePassPopDebugGroup(pass) {
+    if (typeof addon.computePassPopDebugGroup === 'function') {
+      addon.computePassPopDebugGroup(pass._native);
+    }
+  },
+  computePassInsertDebugMarker(pass, label) {
+    if (typeof addon.computePassInsertDebugMarker === 'function') {
+      addon.computePassInsertDebugMarker(pass._native, label);
+    }
+  },
   renderPassEnd(pass) {
     addon.renderPassEnd(pass._native);
     pass._ended = true;
@@ -729,11 +744,6 @@ const nodeEncoderBackend = {
       addon.renderBundleRelease(native);
     }
   },
-  renderBundleSetLabel(bundle, label) {
-    if (typeof addon.objectSetLabel === 'function') {
-      addon.objectSetLabel(bundle._native, label);
-    }
-  },
   commandEncoderInit(encoder) {
     encoder._commands = [];
     encoder._native = null;
@@ -777,9 +787,25 @@ const nodeEncoderBackend = {
         stencilReadOnly: depthAttachment.stencilReadOnly ?? false,
       };
     }
+    let occlusionQuerySet = undefined;
+    if (passDescriptor.occlusionQuerySet !== undefined && passDescriptor.occlusionQuerySet !== null) {
+      occlusionQuerySet = assertLiveResource(passDescriptor.occlusionQuerySet, 'GPUCommandEncoder.beginRenderPass', 'GPUQuerySet');
+    }
+    let timestampWrites = undefined;
+    if (passDescriptor.timestampWrites !== undefined && passDescriptor.timestampWrites !== null) {
+      const writes = assertObject(passDescriptor.timestampWrites, 'GPUCommandEncoder.beginRenderPass', 'descriptor.timestampWrites');
+      timestampWrites = {
+        querySet: assertLiveResource(writes.querySet, 'GPUCommandEncoder.beginRenderPass', 'GPUQuerySet'),
+        beginningOfPassWriteIndex: writes.beginningOfPassWriteIndex ?? 0xFFFFFFFF,
+        endOfPassWriteIndex: writes.endOfPassWriteIndex ?? 0xFFFFFFFF,
+      };
+    }
     const pass = addon.beginRenderPass(encoder._native, {
       colorAttachments,
       depthStencilAttachment,
+      occlusionQuerySet,
+      timestampWrites,
+      maxDrawCount: passDescriptor.maxDrawCount ?? 50_000_000,
     });
     return new classes.DoeGPURenderPassEncoder(pass, encoder);
   },
@@ -844,6 +870,21 @@ const nodeEncoderBackend = {
       offset,
       size,
     );
+  },
+  commandEncoderPushDebugGroup(encoder, label) {
+    if (typeof addon.commandEncoderPushDebugGroup === 'function') {
+      addon.commandEncoderPushDebugGroup(encoder._native, label);
+    }
+  },
+  commandEncoderPopDebugGroup(encoder) {
+    if (typeof addon.commandEncoderPopDebugGroup === 'function') {
+      addon.commandEncoderPopDebugGroup(encoder._native);
+    }
+  },
+  commandEncoderInsertDebugMarker(encoder, label) {
+    if (typeof addon.commandEncoderInsertDebugMarker === 'function') {
+      addon.commandEncoderInsertDebugMarker(encoder._native, label);
+    }
   },
   commandEncoderCopyTextureToTexture(encoder, source, destination, copySize) {
     ensureNodeCommandEncoderNative(encoder);
@@ -1131,6 +1172,10 @@ const fullSurfaceBackend = {
     return addon.createBuffer(assertLiveResource(device, 'GPUDevice.createBuffer', 'GPUDevice'), validated);
   },
   deviceCreateShaderModule(device, code, compilationHints) {
+    const preflight = preflightShaderSource(code);
+    if (preflight.ok === false) {
+      shaderCheckFailure('GPUDevice.createShaderModule', preflight);
+    }
     try {
       return addon.createShaderModule(assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'), code, compilationHints ?? null);
     } catch (error) {
@@ -1148,7 +1193,7 @@ const fullSurfaceBackend = {
         label,
       );
     } catch (error) {
-      throw enrichNativeCompilerError(error, 'GPUDevice.createComputePipeline', readLastErrorFields());
+      throw pipelineErrorFromError(error, 'GPUDevice.createComputePipeline', readLastErrorFields());
     }
   },
   deviceCreateBindGroupLayout(device, entries, label) {
@@ -1201,54 +1246,54 @@ const fullSurfaceBackend = {
     return addon.createSampler(assertLiveResource(device, 'GPUDevice.createSampler', 'GPUDevice'), descriptor);
   },
   deviceCreateRenderPipeline(device, descriptor) {
-    return addon.createRenderPipeline(
-      assertLiveResource(device, 'GPUDevice.createRenderPipeline', 'GPUDevice'),
-      {
-        layout: descriptor.layout,
-        vertex: {
-          module: descriptor.vertexModule,
-          entryPoint: descriptor.vertexEntryPoint,
-          buffers: descriptor.vertexBuffers ?? [],
+    try {
+      return addon.createRenderPipeline(
+        assertLiveResource(device, 'GPUDevice.createRenderPipeline', 'GPUDevice'),
+        {
+          layout: descriptor.layout,
+          vertex: {
+            module: descriptor.vertexModule,
+            entryPoint: descriptor.vertexEntryPoint,
+            buffers: descriptor.vertexBuffers ?? [],
+          },
+          fragment: {
+            module: descriptor.fragmentModule,
+            entryPoint: descriptor.fragmentEntryPoint,
+            targets: [{ format: descriptor.colorFormat }],
+          },
+          primitive: descriptor.primitive ? {
+            topology: descriptor.primitive.topology ?? 'triangle-list',
+            frontFace: descriptor.primitive.frontFace ?? 'ccw',
+            cullMode: descriptor.primitive.cullMode ?? 'none',
+            unclippedDepth: descriptor.primitive.unclippedDepth ?? false,
+          } : undefined,
+          multisample: descriptor.multisample ? {
+            count: descriptor.multisample.count ?? 1,
+            mask: descriptor.multisample.mask ?? 0xFFFF_FFFF,
+            alphaToCoverageEnabled: descriptor.multisample.alphaToCoverageEnabled ?? false,
+          } : undefined,
+          depthStencil: descriptor.depthStencil ? {
+            format: descriptor.depthStencil.format,
+            depthWriteEnabled: descriptor.depthStencil.depthWriteEnabled ?? false,
+            depthCompare: descriptor.depthStencil.depthCompare ?? 'always',
+          } : undefined,
         },
-        fragment: {
-          module: descriptor.fragmentModule,
-          entryPoint: descriptor.fragmentEntryPoint,
-          targets: [{ format: descriptor.colorFormat }],
-        },
-        primitive: descriptor.primitive ? {
-          topology: descriptor.primitive.topology ?? 'triangle-list',
-          frontFace: descriptor.primitive.frontFace ?? 'ccw',
-          cullMode: descriptor.primitive.cullMode ?? 'none',
-          unclippedDepth: descriptor.primitive.unclippedDepth ?? false,
-        } : undefined,
-        multisample: descriptor.multisample ? {
-          count: descriptor.multisample.count ?? 1,
-          mask: descriptor.multisample.mask ?? 0xFFFF_FFFF,
-          alphaToCoverageEnabled: descriptor.multisample.alphaToCoverageEnabled ?? false,
-        } : undefined,
-        depthStencil: descriptor.depthStencil ? {
-          format: descriptor.depthStencil.format,
-          depthWriteEnabled: descriptor.depthStencil.depthWriteEnabled ?? false,
-          depthCompare: descriptor.depthStencil.depthCompare ?? 'always',
-        } : undefined,
-      },
-    );
+      );
+    } catch (error) {
+      throw pipelineErrorFromError(error, 'GPUDevice.createRenderPipeline', readLastErrorFields());
+    }
   },
   deviceCreateQuerySet(device, descriptor) {
+    const QUERY_TYPE_OCCLUSION = 1;
     const QUERY_TYPE_TIMESTAMP = 2;
     return addon.createQuerySet(
       assertLiveResource(device, 'GPUDevice.createQuerySet', 'GPUDevice'),
-      QUERY_TYPE_TIMESTAMP,
+      descriptor.type === 'occlusion' ? QUERY_TYPE_OCCLUSION : QUERY_TYPE_TIMESTAMP,
       descriptor.count,
     );
   },
   querySetDestroy(native) {
     addon.querySetDestroy(native);
-  },
-  querySetSetLabel(querySet, label) {
-    if (typeof addon.objectSetLabel === 'function') {
-      addon.objectSetLabel(querySet._native, label);
-    }
   },
   deviceCreateCommandEncoder(device) {
     return new DoeGPUCommandEncoder(null, device);
@@ -1261,7 +1306,17 @@ const fullSurfaceBackend = {
   },
   adapterRequestDevice(adapter, _descriptor, classes) {
     assertLiveResource(adapter, 'GPUAdapter.requestDevice', 'GPUAdapter');
-    const native = addon.requestDevice(adapter._instance, adapter._native);
+    let native;
+    try {
+      native = addon.requestDevice(adapter._instance, adapter._native);
+    } catch (error) {
+      const message = String(error?.message ?? '');
+      if (!message.includes('adapter is "consumed"')) {
+        throw error;
+      }
+      adapter._native = addon.requestAdapter(adapter._instance, adapter._requestOptions ?? null);
+      native = addon.requestDevice(adapter._instance, adapter._native);
+    }
     const device = {
       _destroyed: false,
       _resourceLabel: 'GPUDevice',
@@ -1312,9 +1367,9 @@ const fullSurfaceBackend = {
   adapterDestroy(native) {
     addon.adapterRelease(native);
   },
-  gpuRequestAdapter(gpu, _options, classes) {
-    const adapter = addon.requestAdapter(gpu._instance);
-    return new classes.DoeGPUAdapter(adapter, gpu._instance);
+  gpuRequestAdapter(gpu, options, classes) {
+    const adapter = addon.requestAdapter(gpu._instance, options);
+    return new classes.DoeGPUAdapter(adapter, gpu._instance, options);
   },
 };
 

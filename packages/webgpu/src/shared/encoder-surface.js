@@ -94,23 +94,18 @@ function createEncoderClasses(backend) {
     }
 
     pushDebugGroup(groupLabel) {
-      this._assertOpen('GPURenderBundleEncoder.pushDebugGroup');
-      backend.renderBundleEncoderPushDebugGroup(
-        this,
-        assertDOMString(groupLabel, 'GPURenderBundleEncoder.pushDebugGroup', 'groupLabel'),
-      );
+      this._assertOpen('GPUComputePassEncoder.pushDebugGroup');
+      backend.computePassPushDebugGroup(this, groupLabel);
     }
-
     popDebugGroup() {
-      this._assertOpen('GPURenderBundleEncoder.popDebugGroup');
-      backend.renderBundleEncoderPopDebugGroup(this);
+      this._assertOpen('GPUComputePassEncoder.popDebugGroup');
+      backend.computePassPopDebugGroup(this);
     }
-
     insertDebugMarker(markerLabel) {
-      this._assertOpen('GPURenderBundleEncoder.insertDebugMarker');
-      backend.renderBundleEncoderInsertDebugMarker(
+      this._assertOpen('GPUComputePassEncoder.insertDebugMarker');
+      backend.computePassInsertDebugMarker(
         this,
-        assertDOMString(markerLabel, 'GPURenderBundleEncoder.insertDebugMarker', 'markerLabel'),
+        assertDOMString(markerLabel, 'GPUComputePassEncoder.insertDebugMarker', 'markerLabel'),
       );
     }
 
@@ -270,9 +265,15 @@ function createEncoderClasses(backend) {
       backend.renderPassEndOcclusionQuery(this);
     }
 
-    pushDebugGroup(_groupLabel) {}
-    popDebugGroup() {}
-    insertDebugMarker(_markerLabel) {}
+    pushDebugGroup(groupLabel) {
+      backend.renderPassPushDebugGroup(this, groupLabel);
+    }
+    popDebugGroup() {
+      backend.renderPassPopDebugGroup(this);
+    }
+    insertDebugMarker(markerLabel) {
+      backend.renderPassInsertDebugMarker(this, markerLabel);
+    }
 
     executeBundles(bundles) {
       this._assertOpen('GPURenderPassEncoder.executeBundles');
@@ -415,9 +416,15 @@ function createEncoderClasses(backend) {
       );
     }
 
-    pushDebugGroup(_groupLabel) {}
-    popDebugGroup() {}
-    insertDebugMarker(_markerLabel) {}
+    pushDebugGroup(groupLabel) {
+      backend.renderBundleEncoderPushDebugGroup(this, groupLabel);
+    }
+    popDebugGroup() {
+      backend.renderBundleEncoderPopDebugGroup(this);
+    }
+    insertDebugMarker(markerLabel) {
+      backend.renderBundleEncoderInsertDebugMarker(this, markerLabel);
+    }
 
     finish(descriptor) {
       this._assertOpen('GPURenderBundleEncoder.finish');
@@ -427,7 +434,6 @@ function createEncoderClasses(backend) {
         classes,
       );
       bundle.label = descriptor?.label ?? '';
-      backend.renderBundleSetLabel?.(bundle, bundle.label);
       this._finished = true;
       return bundle;
     }
@@ -631,9 +637,15 @@ function createEncoderClasses(backend) {
       backend.commandEncoderResolveQuerySet(this, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
     }
 
-    pushDebugGroup(_groupLabel) {}
-    popDebugGroup() {}
-    insertDebugMarker(_markerLabel) {}
+    pushDebugGroup(groupLabel) {
+      backend.commandEncoderPushDebugGroup(this, groupLabel);
+    }
+    popDebugGroup() {
+      backend.commandEncoderPopDebugGroup(this);
+    }
+    insertDebugMarker(markerLabel) {
+      backend.commandEncoderInsertDebugMarker(this, markerLabel);
+    }
 
     finish(descriptor) {
       this._assertOpen('GPUCommandEncoder.finish');

@@ -22,6 +22,7 @@ const DIAG_RESOURCE_TABLE_SIZE: u32 = 8;
 const DIAG_RENDER_TARGET_HANDLE: u64 = 0x8C9F_2C00_0000_0000;
 const DIAG_RENDER_TARGET_WIDTH: u32 = 4;
 const DIAG_RENDER_TARGET_HEIGHT: u32 = 4;
+const DIAG_MAX_DRAW_COUNT: u64 = 50_000_000;
 const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable: types.WGPUFeatureName = 0x0005003A;
 
 const DIAGNOSTIC_SHADER_SOURCE =
@@ -239,6 +240,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
             .depthStencilAttachment = null,
             .occlusionQuerySet = null,
             .timestampWrites = null,
+            .maxDrawCount = DIAG_MAX_DRAW_COUNT,
         },
     );
     if (render_pass == null) return error.RenderPassCreationFailed;
@@ -333,6 +335,7 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
             .depthStencilAttachment = null,
             .occlusionQuerySet = null,
             .timestampWrites = null,
+            .maxDrawCount = DIAG_MAX_DRAW_COUNT,
         },
     );
     if (render_pass == null) return error.RenderPassCreationFailed;
@@ -466,6 +469,7 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUText
             .depthStencilAttachment = null,
             .occlusionQuerySet = null,
             .timestampWrites = null,
+            .maxDrawCount = DIAG_MAX_DRAW_COUNT,
         },
     );
     if (render_pass == null) return error.RenderPassCreationFailed;

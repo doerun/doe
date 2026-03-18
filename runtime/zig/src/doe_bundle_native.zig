@@ -369,6 +369,8 @@ pub export fn doeNativeRenderPassExecuteBundles(
                     state.index_format = ib.format;
                 },
                 .draw => |d| {
+                    if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.vertex_count = d.vertex_count;
                     rc.render_pass.instance_count = d.instance_count;
@@ -381,6 +383,8 @@ pub export fn doeNativeRenderPassExecuteBundles(
                     if (!require_index_buffer_for_bundle_draw(&state, "draw_indexed")) {
                         continue;
                     }
+                    if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indexed = true;
                     rc.render_pass.index_buffer = state.index_buffer;
@@ -396,6 +400,8 @@ pub export fn doeNativeRenderPassExecuteBundles(
                         std.debug.panic("doe: executeBundles OOM", .{});
                 },
                 .draw_indirect => |d| {
+                    if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indirect = true;
                     rc.render_pass.indirect_buffer = d.indirect_buffer;
@@ -407,6 +413,8 @@ pub export fn doeNativeRenderPassExecuteBundles(
                     if (!require_index_buffer_for_bundle_draw(&state, "draw_indexed_indirect")) {
                         continue;
                     }
+                    if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indexed = true;
                     rc.render_pass.indirect = true;

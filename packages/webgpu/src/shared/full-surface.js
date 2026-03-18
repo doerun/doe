@@ -13,7 +13,16 @@ import {
   assertBufferDescriptor,
   assertTextureSize,
   assertBindGroupResource,
+  normalizeRequestAdapterOptions,
+  normalizeRequestDeviceDescriptor,
+  normalizeSamplerDescriptor,
+  normalizeTextureViewDescriptor,
+  normalizeTextureDescriptor,
   normalizeTextureDimension,
+  normalizeQuerySetDescriptor,
+  normalizePrimitiveState,
+  normalizeDepthStencilState,
+  normalizeVertexBufferLayouts,
   normalizeBindGroupLayoutEntry,
 } from './validation.js';
 import {
@@ -46,6 +55,21 @@ function validateWriteBufferInput(data, dataOffset, size, path) {
   return new Uint8Array(data.buffer, byteOffset, byteLength);
 }
 
+function escapeRegexLiteral(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function assertShaderEntryPoint(shader, entryPoint, path) {
+  const code = shader?._code;
+  if (typeof code !== 'string' || code.length === 0) {
+    return;
+  }
+  const pattern = new RegExp(`\\bfn\\s+${escapeRegexLiteral(entryPoint)}\\s*\\(`);
+  if (!pattern.test(code)) {
+    failValidation(path, `entry point "${entryPoint}" not found in shader module`);
+  }
+}
+
 const NEVER_RESOLVED = new Promise(() => {});
 
 class GPUError extends Error {
@@ -65,6 +89,26 @@ class GPUPipelineError extends DOMException {
     super(message, 'GPUPipelineError');
     this.reason = options?.reason ?? 'internal';
   }
+}
+
+function wrapPipelineError(error) {
+  if (error instanceof Error) {
+    const message = error.message ?? '';
+    const reason = error.reason
+      ?? (error.name === 'GPUValidationError'
+        || message.startsWith('GPUDevice.createComputePipeline')
+        || message.startsWith('GPUDevice.createComputePipelineAsync')
+        || message.startsWith('GPUDevice.createRenderPipeline')
+        || message.startsWith('GPUDevice.createRenderPipelineAsync')
+        || message.startsWith('createComputePipeline requires')
+        || message.startsWith('createRenderPipeline requires')
+        || message.startsWith('createComputePipeline:')
+        || message.startsWith('createRenderPipeline:')
+        ? 'validation'
+        : 'internal');
+    return new GPUPipelineError(message, { reason });
+  }
+  return error;
 }
 class GPUDeviceLostInfo {
   constructor(reason, message) {
@@ -320,9 +364,16 @@ function createFullSurfaceClasses({
     }
 
     createView(descriptor) {
-      const view = backend.textureCreateView(this, assertLiveResource(this, 'GPUTexture.createView', 'GPUTexture'), descriptor);
+      const texture = assertLiveResource(this, 'GPUTexture.createView', 'GPUTexture');
+      const viewDescriptor = normalizeTextureViewDescriptor(
+        descriptor,
+        this,
+        this._resourceOwner?.features ?? this._features ?? null,
+        'GPUTexture.createView',
+      );
+      const view = backend.textureCreateView(this, texture, viewDescriptor);
       const tv = new DoeGPUTextureView(view, this);
-      tv.label = descriptor?.label ?? '';
+      tv.label = viewDescriptor?.label ?? '';
       return tv;
     }
 
@@ -544,41 +595,77 @@ function createFullSurfaceClasses({
     }
 
     createComputePipeline(descriptor) {
-      const pipelineDescriptor = assertObject(descriptor, 'GPUDevice.createComputePipeline', 'descriptor');
-      const compute = assertObject(pipelineDescriptor.compute, 'GPUDevice.createComputePipeline', 'descriptor.compute');
-      const shader = compute.module;
-      const shaderNative = assertLiveResource(shader, 'GPUDevice.createComputePipeline', 'GPUShaderModule');
-      const entryPoint = compute.entryPoint ?? 'main';
-      assertNonEmptyString(entryPoint, 'GPUDevice.createComputePipeline', 'descriptor.compute.entryPoint');
-      const layout = pipelineDescriptor.layout === 'auto' || pipelineDescriptor.layout === undefined
-        ? null
-        : pipelineDescriptor.layout;
-      if (layout !== null) {
-        assertLiveResource(layout, 'GPUDevice.createComputePipeline', 'GPUPipelineLayout');
+      try {
+        const pipelineDescriptor = assertObject(descriptor, 'GPUDevice.createComputePipeline', 'descriptor');
+        const compute = assertObject(pipelineDescriptor.compute, 'GPUDevice.createComputePipeline', 'descriptor.compute');
+        const shader = compute.module;
+        const shaderNative = assertLiveResource(shader, 'GPUDevice.createComputePipeline', 'GPUShaderModule');
+        const entryPoint = compute.entryPoint ?? 'main';
+        assertNonEmptyString(entryPoint, 'GPUDevice.createComputePipeline', 'descriptor.compute.entryPoint');
+        assertShaderEntryPoint(shader, entryPoint, 'GPUDevice.createComputePipeline');
+        const layout = pipelineDescriptor.layout === 'auto' || pipelineDescriptor.layout === undefined
+          ? null
+          : pipelineDescriptor.layout;
+        if (layout !== null) {
+          assertLiveResource(layout, 'GPUDevice.createComputePipeline', 'GPUPipelineLayout');
+        }
+        const autoLayoutEntriesByGroup = layout
+          ? null
+          : backend.requireAutoLayoutEntriesFromNative(
+            shader,
+            globals.GPUShaderStage.COMPUTE,
+            'GPUDevice.createComputePipeline',
+          );
+        const constants = compute.constants ?? null;
+        const label = pipelineDescriptor.label || undefined;
+        const native = backend.deviceCreateComputePipeline(this, shaderNative, entryPoint, layout?._native ?? null, constants, label);
+        const pipeline = new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
+        pipeline.label = pipelineDescriptor.label ?? '';
+        return pipeline;
+      } catch (error) {
+        throw wrapPipelineError(error);
       }
-      const autoLayoutEntriesByGroup = layout
-        ? null
-        : backend.requireAutoLayoutEntriesFromNative(
-          shader,
-          globals.GPUShaderStage.COMPUTE,
-          'GPUDevice.createComputePipeline',
-        );
-      const constants = compute.constants ?? null;
-      const label = pipelineDescriptor.label || undefined;
-      const native = backend.deviceCreateComputePipeline(this, shaderNative, entryPoint, layout?._native ?? null, constants, label);
-      const pipeline = new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
-      pipeline.label = pipelineDescriptor.label ?? '';
-      return pipeline;
     }
 
     async createComputePipelineAsync(descriptor) {
-      return this.createComputePipeline(descriptor);
+      try {
+        const pipelineDescriptor = assertObject(descriptor, 'GPUDevice.createComputePipelineAsync', 'descriptor');
+        const compute = assertObject(pipelineDescriptor.compute, 'GPUDevice.createComputePipelineAsync', 'descriptor.compute');
+        const shader = compute.module;
+        const shaderNative = assertLiveResource(shader, 'GPUDevice.createComputePipelineAsync', 'GPUShaderModule');
+        const entryPoint = compute.entryPoint ?? 'main';
+        assertNonEmptyString(entryPoint, 'GPUDevice.createComputePipelineAsync', 'descriptor.compute.entryPoint');
+        assertShaderEntryPoint(shader, entryPoint, 'GPUDevice.createComputePipelineAsync');
+        const layout = pipelineDescriptor.layout === 'auto' || pipelineDescriptor.layout === undefined
+          ? null
+          : pipelineDescriptor.layout;
+        if (layout !== null) {
+          assertLiveResource(layout, 'GPUDevice.createComputePipelineAsync', 'GPUPipelineLayout');
+        }
+        const autoLayoutEntriesByGroup = layout
+          ? null
+          : backend.requireAutoLayoutEntriesFromNative(
+            shader,
+            globals.GPUShaderStage.COMPUTE,
+            'GPUDevice.createComputePipelineAsync',
+          );
+        const constants = compute.constants ?? null;
+        const label = pipelineDescriptor.label || undefined;
+        const native = typeof backend.deviceCreateComputePipelineAsync === 'function'
+          ? await backend.deviceCreateComputePipelineAsync(this, shaderNative, entryPoint, layout?._native ?? null, constants, label)
+          : backend.deviceCreateComputePipeline(this, shaderNative, entryPoint, layout?._native ?? null, constants, label);
+        const pipeline = new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
+        pipeline.label = pipelineDescriptor.label ?? '';
+        return pipeline;
+      } catch (error) {
+        throw wrapPipelineError(error);
+      }
     }
 
     createBindGroupLayout(descriptor) {
       const layoutDescriptor = assertObject(descriptor, 'GPUDevice.createBindGroupLayout', 'descriptor');
       const entries = assertArray(layoutDescriptor.entries ?? [], 'GPUDevice.createBindGroupLayout', 'descriptor.entries')
-        .map((entry, index) => normalizeBindGroupLayoutEntry(entry, index, 'GPUDevice.createBindGroupLayout'));
+        .map((entry, index) => normalizeBindGroupLayoutEntry(entry, index, 'GPUDevice.createBindGroupLayout', this.features));
       const native = backend.deviceCreateBindGroupLayout(this, entries, layoutDescriptor.label || undefined);
       const bgl = new DoeGPUBindGroupLayout(native, this);
       bgl.label = layoutDescriptor.label ?? '';
@@ -631,68 +718,123 @@ function createFullSurfaceClasses({
       const textureDescriptor = assertObject(descriptor, 'GPUDevice.createTexture', 'descriptor');
       const size = assertTextureSize(textureDescriptor.size, 'GPUDevice.createTexture');
       const usage = assertIntegerInRange(textureDescriptor.usage, 'GPUDevice.createTexture', 'descriptor.usage', { min: 1 });
-      const dimension = normalizeTextureDimension(textureDescriptor.dimension, 'GPUDevice.createTexture');
-      const native = backend.deviceCreateTexture(this, {
-        ...textureDescriptor,
-        dimension,
-      }, size, usage);
+      const normalizedDescriptor = normalizeTextureDescriptor(
+        textureDescriptor,
+        size,
+        usage,
+        this.features,
+        'GPUDevice.createTexture',
+      );
+      const native = backend.deviceCreateTexture(this, normalizedDescriptor, size, usage);
       const texture = new DoeGPUTexture(native, this, {
         width: size.width,
         height: size.height,
         depthOrArrayLayers: size.depthOrArrayLayers,
-        mipLevelCount: textureDescriptor.mipLevelCount ?? 1,
-        sampleCount: textureDescriptor.sampleCount ?? 1,
-        dimension,
-        format: textureDescriptor.format ?? 'rgba8unorm',
+        mipLevelCount: normalizedDescriptor.mipLevelCount ?? 1,
+        sampleCount: normalizedDescriptor.sampleCount ?? 1,
+        dimension: normalizedDescriptor.dimension,
+        format: normalizedDescriptor.format ?? 'rgba8unorm',
         usage,
       });
-      texture.label = textureDescriptor.label ?? '';
+      texture.label = normalizedDescriptor.label ?? '';
+      texture._features = this.features;
       return texture;
     }
 
     createSampler(descriptor = {}) {
-      assertObject(descriptor, 'GPUDevice.createSampler', 'descriptor');
-      const native = backend.deviceCreateSampler(this, descriptor);
+      const normalizedDescriptor = normalizeSamplerDescriptor(descriptor, 'GPUDevice.createSampler');
+      const native = backend.deviceCreateSampler(this, normalizedDescriptor);
       const sampler = new DoeGPUSampler(native, this);
-      sampler.label = descriptor?.label ?? '';
+      sampler.label = normalizedDescriptor?.label ?? '';
       return sampler;
     }
 
     createRenderPipeline(descriptor) {
-      const renderDescriptor = assertObject(descriptor, 'GPUDevice.createRenderPipeline', 'descriptor');
-      const vertex = assertObject(renderDescriptor.vertex, 'GPUDevice.createRenderPipeline', 'descriptor.vertex');
-      const fragment = assertObject(renderDescriptor.fragment, 'GPUDevice.createRenderPipeline', 'descriptor.fragment');
-      const vertexModule = assertLiveResource(vertex.module, 'GPUDevice.createRenderPipeline', 'GPUShaderModule');
-      const fragmentModule = assertLiveResource(fragment.module, 'GPUDevice.createRenderPipeline', 'GPUShaderModule');
-      const targets = assertArray(fragment.targets ?? [], 'GPUDevice.createRenderPipeline', 'descriptor.fragment.targets');
-      if (targets.length === 0) {
-        failValidation('GPUDevice.createRenderPipeline', 'descriptor.fragment.targets must contain at least one target');
+      try {
+        const renderDescriptor = assertObject(descriptor, 'GPUDevice.createRenderPipeline', 'descriptor');
+        const vertex = assertObject(renderDescriptor.vertex, 'GPUDevice.createRenderPipeline', 'descriptor.vertex');
+        const fragment = assertObject(renderDescriptor.fragment, 'GPUDevice.createRenderPipeline', 'descriptor.fragment');
+        const vertexModule = assertLiveResource(vertex.module, 'GPUDevice.createRenderPipeline', 'GPUShaderModule');
+        const fragmentModule = assertLiveResource(fragment.module, 'GPUDevice.createRenderPipeline', 'GPUShaderModule');
+        const targets = assertArray(fragment.targets ?? [], 'GPUDevice.createRenderPipeline', 'descriptor.fragment.targets');
+        if (targets.length === 0) {
+          failValidation('GPUDevice.createRenderPipeline', 'descriptor.fragment.targets must contain at least one target');
+        }
+        const vertexBuffers = vertex.buffers === undefined
+          ? []
+          : normalizeVertexBufferLayouts(vertex.buffers, 'GPUDevice.createRenderPipeline');
+        const layout = renderDescriptor.layout && renderDescriptor.layout !== 'auto'
+          ? assertLiveResource(renderDescriptor.layout, 'GPUDevice.createRenderPipeline', 'GPUPipelineLayout')
+          : null;
+        const pipelineDescriptor = {
+          layout,
+          vertexModule,
+          vertexEntryPoint: vertex.entryPoint ?? 'main',
+          vertexBuffers,
+          fragmentModule,
+          fragmentEntryPoint: fragment.entryPoint ?? 'main',
+          colorFormat: normalizeTextureViewDescriptor(
+            { format: assertNonEmptyString(targets[0].format, 'GPUDevice.createRenderPipeline', 'descriptor.fragment.targets[0].format') },
+            null,
+            this.features,
+            'GPUDevice.createRenderPipeline',
+          ).format,
+          primitive: normalizePrimitiveState(renderDescriptor.primitive ?? null, 'GPUDevice.createRenderPipeline'),
+          depthStencil: normalizeDepthStencilState(renderDescriptor.depthStencil ?? null, this.features, 'GPUDevice.createRenderPipeline'),
+          multisample: renderDescriptor.multisample ?? null,
+        };
+        const native = backend.deviceCreateRenderPipeline(this, pipelineDescriptor);
+        const rp = new DoeGPURenderPipeline(native, this);
+        rp.label = renderDescriptor.label ?? '';
+        return rp;
+      } catch (error) {
+        throw wrapPipelineError(error);
       }
-      const vertexBuffers = vertex.buffers === undefined
-        ? []
-        : assertArray(vertex.buffers, 'GPUDevice.createRenderPipeline', 'descriptor.vertex.buffers');
-      const layout = renderDescriptor.layout && renderDescriptor.layout !== 'auto'
-        ? assertLiveResource(renderDescriptor.layout, 'GPUDevice.createRenderPipeline', 'GPUPipelineLayout')
-        : null;
-      const native = backend.deviceCreateRenderPipeline(this, {
-        layout,
-        vertexModule,
-        vertexEntryPoint: vertex.entryPoint ?? 'main',
-        vertexBuffers,
-        fragmentModule,
-        fragmentEntryPoint: fragment.entryPoint ?? 'main',
-        colorFormat: assertNonEmptyString(targets[0].format, 'GPUDevice.createRenderPipeline', 'descriptor.fragment.targets[0].format'),
-        primitive: renderDescriptor.primitive ?? null,
-        depthStencil: renderDescriptor.depthStencil ?? null,
-        multisample: renderDescriptor.multisample ?? null,
-      });
-      const rp = new DoeGPURenderPipeline(native, this);
-      rp.label = renderDescriptor.label ?? '';
-      return rp;
     }
 
     async createRenderPipelineAsync(descriptor) {
-      return this.createRenderPipeline(descriptor);
+      try {
+        const renderDescriptor = assertObject(descriptor, 'GPUDevice.createRenderPipelineAsync', 'descriptor');
+        const vertex = assertObject(renderDescriptor.vertex, 'GPUDevice.createRenderPipelineAsync', 'descriptor.vertex');
+        const fragment = assertObject(renderDescriptor.fragment, 'GPUDevice.createRenderPipelineAsync', 'descriptor.fragment');
+        const vertexModule = assertLiveResource(vertex.module, 'GPUDevice.createRenderPipelineAsync', 'GPUShaderModule');
+        const fragmentModule = assertLiveResource(fragment.module, 'GPUDevice.createRenderPipelineAsync', 'GPUShaderModule');
+        const targets = assertArray(fragment.targets ?? [], 'GPUDevice.createRenderPipelineAsync', 'descriptor.fragment.targets');
+        if (targets.length === 0) {
+          failValidation('GPUDevice.createRenderPipelineAsync', 'descriptor.fragment.targets must contain at least one target');
+        }
+        const vertexBuffers = vertex.buffers === undefined
+          ? []
+          : normalizeVertexBufferLayouts(vertex.buffers, 'GPUDevice.createRenderPipelineAsync');
+        const layout = renderDescriptor.layout && renderDescriptor.layout !== 'auto'
+          ? assertLiveResource(renderDescriptor.layout, 'GPUDevice.createRenderPipelineAsync', 'GPUPipelineLayout')
+          : null;
+        const pipelineDescriptor = {
+          layout,
+          vertexModule,
+          vertexEntryPoint: vertex.entryPoint ?? 'main',
+          vertexBuffers,
+          fragmentModule,
+          fragmentEntryPoint: fragment.entryPoint ?? 'main',
+          colorFormat: normalizeTextureViewDescriptor(
+            { format: assertNonEmptyString(targets[0].format, 'GPUDevice.createRenderPipelineAsync', 'descriptor.fragment.targets[0].format') },
+            null,
+            this.features,
+            'GPUDevice.createRenderPipelineAsync',
+          ).format,
+          primitive: normalizePrimitiveState(renderDescriptor.primitive ?? null, 'GPUDevice.createRenderPipelineAsync'),
+          depthStencil: normalizeDepthStencilState(renderDescriptor.depthStencil ?? null, this.features, 'GPUDevice.createRenderPipelineAsync'),
+          multisample: renderDescriptor.multisample ?? null,
+        };
+        const native = typeof backend.deviceCreateRenderPipelineAsync === 'function'
+          ? await backend.deviceCreateRenderPipelineAsync(this, pipelineDescriptor)
+          : backend.deviceCreateRenderPipeline(this, pipelineDescriptor);
+        const rp = new DoeGPURenderPipeline(native, this);
+        rp.label = renderDescriptor.label ?? '';
+        return rp;
+      } catch (error) {
+        throw wrapPipelineError(error);
+      }
     }
 
     createRenderBundleEncoder(descriptor) {
@@ -708,18 +850,14 @@ function createFullSurfaceClasses({
 
     createQuerySet(descriptor) {
       assertLiveResource(this, 'GPUDevice.createQuerySet', 'GPUDevice');
-      const queryDescriptor = assertObject(descriptor, 'GPUDevice.createQuerySet', 'descriptor');
-      if (queryDescriptor.type !== 'timestamp' && queryDescriptor.type !== 'occlusion') {
-        failValidation('GPUDevice.createQuerySet', `unsupported query type "${queryDescriptor.type}"; only "timestamp" and "occlusion" are supported`);
-      }
+      const queryDescriptor = normalizeQuerySetDescriptor(descriptor, 'GPUDevice.createQuerySet');
       assertIntegerInRange(queryDescriptor.count, 'GPUDevice.createQuerySet', 'descriptor.count', { min: 1, max: UINT32_MAX });
       const native = backend.deviceCreateQuerySet(this, queryDescriptor);
       if (native == null) {
-        failValidation('GPUDevice.createQuerySet', 'timestamp query sets are not supported on this backend/device');
+        failValidation('GPUDevice.createQuerySet', 'query sets are not supported on this backend/device');
       }
       const qs = new DoeGPUQuerySet(native, queryDescriptor.type, queryDescriptor.count, this);
       qs.label = queryDescriptor.label ?? '';
-      backend.querySetSetLabel?.(qs, qs.label);
       return qs;
     }
 
@@ -751,9 +889,10 @@ function createFullSurfaceClasses({
   }
 
   class DoeGPUAdapter {
-    constructor(native, instance) {
+    constructor(native, instance, requestOptions = null) {
       this._native = native;
       this._instance = instance;
+      this._requestOptions = requestOptions;
       this._info = null;
       this.label = '';
       this.features = backend.adapterFeatures(native);
@@ -781,7 +920,11 @@ function createFullSurfaceClasses({
     }
 
     async requestDevice(descriptor) {
-      return backend.adapterRequestDevice(this, descriptor, classes);
+      return backend.adapterRequestDevice(
+        this,
+        normalizeRequestDeviceDescriptor(descriptor, 'GPUAdapter.requestDevice'),
+        classes,
+      );
     }
 
     destroy() {
@@ -807,7 +950,11 @@ function createFullSurfaceClasses({
     }
 
     async requestAdapter(options) {
-      return backend.gpuRequestAdapter(this, options, classes);
+      return backend.gpuRequestAdapter(
+        this,
+        normalizeRequestAdapterOptions(options, 'GPU.requestAdapter'),
+        classes,
+      );
     }
   }
 

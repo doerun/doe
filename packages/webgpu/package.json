@@ -32,6 +32,10 @@
       "types": "./src/full.d.ts",
       "default": "./src/full.js"
     },
+    "./browser": {
+      "types": "./src/browser.d.ts",
+      "default": "./src/browser.js"
+    },
     "./native-direct": {
       "types": "./src/native-direct.d.ts",
       "default": "./src/native-direct.js"

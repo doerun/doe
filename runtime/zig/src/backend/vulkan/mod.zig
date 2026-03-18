@@ -83,29 +83,6 @@ pub const ZigVulkanBackend = struct {
     ) !*ZigVulkanBackend {
         if (profile.api != .vulkan) return error.UnsupportedFeature;
 
-        var caps = capabilities.CapabilitySet{};
-        caps.declare_all(&.{
-            .kernel_dispatch,
-            .buffer_upload,
-            .buffer_copy,
-            .barrier_sync,
-            .sampler_lifecycle,
-            .render_draw,
-            .render_pass,
-            .texture_write,
-            .texture_query,
-            .texture_destroy,
-            .surface_lifecycle,
-            .surface_present,
-            .async_pipeline_diagnostics,
-            .async_capability_introspection,
-            .async_resource_table_immediates,
-            .async_lifecycle_refcount,
-            .async_pixel_local_storage,
-            .gpu_timestamps,
-            .render_bundle,
-        });
-
         const owned_kernel_root = if (kernel_root) |root| try allocator.dupe(u8, root) else null;
 
         const ptr = try allocator.create(ZigVulkanBackend);
@@ -122,7 +99,7 @@ pub const ZigVulkanBackend = struct {
             .queue_sync_mode = .per_command,
             .gpu_timestamp_mode = .auto,
             .pending_upload_commands = 0,
-            .capability_set = caps,
+            .capability_set = native_capability_set(),
             .status_message_storage = [_]u8{0} ** STATUS_MESSAGE_BYTES,
             .status_message_len = 0,
             .manifest_emit_count = 0,
@@ -192,6 +169,32 @@ pub const ZigVulkanBackend = struct {
         return artifact_emit.emit_shader_artifact_manifest_for_signature(self, module, meta, status_code);
     }
 };
+
+fn native_capability_set() capabilities.CapabilitySet {
+    var set = capabilities.CapabilitySet{};
+    set.declare_all(&.{
+        .kernel_dispatch,
+        .buffer_upload,
+        .buffer_copy,
+        .barrier_sync,
+        .sampler_lifecycle,
+        .render_draw,
+        .render_pass,
+        .texture_write,
+        .texture_query,
+        .texture_destroy,
+        .surface_lifecycle,
+        .surface_present,
+        .async_pipeline_diagnostics,
+        .async_capability_introspection,
+        .async_resource_table_immediates,
+        .async_lifecycle_refcount,
+        .async_pixel_local_storage,
+        .gpu_timestamps,
+        .render_bundle,
+    });
+    return set;
+}
 
 fn cast(ctx: *anyopaque) *ZigVulkanBackend {
     return @as(*ZigVulkanBackend, @ptrCast(@alignCast(ctx)));
@@ -643,29 +646,6 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
 }
 
 pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgpu.QueueSyncMode) !webgpu.NativeExecutionResult {
-    var caps = capabilities.CapabilitySet{};
-    caps.declare_all(&.{
-        .kernel_dispatch,
-        .buffer_upload,
-        .buffer_copy,
-        .barrier_sync,
-        .sampler_lifecycle,
-        .render_draw,
-        .render_pass,
-        .texture_write,
-        .texture_query,
-        .texture_destroy,
-        .surface_lifecycle,
-        .surface_present,
-        .async_pipeline_diagnostics,
-        .async_capability_introspection,
-        .async_resource_table_immediates,
-        .async_lifecycle_refcount,
-        .async_pixel_local_storage,
-        .gpu_timestamps,
-        .render_bundle,
-    });
-
     var backend = ZigVulkanBackend{
         .allocator = std.testing.allocator,
         .kernel_root_owned = null,
@@ -677,7 +657,7 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .queue_sync_mode = queue_sync_mode,
         .gpu_timestamp_mode = .off,
         .pending_upload_commands = 0,
-        .capability_set = caps,
+        .capability_set = native_capability_set(),
         .status_message_storage = [_]u8{0} ** STATUS_MESSAGE_BYTES,
         .status_message_len = 0,
     };

@@ -16,6 +16,12 @@ the raw WebGPU API through `requestDevice()` and `device.*`, or move up to the
 Doe API when you want the same runtime with less setup. Browser DOM/canvas
 ownership lives in the separate `browser/fawn-browser` lane.
 
+When you are integrating against a real browser-owned `navigator.gpu`
+implementation (for example Chromium Track A or offscreen browser tests), use
+the explicit `@simulatte/webgpu/browser` subpath. It wraps browser-owned
+`GPUAdapter` / `GPUDevice` / `GPUCanvasContext` objects with the shared package
+surface while keeping DOM ownership in the browser process.
+
 Terminology in this README is deliberate:
 
 - `Doe runtime` means the Zig/native WebGPU runtime underneath the package

@@ -22,6 +22,7 @@ const label_store = native.label_store;
 const DoeDevice = native.DoeDevice;
 const DoeShaderModule = native.DoeShaderModule;
 const DoeComputePipeline = native.DoeComputePipeline;
+const DoePipelineLayout = native.DoePipelineLayout;
 const LAST_ERROR_CAP: usize = 512;
 const LAST_ERROR_META_CAP: usize = 64;
 var last_error_buf: [LAST_ERROR_CAP]u8 = undefined;
@@ -469,9 +470,10 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
 // Compute Pipeline
 // ============================================================
 
-fn createComputePipelineVulkan(sm: *DoeShaderModule) ?*anyopaque {
+fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout) ?*anyopaque {
     const cp = make(DoeComputePipeline) orelse return null;
     cp.* = .{};
+    cp.layout = layout;
     cp.wg_x = sm.wg_x;
     cp.wg_y = sm.wg_y;
     cp.wg_z = sm.wg_z;
@@ -581,7 +583,7 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     };
 
     if (dev.backend == .vulkan) {
-        const result = createComputePipelineVulkan(sm);
+        const result = createComputePipelineVulkan(sm, cast(DoePipelineLayout, d.layout));
         if (result != null) label_store.set(result, d.label.data, d.label.length);
         return result;
     }
@@ -638,7 +640,7 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
         metal_bridge_release(pso);
         return null;
     };
-    cp.* = .{ .mtl_pso = pso };
+    cp.* = .{ .mtl_pso = pso, .layout = cast(DoePipelineLayout, d.layout) };
     // Transfer workgroup size from shader module for correct Metal dispatch.
     cp.wg_x = sm.wg_x;
     cp.wg_y = sm.wg_y;

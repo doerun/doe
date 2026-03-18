@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import http from "node:http";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -79,6 +79,7 @@ const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const BENCH_OUT_SCRATCH_ROOT = resolve(ROOT, "bench/out/scratch");
 const ARTIFACTS_ROOT = resolve(ROOT, "browser/fawn-browser/artifacts");
 const DEFAULT_OUT_FILE = "dawn-vs-doe.browser-layered.diagnostic.json";
+const DEFAULT_API_SURFACE = "native";
 const HASH_ALGORITHM = "sha256";
 
 const DEFAULT_ITERATIONS = {
@@ -118,6 +119,7 @@ Options:
   --allow-bench-out         Allow writing this diagnostic report under bench/out/scratch
   --allow-data-url-fallback Allow data: URL fallback if local server bind fails
   --headless true|false     Launch headless (default: true)
+  --api-surface SURFACE     Browser API surface: native|package-browser (default: ${DEFAULT_API_SURFACE})
   --chrome-arg ARG          Extra Chromium arg (repeatable)
   --iters-upload N          Upload scenario iterations (default: 300)
   --iters-dispatch N        Dispatch scenario iterations (default: 200)
@@ -229,6 +231,7 @@ function parseArgs(argv) {
     allowBenchOut: false,
     allowDataUrlFallback: false,
     headless: true,
+    apiSurface: DEFAULT_API_SURFACE,
     chromeArgs: [],
     strict: false,
     iterations: { ...DEFAULT_ITERATIONS },
@@ -271,6 +274,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (token === "--headless") {
       args.headless = parseBool(readOptionValue(argv, i, "--headless"), "--headless");
+      i += 1;
+    } else if (token === "--api-surface") {
+      args.apiSurface = readOptionValue(argv, i, "--api-surface").toLowerCase();
       i += 1;
     } else if (token === "--chrome-arg") {
       args.chromeArgs.push(readOptionValue(argv, i, "--chrome-arg"));
@@ -318,6 +324,9 @@ function parseArgs(argv) {
 
   if (!["dawn", "doe", "both"].includes(args.mode)) {
     throw new Error("--mode must be one of dawn, doe, both");
+  }
+  if (!["native", "package-browser"].includes(args.apiSurface)) {
+    throw new Error("--api-surface must be one of native, package-browser");
   }
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
   const modeChromePaths = {
@@ -509,7 +518,29 @@ async function loadChromiumDriver() {
 function startLocalServer() {
   const html =
     "<!doctype html><meta charset='utf-8'><title>doe-webgpu-layered-bench</title>";
-  const server = http.createServer((_, res) => {
+  const server = http.createServer((req, res) => {
+    const requestPath = new URL(req.url ?? "/", "http://127.0.0.1").pathname;
+    if (requestPath !== "/") {
+      const relativePath = requestPath.replace(/^\/+/, "");
+      const absolutePath = resolve(ROOT, relativePath);
+      if (!pathWithin(absolutePath, ROOT) || !existsSync(absolutePath)) {
+        res.statusCode = 404;
+        res.end("not found");
+        return;
+      }
+      const extension = extname(absolutePath).toLowerCase();
+      const contentType = extension === ".js" || extension === ".mjs"
+        ? "text/javascript; charset=utf-8"
+        : extension === ".json"
+          ? "application/json; charset=utf-8"
+          : extension === ".html"
+            ? "text/html; charset=utf-8"
+            : "text/plain; charset=utf-8";
+      res.statusCode = 200;
+      res.setHeader("content-type", contentType);
+      res.end(readFileSync(absolutePath));
+      return;
+    }
     res.statusCode = 200;
     res.setHeader("content-type", "text/html; charset=utf-8");
     res.end(html);
@@ -538,7 +569,11 @@ function makeDataPageUrl() {
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
 }
 
-async function resolvePageTarget(allowDataUrlFallback) {
+function browserSurfaceModuleUrl(baseUrl) {
+  return new URL("/packages/webgpu/src/browser.js", baseUrl).href;
+}
+
+async function resolvePageTarget(allowDataUrlFallback, apiSurface) {
   try {
     const { server, url, port } = await startLocalServer();
     return {
@@ -549,6 +584,15 @@ async function resolvePageTarget(allowDataUrlFallback) {
       warning: null,
     };
   } catch (error) {
+    if (apiSurface === "package-browser") {
+      return {
+        kind: "unavailable",
+        server: null,
+        url: "",
+        port: null,
+        warning: `local server bind failed and --api-surface=package-browser requires local module serving: ${String(error)}`,
+      };
+    }
     if (!allowDataUrlFallback) {
       return {
         kind: "unavailable",
@@ -594,10 +638,18 @@ function runtimeArgs(mode, doeLibPath) {
   ];
 }
 
-async function probeRuntime(page) {
-  return page.evaluate(async () => {
+async function probeRuntime(page, browserSurfaceArgs) {
+  return page.evaluate(async ({ apiSurface, browserModuleUrl }) => {
+    const browserSurface = apiSurface === "package-browser"
+      ? await import(browserModuleUrl)
+      : null;
+    const browserRuntime = browserSurface?.createBrowserRuntime?.() ?? null;
+    const gpu = browserRuntime?.gpu ?? navigator.gpu;
+    const getCanvasContext = (canvas) =>
+      browserRuntime ? browserRuntime.createCanvasContext(canvas) : canvas.getContext("webgpu");
     const response = {
-      webgpuAvailable: typeof navigator.gpu !== "undefined",
+      apiSurface,
+      webgpuAvailable: typeof gpu !== "undefined",
       adapterAvailable: false,
       adapterInfo: null,
       featureCount: 0,
@@ -613,12 +665,12 @@ async function probeRuntime(page) {
     };
 
     if (!response.webgpuAvailable) {
-      response.errors.push("navigator.gpu unavailable");
+      response.errors.push("WebGPU surface unavailable");
       return response;
     }
 
     try {
-      const adapter = await navigator.gpu.requestAdapter();
+      const adapter = await gpu.requestAdapter();
       if (!adapter) {
         response.errors.push("requestAdapter returned null");
         return response;
@@ -629,10 +681,10 @@ async function probeRuntime(page) {
         response.adapterInfo = adapter.info;
       }
       response.webgpuCanvasApi.preferredCanvasFormatSupported =
-        typeof navigator.gpu.getPreferredCanvasFormat === "function";
+        typeof gpu.getPreferredCanvasFormat === "function";
       if (response.webgpuCanvasApi.preferredCanvasFormatSupported) {
         try {
-          response.webgpuCanvasApi.preferredCanvasFormat = navigator.gpu.getPreferredCanvasFormat();
+          response.webgpuCanvasApi.preferredCanvasFormat = gpu.getPreferredCanvasFormat();
         } catch (error) {
           response.errors.push(`getPreferredCanvasFormat failed: ${String(error)}`);
         }
@@ -640,7 +692,7 @@ async function probeRuntime(page) {
       if (typeof OffscreenCanvas !== "undefined") {
         response.webgpuCanvasApi.offscreenCanvasAvailable = true;
         const canvas = new OffscreenCanvas(1, 1);
-        const context = canvas.getContext("webgpu");
+        const context = getCanvasContext(canvas);
         response.webgpuCanvasApi.webgpuContextAvailable = Boolean(context);
         if (context) {
           response.webgpuCanvasApi.webgpuContextHasConfigure = typeof context.configure === "function";
@@ -653,13 +705,14 @@ async function probeRuntime(page) {
     }
 
     return response;
-  });
+  }, browserSurfaceArgs);
 }
 
-async function runScenario(page, template, iterations) {
+async function runScenario(page, template, iterations, browserSurfaceArgs) {
   return page.evaluate(
-    async ({ scenarioTemplate, runIterations }) => {
+    async ({ scenarioTemplate, runIterations, apiSurface, browserModuleUrl }) => {
       const result = {
+        apiSurface,
         status: "fail",
         statusCode: "scenario_runtime_error",
         error: null,
@@ -667,12 +720,19 @@ async function runScenario(page, template, iterations) {
       };
 
       const nowMs = () => performance.now();
+      const browserSurface = apiSurface === "package-browser"
+        ? await import(browserModuleUrl)
+        : null;
+      const browserRuntime = browserSurface?.createBrowserRuntime?.() ?? null;
+      const gpu = browserRuntime?.gpu ?? navigator.gpu;
+      const getCanvasContext = (canvas) =>
+        browserRuntime ? browserRuntime.createCanvasContext(canvas) : canvas.getContext("webgpu");
 
       async function initDevice() {
-        if (typeof navigator.gpu === "undefined") {
-          throw new Error("navigator.gpu unavailable");
+        if (typeof gpu === "undefined") {
+          throw new Error("WebGPU surface unavailable");
         }
-        const adapter = await navigator.gpu.requestAdapter();
+        const adapter = await gpu.requestAdapter();
         if (!adapter) {
           throw new Error("requestAdapter returned null");
         }
@@ -820,11 +880,11 @@ async function runScenario(page, template, iterations) {
         const width = 64;
         const height = 64;
         const canvas = new OffscreenCanvas(width, height);
-        const context = canvas.getContext("webgpu");
+        const context = getCanvasContext(canvas);
         if (!context) {
           throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
         }
-        const format = navigator.gpu.getPreferredCanvasFormat();
+        const format = gpu.getPreferredCanvasFormat();
         context.configure({ device, format, alphaMode: "opaque" });
 
         const shader = device.createShaderModule({
@@ -1094,11 +1154,11 @@ async function runScenario(page, template, iterations) {
       async function runSurfacePresent(device) {
         const iterations = runIterations.render;
         const canvas = new OffscreenCanvas(128, 128);
-        const context = canvas.getContext("webgpu");
+        const context = getCanvasContext(canvas);
         if (!context) {
           throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
         }
-        const format = navigator.gpu.getPreferredCanvasFormat();
+        const format = gpu.getPreferredCanvasFormat();
         context.configure({ device, format, alphaMode: "opaque" });
 
         const t0 = nowMs();
@@ -1126,11 +1186,11 @@ async function runScenario(page, template, iterations) {
       async function runCanvasReconfigureResize(device) {
         const sizes = [64, 96, 128, 160, 192, 256];
         const canvas = new OffscreenCanvas(sizes[0], sizes[0]);
-        const context = canvas.getContext("webgpu");
+        const context = getCanvasContext(canvas);
         if (!context) {
           throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
         }
-        const format = navigator.gpu.getPreferredCanvasFormat();
+        const format = gpu.getPreferredCanvasFormat();
         const t0 = nowMs();
         for (const size of sizes) {
           canvas.width = size;
@@ -1258,6 +1318,7 @@ async function runScenario(page, template, iterations) {
     {
       scenarioTemplate: template,
       runIterations: iterations,
+      ...browserSurfaceArgs,
     },
   );
 }
@@ -1358,6 +1419,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
   const workflowResultsById = new Map();
   const runtimeEvidence = {
     modeRequested: mode,
+    apiSurface: args.apiSurface,
     pageTargetKind: pageTarget.kind,
     pageTargetPort: Number.isInteger(pageTarget.port) ? pageTarget.port : null,
     pageTargetWarning: pageTarget.warning ?? null,
@@ -1404,16 +1466,25 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(pageTarget.url, { waitUntil: "load", timeout: 120000 });
+    const browserSurfaceArgs = {
+      apiSurface: args.apiSurface,
+      browserModuleUrl: browserSurfaceModuleUrl(pageTarget.url),
+    };
     runtimeEvidence.browserVersion = browser.version();
     runtimeEvidence.userAgent = await page.evaluate(() => navigator.userAgent);
-    runtimeProbe = await probeRuntime(page);
+    runtimeProbe = await probeRuntime(page, browserSurfaceArgs);
 
     for (const row of l1Rows) {
       if (row.layerTarget === "l0_only") {
         rowResultsById.set(row.sourceWorkloadId, makeModeRowResult("l0_only", "l0_only"));
         continue;
       }
-      const scenarioResult = await runScenario(page, row.scenarioTemplate, args.iterations);
+      const scenarioResult = await runScenario(
+        page,
+        row.scenarioTemplate,
+        args.iterations,
+        browserSurfaceArgs,
+      );
       rowResultsById.set(
         row.sourceWorkloadId,
         makeModeRowResult(
@@ -1430,6 +1501,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
         page,
         workflow.scenarioTemplate,
         args.iterations,
+        browserSurfaceArgs,
       );
       workflowResultsById.set(
         workflow.id,
@@ -1548,7 +1620,7 @@ async function main() {
   const modes = args.mode === "both" ? ["dawn", "doe"] : [args.mode];
   const modeRunDetails = [];
 
-  const pageTarget = await resolvePageTarget(args.allowDataUrlFallback);
+  const pageTarget = await resolvePageTarget(args.allowDataUrlFallback, args.apiSurface);
   if (pageTarget.warning) {
     console.log(`[warn] ${pageTarget.warning}`);
   }

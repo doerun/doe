@@ -14,6 +14,8 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
+
+const VK_QUERY_CONTROL_NONE: u32 = 0;
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
@@ -562,6 +564,13 @@ fn record_and_submit_draws(
         .pClearValues = @ptrCast(&clear_value),
     };
     c.vkCmdBeginRenderPass(self.primary_command_buffer, &render_pass_begin, c.VK_SUBPASS_CONTENTS_INLINE);
+    if (cmd.occlusion_query_pool != 0) {
+        if (cmd.occlusion_query_index) |query_index| {
+            const query_pool: c.VkQueryPool = @intCast(cmd.occlusion_query_pool);
+            c.vkCmdResetQueryPool(self.primary_command_buffer, query_pool, query_index, 1);
+            c.vkCmdBeginQuery(self.primary_command_buffer, query_pool, query_index, VK_QUERY_CONTROL_NONE);
+        }
+    }
 
     // Set dynamic viewport
     const vp_width = cmd.viewport_width orelse @as(f32, @floatFromInt(target_width));
@@ -609,6 +618,12 @@ fn record_and_submit_draws(
                 first_vertex,
                 first_instance,
             );
+        }
+    }
+    if (cmd.occlusion_query_pool != 0) {
+        if (cmd.occlusion_query_index) |query_index| {
+            const query_pool: c.VkQueryPool = @intCast(cmd.occlusion_query_pool);
+            c.vkCmdEndQuery(self.primary_command_buffer, query_pool, query_index);
         }
     }
 

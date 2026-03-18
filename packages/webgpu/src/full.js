@@ -1,5 +1,5 @@
 import * as full from './index.js';
-import { createDoeNamespace } from '@simulatte/webgpu-doe';
+import { createDoeNamespace } from '../../webgpu-doe/src/index.js';
 
 /**
  * Shared Doe API namespace for the full package surface.
