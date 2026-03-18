@@ -359,6 +359,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - `GPUPipelineLayoutDescriptor.immediateSize` now forwards through Node addon, Bun FFI, and native-direct package paths instead of being forced to `0`.
   - `GPUComputePassEncoder.setImmediates`, `GPURenderPassEncoder.setImmediates`, and `GPURenderBundleEncoder.setImmediates` now forward through Doe native exports/package surfaces to the provider WebGPU procs on Metal.
   - Metal limits now report `maxImmediateSize=64`, and the abstract `GPUBindingCommandsMixin.setImmediates` spec-index row is tracked as satisfied via those concrete encoder methods.
+  - `GPURenderBundleEncoder.pushDebugGroup`, `popDebugGroup`, and `insertDebugMarker` now flow through the addon and JS package layers; the runtime already exported the underlying symbols, so Vulkan bundle debug-marker rows can now be tracked as implemented instead of blocked on stale package evidence.
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off|require`; `auto` degrades to non-timestamp operation timing on invalid/unavailable timestamp capture, while `require` fails fast for strict timestamp lanes.
 - local macOS Metal strict comparable preset now runs all comparable-by-contract workloads from `bench/workloads.apple.metal.extended.json` (no hard-coded 19-workload subset filter).

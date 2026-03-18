@@ -120,6 +120,9 @@ FnRenderPassSetStencilReference pfn_doeNativeRenderPassSetStencilReference = NUL
 FnRenderPassPushDebugGroup pfn_doeNativeRenderPassPushDebugGroup = NULL;
 FnRenderPassPopDebugGroup pfn_doeNativeRenderPassPopDebugGroup = NULL;
 FnRenderPassInsertDebugMarker pfn_doeNativeRenderPassInsertDebugMarker = NULL;
+FnRenderBundleEncoderPushDebugGroup pfn_doeNativeRenderBundleEncoderPushDebugGroup = NULL;
+FnRenderBundleEncoderPopDebugGroup pfn_doeNativeRenderBundleEncoderPopDebugGroup = NULL;
+FnRenderBundleEncoderInsertDebugMarker pfn_doeNativeRenderBundleEncoderInsertDebugMarker = NULL;
 FnAdapterGetInfo pfn_doeNativeAdapterGetInfo = NULL;
 FnAdapterFreeInfo pfn_doeNativeAdapterFreeInfo = NULL;
 FnShaderModuleGetCompilationInfo pfn_doeNativeShaderModuleGetCompilationInfo = NULL;
@@ -374,6 +377,9 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeRenderBundleEncoderSetIndexBuffer  = (FnRenderBundleEncoderSetIndexBuffer)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderSetIndexBuffer");
     pfn_doeNativeRenderBundleEncoderDraw           = (FnRenderBundleEncoderDraw)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderDraw");
     pfn_doeNativeRenderBundleEncoderDrawIndexed    = (FnRenderBundleEncoderDrawIndexed)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderDrawIndexed");
+    pfn_doeNativeRenderBundleEncoderPushDebugGroup = (FnRenderBundleEncoderPushDebugGroup)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderPushDebugGroup");
+    pfn_doeNativeRenderBundleEncoderPopDebugGroup = (FnRenderBundleEncoderPopDebugGroup)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderPopDebugGroup");
+    pfn_doeNativeRenderBundleEncoderInsertDebugMarker = (FnRenderBundleEncoderInsertDebugMarker)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderInsertDebugMarker");
     pfn_doeNativeRenderBundleEncoderFinish         = (FnRenderBundleEncoderFinish)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderFinish");
     pfn_doeNativeRenderBundleRelease               = (FnRenderBundleRelease)LIB_SYM(g_lib, "doeNativeRenderBundleRelease");
 

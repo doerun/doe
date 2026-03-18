@@ -631,6 +631,35 @@ napi_value doe_render_bundle_encoder_draw_indexed(napi_env env, napi_callback_in
     return NULL;
 }
 
+napi_value doe_render_bundle_encoder_push_debug_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* enc = unwrap_ptr(env, _args[0]); if (!enc || !pfn_doeNativeRenderBundleEncoderPushDebugGroup) return NULL;
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1); if (!label) return NULL;
+    napi_get_value_string_utf8(env, _args[1], label, label_len + 1, &label_len);
+    pfn_doeNativeRenderBundleEncoderPushDebugGroup(enc, label, label_len);
+    free(label); return NULL;
+}
+
+napi_value doe_render_bundle_encoder_pop_debug_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* enc = unwrap_ptr(env, _args[0]); if (!enc || !pfn_doeNativeRenderBundleEncoderPopDebugGroup) return NULL;
+    pfn_doeNativeRenderBundleEncoderPopDebugGroup(enc);
+    return NULL;
+}
+
+napi_value doe_render_bundle_encoder_insert_debug_marker(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* enc = unwrap_ptr(env, _args[0]); if (!enc || !pfn_doeNativeRenderBundleEncoderInsertDebugMarker) return NULL;
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1); if (!label) return NULL;
+    napi_get_value_string_utf8(env, _args[1], label, label_len + 1, &label_len);
+    pfn_doeNativeRenderBundleEncoderInsertDebugMarker(enc, label, label_len);
+    free(label); return NULL;
+}
+
 napi_value doe_render_bundle_encoder_finish(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     CHECK_LIB_LOADED(env);

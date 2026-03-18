@@ -419,6 +419,9 @@ typedef void (*FnRenderPassSetStencilReference)(void* encoder, uint32_t referenc
 typedef void (*FnRenderPassPushDebugGroup)(void* encoder, const char* label, size_t label_len);
 typedef void (*FnRenderPassPopDebugGroup)(void* encoder);
 typedef void (*FnRenderPassInsertDebugMarker)(void* encoder, const char* label, size_t label_len);
+typedef void (*FnRenderBundleEncoderPushDebugGroup)(void* encoder, const char* label, size_t label_len);
+typedef void (*FnRenderBundleEncoderPopDebugGroup)(void* encoder);
+typedef void (*FnRenderBundleEncoderInsertDebugMarker)(void* encoder, const char* label, size_t label_len);
 typedef void (*FnAdapterGetInfo)(void* adapter, const char** out_vendor, const char** out_arch, const char** out_device, const char** out_desc, char** out_block);
 typedef void (*FnAdapterFreeInfo)(char* block);
 typedef const char* (*FnShaderModuleGetCompilationInfo)(void* module);
@@ -458,6 +461,9 @@ extern FnRenderPassSetStencilReference pfn_doeNativeRenderPassSetStencilReferenc
 extern FnRenderPassPushDebugGroup pfn_doeNativeRenderPassPushDebugGroup;
 extern FnRenderPassPopDebugGroup pfn_doeNativeRenderPassPopDebugGroup;
 extern FnRenderPassInsertDebugMarker pfn_doeNativeRenderPassInsertDebugMarker;
+extern FnRenderBundleEncoderPushDebugGroup pfn_doeNativeRenderBundleEncoderPushDebugGroup;
+extern FnRenderBundleEncoderPopDebugGroup pfn_doeNativeRenderBundleEncoderPopDebugGroup;
+extern FnRenderBundleEncoderInsertDebugMarker pfn_doeNativeRenderBundleEncoderInsertDebugMarker;
 extern FnAdapterGetInfo pfn_doeNativeAdapterGetInfo;
 extern FnAdapterFreeInfo pfn_doeNativeAdapterFreeInfo;
 extern FnShaderModuleGetCompilationInfo pfn_doeNativeShaderModuleGetCompilationInfo;

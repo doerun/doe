@@ -93,9 +93,26 @@ function createEncoderClasses(backend) {
       );
     }
 
-    pushDebugGroup(_groupLabel) {}
-    popDebugGroup() {}
-    insertDebugMarker(_markerLabel) {}
+    pushDebugGroup(groupLabel) {
+      this._assertOpen('GPURenderBundleEncoder.pushDebugGroup');
+      backend.renderBundleEncoderPushDebugGroup(
+        this,
+        assertDOMString(groupLabel, 'GPURenderBundleEncoder.pushDebugGroup', 'groupLabel'),
+      );
+    }
+
+    popDebugGroup() {
+      this._assertOpen('GPURenderBundleEncoder.popDebugGroup');
+      backend.renderBundleEncoderPopDebugGroup(this);
+    }
+
+    insertDebugMarker(markerLabel) {
+      this._assertOpen('GPURenderBundleEncoder.insertDebugMarker');
+      backend.renderBundleEncoderInsertDebugMarker(
+        this,
+        assertDOMString(markerLabel, 'GPURenderBundleEncoder.insertDebugMarker', 'markerLabel'),
+      );
+    }
 
     end() {
       this._assertOpen('GPUComputePassEncoder.end');

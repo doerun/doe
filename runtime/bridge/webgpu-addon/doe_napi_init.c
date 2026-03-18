@@ -141,6 +141,9 @@ napi_value doe_render_bundle_encoder_set_bind_group(napi_env env, napi_callback_
 napi_value doe_render_bundle_encoder_set_immediates(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_set_vertex_buffer(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_set_index_buffer(napi_env env, napi_callback_info info);
+napi_value doe_render_bundle_encoder_push_debug_group(napi_env env, napi_callback_info info);
+napi_value doe_render_bundle_encoder_pop_debug_group(napi_env env, napi_callback_info info);
+napi_value doe_render_bundle_encoder_insert_debug_marker(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_draw(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_draw_indexed(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_finish(napi_env env, napi_callback_info info);
@@ -271,6 +274,9 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderBundleEncoderSetIndexBuffer",        doe_render_bundle_encoder_set_index_buffer),
         EXPORT_FN("renderBundleEncoderDraw",                  doe_render_bundle_encoder_draw),
         EXPORT_FN("renderBundleEncoderDrawIndexed",           doe_render_bundle_encoder_draw_indexed),
+        EXPORT_FN("renderBundleEncoderPushDebugGroup",        doe_render_bundle_encoder_push_debug_group),
+        EXPORT_FN("renderBundleEncoderPopDebugGroup",         doe_render_bundle_encoder_pop_debug_group),
+        EXPORT_FN("renderBundleEncoderInsertDebugMarker",     doe_render_bundle_encoder_insert_debug_marker),
         EXPORT_FN("renderBundleEncoderFinish",                doe_render_bundle_encoder_finish),
         EXPORT_FN("renderBundleEncoderRelease",               doe_render_bundle_encoder_release),
         EXPORT_FN("renderBundleRelease",                      doe_render_bundle_release),

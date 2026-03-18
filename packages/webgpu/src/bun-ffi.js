@@ -273,6 +273,9 @@ function openLibrary(path) {
         wgpuRenderBundleEncoderDrawIndexed: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.i32, FFIType.u32], returns: FFIType.void },
         wgpuRenderBundleEncoderDrawIndirect: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuRenderBundleEncoderDrawIndexedIndirect: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuRenderBundleEncoderPushDebugGroup: { args: [FFIType.ptr, FFIType.cstring], returns: FFIType.void },
+        wgpuRenderBundleEncoderPopDebugGroup: { args: [FFIType.ptr], returns: FFIType.void },
+        wgpuRenderBundleEncoderInsertDebugMarker: { args: [FFIType.ptr, FFIType.cstring], returns: FFIType.void },
         wgpuRenderBundleEncoderFinish: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuRenderBundleEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuRenderBundleRelease: { args: [FFIType.ptr], returns: FFIType.void },
@@ -1637,6 +1640,23 @@ const bunEncoderBackend = {
             assertLiveResource(encoder, "GPURenderBundleEncoder.drawIndexedIndirect", "GPURenderBundleEncoder"),
             indirectBufferNative,
             BigInt(indirectOffset),
+        );
+    },
+    renderBundleEncoderPushDebugGroup(encoder, label) {
+        wgpu.symbols.wgpuRenderBundleEncoderPushDebugGroup(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.pushDebugGroup", "GPURenderBundleEncoder"),
+            label,
+        );
+    },
+    renderBundleEncoderPopDebugGroup(encoder) {
+        wgpu.symbols.wgpuRenderBundleEncoderPopDebugGroup(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.popDebugGroup", "GPURenderBundleEncoder"),
+        );
+    },
+    renderBundleEncoderInsertDebugMarker(encoder, label) {
+        wgpu.symbols.wgpuRenderBundleEncoderInsertDebugMarker(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.insertDebugMarker", "GPURenderBundleEncoder"),
+            label,
         );
     },
     renderBundleEncoderFinish(encoder, _descriptor, classes) {
