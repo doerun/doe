@@ -256,6 +256,38 @@ pub const RenderIndexFormat = enum {
     uint32,
 };
 
+pub const MAX_VERTEX_BUFFERS: usize = 8;
+pub const MAX_VERTEX_ATTRIBUTES: usize = 16;
+
+pub const WGPUVertexStepMode_Vertex: u32 = 0x00000001;
+pub const WGPUVertexStepMode_Instance: u32 = 0x00000002;
+
+pub const RenderVertexAttribute = struct {
+    format: u32 = 0,
+    offset: u64 = 0,
+    shader_location: u32 = 0,
+};
+
+pub const RenderVertexBufferLayout = struct {
+    array_stride: u64 = 0,
+    step_mode: u32 = WGPUVertexStepMode_Vertex,
+    attribute_count: u32 = 0,
+    attributes: [MAX_VERTEX_ATTRIBUTES]RenderVertexAttribute = [_]RenderVertexAttribute{.{}} ** MAX_VERTEX_ATTRIBUTES,
+};
+
+pub const RenderVertexBinding = struct {
+    slot: u32 = 0,
+    handle: ?*anyopaque = null,
+    offset: u64 = 0,
+};
+
+pub const RenderIndexBinding = struct {
+    handle: ?*anyopaque = null,
+    offset: u64 = 0,
+    size: u64 = 0,
+    format: u32 = 0,
+};
+
 pub const RenderIndexData = union(RenderIndexFormat) {
     uint16: []const u16,
     uint32: []const u32,
@@ -290,6 +322,11 @@ pub const RenderDrawCommand = struct {
     scissor_y: u32 = 0,
     scissor_width: ?u32 = null,
     scissor_height: ?u32 = null,
+    vertex_layout_count: u32 = 0,
+    vertex_layouts: ?[]const RenderVertexBufferLayout = null,
+    vertex_binding_count: u32 = 0,
+    vertex_bindings: ?[]const RenderVertexBinding = null,
+    index_binding: ?RenderIndexBinding = null,
     topology: u32 = 0x00000004,
     front_face: u32 = 0x00000001,
     cull_mode: u32 = 0x00000001,

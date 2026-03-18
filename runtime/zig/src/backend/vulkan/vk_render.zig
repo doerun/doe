@@ -53,6 +53,8 @@ const RENDER_SHADER_WGSL =
 
 const VERTEX_ENTRY_POINT: [*:0]const u8 = "vs_main";
 const FRAGMENT_ENTRY_POINT: [*:0]const u8 = "fs_main";
+const VK_VERTEX_INPUT_RATE_VERTEX: u32 = 0;
+const VK_VERTEX_INPUT_RATE_INSTANCE: u32 = 1;
 
 pub const RenderState = struct {
     render_pass: c.VkRenderPass = VK_NULL_U64,
@@ -396,15 +398,45 @@ fn create_graphics_pipeline(
         },
     };
 
-    // No vertex input (vertex_index built-in generates geometry)
+    var vertex_binding_descriptions: [model.MAX_VERTEX_BUFFERS]c.VkVertexInputBindingDescription = undefined;
+    var vertex_attribute_descriptions: [model.MAX_VERTEX_BUFFERS * model.MAX_VERTEX_ATTRIBUTES]c.VkVertexInputAttributeDescription = undefined;
+    var vertex_binding_count: usize = 0;
+    var vertex_attribute_count: usize = 0;
+    if (cmd.vertex_layouts) |layouts| {
+        const layout_count = @min(layouts.len, model.MAX_VERTEX_BUFFERS);
+        var layout_index: usize = 0;
+        while (layout_index < layout_count) : (layout_index += 1) {
+            const layout = layouts[layout_index];
+            vertex_binding_descriptions[vertex_binding_count] = .{
+                .binding = @intCast(layout_index),
+                .stride = @intCast(@min(layout.array_stride, @as(u64, std.math.maxInt(u32)))),
+                .inputRate = vertex_step_mode_to_vk(layout.step_mode),
+            };
+            vertex_binding_count += 1;
+
+            const attr_count = @min(@as(usize, layout.attribute_count), model.MAX_VERTEX_ATTRIBUTES);
+            var attr_index: usize = 0;
+            while (attr_index < attr_count and vertex_attribute_count < vertex_attribute_descriptions.len) : (attr_index += 1) {
+                const attr = layout.attributes[attr_index];
+                vertex_attribute_descriptions[vertex_attribute_count] = .{
+                    .location = attr.shader_location,
+                    .binding = @intCast(layout_index),
+                    .format = try vk_formats.wgpu_vertex_format_to_vk(attr.format),
+                    .offset = @intCast(@min(attr.offset, @as(u64, std.math.maxInt(u32)))),
+                };
+                vertex_attribute_count += 1;
+            }
+        }
+    }
+
     var vertex_input = c.VkPipelineVertexInputStateCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .vertexBindingDescriptionCount = 0,
-        .pVertexBindingDescriptions = null,
-        .vertexAttributeDescriptionCount = 0,
-        .pVertexAttributeDescriptions = null,
+        .vertexBindingDescriptionCount = @intCast(vertex_binding_count),
+        .pVertexBindingDescriptions = if (vertex_binding_count > 0) vertex_binding_descriptions[0..vertex_binding_count].ptr else null,
+        .vertexAttributeDescriptionCount = @intCast(vertex_attribute_count),
+        .pVertexAttributeDescriptions = if (vertex_attribute_count > 0) vertex_attribute_descriptions[0..vertex_attribute_count].ptr else null,
     };
 
     var input_assembly = c.VkPipelineInputAssemblyStateCreateInfo{
@@ -548,11 +580,31 @@ fn topology_to_vk(topology: u32) u32 {
     };
 }
 
+fn vertex_step_mode_to_vk(step_mode: u32) u32 {
+    return if (step_mode == model.WGPUVertexStepMode_Instance) VK_VERTEX_INPUT_RATE_INSTANCE else VK_VERTEX_INPUT_RATE_VERTEX;
+}
+
 fn front_face_to_vk(front_face: u32) u32 {
     return switch (front_face) {
         0x00000002 => c.VK_FRONT_FACE_CLOCKWISE,
         else => c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
     };
+}
+
+fn resolve_vk_buffer_handle(self: *Runtime, handle: ?*anyopaque) ?c.VkBuffer {
+    const ptr = handle orelse return null;
+    const cb = self.compute_buffers.get(@intFromPtr(ptr)) orelse return null;
+    return cb.buffer;
+}
+
+fn bind_vertex_buffers(self: *Runtime, bindings: ?[]const model.RenderVertexBinding) void {
+    const bs = bindings orelse return;
+    for (bs) |binding| {
+        const vk_buffer = resolve_vk_buffer_handle(self, binding.handle) orelse continue;
+        const buffers = [1]c.VkBuffer{vk_buffer};
+        const offsets = [1]u64{binding.offset};
+        c.vkCmdBindVertexBuffers(self.primary_command_buffer, binding.slot, 1, &buffers, &offsets);
+    }
 }
 
 fn cull_mode_to_vk(cull_mode: u32) u32 {
@@ -651,6 +703,8 @@ fn record_and_submit_draws(
         }
     }
 
+    bind_vertex_buffers(self, cmd.vertex_bindings);
+
     // Set dynamic viewport
     const vp_width = cmd.viewport_width orelse @as(f32, @floatFromInt(target_width));
     const vp_height = cmd.viewport_height orelse @as(f32, @floatFromInt(target_height));
@@ -685,7 +739,7 @@ fn record_and_submit_draws(
     const first_vertex = cmd.first_vertex;
     const first_instance = cmd.first_instance;
 
-    if (cmd.index_data != null) {
+    if (cmd.index_data != null or cmd.index_binding != null or cmd.index_count != null) {
         try record_indexed_draws(self, cmd, draw_count);
     } else {
         var draw_index: u32 = 0;
@@ -755,6 +809,23 @@ fn record_indexed_draws(
     cmd: model.RenderDrawCommand,
     draw_count: u32,
 ) !void {
+    if (cmd.index_binding) |ib| {
+        const vk_buf = resolve_vk_buffer_handle(self, ib.handle) orelse return error.InvalidArgument;
+        c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, ib.offset, wgpu_index_format_to_vk(ib.format));
+        var draw_index: u32 = 0;
+        while (draw_index < draw_count) : (draw_index += 1) {
+            c.vkCmdDrawIndexed(
+                self.primary_command_buffer,
+                cmd.index_count orelse return error.InvalidArgument,
+                cmd.instance_count,
+                cmd.first_index,
+                cmd.base_vertex,
+                cmd.first_instance,
+            );
+        }
+        return;
+    }
+
     const index_data = cmd.index_data orelse return error.InvalidArgument;
     const index_count = cmd.index_count orelse switch (index_data) {
         .uint16 => |data| @as(u32, @intCast(data.len)),

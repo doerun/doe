@@ -34,11 +34,18 @@ surface:
 - Vulkan render-pipeline creation now consumes package/addon blend-factor,
   blend-operation, and cull-mode state into graphics-pipeline rasterization and
   color-blend setup
+- Vulkan render-pipeline and render-pass execution now retain and consume
+  `GPUVertexAttribute`, `GPUVertexBufferLayout`, and `GPUVertexState`
+  metadata end-to-end, including real vertex/index buffer binding on the
+  render-pass path
+- Vulkan swapchain creation now honors configured `GPUCanvasAlphaMode`
+  instead of hardcoding opaque composite alpha
 - shared/package publication for `GPUBuffer.mapState`, `GPUDevice.lost` reason
   strings, `layout: "auto"`, and the Vulkan feature-name surface is now reflected
   in the coverage ledger
 - remaining Vulkan graphics gaps still include full vertex-driven graphics
-  pipelines and richer compilation-info severity publication
+  bundle-parity follow-up, plus richer compilation-info severity publication and
+  tone-mapping-mode plumbing
 macOS browser maintenance now has scheduled workflow and retention wiring:
 - `.github/workflows/macos-browser-refresh.yml`
 - `browser/fawn-browser/scripts/cleanup-browser-artifacts.py`

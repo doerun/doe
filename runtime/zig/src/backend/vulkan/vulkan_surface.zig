@@ -60,6 +60,9 @@ const VK_PRESENT_MODE_IMMEDIATE_KHR: u32 = 0;
 
 // VkCompositeAlphaFlagBitsKHR
 const VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR: u32 = 0x00000001;
+const VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR: u32 = 0x00000002;
+const VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR: u32 = 0x00000004;
+const VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR: u32 = 0x00000008;
 
 // VkImageUsageFlagBitsKHR
 const VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT: u32 = 0x00000010;
@@ -458,6 +461,23 @@ fn map_present_mode(wgpu_mode: u32) u32 {
     };
 }
 
+/// Map the requested WebGPU alpha mode to a Vulkan composite-alpha mode.
+fn map_composite_alpha(requested: u32, supported: VkFlags) u32 {
+    const requested_mode: u32 = switch (requested) {
+        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+        VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
+        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR => requested,
+        else => VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+    };
+    if ((supported & requested_mode) != 0) return requested_mode;
+    if ((supported & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    if ((supported & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+    if ((supported & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+    if ((supported & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+    return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+}
+
 /// Clamp the requested extent to the surface capabilities.
 fn clamp_extent(
     requested_width: u32,
@@ -511,6 +531,7 @@ pub fn create_swapchain(
 
     const chosen_format = select_surface_format(formats[0..query_format_count]);
     const chosen_present_mode = map_present_mode(surface_state.present_mode);
+    const chosen_alpha_mode = map_composite_alpha(surface_state.alpha_mode, caps.supportedCompositeAlpha);
     const chosen_extent = clamp_extent(surface_state.width, surface_state.height, caps);
 
     // Image count: prefer one more than minimum for triple buffering
@@ -536,7 +557,7 @@ pub fn create_swapchain(
         .queueFamilyIndexCount = 1,
         .pQueueFamilyIndices = @ptrCast(&queue_family_index),
         .preTransform = caps.currentTransform,
-        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .compositeAlpha = chosen_alpha_mode,
         .presentMode = chosen_present_mode,
         .clipped = VK_TRUE,
         .oldSwapchain = old_swapchain,

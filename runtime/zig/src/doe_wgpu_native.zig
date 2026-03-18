@@ -6,6 +6,7 @@
 // - Vulkan path executes commands immediately (no deferred batching).
 
 const std = @import("std");
+const model = @import("model.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const error_scope = @import("error_scope.zig");
@@ -391,6 +392,8 @@ pub const DoeRenderPipeline = struct {
     magic: u32 = TYPE_MAGIC,
     mtl_pso: ?*anyopaque = null,
     layout: ?*DoePipelineLayout = null,
+    vertex_layout_count: u32 = 0,
+    vertex_layouts: [model.MAX_VERTEX_BUFFERS]model.RenderVertexBufferLayout = [_]model.RenderVertexBufferLayout{.{}} ** model.MAX_VERTEX_BUFFERS,
     depth_state: ?*anyopaque = null,
     topology: u32 = 0x00000004,
     front_face: u32 = 0x00000001,
@@ -427,9 +430,11 @@ pub const DoeRenderPass = struct {
     bind_groups: [MAX_RENDER_BIND_GROUPS]?*DoeBindGroup = [_]?*DoeBindGroup{null} ** MAX_RENDER_BIND_GROUPS,
     vertex_buffers: [MAX_VERTEX_BUFFERS]?*DoeBuffer = [_]?*DoeBuffer{null} ** MAX_VERTEX_BUFFERS,
     vertex_buffer_offsets: [MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** MAX_VERTEX_BUFFERS,
+    vertex_buffer_sizes: [MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** MAX_VERTEX_BUFFERS,
     index_buffer: ?*DoeBuffer = null,
     index_offset: u64 = 0,
     index_format: u32 = 0,
+    index_buffer_size: u64 = 0,
     viewport_x: f32 = 0,
     viewport_y: f32 = 0,
     viewport_width: ?f32 = null,

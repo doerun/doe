@@ -2,6 +2,7 @@
 // C ABI exports for the Doe native Metal backend. Sharded from doe_wgpu_native.zig.
 
 const std = @import("std");
+const model = @import("model.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
 
@@ -356,6 +357,37 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
     const pip = make(DoeRenderPipeline) orelse return null;
     pip.* = .{};
     pip.layout = cast(DoePipelineLayout, d.layout);
+
+    const buf_count = @min(d.vertex.bufferCount, model.MAX_VERTEX_BUFFERS);
+    if (buf_count > 0) {
+        const bufs = @as(?[*]const RenderVertexBufferLayout, @ptrCast(@alignCast(d.vertex.buffers)));
+        if (bufs) |layouts| {
+            pip.vertex_layout_count = @intCast(buf_count);
+            var i: usize = 0;
+            while (i < buf_count) : (i += 1) {
+                const layout = layouts[i];
+                const dst = &pip.vertex_layouts[i];
+                dst.* = .{
+                    .array_stride = layout.arrayStride,
+                    .step_mode = layout.stepMode,
+                    .attribute_count = @intCast(@min(layout.attributeCount, model.MAX_VERTEX_ATTRIBUTES)),
+                };
+                if (layout.attributes) |attrs| {
+                    const attr_count = @min(layout.attributeCount, model.MAX_VERTEX_ATTRIBUTES);
+                    var j: usize = 0;
+                    while (j < attr_count) : (j += 1) {
+                        const attr = attrs[j];
+                        dst.attributes[j] = .{
+                            .format = attr.format,
+                            .offset = attr.offset,
+                            .shader_location = attr.shaderLocation,
+                        };
+                    }
+                }
+            }
+        }
+    }
+
     if (dev.backend == .vulkan) {
         const vk_render = @import("doe_vulkan_render_native.zig");
         if (!vk_render.vulkan_create_render_pipeline(dev, pip, @ptrCast(d))) {
@@ -611,30 +643,27 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
 }
 
 pub export fn doeNativeRenderPassSetVertexBuffer(pass_raw: ?*anyopaque, slot: u32, buffer_raw: ?*anyopaque, offset: u64, size: u64) callconv(.c) void {
-    _ = cast(DoeRenderPass, pass_raw) orelse return;
-    _ = slot;
-    _ = buffer_raw;
-    _ = offset;
-    _ = size;
-    // TODO: implement vertex buffer assignment
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    if (slot >= MAX_VERTEX_BUFFERS) return;
+    pass.vertex_buffers[slot] = cast(DoeBuffer, buffer_raw);
+    pass.vertex_buffer_offsets[slot] = offset;
+    pass.vertex_buffer_sizes[slot] = size;
 }
 
 pub export fn doeNativeRenderPassSetIndexBuffer(pass_raw: ?*anyopaque, buffer_raw: ?*anyopaque, format: u32, offset: u64, size: u64) callconv(.c) void {
-    _ = cast(DoeRenderPass, pass_raw) orelse return;
-    _ = buffer_raw;
-    _ = format;
-    _ = offset;
-    _ = size;
-    // TODO: implement index buffer assignment
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    pass.index_buffer = cast(DoeBuffer, buffer_raw);
+    pass.index_format = format;
+    pass.index_offset = offset;
+    pass.index_buffer_size = size;
 }
 
 pub export fn doeNativeRenderPassSetBindGroup(pass_raw: ?*anyopaque, group_index: u32, group_raw: ?*anyopaque, dynamic_offset_count: usize, dynamic_offsets: ?[*]const u32) callconv(.c) void {
-    _ = cast(DoeRenderPass, pass_raw) orelse return;
-    _ = group_index;
-    _ = group_raw;
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    if (group_index >= MAX_RENDER_BIND_GROUPS) return;
+    pass.bind_groups[group_index] = cast(DoeBindGroup, group_raw);
     _ = dynamic_offset_count;
     _ = dynamic_offsets;
-    // TODO: implement render pass bind group assignment
 }
 
 pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count: u32, instance_count: u32, first_index: u32, base_vertex: i32, first_instance: u32) callconv(.c) void {

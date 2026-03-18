@@ -391,6 +391,21 @@ pub fn vulkan_render_pass_draw(
         null;
 
     const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
+    var vertex_bindings: [model.MAX_VERTEX_BUFFERS]model.RenderVertexBinding = undefined;
+    var vertex_binding_count: usize = 0;
+    var slot: usize = 0;
+    while (slot < pass.vertex_buffers.len) : (slot += 1) {
+        if (pass.vertex_buffers[slot]) |buf| {
+            if (buf.vk_id != 0) {
+                vertex_bindings[vertex_binding_count] = .{
+                    .slot = @intCast(slot),
+                    .handle = @ptrCast(buf),
+                    .offset = pass.vertex_buffer_offsets[slot],
+                };
+                vertex_binding_count += 1;
+            }
+        }
+    }
 
     const cmd = model.RenderDrawCommand{
         .draw_count = 1,
@@ -408,6 +423,11 @@ pub fn vulkan_render_pass_draw(
         .scissor_y = pass.scissor_y,
         .scissor_width = pass.scissor_width,
         .scissor_height = pass.scissor_height,
+        .vertex_layout_count = if (pass.pipeline) |pip| pip.vertex_layout_count else 0,
+        .vertex_layouts = if (pass.pipeline) |pip| if (pip.vertex_layout_count > 0) pip.vertex_layouts[0..@intCast(pip.vertex_layout_count)] else null else null,
+        .vertex_binding_count = @intCast(vertex_binding_count),
+        .vertex_bindings = if (vertex_binding_count > 0) vertex_bindings[0..vertex_binding_count] else null,
+        .index_binding = null,
         .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
         .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
         .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
@@ -450,6 +470,21 @@ pub fn vulkan_render_pass_draw_indexed(
         null;
 
     const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
+    var vertex_bindings: [model.MAX_VERTEX_BUFFERS]model.RenderVertexBinding = undefined;
+    var vertex_binding_count: usize = 0;
+    var slot: usize = 0;
+    while (slot < pass.vertex_buffers.len) : (slot += 1) {
+        if (pass.vertex_buffers[slot]) |buf| {
+            if (buf.vk_id != 0) {
+                vertex_bindings[vertex_binding_count] = .{
+                    .slot = @intCast(slot),
+                    .handle = @ptrCast(buf),
+                    .offset = pass.vertex_buffer_offsets[slot],
+                };
+                vertex_binding_count += 1;
+            }
+        }
+    }
 
     const cmd = model.RenderDrawCommand{
         .draw_count = 1,
@@ -470,6 +505,16 @@ pub fn vulkan_render_pass_draw_indexed(
         .scissor_y = pass.scissor_y,
         .scissor_width = pass.scissor_width,
         .scissor_height = pass.scissor_height,
+        .vertex_layout_count = if (pass.pipeline) |pip| pip.vertex_layout_count else 0,
+        .vertex_layouts = if (pass.pipeline) |pip| if (pip.vertex_layout_count > 0) pip.vertex_layouts[0..@intCast(pip.vertex_layout_count)] else null else null,
+        .vertex_binding_count = @intCast(vertex_binding_count),
+        .vertex_bindings = if (vertex_binding_count > 0) vertex_bindings[0..vertex_binding_count] else null,
+        .index_binding = if (pass.index_buffer) |idx_buf| .{
+            .handle = @ptrCast(idx_buf),
+            .offset = pass.index_offset,
+            .size = pass.index_buffer_size,
+            .format = pass.index_format,
+        } else null,
         .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
         .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
         .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
