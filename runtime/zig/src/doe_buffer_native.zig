@@ -12,6 +12,9 @@ const DoeQueue = native.DoeQueue;
 
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
 const WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR: u32 = 4;
+const DOE_BUFFER_MAP_STATE_UNMAPPED: u32 = 0;
+const DOE_BUFFER_MAP_STATE_PENDING: u32 = 1;
+const DOE_BUFFER_MAP_STATE_MAPPED: u32 = 2;
 
 extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?[*]u8;
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
@@ -30,6 +33,13 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBuffer, raw)) |b| b.mapped = false;
+}
+
+pub export fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32 {
+    const buf = cast(DoeBuffer, raw) orelse return DOE_BUFFER_MAP_STATE_UNMAPPED;
+    if (buf.mapped) return DOE_BUFFER_MAP_STATE_MAPPED;
+    _ = DOE_BUFFER_MAP_STATE_PENDING;
+    return DOE_BUFFER_MAP_STATE_UNMAPPED;
 }
 
 // ============================================================

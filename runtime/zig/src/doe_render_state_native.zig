@@ -1,16 +1,25 @@
 // doe_render_state_native.zig — C ABI re-exports for full render state support:
 // viewport, scissor, blend, MSAA, stencil, and depth/stencil pipeline.
 //
-// The implementations live in backend/metal/render_state.zig.  On non-macOS
-// targets, this file exposes deterministic no-op fallbacks so builds that do
-// not link Metal still produce a valid shared library.
+// The implementations live in backend/metal/render_state.zig. On non-macOS
+// targets these exports must fail explicitly instead of silently degrading.
 
 const builtin = @import("builtin");
+const std = @import("std");
 
 const impl = if (builtin.os.tag == .macos)
     @import("backend/metal/render_state.zig")
 else
     struct {
+        fn unsupported_void(comptime name: []const u8) void {
+            std.log.err("doe: {s}: unsupported on non-macOS render-state ABI; use the backend-native render path", .{name});
+        }
+
+        fn unsupported_ptr(comptime name: []const u8) ?*anyopaque {
+            std.log.err("doe: {s}: unsupported on non-macOS render-state ABI; use the backend-native render path", .{name});
+            return null;
+        }
+
         pub fn doeNativeRenderPassEncoderSetViewport(
             encoder: ?*anyopaque,
             x: f64,
@@ -27,6 +36,7 @@ else
             _ = height;
             _ = min_depth;
             _ = max_depth;
+            unsupported_void("doeNativeRenderPassEncoderSetViewport");
         }
 
         pub fn doeNativeRenderPassEncoderSetScissorRect(
@@ -41,6 +51,7 @@ else
             _ = y;
             _ = width;
             _ = height;
+            unsupported_void("doeNativeRenderPassEncoderSetScissorRect");
         }
 
         pub fn doeNativeRenderPassEncoderSetStencilReference(
@@ -49,6 +60,7 @@ else
         ) void {
             _ = encoder;
             _ = reference;
+            unsupported_void("doeNativeRenderPassEncoderSetStencilReference");
         }
 
         pub fn doeNativeRenderPassEncoderSetBlendConstant(
@@ -63,6 +75,7 @@ else
             _ = g;
             _ = b;
             _ = a;
+            unsupported_void("doeNativeRenderPassEncoderSetBlendConstant");
         }
 
         pub fn doeNativeRenderPassEncoderPushDebugGroup(
@@ -73,12 +86,14 @@ else
             _ = encoder;
             _ = label_ptr;
             _ = label_len;
+            unsupported_void("doeNativeRenderPassEncoderPushDebugGroup");
         }
 
         pub fn doeNativeRenderPassEncoderPopDebugGroup(
             encoder: ?*anyopaque,
         ) void {
             _ = encoder;
+            unsupported_void("doeNativeRenderPassEncoderPopDebugGroup");
         }
 
         pub fn doeNativeRenderPassEncoderInsertDebugMarker(
@@ -89,6 +104,7 @@ else
             _ = encoder;
             _ = label_ptr;
             _ = label_len;
+            unsupported_void("doeNativeRenderPassEncoderInsertDebugMarker");
         }
 
         pub fn doeNativeDeviceCreateRenderPipelineFull(
@@ -147,7 +163,7 @@ else
             _ = stencil_back_pass;
             _ = stencil_read_mask;
             _ = stencil_write_mask;
-            return null;
+            return unsupported_ptr("doeNativeDeviceCreateRenderPipelineFull");
         }
 
         pub fn doeNativeDeviceCreateDepthStencilState(
@@ -180,7 +196,7 @@ else
             _ = stencil_back_pass;
             _ = stencil_read_mask;
             _ = stencil_write_mask;
-            return null;
+            return unsupported_ptr("doeNativeDeviceCreateDepthStencilState");
         }
 
         pub fn doeNativeRenderPassEncoderSetDepthStencilState(
@@ -189,6 +205,7 @@ else
         ) void {
             _ = encoder;
             _ = ds_state;
+            unsupported_void("doeNativeRenderPassEncoderSetDepthStencilState");
         }
 
         pub fn doeNativeDeviceCreateMsaaTexture(
@@ -203,7 +220,7 @@ else
             _ = height;
             _ = pixel_format;
             _ = sample_count;
-            return null;
+            return unsupported_ptr("doeNativeDeviceCreateMsaaTexture");
         }
 
         pub fn doeNativeCmdBufMsaaRenderEncoder(
@@ -216,7 +233,7 @@ else
             _ = pipeline;
             _ = msaa_texture;
             _ = resolve_target;
-            return null;
+            return unsupported_ptr("doeNativeCmdBufMsaaRenderEncoder");
         }
     };
 

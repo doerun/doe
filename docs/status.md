@@ -2052,6 +2052,13 @@ Backend-specific emitters for all three backends:
   as implemented native surfaces: Vulkan surface configuration stores the
   chosen alpha mode, and `toneMapping.mode` now participates in swapchain
   format selection instead of existing only as wrapper metadata.
+- No-stubs cleanup advanced on native/runtime-visible paths:
+  - Vulkan surface configure/acquire/present now fail explicitly without a real
+    platform surface instead of fabricating headless placeholder presentation.
+  - addon `bufferGetMapState` is now backed by a real Doe buffer map-state
+    export instead of a hardcoded `"unmapped"` stub.
+  - non-macOS render-state ABI fallbacks and native-direct device event-listener
+    shims now report unsupported behavior explicitly instead of silently no-oping.
 - Pipeline-creation failures now normalize to `GPUPipelineError` with a
   concrete `reason` on Node/addon and Bun package paths.
 - Doe pipeline-layout handles now retain `immediateSize`, and compute/render

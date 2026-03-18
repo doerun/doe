@@ -3,30 +3,23 @@
 /* Forward declaration for render bundle encoder setImmediates (defined in doe_napi_nd_encoder.c) */
 napi_value native_direct_render_bundle_encoder_set_immediates(napi_env env, napi_callback_info info);
 
-/* addEventListener is a DOM EventTarget stub required to prevent
- * "TypeError: device.addEventListener is not a function" in code that
- * attaches uncapturedError or devicelost listeners. The Doe runtime is
- * synchronous and surfaces errors through explicit return values, so
- * registration here is intentionally a no-op. */
+/* addEventListener/removeEventListener are DOM EventTarget APIs. The native
+ * Doe runtime does not expose a DOM event source, so these methods fail
+ * explicitly instead of silently accepting listener registration. */
 napi_value native_direct_device_add_event_listener(napi_env env, napi_callback_info info) {
-    size_t argc = 2;
-    napi_value argv[2];
-    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
-    /* Consume type string and listener function to satisfy callers.
-     * No forwarding to the C ABI — pfn_doeNativeDeviceAddEventListener would
-     * also be a no-op and the symbol may not be present in the library yet. */
-    napi_value undefined_value;
-    napi_get_undefined(env, &undefined_value);
-    return undefined_value;
+    (void)info;
+    napi_throw_type_error(env, "DOE_UNSUPPORTED",
+        "device.addEventListener is not supported in the native Doe runtime "
+        "(no DOM event source is available)");
+    return NULL;
 }
 
 napi_value native_direct_device_remove_event_listener(napi_env env, napi_callback_info info) {
-    size_t argc = 2;
-    napi_value argv[2];
-    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
-    napi_value undefined_value;
-    napi_get_undefined(env, &undefined_value);
-    return undefined_value;
+    (void)info;
+    napi_throw_type_error(env, "DOE_UNSUPPORTED",
+        "device.removeEventListener is not supported in the native Doe runtime "
+        "(no DOM event source is available)");
+    return NULL;
 }
 
 /* External texture import requires platform video-frame OS APIs that are

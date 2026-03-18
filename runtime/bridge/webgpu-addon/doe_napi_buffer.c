@@ -238,13 +238,21 @@ napi_value doe_buffer_read_indirect_counts(napi_env env, napi_callback_info info
     return result;
 }
 
-/* bufferGetMapState(buffer) → "unmapped" | "pending" | "mapped"
- * Doe's bufferMapAsync is synchronous, so state is binary. Returns "unmapped"
- * as a stub; wire to native wgpuBufferGetMapState when exposed by the runtime. */
+/* bufferGetMapState(buffer) → "unmapped" | "pending" | "mapped" */
 napi_value doe_buffer_get_map_state(napi_env env, napi_callback_info info) {
-    (void)info;
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUBuffer buf = unwrap_ptr(env, _args[0]);
+    if (!buf) NAPI_THROW(env, "bufferGetMapState requires buffer");
+    if (!pfn_doeNativeBufferGetMapState) NAPI_THROW(env, "bufferGetMapState unavailable");
+
+    const uint32_t state = pfn_doeNativeBufferGetMapState(buf);
+    const char* text = "unmapped";
+    if (state == 1) text = "pending";
+    else if (state == 2) text = "mapped";
+
     napi_value result;
-    napi_create_string_utf8(env, "unmapped", NAPI_AUTO_LENGTH, &result);
+    napi_create_string_utf8(env, text, NAPI_AUTO_LENGTH, &result);
     return result;
 }
 

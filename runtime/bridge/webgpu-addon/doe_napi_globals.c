@@ -62,6 +62,7 @@ PFN_wgpuBufferRelease pfn_wgpuBufferRelease = NULL;
 PFN_wgpuBufferUnmap pfn_wgpuBufferUnmap = NULL;
 PFN_wgpuBufferGetConstMappedRange pfn_wgpuBufferGetConstMappedRange = NULL;
 PFN_wgpuBufferGetMappedRange pfn_wgpuBufferGetMappedRange = NULL;
+PFN_doeNativeBufferGetMapState pfn_doeNativeBufferGetMapState = NULL;
 PFN_wgpuCommandBufferRelease pfn_wgpuCommandBufferRelease = NULL;
 PFN_wgpuDeviceCreateTexture pfn_wgpuDeviceCreateTexture = NULL;
 PFN_wgpuTextureCreateView pfn_wgpuTextureCreateView = NULL;
@@ -322,6 +323,7 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeShaderModuleGetBindings = (PFN_doeNativeShaderModuleGetBindings)LIB_SYM(g_lib, "doeNativeShaderModuleGetBindings");
     pfn_doeNativeAdapterRequestDevice = (PFN_doeNativeAdapterRequestDevice)LIB_SYM(g_lib, "doeNativeAdapterRequestDevice");
     pfn_doeNativeBufferMapAsync = (PFN_doeNativeBufferMapAsync)LIB_SYM(g_lib, "doeNativeBufferMapAsync");
+    pfn_doeNativeBufferGetMapState = (PFN_doeNativeBufferGetMapState)LIB_SYM(g_lib, "doeNativeBufferGetMapState");
     pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeRequestAdapterFlat");
     pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");

@@ -6,9 +6,8 @@
 // Platform VkSurface handles (XCB/Wayland) must be attached via
 // doeNativeSurfaceSetXcbHandle / doeNativeSurfaceSetWaylandHandle before
 // doeNativeSurfaceConfigure is called to enable a real VkSwapchainKHR.
-// Without a platform handle the surface operates in headless mode:
-// configure succeeds, acquire returns a placeholder texture, no actual
-// GPU image is presented.
+// Headless placeholder presentation is not allowed on this path; configure
+// and acquire fail explicitly until a real platform surface is attached.
 
 const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
@@ -155,7 +154,6 @@ pub export fn doeNativeSurfaceConfigure(
 }
 
 /// Acquire the next swapchain image and expose it as a WGPUTexture handle.
-/// For headless surfaces the returned texture is a placeholder with no GPU backing.
 pub export fn doeNativeSurfaceGetCurrentTexture(
     surf_raw: ?*anyopaque,
     out_texture: ?*?*anyopaque,
