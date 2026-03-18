@@ -98,6 +98,19 @@ const TEXTURE_VIEW_DIMENSION = Object.freeze({
     "cube-array": 5,
     "3d": 6,
 });
+const TEXTURE_ASPECT_MAP = Object.freeze({
+    all: 1,
+    "stencil-only": 2,
+    "depth-only": 3,
+});
+const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
+    "0": 1,
+    "1": 2,
+    r: 3,
+    g: 4,
+    b: 5,
+    a: 6,
+});
 const STORAGE_TEXTURE_ACCESS = Object.freeze({
     "write-only": 2,
     "read-only": 3,
@@ -646,13 +659,30 @@ function buildRenderPipelineDescriptor(descriptor) {
     const vertexEntryBytes = encoder.encode(descriptor.vertexEntryPoint);
     const fragmentEntryBytes = encoder.encode(descriptor.fragmentEntryPoint);
     const vertexBuffers = descriptor.vertexBuffers ?? [];
+    const vertexConstants = buildConstantEntries(descriptor.vertexConstants);
+    const fragmentConstants = buildConstantEntries(descriptor.fragmentConstants);
+    const fragmentTarget = descriptor.fragmentTarget ?? { format: descriptor.colorFormat };
+    let blendStateArr = null;
+    if (fragmentTarget.blend) {
+        const blendStateBuf = new ArrayBuffer(WGPU_BLEND_STATE_SIZE);
+        const blendStateView = new DataView(blendStateBuf);
+        const color = fragmentTarget.blend.color ?? {};
+        const alpha = fragmentTarget.blend.alpha ?? {};
+        blendStateView.setUint32(0, blendOperationCode(color.operation), true);
+        blendStateView.setUint32(4, blendFactorCode(color.srcFactor ?? "one"), true);
+        blendStateView.setUint32(8, blendFactorCode(color.dstFactor ?? "zero"), true);
+        blendStateView.setUint32(12, blendOperationCode(alpha.operation), true);
+        blendStateView.setUint32(16, blendFactorCode(alpha.srcFactor ?? "one"), true);
+        blendStateView.setUint32(20, blendFactorCode(alpha.dstFactor ?? "zero"), true);
+        blendStateArr = new Uint8Array(blendStateBuf);
+    }
 
     const colorTargetBuf = new ArrayBuffer(WGPU_RENDER_COLOR_TARGET_STATE_SIZE);
     const colorTargetView = new DataView(colorTargetBuf);
     writePtr(colorTargetView, 0, null);
-    colorTargetView.setUint32(8, TEXTURE_FORMAT_MAP[descriptor.colorFormat] ?? 0x00000016, true);
-    writePtr(colorTargetView, 16, null);
-    colorTargetView.setBigUint64(24, 0xFn, true);
+    colorTargetView.setUint32(8, TEXTURE_FORMAT_MAP[fragmentTarget.format ?? descriptor.colorFormat] ?? 0x00000016, true);
+    writePtr(colorTargetView, 16, blendStateArr ? bunPtr(blendStateArr) : null);
+    colorTargetView.setBigUint64(24, BigInt(fragmentTarget.writeMask ?? 0xF), true);
     const colorTargetArr = new Uint8Array(colorTargetBuf);
 
     const fragmentBuf = new ArrayBuffer(WGPU_RENDER_FRAGMENT_STATE_SIZE);
@@ -660,8 +690,8 @@ function buildRenderPipelineDescriptor(descriptor) {
     writePtr(fragmentView, 0, null);
     writePtr(fragmentView, 8, descriptor.fragmentModule);
     writeStringView(fragmentView, 16, fragmentEntryBytes);
-    fragmentView.setBigUint64(32, 0n, true);
-    writePtr(fragmentView, 40, null);
+    fragmentView.setBigUint64(32, BigInt(fragmentConstants.count), true);
+    writePtr(fragmentView, 40, fragmentConstants.entries ? bunPtr(fragmentConstants.entries) : null);
     fragmentView.setBigUint64(48, 1n, true);
     writePtr(fragmentView, 56, bunPtr(colorTargetArr));
     const fragmentArr = new Uint8Array(fragmentBuf);
@@ -721,8 +751,8 @@ function buildRenderPipelineDescriptor(descriptor) {
     writePtr(view, 32, null);
     writePtr(view, 40, descriptor.vertexModule);
     writeStringView(view, 48, vertexEntryBytes);
-    view.setBigUint64(64, 0n, true);
-    writePtr(view, 72, null);
+    view.setBigUint64(64, BigInt(vertexConstants.count), true);
+    writePtr(view, 72, vertexConstants.entries ? bunPtr(vertexConstants.entries) : null);
     view.setBigUint64(80, BigInt(vertexBuffers.length), true);
     writePtr(view, 88, vertexBuffers.length > 0 ? bunPtr(vertexBufferArr) : null);
     writePtr(view, 96, null);
@@ -745,7 +775,18 @@ function buildRenderPipelineDescriptor(descriptor) {
     writePtr(view, 160, bunPtr(fragmentArr));
     return {
         desc: new Uint8Array(buf),
-        _refs: [vertexEntryBytes, fragmentEntryBytes, colorTargetArr, fragmentArr, vertexAttributeArr, vertexBufferArr, depthStencilArr].filter(Boolean),
+        _refs: [
+            vertexEntryBytes,
+            fragmentEntryBytes,
+            colorTargetArr,
+            blendStateArr,
+            fragmentArr,
+            vertexAttributeArr,
+            vertexBufferArr,
+            depthStencilArr,
+            ...vertexConstants.refs,
+            ...fragmentConstants.refs,
+        ].filter(Boolean),
     };
 }
 
@@ -1008,12 +1049,50 @@ const TEXTURE_DIMENSION_MAP = Object.freeze({
     "2d": 2,
     "3d": 3,
 });
+const TEXTURE_VIEW_DESC_SIZE = 80;
+const WGPU_CONSTANT_ENTRY_SIZE = 32;
+const WGPU_BLEND_STATE_SIZE = 24;
+
+function blendOperationCode(operation) {
+    return {
+        add: 1,
+        subtract: 2,
+        "reverse-subtract": 3,
+        min: 4,
+        max: 5,
+    }[operation ?? "add"] ?? 1;
+}
+
+function blendFactorCode(factor) {
+    return {
+        zero: 1,
+        one: 2,
+        src: 3,
+        "one-minus-src": 4,
+        "src-alpha": 5,
+        "one-minus-src-alpha": 6,
+        dst: 7,
+        "one-minus-dst": 8,
+        "dst-alpha": 9,
+        "one-minus-dst-alpha": 10,
+        "src-alpha-saturated": 11,
+        constant: 12,
+        "one-minus-constant": 13,
+        src1: 14,
+        "one-minus-src1": 15,
+        "src1-alpha": 16,
+        "one-minus-src1-alpha": 17,
+    }[factor ?? "one"] ?? 2;
+}
 
 function buildTextureDescriptor(descriptor) {
     const buf = new ArrayBuffer(TEXTURE_DESC_SIZE);
     const v = new DataView(buf);
+    const refs = [];
     writePtr(v, 0, null);
-    writeStringView(v, 8, null);
+    const labelBytes = descriptor.label ? encoder.encode(descriptor.label) : null;
+    if (labelBytes) refs.push(labelBytes);
+    writeStringView(v, 8, labelBytes);
     v.setBigUint64(24, BigInt(descriptor.usage || 0), true);
     const dimension = descriptor.dimension ?? "2d";
     v.setUint32(32, typeof dimension === "number" ? dimension : (TEXTURE_DIMENSION_MAP[dimension] ?? 2), true);
@@ -1026,12 +1105,71 @@ function buildTextureDescriptor(descriptor) {
     const fmt = descriptor.format || "rgba8unorm";
     v.setUint32(48, TEXTURE_FORMAT_MAP[fmt] ?? 0x16, true);
     v.setUint32(52, descriptor.mipLevelCount || 1, true);
-    v.setUint32(56, 1, true); // sampleCount
-    v.setBigUint64(64, 0n, true); // viewFormatCount
-    writePtr(v, 72, null); // viewFormats
+    v.setUint32(56, descriptor.sampleCount || 1, true);
+    const viewFormats = Array.isArray(descriptor.viewFormats) ? descriptor.viewFormats : [];
+    let viewFormatsArr = null;
+    if (viewFormats.length > 0) {
+        viewFormatsArr = new Uint32Array(viewFormats.length);
+        for (let index = 0; index < viewFormats.length; index += 1) {
+            viewFormatsArr[index] = TEXTURE_FORMAT_MAP[viewFormats[index]] ?? 0x16;
+        }
+        refs.push(viewFormatsArr);
+    }
+    v.setBigUint64(64, BigInt(viewFormats.length), true);
+    writePtr(v, 72, viewFormatsArr ? bunPtr(viewFormatsArr) : null);
     const tbvd = descriptor.textureBindingViewDimension;
     v.setUint32(80, tbvd ? (TEXTURE_VIEW_DIMENSION[tbvd] ?? 0) : 0, true);
-    return new Uint8Array(buf);
+    return { desc: new Uint8Array(buf), _refs: refs };
+}
+
+function buildTextureViewDescriptor(descriptor) {
+    const buf = new ArrayBuffer(TEXTURE_VIEW_DESC_SIZE);
+    const v = new DataView(buf);
+    const refs = [];
+    writePtr(v, 0, null);
+    const labelBytes = descriptor.label ? encoder.encode(descriptor.label) : null;
+    if (labelBytes) refs.push(labelBytes);
+    writeStringView(v, 8, labelBytes);
+    const format = descriptor.format;
+    v.setUint32(24, format ? (TEXTURE_FORMAT_MAP[format] ?? 0) : 0, true);
+    const dimension = descriptor.dimension;
+    v.setUint32(28, dimension ? (typeof dimension === "number" ? dimension : (TEXTURE_VIEW_DIMENSION[dimension] ?? 0)) : 0, true);
+    v.setUint32(32, descriptor.baseMipLevel ?? 0, true);
+    v.setUint32(36, descriptor.mipLevelCount ?? 0, true);
+    v.setUint32(40, descriptor.baseArrayLayer ?? 0, true);
+    v.setUint32(44, descriptor.arrayLayerCount ?? 0, true);
+    const aspect = descriptor.aspect;
+    v.setUint32(48, aspect ? (typeof aspect === "number" ? aspect : (TEXTURE_ASPECT_MAP[aspect] ?? 0)) : 0, true);
+    v.setBigUint64(56, BigInt(descriptor.usage ?? 0), true);
+    const swizzle = typeof descriptor.swizzle === "string" && descriptor.swizzle.length === 4 ? descriptor.swizzle : null;
+    v.setUint32(64, swizzle ? (TEXTURE_SWIZZLE_COMPONENT_MAP[swizzle[0]] ?? 0) : 0, true);
+    v.setUint32(68, swizzle ? (TEXTURE_SWIZZLE_COMPONENT_MAP[swizzle[1]] ?? 0) : 0, true);
+    v.setUint32(72, swizzle ? (TEXTURE_SWIZZLE_COMPONENT_MAP[swizzle[2]] ?? 0) : 0, true);
+    v.setUint32(76, swizzle ? (TEXTURE_SWIZZLE_COMPONENT_MAP[swizzle[3]] ?? 0) : 0, true);
+    return { desc: new Uint8Array(buf), _refs: refs };
+}
+
+function buildConstantEntries(constants) {
+    if (!constants || typeof constants !== "object") {
+        return { count: 0, entries: null, refs: [] };
+    }
+    const keys = Object.keys(constants);
+    if (keys.length === 0) {
+        return { count: 0, entries: null, refs: [] };
+    }
+    const entries = new Uint8Array(keys.length * WGPU_CONSTANT_ENTRY_SIZE);
+    const view = new DataView(entries.buffer);
+    const refs = [entries];
+    for (let index = 0; index < keys.length; index += 1) {
+        const key = keys[index];
+        const keyBytes = encoder.encode(String(key));
+        refs.push(keyBytes);
+        const offset = index * WGPU_CONSTANT_ENTRY_SIZE;
+        writePtr(view, offset + 0, null);
+        writeStringView(view, offset + 8, keyBytes);
+        view.setFloat64(offset + 24, Number(constants[key]), true);
+    }
+    return { count: keys.length, entries, refs };
 }
 
 // WGPUSamplerDescriptor: { nextInChain:ptr@0, label:sv@8, addressModeU:u32@24, V:u32@28, W:u32@32,
@@ -2011,8 +2149,14 @@ const fullSurfaceBackend = {
             throw error;
         }
     },
-    textureCreateView(_texture, native) {
-        return wgpu.symbols.wgpuTextureCreateView(native, null);
+    textureCreateView(_texture, native, descriptor) {
+        if (!descriptor) {
+            return wgpu.symbols.wgpuTextureCreateView(native, null);
+        }
+        const { desc, _refs } = buildTextureViewDescriptor(descriptor);
+        const view = wgpu.symbols.wgpuTextureCreateView(native, desc);
+        void _refs;
+        return view;
     },
     textureDestroy(native) {
         wgpu.symbols.wgpuTextureRelease(native);
@@ -2124,14 +2268,18 @@ const fullSurfaceBackend = {
         return native;
     },
     deviceCreateTexture(device, textureDescriptor, size, usage) {
-        const descBytes = buildTextureDescriptor({
+        const { desc, _refs } = buildTextureDescriptor({
             ...textureDescriptor,
             dimension: normalizeTextureDimension(textureDescriptor.dimension, "GPUDevice.createTexture"),
             usage,
             size,
             mipLevelCount: assertIntegerInRange(textureDescriptor.mipLevelCount ?? 1, "GPUDevice.createTexture", "descriptor.mipLevelCount", { min: 1, max: UINT32_MAX }),
+            sampleCount: assertIntegerInRange(textureDescriptor.sampleCount ?? 1, "GPUDevice.createTexture", "descriptor.sampleCount", { min: 1, max: UINT32_MAX }),
+            viewFormats: Array.isArray(textureDescriptor.viewFormats) ? textureDescriptor.viewFormats : [],
         });
-        return wgpu.symbols.wgpuDeviceCreateTexture(assertLiveResource(device, "GPUDevice.createTexture", "GPUDevice"), descBytes);
+        const native = wgpu.symbols.wgpuDeviceCreateTexture(assertLiveResource(device, "GPUDevice.createTexture", "GPUDevice"), desc);
+        void _refs;
+        return native;
     },
     deviceCreateSampler(device, descriptor) {
         const descBytes = buildSamplerDescriptor(descriptor);
@@ -2143,9 +2291,12 @@ const fullSurfaceBackend = {
             vertexModule: descriptor.vertexModule,
             vertexEntryPoint: descriptor.vertexEntryPoint,
             vertexBuffers: descriptor.vertexBuffers ?? [],
+            vertexConstants: descriptor.vertexConstants ?? null,
             fragmentModule: descriptor.fragmentModule,
             fragmentEntryPoint: descriptor.fragmentEntryPoint,
+            fragmentConstants: descriptor.fragmentConstants ?? null,
             colorFormat: descriptor.colorFormat,
+            fragmentTarget: descriptor.fragmentTarget ?? { format: descriptor.colorFormat },
             primitive: descriptor.primitive ?? null,
             depthStencil: descriptor.depthStencil ?? null,
             multisample: descriptor.multisample ?? null,

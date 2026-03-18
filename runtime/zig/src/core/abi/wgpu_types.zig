@@ -55,6 +55,7 @@ pub const WGPUTextureFormat = u32;
 pub const WGPUShaderStageFlags = WGPUFlags;
 pub const WGPUTextureDimension = u32;
 pub const WGPUTextureAspect = u32;
+pub const WGPUTextureComponentSwizzle = u32;
 pub const WGPUTextureViewDimension = u32;
 
 pub const WGPUBool = u32;
@@ -269,6 +270,13 @@ pub const WGPUTextureAspect_Undefined: u32 = 0;
 pub const WGPUTextureAspect_All: u32 = 1;
 pub const WGPUTextureAspect_StencilOnly: u32 = 2;
 pub const WGPUTextureAspect_DepthOnly: u32 = 3;
+pub const WGPUTextureComponentSwizzle_Undefined: u32 = 0;
+pub const WGPUTextureComponentSwizzle_Zero: u32 = 1;
+pub const WGPUTextureComponentSwizzle_One: u32 = 2;
+pub const WGPUTextureComponentSwizzle_Red: u32 = 3;
+pub const WGPUTextureComponentSwizzle_Green: u32 = 4;
+pub const WGPUTextureComponentSwizzle_Blue: u32 = 5;
+pub const WGPUTextureComponentSwizzle_Alpha: u32 = 6;
 
 pub const WGPUStorageTextureAccess_BindingNotUsed: u32 = 0x00000000;
 pub const WGPUStorageTextureAccess_Undefined: u32 = 0x00000001;
@@ -349,6 +357,10 @@ pub const WGPUTextureViewDescriptor = extern struct {
     arrayLayerCount: u32,
     aspect: WGPUTextureAspect,
     usage: WGPUTextureUsage,
+    swizzleR: WGPUTextureComponentSwizzle,
+    swizzleG: WGPUTextureComponentSwizzle,
+    swizzleB: WGPUTextureComponentSwizzle,
+    swizzleA: WGPUTextureComponentSwizzle,
 };
 
 pub const WGPUTextureDescriptor = extern struct {

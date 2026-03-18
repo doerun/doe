@@ -343,6 +343,11 @@ pub const DoeTexture = struct {
     height: u32 = 0,
     depth_or_array_layers: u32 = 1,
     dimension: u32 = 0,
+    mip_level_count: u32 = 1,
+    sample_count: u32 = 1,
+    usage: u64 = 0,
+    texture_binding_view_dimension: u32 = 0,
+    view_format_count: usize = 0,
     // Vulkan-only: key in NativeVulkanRuntime.textures and back-reference
     // to the runtime for explicit release on doeNativeTextureRelease.
     vk_id: u64 = 0,
@@ -353,6 +358,15 @@ pub const DoeTextureView = struct {
     const TYPE_MAGIC = MAGIC_TEXTURE_VIEW;
     magic: u32 = TYPE_MAGIC,
     tex: *DoeTexture,
+    handle: ?*anyopaque = null,
+    format: u32 = 0,
+    dimension: u32 = 0,
+    base_mip_level: u32 = 0,
+    mip_level_count: u32 = 0,
+    base_array_layer: u32 = 0,
+    array_layer_count: u32 = 0,
+    aspect: u32 = 0,
+    usage: u64 = 0,
 };
 
 pub const DoeSampler = struct {
@@ -375,6 +389,15 @@ pub const DoeRenderPipeline = struct {
     depth_compare: u32 = 0,
     depth_write_enabled: bool = false,
     unclipped_depth: bool = false,
+    blend_enabled: bool = false,
+    color_operation: u32 = 0,
+    color_src_factor: u32 = 0,
+    color_dst_factor: u32 = 0,
+    alpha_operation: u32 = 0,
+    alpha_src_factor: u32 = 0,
+    alpha_dst_factor: u32 = 0,
+    color_write_mask: u32 = 0xF,
+    sample_count: u32 = 1,
 };
 
 pub const DoeRenderPass = struct {

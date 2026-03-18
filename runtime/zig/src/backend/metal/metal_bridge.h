@@ -294,9 +294,22 @@ MetalHandle metal_bridge_device_new_texture(
     uint32_t    height,
     uint32_t    depth_or_array_layers,
     uint32_t    mip_levels,
+    uint32_t    sample_count,
     uint32_t    pixel_format,
     uint32_t    usage,
     uint32_t    dimension);
+MetalHandle metal_bridge_texture_new_view(
+    MetalHandle texture,
+    uint32_t    pixel_format,
+    uint32_t    dimension,
+    uint32_t    base_mip_level,
+    uint32_t    mip_level_count,
+    uint32_t    base_array_layer,
+    uint32_t    array_layer_count,
+    uint32_t    swizzle_r,
+    uint32_t    swizzle_g,
+    uint32_t    swizzle_b,
+    uint32_t    swizzle_a);
 
 // Write CPU data into a texture. For 3D textures uses replaceRegion:bytesPerImage:; for 2D uses bytesPerRow only.
 void metal_bridge_texture_replace_region(
@@ -356,6 +369,15 @@ MetalHandle metal_bridge_device_new_render_pipeline_full(
     MetalHandle                     fragment_function,
     uint32_t                        pixel_format,
     uint32_t                        depth_format,
+    uint32_t                        sample_count,
+    int                             blend_enabled,
+    uint32_t                        color_operation,
+    uint32_t                        color_src_factor,
+    uint32_t                        color_dst_factor,
+    uint32_t                        alpha_operation,
+    uint32_t                        alpha_src_factor,
+    uint32_t                        alpha_dst_factor,
+    uint32_t                        color_write_mask,
     const MetalVertexBufferLayout*  vertex_layouts,
     uint32_t                        vertex_layout_count,
     const MetalVertexAttributeDesc* vertex_attributes,

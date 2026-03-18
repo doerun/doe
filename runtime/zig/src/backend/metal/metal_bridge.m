@@ -283,6 +283,39 @@ static MTLVertexFormat wgpu_to_mtl_vertex_format(uint32_t format) {
     }
 }
 
+static MTLBlendOperation wgpu_to_mtl_blend_op(uint32_t op) {
+    switch (op) {
+        case 2: return MTLBlendOperationSubtract;
+        case 3: return MTLBlendOperationReverseSubtract;
+        case 4: return MTLBlendOperationMin;
+        case 5: return MTLBlendOperationMax;
+        default: return MTLBlendOperationAdd;
+    }
+}
+
+static MTLBlendFactor wgpu_to_mtl_blend_factor(uint32_t factor) {
+    switch (factor) {
+        case 1: return MTLBlendFactorZero;
+        case 2: return MTLBlendFactorOne;
+        case 3: return MTLBlendFactorSourceColor;
+        case 4: return MTLBlendFactorOneMinusSourceColor;
+        case 5: return MTLBlendFactorSourceAlpha;
+        case 6: return MTLBlendFactorOneMinusSourceAlpha;
+        case 7: return MTLBlendFactorDestinationColor;
+        case 8: return MTLBlendFactorOneMinusDestinationColor;
+        case 9: return MTLBlendFactorDestinationAlpha;
+        case 10: return MTLBlendFactorOneMinusDestinationAlpha;
+        case 11: return MTLBlendFactorSourceAlphaSaturated;
+        case 12: return MTLBlendFactorBlendColor;
+        case 13: return MTLBlendFactorOneMinusBlendColor;
+        case 14: return MTLBlendFactorSource1Color;
+        case 15: return MTLBlendFactorOneMinusSource1Color;
+        case 16: return MTLBlendFactorSource1Alpha;
+        case 17: return MTLBlendFactorOneMinusSource1Alpha;
+        default: return MTLBlendFactorOne;
+    }
+}
+
 static MTLIndexType wgpu_to_mtl_index_type(uint32_t format) {
     return format == 0x00000002 ? MTLIndexTypeUInt32 : MTLIndexTypeUInt16;
 }
@@ -1282,6 +1315,7 @@ MetalHandle metal_bridge_device_new_texture(
     uint32_t    height,
     uint32_t    depth_or_array_layers,
     uint32_t    mip_levels,
+    uint32_t    sample_count,
     uint32_t    pixel_format,
     uint32_t    usage,
     uint32_t    dimension)
@@ -1296,11 +1330,15 @@ MetalHandle metal_bridge_device_new_texture(
     desc.width            = width;
     desc.height           = height;
     desc.mipmapLevelCount = mips;
+    desc.sampleCount      = sample_count > 1 ? sample_count : 1;
 
     // dimension: 3 = WGPUTextureDimension_3D; 2D-array when layers > 1 and dimension != 3.
     if (dimension == 3) {
         desc.textureType = MTLTextureType3D;
         desc.depth       = layers;
+    } else if (desc.sampleCount > 1) {
+        desc.textureType = MTLTextureType2DMultisample;
+        desc.depth       = 1;
     } else if (layers > 1) {
         desc.textureType = MTLTextureType2DArray;
         desc.arrayLength = layers;
@@ -1319,6 +1357,45 @@ MetalHandle metal_bridge_device_new_texture(
     id<MTLTexture> tex = [device newTextureWithDescriptor:desc];
     if (tex == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(tex);
+}
+
+MetalHandle metal_bridge_texture_new_view(
+    MetalHandle texture_h,
+    uint32_t    pixel_format,
+    uint32_t    dimension,
+    uint32_t    base_mip_level,
+    uint32_t    mip_level_count,
+    uint32_t    base_array_layer,
+    uint32_t    array_layer_count,
+    uint32_t    swizzle_r,
+    uint32_t    swizzle_g,
+    uint32_t    swizzle_b,
+    uint32_t    swizzle_a)
+{
+    id<MTLTexture> tex = (__bridge id<MTLTexture>)texture_h;
+    if (tex == nil) return NULL;
+    MTLPixelFormat fmt = wgpu_to_mtl_format(pixel_format);
+    MTLTextureType texture_type = tex.textureType;
+    switch (dimension) {
+        case 1: texture_type = MTLTextureType1D; break;
+        case 2: texture_type = tex.sampleCount > 1 ? MTLTextureType2DMultisample : MTLTextureType2D; break;
+        case 3: texture_type = MTLTextureType2DArray; break;
+        case 4: texture_type = MTLTextureTypeCube; break;
+        case 5: texture_type = MTLTextureTypeCubeArray; break;
+        case 6: texture_type = MTLTextureType3D; break;
+        default: break;
+    }
+    NSRange levels = NSMakeRange(base_mip_level, mip_level_count > 0 ? mip_level_count : MAX((NSUInteger)1, tex.mipmapLevelCount - base_mip_level));
+    NSRange slices = NSMakeRange(base_array_layer, array_layer_count > 0 ? array_layer_count : 1);
+    MTLTextureSwizzleChannels swizzle = {
+        .red = swizzle_r == 1 ? MTLTextureSwizzleZero : swizzle_r == 2 ? MTLTextureSwizzleOne : swizzle_r == 4 ? MTLTextureSwizzleGreen : swizzle_r == 5 ? MTLTextureSwizzleBlue : swizzle_r == 6 ? MTLTextureSwizzleAlpha : MTLTextureSwizzleRed,
+        .green = swizzle_g == 1 ? MTLTextureSwizzleZero : swizzle_g == 2 ? MTLTextureSwizzleOne : swizzle_g == 3 ? MTLTextureSwizzleRed : swizzle_g == 5 ? MTLTextureSwizzleBlue : swizzle_g == 6 ? MTLTextureSwizzleAlpha : MTLTextureSwizzleGreen,
+        .blue = swizzle_b == 1 ? MTLTextureSwizzleZero : swizzle_b == 2 ? MTLTextureSwizzleOne : swizzle_b == 3 ? MTLTextureSwizzleRed : swizzle_b == 4 ? MTLTextureSwizzleGreen : swizzle_b == 6 ? MTLTextureSwizzleAlpha : MTLTextureSwizzleBlue,
+        .alpha = swizzle_a == 1 ? MTLTextureSwizzleZero : swizzle_a == 2 ? MTLTextureSwizzleOne : swizzle_a == 3 ? MTLTextureSwizzleRed : swizzle_a == 4 ? MTLTextureSwizzleGreen : swizzle_a == 5 ? MTLTextureSwizzleBlue : MTLTextureSwizzleAlpha,
+    };
+    id<MTLTexture> view = [tex newTextureViewWithPixelFormat:fmt textureType:texture_type levels:levels slices:slices swizzle:swizzle];
+    if (view == nil) return NULL;
+    return (MetalHandle)CFBridgingRetain(view);
 }
 
 void metal_bridge_texture_replace_region(
@@ -1491,6 +1568,15 @@ MetalHandle metal_bridge_device_new_render_pipeline_full(
     MetalHandle                     fragment_function_h,
     uint32_t                        pixel_format,
     uint32_t                        depth_format,
+    uint32_t                        sample_count,
+    int                             blend_enabled,
+    uint32_t                        color_operation,
+    uint32_t                        color_src_factor,
+    uint32_t                        color_dst_factor,
+    uint32_t                        alpha_operation,
+    uint32_t                        alpha_src_factor,
+    uint32_t                        alpha_dst_factor,
+    uint32_t                        color_write_mask,
     const MetalVertexBufferLayout*  vertex_layouts,
     uint32_t                        vertex_layout_count,
     const MetalVertexAttributeDesc* vertex_attributes,
@@ -1514,6 +1600,22 @@ MetalHandle metal_bridge_device_new_render_pipeline_full(
     desc.vertexFunction = vert_fn;
     desc.fragmentFunction = frag_fn;
     desc.colorAttachments[0].pixelFormat = wgpu_to_mtl_format(pixel_format);
+    desc.rasterSampleCount = sample_count > 1 ? sample_count : 1;
+    desc.colorAttachments[0].writeMask = 0;
+    if (color_write_mask & 0x1) desc.colorAttachments[0].writeMask |= MTLColorWriteMaskRed;
+    if (color_write_mask & 0x2) desc.colorAttachments[0].writeMask |= MTLColorWriteMaskGreen;
+    if (color_write_mask & 0x4) desc.colorAttachments[0].writeMask |= MTLColorWriteMaskBlue;
+    if (color_write_mask & 0x8) desc.colorAttachments[0].writeMask |= MTLColorWriteMaskAlpha;
+    if (desc.colorAttachments[0].writeMask == 0) desc.colorAttachments[0].writeMask = MTLColorWriteMaskAll;
+    if (blend_enabled) {
+        desc.colorAttachments[0].blendingEnabled = YES;
+        desc.colorAttachments[0].rgbBlendOperation = wgpu_to_mtl_blend_op(color_operation);
+        desc.colorAttachments[0].sourceRGBBlendFactor = wgpu_to_mtl_blend_factor(color_src_factor);
+        desc.colorAttachments[0].destinationRGBBlendFactor = wgpu_to_mtl_blend_factor(color_dst_factor);
+        desc.colorAttachments[0].alphaBlendOperation = wgpu_to_mtl_blend_op(alpha_operation);
+        desc.colorAttachments[0].sourceAlphaBlendFactor = wgpu_to_mtl_blend_factor(alpha_src_factor);
+        desc.colorAttachments[0].destinationAlphaBlendFactor = wgpu_to_mtl_blend_factor(alpha_dst_factor);
+    }
     if (depth_format != 0) {
         desc.depthAttachmentPixelFormat = wgpu_to_mtl_format(depth_format);
     }

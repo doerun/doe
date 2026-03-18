@@ -24,12 +24,11 @@ const DoeCommandEncoder = native.DoeCommandEncoder;
 
 // Metal bridge externs (resolved at link time from metal_bridge.m).
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, mip_levels: u32, pixel_format: u32, usage: u32, dimension: u32) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, mip_levels: u32, sample_count: u32, pixel_format: u32, usage: u32, dimension: u32) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_texture_new_view(texture: ?*anyopaque, pixel_format: u32, dimension: u32, base_mip_level: u32, mip_level_count: u32, base_array_layer: u32, array_layer_count: u32, swizzle_r: u32, swizzle_g: u32, swizzle_b: u32, swizzle_a: u32) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_f: u32, mag_f: u32, mip_f: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_library_new_function(library: ?*anyopaque, name: [*:0]const u8) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_render_pipeline_functions(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, err: ?[*]u8, err_cap: usize) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_render_pipeline_full(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, depth_format: u32, vertex_layouts: ?[*]const MtlVertexBufferLayout, vertex_layout_count: u32, vertex_attributes: ?[*]const MtlVertexAttributeDesc, vertex_attribute_count: u32, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_device_new_render_pipeline_full(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, depth_format: u32, sample_count: u32, blend_enabled: c_int, color_operation: u32, color_src_factor: u32, color_dst_factor: u32, alpha_operation: u32, alpha_src_factor: u32, alpha_dst_factor: u32, color_write_mask: u32, vertex_layouts: ?[*]const MtlVertexBufferLayout, vertex_layout_count: u32, vertex_attributes: ?[*]const MtlVertexAttributeDesc, vertex_attribute_count: u32, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
 
 // Metal vertex descriptor types (mirrors metal_bridge_decls.zig MetalVertexBufferLayout/MetalVertexAttributeDesc).
 const MtlVertexBufferLayout = extern struct {
@@ -132,7 +131,18 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const tex = make(DoeTexture) orelse return null;
-    tex.* = .{};
+    tex.* = .{
+        .format = d.format,
+        .width = d.size.width,
+        .height = d.size.height,
+        .depth_or_array_layers = d.size.depthOrArrayLayers,
+        .dimension = d.dimension,
+        .mip_level_count = d.mipLevelCount,
+        .sample_count = d.sampleCount,
+        .usage = d.usage,
+        .texture_binding_view_dimension = d.textureBindingViewDimension,
+        .view_format_count = d.viewFormatCount,
+    };
     if (dev.backend == .vulkan) {
         const vk_render = @import("doe_vulkan_render_native.zig");
         if (!vk_render.vulkan_create_texture(dev, tex, d)) {
@@ -144,22 +154,82 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
         return result;
     }
     // Metal path.
-    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.format, @intCast(d.usage), d.dimension) orelse {
+    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.sampleCount, d.format, @intCast(d.usage), d.dimension) orelse {
         alloc.destroy(tex);
         return null;
     };
-    tex.* = .{ .mtl = mtl, .format = d.format, .width = d.size.width, .height = d.size.height };
+    tex.mtl = mtl;
     const result = toOpaque(tex);
     label_store.set(result, d.label.data, d.label.length);
     return result;
 }
 
 pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const types.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque {
-    _ = desc;
     const tex = cast(DoeTexture, tex_raw) orelse return null;
     const tv = make(DoeTextureView) orelse return null;
-    tv.* = .{ .tex = tex };
-    return toOpaque(tv);
+    const d = desc orelse &types.WGPUTextureViewDescriptor{
+        .nextInChain = null,
+        .label = .{ .data = null, .length = 0 },
+        .format = tex.format,
+        .dimension = if (tex.texture_binding_view_dimension != 0) tex.texture_binding_view_dimension else tex.dimension,
+        .baseMipLevel = 0,
+        .mipLevelCount = tex.mip_level_count,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = tex.depth_or_array_layers,
+        .aspect = types.WGPUTextureAspect_All,
+        .usage = tex.usage,
+        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
+    };
+    const resolved_format = if (d.format != 0) d.format else tex.format;
+    const resolved_dimension = if (d.dimension != 0) d.dimension else if (tex.texture_binding_view_dimension != 0) tex.texture_binding_view_dimension else tex.dimension;
+    const resolved_mip_level_count = if (d.mipLevelCount != 0) d.mipLevelCount else tex.mip_level_count - d.baseMipLevel;
+    const resolved_array_layer_count = if (d.arrayLayerCount != 0) d.arrayLayerCount else if (tex.dimension == types.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers - d.baseArrayLayer;
+    const resolved_usage = if (d.usage != 0) d.usage else tex.usage;
+    const resolved_swizzle_r = if (d.swizzleR != 0) d.swizzleR else types.WGPUTextureComponentSwizzle_Red;
+    const resolved_swizzle_g = if (d.swizzleG != 0) d.swizzleG else types.WGPUTextureComponentSwizzle_Green;
+    const resolved_swizzle_b = if (d.swizzleB != 0) d.swizzleB else types.WGPUTextureComponentSwizzle_Blue;
+    const resolved_swizzle_a = if (d.swizzleA != 0) d.swizzleA else types.WGPUTextureComponentSwizzle_Alpha;
+    if (tex.mtl == null and tex.vk_id != 0) {
+        const vk_render = @import("doe_vulkan_render_native.zig");
+        if (!vk_render.vulkan_create_texture_view(tex, tv, d)) {
+            alloc.destroy(tv);
+            return null;
+        }
+    }
+    const view_handle = if (tex.mtl != null)
+        metal_bridge_texture_new_view(
+            tex.mtl,
+            resolved_format,
+            resolved_dimension,
+            d.baseMipLevel,
+            resolved_mip_level_count,
+            d.baseArrayLayer,
+            resolved_array_layer_count,
+            resolved_swizzle_r,
+            resolved_swizzle_g,
+            resolved_swizzle_b,
+            resolved_swizzle_a,
+        )
+    else
+        tv.handle;
+    tv.* = .{
+        .tex = tex,
+        .handle = if (view_handle) |handle| handle else tex.mtl,
+        .format = resolved_format,
+        .dimension = resolved_dimension,
+        .base_mip_level = d.baseMipLevel,
+        .mip_level_count = resolved_mip_level_count,
+        .base_array_layer = d.baseArrayLayer,
+        .array_layer_count = resolved_array_layer_count,
+        .aspect = if (d.aspect != 0) d.aspect else types.WGPUTextureAspect_All,
+        .usage = resolved_usage,
+    };
+    const result = toOpaque(tv);
+    label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -179,6 +249,15 @@ pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
 pub export fn doeNativeTextureViewRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTextureView, raw)) |tv| {
         label_store.remove(raw);
+        if (tv.tex.vk_id != 0) {
+            const vk_render = @import("doe_vulkan_render_native.zig");
+            vk_render.vulkan_destroy_texture_view(tv);
+            alloc.destroy(tv);
+            return;
+        }
+        if (tv.handle) |handle| {
+            if (tv.tex.mtl == null or handle != tv.tex.mtl) metal_bridge_release(handle);
+        }
         alloc.destroy(tv);
     }
 }
@@ -355,9 +434,28 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
         }
     }
 
+    const target0 = if (frag.targetCount > 0 and frag.targets != null) frag.targets.?[0] else RenderColorTargetState{
+        .nextInChain = null,
+        .format = pixel_format,
+        .blend = null,
+        .writeMask = 0xF,
+    };
+    const blend_enabled: c_int = if (target0.blend != null) 1 else 0;
+    const color_operation: u32 = if (target0.blend) |blend| blend.color.operation else 1;
+    const color_src_factor: u32 = if (target0.blend) |blend| blend.color.srcFactor else 2;
+    const color_dst_factor: u32 = if (target0.blend) |blend| blend.color.dstFactor else 1;
+    const alpha_operation: u32 = if (target0.blend) |blend| blend.alpha.operation else 1;
+    const alpha_src_factor: u32 = if (target0.blend) |blend| blend.alpha.srcFactor else 2;
+    const alpha_dst_factor: u32 = if (target0.blend) |blend| blend.alpha.dstFactor else 1;
+    const sample_count: u32 = if (d.multisample_count > 0) d.multisample_count else 1;
+
     const pso = metal_bridge_device_new_render_pipeline_full(
         dev.mtl_device, vfn, ffn,
-        pixel_format, depth_format,
+        pixel_format, depth_format, sample_count,
+        blend_enabled,
+        color_operation, color_src_factor, color_dst_factor,
+        alpha_operation, alpha_src_factor, alpha_dst_factor,
+        @intCast(target0.writeMask),
         if (layout_count > 0) &mtl_layouts else null, layout_count,
         if (attr_count > 0) &mtl_attrs else null, attr_count,
         &err_buf, ERR_CAP,
@@ -375,6 +473,15 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
         .topology = d.primitive.topology,
         .front_face = d.primitive.frontFace,
         .cull_mode = d.primitive.cullMode,
+        .blend_enabled = blend_enabled != 0,
+        .color_operation = color_operation,
+        .color_src_factor = color_src_factor,
+        .color_dst_factor = color_dst_factor,
+        .alpha_operation = alpha_operation,
+        .alpha_src_factor = alpha_src_factor,
+        .alpha_dst_factor = alpha_dst_factor,
+        .color_write_mask = @intCast(target0.writeMask),
+        .sample_count = sample_count,
     };
     return toOpaque(pip);
 }
@@ -402,7 +509,7 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
             if (d.colorAttachments) |attachments| {
                 const att = attachments[0];
                 const tv = cast(DoeTextureView, att.view);
-                if (tv) |v| pass.target = v.tex.mtl;
+                if (tv) |v| pass.target = if (v.handle) |handle| handle else v.tex.mtl;
                 pass.clear_r = att.clearValue.r;
                 pass.clear_g = att.clearValue.g;
                 pass.clear_b = att.clearValue.b;
