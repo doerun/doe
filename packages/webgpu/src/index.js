@@ -74,6 +74,27 @@ const TEXTURE_DIMENSION_MAP = Object.freeze({
   '2d': 2,
   '3d': 3,
 });
+const TEXTURE_VIEW_DIMENSION_MAP = Object.freeze({
+  '1d': 1,
+  '2d': 2,
+  '2d-array': 3,
+  cube: 4,
+  'cube-array': 5,
+  '3d': 6,
+});
+const TEXTURE_ASPECT_MAP = Object.freeze({
+  all: 1,
+  'stencil-only': 2,
+  'depth-only': 3,
+});
+const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
+  '0': 1,
+  '1': 2,
+  r: 3,
+  g: 4,
+  b: 5,
+  a: 6,
+});
 
 const addon = loadAddon();
 const DOE_LIB_PATH = resolveDoeLibraryPath();
@@ -1062,8 +1083,29 @@ const fullSurfaceBackend = {
       throw error;
     }
   },
-  textureCreateView(_texture, native) {
-    return addon.textureCreateView(native);
+  textureCreateView(_texture, native, descriptor) {
+    if (!descriptor) {
+      return addon.textureCreateView(native);
+    }
+    const viewDescriptor = { ...descriptor };
+    if (descriptor.dimension !== undefined) {
+      viewDescriptor.dimension = typeof descriptor.dimension === 'number'
+        ? descriptor.dimension
+        : (TEXTURE_VIEW_DIMENSION_MAP[descriptor.dimension] ?? 0);
+    }
+    if (descriptor.aspect !== undefined) {
+      viewDescriptor.aspect = typeof descriptor.aspect === 'number'
+        ? descriptor.aspect
+        : (TEXTURE_ASPECT_MAP[descriptor.aspect] ?? 0);
+    }
+    if (typeof descriptor.swizzle === 'string' && descriptor.swizzle.length === 4) {
+      viewDescriptor.swizzle = descriptor.swizzle;
+      viewDescriptor.swizzleR = TEXTURE_SWIZZLE_COMPONENT_MAP[descriptor.swizzle[0]] ?? 0;
+      viewDescriptor.swizzleG = TEXTURE_SWIZZLE_COMPONENT_MAP[descriptor.swizzle[1]] ?? 0;
+      viewDescriptor.swizzleB = TEXTURE_SWIZZLE_COMPONENT_MAP[descriptor.swizzle[2]] ?? 0;
+      viewDescriptor.swizzleA = TEXTURE_SWIZZLE_COMPONENT_MAP[descriptor.swizzle[3]] ?? 0;
+    }
+    return addon.textureCreateView(native, viewDescriptor);
   },
   textureDestroy(native) {
     addon.textureRelease(native);
@@ -1184,6 +1226,7 @@ const fullSurfaceBackend = {
   },
   deviceCreateTexture(device, textureDescriptor, size, usage) {
     const desc = {
+      label: textureDescriptor.label ?? '',
       format: textureDescriptor.format || 'rgba8unorm',
       width: size.width,
       height: size.height,
@@ -1191,6 +1234,8 @@ const fullSurfaceBackend = {
       dimension: TEXTURE_DIMENSION_MAP[textureDescriptor.dimension ?? '2d'] ?? 2,
       usage,
       mipLevelCount: assertIntegerInRange(textureDescriptor.mipLevelCount ?? 1, 'GPUDevice.createTexture', 'descriptor.mipLevelCount', { min: 1, max: UINT32_MAX }),
+      sampleCount: assertIntegerInRange(textureDescriptor.sampleCount ?? 1, 'GPUDevice.createTexture', 'descriptor.sampleCount', { min: 1, max: UINT32_MAX }),
+      viewFormats: Array.isArray(textureDescriptor.viewFormats) ? textureDescriptor.viewFormats : [],
     };
     if (textureDescriptor.textureBindingViewDimension) {
       desc.textureBindingViewDimension = textureDescriptor.textureBindingViewDimension;
@@ -1201,6 +1246,7 @@ const fullSurfaceBackend = {
     return addon.createSampler(assertLiveResource(device, 'GPUDevice.createSampler', 'GPUDevice'), descriptor);
   },
   deviceCreateRenderPipeline(device, descriptor) {
+    const fragmentTarget = descriptor.fragmentTarget ?? { format: 'rgba8unorm' };
     return addon.createRenderPipeline(
       assertLiveResource(device, 'GPUDevice.createRenderPipeline', 'GPUDevice'),
       {
@@ -1209,11 +1255,17 @@ const fullSurfaceBackend = {
           module: descriptor.vertexModule,
           entryPoint: descriptor.vertexEntryPoint,
           buffers: descriptor.vertexBuffers ?? [],
+          constants: descriptor.vertexConstants ?? null,
         },
         fragment: {
           module: descriptor.fragmentModule,
           entryPoint: descriptor.fragmentEntryPoint,
-          targets: [{ format: descriptor.colorFormat }],
+          constants: descriptor.fragmentConstants ?? null,
+          targets: [{
+            format: fragmentTarget.format,
+            writeMask: fragmentTarget.writeMask,
+            blend: fragmentTarget.blend ?? undefined,
+          }],
         },
         primitive: descriptor.primitive ? {
           topology: descriptor.primitive.topology ?? 'triangle-list',

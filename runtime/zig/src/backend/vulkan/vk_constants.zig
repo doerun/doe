@@ -290,8 +290,16 @@ pub const MAX_DESCRIPTOR_SETS: usize = 4;
 pub const MAX_DESCRIPTOR_SETS_U32: u32 = 4;
 
 // --- Image format and layout ---
+pub const VK_IMAGE_TYPE_1D: u32 = 0;
 pub const VK_IMAGE_TYPE_2D: u32 = 1;
+pub const VK_IMAGE_TYPE_3D: u32 = 2;
+pub const VK_IMAGE_VIEW_TYPE_1D: u32 = 0;
 pub const VK_IMAGE_VIEW_TYPE_2D: u32 = 1;
+pub const VK_IMAGE_VIEW_TYPE_3D: u32 = 2;
+pub const VK_IMAGE_VIEW_TYPE_CUBE: u32 = 3;
+pub const VK_IMAGE_VIEW_TYPE_1D_ARRAY: u32 = 4;
+pub const VK_IMAGE_VIEW_TYPE_2D_ARRAY: u32 = 5;
+pub const VK_IMAGE_VIEW_TYPE_CUBE_ARRAY: u32 = 6;
 pub const VK_IMAGE_TILING_OPTIMAL: u32 = 0;
 pub const VK_IMAGE_LAYOUT_UNDEFINED: u32 = 0;
 pub const VK_IMAGE_LAYOUT_GENERAL: u32 = 1;
@@ -301,6 +309,17 @@ pub const VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: u32 = 7;
 pub const VK_IMAGE_ASPECT_COLOR_BIT: u32 = 0x00000001;
 pub const VK_SAMPLE_COUNT_1_BIT: u32 = 0x00000001;
 pub const VK_COMPONENT_SWIZZLE_IDENTITY: u32 = 0;
+pub const VK_COMPONENT_SWIZZLE_ZERO: u32 = 1;
+pub const VK_COMPONENT_SWIZZLE_ONE: u32 = 2;
+pub const VK_COMPONENT_SWIZZLE_R: u32 = 3;
+pub const VK_COMPONENT_SWIZZLE_G: u32 = 4;
+pub const VK_COMPONENT_SWIZZLE_B: u32 = 5;
+pub const VK_COMPONENT_SWIZZLE_A: u32 = 6;
+pub const VK_SAMPLE_COUNT_2_BIT: u32 = 0x00000002;
+pub const VK_SAMPLE_COUNT_4_BIT: u32 = 0x00000004;
+pub const VK_SAMPLE_COUNT_8_BIT: u32 = 0x00000008;
+pub const VK_SAMPLE_COUNT_16_BIT: u32 = 0x00000010;
+pub const VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT: u32 = 0x00000010;
 pub const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
 
 // --- VkResult error codes (canonical definitions in vulkan_errors.zig) ---

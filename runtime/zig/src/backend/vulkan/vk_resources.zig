@@ -50,6 +50,58 @@ const TextureTransitionSource = struct {
 
 const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
 
+fn texture_dimension_to_vk_image_type(dimension: u32) u32 {
+    return switch (dimension) {
+        model.WGPUTextureDimension_1D => c.VK_IMAGE_TYPE_1D,
+        model.WGPUTextureDimension_3D => c.VK_IMAGE_TYPE_3D,
+        else => c.VK_IMAGE_TYPE_2D,
+    };
+}
+
+fn texture_view_dimension_to_vk_view_type(dimension: u32, array_layers: u32) u32 {
+    return switch (dimension) {
+        model.WGPUTextureViewDimension_1D => c.VK_IMAGE_VIEW_TYPE_1D,
+        model.WGPUTextureViewDimension_2D => c.VK_IMAGE_VIEW_TYPE_2D,
+        model.WGPUTextureViewDimension_2DArray => c.VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+        model.WGPUTextureViewDimension_Cube => c.VK_IMAGE_VIEW_TYPE_CUBE,
+        model.WGPUTextureViewDimension_CubeArray => c.VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
+        model.WGPUTextureViewDimension_3D => c.VK_IMAGE_VIEW_TYPE_3D,
+        else => if (array_layers > 1) c.VK_IMAGE_VIEW_TYPE_2D_ARRAY else c.VK_IMAGE_VIEW_TYPE_2D,
+    };
+}
+
+fn texture_sample_count_to_vk(sample_count: u32) !u32 {
+    return switch (sample_count) {
+        0, 1 => c.VK_SAMPLE_COUNT_1_BIT,
+        2 => c.VK_SAMPLE_COUNT_2_BIT,
+        4 => c.VK_SAMPLE_COUNT_4_BIT,
+        8 => c.VK_SAMPLE_COUNT_8_BIT,
+        16 => c.VK_SAMPLE_COUNT_16_BIT,
+        else => error.UnsupportedFeature,
+    };
+}
+
+fn texture_view_aspect_mask(format: model.WGPUTextureFormat, aspect: u32) u32 {
+    return switch (aspect) {
+        model.WGPUTextureAspect_DepthOnly => vk_formats.VK_IMAGE_ASPECT_DEPTH_BIT,
+        model.WGPUTextureAspect_StencilOnly => vk_formats.VK_IMAGE_ASPECT_STENCIL_BIT,
+        else => vk_formats.aspect_mask_for_format(format),
+    };
+}
+
+fn texture_component_swizzle_to_vk(component: u32, identity_component: u32) u32 {
+    return switch (component) {
+        0 => identity_component,
+        1 => c.VK_COMPONENT_SWIZZLE_ZERO,
+        2 => c.VK_COMPONENT_SWIZZLE_ONE,
+        3 => c.VK_COMPONENT_SWIZZLE_R,
+        4 => c.VK_COMPONENT_SWIZZLE_G,
+        5 => c.VK_COMPONENT_SWIZZLE_B,
+        6 => c.VK_COMPONENT_SWIZZLE_A,
+        else => identity_component,
+    };
+}
+
 pub fn ensure_compute_buffer(
     self: *Runtime,
     handle: u64,
@@ -315,23 +367,58 @@ pub fn create_texture_resource(
     texture: model.CopyTextureResource,
     mip_levels: u32,
 ) !TextureResource {
+    return create_texture_resource_full(
+        self,
+        texture.width,
+        texture.height,
+        1,
+        mip_levels,
+        1,
+        model.WGPUTextureDimension_2D,
+        texture.format,
+        texture.usage,
+    );
+}
+
+pub fn create_texture_resource_full(
+    self: *Runtime,
+    width: u32,
+    height: u32,
+    depth_or_array_layers: u32,
+    mip_levels: u32,
+    sample_count: u32,
+    dimension: u32,
+    format: model.WGPUTextureFormat,
+    usage: model.WGPUFlags,
+) !TextureResource {
     var image: VkImage = VK_NULL_U64;
     var memory: VkDeviceMemory = VK_NULL_U64;
     var view: VkImageView = VK_NULL_U64;
-    const usage = effective_texture_usage(texture.usage);
+    const effective_usage = effective_texture_usage(usage);
+    const layers = if (depth_or_array_layers > 0) depth_or_array_layers else 1;
+    const resolved_mip_levels = if (mip_levels > 0) mip_levels else 1;
+    const resolved_dimension = if (dimension != 0) dimension else model.WGPUTextureDimension_2D;
+    const image_type = texture_dimension_to_vk_image_type(resolved_dimension);
+    const image_depth: u32 = if (resolved_dimension == model.WGPUTextureDimension_3D) layers else 1;
+    const image_array_layers: u32 = if (resolved_dimension == model.WGPUTextureDimension_3D) 1 else layers;
+    const sample_count_vk = try texture_sample_count_to_vk(sample_count);
+    const view_type = texture_view_dimension_to_vk_view_type(
+        if (resolved_dimension == model.WGPUTextureDimension_1D) model.WGPUTextureViewDimension_1D else if (resolved_dimension == model.WGPUTextureDimension_3D) model.WGPUTextureViewDimension_3D else if (image_array_layers > 1) model.WGPUTextureViewDimension_2DArray else model.WGPUTextureViewDimension_2D,
+        image_array_layers,
+    );
 
     var image_info = c.VkImageCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = null,
-        .flags = 0,
-        .imageType = c.VK_IMAGE_TYPE_2D,
-        .format = try texture_format_to_vk(texture.format),
-        .extent = .{ .width = texture.width, .height = texture.height, .depth = 1 },
-        .mipLevels = mip_levels,
-        .arrayLayers = 1,
-        .samples = c.VK_SAMPLE_COUNT_1_BIT,
+        .flags = if (image_array_layers >= 6 and resolved_dimension == model.WGPUTextureDimension_2D) c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT else 0,
+        .imageType = image_type,
+        .format = try texture_format_to_vk(format),
+        .extent = .{ .width = width, .height = height, .depth = image_depth },
+        .mipLevels = resolved_mip_levels,
+        .arrayLayers = image_array_layers,
+        .samples = sample_count_vk,
         .tiling = c.VK_IMAGE_TILING_OPTIMAL,
-        .usage = image_usage_for_texture(usage),
+        .usage = image_usage_for_texture(effective_usage),
         .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = null,
@@ -358,14 +445,14 @@ pub fn create_texture_resource(
 
     try c.check_vk(c.vkBindImageMemory(self.device, image, memory, 0));
 
-    const aspect_mask = vk_formats.aspect_mask_for_format(texture.format);
+    const aspect_mask = vk_formats.aspect_mask_for_format(format);
     var view_info = c.VkImageViewCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = null,
         .flags = 0,
         .image = image,
-        .viewType = c.VK_IMAGE_VIEW_TYPE_2D,
-        .format = try texture_format_to_vk(texture.format),
+        .viewType = view_type,
+        .format = try texture_format_to_vk(format),
         .components = .{
             .r = c.VK_COMPONENT_SWIZZLE_IDENTITY,
             .g = c.VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -375,9 +462,9 @@ pub fn create_texture_resource(
         .subresourceRange = .{
             .aspectMask = aspect_mask,
             .baseMipLevel = 0,
-            .levelCount = mip_levels,
+            .levelCount = resolved_mip_levels,
             .baseArrayLayer = 0,
-            .layerCount = 1,
+            .layerCount = if (view_type == c.VK_IMAGE_VIEW_TYPE_3D) 1 else image_array_layers,
         },
     };
     try c.check_vk(c.vkCreateImageView(self.device, &view_info, null, &view));
@@ -387,13 +474,58 @@ pub fn create_texture_resource(
         .image = image,
         .memory = memory,
         .view = view,
-        .width = texture.width,
-        .height = texture.height,
-        .mip_levels = mip_levels,
-        .format = texture.format,
-        .usage = usage,
+        .width = width,
+        .height = height,
+        .mip_levels = resolved_mip_levels,
+        .format = format,
+        .usage = effective_usage,
         .layout = c.VK_IMAGE_LAYOUT_UNDEFINED,
     };
+}
+
+pub fn create_texture_view(
+    self: *Runtime,
+    texture: TextureResource,
+    format: model.WGPUTextureFormat,
+    dimension: u32,
+    base_mip_level: u32,
+    mip_level_count: u32,
+    base_array_layer: u32,
+    array_layer_count: u32,
+    aspect: u32,
+    swizzle_r: u32,
+    swizzle_g: u32,
+    swizzle_b: u32,
+    swizzle_a: u32,
+) !VkImageView {
+    var view: VkImageView = VK_NULL_U64;
+    const resolved_format = if (format != 0) format else texture.format;
+    const resolved_level_count = if (mip_level_count != 0) mip_level_count else texture.mip_levels - base_mip_level;
+    const resolved_layer_count = if (array_layer_count != 0) array_layer_count else 1;
+    const view_type = texture_view_dimension_to_vk_view_type(dimension, resolved_layer_count);
+    var view_info = c.VkImageViewCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .image = texture.image,
+        .viewType = view_type,
+        .format = try texture_format_to_vk(resolved_format),
+        .components = .{
+            .r = texture_component_swizzle_to_vk(swizzle_r, c.VK_COMPONENT_SWIZZLE_R),
+            .g = texture_component_swizzle_to_vk(swizzle_g, c.VK_COMPONENT_SWIZZLE_G),
+            .b = texture_component_swizzle_to_vk(swizzle_b, c.VK_COMPONENT_SWIZZLE_B),
+            .a = texture_component_swizzle_to_vk(swizzle_a, c.VK_COMPONENT_SWIZZLE_A),
+        },
+        .subresourceRange = .{
+            .aspectMask = texture_view_aspect_mask(resolved_format, aspect),
+            .baseMipLevel = base_mip_level,
+            .levelCount = resolved_level_count,
+            .baseArrayLayer = base_array_layer,
+            .layerCount = if (view_type == c.VK_IMAGE_VIEW_TYPE_3D) 1 else resolved_layer_count,
+        },
+    };
+    try c.check_vk(c.vkCreateImageView(self.device, &view_info, null, &view));
+    return view;
 }
 
 pub fn release_texture_resource(self: *Runtime, texture: TextureResource) void {
@@ -404,6 +536,10 @@ pub fn release_texture_resource_with_device(device: c.VkDevice, texture: Texture
     if (texture.view != VK_NULL_U64) c.vkDestroyImageView(device, texture.view, null);
     if (texture.image != VK_NULL_U64) c.vkDestroyImage(device, texture.image, null);
     if (texture.memory != VK_NULL_U64) c.vkFreeMemory(device, texture.memory, null);
+}
+
+pub fn release_texture_view_with_device(device: c.VkDevice, view: VkImageView) void {
+    if (view != VK_NULL_U64) c.vkDestroyImageView(device, view, null);
 }
 
 pub fn release_textures(self: *Runtime) void {

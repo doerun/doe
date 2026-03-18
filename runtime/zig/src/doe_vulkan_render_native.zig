@@ -14,6 +14,7 @@ const NativeVulkanRuntime = native.NativeVulkanRuntime;
 
 const DoeDevice = native.DoeDevice;
 const DoeTexture = native.DoeTexture;
+const DoeTextureView = native.DoeTextureView;
 const DoeSampler = native.DoeSampler;
 const DoeRenderPipeline = native.DoeRenderPipeline;
 const DoeRenderPass = native.DoeRenderPass;
@@ -69,21 +70,28 @@ pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const typ
     };
 
     const handle: u64 = @intFromPtr(tex);
-    const tex_resource = model.CopyTextureResource{
-        .handle = handle,
-        .width = desc.size.width,
-        .height = desc.size.height,
-        .format = desc.format,
-        .usage = @intCast(desc.usage),
-        .mip_level = 0,
-        .bytes_per_row = 0,
-        .rows_per_image = 0,
-    };
-
-    _ = vk_resources.ensure_texture_resource(rt, tex_resource) catch |err| {
-        std.debug.print("doe_vulkan_render_native: ensure_texture_resource failed: {}\n", .{err});
+    const tex_resource = vk_resources.create_texture_resource_full(
+        rt,
+        desc.size.width,
+        desc.size.height,
+        desc.size.depthOrArrayLayers,
+        desc.mipLevelCount,
+        desc.sampleCount,
+        desc.dimension,
+        desc.format,
+        @intCast(desc.usage),
+    ) catch |err| {
+        std.debug.print("doe_vulkan_render_native: create_texture_resource_full failed: {}\n", .{err});
         return false;
     };
+    const result = rt.textures.getOrPut(rt.allocator, handle) catch {
+        vk_resources.release_texture_resource(rt, tex_resource);
+        return false;
+    };
+    if (result.found_existing) {
+        vk_resources.release_texture_resource(rt, result.value_ptr.*);
+    }
+    result.value_ptr.* = tex_resource;
 
     tex.vk_id = handle;
     tex.vk_runtime_ref = @ptrCast(rt);
@@ -103,6 +111,64 @@ pub fn vulkan_destroy_texture(tex: *DoeTexture) void {
     }
     tex.vk_id = 0;
     tex.vk_runtime_ref = null;
+}
+
+pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *const types.WGPUTextureViewDescriptor) bool {
+    if (tex.vk_id == 0) return false;
+    const rt_ptr = tex.vk_runtime_ref orelse return false;
+    const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+    const texture = rt.textures.get(tex.vk_id) orelse return false;
+    const resolved_format: model.WGPUTextureFormat = @intCast(if (desc.format != 0) desc.format else tex.format);
+    const resolved_dimension = if (desc.dimension != 0) desc.dimension else if (tex.texture_binding_view_dimension != 0) tex.texture_binding_view_dimension else tex.dimension;
+    const resolved_mip_level_count = if (desc.mipLevelCount != 0) desc.mipLevelCount else tex.mip_level_count - desc.baseMipLevel;
+    const resolved_array_layer_count = if (desc.arrayLayerCount != 0) desc.arrayLayerCount else if (tex.dimension == model.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers - desc.baseArrayLayer;
+    const vk_view = vk_resources.create_texture_view(
+        rt,
+        texture,
+        resolved_format,
+        resolved_dimension,
+        desc.baseMipLevel,
+        resolved_mip_level_count,
+        desc.baseArrayLayer,
+        resolved_array_layer_count,
+        desc.aspect,
+        desc.swizzleR,
+        desc.swizzleG,
+        desc.swizzleB,
+        desc.swizzleA,
+    ) catch |err| {
+        std.debug.print("doe_vulkan_render_native: create_texture_view failed: {}\n", .{err});
+        return false;
+    };
+    const key: u64 = vk_view;
+    const result = rt.textures.getOrPut(rt.allocator, key) catch {
+        vk_resources.release_texture_view_with_device(rt.device, vk_view);
+        return false;
+    };
+    result.value_ptr.* = .{
+        .image = texture.image,
+        .memory = c.VK_NULL_U64,
+        .view = vk_view,
+        .width = texture.width,
+        .height = texture.height,
+        .mip_levels = resolved_mip_level_count,
+        .format = resolved_format,
+        .usage = if (desc.usage != 0) @intCast(desc.usage) else texture.usage,
+        .layout = texture.layout,
+    };
+    tv.handle = @ptrFromInt(vk_view);
+    return true;
+}
+
+pub fn vulkan_destroy_texture_view(tv: *DoeTextureView) void {
+    const handle_ptr = tv.handle orelse return;
+    const rt_ptr = tv.tex.vk_runtime_ref orelse return;
+    const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+    const key: u64 = @intFromPtr(handle_ptr);
+    if (rt.textures.fetchRemove(key)) |entry| {
+        vk_resources.release_texture_view_with_device(rt.device, entry.value.view);
+    }
+    tv.handle = null;
 }
 
 // ============================================================

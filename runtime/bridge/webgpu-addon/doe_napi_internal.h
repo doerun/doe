@@ -198,6 +198,7 @@ typedef struct {
     void* nextInChain; WGPUStringView label; uint32_t format; uint32_t dimension;
     uint32_t baseMipLevel; uint32_t mipLevelCount; uint32_t baseArrayLayer; uint32_t arrayLayerCount;
     uint32_t aspect; uint64_t usage;
+    uint32_t swizzleR; uint32_t swizzleG; uint32_t swizzleB; uint32_t swizzleA;
 } WGPUTextureViewDescriptor;
 
 typedef struct {

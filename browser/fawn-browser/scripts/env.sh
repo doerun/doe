@@ -18,7 +18,6 @@ for env_file in "${EXTERNAL_ENV_FILE}" "${EXTERNAL_ENV_FILE_LEGACY}"; do
     break
   fi
 done
-fi
 
 prepend_path() {
   local dir="$1"

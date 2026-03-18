@@ -116,10 +116,15 @@ function createFullSurfaceClasses({
       this.size = size;
       this.usage = usage;
       this.label = '';
+      this._mapState = 'unmapped';
       initResource(this, 'GPUBuffer', owner);
       if (backend.initBufferState) {
         backend.initBufferState(this);
       }
+    }
+
+    get mapState() {
+      return this._mapState ?? 'unmapped';
     }
 
     async mapAsync(mode, offset = 0, size = Math.max(0, this.size - offset)) {
@@ -130,7 +135,14 @@ function createFullSurfaceClasses({
       if (offset + size > this.size) {
         failValidation('GPUBuffer.mapAsync', `mapped range ${offset}+${size} exceeds buffer size ${this.size}`);
       }
-      await backend.bufferMapAsync(this, native, mode, offset, size);
+      this._mapState = 'pending';
+      try {
+        await backend.bufferMapAsync(this, native, mode, offset, size);
+        this._mapState = 'mapped';
+      } catch (error) {
+        this._mapState = 'unmapped';
+        throw error;
+      }
     }
 
     getMappedRange(offset = 0, size = Math.max(0, this.size - offset)) {
@@ -201,6 +213,7 @@ function createFullSurfaceClasses({
 
     unmap() {
       backend.bufferUnmap(assertLiveResource(this, 'GPUBuffer.unmap', 'GPUBuffer'), this);
+      this._mapState = 'unmapped';
     }
 
     destroy() {
@@ -315,14 +328,39 @@ function createFullSurfaceClasses({
       this.dimension = meta?.dimension ?? '2d';
       this.format = meta?.format ?? 'rgba8unorm';
       this.usage = meta?.usage ?? 0;
+      this.textureBindingViewDimension = meta?.textureBindingViewDimension;
+      this.viewFormats = Array.isArray(meta?.viewFormats) ? meta.viewFormats : [];
       this.label = '';
       initResource(this, 'GPUTexture', owner);
     }
 
     createView(descriptor) {
-      const view = backend.textureCreateView(this, assertLiveResource(this, 'GPUTexture.createView', 'GPUTexture'), descriptor);
+      const viewDescriptor = descriptor == null ? {} : assertObject(descriptor, 'GPUTexture.createView', 'descriptor');
+      const baseMipLevel = assertIntegerInRange(viewDescriptor.baseMipLevel ?? 0, 'GPUTexture.createView', 'descriptor.baseMipLevel', { min: 0, max: UINT32_MAX });
+      const baseArrayLayer = assertIntegerInRange(viewDescriptor.baseArrayLayer ?? 0, 'GPUTexture.createView', 'descriptor.baseArrayLayer', { min: 0, max: UINT32_MAX });
+      const mipLevelCount = assertIntegerInRange(viewDescriptor.mipLevelCount ?? Math.max(1, this.mipLevelCount - baseMipLevel), 'GPUTexture.createView', 'descriptor.mipLevelCount', { min: 1, max: UINT32_MAX });
+      const arrayLayerCount = assertIntegerInRange(viewDescriptor.arrayLayerCount ?? Math.max(1, this.depthOrArrayLayers - baseArrayLayer), 'GPUTexture.createView', 'descriptor.arrayLayerCount', { min: 1, max: UINT32_MAX });
+      const format = viewDescriptor.format ?? this.format;
+      if (format !== this.format && !this.viewFormats.includes(format)) {
+        failValidation('GPUTexture.createView', 'descriptor.format must match texture.format or one of texture.viewFormats');
+      }
+      if (viewDescriptor.swizzle !== undefined && (typeof viewDescriptor.swizzle !== 'string' || !/^[rgba01]{4}$/.test(viewDescriptor.swizzle))) {
+        failValidation('GPUTexture.createView', 'descriptor.swizzle must be a 4-character string using r, g, b, a, 0, or 1');
+      }
+      const normalizedDescriptor = {
+        ...viewDescriptor,
+        format,
+        dimension: viewDescriptor.dimension ?? this.textureBindingViewDimension ?? this.dimension,
+        baseMipLevel,
+        mipLevelCount,
+        baseArrayLayer,
+        arrayLayerCount,
+        aspect: viewDescriptor.aspect ?? 'all',
+        usage: viewDescriptor.usage ?? this.usage,
+      };
+      const view = backend.textureCreateView(this, assertLiveResource(this, 'GPUTexture.createView', 'GPUTexture'), normalizedDescriptor);
       const tv = new DoeGPUTextureView(view, this);
-      tv.label = descriptor?.label ?? '';
+      tv.label = normalizedDescriptor.label ?? '';
       return tv;
     }
 
@@ -524,6 +562,7 @@ function createFullSurfaceClasses({
       buffer.label = descriptor?.label ?? '';
       if (validated.mappedAtCreation && typeof backend.bufferMarkMappedAtCreation === 'function') {
         backend.bufferMarkMappedAtCreation(buffer);
+        buffer._mapState = 'mapped';
       }
       return buffer;
     }
@@ -645,6 +684,8 @@ function createFullSurfaceClasses({
         dimension,
         format: textureDescriptor.format ?? 'rgba8unorm',
         usage,
+        textureBindingViewDimension: textureDescriptor.textureBindingViewDimension ?? undefined,
+        viewFormats: Array.isArray(textureDescriptor.viewFormats) ? textureDescriptor.viewFormats : [],
       });
       texture.label = textureDescriptor.label ?? '';
       return texture;
@@ -679,9 +720,11 @@ function createFullSurfaceClasses({
         vertexModule,
         vertexEntryPoint: vertex.entryPoint ?? 'main',
         vertexBuffers,
+        vertexConstants: vertex.constants ?? null,
         fragmentModule,
         fragmentEntryPoint: fragment.entryPoint ?? 'main',
-        colorFormat: assertNonEmptyString(targets[0].format, 'GPUDevice.createRenderPipeline', 'descriptor.fragment.targets[0].format'),
+        fragmentConstants: fragment.constants ?? null,
+        fragmentTarget: targets[0],
         primitive: renderDescriptor.primitive ?? null,
         depthStencil: renderDescriptor.depthStencil ?? null,
         multisample: renderDescriptor.multisample ?? null,

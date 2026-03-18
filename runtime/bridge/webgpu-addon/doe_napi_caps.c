@@ -442,6 +442,8 @@ napi_value doe_create_texture(napi_env env, napi_callback_info info) {
     if (has_prop(env, _args[1], "mipLevelCount"))
         desc.mipLevelCount = get_uint32_prop(env, _args[1], "mipLevelCount");
     desc.sampleCount = 1;
+    if (has_prop(env, _args[1], "sampleCount"))
+        desc.sampleCount = get_uint32_prop(env, _args[1], "sampleCount");
     desc.dimension = 2; /* WGPUTextureDimension_2D */
     if (has_prop(env, _args[1], "dimension"))
         desc.dimension = get_uint32_prop(env, _args[1], "dimension");
@@ -515,6 +517,17 @@ napi_value doe_texture_create_view(napi_env env, napi_callback_info info) {
             view_desc.aspect = get_uint32_prop(env, desc_arg, "aspect");
         if (has_prop(env, desc_arg, "usage"))
             view_desc.usage = (uint64_t)get_int64_prop(env, desc_arg, "usage");
+        if (has_prop(env, desc_arg, "swizzle") && prop_type(env, desc_arg, "swizzle") == napi_string) {
+            char swizzle[8] = {0};
+            size_t swizzle_len = 0;
+            napi_get_value_string_utf8(env, get_prop(env, desc_arg, "swizzle"), swizzle, sizeof(swizzle), &swizzle_len);
+            if (swizzle_len == 4) {
+                view_desc.swizzleR = (swizzle[0] == '0') ? 1 : (swizzle[0] == '1') ? 2 : (swizzle[0] == 'r') ? 3 : (swizzle[0] == 'g') ? 4 : (swizzle[0] == 'b') ? 5 : (swizzle[0] == 'a') ? 6 : 0;
+                view_desc.swizzleG = (swizzle[1] == '0') ? 1 : (swizzle[1] == '1') ? 2 : (swizzle[1] == 'r') ? 3 : (swizzle[1] == 'g') ? 4 : (swizzle[1] == 'b') ? 5 : (swizzle[1] == 'a') ? 6 : 0;
+                view_desc.swizzleB = (swizzle[2] == '0') ? 1 : (swizzle[2] == '1') ? 2 : (swizzle[2] == 'r') ? 3 : (swizzle[2] == 'g') ? 4 : (swizzle[2] == 'b') ? 5 : (swizzle[2] == 'a') ? 6 : 0;
+                view_desc.swizzleA = (swizzle[3] == '0') ? 1 : (swizzle[3] == '1') ? 2 : (swizzle[3] == 'r') ? 3 : (swizzle[3] == 'g') ? 4 : (swizzle[3] == 'b') ? 5 : (swizzle[3] == 'a') ? 6 : 0;
+            }
+        }
         view_desc_ptr = &view_desc;
     }
 
