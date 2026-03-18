@@ -127,7 +127,7 @@ pub fn execute_render_draw(
     try create_framebuffer(self, &render_state, target_width, target_height);
 
     // Phase 4: compile shaders and create graphics pipeline
-    try create_graphics_pipeline(self, &render_state, vk_format, cmd.unclipped_depth);
+    try create_graphics_pipeline(self, &render_state, vk_format, cmd);
 
     const encode_end = common_timing.now_ns();
     const setup_ns = common_timing.ns_delta(encode_end, encode_start);
@@ -339,7 +339,7 @@ fn create_graphics_pipeline(
     self: *Runtime,
     state: *RenderState,
     vk_format: u32,
-    unclipped_depth: bool,
+    cmd: model.RenderDrawCommand,
 ) !void {
     _ = vk_format;
 
@@ -411,7 +411,7 @@ fn create_graphics_pipeline(
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .topology = c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .topology = topology_to_vk(cmd.topology),
         .primitiveRestartEnable = c.VK_FALSE,
     };
 
@@ -429,8 +429,8 @@ fn create_graphics_pipeline(
     // When unclippedDepth is requested and VK_EXT_depth_clip_enable is available,
     // enable depth clamping and chain the depth clip disable struct. Without the
     // extension, fall back to standard depth clipping and log a warning.
-    const use_unclipped = unclipped_depth and self.has_depth_clip_enable_ext;
-    if (unclipped_depth and !self.has_depth_clip_enable_ext) {
+    const use_unclipped = cmd.unclipped_depth and self.has_depth_clip_enable_ext;
+    if (cmd.unclipped_depth and !self.has_depth_clip_enable_ext) {
         std.debug.print("vk_render: unclippedDepth requested but VK_EXT_depth_clip_enable unavailable; falling back to standard clipping\n", .{});
     }
 
@@ -447,8 +447,8 @@ fn create_graphics_pipeline(
         .depthClampEnable = if (use_unclipped) c.VK_TRUE else c.VK_FALSE,
         .rasterizerDiscardEnable = c.VK_FALSE,
         .polygonMode = c.VK_POLYGON_MODE_FILL,
-        .cullMode = c.VK_CULL_MODE_NONE,
-        .frontFace = c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .cullMode = cull_mode_to_vk(cmd.cull_mode),
+        .frontFace = front_face_to_vk(cmd.front_face),
         .depthBiasEnable = c.VK_FALSE,
         .depthBiasConstantFactor = 0.0,
         .depthBiasClamp = 0.0,
@@ -460,7 +460,7 @@ fn create_graphics_pipeline(
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .rasterizationSamples = c.VK_SAMPLE_COUNT_1_BIT,
+        .rasterizationSamples = sample_count_to_vk(cmd.sample_count),
         .sampleShadingEnable = c.VK_FALSE,
         .minSampleShading = 1.0,
         .pSampleMask = null,
@@ -474,14 +474,14 @@ fn create_graphics_pipeline(
         c.VK_COLOR_COMPONENT_A_BIT;
 
     var blend_attachment = c.VkPipelineColorBlendAttachmentState{
-        .blendEnable = c.VK_FALSE,
-        .srcColorBlendFactor = c.VK_BLEND_FACTOR_ONE,
-        .dstColorBlendFactor = c.VK_BLEND_FACTOR_ZERO,
-        .colorBlendOp = c.VK_BLEND_OP_ADD,
-        .srcAlphaBlendFactor = c.VK_BLEND_FACTOR_ONE,
-        .dstAlphaBlendFactor = c.VK_BLEND_FACTOR_ZERO,
-        .alphaBlendOp = c.VK_BLEND_OP_ADD,
-        .colorWriteMask = COLOR_WRITE_ALL,
+        .blendEnable = if (cmd.blend_enabled) c.VK_TRUE else c.VK_FALSE,
+        .srcColorBlendFactor = blend_factor_to_vk(cmd.color_src_factor),
+        .dstColorBlendFactor = blend_factor_to_vk(cmd.color_dst_factor),
+        .colorBlendOp = blend_operation_to_vk(cmd.color_operation),
+        .srcAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_src_factor),
+        .dstAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_dst_factor),
+        .alphaBlendOp = blend_operation_to_vk(cmd.alpha_operation),
+        .colorWriteMask = color_write_mask_to_vk(cmd.color_write_mask, COLOR_WRITE_ALL),
     };
 
     var color_blend = c.VkPipelineColorBlendStateCreateInfo{
@@ -492,7 +492,7 @@ fn create_graphics_pipeline(
         .logicOp = c.VK_LOGIC_OP_CLEAR,
         .attachmentCount = 1,
         .pAttachments = @ptrCast(&blend_attachment),
-        .blendConstants = .{ 0.0, 0.0, 0.0, 0.0 },
+        .blendConstants = cmd.blend_constant,
     };
 
     const dynamic_states = [_]u32{
@@ -536,6 +536,85 @@ fn create_graphics_pipeline(
         null,
         @ptrCast(&state.graphics_pipeline),
     ));
+}
+
+fn topology_to_vk(topology: u32) u32 {
+    return switch (topology) {
+        0x00000001 => c.VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+        0x00000002 => c.VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+        0x00000003 => c.VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+        0x00000005 => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        else => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    };
+}
+
+fn front_face_to_vk(front_face: u32) u32 {
+    return switch (front_face) {
+        0x00000002 => c.VK_FRONT_FACE_CLOCKWISE,
+        else => c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
+    };
+}
+
+fn cull_mode_to_vk(cull_mode: u32) u32 {
+    return switch (cull_mode) {
+        0x00000002 => c.VK_CULL_MODE_FRONT_BIT,
+        0x00000003 => c.VK_CULL_MODE_BACK_BIT,
+        else => c.VK_CULL_MODE_NONE,
+    };
+}
+
+fn sample_count_to_vk(sample_count: u32) u32 {
+    return switch (sample_count) {
+        2 => c.VK_SAMPLE_COUNT_2_BIT,
+        4 => c.VK_SAMPLE_COUNT_4_BIT,
+        8 => c.VK_SAMPLE_COUNT_8_BIT,
+        16 => c.VK_SAMPLE_COUNT_16_BIT,
+        32 => c.VK_SAMPLE_COUNT_32_BIT,
+        64 => c.VK_SAMPLE_COUNT_64_BIT,
+        else => c.VK_SAMPLE_COUNT_1_BIT,
+    };
+}
+
+fn blend_factor_to_vk(factor: u32) u32 {
+    return switch (factor) {
+        1 => c.VK_BLEND_FACTOR_ZERO,
+        2 => c.VK_BLEND_FACTOR_ONE,
+        3 => c.VK_BLEND_FACTOR_SRC_COLOR,
+        4 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+        5 => c.VK_BLEND_FACTOR_SRC_ALPHA,
+        6 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        7 => c.VK_BLEND_FACTOR_DST_COLOR,
+        8 => c.VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+        9 => c.VK_BLEND_FACTOR_DST_ALPHA,
+        10 => c.VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+        11 => c.VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
+        12 => c.VK_BLEND_FACTOR_CONSTANT_COLOR,
+        13 => c.VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+        14 => c.VK_BLEND_FACTOR_SRC1_COLOR,
+        15 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
+        16 => c.VK_BLEND_FACTOR_SRC1_ALPHA,
+        17 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
+        else => c.VK_BLEND_FACTOR_ONE,
+    };
+}
+
+fn blend_operation_to_vk(operation: u32) u32 {
+    return switch (operation) {
+        2 => c.VK_BLEND_OP_SUBTRACT,
+        3 => c.VK_BLEND_OP_REVERSE_SUBTRACT,
+        4 => c.VK_BLEND_OP_MIN,
+        5 => c.VK_BLEND_OP_MAX,
+        else => c.VK_BLEND_OP_ADD,
+    };
+}
+
+fn color_write_mask_to_vk(write_mask: u32, fallback: u32) u32 {
+    var mask: u32 = 0;
+    if ((write_mask & 0x1) != 0) mask |= c.VK_COLOR_COMPONENT_R_BIT;
+    if ((write_mask & 0x2) != 0) mask |= c.VK_COLOR_COMPONENT_G_BIT;
+    if ((write_mask & 0x4) != 0) mask |= c.VK_COLOR_COMPONENT_B_BIT;
+    if ((write_mask & 0x8) != 0) mask |= c.VK_COLOR_COMPONENT_A_BIT;
+    return if (mask == 0) fallback else mask;
 }
 
 fn record_and_submit_draws(

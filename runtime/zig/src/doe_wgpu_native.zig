@@ -203,6 +203,15 @@ pub const DoeBindGroupLayout = struct {
     const TYPE_MAGIC = MAGIC_BGL;
     magic: u32 = TYPE_MAGIC,
     entry_count: u32 = 0,
+    entries: ?[]DoeBindGroupLayoutEntry = null,
+};
+
+pub const DoeBindGroupLayoutEntry = struct {
+    binding: u32 = 0,
+    resource_kind: u32 = 0,
+    texture_sample_type: u32 = types.WGPUTextureSampleType_Undefined,
+    texture_view_dimension: u32 = types.WGPUTextureViewDimension_Undefined,
+    texture_multisampled: bool = false,
 };
 
 pub const DoePipelineLayout = struct {

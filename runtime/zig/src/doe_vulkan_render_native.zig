@@ -258,6 +258,34 @@ pub fn vulkan_create_render_pipeline(
     // The RenderPipelineDesc type is defined in doe_render_native.zig; we only
     // need the primitive state fields, which share a common layout offset. Cast
     // through the opaque pointer to reach them via a minimal local mirror.
+    const RenderStringView = extern struct {
+        data: ?[*]const u8,
+        length: usize,
+    };
+    const RenderBlendComponent = extern struct {
+        operation: u32,
+        srcFactor: u32,
+        dstFactor: u32,
+    };
+    const RenderBlendState = extern struct {
+        color: RenderBlendComponent,
+        alpha: RenderBlendComponent,
+    };
+    const RenderColorTargetState = extern struct {
+        nextInChain: ?*anyopaque,
+        format: u32,
+        blend: ?*const RenderBlendState,
+        writeMask: u64,
+    };
+    const RenderFragmentState = extern struct {
+        nextInChain: ?*anyopaque,
+        module: ?*anyopaque,
+        entryPoint: RenderStringView,
+        constantCount: usize,
+        constants: ?*anyopaque,
+        targetCount: usize,
+        targets: ?[*]const RenderColorTargetState,
+    };
     const RenderPrimitiveState = extern struct {
         nextInChain: ?*anyopaque,
         topology: u32,
@@ -269,6 +297,21 @@ pub fn vulkan_create_render_pipeline(
     const RenderDepthStencilDesc = extern struct {
         nextInChain: ?*anyopaque,
         format: u32,
+        depthWriteEnabled: u32,
+        depthCompare: u32,
+        stencilFront_compare: u32,
+        stencilFront_failOp: u32,
+        stencilFront_depthFailOp: u32,
+        stencilFront_passOp: u32,
+        stencilBack_compare: u32,
+        stencilBack_failOp: u32,
+        stencilBack_depthFailOp: u32,
+        stencilBack_passOp: u32,
+        stencilReadMask: u32,
+        stencilWriteMask: u32,
+        depthBias: i32,
+        depthBiasSlopeScale: f32,
+        depthBiasClamp: f32,
     };
     const LocalDesc = extern struct {
         nextInChain: ?*anyopaque,
@@ -291,17 +334,35 @@ pub fn vulkan_create_render_pipeline(
         multisample_count: u32,
         multisample_mask: u32,
         multisample_alphaToCoverageEnabled: u32,
-        fragment: ?*anyopaque,
+        fragment: ?*const RenderFragmentState,
     };
     const d = @as(*const LocalDesc, @ptrCast(@alignCast(desc)));
     pip.topology = d.primitive.topology;
     pip.front_face = d.primitive.frontFace;
     pip.cull_mode = d.primitive.cullMode;
     pip.unclipped_depth = (d.primitive.unclippedDepth != 0);
+    pip.sample_count = if (d.multisample_count == 0) 1 else d.multisample_count;
 
     if (d.depthStencil) |ds_raw| {
         const ds = @as(*const RenderDepthStencilDesc, @ptrCast(@alignCast(ds_raw)));
-        _ = ds; // depth_compare stays 0 for Vulkan v0; run_render_draw owns pipeline
+        pip.depth_compare = ds.depthCompare;
+        pip.depth_write_enabled = ds.depthWriteEnabled != 0;
+    }
+
+    if (d.fragment) |frag| {
+        if (frag.targetCount > 0 and frag.targets != null) {
+            const target0 = frag.targets.?[0];
+            pip.color_write_mask = @intCast(target0.writeMask);
+            if (target0.blend) |blend| {
+                pip.blend_enabled = true;
+                pip.color_operation = blend.color.operation;
+                pip.color_src_factor = blend.color.srcFactor;
+                pip.color_dst_factor = blend.color.dstFactor;
+                pip.alpha_operation = blend.alpha.operation;
+                pip.alpha_src_factor = blend.alpha.srcFactor;
+                pip.alpha_dst_factor = blend.alpha.dstFactor;
+            }
+        }
     }
 
     // mtl_pso intentionally left null: Vulkan draw is routed through run_render_draw.
@@ -347,6 +408,18 @@ pub fn vulkan_render_pass_draw(
         .scissor_y = pass.scissor_y,
         .scissor_width = pass.scissor_width,
         .scissor_height = pass.scissor_height,
+        .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
+        .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
+        .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
+        .blend_enabled = if (pass.pipeline) |pip| pip.blend_enabled else false,
+        .color_operation = if (pass.pipeline) |pip| pip.color_operation else 1,
+        .color_src_factor = if (pass.pipeline) |pip| pip.color_src_factor else 2,
+        .color_dst_factor = if (pass.pipeline) |pip| pip.color_dst_factor else 1,
+        .alpha_operation = if (pass.pipeline) |pip| pip.alpha_operation else 1,
+        .alpha_src_factor = if (pass.pipeline) |pip| pip.alpha_src_factor else 2,
+        .alpha_dst_factor = if (pass.pipeline) |pip| pip.alpha_dst_factor else 1,
+        .color_write_mask = if (pass.pipeline) |pip| pip.color_write_mask else 0xF,
+        .sample_count = if (pass.pipeline) |pip| pip.sample_count else 1,
         .blend_constant = pass.blend_constant,
         .stencil_reference = pass.stencil_reference,
         .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
@@ -397,6 +470,18 @@ pub fn vulkan_render_pass_draw_indexed(
         .scissor_y = pass.scissor_y,
         .scissor_width = pass.scissor_width,
         .scissor_height = pass.scissor_height,
+        .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
+        .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
+        .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
+        .blend_enabled = if (pass.pipeline) |pip| pip.blend_enabled else false,
+        .color_operation = if (pass.pipeline) |pip| pip.color_operation else 1,
+        .color_src_factor = if (pass.pipeline) |pip| pip.color_src_factor else 2,
+        .color_dst_factor = if (pass.pipeline) |pip| pip.color_dst_factor else 1,
+        .alpha_operation = if (pass.pipeline) |pip| pip.alpha_operation else 1,
+        .alpha_src_factor = if (pass.pipeline) |pip| pip.alpha_src_factor else 2,
+        .alpha_dst_factor = if (pass.pipeline) |pip| pip.alpha_dst_factor else 1,
+        .color_write_mask = if (pass.pipeline) |pip| pip.color_write_mask else 0xF,
+        .sample_count = if (pass.pipeline) |pip| pip.sample_count else 1,
         .blend_constant = pass.blend_constant,
         .stencil_reference = pass.stencil_reference,
         .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
