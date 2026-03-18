@@ -1,20 +1,15 @@
 const std = @import("std");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 
+comptime {
+    _ = @import("doe_encoder_native.zig");
+    _ = @import("doe_command_texture_native.zig");
+}
+
 const LAST_ERROR_CAP: usize = 512;
 const LAST_ERROR_META_CAP: usize = 64;
 const MAGIC_SHADER: u32 = 0xD0E1_0006;
 const MAX_SHADER_BINDINGS: usize = wgsl_compiler.MAX_BINDINGS;
-
-extern fn wgpuCommandEncoderClearBuffer(
-    command_encoder: ?*anyopaque,
-    buffer: ?*anyopaque,
-    offset: u64,
-    size: u64,
-) callconv(.c) void;
-
-const encoder_native = @import("doe_encoder_native.zig");
-const command_texture_native = @import("doe_command_texture_native.zig");
 
 const BindingInfo = extern struct {
     group: u32,
@@ -271,105 +266,6 @@ pub export fn doeNativeRenderPassBeginOcclusionQuery(
 
 pub export fn doeNativeRenderPassEndOcclusionQuery(pass_raw: ?*anyopaque) callconv(.c) void {
     _ = pass_raw;
-}
-
-pub export fn doeNativeCommandEncoderClearBuffer(
-    command_encoder: ?*anyopaque,
-    buffer: ?*anyopaque,
-    offset: u64,
-    size: u64,
-) callconv(.c) void {
-    wgpuCommandEncoderClearBuffer(command_encoder, buffer, offset, size);
-}
-
-pub export fn doeNativeCommandEncoderCopyBufferToTexture(
-    enc_raw: ?*anyopaque,
-    src_buffer_raw: ?*anyopaque,
-    src_offset: u64,
-    src_bytes_per_row: u32,
-    src_rows_per_image: u32,
-    dst_texture_raw: ?*anyopaque,
-    dst_mip_level: u32,
-    width: u32,
-    height: u32,
-    depth_or_array_layers: u32,
-) callconv(.c) void {
-    encoder_native.doeNativeCommandEncoderCopyBufferToTexture(
-        enc_raw,
-        src_buffer_raw,
-        src_offset,
-        src_bytes_per_row,
-        src_rows_per_image,
-        dst_texture_raw,
-        dst_mip_level,
-        width,
-        height,
-        depth_or_array_layers,
-    );
-}
-
-pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
-    enc_raw: ?*anyopaque,
-    src_texture_raw: ?*anyopaque,
-    src_mip_level: u32,
-    dst_buffer_raw: ?*anyopaque,
-    dst_offset: u64,
-    dst_bytes_per_row: u32,
-    dst_rows_per_image: u32,
-    width: u32,
-    height: u32,
-    depth_or_array_layers: u32,
-) callconv(.c) void {
-    encoder_native.doeNativeCommandEncoderCopyTextureToBuffer(
-        enc_raw,
-        src_texture_raw,
-        src_mip_level,
-        dst_buffer_raw,
-        dst_offset,
-        dst_bytes_per_row,
-        dst_rows_per_image,
-        width,
-        height,
-        depth_or_array_layers,
-    );
-}
-
-pub export fn doeNativeCommandEncoderCopyTextureToTexture(
-    enc_raw: ?*anyopaque,
-    src_texture_raw: ?*anyopaque,
-    src_mip: u32,
-    src_slice: u32,
-    src_x: u32,
-    src_y: u32,
-    src_z: u32,
-    dst_texture_raw: ?*anyopaque,
-    dst_mip: u32,
-    dst_slice: u32,
-    dst_x: u32,
-    dst_y: u32,
-    dst_z: u32,
-    width: u32,
-    height: u32,
-    depth_or_layers: u32,
-) callconv(.c) void {
-    command_texture_native.doeNativeCommandEncoderCopyTextureToTexture(
-        enc_raw,
-        src_texture_raw,
-        src_mip,
-        src_slice,
-        src_x,
-        src_y,
-        src_z,
-        dst_texture_raw,
-        dst_mip,
-        dst_slice,
-        dst_x,
-        dst_y,
-        dst_z,
-        width,
-        height,
-        depth_or_layers,
-    );
 }
 
 pub export fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void {

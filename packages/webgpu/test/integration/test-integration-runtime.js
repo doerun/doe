@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,6 +9,27 @@ const REPO_ROOT = resolve(PACKAGE_DIR, "..", "..");
 const DEFAULT_COMMANDS = resolve(PACKAGE_DIR, "../../examples/upload_1kb_commands.json");
 const DEFAULT_APPLE_QUIRKS = resolve(PACKAGE_DIR, "../../examples/quirks/apple_m3_noop_list.json");
 const OUT_DIR = resolve(PACKAGE_DIR, "out");
+const DEFAULT_RUNTIME_BIN = resolve(REPO_ROOT, "runtime/zig/zig-out/bin/doe-zig-runtime");
+
+function hasRunnableRuntimeBinary() {
+    const binPath = process.env.FAWN_DOE_BIN || DEFAULT_RUNTIME_BIN;
+    if (!existsSync(binPath)) {
+        return false;
+    }
+    if (process.platform !== "linux") {
+        return true;
+    }
+    try {
+        const header = readFileSync(binPath);
+        return header.length >= 4
+            && header[0] === 0x7f
+            && header[1] === 0x45
+            && header[2] === 0x4c
+            && header[3] === 0x46;
+    } catch {
+        return false;
+    }
+}
 
 function defaultBenchOptions() {
     if (process.env.FAWN_TEST_QUIRKS || process.env.FAWN_TEST_VENDOR || process.env.FAWN_TEST_API) {
@@ -37,6 +58,10 @@ function defaultBenchOptions() {
 async function main() {
     if (!existsSync(DEFAULT_COMMANDS)) {
         console.log(`skip: commands file not found: ${DEFAULT_COMMANDS}`);
+        return;
+    }
+    if (!hasRunnableRuntimeBinary()) {
+        console.log(`skip: runnable doe-zig-runtime not found for ${process.platform}`);
         return;
     }
 

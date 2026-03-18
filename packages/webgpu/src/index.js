@@ -64,7 +64,7 @@ import {
   CANVAS_COLOR_SPACES,
 } from './shared/browser-surface.js';
 import {
-  createNativeBrowserCanvasBackend,
+  createNativeBrowserCanvasBackend as createNativeBrowserCanvasBackendImpl,
 } from './shared/browser-native-canvas-backend.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -104,7 +104,11 @@ const DOE_BUILD_METADATA = loadDoeBuildMetadata({
 });
 let libraryLoaded = false;
 
-export { globals, preflightShaderSource };
+export {
+  globals,
+  preflightShaderSource,
+  createNativeBrowserCanvasBackendImpl as createNativeBrowserCanvasBackend,
+};
 
 
 function loadAddon() {
@@ -1629,7 +1633,6 @@ export {
   normalizeOrigin2D,
   normalizeCanvasConfiguration,
   createBrowserSurfaceClasses,
-  createNativeBrowserCanvasBackend,
 };
 
 export default {
@@ -1639,7 +1642,7 @@ export default {
   create,
   createInstance,
   createBrowserSurfaceClasses,
-  createNativeBrowserCanvasBackend,
+  createNativeBrowserCanvasBackend: createNativeBrowserCanvasBackendImpl,
   globals,
   normalizeCanvasConfiguration,
   normalizeOrigin2D,

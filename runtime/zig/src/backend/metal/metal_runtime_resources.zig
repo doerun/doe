@@ -4,9 +4,7 @@ const bridge = @import("metal_bridge_decls.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
-const _unused_mpc = if (HAS_PIPELINE_CACHE) metal_pipeline_cache
-else
-    null;
+const _unused_mpc = if (HAS_PIPELINE_CACHE) metal_pipeline_cache else null;
 
 const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
@@ -109,7 +107,10 @@ pub fn ensure_streaming_render_encoder(self: anytype) !void {
         self.render_target,
         null,
         0,
-        0.0, 0.0, 0.0, 0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
     ) orelse return error.InvalidState;
     self.streaming_has_render = true;
 }

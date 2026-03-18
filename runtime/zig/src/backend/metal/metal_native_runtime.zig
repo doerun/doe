@@ -741,7 +741,6 @@ pub const NativeMetalRuntime = struct {
     pub fn gpu_timestamps_supported(self: *const NativeMetalRuntime) bool {
         return self.timestamp_state.supported;
     }
-
 };
 
 pub const BufferPool = metal_buffer_pool.BufferPool;
