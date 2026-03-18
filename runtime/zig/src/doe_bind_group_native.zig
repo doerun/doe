@@ -82,7 +82,6 @@ pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*const types.WGPUPipelineLayoutDescriptor) callconv(.c) ?*anyopaque {
     _ = dev_raw;
-    _ = desc;
     const pl = make(DoePipelineLayout) orelse return null;
     pl.* = .{};
     const pl_result = toOpaque(pl);

@@ -49,6 +49,14 @@ pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
         if (params_len != 1) return error.InvalidType;
         return try self.module.types.intern(.{ .texture_3d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
     }
+    if (std.mem.eql(u8, name, "texture_cube")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_cube = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
+    if (std.mem.eql(u8, name, "texture_2d_array")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_2d_array = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
     if (std.mem.eql(u8, name, "texture_storage_2d")) {
         if (params_len != 2) return error.InvalidType;
         const format_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start]];

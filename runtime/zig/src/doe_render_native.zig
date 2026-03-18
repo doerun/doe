@@ -469,11 +469,6 @@ pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count:
         return;
     }
     // TODO: implement indexed draw for Metal
-    _ = index_count;
-    _ = instance_count;
-    _ = first_index;
-    _ = base_vertex;
-    _ = first_instance;
 }
 
 pub export fn doeNativeRenderPassEnd(raw: ?*anyopaque) callconv(.c) void {

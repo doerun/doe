@@ -66,6 +66,17 @@ const Emitter = struct {
             self.indent += 4;
             for (struct_def.fields.items) |field| {
                 try self.write_indent();
+                // Runtime-sized array field: emit as elem_type name[] (unsized array).
+                switch (self.module.types.get(field.ty)) {
+                    .array => |arr| if (arr.len == null) {
+                        try self.emit_type_only(arr.elem);
+                        try self.write(" ");
+                        try self.write(field.name);
+                        try self.write("[];\n");
+                        continue;
+                    },
+                    else => {},
+                }
                 try self.emit_typed_name(field.ty, field.name);
                 try self.write(";\n");
             }
@@ -216,8 +227,8 @@ const Emitter = struct {
                 else => continue,
             };
             if (arr.len != null) continue;
-            const field_offset = hlsl_struct_field_offset(self.module, struct_def, @intCast(field_idx));
-            const elem_size = hlsl_type_size(self.module, arr.elem);
+            const field_offset = layout.struct_field_offset(self.module, struct_def, @intCast(field_idx));
+            const elem_size = layout.type_size(self.module, arr.elem);
             try self.write("\nuint doe_arrayLength_");
             try self.write(global.name);
             try self.write("_");
@@ -606,7 +617,7 @@ const Emitter = struct {
                     },
                     .member => |member| {
                         // arrayLength(&buf.data) — struct field runtime-sized array.
-                        const global_index = hlsl_resolve_member_global(function, member.base) orelse return error.InvalidIr;
+                        const global_index = layout.resolve_member_global(function, member.base) orelse return error.InvalidIr;
                         const global = self.module.globals.items[global_index];
                         const struct_id = switch (self.module.types.get(global.ty)) {
                             .struct_ => |sid| sid,
@@ -840,108 +851,3 @@ const Emitter = struct {
         }
     }
 };
-
-/// Walk a chain of member/load expressions to find the root global_ref index.
-fn hlsl_resolve_member_global(function: ir.Function, expr_id: ir.ExprId) ?ir.GlobalId {
-    var current = expr_id;
-    while (true) {
-        switch (function.exprs.items[current].data) {
-            .global_ref => |index| return index,
-            .member => |m| current = m.base,
-            .load => |inner| current = inner,
-            else => return null,
-        }
-    }
-}
-
-/// Compute the byte offset of a field in a struct for storage layout (std430).
-fn hlsl_struct_field_offset(module: *const ir.Module, struct_def: ir.StructDef, target_field: u32) u32 {
-    var offset: u32 = 0;
-    for (struct_def.fields.items[0..target_field]) |field| {
-        const field_align = hlsl_type_alignment(module, field.ty);
-        offset = hlsl_round_up(offset, field_align);
-        offset += hlsl_type_size(module, field.ty);
-    }
-    const target_align = hlsl_type_alignment(module, struct_def.fields.items[target_field].ty);
-    return hlsl_round_up(offset, target_align);
-}
-
-fn hlsl_round_up(value: u32, alignment: u32) u32 {
-    if (alignment <= 1) return value;
-    const remainder = value % alignment;
-    if (remainder == 0) return value;
-    return value + alignment - remainder;
-}
-
-fn hlsl_type_alignment(module: *const ir.Module, ty: ir.TypeId) u32 {
-    return switch (module.types.get(ty)) {
-        .scalar => |s| switch (s) {
-            .f16 => 2,
-            .bool, .i32, .u32, .f32, .abstract_int, .abstract_float => 4,
-            else => 4,
-        },
-        .vector => |v| hlsl_type_alignment(module, v.elem) * switch (v.len) {
-            2 => @as(u32, 2),
-            3, 4 => @as(u32, 4),
-            else => 1,
-        },
-        .matrix => |m| hlsl_type_alignment(module, m.elem) * switch (m.rows) {
-            2 => @as(u32, 2),
-            3, 4 => @as(u32, 4),
-            else => 1,
-        },
-        .array => |a| hlsl_type_alignment(module, a.elem),
-        .atomic => |inner| hlsl_type_alignment(module, inner),
-        .struct_ => |sid| blk: {
-            var max_align: u32 = 1;
-            for (module.structs.items[sid].fields.items) |field| {
-                max_align = @max(max_align, hlsl_type_alignment(module, field.ty));
-            }
-            break :blk max_align;
-        },
-        else => 4,
-    };
-}
-
-fn hlsl_type_size(module: *const ir.Module, ty: ir.TypeId) u32 {
-    return switch (module.types.get(ty)) {
-        .scalar => |s| switch (s) {
-            .f16 => 2,
-            .bool, .i32, .u32, .f32, .abstract_int, .abstract_float => 4,
-            else => 4,
-        },
-        .vector => |v| hlsl_type_size(module, v.elem) * v.len,
-        .matrix => |m| blk: {
-            const col_size = hlsl_type_size(module, m.elem) * m.rows;
-            const col_align = hlsl_type_alignment(module, m.elem) * switch (m.rows) {
-                2 => @as(u32, 2),
-                3, 4 => @as(u32, 4),
-                else => 1,
-            };
-            const stride = hlsl_round_up(col_size, col_align);
-            break :blk stride * m.columns;
-        },
-        .array => |a| blk: {
-            if (a.len) |len| {
-                const elem_size = hlsl_type_size(module, a.elem);
-                const elem_align = hlsl_type_alignment(module, a.elem);
-                const stride = hlsl_round_up(elem_size, elem_align);
-                break :blk stride * len;
-            }
-            break :blk 0;
-        },
-        .atomic => |inner| hlsl_type_size(module, inner),
-        .struct_ => |sid| blk: {
-            var offset: u32 = 0;
-            var max_align: u32 = 1;
-            for (module.structs.items[sid].fields.items) |field| {
-                const field_align = hlsl_type_alignment(module, field.ty);
-                offset = hlsl_round_up(offset, field_align);
-                offset += hlsl_type_size(module, field.ty);
-                max_align = @max(max_align, field_align);
-            }
-            break :blk hlsl_round_up(offset, max_align);
-        },
-        else => 4,
-    };
-}

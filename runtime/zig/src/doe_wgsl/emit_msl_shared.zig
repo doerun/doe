@@ -403,7 +403,7 @@ pub fn write_expr(module: *const ir.Module, function: ir.Function, expr_id: ir.E
 // builtins like min/max/clamp where mixed argument types are invalid.
 fn write_expr_coerced(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId, buf: []u8, pos: *usize) EmitError!void {
     const expr_ty = function.exprs.items[expr_id].ty;
-    if (expr_ty != target_ty) {
+    if (expr_ty != target_ty or should_force_literal_cast(module, function, expr_id, target_ty)) {
         try write_type(module, target_ty, buf, pos);
         try write_str(buf, pos, "(");
         try write_expr(module, function, expr_id, buf, pos);
@@ -411,6 +411,14 @@ fn write_expr_coerced(module: *const ir.Module, function: ir.Function, expr_id: 
         return;
     }
     try write_expr(module, function, expr_id, buf, pos);
+}
+
+fn should_force_literal_cast(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId) bool {
+    if (function.exprs.items[expr_id].data != .int_lit) return false;
+    return switch (module.types.get(target_ty)) {
+        .scalar => |scalar| scalar == .u32,
+        else => false,
+    };
 }
 
 fn write_call(module: *const ir.Module, function: ir.Function, result_ty: ir.TypeId, call: @FieldType(ir.Expr, "call"), buf: []u8, pos: *usize) EmitError!void {

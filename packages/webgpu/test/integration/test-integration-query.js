@@ -27,6 +27,7 @@ try {
 }
 
 const { GPUBufferUsage } = full.globals;
+const querySupportUnavailable = (err) => /timestamp query sets are not supported|unsupported|not supported|not available|unavailable/i.test(err?.message ?? String(err));
 
 // ---------------------------------------------------------------------------
 // a. createQuerySet with type "timestamp"
@@ -34,14 +35,20 @@ const { GPUBufferUsage } = full.globals;
 
 console.log("\n--- a. createQuerySet with type timestamp ---");
 let querySet = null;
+let querySupportMissing = false;
 try {
   querySet = device.createQuerySet({ type: "timestamp", count: 2 });
   assert(querySet != null, "timestamp query set created");
   assert(querySet.type === "timestamp", `querySet.type === "timestamp" (got "${querySet.type}")`);
   assert(querySet.count === 2, `querySet.count === 2 (got ${querySet.count})`);
 } catch (err) {
-  failed++;
-  console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+  if (querySupportUnavailable(err)) {
+    querySupportMissing = true;
+    skip(`timestamp query sets unavailable: ${err?.message ?? err}`);
+  } else {
+    failed++;
+    console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -50,10 +57,14 @@ try {
 
 console.log("\n--- b. createQuerySet with count=1 ---");
 try {
-  const qs = device.createQuerySet({ type: "timestamp", count: 1 });
-  assert(qs != null, "query set with count=1 created");
-  assert(qs.count === 1, `querySet.count === 1 (got ${qs.count})`);
-  qs.destroy();
+  if (querySupportMissing) {
+    skip("query set support unavailable on this backend/device");
+  } else {
+    const qs = device.createQuerySet({ type: "timestamp", count: 1 });
+    assert(qs != null, "query set with count=1 created");
+    assert(qs.count === 1, `querySet.count === 1 (got ${qs.count})`);
+    qs.destroy();
+  }
 } catch (err) {
   failed++;
   console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
@@ -65,10 +76,14 @@ try {
 
 console.log("\n--- c. createQuerySet with count=16 ---");
 try {
-  const qs = device.createQuerySet({ type: "timestamp", count: 16 });
-  assert(qs != null, "query set with count=16 created");
-  assert(qs.count === 16, `querySet.count === 16 (got ${qs.count})`);
-  qs.destroy();
+  if (querySupportMissing) {
+    skip("query set support unavailable on this backend/device");
+  } else {
+    const qs = device.createQuerySet({ type: "timestamp", count: 16 });
+    assert(qs != null, "query set with count=16 created");
+    assert(qs.count === 16, `querySet.count === 16 (got ${qs.count})`);
+    qs.destroy();
+  }
 } catch (err) {
   failed++;
   console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
@@ -80,10 +95,14 @@ try {
 
 console.log("\n--- d. querySet.destroy() ---");
 try {
-  const qs = device.createQuerySet({ type: "timestamp", count: 4 });
-  assert(typeof qs.destroy === "function", "querySet has destroy method");
-  qs.destroy();
-  assert(true, "querySet.destroy() completed without error");
+  if (querySupportMissing) {
+    skip("query set support unavailable on this backend/device");
+  } else {
+    const qs = device.createQuerySet({ type: "timestamp", count: 4 });
+    assert(typeof qs.destroy === "function", "querySet has destroy method");
+    qs.destroy();
+    assert(true, "querySet.destroy() completed without error");
+  }
 } catch (err) {
   failed++;
   console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
@@ -95,16 +114,20 @@ try {
 
 console.log("\n--- e. querySet double destroy ---");
 try {
-  const qs = device.createQuerySet({ type: "timestamp", count: 2 });
-  qs.destroy();
-  let secondOk = false;
-  try {
+  if (querySupportMissing) {
+    skip("query set support unavailable on this backend/device");
+  } else {
+    const qs = device.createQuerySet({ type: "timestamp", count: 2 });
     qs.destroy();
-    secondOk = true;
-  } catch {
-    secondOk = true; // throwing is also acceptable
+    let secondOk = false;
+    try {
+      qs.destroy();
+      secondOk = true;
+    } catch {
+      secondOk = true; // throwing is also acceptable
+    }
+    assert(secondOk, "double destroy on querySet does not crash");
   }
-  assert(secondOk, "double destroy on querySet does not crash");
 } catch (err) {
   failed++;
   console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);

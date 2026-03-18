@@ -115,6 +115,7 @@ pub const vkGetDeviceQueue = functions.vkGetDeviceQueue;
 pub const vkCreateCommandPool = functions.vkCreateCommandPool;
 pub const vkDestroyCommandPool = functions.vkDestroyCommandPool;
 pub const vkAllocateCommandBuffers = functions.vkAllocateCommandBuffers;
+pub const vkFreeCommandBuffers = functions.vkFreeCommandBuffers;
 pub const vkResetCommandPool = functions.vkResetCommandPool;
 pub const vkCreateFence = functions.vkCreateFence;
 pub const vkDestroyFence = functions.vkDestroyFence;

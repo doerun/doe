@@ -318,7 +318,7 @@ fn emit_atomic_fetch_explicit(self: anytype, function: ir.Function, call: @Field
 
 pub fn emit_expr_coerced(self: anytype, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId) EmitError!void {
     const expr_ty = function.exprs.items[expr_id].ty;
-    if (expr_ty != target_ty) {
+    if (expr_ty != target_ty or should_force_literal_cast(self.module, function, expr_id, target_ty)) {
         try self.emit_type(target_ty);
         try self.write("(");
         try self.emit_expr(function, expr_id);
@@ -326,4 +326,12 @@ pub fn emit_expr_coerced(self: anytype, function: ir.Function, expr_id: ir.ExprI
         return;
     }
     try self.emit_expr(function, expr_id);
+}
+
+fn should_force_literal_cast(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId) bool {
+    if (function.exprs.items[expr_id].data != .int_lit) return false;
+    return switch (module.types.get(target_ty)) {
+        .scalar => |scalar| scalar == .u32,
+        else => false,
+    };
 }

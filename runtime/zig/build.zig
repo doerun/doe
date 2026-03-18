@@ -99,7 +99,10 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         dropin_lib.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                dropin_lib.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             dropin_lib.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -224,7 +227,7 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         exe.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             exe.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -348,7 +351,7 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         module_runner.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             module_runner.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -411,7 +414,7 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         core_dropin_lib.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             core_dropin_lib.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -459,7 +462,7 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         test_exec.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             test_exec.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -507,7 +510,7 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         core_test_exec.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             core_test_exec.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -555,7 +558,7 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         full_test_exec.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             full_test_exec.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -603,7 +606,7 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         d3d12_test_exec.linkSystemLibrary("dl");
-        if (target.result.os.tag == .linux) {
+        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             d3d12_test_exec.linkSystemLibrary("vulkan");
         }
     }

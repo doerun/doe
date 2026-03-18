@@ -1,5 +1,11 @@
 const std = @import("std");
 const rb = @import("../../src/render_bundle.zig");
+const native = @import("../../src/doe_wgpu_native.zig");
+const doebundle = @import("../../src/doe_bundle_native.zig");
+
+const TEST_DEVICE_MAGIC: u32 = 0xD0E1_0003;
+const TEST_CMD_ENCODER_MAGIC: u32 = 0xD0E1_000B;
+const TEST_RENDER_PASS_MAGIC: u32 = 0xD0E1_0012;
 
 // Convenience aliases.
 const BundleCmd = rb.BundleCmd;
@@ -43,6 +49,24 @@ fn finish_to_bundle(enc: *DoeBundleEncoder) DoeRenderBundle {
         .depth_stencil_format = enc.depth_stencil_format,
         .sample_count = enc.sample_count,
         .cmds = cmds_slice,
+    };
+}
+
+fn make_native_device() native.DoeDevice {
+    return .{ .magic = TEST_DEVICE_MAGIC };
+}
+
+fn make_native_command_encoder(dev: *native.DoeDevice) native.DoeCommandEncoder {
+    return .{
+        .magic = TEST_CMD_ENCODER_MAGIC,
+        .dev = dev,
+    };
+}
+
+fn make_native_render_pass(enc: *native.DoeCommandEncoder) native.DoeRenderPass {
+    return .{
+        .magic = TEST_RENDER_PASS_MAGIC,
+        .enc = enc,
     };
 }
 
@@ -140,12 +164,14 @@ test "set_index_buffer records format and offset" {
     var enc = make_test_encoder(std.testing.allocator);
     defer enc.cmds.deinit(enc.allocator);
 
-    rb.bundle_encoder_push(&enc, BundleCmd{ .set_index_buffer = .{
-        .mtl_buffer = null,
-        .format = 0x1, // uint16
-        .offset = 128,
-        .size = 2048,
-    } });
+    rb.bundle_encoder_push(&enc, BundleCmd{
+        .set_index_buffer = .{
+            .mtl_buffer = null,
+            .format = 0x1, // uint16
+            .offset = 128,
+            .size = 2048,
+        },
+    });
 
     const ib = enc.cmds.items[0].set_index_buffer;
     try std.testing.expectEqual(@as(u32, 0x1), ib.format);
@@ -265,6 +291,120 @@ test "replay produces correct command sequence for mixed commands" {
 
     // Verify data integrity of the draw_indexed command.
     try std.testing.expectEqual(@as(u32, 12), bundle.cmds[4].draw_indexed.index_count);
+}
+
+// ============================================================
+// Native executeBundles replay tests
+// ============================================================
+
+test "executeBundles replays indexed indirect bundles with fresh replay state" {
+    var dev = make_native_device();
+    var cmd_enc = make_native_command_encoder(&dev);
+    defer cmd_enc.cmds.deinit(native.alloc);
+
+    var render_pass = make_native_render_pass(&cmd_enc);
+
+    var pipeline_token_a: u8 = 0;
+    var vertex_token_a: u8 = 0;
+    var index_token_a: u8 = 0;
+    var indirect_token_a: u8 = 0;
+
+    var bundle_a_enc = make_test_encoder(std.testing.allocator);
+    defer bundle_a_enc.cmds.deinit(bundle_a_enc.allocator);
+    rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = @ptrCast(&pipeline_token_a) } });
+    rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_vertex_buffer = .{
+        .slot = 0,
+        .mtl_buffer = @ptrCast(&vertex_token_a),
+        .offset = 16,
+    } });
+    rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_index_buffer = .{
+        .mtl_buffer = @ptrCast(&index_token_a),
+        .format = 0x1,
+        .offset = 24,
+        .size = 128,
+    } });
+    rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .draw_indexed_indirect = .{
+        .indirect_buffer = @ptrCast(&indirect_token_a),
+        .indirect_offset = 64,
+    } });
+    const bundle_a = finish_to_bundle(&bundle_a_enc);
+    defer std.testing.allocator.free(bundle_a.cmds);
+
+    var pipeline_token_b: u8 = 0;
+    var index_token_b: u8 = 0;
+    var indirect_token_b: u8 = 0;
+
+    var bundle_b_enc = make_test_encoder(std.testing.allocator);
+    defer bundle_b_enc.cmds.deinit(bundle_b_enc.allocator);
+    rb.bundle_encoder_push(&bundle_b_enc, BundleCmd{ .set_index_buffer = .{
+        .mtl_buffer = @ptrCast(&index_token_b),
+        .format = 0x2,
+        .offset = 8,
+        .size = 256,
+    } });
+    rb.bundle_encoder_push(&bundle_b_enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = @ptrCast(&pipeline_token_b) } });
+    rb.bundle_encoder_push(&bundle_b_enc, BundleCmd{ .draw_indexed_indirect = .{
+        .indirect_buffer = @ptrCast(&indirect_token_b),
+        .indirect_offset = 32,
+    } });
+    const bundle_b = finish_to_bundle(&bundle_b_enc);
+    defer std.testing.allocator.free(bundle_b.cmds);
+
+    const bundles = [_]?*anyopaque{
+        @ptrCast(@constCast(&bundle_a)),
+        @ptrCast(@constCast(&bundle_b)),
+    };
+    doebundle.doeNativeRenderPassExecuteBundles(@ptrCast(&render_pass), bundles.len, &bundles);
+
+    try std.testing.expectEqual(@as(usize, 2), cmd_enc.cmds.items.len);
+
+    const first = cmd_enc.cmds.items[0].render_pass;
+    try std.testing.expect(first.indexed);
+    try std.testing.expect(first.indirect);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrCast(&index_token_a)), first.index_buffer);
+    try std.testing.expectEqual(@as(u64, 24), first.index_offset);
+    try std.testing.expectEqual(@as(u32, 0x1), first.index_format);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrCast(&indirect_token_a)), first.indirect_buffer);
+    try std.testing.expectEqual(@as(u64, 64), first.indirect_offset);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrCast(&pipeline_token_a)), first.pso);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrCast(&vertex_token_a)), first.vertex_buffers[0]);
+    try std.testing.expectEqual(@as(u64, 16), first.vertex_buffer_offsets[0]);
+
+    const second = cmd_enc.cmds.items[1].render_pass;
+    try std.testing.expect(second.indexed);
+    try std.testing.expect(second.indirect);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrCast(&index_token_b)), second.index_buffer);
+    try std.testing.expectEqual(@as(u64, 8), second.index_offset);
+    try std.testing.expectEqual(@as(u32, 0x2), second.index_format);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrCast(&indirect_token_b)), second.indirect_buffer);
+    try std.testing.expectEqual(@as(u64, 32), second.indirect_offset);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrCast(&pipeline_token_b)), second.pso);
+    try std.testing.expect(second.vertex_buffers[0] == null);
+    try std.testing.expectEqual(@as(u64, 0), second.vertex_buffer_offsets[0]);
+}
+
+test "executeBundles skips indexed indirect draws without an index buffer" {
+    var dev = make_native_device();
+    var cmd_enc = make_native_command_encoder(&dev);
+    defer cmd_enc.cmds.deinit(native.alloc);
+
+    var render_pass = make_native_render_pass(&cmd_enc);
+
+    var indirect_token: u8 = 0;
+
+    var bundle_enc = make_test_encoder(std.testing.allocator);
+    defer bundle_enc.cmds.deinit(bundle_enc.allocator);
+    rb.bundle_encoder_push(&bundle_enc, BundleCmd{ .draw_indexed_indirect = .{
+        .indirect_buffer = @ptrCast(&indirect_token),
+        .indirect_offset = 48,
+    } });
+    const bundle = finish_to_bundle(&bundle_enc);
+    defer std.testing.allocator.free(bundle.cmds);
+
+    const bundles = [_]?*anyopaque{@ptrCast(@constCast(&bundle))};
+    doebundle.doeNativeRenderPassExecuteBundles(@ptrCast(&render_pass), bundles.len, &bundles);
+
+    try std.testing.expectEqual(@as(usize, 0), cmd_enc.cmds.items.len);
 }
 
 // ============================================================
@@ -526,4 +666,228 @@ test "MAX_BIND_GROUPS is 4" {
 
 test "MAX_BINDINGS_PER_GROUP is 16" {
     try std.testing.expectEqual(@as(usize, 16), rb.MAX_BINDINGS_PER_GROUP);
+}
+
+// ============================================================
+// Full replay command sequence: record all command types, finish,
+// verify data integrity for replay iteration
+// ============================================================
+
+test "replay sequence: all command types recorded and data preserved" {
+    rb.set_allocator(std.testing.allocator);
+
+    const enc = rb.make_bundle_encoder(0x04, 0x20, 4, false, false) orelse
+        return error.AllocationFailed;
+
+    // 1. set_pipeline
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+
+    // 2. set_bind_group (group 0, 2 entries)
+    var bg0 = rb.BundleBindGroup{ .entries = undefined, .count = 2 };
+    bg0.entries[0] = .{ .mtl_buffer = null, .offset = 0 };
+    bg0.entries[1] = .{ .mtl_buffer = null, .offset = 256 };
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_bind_group = .{ .group = 0, .bg = bg0 } });
+
+    // 3. set_vertex_buffer (slot 0)
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_vertex_buffer = .{
+        .slot = 0,
+        .mtl_buffer = null,
+        .offset = 0,
+    } });
+
+    // 4. draw
+    rb.bundle_encoder_push(enc, BundleCmd{ .draw = .{
+        .vertex_count = 36,
+        .instance_count = 1,
+        .first_vertex = 0,
+        .first_instance = 0,
+    } });
+
+    // 5. set_index_buffer
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_index_buffer = .{
+        .mtl_buffer = null,
+        .format = 0x2,
+        .offset = 0,
+        .size = 4096,
+    } });
+
+    // 6. draw_indexed
+    rb.bundle_encoder_push(enc, BundleCmd{ .draw_indexed = .{
+        .index_count = 24,
+        .instance_count = 2,
+        .first_index = 0,
+        .base_vertex = 10,
+        .first_instance = 0,
+    } });
+
+    // 7. draw_indirect
+    rb.bundle_encoder_push(enc, BundleCmd{ .draw_indirect = .{
+        .indirect_buffer = null,
+        .indirect_offset = 64,
+    } });
+
+    // 8. draw_indexed_indirect
+    rb.bundle_encoder_push(enc, BundleCmd{ .draw_indexed_indirect = .{
+        .indirect_buffer = null,
+        .indirect_offset = 128,
+    } });
+
+    // Finish to bundle.
+    const bundle = rb.bundle_encoder_finish(enc) orelse
+        return error.FinishFailed;
+    defer rb.bundle_destroy(bundle);
+
+    // Verify command count.
+    try std.testing.expectEqual(@as(usize, 8), bundle.cmds.len);
+
+    // Verify compatibility metadata transferred.
+    try std.testing.expectEqual(@as(u32, 0x04), bundle.color_format);
+    try std.testing.expectEqual(@as(u32, 0x20), bundle.depth_stencil_format);
+    try std.testing.expectEqual(@as(u32, 4), bundle.sample_count);
+
+    // Verify command tags in replay order.
+    const expected_tags = [_]BundleCmdTag{
+        .set_pipeline,
+        .set_bind_group,
+        .set_vertex_buffer,
+        .draw,
+        .set_index_buffer,
+        .draw_indexed,
+        .draw_indirect,
+        .draw_indexed_indirect,
+    };
+    for (expected_tags, 0..) |tag, i| {
+        try std.testing.expectEqual(tag, std.meta.activeTag(bundle.cmds[i]));
+    }
+
+    // Verify set_bind_group data integrity.
+    const sbg = bundle.cmds[1].set_bind_group;
+    try std.testing.expectEqual(@as(u32, 0), sbg.group);
+    try std.testing.expectEqual(@as(u32, 2), sbg.bg.count);
+    try std.testing.expectEqual(@as(u64, 256), sbg.bg.entries[1].offset);
+
+    // Verify set_vertex_buffer data.
+    const vb = bundle.cmds[2].set_vertex_buffer;
+    try std.testing.expectEqual(@as(u32, 0), vb.slot);
+
+    // Verify draw data.
+    const draw = bundle.cmds[3].draw;
+    try std.testing.expectEqual(@as(u32, 36), draw.vertex_count);
+    try std.testing.expectEqual(@as(u32, 1), draw.instance_count);
+
+    // Verify set_index_buffer data.
+    const ib = bundle.cmds[4].set_index_buffer;
+    try std.testing.expectEqual(@as(u32, 0x2), ib.format);
+    try std.testing.expectEqual(@as(u64, 4096), ib.size);
+
+    // Verify draw_indexed data.
+    const di = bundle.cmds[5].draw_indexed;
+    try std.testing.expectEqual(@as(u32, 24), di.index_count);
+    try std.testing.expectEqual(@as(u32, 2), di.instance_count);
+    try std.testing.expectEqual(@as(i32, 10), di.base_vertex);
+
+    // Verify draw_indirect data.
+    const dind = bundle.cmds[6].draw_indirect;
+    try std.testing.expectEqual(@as(u64, 64), dind.indirect_offset);
+
+    // Verify draw_indexed_indirect data.
+    const diind = bundle.cmds[7].draw_indexed_indirect;
+    try std.testing.expectEqual(@as(u64, 128), diind.indirect_offset);
+
+    // Verify compatibility check passes for matching format.
+    try rb.check_compatibility(bundle, 0x04, 4);
+
+    // Verify compatibility check fails for mismatched format.
+    try std.testing.expectError(
+        rb.ReplayError.FormatMismatch,
+        rb.check_compatibility(bundle, 0x08, 4),
+    );
+
+    // Verify compatibility check fails for mismatched sample count.
+    try std.testing.expectError(
+        rb.ReplayError.SampleCountMismatch,
+        rb.check_compatibility(bundle, 0x04, 1),
+    );
+}
+
+test "replay sequence: multiple bind groups in replay order" {
+    rb.set_allocator(std.testing.allocator);
+
+    const enc = rb.make_bundle_encoder(0x04, 0, 1, false, false) orelse
+        return error.AllocationFailed;
+
+    // Record bind groups 0, 1, 2, 3 with different entry counts.
+    var i: u32 = 0;
+    while (i < rb.MAX_BIND_GROUPS) : (i += 1) {
+        var bg = rb.BundleBindGroup{ .entries = undefined, .count = i + 1 };
+        var j: u32 = 0;
+        while (j < bg.count) : (j += 1) {
+            bg.entries[j] = .{ .mtl_buffer = null, .offset = @as(u64, i) * 1000 + @as(u64, j) * 64 };
+        }
+        rb.bundle_encoder_push(enc, BundleCmd{ .set_bind_group = .{ .group = i, .bg = bg } });
+    }
+
+    rb.bundle_encoder_push(enc, BundleCmd{ .draw = .{
+        .vertex_count = 3,
+        .instance_count = 1,
+        .first_vertex = 0,
+        .first_instance = 0,
+    } });
+
+    const bundle = rb.bundle_encoder_finish(enc) orelse
+        return error.FinishFailed;
+    defer rb.bundle_destroy(bundle);
+
+    // 4 bind groups + 1 draw = 5 commands.
+    try std.testing.expectEqual(@as(usize, 5), bundle.cmds.len);
+
+    // Verify each bind group's data.
+    var k: u32 = 0;
+    while (k < rb.MAX_BIND_GROUPS) : (k += 1) {
+        const cmd = bundle.cmds[k].set_bind_group;
+        try std.testing.expectEqual(k, cmd.group);
+        try std.testing.expectEqual(k + 1, cmd.bg.count);
+        try std.testing.expectEqual(@as(u64, k) * 1000, cmd.bg.entries[0].offset);
+    }
+}
+
+test "replay sequence: multiple vertex buffer slots" {
+    rb.set_allocator(std.testing.allocator);
+
+    const enc = rb.make_bundle_encoder(0x04, 0, 1, false, false) orelse
+        return error.AllocationFailed;
+
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+
+    // Record vertex buffers on slots 0..MAX_VTX_BUFS-1.
+    var slot: u32 = 0;
+    while (slot < rb.MAX_VTX_BUFS) : (slot += 1) {
+        rb.bundle_encoder_push(enc, BundleCmd{ .set_vertex_buffer = .{
+            .slot = slot,
+            .mtl_buffer = null,
+            .offset = @as(u64, slot) * 128,
+        } });
+    }
+
+    rb.bundle_encoder_push(enc, BundleCmd{ .draw = .{
+        .vertex_count = 100,
+        .instance_count = 1,
+        .first_vertex = 0,
+        .first_instance = 0,
+    } });
+
+    const bundle = rb.bundle_encoder_finish(enc) orelse
+        return error.FinishFailed;
+    defer rb.bundle_destroy(bundle);
+
+    // 1 pipeline + MAX_VTX_BUFS vertex buffers + 1 draw.
+    try std.testing.expectEqual(@as(usize, 1 + rb.MAX_VTX_BUFS + 1), bundle.cmds.len);
+
+    // Verify each vertex buffer slot and offset.
+    var s: u32 = 0;
+    while (s < rb.MAX_VTX_BUFS) : (s += 1) {
+        const vb = bundle.cmds[1 + s].set_vertex_buffer;
+        try std.testing.expectEqual(s, vb.slot);
+        try std.testing.expectEqual(@as(u64, s) * 128, vb.offset);
+    }
 }

@@ -29,6 +29,8 @@ pub extern fn metal_bridge_render_encoder_set_front_facing(encoder: ?*anyopaque,
 pub extern fn metal_bridge_render_encoder_set_cull_mode(encoder: ?*anyopaque, cull_mode: u32) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_draw(encoder: ?*anyopaque, topology: u32, draw_count: u32, vertex_count: u32, instance_count: u32, first_vertex: u32, first_instance: u32, redundant_pipeline: c_int, pipeline: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_draw_indexed(encoder: ?*anyopaque, topology: u32, draw_count: u32, index_count: u32, instance_count: u32, index_buffer: ?*anyopaque, index_offset: u64, index_format: u32, base_vertex: i32, first_instance: u32) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_draw_indirect(encoder: ?*anyopaque, indirect_buffer: ?*anyopaque, indirect_offset: u64) callconv(.c) void;
+pub extern fn metal_bridge_render_encoder_draw_indexed_indirect(encoder: ?*anyopaque, index_buffer: ?*anyopaque, index_buffer_offset: u64, index_type: u32, indirect_buffer: ?*anyopaque, indirect_offset: u64) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_execute_icb(encoder: ?*anyopaque, icb: ?*anyopaque, draw_count: u32) callconv(.c) void;
 pub extern fn metal_bridge_render_encoder_end(encoder: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_device_new_shared_event(device: ?*anyopaque) callconv(.c) ?*anyopaque;

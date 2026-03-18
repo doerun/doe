@@ -318,10 +318,17 @@ const FunctionBuilder = struct {
             .int_literal => ir.Expr{ .int_lit = sema_helpers.parse_wgsl_int_literal(u64, self.tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
             .float_literal => ir.Expr{ .float_lit = sema_helpers.parse_wgsl_float_literal(self.tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
             .ident_expr => try self.lower_ident(node_idx),
-            .unary_expr => ir.Expr{ .unary = .{
-                .op = map_unary_op(self.tree.tokens.items[node.main_token].tag),
-                .operand = try self.lower_value_expr(node.data.lhs),
-            } },
+            .unary_expr => blk: {
+                const op_tag = self.tree.tokens.items[node.main_token].tag;
+                if (op_tag == .@"*" or op_tag == .@"&") {
+                    // Dereference (*p) and address-of (&x) pass through to inner.
+                    return try self.lower_expr(node.data.lhs);
+                }
+                break :blk ir.Expr{ .unary = .{
+                    .op = map_unary_op(op_tag),
+                    .operand = try self.lower_value_expr(node.data.lhs),
+                } };
+            },
             .binary_expr => ir.Expr{ .binary = .{
                 .op = map_binary_op(self.tree.tokens.items[node.main_token].tag),
                 .lhs = try self.lower_value_expr(node.data.lhs),
@@ -364,12 +371,29 @@ const FunctionBuilder = struct {
 
         const kind: ir.CallKind = if (self.semantic.function_map.get(name) != null) .user else .builtin;
         const is_constructor = self.semantic.tryResolveNamedType(name) != null;
+        const callee_fn = if (kind == .user) blk: {
+            const fn_index = self.semantic.function_map.get(name) orelse break :blk null;
+            break :blk &self.semantic.functions.items[fn_index];
+        } else null;
 
         var i: u32 = 0;
         while (i < node.data.rhs) : (i += 1) {
             const arg_node = self.tree.extra_data.items[node.data.lhs + i];
+            const param_is_ref = callee_fn != null and i < callee_fn.?.params.items.len and
+                switch (self.semantic.types.get(callee_fn.?.params.items[i].ty)) {
+                .ref => true,
+                else => false,
+            };
             if (!is_constructor and kind == .builtin and i == 0 and (std.mem.startsWith(u8, name, "atomic") or std.mem.eql(u8, name, "arrayLength"))) {
                 // arrayLength(&buf) and atomic builtins may write &ref — unwrap & to get the ref.
+                const ref_node = blk: {
+                    const an = self.tree.nodes.items[arg_node];
+                    if (an.tag == .unary_expr and self.tree.tokens.items[an.main_token].tag == .@"&") break :blk an.data.lhs;
+                    break :blk arg_node;
+                };
+                try args.append(self.allocator, try self.lower_ref_expr(ref_node));
+            } else if (param_is_ref) {
+                // Pointer params: unwrap & and pass the ref directly.
                 const ref_node = blk: {
                     const an = self.tree.nodes.items[arg_node];
                     if (an.tag == .unary_expr and self.tree.tokens.items[an.main_token].tag == .@"&") break :blk an.data.lhs;
@@ -386,6 +410,7 @@ const FunctionBuilder = struct {
         }
         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
     }
+
 
     fn lower_generic_call(self: *FunctionBuilder, _: u32, node: Node) !ir.Expr {
         const name = self.tree.tokenSlice(node.main_token);

@@ -252,7 +252,6 @@ pub const DescriptorHeapState = struct {
         if (self.sampler_next >= self.sampler_capacity) return error.UnsupportedFeature;
         const index = self.sampler_next;
         self.sampler_next += 1;
-        _ = device;
         return index;
     }
 

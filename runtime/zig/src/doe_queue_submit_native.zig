@@ -51,6 +51,8 @@ const metal_bridge_render_encoder_set_depth_stencil_values = bridge.metal_bridge
 const metal_bridge_render_encoder_set_front_facing = bridge.metal_bridge_render_encoder_set_front_facing;
 const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw;
 const metal_bridge_render_encoder_draw_indexed = bridge.metal_bridge_render_encoder_draw_indexed;
+const metal_bridge_render_encoder_draw_indirect = bridge.metal_bridge_render_encoder_draw_indirect;
+const metal_bridge_render_encoder_draw_indexed_indirect = bridge.metal_bridge_render_encoder_draw_indexed_indirect;
 const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 const metal_bridge_render_encoder_set_vertex_buffer = bridge.metal_bridge_render_encoder_set_vertex_buffer;
 const metal_bridge_sample_timestamp = bridge.metal_bridge_sample_timestamp;
@@ -346,7 +348,24 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                                 metal_bridge_render_encoder_set_vertex_buffer(e, VERTEX_BUFFER_SLOT_BASE + @as(u32, @intCast(slot)), buf, offset);
                             }
                         }
-                        if (r.indexed) {
+                        if (r.indirect) {
+                            if (r.indexed) {
+                                metal_bridge_render_encoder_draw_indexed_indirect(
+                                    e,
+                                    r.index_buffer,
+                                    r.index_offset,
+                                    r.index_format,
+                                    r.indirect_buffer,
+                                    r.indirect_offset,
+                                );
+                            } else {
+                                metal_bridge_render_encoder_draw_indirect(
+                                    e,
+                                    r.indirect_buffer,
+                                    r.indirect_offset,
+                                );
+                            }
+                        } else if (r.indexed) {
                             metal_bridge_render_encoder_draw_indexed(
                                 e,
                                 r.topology,

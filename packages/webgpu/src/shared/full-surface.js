@@ -650,6 +650,9 @@ function createFullSurfaceClasses({
       }
       assertIntegerInRange(queryDescriptor.count, 'GPUDevice.createQuerySet', 'descriptor.count', { min: 1, max: UINT32_MAX });
       const native = backend.deviceCreateQuerySet(this, queryDescriptor);
+      if (native == null) {
+        failValidation('GPUDevice.createQuerySet', 'timestamp query sets are not supported on this backend/device');
+      }
       const qs = new DoeGPUQuerySet(native, queryDescriptor.type, queryDescriptor.count, this);
       qs.label = queryDescriptor.label ?? '';
       return qs;

@@ -192,96 +192,41 @@ fn vulkan_create_query_set(dev: *native.DoeDevice, count: u32) ?*anyopaque {
     return native.toOpaque(qs);
 }
 
-/// Reset query pool entries via a command buffer (vkCmdResetQueryPool).
+/// Reset query pool entries via a transient one-shot command buffer.
+/// The query helpers allocate their own command buffer so they do not borrow
+/// or mutate the runtime's primary command buffer.
 fn vk_reset_query_pool(
     rt: *native.NativeVulkanRuntime,
     query_pool: c.VkQueryPool,
     first_query: u32,
     query_count: u32,
 ) !void {
-    if (!rt.has_command_pool or !rt.has_primary_command_buffer or !rt.has_fence) return error.InvalidState;
-
-    try c.check_vk(c.vkResetCommandPool(rt.device, rt.command_pool, 0));
-
-    var begin_info = c.VkCommandBufferBeginInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = null,
-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = null,
-    };
-    try c.check_vk(c.vkBeginCommandBuffer(rt.primary_command_buffer, &begin_info));
-    c.vkCmdResetQueryPool(rt.primary_command_buffer, query_pool, first_query, query_count);
-    try c.check_vk(c.vkEndCommandBuffer(rt.primary_command_buffer));
-
-    var submit_info = c.VkSubmitInfo{
-        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext = null,
-        .waitSemaphoreCount = 0,
-        .pWaitSemaphores = null,
-        .pWaitDstStageMask = null,
-        .commandBufferCount = 1,
-        .pCommandBuffers = @ptrCast(&rt.primary_command_buffer),
-        .signalSemaphoreCount = 0,
-        .pSignalSemaphores = null,
-    };
-    try c.check_vk(c.vkResetFences(rt.device, 1, @ptrCast(&rt.fence)));
-    try c.check_vk(c.vkQueueSubmit(rt.queue, 1, @ptrCast(&submit_info), rt.fence));
-    try c.check_vk(c.vkWaitForFences(rt.device, 1, @ptrCast(&rt.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+    _ = rt.flush_queue() catch {};
+    const command_buffer = try begin_one_shot_command_buffer(rt);
+    c.vkCmdResetQueryPool(command_buffer, query_pool, first_query, query_count);
+    try submit_one_shot_command_buffer(rt, command_buffer);
 }
 
 /// Vulkan writeTimestamp: reset the query slot, then record vkCmdWriteTimestamp
 /// in a one-shot command buffer, submit, and wait for completion.
 fn vulkan_write_timestamp(qs: *DoeQuerySet, query_index: u32) void {
     const rt = vk_runtime_from_qs(qs) orelse return;
-    if (!rt.has_command_pool or !rt.has_primary_command_buffer or !rt.has_fence) return;
+    if (!rt.has_command_pool or !rt.has_fence) return;
 
     // Flush any pending work to avoid command pool conflicts.
     _ = rt.flush_queue() catch {};
-
-    c.check_vk(c.vkResetCommandPool(rt.device, rt.command_pool, 0)) catch |err| {
-        std.log.err("doe_query_native: vkResetCommandPool failed: {s}", .{@errorName(err)});
-        return;
-    };
-
-    var begin_info = c.VkCommandBufferBeginInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = null,
-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = null,
-    };
-    c.check_vk(c.vkBeginCommandBuffer(rt.primary_command_buffer, &begin_info)) catch |err| {
-        std.log.err("doe_query_native: vkBeginCommandBuffer failed: {s}", .{@errorName(err)});
+    const command_buffer = begin_one_shot_command_buffer(rt) catch |err| {
+        std.log.err("doe_query_native: begin one-shot query command buffer failed: {s}", .{@errorName(err)});
         return;
     };
 
     // Reset the single query index before writing.
-    c.vkCmdResetQueryPool(rt.primary_command_buffer, qs.vk_query_pool, query_index, 1);
+    c.vkCmdResetQueryPool(command_buffer, qs.vk_query_pool, query_index, 1);
     // Write GPU timestamp at the bottom of the pipeline (all prior work is complete).
-    c.vkCmdWriteTimestamp(rt.primary_command_buffer, c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, qs.vk_query_pool, query_index);
+    c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, qs.vk_query_pool, query_index);
 
-    c.check_vk(c.vkEndCommandBuffer(rt.primary_command_buffer)) catch |err| {
-        std.log.err("doe_query_native: vkEndCommandBuffer failed: {s}", .{@errorName(err)});
-        return;
-    };
-
-    var submit_info = c.VkSubmitInfo{
-        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext = null,
-        .waitSemaphoreCount = 0,
-        .pWaitSemaphores = null,
-        .pWaitDstStageMask = null,
-        .commandBufferCount = 1,
-        .pCommandBuffers = @ptrCast(&rt.primary_command_buffer),
-        .signalSemaphoreCount = 0,
-        .pSignalSemaphores = null,
-    };
-    c.check_vk(c.vkResetFences(rt.device, 1, @ptrCast(&rt.fence))) catch return;
-    c.check_vk(c.vkQueueSubmit(rt.queue, 1, @ptrCast(&submit_info), rt.fence)) catch |err| {
-        std.log.err("doe_query_native: vkQueueSubmit (writeTimestamp) failed: {s}", .{@errorName(err)});
-        return;
-    };
-    c.check_vk(c.vkWaitForFences(rt.device, 1, @ptrCast(&rt.fence), c.VK_TRUE, WAIT_TIMEOUT_NS)) catch |err| {
-        std.log.err("doe_query_native: vkWaitForFences (writeTimestamp) failed: {s}", .{@errorName(err)});
+    submit_one_shot_command_buffer(rt, command_buffer) catch |err| {
+        std.log.err("doe_query_native: submit one-shot query timestamp failed: {s}", .{@errorName(err)});
     };
 }
 
@@ -295,7 +240,7 @@ fn vulkan_resolve_query_set(
     dst_offset: u64,
 ) void {
     const rt = vk_runtime_from_qs(qs) orelse return;
-    if (!rt.has_command_pool or !rt.has_primary_command_buffer or !rt.has_fence) return;
+    if (!rt.has_command_pool or !rt.has_fence) return;
 
     // Look up the destination VkBuffer from the runtime's buffer map.
     const dst_vk_buf = vk_buffer_from_doe_buffer(rt, dst) orelse {
@@ -306,25 +251,14 @@ fn vulkan_resolve_query_set(
     // Flush any pending work to avoid command pool conflicts.
     _ = rt.flush_queue() catch {};
 
-    c.check_vk(c.vkResetCommandPool(rt.device, rt.command_pool, 0)) catch |err| {
-        std.log.err("doe_query_native: vkResetCommandPool failed: {s}", .{@errorName(err)});
-        return;
-    };
-
-    var begin_info = c.VkCommandBufferBeginInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = null,
-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = null,
-    };
-    c.check_vk(c.vkBeginCommandBuffer(rt.primary_command_buffer, &begin_info)) catch |err| {
-        std.log.err("doe_query_native: vkBeginCommandBuffer failed: {s}", .{@errorName(err)});
+    const command_buffer = begin_one_shot_command_buffer(rt) catch |err| {
+        std.log.err("doe_query_native: begin one-shot query command buffer failed: {s}", .{@errorName(err)});
         return;
     };
 
     // Copy results as 64-bit values, waiting for query availability.
     c.vkCmdCopyQueryPoolResults(
-        rt.primary_command_buffer,
+        command_buffer,
         qs.vk_query_pool,
         first_query,
         query_count,
@@ -334,29 +268,8 @@ fn vulkan_resolve_query_set(
         c.VK_QUERY_RESULT_64_BIT | c.VK_QUERY_RESULT_WAIT_BIT,
     );
 
-    c.check_vk(c.vkEndCommandBuffer(rt.primary_command_buffer)) catch |err| {
-        std.log.err("doe_query_native: vkEndCommandBuffer failed: {s}", .{@errorName(err)});
-        return;
-    };
-
-    var submit_info = c.VkSubmitInfo{
-        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext = null,
-        .waitSemaphoreCount = 0,
-        .pWaitSemaphores = null,
-        .pWaitDstStageMask = null,
-        .commandBufferCount = 1,
-        .pCommandBuffers = @ptrCast(&rt.primary_command_buffer),
-        .signalSemaphoreCount = 0,
-        .pSignalSemaphores = null,
-    };
-    c.check_vk(c.vkResetFences(rt.device, 1, @ptrCast(&rt.fence))) catch return;
-    c.check_vk(c.vkQueueSubmit(rt.queue, 1, @ptrCast(&submit_info), rt.fence)) catch |err| {
-        std.log.err("doe_query_native: vkQueueSubmit (resolveQuerySet) failed: {s}", .{@errorName(err)});
-        return;
-    };
-    c.check_vk(c.vkWaitForFences(rt.device, 1, @ptrCast(&rt.fence), c.VK_TRUE, WAIT_TIMEOUT_NS)) catch |err| {
-        std.log.err("doe_query_native: vkWaitForFences (resolveQuerySet) failed: {s}", .{@errorName(err)});
+    submit_one_shot_command_buffer(rt, command_buffer) catch |err| {
+        std.log.err("doe_query_native: submit one-shot query resolve failed: {s}", .{@errorName(err)});
     };
 }
 
@@ -375,4 +288,51 @@ fn vk_buffer_from_doe_buffer(rt: *native.NativeVulkanRuntime, buf: *const native
     if (buf.vk_id == 0) return null;
     const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
     return cb.buffer;
+}
+
+fn begin_one_shot_command_buffer(rt: *native.NativeVulkanRuntime) !c.VkCommandBuffer {
+    if (!rt.has_command_pool or !rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
+
+    var command_buffer: c.VkCommandBuffer = null;
+    var alloc_info = c.VkCommandBufferAllocateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext = null,
+        .commandPool = rt.command_pool,
+        .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    try c.check_vk(c.vkAllocateCommandBuffers(rt.device, &alloc_info, @ptrCast(&command_buffer)));
+
+    var begin_info = c.VkCommandBufferBeginInfo{
+        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext = null,
+        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .pInheritanceInfo = null,
+    };
+    errdefer c.vkFreeCommandBuffers(rt.device, rt.command_pool, 1, @ptrCast(&command_buffer));
+    try c.check_vk(c.vkBeginCommandBuffer(command_buffer, &begin_info));
+    return command_buffer;
+}
+
+fn submit_one_shot_command_buffer(rt: *native.NativeVulkanRuntime, command_buffer: c.VkCommandBuffer) !void {
+    if (!rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
+
+    defer c.vkFreeCommandBuffers(rt.device, rt.command_pool, 1, @ptrCast(&command_buffer));
+
+    try c.check_vk(c.vkEndCommandBuffer(command_buffer));
+
+    var submit_info = c.VkSubmitInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = null,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = null,
+        .pWaitDstStageMask = null,
+        .commandBufferCount = 1,
+        .pCommandBuffers = @ptrCast(&command_buffer),
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores = null,
+    };
+    try c.check_vk(c.vkResetFences(rt.device, 1, @ptrCast(&rt.fence)));
+    try c.check_vk(c.vkQueueSubmit(rt.queue, 1, @ptrCast(&submit_info), rt.fence));
+    try c.check_vk(c.vkWaitForFences(rt.device, 1, @ptrCast(&rt.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
 }

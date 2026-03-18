@@ -48,8 +48,10 @@ function resolveDoeLibraryPath() {
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
     process.env.FAWN_DOE_LIB,
+    resolve(__dirname, '..', '..', '..', 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
+    resolve(process.cwd(), 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
   ];
   for (const candidate of candidates) {

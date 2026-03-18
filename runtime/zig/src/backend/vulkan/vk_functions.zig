@@ -12,6 +12,7 @@ pub extern fn vkGetDeviceQueue(device: vk.VkDevice, queueFamilyIndex: u32, queue
 pub extern fn vkCreateCommandPool(device: vk.VkDevice, pCreateInfo: *const structs.VkCommandPoolCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pCommandPool: *vk.VkCommandPool) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyCommandPool(device: vk.VkDevice, commandPool: vk.VkCommandPool, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkAllocateCommandBuffers(device: vk.VkDevice, pAllocateInfo: *const structs.VkCommandBufferAllocateInfo, pCommandBuffers: [*]vk.VkCommandBuffer) callconv(.c) vk.VkResult;
+pub extern fn vkFreeCommandBuffers(device: vk.VkDevice, commandPool: vk.VkCommandPool, commandBufferCount: u32, pCommandBuffers: [*]const vk.VkCommandBuffer) callconv(.c) void;
 pub extern fn vkResetCommandPool(device: vk.VkDevice, commandPool: vk.VkCommandPool, flags: vk.VkFlags) callconv(.c) vk.VkResult;
 pub extern fn vkCreateFence(device: vk.VkDevice, pCreateInfo: *const structs.VkFenceCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pFence: *vk.VkFence) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyFence(device: vk.VkDevice, fence: vk.VkFence, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;

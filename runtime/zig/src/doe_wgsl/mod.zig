@@ -24,6 +24,7 @@ pub const emit_spirv_fn = @import("emit_spirv_fn.zig");
 pub const emit_spirv_stages = @import("emit_spirv_stages.zig");
 pub const emit_spirv_texture = @import("emit_spirv_texture.zig");
 pub const emit_dxil = @import("emit_dxil.zig");
+pub const layout_utils = @import("layout_utils.zig");
 const legacy_msl = @import("doe_wgsl_msl.zig");
 
 const std = @import("std");
@@ -488,6 +489,7 @@ test {
     _ = emit_spirv_stages;
     _ = emit_spirv_texture;
     _ = emit_dxil;
+    _ = layout_utils;
     // Test files are registered in test_suite*.zig, not imported here,
     // to avoid bleeding failing tests into every consumer of mod.zig.
 }
@@ -646,4 +648,92 @@ test "robustness: runtime-sized constant index coerces abstract int for MSL min(
     const len = try translateToMsl(std.testing.allocator, source, &out);
     const msl = out[0..len];
     try std.testing.expect(std.mem.indexOf(u8, msl, "min(uint(0), (uint(_doe_sizes[0] / sizeof(uint)) - 1))") != null);
+}
+
+test "robustness: vertex array clamp coerces u32 literal for MSL min()" {
+    const source =
+        \\@vertex
+        \\fn main(@builtin(vertex_index) vid: u32) -> @builtin(position) vec4f {
+        \\    var pos = array<vec2f, 3>(
+        \\        vec2f( 0.0,  0.5),
+        \\        vec2f(-0.5, -0.5),
+        \\        vec2f( 0.5, -0.5),
+        \\    );
+        \\    return vec4f(pos[vid], 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min(vid, uint(2))") != null);
+}
+
+test "arrayLength on struct member compiles to MSL" {
+    const source =
+        \\struct Storage {
+        \\    count: u32,
+        \\    data: array<f32>,
+        \\}
+        \\@group(0) @binding(0) var<storage, read_write> buf: Storage;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let len = arrayLength(&buf.data);
+        \\    buf.data[0] = f32(len);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    // Should contain the _doe_sizes lookup with byte offset subtraction.
+    // Storage has u32 count (4 bytes), then array<f32> at offset 4.
+    try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes[") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "- 4)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "sizeof(float)") != null);
+}
+
+test "arrayLength on struct member compiles to HLSL" {
+    const source =
+        \\struct Storage {
+        \\    count: u32,
+        \\    data: array<f32>,
+        \\}
+        \\@group(0) @binding(0) var<storage, read_write> buf: Storage;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let len = arrayLength(&buf.data);
+        \\    buf.data[0] = f32(len);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const hlsl = out[0..len];
+    // Should contain the generated helper function.
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "doe_arrayLength_buf_data()") != null);
+    // The helper should use GetDimensions.
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "GetDimensions") != null);
+}
+
+test "arrayLength on struct member compiles to SPIR-V" {
+    const source =
+        \\struct Storage {
+        \\    count: u32,
+        \\    data: array<f32>,
+        \\}
+        \\@group(0) @binding(0) var<storage, read_write> buf: Storage;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let len = arrayLength(&buf.data);
+        \\    buf.data[0] = f32(len);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    // SPIR-V already handles struct member arrayLength correctly.
+    try std.testing.expect(len > 0);
+    // Verify valid SPIR-V header (magic number).
+    try std.testing.expect(len >= 20);
+    const magic = std.mem.readInt(u32, @as(*const [4]u8, @ptrCast(out[0..4].ptr)), .little);
+    try std.testing.expectEqual(@as(u32, 0x07230203), magic);
 }

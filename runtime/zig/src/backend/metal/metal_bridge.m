@@ -1751,7 +1751,7 @@ MetalHandle metal_bridge_create_counter_sample_buffer(MetalHandle device_h, uint
     if (device_h == NULL || count == 0) return NULL;
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
 
-    if (![device supportsCounterSampling:MTLCounterSamplingPointAtStageBoundary]) return NULL;
+    if (![device supportsCounterSampling:MTLCounterSamplingPointAtBlitBoundary]) return NULL;
 
     id<MTLCounterSet> cs = findTimestampCounterSet(device);
     if (cs == nil) return NULL;

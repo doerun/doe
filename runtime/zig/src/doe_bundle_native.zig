@@ -312,6 +312,12 @@ fn bundleRenderPassCmd(
     } };
 }
 
+fn require_index_buffer_for_bundle_draw(state: *const BundleReplayState, kind: []const u8) bool {
+    if (state.index_buffer != null) return true;
+    std.debug.print("doe: executeBundles: {s} missing index buffer; skipping\n", .{kind});
+    return false;
+}
+
 pub export fn doeNativeRenderPassExecuteBundles(
     pass_raw: ?*anyopaque,
     bundle_count: usize,
@@ -319,17 +325,20 @@ pub export fn doeNativeRenderPassExecuteBundles(
 ) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
 
-    // Format and sample count for compatibility validation.
-    // Pass sample count is always 1 on the Doe native Metal backend.
-    const pass_fmt: types.WGPUTextureFormat = 0; // 0 = skip format check
+    // The pass format is not exposed through DoeRenderPass here, so we only
+    // validate the bundle sample count and treat format compatibility as
+    // caller-managed by the render pass path.
     const pass_samples: u32 = 1;
 
     for (bundles[0..bundle_count]) |raw| {
         const b = bundle.cast_bundle(raw) orelse continue;
-        bundle.check_compatibility(b, pass_fmt, pass_samples) catch |err| {
-            std.debug.print("doe: executeBundles: compatibility check failed: {}\n", .{err});
+        if (b.sample_count != 0 and b.sample_count != pass_samples) {
+            std.debug.print("doe: executeBundles: sample count mismatch: bundle={} pass={}\n", .{
+                b.sample_count,
+                pass_samples,
+            });
             continue;
-        };
+        }
 
         // Each bundle starts with a fresh replay state seeded from the pass.
         var state = BundleReplayState.init(pass);
@@ -369,6 +378,9 @@ pub export fn doeNativeRenderPassExecuteBundles(
                         std.debug.panic("doe: executeBundles OOM", .{});
                 },
                 .draw_indexed => |d| {
+                    if (!require_index_buffer_for_bundle_draw(&state, "draw_indexed")) {
+                        continue;
+                    }
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indexed = true;
                     rc.render_pass.index_buffer = state.index_buffer;
@@ -384,26 +396,25 @@ pub export fn doeNativeRenderPassExecuteBundles(
                         std.debug.panic("doe: executeBundles OOM", .{});
                 },
                 .draw_indirect => |d| {
-                    // Indirect draw: the GPU reads draw parameters from the
-                    // indirect buffer. Record with current state; the queue
-                    // submit path uses the Metal bridge drawPrimitives:indirectBuffer:.
                     var rc = bundleRenderPassCmd(&state, pass);
-                    rc.render_pass.index_buffer = d.indirect_buffer;
-                    rc.render_pass.index_offset = d.indirect_offset;
+                    rc.render_pass.indirect = true;
+                    rc.render_pass.indirect_buffer = d.indirect_buffer;
+                    rc.render_pass.indirect_offset = d.indirect_offset;
                     pass.enc.cmds.append(alloc, rc) catch
                         std.debug.panic("doe: executeBundles OOM", .{});
                 },
                 .draw_indexed_indirect => |d| {
+                    if (!require_index_buffer_for_bundle_draw(&state, "draw_indexed_indirect")) {
+                        continue;
+                    }
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indexed = true;
+                    rc.render_pass.indirect = true;
                     rc.render_pass.index_buffer = state.index_buffer;
                     rc.render_pass.index_offset = state.index_offset;
                     rc.render_pass.index_format = state.index_format;
-                    // Carry the indirect buffer handle in bind_buffers[0] and
-                    // offset in bind_buffer_offsets[0] as an extension signal.
-                    // Full indirect render dispatch requires queue submit path
-                    // extension; this preserves the data for that path.
-                    _ = d;
+                    rc.render_pass.indirect_buffer = d.indirect_buffer;
+                    rc.render_pass.indirect_offset = d.indirect_offset;
                     pass.enc.cmds.append(alloc, rc) catch
                         std.debug.panic("doe: executeBundles OOM", .{});
                 },

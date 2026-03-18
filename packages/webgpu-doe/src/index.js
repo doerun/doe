@@ -18,20 +18,23 @@ const DOE_BUFFER_META = new WeakMap();
 const DOE_READBACK_STAGING = new WeakMap();
 const DOE_PENDING_ENCODERS = new WeakMap();
 
-function deferEncoder(device, encoder) {
+function deferCommandBuffer(device, commandBuffer) {
+  if (!commandBuffer || typeof commandBuffer !== 'object') {
+    return;
+  }
   let pending = DOE_PENDING_ENCODERS.get(device);
   if (!pending) {
     pending = [];
     DOE_PENDING_ENCODERS.set(device, pending);
   }
-  pending.push(encoder);
+  pending.push(commandBuffer);
 }
 
 function drainPendingEncoders(device) {
   const pending = DOE_PENDING_ENCODERS.get(device);
   if (!pending || pending.length === 0) return [];
   DOE_PENDING_ENCODERS.set(device, []);
-  return pending;
+  return pending.filter((commandBuffer) => commandBuffer && typeof commandBuffer === 'object');
 }
 
 function resolveBufferUsageToken(token, combined = false) {
@@ -251,7 +254,7 @@ function resolvePassTarget(target, label) {
 }
 
 function submitCommands(device, encoder) {
-  deferEncoder(device, encoder);
+  deferCommandBuffer(device, encoder.finish());
 }
 
 /**
@@ -807,9 +810,9 @@ async function readBuffer(device, buffer, type, options = {}) {
     throw new Error('Doe buffer.read size must be a non-negative integer.');
   }
   if (((buffer.usage ?? 0) & DOE_GPU_BUFFER_USAGE.MAP_READ) !== 0) {
-    const pendingEncoders = drainPendingEncoders(device);
-    if (pendingEncoders.length > 0) {
-      device.queue.submit(pendingEncoders.map((e) => e.finish()));
+    const pendingCommands = drainPendingEncoders(device);
+    if (pendingCommands.length > 0) {
+      device.queue.submit(pendingCommands);
     }
     await buffer.mapAsync(DOE_GPU_MAP_MODE.READ, offset, size);
     const copy = typeof buffer._readCopy === 'function'
@@ -827,20 +830,14 @@ async function readBuffer(device, buffer, type, options = {}) {
     });
     DOE_READBACK_STAGING.set(buffer, staging);
   }
-  const pendingEncoders = drainPendingEncoders(device);
+  const pendingCommands = drainPendingEncoders(device);
   const commands = [];
-  if (pendingEncoders.length > 0) {
-    for (let i = 0; i < pendingEncoders.length - 1; i++) {
-      commands.push(pendingEncoders[i].finish());
-    }
-    const last = pendingEncoders[pendingEncoders.length - 1];
-    last.copyBufferToBuffer(buffer, offset, staging, 0, size);
-    commands.push(last.finish());
-  } else {
-    const encoder = device.createCommandEncoder({ label: options.label ?? undefined });
-    encoder.copyBufferToBuffer(buffer, offset, staging, 0, size);
-    commands.push(encoder.finish());
+  if (pendingCommands.length > 0) {
+    commands.push(...pendingCommands);
   }
+  const encoder = device.createCommandEncoder({ label: options.label ?? undefined });
+  encoder.copyBufferToBuffer(buffer, offset, staging, 0, size);
+  commands.push(encoder.finish());
   device.queue.submit(commands);
   await staging.mapAsync(DOE_GPU_MAP_MODE.READ);
   const copy = typeof staging._readCopy === 'function'

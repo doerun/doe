@@ -590,3 +590,202 @@ test "const folding: module-scope literal arithmetic through MSL" {
     const len = try translateToMsl(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
 }
+
+// ============================================================
+// 48. Pointer parameters: ptr<storage, array<f32>> in helper function
+// ============================================================
+
+test "pointer param: helper with ptr<storage, f32> MSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> val: f32;
+        \\
+        \\fn add_one(p: ptr<storage, f32, read_write>) {
+        \\    *p = *p + 1.0;
+        \\}
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    add_one(&val);
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    // MSL pointer param must use device address space, not bare element type.
+    try std.testing.expect(contains(msl, "device"));
+}
+
+test "pointer param: helper with ptr<storage, f32> HLSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> val: f32;
+        \\
+        \\fn add_one(p: ptr<storage, f32, read_write>) {
+        \\    *p = *p + 1.0;
+        \\}
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    add_one(&val);
+        \\}
+    ;
+
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const hlsl = out[0..len];
+    // HLSL pointer param must use inout qualifier.
+    try std.testing.expect(contains(hlsl, "inout"));
+}
+
+test "pointer param: helper with ptr<storage, f32> SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> val: f32;
+        \\
+        \\fn add_one(p: ptr<storage, f32, read_write>) {
+        \\    *p = *p + 1.0;
+        \\}
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    add_one(&val);
+        \\}
+    ;
+
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+// ============================================================
+// 49. Cube texture types: texture_cube, texture_depth_cube
+// ============================================================
+
+test "texture_cube compiles to MSL" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_cube<f32>;
+        \\@group(0) @binding(1) var s: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    try std.testing.expect(contains(out[0..len], "texturecube"));
+}
+
+test "texture_cube compiles to HLSL" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_cube<f32>;
+        \\@group(0) @binding(1) var s: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    try std.testing.expect(contains(out[0..len], "TextureCube"));
+}
+
+test "texture_cube compiles to SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_cube<f32>;
+        \\@group(0) @binding(1) var s: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "texture_depth_cube compiles to MSL" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_depth_cube;
+        \\@group(0) @binding(1) var s: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    try std.testing.expect(contains(out[0..len], "depthcube"));
+}
+
+// ============================================================
+// 50. 2D array texture type: texture_2d_array
+// ============================================================
+
+test "texture_2d_array compiles to MSL" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_2d_array<f32>;
+        \\@group(0) @binding(1) var s: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    try std.testing.expect(contains(out[0..len], "texture2d_array"));
+}
+
+test "texture_2d_array compiles to HLSL" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_2d_array<f32>;
+        \\@group(0) @binding(1) var s: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    try std.testing.expect(contains(out[0..len], "Texture2DArray"));
+}
+
+test "texture_2d_array compiles to SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_2d_array<f32>;
+        \\@group(0) @binding(1) var s: sampler;
+        \\@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}

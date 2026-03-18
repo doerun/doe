@@ -134,6 +134,10 @@ fn is_integer_type(module: *const ir.Module, ty: ir.TypeId) bool {
 fn reference_is_mutable(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) bool {
     const expr = function.exprs.items[expr_id];
     return switch (expr.data) {
+        .param_ref => |index| switch (module.types.get(function.params.items[index].ty)) {
+            .ref => |ref_ty| ref_ty.access != .read,
+            else => true,
+        },
         .local_ref => |index| function.locals.items[index].mutable,
         .global_ref => |index| switch (module.globals.items[index].class) {
             .var_ => true,
@@ -158,6 +162,8 @@ fn type_compatible(module: *const ir.Module, expected: ir.TypeId, actual: ir.Typ
             },
             else => false,
         },
+        // Pointer param accepts matching element type.
+        .ref => |ref_ty| ref_ty.elem == actual or type_compatible(module, ref_ty.elem, actual),
         else => false,
     };
 }

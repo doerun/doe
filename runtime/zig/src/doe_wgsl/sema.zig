@@ -503,7 +503,9 @@ const Analyzer = struct {
             .index_expr => try self.analyze_index(node, body, &info),
             else => return error.UnsupportedConstruct,
         };
-        if (node.tag != .ident_expr and node.tag != .member_expr and node.tag != .index_expr) {
+        if (node.tag == .unary_expr and self.module.tree.tokens.items[node.main_token].tag == .@"*") {
+            info.category = .ref;
+        } else if (node.tag != .ident_expr and node.tag != .member_expr and node.tag != .index_expr) {
             info.category = .value;
         }
         self.module.node_info.items[node_idx] = info;
@@ -539,6 +541,10 @@ const Analyzer = struct {
             .@"-", .@"~" => operand_ty,
             .@"!" => self.module.bool_type,
             .@"&" => operand_ty,
+            .@"*" => switch (self.module.types.get(operand_ty)) {
+                .ref => |ref_ty| ref_ty.elem,
+                else => operand_ty,
+            },
             else => error.InvalidWgsl,
         };
     }
@@ -656,7 +662,12 @@ const Analyzer = struct {
         const base_ty = try self.analyze_expr(node.data.lhs, body);
         _ = try self.analyze_expr(node.data.rhs, body);
         out.category = self.module.node_info.items[node.data.lhs].category;
-        return switch (self.module.types.get(base_ty)) {
+        // Unwrap ref to get the underlying indexable type.
+        const inner_ty = switch (self.module.types.get(base_ty)) {
+            .ref => |ref_ty| ref_ty.elem,
+            else => base_ty,
+        };
+        return switch (self.module.types.get(inner_ty)) {
             .array => |arr| arr.elem,
             .vector => |vec| vec.elem,
             .matrix => |mat| try self.module.types.intern(.{ .vector = .{ .elem = mat.elem, .len = mat.rows } }),
@@ -688,6 +699,9 @@ const Analyzer = struct {
         if (std.mem.eql(u8, name, "texture_2d")) return try self.module.types.intern(.{ .texture_2d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_3d")) return try self.module.types.intern(.{ .texture_3d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_depth_2d")) return try self.module.types.intern(.{ .texture_depth_2d = {} });
+        if (std.mem.eql(u8, name, "texture_depth_cube")) return try self.module.types.intern(.{ .texture_depth_cube = {} });
+        if (std.mem.eql(u8, name, "texture_cube")) return try self.module.types.intern(.{ .texture_cube = self.module.f32_type });
+        if (std.mem.eql(u8, name, "texture_2d_array")) return try self.module.types.intern(.{ .texture_2d_array = self.module.f32_type });
         if (self.try_resolve_named_type(name)) |ty| return ty;
         return error.UnknownType;
     }
@@ -739,6 +753,8 @@ const Analyzer = struct {
                 },
                 else => false,
             },
+            // Pointer param accepts matching element type (from & address-of).
+            .ref => |ref_ty| ref_ty.elem == actual or self.type_compatible(ref_ty.elem, actual),
             else => false,
         };
     }

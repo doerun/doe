@@ -1,6 +1,7 @@
 const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
+const sema_helpers = @import("sema_helpers.zig");
 
 const Ast = ast_mod.Ast;
 
@@ -26,7 +27,7 @@ pub fn parse_workgroup_size(self: anytype, attrs_start: u32, attrs_len: u32) ![3
         while (i < span.len and i < result.len) : (i += 1) {
             const arg_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[span.start + i]];
             if (arg_node.tag != .int_literal) return error.InvalidAttribute;
-            result[i] = try std.fmt.parseInt(u32, self.module.tree.tokenSlice(arg_node.main_token), 10);
+            result[i] = try sema_helpers.parse_wgsl_int_literal(u32, self.module.tree.tokenSlice(arg_node.main_token));
         }
     }
     return result;
@@ -149,7 +150,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => arg_types[0],
         };
     }
-    if (std.mem.eql(u8, name, "min") or std.mem.eql(u8, name, "max") or std.mem.eql(u8, name, "clamp") or std.mem.eql(u8, name, "select") or std.mem.eql(u8, name, "abs") or std.mem.eql(u8, name, "sqrt") or std.mem.eql(u8, name, "sin") or std.mem.eql(u8, name, "cos") or std.mem.eql(u8, name, "normalize") or std.mem.eql(u8, name, "length") or std.mem.eql(u8, name, "distance")) {
+    if (is_passthrough_math(name)) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return arg_types[0];
     }
@@ -167,6 +168,19 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     if (std.mem.eql(u8, name, "subgroupAll") or std.mem.eql(u8, name, "subgroupAny")) {
         return try self.module.types.intern(.{ .scalar = .bool });
     }
+    // Pack builtins return u32.
+    if (is_pack_builtin(name)) {
+        return try self.module.types.intern(.{ .scalar = .u32 });
+    }
+    // Unpack builtins return vec2f or vec4f.
+    if (is_unpack_2_builtin(name)) {
+        const f32_ty = try self.module.types.intern(.{ .scalar = .f32 });
+        return try self.module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 2 } });
+    }
+    if (is_unpack_4_builtin(name)) {
+        const f32_ty = try self.module.types.intern(.{ .scalar = .f32 });
+        return try self.module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    }
     return error.UnsupportedBuiltin;
 }
 
@@ -177,6 +191,49 @@ fn is_subgroup_value_op(name: []const u8) bool {
         "subgroupInclusiveAdd", "subgroupShuffle",   "subgroupShuffleDown",    "subgroupShuffleUp",
         "subgroupShuffleXor",   "subgroupBroadcast", "subgroupBroadcastFirst",
     };
+    for (ops) |op| {
+        if (std.mem.eql(u8, name, op)) return true;
+    }
+    return false;
+}
+
+/// Math/comparison builtins that return the same type as their first argument.
+fn is_passthrough_math(name: []const u8) bool {
+    const ops = [_][]const u8{
+        "min",          "max",          "clamp",        "select",       "abs",
+        "sqrt",         "sin",          "cos",          "normalize",    "length",
+        "distance",     "fract",        "mix",          "inverseSqrt",  "degrees",
+        "radians",      "atan2",        "ldexp",        "fma",          "smoothstep",
+        "sign",         "floor",        "ceil",         "round",        "trunc",
+        "exp",          "exp2",         "log",          "log2",         "pow",
+        "step",         "tan",          "asin",         "acos",         "atan",
+        "sinh",         "cosh",         "tanh",         "saturate",     "dot",
+        "cross",        "reflect",      "refract",      "modf",         "frexp",
+    };
+    for (ops) |op| {
+        if (std.mem.eql(u8, name, op)) return true;
+    }
+    return false;
+}
+
+fn is_pack_builtin(name: []const u8) bool {
+    const ops = [_][]const u8{ "pack2x16float", "pack4x8unorm", "pack4x8snorm", "pack2x16snorm", "pack2x16unorm" };
+    for (ops) |op| {
+        if (std.mem.eql(u8, name, op)) return true;
+    }
+    return false;
+}
+
+fn is_unpack_2_builtin(name: []const u8) bool {
+    const ops = [_][]const u8{ "unpack2x16float", "unpack2x16snorm", "unpack2x16unorm" };
+    for (ops) |op| {
+        if (std.mem.eql(u8, name, op)) return true;
+    }
+    return false;
+}
+
+fn is_unpack_4_builtin(name: []const u8) bool {
+    const ops = [_][]const u8{ "unpack4x8unorm", "unpack4x8snorm" };
     for (ops) |op| {
         if (std.mem.eql(u8, name, op)) return true;
     }
@@ -228,7 +285,7 @@ fn parse_single_int_attr(tree: *const Ast, attr_idx: u32) !u32 {
     if (span.len == 0) return error.InvalidAttribute;
     const arg = tree.nodes.items[tree.extra_data.items[span.start]];
     if (arg.tag != .int_literal) return error.InvalidAttribute;
-    return try std.fmt.parseInt(u32, tree.tokenSlice(arg.main_token), 10);
+    return try sema_helpers.parse_wgsl_int_literal(u32, tree.tokenSlice(arg.main_token));
 }
 
 fn parse_interpolation_attr(tree: *const Ast, attr_idx: u32) !ir.Interpolation {

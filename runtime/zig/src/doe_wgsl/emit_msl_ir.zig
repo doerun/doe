@@ -111,6 +111,17 @@ const Emitter = struct {
             self.indent += 4;
             for (struct_def.fields.items) |field| {
                 try self.write_indent();
+                // Runtime-sized array field: emit as elem_type name[1] (flexible member).
+                switch (self.module.types.get(field.ty)) {
+                    .array => |arr| if (arr.len == null) {
+                        try self.emit_type(arr.elem);
+                        try self.write(" ");
+                        try self.write(field.name);
+                        try self.write("[1];\n");
+                        continue;
+                    },
+                    else => {},
+                }
                 try self.emit_type(field.ty);
                 try self.write(" ");
                 try self.write(field.name);

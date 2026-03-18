@@ -416,11 +416,13 @@ fn emit_array_length(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
         },
         .member => |member| blk: {
             const base_expr = self.function.exprs.items[member.base];
-            const base_ref = switch (self.emitter.module.types.get(base_expr.ty)) {
-                .ref => |ref_ty| ref_ty,
-                else => return error.InvalidIr,
+            // The base type may be the struct type directly (from sema) or
+            // wrapped in a .ref (pointer) type — handle both.
+            const base_ty = switch (self.emitter.module.types.get(base_expr.ty)) {
+                .ref => |ref_ty| ref_ty.elem,
+                else => base_expr.ty,
             };
-            switch (self.emitter.module.types.get(base_ref.elem)) {
+            switch (self.emitter.module.types.get(base_ty)) {
                 .struct_ => {},
                 else => return error.UnsupportedConstruct,
             }

@@ -98,8 +98,10 @@ function resolveDoeLibraryPath() {
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
     process.env.FAWN_DOE_LIB,
+    resolve(__dirname, '..', '..', '..', 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
+    resolve(process.cwd(), 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
   ];
 
@@ -246,27 +248,41 @@ function unsupportedNodeDeviceCapability(name) {
   return new Error(`${name} is not available in this Node package build`);
 }
 
-function installNodeDeviceCallbacks(device) {
-  let lostRegistered = false;
-  if (typeof addon?.deviceRegisterLostCallback === 'function') {
-    let resolveLost;
-    const lostPromise = new Promise((resolve) => {
-      resolveLost = resolve;
-    });
-    try {
-      const registered = addon.deviceRegisterLostCallback(device._native, resolveLost);
-      if (registered !== false) {
-        device._lost = lostPromise;
-        lostRegistered = true;
-      }
-    } catch (error) {
-      if (!String(error?.message ?? '').includes('not available')) {
-        throw error;
-      }
+function ensureNodeDeviceLostRegistration(device) {
+  if (device._lostRegistrationAttempted) {
+    return device._lostSupported;
+  }
+  device._lostRegistrationAttempted = true;
+  if (typeof addon?.deviceRegisterLostCallback !== 'function') {
+    device._lostSupported = false;
+    device._lost = null;
+    return false;
+  }
+  let resolveLost;
+  const lostPromise = new Promise((resolve) => {
+    resolveLost = resolve;
+  });
+  try {
+    const registered = addon.deviceRegisterLostCallback(device._native, resolveLost);
+    if (registered !== false) {
+      device._lost = lostPromise;
+      device._lostSupported = true;
+      return true;
+    }
+  } catch (error) {
+    if (!String(error?.message ?? '').includes('not available')) {
+      throw error;
     }
   }
-  device._lostSupported = lostRegistered;
-  device._lost = lostRegistered ? device._lost : null;
+  device._lostSupported = false;
+  device._lost = null;
+  return false;
+}
+
+function installNodeDeviceCallbacks(device) {
+  device._lostSupported = false;
+  device._lostRegistrationAttempted = false;
+  device._lost = null;
   device._onuncapturederror = null;
   device._onuncapturederrorDispatch = null;
   const lostDescriptor = {
@@ -274,7 +290,7 @@ function installNodeDeviceCallbacks(device) {
       enumerable: true,
       get() {
         assertLiveResource(this, 'GPUDevice.lost', 'GPUDevice');
-        if (!this._lostSupported) {
+        if (!ensureNodeDeviceLostRegistration(this)) {
           throw unsupportedNodeDeviceCapability('GPUDevice.lost');
         }
         return this._lost;
@@ -347,7 +363,7 @@ async function nodeDevicePopErrorScope() {
     throw unsupportedNodeDeviceCapability('GPUDevice.popErrorScope');
   }
   try {
-    return addon.devicePopErrorScope(this._native);
+    return addon.devicePopErrorScope(this._native, this._instance ?? null);
   } catch (error) {
     if (String(error?.message ?? '').includes('not available')) {
       throw unsupportedNodeDeviceCapability('GPUDevice.popErrorScope');
@@ -491,11 +507,6 @@ const nodeEncoderBackend = {
       'GPUComputePassEncoder.dispatchWorkgroupsIndirect',
       'GPUComputePassEncoder',
     );
-    if (typeof addon.bufferReadIndirectCounts === 'function') {
-      const counts = addon.bufferReadIndirectCounts(indirectBufferNative, indirectOffset);
-      addon.computePassDispatchWorkgroups(nativePass, counts.x, counts.y, counts.z);
-      return;
-    }
     addon.computePassDispatchWorkgroupsIndirect(nativePass, indirectBufferNative, indirectOffset);
   },
   computePassEnd(pass) {
@@ -777,6 +788,7 @@ const nodeEncoderBackend = {
       source.origin?.x ?? 0,
       source.origin?.y ?? 0,
       source.origin?.z ?? 0,
+      source.aspect ?? 1,
       destination.texture,
       destination.mipLevel ?? 0,
       destination.origin?.x ?? 0,

@@ -531,6 +531,7 @@ DECL_PFN(void, wgpuComputePassEncoderSetPipeline, (WGPUComputePassEncoder, WGPUC
 DECL_PFN(void, wgpuComputePassEncoderSetBindGroup, (WGPUComputePassEncoder, uint32_t, WGPUBindGroup, size_t, const uint32_t*));
 DECL_PFN(void, wgpuComputePassEncoderDispatchWorkgroups, (WGPUComputePassEncoder, uint32_t, uint32_t, uint32_t));
 DECL_PFN(void, wgpuComputePassEncoderDispatchWorkgroupsIndirect, (WGPUComputePassEncoder, WGPUBuffer, uint64_t));
+DECL_PFN(void, doeNativeComputePassDispatchIndirect, (WGPUComputePassEncoder, WGPUBuffer, uint64_t));
 DECL_PFN(void, wgpuComputePassEncoderEnd, (WGPUComputePassEncoder));
 DECL_PFN(void, wgpuComputePassEncoderRelease, (WGPUComputePassEncoder));
 DECL_PFN(void, wgpuQueueSubmit, (WGPUQueue, size_t, const WGPUCommandBuffer*));
@@ -639,6 +640,8 @@ static FnAdapterFreeInfo pfn_doeNativeAdapterFreeInfo = NULL;
 static FnShaderModuleGetCompilationInfo pfn_doeNativeShaderModuleGetCompilationInfo = NULL;
 static FnDevicePushErrorScope pfn_doeNativeDevicePushErrorScope = NULL;
 static FnDevicePopErrorScope pfn_doeNativeDevicePopErrorScope = NULL;
+static FnDevicePushErrorScope pfn_wgpuDevicePushErrorScope = NULL;
+static FnDevicePopErrorScope pfn_wgpuDevicePopErrorScope = NULL;
 static FnDeviceSetUncapturedErrorCallback pfn_doeNativeDeviceSetUncapturedErrorCallback = NULL;
 static FnDeviceRegisterLostCallback pfn_doeNativeDeviceRegisterLostCallback = NULL;
 
@@ -654,6 +657,11 @@ typedef void (*FnCommandEncoderCopyTextureToTexture)(
     void* src_texture, uint32_t src_mip, uint32_t src_slice, uint32_t src_x, uint32_t src_y, uint32_t src_z,
     void* dst_texture, uint32_t dst_mip, uint32_t dst_slice, uint32_t dst_x, uint32_t dst_y, uint32_t dst_z,
     uint32_t width, uint32_t height, uint32_t depth_or_layers);
+typedef void (*FnWgpuCommandEncoderCopyTextureToTexture)(
+    WGPUCommandEncoder encoder,
+    const WGPUTexelCopyTextureInfo* source,
+    const WGPUTexelCopyTextureInfo* destination,
+    const WGPUExtent3D* copy_size);
 typedef void (*FnQueueWriteTexture)(
     void* queue, void* texture,
     const void* data, size_t data_len,
@@ -664,6 +672,7 @@ typedef void (*FnQueueWriteTexture)(
 
 static FnCommandEncoderClearBuffer         pfn_doeNativeCommandEncoderClearBuffer = NULL;
 static FnCommandEncoderCopyTextureToTexture pfn_doeNativeCommandEncoderCopyTextureToTexture = NULL;
+static FnWgpuCommandEncoderCopyTextureToTexture pfn_wgpuCommandEncoderCopyTextureToTexture = NULL;
 static FnQueueWriteTexture                 pfn_doeNativeQueueWriteTexture = NULL;
 
 typedef struct DeviceCallbackBinding {
@@ -930,6 +939,7 @@ static DeviceCallbackBinding* create_device_callback_binding(
         free(binding);
         return NULL;
     }
+    napi_unref_threadsafe_function(env, binding->tsfn);
     return binding;
 }
 
@@ -1251,6 +1261,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuComputePassEncoderSetBindGroup);
     LOAD_SYM(wgpuComputePassEncoderDispatchWorkgroups);
     LOAD_SYM(wgpuComputePassEncoderDispatchWorkgroupsIndirect);
+    LOAD_SYM(doeNativeComputePassDispatchIndirect);
     LOAD_SYM(wgpuComputePassEncoderEnd);
     LOAD_SYM(wgpuComputePassEncoderRelease);
     LOAD_SYM(wgpuQueueSubmit);
@@ -1322,6 +1333,8 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeShaderModuleGetCompilationInfo = (FnShaderModuleGetCompilationInfo)LIB_SYM(g_lib, "doeNativeShaderModuleGetCompilationInfo");
     pfn_doeNativeDevicePushErrorScope = (FnDevicePushErrorScope)LIB_SYM(g_lib, "doeNativeDevicePushErrorScope");
     pfn_doeNativeDevicePopErrorScope = (FnDevicePopErrorScope)LIB_SYM(g_lib, "doeNativeDevicePopErrorScope");
+    pfn_wgpuDevicePushErrorScope = (FnDevicePushErrorScope)LIB_SYM(g_lib, "wgpuDevicePushErrorScope");
+    pfn_wgpuDevicePopErrorScope = (FnDevicePopErrorScope)LIB_SYM(g_lib, "wgpuDevicePopErrorScope");
     pfn_doeNativeDeviceSetUncapturedErrorCallback = (FnDeviceSetUncapturedErrorCallback)LIB_SYM(g_lib, "doeNativeDeviceSetUncapturedErrorCallback");
     pfn_doeNativeDeviceRegisterLostCallback = (FnDeviceRegisterLostCallback)LIB_SYM(g_lib, "doeNativeDeviceRegisterLostCallback");
 
@@ -1337,6 +1350,7 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     /* clearBuffer / copyTextureToTexture / writeTexture — optional; absent on older builds. */
     pfn_doeNativeCommandEncoderClearBuffer = (FnCommandEncoderClearBuffer)LIB_SYM(g_lib, "doeNativeCommandEncoderClearBuffer");
     pfn_doeNativeCommandEncoderCopyTextureToTexture = (FnCommandEncoderCopyTextureToTexture)LIB_SYM(g_lib, "doeNativeCommandEncoderCopyTextureToTexture");
+    pfn_wgpuCommandEncoderCopyTextureToTexture = (FnWgpuCommandEncoderCopyTextureToTexture)LIB_SYM(g_lib, "wgpuCommandEncoderCopyTextureToTexture");
     pfn_doeNativeQueueWriteTexture = (FnQueueWriteTexture)LIB_SYM(g_lib, "doeNativeQueueWriteTexture");
 
     /* renderPipelineGetBindGroupLayout — optional; absent on older builds. */
@@ -1504,9 +1518,16 @@ static napi_value doe_device_release(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     void* device = unwrap_ptr(env, _args[0]);
     if (device) {
+        DeviceCallbackBinding* lost = binding_take(&g_lost_bindings, device);
         DeviceCallbackBinding* uncaptured = binding_take(&g_uncaptured_bindings, device);
+        if (lost && pfn_doeNativeDeviceRegisterLostCallback) {
+            pfn_doeNativeDeviceRegisterLostCallback(device, NULL, NULL);
+        }
         if (uncaptured && pfn_doeNativeDeviceSetUncapturedErrorCallback) {
             pfn_doeNativeDeviceSetUncapturedErrorCallback(device, NULL, NULL, NULL);
+        }
+        if (lost) {
+            release_binding(lost);
         }
         if (uncaptured) {
             release_binding(uncaptured);
@@ -2618,7 +2639,11 @@ static napi_value doe_compute_pass_dispatch_indirect(napi_env env, napi_callback
     WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
     int64_t offset;
     napi_get_value_int64(env, _args[2], &offset);
-    pfn_wgpuComputePassEncoderDispatchWorkgroupsIndirect(pass, buffer, (uint64_t)offset);
+    if (pfn_doeNativeComputePassDispatchIndirect) {
+        pfn_doeNativeComputePassDispatchIndirect(pass, buffer, (uint64_t)offset);
+    } else {
+        pfn_wgpuComputePassEncoderDispatchWorkgroupsIndirect(pass, buffer, (uint64_t)offset);
+    }
     return NULL;
 }
 
@@ -4473,36 +4498,72 @@ static napi_value doe_command_encoder_clear_buffer(napi_env env, napi_callback_i
 }
 
 static napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 15);
+    size_t argc = 15;
+    napi_value argv[15];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     CHECK_LIB_LOADED(env);
-    if (!pfn_doeNativeCommandEncoderCopyTextureToTexture) {
+    if (argc != 14 && argc != 15) {
+        NAPI_THROW(env, "commandEncoderCopyTextureToTexture requires 14 or 15 arguments");
+    }
+    if (!pfn_doeNativeCommandEncoderCopyTextureToTexture && !pfn_wgpuCommandEncoderCopyTextureToTexture) {
         NAPI_THROW(env, "commandEncoderCopyTextureToTexture: no implementation available in loaded library");
     }
-    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
-    WGPUTexture src_texture = unwrap_ptr(env, _args[1]);
-    WGPUTexture dst_texture = unwrap_ptr(env, _args[7]);
+    const size_t dst_index = argc == 15 ? 7 : 6;
+    const size_t dst_mip_index = argc == 15 ? 8 : 7;
+    const size_t dst_x_index = argc == 15 ? 9 : 8;
+    const size_t dst_y_index = argc == 15 ? 10 : 9;
+    const size_t dst_z_index = argc == 15 ? 11 : 10;
+    const size_t width_index = argc == 15 ? 12 : 11;
+    const size_t height_index = argc == 15 ? 13 : 12;
+    const size_t depth_index = argc == 15 ? 14 : 13;
+
+    WGPUCommandEncoder enc = unwrap_ptr(env, argv[0]);
+    WGPUTexture src_texture = unwrap_ptr(env, argv[1]);
+    WGPUTexture dst_texture = unwrap_ptr(env, argv[dst_index]);
     if (!enc || !src_texture || !dst_texture) {
         NAPI_THROW(env, "commandEncoderCopyTextureToTexture requires encoder and textures");
     }
     uint32_t src_mip = 0, src_x = 0, src_y = 0, src_z = 0;
     uint32_t dst_mip = 0, dst_x = 0, dst_y = 0, dst_z = 0;
     uint32_t width = 1, height = 1, depth_or_layers = 1;
-    napi_get_value_uint32(env, _args[2], &src_mip);
-    napi_get_value_uint32(env, _args[3], &src_x);
-    napi_get_value_uint32(env, _args[4], &src_y);
-    napi_get_value_uint32(env, _args[5], &src_z);
-    napi_get_value_uint32(env, _args[8], &dst_mip);
-    napi_get_value_uint32(env, _args[9], &dst_x);
-    napi_get_value_uint32(env, _args[10], &dst_y);
-    napi_get_value_uint32(env, _args[11], &dst_z);
-    napi_get_value_uint32(env, _args[12], &width);
-    napi_get_value_uint32(env, _args[13], &height);
-    napi_get_value_uint32(env, _args[14], &depth_or_layers);
-    pfn_doeNativeCommandEncoderCopyTextureToTexture(
-        enc,
-        src_texture, src_mip, 0, src_x, src_y, src_z,
-        dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
-        width, height, depth_or_layers);
+    napi_get_value_uint32(env, argv[2], &src_mip);
+    napi_get_value_uint32(env, argv[3], &src_x);
+    napi_get_value_uint32(env, argv[4], &src_y);
+    napi_get_value_uint32(env, argv[5], &src_z);
+    napi_get_value_uint32(env, argv[dst_mip_index], &dst_mip);
+    napi_get_value_uint32(env, argv[dst_x_index], &dst_x);
+    napi_get_value_uint32(env, argv[dst_y_index], &dst_y);
+    napi_get_value_uint32(env, argv[dst_z_index], &dst_z);
+    napi_get_value_uint32(env, argv[width_index], &width);
+    napi_get_value_uint32(env, argv[height_index], &height);
+    napi_get_value_uint32(env, argv[depth_index], &depth_or_layers);
+    if (pfn_doeNativeCommandEncoderCopyTextureToTexture) {
+        pfn_doeNativeCommandEncoderCopyTextureToTexture(
+            enc,
+            src_texture, src_mip, 0, src_x, src_y, src_z,
+            dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
+            width, height, depth_or_layers);
+    } else {
+        WGPUTexelCopyTextureInfo src;
+        WGPUTexelCopyTextureInfo dst;
+        WGPUExtent3D size;
+        memset(&src, 0, sizeof(src));
+        memset(&dst, 0, sizeof(dst));
+        src.texture = src_texture;
+        src.mipLevel = src_mip;
+        src.origin.x = src_x;
+        src.origin.y = src_y;
+        src.origin.z = src_z;
+        dst.texture = dst_texture;
+        dst.mipLevel = dst_mip;
+        dst.origin.x = dst_x;
+        dst.origin.y = dst_y;
+        dst.origin.z = dst_z;
+        size.width = width;
+        size.height = height;
+        size.depthOrArrayLayers = depth_or_layers;
+        pfn_wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &size);
+    }
     return NULL;
 }
 
@@ -4523,19 +4584,23 @@ static void pop_error_scope_callback(uint32_t error_type, WGPUStringView message
 static napi_value doe_device_push_error_scope(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
-    if (!pfn_doeNativeDevicePushErrorScope) NAPI_THROW(env, "devicePushErrorScope not available");
+    if (!pfn_doeNativeDevicePushErrorScope && !pfn_wgpuDevicePushErrorScope) NAPI_THROW(env, "devicePushErrorScope not available");
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
     uint32_t filter = 0;
     napi_get_value_uint32(env, _args[1], &filter);
-    pfn_doeNativeDevicePushErrorScope(device, filter);
+    if (pfn_doeNativeDevicePushErrorScope) {
+        pfn_doeNativeDevicePushErrorScope(device, filter);
+    } else {
+        pfn_wgpuDevicePushErrorScope(device, filter);
+    }
     return NULL;
 }
 
 static napi_value doe_device_pop_error_scope(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     CHECK_LIB_LOADED(env);
-    if (!pfn_doeNativeDevicePopErrorScope) NAPI_THROW(env, "devicePopErrorScope not available");
+    if (!pfn_doeNativeDevicePopErrorScope && !pfn_wgpuDevicePopErrorScope) NAPI_THROW(env, "devicePopErrorScope not available");
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
@@ -4547,7 +4612,11 @@ static napi_value doe_device_pop_error_scope(napi_env env, napi_callback_info in
         .userdata1 = &result,
         .userdata2 = NULL,
     };
-    pfn_doeNativeDevicePopErrorScope(device, cb_info);
+    if (pfn_wgpuDevicePopErrorScope) {
+        pfn_wgpuDevicePopErrorScope(device, cb_info);
+    } else {
+        pfn_doeNativeDevicePopErrorScope(device, cb_info);
+    }
     if (!result.done) {
         NAPI_THROW(env, "popErrorScope: no active error scope");
     }
@@ -4601,6 +4670,7 @@ static napi_value doe_device_set_uncaptured_error_callback(napi_env env, napi_ca
         free(binding);
         NAPI_THROW(env, "Failed to create uncaptured-error callback bridge");
     }
+    napi_unref_threadsafe_function(env, binding->tsfn);
     binding_insert(&g_uncaptured_bindings, binding);
     pfn_doeNativeDeviceSetUncapturedErrorCallback(device, uncaptured_error_native_callback, binding, NULL);
     napi_value result;
@@ -4641,6 +4711,7 @@ static napi_value doe_device_register_lost_callback(napi_env env, napi_callback_
         free(binding);
         NAPI_THROW(env, "Failed to create device-lost callback bridge");
     }
+    napi_unref_threadsafe_function(env, binding->tsfn);
     binding_insert(&g_lost_bindings, binding);
     pfn_doeNativeDeviceRegisterLostCallback(device, lost_native_callback, binding);
     napi_value result;
@@ -4663,7 +4734,7 @@ static napi_value doe_create_query_set(napi_env env, napi_callback_info info) {
     uint32_t count = 0;
     napi_get_value_uint32(env, _args[2], &count);
     WGPUQuerySet qs = pfn_doeNativeDeviceCreateQuerySet(device, query_type, count);
-    if (!qs) NAPI_THROW(env, "createQuerySet failed");
+    if (!qs) NAPI_THROW(env, "timestamp query sets are not supported on this backend/device");
     return wrap_ptr(env, qs);
 }
 
@@ -5087,43 +5158,86 @@ static napi_value doe_shader_module_get_compilation_info_export(napi_env env, na
 static napi_value doe_device_push_error_scope_export(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 2);
     CHECK_LIB_LOADED(env);
-    if (!pfn_doeNativeDevicePushErrorScope) NAPI_THROW(env, "devicePushErrorScope not available");
+    if (!pfn_doeNativeDevicePushErrorScope && !pfn_wgpuDevicePushErrorScope) NAPI_THROW(env, "devicePushErrorScope not available");
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     if (!device) NAPI_THROW(env, "devicePushErrorScope: null device");
     uint32_t filter = 0;
     napi_get_value_uint32(env, _args[1], &filter);
-    pfn_doeNativeDevicePushErrorScope(device, filter);
+    if (pfn_doeNativeDevicePushErrorScope) {
+        pfn_doeNativeDevicePushErrorScope(device, filter);
+    } else {
+        pfn_wgpuDevicePushErrorScope(device, filter);
+    }
     return NULL;
 }
 
 static napi_value doe_device_pop_error_scope_export(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 1);
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     CHECK_LIB_LOADED(env);
-    if (!pfn_doeNativeDevicePopErrorScope) NAPI_THROW(env, "devicePopErrorScope not available");
-    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (argc < 1 || argc > 2) NAPI_THROW(env, "devicePopErrorScope requires device and optional instance");
+    if (!pfn_doeNativeDevicePopErrorScope && !pfn_wgpuDevicePopErrorScope) NAPI_THROW(env, "devicePopErrorScope not available");
+    WGPUDevice device = unwrap_ptr(env, argv[0]);
     if (!device) NAPI_THROW(env, "devicePopErrorScope: null device");
+    WGPUInstance inst = argc >= 2 ? unwrap_ptr(env, argv[1]) : NULL;
 
-    napi_deferred deferred;
-    napi_value promise;
-    napi_create_promise(env, &deferred, &promise);
+    DevicePopErrorScopeResult result = {0};
+    WGPUPopErrorScopeCallbackInfo2 cb_info = {
+        .next_in_chain = NULL,
+        .mode = pfn_wgpuDevicePopErrorScope ? WGPU_CALLBACK_MODE_WAIT_ANY_ONLY : WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = pop_error_scope_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
 
-    PopErrorScopeRequest* request = (PopErrorScopeRequest*)calloc(1, sizeof(PopErrorScopeRequest));
-    if (!request) NAPI_THROW(env, "devicePopErrorScope: allocation failed");
-    request->env = env;
-    request->deferred = deferred;
-
-    WGPUPopErrorScopeCallbackInfo2 cb_info = {0};
-    cb_info.mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS;
-    cb_info.callback = pop_error_scope_native_callback;
-    cb_info.userdata1 = request;
-    cb_info.userdata2 = NULL;
-
-    WGPUFuture future = pfn_doeNativeDevicePopErrorScope(device, cb_info);
-    if (future.id == 0) {
-        free(request);
-        NAPI_THROW(env, "devicePopErrorScope future unavailable");
+    if (pfn_doeNativeDevicePopErrorScope) {
+        WGPUFuture future = pfn_doeNativeDevicePopErrorScope(device, cb_info);
+        if (future.id == 0 || !result.done) {
+            NAPI_THROW(env, "devicePopErrorScope future unavailable");
+        }
+    } else {
+        if (!inst) NAPI_THROW(env, "devicePopErrorScope requires instance for public ABI fallback");
+        WGPUFuture future = pfn_wgpuDevicePopErrorScope(device, cb_info);
+        if (future.id == 0) NAPI_THROW(env, "devicePopErrorScope future unavailable");
+        uint64_t start_ns = monotonic_now_ns();
+        while (!result.done) {
+            WGPUFutureWaitInfo wait_info = {
+                .future = future,
+                .completed = 0,
+            };
+            uint32_t wait_status = pfn_wgpuInstanceWaitAny(inst, 1, &wait_info, 0);
+            if (wait_status == WGPU_WAIT_STATUS_SUCCESS) {
+                if (!result.done) {
+                    pfn_wgpuInstanceProcessEvents(inst);
+                }
+            } else if (wait_status == WGPU_WAIT_STATUS_TIMED_OUT) {
+                pfn_wgpuInstanceProcessEvents(inst);
+                if (monotonic_now_ns() - start_ns >= current_timeout_ns()) {
+                    NAPI_THROW(env, "devicePopErrorScope timed out");
+                }
+                wait_slice();
+            } else if (wait_status == WGPU_WAIT_STATUS_ERROR) {
+                NAPI_THROW(env, "devicePopErrorScope wait failed");
+            } else {
+                NAPI_THROW(env, "devicePopErrorScope unsupported wait status");
+            }
+        }
     }
-    return promise;
+
+    if (result.error_type == 0x00000001) {
+        napi_value null_value;
+        napi_get_null(env, &null_value);
+        return null_value;
+    }
+
+    napi_value out, type_val, message_val;
+    napi_create_object(env, &out);
+    napi_create_string_utf8(env, error_type_string(result.error_type), NAPI_AUTO_LENGTH, &type_val);
+    napi_create_string_utf8(env, result.message, NAPI_AUTO_LENGTH, &message_val);
+    napi_set_named_property(env, out, "type", type_val);
+    napi_set_named_property(env, out, "message", message_val);
+    return out;
 }
 
 static napi_value doe_device_set_uncaptured_error_callback_export(napi_env env, napi_callback_info info) {
@@ -6160,6 +6274,20 @@ static napi_value native_direct_device_destroy(napi_env env, napi_callback_info 
     NativeDirectHandleCache* device_cache = native_direct_get_handle_cache(env, this_arg);
     WGPUDevice device = device_cache ? (WGPUDevice)device_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
     if (device) {
+        DeviceCallbackBinding* lost = binding_take(&g_lost_bindings, device);
+        DeviceCallbackBinding* uncaptured = binding_take(&g_uncaptured_bindings, device);
+        if (lost && pfn_doeNativeDeviceRegisterLostCallback) {
+            pfn_doeNativeDeviceRegisterLostCallback(device, NULL, NULL);
+        }
+        if (uncaptured && pfn_doeNativeDeviceSetUncapturedErrorCallback) {
+            pfn_doeNativeDeviceSetUncapturedErrorCallback(device, NULL, NULL, NULL);
+        }
+        if (lost) {
+            release_binding(lost);
+        }
+        if (uncaptured) {
+            release_binding(uncaptured);
+        }
         pfn_wgpuDeviceRelease(device);
         native_direct_set_external_prop(env, this_arg, DOE_DIRECT_NATIVE, NULL);
         if (device_cache) device_cache->native = NULL;
@@ -6763,7 +6891,27 @@ static napi_value native_direct_command_encoder_copy_texture_to_texture(napi_env
     napi_valuetype size_type;
     napi_typeof(env, argv[2], &size_type);
     if (size_type == napi_object) get_extent_3d(env, argv[2], &width, &height, &depth_or_layers);
-    if (pfn_doeNativeCommandEncoderCopyTextureToTexture) {
+    if (pfn_wgpuCommandEncoderCopyTextureToTexture) {
+        WGPUTexelCopyTextureInfo src;
+        WGPUTexelCopyTextureInfo dst;
+        WGPUExtent3D size;
+        memset(&src, 0, sizeof(src));
+        memset(&dst, 0, sizeof(dst));
+        src.texture = src_texture;
+        src.mipLevel = src_mip;
+        src.origin.x = src_x;
+        src.origin.y = src_y;
+        src.origin.z = src_z;
+        dst.texture = dst_texture;
+        dst.mipLevel = dst_mip;
+        dst.origin.x = dst_x;
+        dst.origin.y = dst_y;
+        dst.origin.z = dst_z;
+        size.width = width;
+        size.height = height;
+        size.depthOrArrayLayers = depth_or_layers;
+        pfn_wgpuCommandEncoderCopyTextureToTexture(encoder, &src, &dst, &size);
+    } else if (pfn_doeNativeCommandEncoderCopyTextureToTexture) {
         pfn_doeNativeCommandEncoderCopyTextureToTexture(
             encoder,
             src_texture, src_mip, 0, src_x, src_y, src_z,
@@ -6889,17 +7037,33 @@ static napi_value doe_command_encoder_clear_buffer_export(napi_env env, napi_cal
 }
 
 static napi_value doe_command_encoder_copy_texture_to_texture_export(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 14);
+    size_t argc = 15;
+    napi_value argv[15];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     CHECK_LIB_LOADED(env);
-    if (!pfn_doeNativeCommandEncoderCopyTextureToTexture) NAPI_THROW(env, "commandEncoderCopyTextureToTexture not available");
+    if (argc != 14 && argc != 15) {
+        NAPI_THROW(env, "commandEncoderCopyTextureToTexture requires 14 or 15 arguments");
+    }
+    if (!pfn_doeNativeCommandEncoderCopyTextureToTexture && !pfn_wgpuCommandEncoderCopyTextureToTexture) {
+        NAPI_THROW(env, "commandEncoderCopyTextureToTexture not available");
+    }
 
-    WGPUCommandEncoder encoder = unwrap_ptr(env, _args[0]);
-    WGPUTexture src_texture = unwrap_ptr(env, _args[1]);
+    const size_t dst_index = argc == 15 ? 7 : 6;
+    const size_t dst_mip_index = argc == 15 ? 8 : 7;
+    const size_t dst_x_index = argc == 15 ? 9 : 8;
+    const size_t dst_y_index = argc == 15 ? 10 : 9;
+    const size_t dst_z_index = argc == 15 ? 11 : 10;
+    const size_t width_index = argc == 15 ? 12 : 11;
+    const size_t height_index = argc == 15 ? 13 : 12;
+    const size_t depth_index = argc == 15 ? 14 : 13;
+
+    WGPUCommandEncoder encoder = unwrap_ptr(env, argv[0]);
+    WGPUTexture src_texture = unwrap_ptr(env, argv[1]);
     uint32_t src_mip = 0;
     uint32_t src_x = 0;
     uint32_t src_y = 0;
     uint32_t src_z = 0;
-    WGPUTexture dst_texture = unwrap_ptr(env, _args[6]);
+    WGPUTexture dst_texture = unwrap_ptr(env, argv[dst_index]);
     uint32_t dst_mip = 0;
     uint32_t dst_x = 0;
     uint32_t dst_y = 0;
@@ -6909,23 +7073,45 @@ static napi_value doe_command_encoder_copy_texture_to_texture_export(napi_env en
     uint32_t depth_or_layers = 0;
 
     if (!encoder || !src_texture || !dst_texture) NAPI_THROW(env, "commandEncoderCopyTextureToTexture: invalid encoder or textures");
-    napi_get_value_uint32(env, _args[2], &src_mip);
-    napi_get_value_uint32(env, _args[3], &src_x);
-    napi_get_value_uint32(env, _args[4], &src_y);
-    napi_get_value_uint32(env, _args[5], &src_z);
-    napi_get_value_uint32(env, _args[7], &dst_mip);
-    napi_get_value_uint32(env, _args[8], &dst_x);
-    napi_get_value_uint32(env, _args[9], &dst_y);
-    napi_get_value_uint32(env, _args[10], &dst_z);
-    napi_get_value_uint32(env, _args[11], &width);
-    napi_get_value_uint32(env, _args[12], &height);
-    napi_get_value_uint32(env, _args[13], &depth_or_layers);
+    napi_get_value_uint32(env, argv[2], &src_mip);
+    napi_get_value_uint32(env, argv[3], &src_x);
+    napi_get_value_uint32(env, argv[4], &src_y);
+    napi_get_value_uint32(env, argv[5], &src_z);
+    napi_get_value_uint32(env, argv[dst_mip_index], &dst_mip);
+    napi_get_value_uint32(env, argv[dst_x_index], &dst_x);
+    napi_get_value_uint32(env, argv[dst_y_index], &dst_y);
+    napi_get_value_uint32(env, argv[dst_z_index], &dst_z);
+    napi_get_value_uint32(env, argv[width_index], &width);
+    napi_get_value_uint32(env, argv[height_index], &height);
+    napi_get_value_uint32(env, argv[depth_index], &depth_or_layers);
 
-    pfn_doeNativeCommandEncoderCopyTextureToTexture(
-        encoder,
-        src_texture, src_mip, 0, src_x, src_y, src_z,
-        dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
-        width, height, depth_or_layers);
+    if (pfn_doeNativeCommandEncoderCopyTextureToTexture) {
+        pfn_doeNativeCommandEncoderCopyTextureToTexture(
+            encoder,
+            src_texture, src_mip, 0, src_x, src_y, src_z,
+            dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
+            width, height, depth_or_layers);
+    } else {
+        WGPUTexelCopyTextureInfo src;
+        WGPUTexelCopyTextureInfo dst;
+        WGPUExtent3D size;
+        memset(&src, 0, sizeof(src));
+        memset(&dst, 0, sizeof(dst));
+        src.texture = src_texture;
+        src.mipLevel = src_mip;
+        src.origin.x = src_x;
+        src.origin.y = src_y;
+        src.origin.z = src_z;
+        dst.texture = dst_texture;
+        dst.mipLevel = dst_mip;
+        dst.origin.x = dst_x;
+        dst.origin.y = dst_y;
+        dst.origin.z = dst_z;
+        size.width = width;
+        size.height = height;
+        size.depthOrArrayLayers = depth_or_layers;
+        pfn_wgpuCommandEncoderCopyTextureToTexture(encoder, &src, &dst, &size);
+    }
     return NULL;
 }
 
@@ -6995,7 +7181,11 @@ static napi_value native_direct_compute_pass_dispatch_workgroups_indirect(napi_e
     WGPUBuffer buffer = buffer_cache ? buffer_cache->buffer : native_direct_unwrap_external_prop(env, argv[0], DOE_DIRECT_NATIVE);
     int64_t offset = 0;
     if (argc >= 2 && argv[1]) napi_get_value_int64(env, argv[1], &offset);
-    pfn_wgpuComputePassEncoderDispatchWorkgroupsIndirect(pass, buffer, (uint64_t)offset);
+    if (pfn_doeNativeComputePassDispatchIndirect) {
+        pfn_doeNativeComputePassDispatchIndirect(pass, buffer, (uint64_t)offset);
+    } else {
+        pfn_wgpuComputePassEncoderDispatchWorkgroupsIndirect(pass, buffer, (uint64_t)offset);
+    }
     napi_value undefined_value;
     napi_get_undefined(env, &undefined_value);
     return undefined_value;
@@ -7249,9 +7439,9 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("requestDevice", doe_request_device),
         EXPORT_FN("deviceRelease", doe_device_release),
         EXPORT_FN("deviceGetQueue", doe_device_get_queue),
-        EXPORT_FN("devicePushErrorScope", doe_device_push_error_scope),
-        EXPORT_FN("devicePopErrorScope", doe_device_pop_error_scope),
-        EXPORT_FN("deviceSetUncapturedErrorCallback", doe_device_set_uncaptured_error_callback),
+        EXPORT_FN("devicePushErrorScope", doe_device_push_error_scope_export),
+        EXPORT_FN("devicePopErrorScope", doe_device_pop_error_scope_export),
+        EXPORT_FN("deviceSetUncapturedErrorCallback", doe_device_set_uncaptured_error_callback_export),
         EXPORT_FN("deviceRegisterLostCallback", doe_device_register_lost_callback),
         EXPORT_FN("createBuffer", doe_create_buffer),
         EXPORT_FN("bufferRelease", doe_buffer_release),
@@ -7283,8 +7473,8 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("commandEncoderCopyBufferToBuffer", doe_command_encoder_copy_buffer_to_buffer),
         EXPORT_FN("commandEncoderCopyBufferToTexture", doe_command_encoder_copy_buffer_to_texture),
         EXPORT_FN("commandEncoderCopyTextureToBuffer", doe_command_encoder_copy_texture_to_buffer),
-        EXPORT_FN("commandEncoderClearBuffer", doe_command_encoder_clear_buffer),
-        EXPORT_FN("commandEncoderCopyTextureToTexture", doe_command_encoder_copy_texture_to_texture),
+        EXPORT_FN("commandEncoderClearBuffer", doe_command_encoder_clear_buffer_export),
+        EXPORT_FN("commandEncoderCopyTextureToTexture", doe_command_encoder_copy_texture_to_texture_export),
         EXPORT_FN("commandEncoderFinish", doe_command_encoder_finish),
         EXPORT_FN("commandBufferRelease", doe_command_buffer_release),
         EXPORT_FN("beginComputePass", doe_begin_compute_pass),

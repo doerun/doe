@@ -438,7 +438,14 @@ pub const FunctionState = struct {
         defer args.deinit(self.emitter.alloc);
         var i: u32 = 0;
         while (i < call.args.len) : (i += 1) {
-            try args.append(self.emitter.alloc, try self.emit_value_expr(self.function.expr_args.items[call.args.start + i]));
+            const arg_expr_id = self.function.expr_args.items[call.args.start + i];
+            const arg_expr = self.function.exprs.items[arg_expr_id];
+            if (arg_expr.category == .ref) {
+                // Pointer arg: pass the pointer, not the loaded value.
+                try args.append(self.emitter.alloc, try self.emit_ref_expr(arg_expr_id));
+            } else {
+                try args.append(self.emitter.alloc, try self.emit_value_expr(arg_expr_id));
+            }
         }
         return try self.emitter.emit_function_call(try self.emitter.lower_type(result_ty), fn_id, args.items);
     }

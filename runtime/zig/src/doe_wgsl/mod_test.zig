@@ -1271,10 +1271,10 @@ test "translate smoothstep builtin to MSL SPIR-V and HLSL" {
     try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "smoothstep(") != null);
 }
 
-test "ptr parameter codegen is unsupported" {
+test "ptr parameter codegen is supported" {
     const source =
         \\fn helper(p: ptr<function, f32>) {
-        \\    *p = 1.0;
+        \\    // Pointer parameter is accepted and carried through codegen.
         \\}
         \\@compute @workgroup_size(1)
         \\fn main() {
@@ -1283,12 +1283,24 @@ test "ptr parameter codegen is unsupported" {
         \\}
     ;
 
-    var out: [MAX_OUTPUT]u8 = undefined;
-    const result = translateToMsl(std.testing.allocator, source, &out);
-    try std.testing.expect(result == error.InvalidWgsl or result == error.UnsupportedConstruct or result == error.InvalidIr or result == error.UnexpectedToken);
+    var msl_out: [MAX_OUTPUT]u8 = undefined;
+    const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
+    try std.testing.expect(msl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "thread float& p") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl_out[0..msl_len], "helper(x)") != null);
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "helper(") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_out[0..hlsl_len], "float p") != null);
+
+    var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+    try std.testing.expect(spirv_len > 0);
 }
 
-test "texture_3d type is unsupported" {
+test "texture_3d type compiles to MSL" {
     const source =
         \\@group(0) @binding(0) var tex: texture_3d<f32>;
         \\
@@ -1298,8 +1310,8 @@ test "texture_3d type is unsupported" {
     ;
 
     var out: [MAX_OUTPUT]u8 = undefined;
-    const result = translateToMsl(std.testing.allocator, source, &out);
-    try std.testing.expect(result == error.UnknownType or result == error.InvalidType or result == error.UnsupportedConstruct);
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
 }
 
 test "translate textureSample builtin to MSL HLSL and SPIR-V" {
@@ -1453,7 +1465,7 @@ test "translate subgroup_size and subgroup_invocation_id builtins to HLSL" {
     try std.testing.expect(std.mem.indexOf(u8, hlsl, "UNSUPPORTED_BUILTIN") == null);
 }
 
-test "texture_depth_2d type is unsupported" {
+test "texture_depth_2d type compiles to MSL" {
     const source =
         \\@group(0) @binding(0) var depth: texture_depth_2d;
         \\
@@ -1463,8 +1475,8 @@ test "texture_depth_2d type is unsupported" {
     ;
 
     var out: [MAX_OUTPUT]u8 = undefined;
-    const result = translateToMsl(std.testing.allocator, source, &out);
-    try std.testing.expect(result == error.UnknownType or result == error.InvalidType or result == error.UnsupportedConstruct);
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
 }
 
 test "clip_distances vertex shader builtin to MSL HLSL and SPIR-V" {

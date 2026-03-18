@@ -266,7 +266,7 @@ pub fn vulkan_render_pass_draw(
         .first_instance = first_instance,
     };
 
-    rt.run_render_draw(cmd) catch |err| {
+    _ = rt.run_render_draw(cmd) catch |err| {
         std.debug.print("doe_vulkan_render_native: run_render_draw failed: {}\n", .{err});
     };
 }
@@ -295,7 +295,7 @@ pub fn vulkan_render_pass_draw_indexed(
         .base_vertex = base_vertex,
     };
 
-    rt.run_render_draw(cmd) catch |err| {
+    _ = rt.run_render_draw(cmd) catch |err| {
         std.debug.print("doe_vulkan_render_native: run_render_draw (indexed) failed: {}\n", .{err});
     };
 }
