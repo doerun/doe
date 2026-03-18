@@ -1435,3 +1435,15 @@ Contract updates in this change:
   - strict comparable coverage is limited to compute, upload, pipeline, and `p0-resource`
   - render and texture contracts remain out of scope until native D3D12 coverage expands
 - Benchmark cube placeholders now annotate governed-but-unevidenced `windows_d3d12` cells as `contract exists, evidence missing` instead of leaving them as generic empty cells.
+
+### Vulkan surface tone-mapping command payload (2026-03-18)
+
+- `runtime/zig/src/model_webgpu_types.zig` `SurfaceConfigureCommand` now carries
+  `tone_mapping_mode` in addition to `alpha_mode` / `present_mode`.
+- `runtime/zig/src/command_json_raw.zig` and
+  `runtime/zig/src/command_json_extra.zig` now accept
+  `toneMappingMode` / `tone_mapping_mode` on `surface_configure` payloads.
+- `runtime/zig/src/backend/vulkan/native_runtime.zig` and
+  `runtime/zig/src/backend/vulkan/vulkan_surface.zig` now consume that field
+  during swapchain format selection so `extended` tone mapping prefers
+  extended-sRGB Vulkan surface formats when the platform exposes them.

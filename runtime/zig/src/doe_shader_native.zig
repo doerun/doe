@@ -23,8 +23,11 @@ const DoeDevice = native.DoeDevice;
 const DoeShaderModule = native.DoeShaderModule;
 const DoeComputePipeline = native.DoeComputePipeline;
 const DoePipelineLayout = native.DoePipelineLayout;
+const CompilationMessageKind = native.CompilationMessageKind;
 const LAST_ERROR_CAP: usize = 512;
 const LAST_ERROR_META_CAP: usize = 64;
+const DIAGNOSTIC_DIRECTIVE_INFO: []const u8 =
+    "WGSL diagnostic directives are parsed on this path and currently reported as advisory compilation info only.";
 var last_error_buf: [LAST_ERROR_CAP]u8 = undefined;
 var last_error_len: usize = 0;
 var last_error_stage_buf: [LAST_ERROR_META_CAP]u8 = undefined;
@@ -174,6 +177,56 @@ fn normalizeWorkgroupDim(v: u32) u32 {
     return if (v > 0) v else 1;
 }
 
+fn offset_to_line_column(src: []const u8, offset: usize) struct { line: u32, column: u32 } {
+    var line: u32 = 1;
+    var column: u32 = 1;
+    var i: usize = 0;
+    const clamped_offset = @min(offset, src.len);
+    while (i < clamped_offset) : (i += 1) {
+        if (src[i] == '\n') {
+            line += 1;
+            column = 1;
+        } else {
+            column += 1;
+        }
+    }
+    return .{ .line = line, .column = column };
+}
+
+fn set_module_compilation_message(
+    sm: *DoeShaderModule,
+    kind: CompilationMessageKind,
+    message: []const u8,
+    line: u32,
+    column: u32,
+) void {
+    if (sm.compilation_message) |existing| {
+        alloc.free(existing);
+        sm.compilation_message = null;
+    }
+    sm.compilation_message = alloc.dupe(u8, message) catch null;
+    sm.compilation_message_kind = kind;
+    sm.compilation_message_line = line;
+    sm.compilation_message_column = column;
+}
+
+fn set_module_info_from_diagnostic_directive(sm: *DoeShaderModule, wgsl: []const u8) void {
+    const offset = std.mem.indexOf(u8, wgsl, "diagnostic") orelse return;
+    const loc = offset_to_line_column(wgsl, offset);
+    set_module_compilation_message(sm, .info, DIAGNOSTIC_DIRECTIVE_INFO, loc.line, loc.column);
+}
+
+fn set_module_warning_from_compiler_state(
+    sm: *DoeShaderModule,
+    fallback_message: []const u8,
+) void {
+    const detail = wgsl_compiler.lastErrorMessage();
+    const line = wgsl_compiler.lastErrorLine();
+    const column = wgsl_compiler.lastErrorColumn();
+    const message = if (detail.len > 0) detail else fallback_message;
+    set_module_compilation_message(sm, .warning, message, line, column);
+}
+
 pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*const types.WGPUShaderModuleDescriptor) callconv(.c) ?*anyopaque {
     clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
@@ -232,6 +285,7 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyo
         return null;
     };
     sm.* = .{ .mtl_library = lib };
+    set_module_info_from_diagnostic_directive(sm, wgsl);
     sm.needs_sizes_buf = std.mem.indexOf(u8, wgsl, "arrayLength") != null;
     const wg = native.extractWorkgroupSize(wgsl);
     sm.wg_x = wg.x;
@@ -252,6 +306,7 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyo
             set_last_error_fmt("binding extraction failed (shader compiled): {s}", .{@errorName(bind_err)});
         }
         std.log.warn("doe: createShaderModule: binding extraction failed ({s}); proceeding with 0 bindings", .{@errorName(bind_err)});
+        set_module_warning_from_compiler_state(sm, "binding extraction failed after successful shader compilation");
         break :blk 0;
     };
     for (0..bind_count) |i| {
@@ -275,6 +330,7 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
     _ = dev;
     const sm = make(DoeShaderModule) orelse return null;
     sm.* = .{};
+    set_module_info_from_diagnostic_directive(sm, wgsl);
     sm.needs_sizes_buf = std.mem.indexOf(u8, wgsl, "arrayLength") != null;
     const wg = native.extractWorkgroupSize(wgsl);
     sm.wg_x = wg.x;
@@ -295,7 +351,11 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
 
     // Extract binding metadata for getBindGroupLayout (non-fatal on failure).
     var bind_meta: [native.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
-    const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch 0;
+    const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch |bind_err| blk: {
+        set_module_warning_from_compiler_state(sm, "binding extraction failed after successful Vulkan shader compilation");
+        std.log.warn("doe: createShaderModule (Vulkan): binding extraction failed ({s}); proceeding with 0 bindings", .{@errorName(bind_err)});
+        break :blk 0;
+    };
     for (0..bind_count) |i| {
         sm.bindings[i] = .{
             .group = bind_meta[i].group,
@@ -463,6 +523,7 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
         if (sm.spirv_data) |s| alloc.free(s);
         if (sm.hlsl_source) |h| alloc.free(h);
         if (sm.wgsl_source) |w| alloc.free(w);
+        if (sm.compilation_message) |message| alloc.free(message);
         alloc.destroy(sm);
     }
 }

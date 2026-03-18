@@ -49,9 +49,11 @@ const VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO: i32 = 9;
 const VK_FORMAT_B8G8R8A8_SRGB: u32 = 50;
 const VK_FORMAT_B8G8R8A8_UNORM: u32 = 44;
 const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
+const VK_FORMAT_R16G16B16A16_SFLOAT: u32 = 97;
 
 // VkColorSpaceKHR
 const VK_COLOR_SPACE_SRGB_NONLINEAR_KHR: u32 = 0;
+const VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT: u32 = 1000104002;
 
 // VkPresentModeKHR
 const VK_PRESENT_MODE_FIFO_KHR: u32 = 2;
@@ -230,6 +232,7 @@ pub const VulkanSurface = struct {
     usage: model.WGPUFlags = model.WGPUTextureUsage_RenderAttachment,
     alpha_mode: u32 = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
     present_mode: u32 = WGPU_PRESENT_MODE_FIFO,
+    tone_mapping_mode: u32 = WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD,
     desired_maximum_frame_latency: u32 = DEFAULT_SURFACE_MAX_FRAME_LATENCY,
 
     // Cached capabilities
@@ -244,6 +247,8 @@ pub const INSTANCE_WAYLAND_EXTENSION: [*:0]const u8 = "VK_KHR_wayland_surface";
 pub const INSTANCE_XCB_EXTENSION: [*:0]const u8 = "VK_KHR_xcb_surface";
 
 pub const DEVICE_SWAPCHAIN_EXTENSION: [*:0]const u8 = "VK_KHR_swapchain";
+pub const WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD: u32 = 0x00000001;
+pub const WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED: u32 = 0x00000002;
 
 /// Returns instance extensions needed for surface support on this platform.
 pub fn required_instance_extensions() []const [*:0]const u8 {
@@ -429,7 +434,20 @@ pub fn destroy_sync_objects(
 /// Select the best surface format from available formats.
 fn select_surface_format(
     formats: []const VkSurfaceFormatKHR,
+    tone_mapping_mode: u32,
 ) VkSurfaceFormatKHR {
+    if (tone_mapping_mode == WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED) {
+        for (formats) |fmt| {
+            if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT and
+                fmt.format == VK_FORMAT_R16G16B16A16_SFLOAT)
+            {
+                return fmt;
+            }
+        }
+        for (formats) |fmt| {
+            if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) return fmt;
+        }
+    }
     // Prefer B8G8R8A8_SRGB with sRGB nonlinear color space
     for (formats) |fmt| {
         if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
@@ -529,7 +547,7 @@ pub fn create_swapchain(
         &formats,
     ));
 
-    const chosen_format = select_surface_format(formats[0..query_format_count]);
+    const chosen_format = select_surface_format(formats[0..query_format_count], surface_state.tone_mapping_mode);
     const chosen_present_mode = map_present_mode(surface_state.present_mode);
     const chosen_alpha_mode = map_composite_alpha(surface_state.alpha_mode, caps.supportedCompositeAlpha);
     const chosen_extent = clamp_extent(surface_state.width, surface_state.height, caps);

@@ -165,6 +165,13 @@ pub const BindingInfo = struct {
 
 pub const MAX_SHADER_BINDINGS: usize = wgsl_compiler.MAX_BINDINGS;
 
+pub const CompilationMessageKind = enum(u8) {
+    none,
+    error,
+    warning,
+    info,
+};
+
 pub const DoeShaderModule = struct {
     const TYPE_MAGIC = MAGIC_SHADER;
     magic: u32 = TYPE_MAGIC,
@@ -184,6 +191,10 @@ pub const DoeShaderModule = struct {
     // Original WGSL source (heap-allocated copy, owned by this module).
     // Retained for re-translation when pipeline override constants are provided.
     wgsl_source: ?[]const u8 = null,
+    compilation_message_kind: CompilationMessageKind = .none,
+    compilation_message: ?[]const u8 = null,
+    compilation_message_line: u32 = 0,
+    compilation_message_column: u32 = 0,
 };
 
 pub const DoeComputePipeline = struct {

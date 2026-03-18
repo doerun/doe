@@ -43,9 +43,9 @@ surface:
 - shared/package publication for `GPUBuffer.mapState`, `GPUDevice.lost` reason
   strings, `layout: "auto"`, and the Vulkan feature-name surface is now reflected
   in the coverage ledger
-- remaining Vulkan graphics gaps still include full vertex-driven graphics
-  bundle-parity follow-up, plus richer compilation-info severity publication and
-  tone-mapping-mode plumbing
+- the tracked Vulkan coverage gap from this unblock pass is now closed:
+  vertex-input publication, canvas alpha/tone-mapping modes, and
+  compilation-message severities are all reflected in source and ledger state
 macOS browser maintenance now has scheduled workflow and retention wiring:
 - `.github/workflows/macos-browser-refresh.yml`
 - `browser/fawn-browser/scripts/cleanup-browser-artifacts.py`
