@@ -270,6 +270,12 @@ napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
                 env, get_prop(env, tex_obj, "sampleType"));
             entries[i].texture.viewDimension = texture_view_dimension_from_string(
                 env, get_prop(env, tex_obj, "viewDimension"));
+            if (has_prop(env, tex_obj, "textureBindingViewDimension")) {
+                uint32_t tbvd = texture_view_dimension_from_string(
+                    env, get_prop(env, tex_obj, "textureBindingViewDimension"));
+                if (tbvd != 0)
+                    entries[i].texture.viewDimension = tbvd;
+            }
             if (has_prop(env, tex_obj, "multisampled"))
                 entries[i].texture.multisampled = get_bool_prop(env, tex_obj, "multisampled") ? 1 : 0;
         }

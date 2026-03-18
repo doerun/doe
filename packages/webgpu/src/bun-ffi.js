@@ -773,7 +773,11 @@ function buildBindGroupLayoutDescriptor(entries) {
         if (e.texture) {
             writePtr(entryView, off + 72, null);
             entryView.setUint32(off + 80, TEXTURE_SAMPLE_TYPE[e.texture.sampleType] || 2, true);
-            entryView.setUint32(off + 84, TEXTURE_VIEW_DIMENSION[e.texture.viewDimension] || 2, true);
+            let tvd = TEXTURE_VIEW_DIMENSION[e.texture.viewDimension] || 2;
+            if (e.texture.textureBindingViewDimension) {
+                tvd = TEXTURE_VIEW_DIMENSION[e.texture.textureBindingViewDimension] || tvd;
+            }
+            entryView.setUint32(off + 84, tvd, true);
             entryView.setUint32(off + 88, e.texture.multisampled ? 1 : 0, true);
         }
         if (e.storageTexture) {
@@ -875,8 +879,9 @@ function buildPipelineLayoutDescriptor(layouts) {
 // pad: 4@60
 // viewFormatCount: size_t@64 (8)
 // viewFormats: ptr@72 (8)
-// Total: 80
-const TEXTURE_DESC_SIZE = 80;
+// textureBindingViewDimension: u32@80 (4) + pad@84 (4)
+// Total: 88
+const TEXTURE_DESC_SIZE = 88;
 
 const TEXTURE_FORMAT_MAP = {
     r8unorm: 0x01, r8snorm: 0x02, r8uint: 0x03, r8sint: 0x04,
@@ -989,6 +994,8 @@ function buildTextureDescriptor(descriptor) {
     v.setUint32(56, 1, true); // sampleCount
     v.setBigUint64(64, 0n, true); // viewFormatCount
     writePtr(v, 72, null); // viewFormats
+    const tbvd = descriptor.textureBindingViewDimension;
+    v.setUint32(80, tbvd ? (TEXTURE_VIEW_DIMENSION[tbvd] ?? 0) : 0, true);
     return new Uint8Array(buf);
 }
 
@@ -1894,7 +1901,7 @@ const fullSurfaceBackend = {
         const descBytes = buildBufferDescriptor(validated);
         return wgpu.symbols.wgpuDeviceCreateBuffer(assertLiveResource(device, "GPUDevice.createBuffer", "GPUDevice"), descBytes);
     },
-    deviceCreateShaderModule(device, code) {
+    deviceCreateShaderModule(device, code, _compilationHints) {
         const { desc, _refs } = buildShaderModuleDescriptor(code);
         let mod;
         try {

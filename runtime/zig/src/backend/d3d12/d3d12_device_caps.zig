@@ -15,10 +15,12 @@ const FEATURE_DEPTH_CLIP_CONTROL: u32 = types.WGPUFeatureName_DepthClipControl;
 const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = types.WGPUFeatureName_Depth32FloatStencil8;
 const FEATURE_TEXTURE_COMPRESSION_BC: u32 = types.WGPUFeatureName_TextureCompressionBC;
 const FEATURE_BGRA8UNORM_STORAGE: u32 = types.WGPUFeatureName_BGRA8UnormStorage;
-const FEATURE_SHADER_F16: u32 = types.WGPUFeatureName_ShaderF16;
 const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = types.WGPUFeatureName_IndirectFirstInstance;
 const FEATURE_FLOAT32_FILTERABLE: u32 = types.WGPUFeatureName_Float32Filterable;
-const FEATURE_FLOAT32_BLENDABLE: u32 = types.WGPUFeatureName_Float32Blendable;
+const FEATURE_TIMESTAMP_QUERY: u32 = types.WGPUFeatureName_TimestampQuery;
+const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = types.WGPUFeatureName_RG11B10UfloatRenderable;
+const FEATURE_CLIP_DISTANCES: u32 = types.WGPUFeatureName_ClipDistances;
+const FEATURE_DUAL_SOURCE_BLENDING: u32 = types.WGPUFeatureName_DualSourceBlending;
 
 // D3D12 Feature Level 11.0 conservative limits.
 // These match the WebGPU spec minimum where possible, and D3D12 FL11.0
@@ -66,19 +68,22 @@ fn build_limits() types.WGPULimits {
     return D3D12_LIMITS_STATIC;
 }
 
-// D3D12 feature support. shader-f16 requires SM 6.2+; report true
-// optimistically since Doe targets DXC which handles SM 6.x.
-// BC texture compression is universally available on D3D12 hardware.
+// D3D12 feature support — Feature Level 11.0+ unconditional capabilities.
+// Features that need runtime hardware queries (ShaderF16, Subgroups,
+// SubgroupsF16, ETC2, ASTC, Float32Blendable) are excluded and must
+// not be reported without evidence from D3D12_FEATURE_DATA queries.
 fn is_feature_supported(feature: u32) bool {
     return switch (feature) {
-        FEATURE_SHADER_F16 => D3D12_AVAILABLE,
         FEATURE_DEPTH_CLIP_CONTROL,
         FEATURE_DEPTH32FLOAT_STENCIL8,
         FEATURE_TEXTURE_COMPRESSION_BC,
         FEATURE_BGRA8UNORM_STORAGE,
         FEATURE_INDIRECT_FIRST_INSTANCE,
         FEATURE_FLOAT32_FILTERABLE,
-        FEATURE_FLOAT32_BLENDABLE,
+        FEATURE_TIMESTAMP_QUERY,
+        FEATURE_RG11B10UFLOAT_RENDERABLE,
+        FEATURE_CLIP_DISTANCES,
+        FEATURE_DUAL_SOURCE_BLENDING,
         => D3D12_AVAILABLE,
         else => false,
     };

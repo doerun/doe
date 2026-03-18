@@ -224,6 +224,10 @@ static DXGI_FORMAT map_wgpu_format_to_dxgi(uint32_t format) {
         case 0x0000000F: return DXGI_FORMAT_R32_UINT;              /* R32Uint */
         case 0x00000010: return DXGI_FORMAT_R32_SINT;              /* R32Sint */
         case 0x00000009: return DXGI_FORMAT_R16_FLOAT;             /* R16Float */
+        case 0x00000005: return DXGI_FORMAT_R16_UNORM;             /* R16Unorm */
+        case 0x00000006: return DXGI_FORMAT_R16_SNORM;             /* R16Snorm */
+        case 0x00000011: return DXGI_FORMAT_R16G16_UNORM;          /* RG16Unorm */
+        case 0x00000012: return DXGI_FORMAT_R16G16_SNORM;          /* RG16Snorm */
         case 0x0000002D: return DXGI_FORMAT_D16_UNORM;             /* Depth16Unorm */
         case 0x00000030: return DXGI_FORMAT_D32_FLOAT;             /* Depth32Float */
         default:         return DXGI_FORMAT_R8G8B8A8_UNORM;

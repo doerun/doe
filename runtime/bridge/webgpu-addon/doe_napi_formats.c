@@ -232,10 +232,42 @@ uint32_t vertex_format_from_value(napi_env env, napi_value val) {
     if (vt == napi_number) { uint32_t out = 0; napi_get_value_uint32(env, val, &out); return out; }
     char buf[32] = {0}; size_t len = 0;
     napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    /* 8-bit formats */
+    if (strcmp(buf, "uint8") == 0)     return 0x00000001;
+    if (strcmp(buf, "uint8x2") == 0)   return 0x00000002;
+    if (strcmp(buf, "uint8x4") == 0)   return 0x00000003;
+    if (strcmp(buf, "sint8") == 0)     return 0x00000004;
+    if (strcmp(buf, "sint8x2") == 0)   return 0x00000005;
+    if (strcmp(buf, "sint8x4") == 0)   return 0x00000006;
+    if (strcmp(buf, "unorm8") == 0)    return 0x00000007;
+    if (strcmp(buf, "unorm8x2") == 0)  return 0x00000008;
+    if (strcmp(buf, "unorm8x4") == 0)  return 0x00000009;
+    if (strcmp(buf, "snorm8") == 0)    return 0x0000000A;
+    if (strcmp(buf, "snorm8x2") == 0)  return 0x0000000B;
+    if (strcmp(buf, "snorm8x4") == 0)  return 0x0000000C;
+    /* 16-bit formats */
+    if (strcmp(buf, "uint16") == 0)    return 0x0000000D;
+    if (strcmp(buf, "uint16x2") == 0)  return 0x0000000E;
+    if (strcmp(buf, "uint16x4") == 0)  return 0x0000000F;
+    if (strcmp(buf, "sint16") == 0)    return 0x00000010;
+    if (strcmp(buf, "sint16x2") == 0)  return 0x00000011;
+    if (strcmp(buf, "sint16x4") == 0)  return 0x00000012;
+    if (strcmp(buf, "unorm16") == 0)   return 0x00000013;
+    if (strcmp(buf, "unorm16x2") == 0) return 0x00000014;
+    if (strcmp(buf, "unorm16x4") == 0) return 0x00000015;
+    if (strcmp(buf, "snorm16") == 0)   return 0x00000016;
+    if (strcmp(buf, "snorm16x2") == 0) return 0x00000017;
+    if (strcmp(buf, "snorm16x4") == 0) return 0x00000018;
+    /* 32-bit float formats */
     if (strcmp(buf, "float32") == 0)   return 0x00000019;
     if (strcmp(buf, "float32x2") == 0) return 0x0000001A;
     if (strcmp(buf, "float32x3") == 0) return 0x0000001B;
     if (strcmp(buf, "float32x4") == 0) return 0x0000001C;
+    /* 16-bit float formats */
+    if (strcmp(buf, "float16") == 0)   return 0x0000001D;
+    if (strcmp(buf, "float16x2") == 0) return 0x0000001E;
+    if (strcmp(buf, "float16x4") == 0) return 0x0000001F;
+    /* 32-bit integer formats */
     if (strcmp(buf, "uint32") == 0)    return 0x00000021;
     if (strcmp(buf, "uint32x2") == 0)  return 0x00000022;
     if (strcmp(buf, "uint32x3") == 0)  return 0x00000023;
@@ -244,6 +276,9 @@ uint32_t vertex_format_from_value(napi_env env, napi_value val) {
     if (strcmp(buf, "sint32x2") == 0)  return 0x00000026;
     if (strcmp(buf, "sint32x3") == 0)  return 0x00000027;
     if (strcmp(buf, "sint32x4") == 0)  return 0x00000028;
+    /* packed formats */
+    if (strcmp(buf, "unorm10-10-10-2") == 0) return 0x00000029;
+    if (strcmp(buf, "unorm8x4-bgra") == 0)   return 0x0000002A;
     napi_throw_error(env, "DOE_ERROR", "Unsupported vertex format"); return 0;
 }
 
@@ -255,4 +290,42 @@ uint32_t index_format_from_value(napi_env env, napi_value val) {
     if (strcmp(buf, "uint16") == 0) return 0x00000001;
     if (strcmp(buf, "uint32") == 0) return 0x00000002;
     napi_throw_error(env, "DOE_ERROR", "Unsupported index format"); return 0;
+}
+
+uint32_t blend_factor_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt; napi_typeof(env, val, &vt);
+    if (vt == napi_number) { uint32_t out = 0; napi_get_value_uint32(env, val, &out); return out; }
+    char buf[32] = {0}; size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "zero") == 0)                  return 1;
+    if (strcmp(buf, "one") == 0)                   return 2;
+    if (strcmp(buf, "src") == 0)                   return 3;
+    if (strcmp(buf, "one-minus-src") == 0)         return 4;
+    if (strcmp(buf, "src-alpha") == 0)             return 5;
+    if (strcmp(buf, "one-minus-src-alpha") == 0)   return 6;
+    if (strcmp(buf, "dst") == 0)                   return 7;
+    if (strcmp(buf, "one-minus-dst") == 0)         return 8;
+    if (strcmp(buf, "dst-alpha") == 0)             return 9;
+    if (strcmp(buf, "one-minus-dst-alpha") == 0)   return 10;
+    if (strcmp(buf, "src-alpha-saturated") == 0)   return 11;
+    if (strcmp(buf, "constant") == 0)              return 12;
+    if (strcmp(buf, "one-minus-constant") == 0)    return 13;
+    if (strcmp(buf, "src1") == 0)                  return 14;
+    if (strcmp(buf, "one-minus-src1") == 0)        return 15;
+    if (strcmp(buf, "src1-alpha") == 0)            return 16;
+    if (strcmp(buf, "one-minus-src1-alpha") == 0)  return 17;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported blend factor"); return 0;
+}
+
+uint32_t blend_operation_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt; napi_typeof(env, val, &vt);
+    if (vt == napi_number) { uint32_t out = 0; napi_get_value_uint32(env, val, &out); return out; }
+    char buf[24] = {0}; size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "add") == 0)              return 1;
+    if (strcmp(buf, "subtract") == 0)         return 2;
+    if (strcmp(buf, "reverse-subtract") == 0) return 3;
+    if (strcmp(buf, "min") == 0)              return 4;
+    if (strcmp(buf, "max") == 0)              return 5;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported blend operation"); return 0;
 }

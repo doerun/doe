@@ -14,6 +14,7 @@ INTERFACE_IMPLEMENTED = {
     "GPUBindGroup",
     "GPUBindGroupLayout",
     "GPUSampler",
+    "GPUShaderModule",
     "GPUComputePipeline",
     "GPUComputePassEncoder",
     "GPURenderPipeline",
@@ -29,6 +30,7 @@ INTERFACE_PARTIAL = {
     "GPUAdapter",
     "GPUCommandEncoder",
     "GPUCommandBuffer",
+    "GPUPipelineLayout",
 }
 
 # Specific members to mark as implemented
@@ -44,6 +46,7 @@ MEMBER_IMPLEMENTED = {
     ("GPUDevice", "createSampler"),
     ("GPUDevice", "createTexture"),
     ("GPUDevice", "createShaderModule"),
+    ("GPUDevice", "createPipelineLayout"),
     ("GPUDevice", "createCommandEncoder"),
     ("GPUAdapter", "limits"),
     ("GPUAdapter", "features"),

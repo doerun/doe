@@ -348,6 +348,7 @@ function createEncoderClasses(backend) {
         descriptor === undefined ? undefined : assertObject(descriptor, 'GPURenderBundleEncoder.finish', 'descriptor'),
         classes,
       );
+      bundle.label = descriptor?.label ?? '';
       this._finished = true;
       return bundle;
     }
@@ -551,9 +552,11 @@ function createEncoderClasses(backend) {
       backend.commandEncoderResolveQuerySet(this, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
     }
 
-    finish() {
+    finish(descriptor) {
       this._assertOpen('GPUCommandEncoder.finish');
-      return backend.commandEncoderFinish(this);
+      const cmdBuf = backend.commandEncoderFinish(this);
+      cmdBuf.label = descriptor?.label ?? '';
+      return cmdBuf;
     }
   }
 

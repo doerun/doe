@@ -265,13 +265,21 @@ function normalizeTextureLayout(binding, path, label) {
   if (!(viewDimension in TEXTURE_VIEW_DIMENSIONS)) {
     failValidation(path, `${label}.viewDimension must be one of: ${Object.keys(TEXTURE_VIEW_DIMENSIONS).join(', ')}`);
   }
-  return {
+  const result = {
     sampleType,
     viewDimension,
     multisampled: texture.multisampled === undefined
       ? false
       : assertBoolean(texture.multisampled, path, `${label}.multisampled`),
   };
+  if (texture.textureBindingViewDimension !== undefined) {
+    const tbvd = normalizeEnumKey(texture.textureBindingViewDimension, path, `${label}.textureBindingViewDimension`);
+    if (!(tbvd in TEXTURE_VIEW_DIMENSIONS)) {
+      failValidation(path, `${label}.textureBindingViewDimension must be one of: ${Object.keys(TEXTURE_VIEW_DIMENSIONS).join(', ')}`);
+    }
+    result.textureBindingViewDimension = tbvd;
+  }
+  return result;
 }
 
 function normalizeStorageTextureLayout(binding, path, label) {

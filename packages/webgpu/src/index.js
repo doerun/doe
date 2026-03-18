@@ -1064,9 +1064,9 @@ const fullSurfaceBackend = {
   deviceCreateBuffer(device, validated) {
     return addon.createBuffer(assertLiveResource(device, 'GPUDevice.createBuffer', 'GPUDevice'), validated);
   },
-  deviceCreateShaderModule(device, code) {
+  deviceCreateShaderModule(device, code, compilationHints) {
     try {
-      return addon.createShaderModule(assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'), code);
+      return addon.createShaderModule(assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'), code, compilationHints ?? null);
     } catch (error) {
       throw enrichNativeCompilerError(error, 'GPUDevice.createShaderModule', readLastErrorFields());
     }
@@ -1100,7 +1100,7 @@ const fullSurfaceBackend = {
     return addon.createPipelineLayout(assertLiveResource(device, 'GPUDevice.createPipelineLayout', 'GPUDevice'), layouts, label);
   },
   deviceCreateTexture(device, textureDescriptor, size, usage) {
-    return addon.createTexture(assertLiveResource(device, 'GPUDevice.createTexture', 'GPUDevice'), {
+    const desc = {
       format: textureDescriptor.format || 'rgba8unorm',
       width: size.width,
       height: size.height,
@@ -1108,7 +1108,11 @@ const fullSurfaceBackend = {
       dimension: TEXTURE_DIMENSION_MAP[textureDescriptor.dimension ?? '2d'] ?? 2,
       usage,
       mipLevelCount: assertIntegerInRange(textureDescriptor.mipLevelCount ?? 1, 'GPUDevice.createTexture', 'descriptor.mipLevelCount', { min: 1, max: UINT32_MAX }),
-    });
+    };
+    if (textureDescriptor.textureBindingViewDimension) {
+      desc.textureBindingViewDimension = textureDescriptor.textureBindingViewDimension;
+    }
+    return addon.createTexture(assertLiveResource(device, 'GPUDevice.createTexture', 'GPUDevice'), desc);
   },
   deviceCreateSampler(device, descriptor) {
     return addon.createSampler(assertLiveResource(device, 'GPUDevice.createSampler', 'GPUDevice'), descriptor);

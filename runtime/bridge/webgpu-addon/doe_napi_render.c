@@ -5,6 +5,47 @@
  */
 #include "doe_napi_internal.h"
 
+/* Stencil operation string-to-enum (WebGPU GPUStencilOperation) */
+static uint32_t stencil_operation_from_string(napi_env env, napi_value val) {
+    napi_valuetype vt; napi_typeof(env, val, &vt);
+    if (vt == napi_number) { uint32_t out = 0; napi_get_value_uint32(env, val, &out); return out; }
+    char buf[24] = {0}; size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "keep") == 0)            return 0;
+    if (strcmp(buf, "zero") == 0)            return 1;
+    if (strcmp(buf, "replace") == 0)         return 2;
+    if (strcmp(buf, "invert") == 0)          return 3;
+    if (strcmp(buf, "increment-clamp") == 0) return 4;
+    if (strcmp(buf, "decrement-clamp") == 0) return 5;
+    if (strcmp(buf, "increment-wrap") == 0)  return 6;
+    if (strcmp(buf, "decrement-wrap") == 0)  return 7;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported stencil operation"); return 0;
+}
+
+/* Parse a GPUStencilFaceState object into a WGPURenderStencilFaceState.
+   Defaults per WebGPU spec: compare=always, failOp/depthFailOp/passOp=keep. */
+static WGPURenderStencilFaceState parse_stencil_face(napi_env env, napi_value obj) {
+    WGPURenderStencilFaceState face;
+    face.compare     = has_prop(env, obj, "compare")     ? compare_func_from_value(env, get_prop(env, obj, "compare"))            : 0x00000008;
+    face.failOp      = has_prop(env, obj, "failOp")      ? stencil_operation_from_string(env, get_prop(env, obj, "failOp"))        : 0;
+    face.depthFailOp = has_prop(env, obj, "depthFailOp") ? stencil_operation_from_string(env, get_prop(env, obj, "depthFailOp"))   : 0;
+    face.passOp      = has_prop(env, obj, "passOp")      ? stencil_operation_from_string(env, get_prop(env, obj, "passOp"))        : 0;
+    return face;
+}
+
+/* Blend state parsing */
+
+static WGPUBlendComponent parse_blend_component(napi_env env, napi_value obj) {
+    WGPUBlendComponent comp;
+    comp.operation = has_prop(env, obj, "operation")
+        ? blend_operation_from_string(env, get_prop(env, obj, "operation")) : 1; /* add */
+    comp.srcFactor = has_prop(env, obj, "srcFactor")
+        ? blend_factor_from_string(env, get_prop(env, obj, "srcFactor")) : 2; /* one */
+    comp.dstFactor = has_prop(env, obj, "dstFactor")
+        ? blend_factor_from_string(env, get_prop(env, obj, "dstFactor")) : 1; /* zero */
+    return comp;
+}
+
 /* Render Pipeline */
 
 napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
@@ -108,7 +149,23 @@ napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
     napi_value target0; napi_get_element(env, targets, 0, &target0);
     WGPURenderColorTargetState color_target; memset(&color_target, 0, sizeof(color_target));
     color_target.format = texture_format_from_string(env, get_prop(env, target0, "format"));
-    color_target.writeMask = 0xF;
+    color_target.writeMask = has_prop(env, target0, "writeMask")
+        ? (uint64_t)get_uint32_prop(env, target0, "writeMask") : 0xF;
+    WGPUBlendState* blend_state = NULL;
+    if (has_prop(env, target0, "blend") && prop_type(env, target0, "blend") == napi_object) {
+        napi_value blend_obj = get_prop(env, target0, "blend");
+        blend_state = (WGPUBlendState*)calloc(1, sizeof(WGPUBlendState));
+        if (!blend_state) { free(vertex_buffers); free(vertex_attributes); free(vertex_entry); free(fragment_entry); NAPI_THROW(env, "createRenderPipeline: out of memory"); }
+        if (has_prop(env, blend_obj, "color") && prop_type(env, blend_obj, "color") == napi_object)
+            blend_state->color = parse_blend_component(env, get_prop(env, blend_obj, "color"));
+        else
+            blend_state->color = (WGPUBlendComponent){ 1, 2, 1 }; /* add, one, zero */
+        if (has_prop(env, blend_obj, "alpha") && prop_type(env, blend_obj, "alpha") == napi_object)
+            blend_state->alpha = parse_blend_component(env, get_prop(env, blend_obj, "alpha"));
+        else
+            blend_state->alpha = (WGPUBlendComponent){ 1, 2, 1 }; /* add, one, zero */
+        color_target.blend = blend_state;
+    }
 
     WGPURenderFragmentState fragment_state; memset(&fragment_state, 0, sizeof(fragment_state));
     fragment_state.module = fragment_module;
@@ -148,7 +205,19 @@ napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
         depth_stencil->format = texture_format_from_string(env, get_prop(env, depth_obj, "format"));
         depth_stencil->depthWriteEnabled = has_prop(env, depth_obj, "depthWriteEnabled") ? (get_bool_prop(env, depth_obj, "depthWriteEnabled") ? 1 : 0) : 0;
         depth_stencil->depthCompare = has_prop(env, depth_obj, "depthCompare") ? compare_func_from_value(env, get_prop(env, depth_obj, "depthCompare")) : 0x00000008;
-        depth_stencil->stencilReadMask = 0xFFFFFFFFu; depth_stencil->stencilWriteMask = 0xFFFFFFFFu;
+        depth_stencil->stencilReadMask = has_prop(env, depth_obj, "stencilReadMask") ? get_uint32_prop(env, depth_obj, "stencilReadMask") : 0xFFFFFFFFu;
+        depth_stencil->stencilWriteMask = has_prop(env, depth_obj, "stencilWriteMask") ? get_uint32_prop(env, depth_obj, "stencilWriteMask") : 0xFFFFFFFFu;
+        depth_stencil->depthBias = has_prop(env, depth_obj, "depthBias") ? (int32_t)get_int64_prop(env, depth_obj, "depthBias") : 0;
+        depth_stencil->depthBiasSlopeScale = has_prop(env, depth_obj, "depthBiasSlopeScale") ? (float)get_double_prop(env, depth_obj, "depthBiasSlopeScale") : 0.0f;
+        depth_stencil->depthBiasClamp = has_prop(env, depth_obj, "depthBiasClamp") ? (float)get_double_prop(env, depth_obj, "depthBiasClamp") : 0.0f;
+        if (has_prop(env, depth_obj, "stencilFront") && prop_type(env, depth_obj, "stencilFront") == napi_object)
+            depth_stencil->stencilFront = parse_stencil_face(env, get_prop(env, depth_obj, "stencilFront"));
+        else
+            depth_stencil->stencilFront = (WGPURenderStencilFaceState){ 0x00000008, 0, 0, 0 };
+        if (has_prop(env, depth_obj, "stencilBack") && prop_type(env, depth_obj, "stencilBack") == napi_object)
+            depth_stencil->stencilBack = parse_stencil_face(env, get_prop(env, depth_obj, "stencilBack"));
+        else
+            depth_stencil->stencilBack = (WGPURenderStencilFaceState){ 0x00000008, 0, 0, 0 };
         desc.depthStencil = depth_stencil;
     }
     desc.multisample.count = 1; desc.multisample.mask = 0xFFFFffffu;
@@ -178,8 +247,8 @@ napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info) {
     WGPURenderPipeline rp = pfn_wgpuDeviceCreateRenderPipeline(device, &desc);
     free_override_constants(vertex_constants, vertex_constant_count);
     free_override_constants(fragment_constants, fragment_constant_count);
-    free(depth_stencil); free(vertex_attributes); free(vertex_buffers);
-    free(vertex_entry);  free(fragment_entry);    free(label_str);
+    free(blend_state); free(depth_stencil); free(vertex_attributes); free(vertex_buffers);
+    free(vertex_entry); free(fragment_entry); free(label_str);
     if (!rp) NAPI_THROW(env, "createRenderPipeline failed");
     return wrap_ptr(env, rp);
 }

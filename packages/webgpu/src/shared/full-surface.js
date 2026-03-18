@@ -46,6 +46,16 @@ function validateWriteBufferInput(data, dataOffset, size, path) {
   return new Uint8Array(data.buffer, byteOffset, byteLength);
 }
 
+const NEVER_RESOLVED = new Promise(() => {});
+const EMPTY_ADAPTER_INFO = Object.freeze({
+  vendor: '',
+  architecture: '',
+  device: '',
+  description: '',
+  subgroupMinSize: 0,
+  subgroupMaxSize: 0,
+});
+
 function createFullSurfaceClasses({
   globals,
   backend,
@@ -411,6 +421,7 @@ function createFullSurfaceClasses({
     constructor(native, instance, inheritedLimits = null, inheritedFeatures = null) {
       this._native = native;
       this._instance = instance;
+      this._onuncapturederror = null;
       this.label = '';
       initResource(this, 'GPUDevice');
       if (typeof backend.initDeviceState === 'function') {
@@ -421,45 +432,57 @@ function createFullSurfaceClasses({
       this.features = inheritedFeatures ?? backend.deviceFeatures(native);
     }
 
+    addEventListener(_type, _listener) {}
+
+    removeEventListener(_type, _listener) {}
+
     get lost() {
-      const native = assertLiveResource(this, 'GPUDevice.lost', 'GPUDevice');
       if (typeof backend.deviceGetLost === 'function') {
+        const native = assertLiveResource(this, 'GPUDevice.lost', 'GPUDevice');
         return backend.deviceGetLost(this, native);
       }
-      failValidation('GPUDevice.lost', 'device lost tracking is not supported on this package surface');
+      return NEVER_RESOLVED;
+    }
+
+    get adapterInfo() {
+      if (typeof backend.deviceGetAdapterInfo === 'function') {
+        const native = assertLiveResource(this, 'GPUDevice.adapterInfo', 'GPUDevice');
+        return backend.deviceGetAdapterInfo(this, native);
+      }
+      return EMPTY_ADAPTER_INFO;
     }
 
     pushErrorScope(filter) {
       const native = assertLiveResource(this, 'GPUDevice.pushErrorScope', 'GPUDevice');
       const encodedFilter = normalizeErrorFilter(filter, 'GPUDevice.pushErrorScope');
-      if (typeof backend.devicePushErrorScope !== 'function') {
-        failValidation('GPUDevice.pushErrorScope', 'error scopes are not supported on this package surface');
+      if (typeof backend.devicePushErrorScope === 'function') {
+        backend.devicePushErrorScope(this, native, filter, encodedFilter);
       }
-      backend.devicePushErrorScope(this, native, filter, encodedFilter);
     }
 
     popErrorScope() {
       const native = assertLiveResource(this, 'GPUDevice.popErrorScope', 'GPUDevice');
-      if (typeof backend.devicePopErrorScope !== 'function') {
-        failValidation('GPUDevice.popErrorScope', 'error scopes are not supported on this package surface');
+      if (typeof backend.devicePopErrorScope === 'function') {
+        return backend.devicePopErrorScope(this, native);
       }
-      return backend.devicePopErrorScope(this, native);
+      return Promise.resolve(null);
     }
 
     get onuncapturederror() {
-      const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');
       if (typeof backend.deviceGetOnUncapturedError === 'function') {
+        const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');
         return backend.deviceGetOnUncapturedError(this, native);
       }
-      return null;
+      return this._onuncapturederror;
     }
 
     set onuncapturederror(handler) {
-      const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');
-      if (typeof backend.deviceSetOnUncapturedError !== 'function') {
-        failValidation('GPUDevice.onuncapturederror', 'uncaptured error handlers are not supported on this package surface');
+      if (typeof backend.deviceSetOnUncapturedError === 'function') {
+        const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');
+        backend.deviceSetOnUncapturedError(this, native, handler ?? null);
+        return;
       }
-      backend.deviceSetOnUncapturedError(this, native, handler ?? null);
+      this._onuncapturederror = handler ?? null;
     }
 
     createBuffer(descriptor) {
@@ -481,7 +504,8 @@ function createFullSurfaceClasses({
       if (!preflight.ok) {
         shaderCheckFailure('GPUDevice.createShaderModule', preflight);
       }
-      const native = backend.deviceCreateShaderModule(this, code);
+      const hints = objectDescriptor.compilationHints ?? null;
+      const native = backend.deviceCreateShaderModule(this, code, hints);
       const module = new DoeGPUShaderModule(native, code, this);
       module.label = objectDescriptor.label ?? '';
       return module;

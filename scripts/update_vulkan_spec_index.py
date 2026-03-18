@@ -18,6 +18,7 @@ INTERFACE_IMPLEMENTED = {
     "GPUBindGroup",
     "GPUBindGroupLayout",
     "GPUShaderModule",
+    "GPUQuerySet",
 }
 
 # Interfaces that go from unreviewed/partial to "partial" (not fully complete)
@@ -27,6 +28,7 @@ INTERFACE_PARTIAL = {
     "GPUCommandEncoder",
     "GPUCommandBuffer",
     "GPUTextureView",
+    "GPUPipelineLayout",
 }
 
 # Specific members to mark as implemented
@@ -41,7 +43,9 @@ MEMBER_IMPLEMENTED = {
     ("GPUDevice", "createRenderPipeline"),
     ("GPUDevice", "createBindGroup"),
     ("GPUDevice", "createBindGroupLayout"),
+    ("GPUDevice", "createPipelineLayout"),
     ("GPUDevice", "createCommandEncoder"),
+    ("GPUDevice", "createQuerySet"),
     ("GPUAdapter", "limits"),
     ("GPUAdapter", "features"),
     ("GPUQueue", "onSubmittedWorkDone"),
@@ -87,6 +91,11 @@ MEMBER_IMPLEMENTED = {
     ("GPUCommandEncoder", "copyBufferToTexture"),
     ("GPUCommandEncoder", "finish"),
     ("GPUCommandEncoder", "clearBuffer"),
+    ("GPUCommandEncoder", "writeTimestamp"),
+    ("GPUCommandEncoder", "resolveQuerySet"),
+    ("GPUQuerySet", "destroy"),
+    ("GPUQuerySet", "type"),
+    ("GPUQuerySet", "count"),
 }
 
 # Members explicitly unsupported on Vulkan (won't be marked implemented)

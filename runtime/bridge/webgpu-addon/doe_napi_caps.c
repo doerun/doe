@@ -466,6 +466,11 @@ napi_value doe_create_texture(napi_env env, napi_callback_info info) {
     desc.viewFormatCount = (size_t)view_format_count;
     desc.viewFormats = view_formats;
 
+    /* textureBindingViewDimension: string → enum, defaults to matching dimension */
+    if (has_prop(env, _args[1], "textureBindingViewDimension"))
+        desc.textureBindingViewDimension = texture_view_dimension_from_string(
+            env, get_prop(env, _args[1], "textureBindingViewDimension"));
+
     WGPUTexture tex = pfn_wgpuDeviceCreateTexture(device, &desc);
     free(view_formats);
     free(label_str);

@@ -87,7 +87,18 @@ typedef struct {
 typedef struct { void* nextInChain; WGPUStringView label; } WGPUCommandEncoderDescriptor;
 typedef struct { void* nextInChain; WGPUStringView label; } WGPUCommandBufferDescriptor;
 typedef struct { WGPUChainedStruct chain; WGPUStringView code; } WGPUShaderSourceWGSL;
-typedef struct { void* nextInChain; WGPUStringView label; } WGPUShaderModuleDescriptor;
+
+typedef struct {
+    WGPUStringView entryPoint;
+    void* layout; /* WGPUPipelineLayout or NULL for "auto" */
+} WGPUShaderModuleCompilationHint;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView label;
+    size_t compilationHintCount;
+    const WGPUShaderModuleCompilationHint* compilationHints;
+} WGPUShaderModuleDescriptor;
 
 typedef struct {
     void* nextInChain;
@@ -180,6 +191,7 @@ typedef struct {
     void* nextInChain; WGPUStringView label; uint64_t usage; uint32_t dimension;
     WGPUExtent3D size; uint32_t format; uint32_t mipLevelCount; uint32_t sampleCount;
     size_t viewFormatCount; const uint32_t* viewFormats;
+    uint32_t textureBindingViewDimension;
 } WGPUTextureDescriptor;
 
 typedef struct {
@@ -223,7 +235,9 @@ typedef struct {
 
 typedef struct { void* nextInChain; uint32_t format; uint64_t offset; uint32_t shaderLocation; } WGPURenderVertexAttribute;
 typedef struct { void* nextInChain; uint32_t stepMode; uint64_t arrayStride; size_t attributeCount; const WGPURenderVertexAttribute* attributes; } WGPURenderVertexBufferLayout;
-typedef struct { void* nextInChain; uint32_t format; const void* blend; uint64_t writeMask; } WGPURenderColorTargetState;
+typedef struct { uint32_t operation; uint32_t srcFactor; uint32_t dstFactor; } WGPUBlendComponent;
+typedef struct { WGPUBlendComponent color; WGPUBlendComponent alpha; } WGPUBlendState;
+typedef struct { void* nextInChain; uint32_t format; const WGPUBlendState* blend; uint64_t writeMask; } WGPURenderColorTargetState;
 
 typedef struct {
     void* nextInChain; WGPUShaderModule module; WGPUStringView entryPoint;
@@ -648,6 +662,8 @@ uint32_t compare_func_from_value(napi_env env, napi_value val);
 uint32_t vertex_step_mode_from_value(napi_env env, napi_value val);
 uint32_t vertex_format_from_value(napi_env env, napi_value val);
 uint32_t index_format_from_value(napi_env env, napi_value val);
+uint32_t blend_factor_from_string(napi_env env, napi_value val);
+uint32_t blend_operation_from_string(napi_env env, napi_value val);
 const char* texture_format_u32_to_string(uint32_t fmt);
 const char* doe_binding_kind_name(uint32_t kind);
 const char* doe_binding_space_name(uint32_t addr_space);

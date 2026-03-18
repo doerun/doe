@@ -188,12 +188,22 @@ fn is_metal_feature_supported(feature: u32) bool {
 }
 
 // Vulkan feature support: conservative baseline without per-device extension query.
-// shader-f16 requires VK_KHR_shader_float16_int8; we conservatively report false
-// until the Vulkan path queries extensions at device init time.
+// Reports features widely available on Vulkan 1.1+ desktop devices without needing
+// runtime extension queries. shader-f16, subgroups, dual-source blending, and
+// compressed-texture families (ETC2, ASTC) require per-device extension checks.
 fn is_vulkan_feature_supported(feature: u32) bool {
     return switch (feature) {
-        FEATURE_DEPTH_CLIP_CONTROL => true,
-        FEATURE_INDIRECT_FIRST_INSTANCE => true,
+        // Vulkan 1.0 mandatory or Vulkan 1.1+ widely available features.
+        FEATURE_DEPTH_CLIP_CONTROL,
+        FEATURE_DEPTH32FLOAT_STENCIL8,
+        FEATURE_TEXTURE_COMPRESSION_BC,
+        FEATURE_BGRA8UNORM_STORAGE,
+        FEATURE_INDIRECT_FIRST_INSTANCE,
+        FEATURE_FLOAT32_FILTERABLE,
+        FEATURE_TIMESTAMP_QUERY,
+        FEATURE_RG11B10UFLOAT_RENDERABLE,
+        FEATURE_CLIP_DISTANCES,
+        => true,
         else => false,
     };
 }
