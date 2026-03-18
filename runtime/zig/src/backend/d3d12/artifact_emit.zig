@@ -10,7 +10,14 @@ const SPEC = shared_manifest.ManifestSpec{
         .{ .stage = "ir_build", .hash_label = "ir_build", .manifest_field = "irSha256" },
         .{ .stage = "ir_validate", .hash_label = "ir_validate" },
         .{ .stage = "ir_to_dxil", .hash_label = "ir_to_dxil", .manifest_field = "dxilSha256" },
-        .{ .stage = "dxil_validate", .hash_label = "dxil_validate" },
+        .{
+            .stage = "dxil_validate",
+            .hash_label = "dxil_validate",
+            .implementation = .external_tool,
+            .tool = "dxv",
+            .version = "1.x",
+            .args = &.{},
+        },
     },
 };
 

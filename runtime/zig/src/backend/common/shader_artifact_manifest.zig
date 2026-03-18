@@ -11,10 +11,26 @@ const HASH_INPUT_CAPACITY: usize = 512;
 const TAXONOMY_CODE_CAPACITY: usize = 128;
 const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 
+pub const StageImplementation = enum {
+    native_zig,
+    external_tool,
+
+    pub fn name(self: StageImplementation) []const u8 {
+        return switch (self) {
+            .native_zig => "native_zig",
+            .external_tool => "external_tool",
+        };
+    }
+};
+
 pub const StageDescriptor = struct {
     stage: []const u8,
     hash_label: []const u8,
     manifest_field: ?[]const u8 = null,
+    implementation: StageImplementation = .native_zig,
+    tool: ?[]const u8 = null,
+    version: ?[]const u8 = null,
+    args: []const []const u8 = &.{},
 };
 
 pub const ManifestSpec = struct {
@@ -180,18 +196,42 @@ fn build_stages_json(
     errdefer list.deinit(allocator);
     const writer = list.writer(allocator);
 
-    try writer.print(
-        "[{{\"stage\":\"wgsl_parse\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}}",
-        .{wgsl_hash[0..]},
-    );
+    try writer.writeByte('[');
+    try write_stage_json(writer, .{
+        .stage = "wgsl_parse",
+        .hash_label = "wgsl_parse",
+    }, wgsl_hash);
     for (stages, 0..) |stage, index| {
-        try writer.print(
-            ",{{\"stage\":\"{s}\",\"implementation\":\"native_zig\",\"artifactSha256\":\"{s}\"}}",
-            .{ stage.stage, stage_hashes[index][0..] },
-        );
+        try writer.writeByte(',');
+        try write_stage_json(writer, stage, stage_hashes[index]);
     }
     try writer.writeByte(']');
     return list.toOwnedSlice(allocator);
+}
+
+fn write_stage_json(
+    writer: anytype,
+    stage: StageDescriptor,
+    artifact_hash: [hash_utils.SHA256_HEX_SIZE]u8,
+) !void {
+    try writer.print(
+        "{{\"stage\":\"{s}\",\"implementation\":\"{s}\",\"artifactSha256\":\"{s}\"",
+        .{ stage.stage, stage.implementation.name(), artifact_hash[0..] },
+    );
+    switch (stage.implementation) {
+        .native_zig => {},
+        .external_tool => {
+            const tool = stage.tool orelse return error.InvalidArgument;
+            const version = stage.version orelse return error.InvalidArgument;
+            try writer.print(",\"tool\":\"{s}\",\"version\":\"{s}\",\"args\":[", .{ tool, version });
+            for (stage.args, 0..) |arg, index| {
+                if (index > 0) try writer.writeByte(',');
+                try writer.print("\"{s}\"", .{arg});
+            }
+            try writer.writeByte(']');
+        },
+    }
+    try writer.writeByte('}');
 }
 
 fn build_prehash_json(
@@ -279,4 +319,26 @@ test "derive_stage_hashes builds deterministic chained hashes" {
 
     try std.testing.expectEqual(derive_stage_hash(wgsl_hash[0..], "sema"), hashes[0]);
     try std.testing.expectEqual(derive_stage_hash(hashes[0][0..], "ir_build"), hashes[1]);
+}
+
+test "build_stages_json preserves external tool stage metadata" {
+    const stages = [_]StageDescriptor{
+        .{
+            .stage = "dxil_validate",
+            .hash_label = "dxil_validate",
+            .implementation = .external_tool,
+            .tool = "dxv",
+            .version = "1.x",
+            .args = &.{},
+        },
+    };
+    const wgsl_hash = hash_utils.sha256_hex("module");
+    const stage_hashes = [_][hash_utils.SHA256_HEX_SIZE]u8{hash_utils.sha256_hex("dxil_validate")};
+    const json = try build_stages_json(std.testing.allocator, &stages, wgsl_hash, &stage_hashes);
+    defer std.testing.allocator.free(json);
+
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"implementation\":\"external_tool\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"tool\":\"dxv\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"version\":\"1.x\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"args\":[]") != null);
 }

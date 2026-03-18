@@ -10,8 +10,23 @@ const SPEC = shared_manifest.ManifestSpec{
         .{ .stage = "ir_build", .hash_label = "ir_build", .manifest_field = "irSha256" },
         .{ .stage = "ir_validate", .hash_label = "ir_validate" },
         .{ .stage = "ir_to_msl", .hash_label = "ir_to_msl", .manifest_field = "mslSha256" },
-        .{ .stage = "msl_compile", .hash_label = "msl_compile" },
-        .{ .stage = "metallib_link", .hash_label = "metallib_link", .manifest_field = "metallibSha256" },
+        .{
+            .stage = "msl_compile",
+            .hash_label = "msl_compile",
+            .implementation = .external_tool,
+            .tool = "xcrun",
+            .version = "15.x",
+            .args = &.{ "metal", "-std=metal3.1" },
+        },
+        .{
+            .stage = "metallib_link",
+            .hash_label = "metallib_link",
+            .manifest_field = "metallibSha256",
+            .implementation = .external_tool,
+            .tool = "xcrun",
+            .version = "15.x",
+            .args = &.{"metallib"},
+        },
     },
 };
 
