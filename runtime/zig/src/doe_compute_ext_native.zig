@@ -37,6 +37,11 @@ pub export fn doeNativeComputePassSetBindGroup(pass_raw: ?*anyopaque, index: u32
 
 pub export fn doeNativeComputePassDispatch(pass_raw: ?*anyopaque, x: u32, y: u32, z: u32) callconv(.c) void {
     const pass = cast(DoeComputePass, pass_raw) orelse return;
+    if (pass.enc.dev.backend == .vulkan) {
+        const vk_compute = @import("doe_vulkan_compute_native.zig");
+        vk_compute.vulkan_compute_pass_dispatch(pass, x, y, z);
+        return;
+    }
     const pip = pass.pipeline orelse return;
     var cmd = RecordedCmd{ .dispatch = .{
         .pso = pip.mtl_pso,
@@ -68,8 +73,31 @@ pub export fn doeNativeComputePassEnd(raw: ?*anyopaque) callconv(.c) void {
     _ = raw;
 }
 
+// ============================================================
+// Debug markers — no-ops in headless runtime; symbols required for API surface completeness.
+// ============================================================
+
+pub export fn doeNativeComputePassInsertDebugMarker(
+    _: ?*anyopaque,
+    _: ?[*]const u8,
+    _: usize,
+) callconv(.c) void {}
+
+pub export fn doeNativeComputePassPushDebugGroup(
+    _: ?*anyopaque,
+    _: ?[*]const u8,
+    _: usize,
+) callconv(.c) void {}
+
+pub export fn doeNativeComputePassPopDebugGroup(
+    _: ?*anyopaque,
+) callconv(.c) void {}
+
 pub export fn doeNativeComputePassRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeComputePass, raw)) |p| alloc.destroy(p);
+    if (cast(DoeComputePass, raw)) |p| {
+        native.label_store.remove(raw);
+        alloc.destroy(p);
+    }
 }
 
 // ============================================================
@@ -93,6 +121,11 @@ pub export fn doeNativeComputePipelineGetBindGroupLayout(pip_raw: ?*anyopaque, g
 
 pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_raw: ?*anyopaque, offset: u64) callconv(.c) void {
     const pass = cast(DoeComputePass, pass_raw) orelse return;
+    if (pass.enc.dev.backend == .vulkan) {
+        const vk_compute = @import("doe_vulkan_compute_native.zig");
+        vk_compute.vulkan_compute_pass_dispatch_indirect(pass, buf_raw, offset);
+        return;
+    }
     const pip = pass.pipeline orelse return;
     const indirect_buf = cast(DoeBuffer, buf_raw) orelse return;
     var cmd = RecordedCmd{ .dispatch_indirect = .{

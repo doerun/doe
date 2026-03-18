@@ -192,7 +192,8 @@ const Analyzer = struct {
     fn register_global(self: *Analyzer, node: Node, node_idx: u32) !void {
         const name = switch (node.tag) {
             .global_var => self.module.tree.tokenSlice(self.module.tree.extra_data.items[node.data.rhs]),
-            .const_decl, .override_decl => self.module.tree.tokenSlice(node.main_token + 1),
+            .const_decl => self.module.tree.tokenSlice(node.main_token + 1),
+            .override_decl => self.module.tree.tokenSlice(self.module.tree.extra_data.items[node.data.lhs]),
             else => return error.InvalidWgsl,
         };
         if (self.module.global_map.contains(name)) return error.DuplicateSymbol;
@@ -256,7 +257,8 @@ const Analyzer = struct {
     fn resolve_global(self: *Analyzer, node: Node, _: u32) !void {
         const global_name = switch (node.tag) {
             .global_var => self.module.tree.tokenSlice(self.module.tree.extra_data.items[node.data.rhs]),
-            .const_decl, .override_decl => self.module.tree.tokenSlice(node.main_token + 1),
+            .const_decl => self.module.tree.tokenSlice(node.main_token + 1),
+            .override_decl => self.module.tree.tokenSlice(self.module.tree.extra_data.items[node.data.lhs]),
             else => return error.InvalidWgsl,
         };
         const global_index = self.module.global_map.get(global_name) orelse return error.InvalidWgsl;
@@ -274,7 +276,7 @@ const Analyzer = struct {
                     global_info.addr_space = .handle;
                 }
             },
-            .const_decl, .override_decl => {
+            .const_decl => {
                 global_info.ty = if (node.data.lhs != NULL_NODE) try self.resolve_type_node(node.data.lhs) else ir.INVALID_TYPE;
                 if (node.data.rhs != NULL_NODE) {
                     const init_ty = try self.analyze_expr(node.data.rhs, null);
@@ -285,6 +287,25 @@ const Analyzer = struct {
                     }
                 }
                 if (global_info.ty == ir.INVALID_TYPE) return error.InvalidType;
+            },
+            .override_decl => {
+                const extra = self.module.tree.extra_data.items;
+                const base = node.data.lhs;
+                const type_node = extra[base + 1];
+                const init_node = extra[base + 2];
+                const attrs_start = extra[base + 3];
+                const attrs_len = extra[base + 4];
+                global_info.ty = if (type_node != NULL_NODE) try self.resolve_type_node(type_node) else ir.INVALID_TYPE;
+                if (init_node != NULL_NODE) {
+                    const init_ty = try self.analyze_expr(init_node, null);
+                    if (global_info.ty == ir.INVALID_TYPE) {
+                        global_info.ty = init_ty;
+                    } else if (!self.type_compatible(global_info.ty, init_ty)) {
+                        return error.TypeMismatch;
+                    }
+                }
+                if (global_info.ty == ir.INVALID_TYPE) return error.InvalidType;
+                global_info.override_id = try sema_attrs.parse_override_id(self, attrs_start, attrs_len);
             },
             else => return error.InvalidWgsl,
         }

@@ -4,6 +4,7 @@
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
+const wgsl_ir = @import("doe_wgsl/ir.zig");
 const native = @import("doe_wgpu_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
@@ -16,6 +17,7 @@ const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
 const ERR_CAP = native.ERR_CAP;
+const label_store = native.label_store;
 
 const DoeDevice = native.DoeDevice;
 const DoeShaderModule = native.DoeShaderModule;
@@ -177,7 +179,7 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
     const d = desc orelse return null;
     const chain = d.nextInChain orelse return null;
 
-    return switch (chain.sType) {
+    const result = switch (chain.sType) {
         types.WGPUSType_ShaderSourceWGSL => createFromWGSL(dev, chain),
         types.WGPUSType_ShaderSourceMSL => createFromMSL(dev, chain),
         types.WGPUSType_ShaderSourceSPIRV => createFromSPIRV(chain),
@@ -190,6 +192,8 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
             return null;
         },
     };
+    if (result != null) label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 // ============================================================
@@ -199,6 +203,8 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
 fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyopaque {
     const wgsl_chain: *const types.WGPUShaderSourceWGSL = @ptrCast(@alignCast(chain));
     const wgsl = resolveStringView(wgsl_chain.code) orelse return null;
+
+    if (dev.backend == .vulkan) return createFromWGSLVulkan(dev, wgsl);
 
     // Translate WGSL → MSL.
     var msl_buf: [wgsl_compiler.MAX_OUTPUT]u8 = undefined;
@@ -230,6 +236,8 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyo
     sm.wg_x = wg.x;
     sm.wg_y = wg.y;
     sm.wg_z = wg.z;
+    // Retain WGSL source for re-translation with pipeline override constants.
+    sm.wgsl_source = alloc.dupe(u8, wgsl) catch null;
     // Extract binding metadata (non-fatal on failure).
     var bind_meta: [native.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
     const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch |bind_err| blk: {
@@ -245,6 +253,47 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyo
         std.log.warn("doe: createShaderModule: binding extraction failed ({s}); proceeding with 0 bindings", .{@errorName(bind_err)});
         break :blk 0;
     };
+    for (0..bind_count) |i| {
+        sm.bindings[i] = .{
+            .group = bind_meta[i].group,
+            .binding = bind_meta[i].binding,
+            .kind = @intFromEnum(bind_meta[i].kind),
+            .addr_space = @intFromEnum(bind_meta[i].addr_space),
+            .access = @intFromEnum(bind_meta[i].access),
+        };
+    }
+    sm.binding_count = @intCast(bind_count);
+    return toOpaque(sm);
+}
+
+// ============================================================
+// Vulkan WGSL path — WGSL → SPIR-V, no Metal library
+// ============================================================
+
+fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
+    _ = dev;
+    const sm = make(DoeShaderModule) orelse return null;
+    sm.* = .{};
+    sm.needs_sizes_buf = std.mem.indexOf(u8, wgsl, "arrayLength") != null;
+    const wg = native.extractWorkgroupSize(wgsl);
+    sm.wg_x = wg.x;
+    sm.wg_y = wg.y;
+    sm.wg_z = wg.z;
+    sm.binding_count = 0;
+
+    const vk_compute = @import("doe_vulkan_compute_native.zig");
+    vk_compute.vulkan_create_shader_module(sm, wgsl) catch |err| {
+        set_last_error_stage_name("native_shader_create");
+        set_last_error_kind(@errorName(err));
+        set_last_error_fmt("Vulkan WGSL→SPIR-V compilation failed: {s}", .{@errorName(err)});
+        std.log.err("doe: createShaderModule (Vulkan) failed: {s}", .{@errorName(err)});
+        alloc.destroy(sm);
+        return null;
+    };
+
+    // Extract binding metadata for getBindGroupLayout (non-fatal on failure).
+    var bind_meta: [native.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
+    const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch 0;
     for (0..bind_count) |i| {
         sm.bindings[i] = .{
             .group = bind_meta[i].group,
@@ -407,9 +456,11 @@ fn compileMslToLibrary(dev: *DoeDevice, msl_buf: [*]const u8, msl_len: usize, er
 
 pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeShaderModule, raw)) |sm| {
+        label_store.remove(raw);
         if (sm.mtl_library) |l| metal_bridge_release(l);
         if (sm.spirv_data) |s| alloc.free(s);
         if (sm.hlsl_source) |h| alloc.free(h);
+        if (sm.wgsl_source) |w| alloc.free(w);
         alloc.destroy(sm);
     }
 }
@@ -417,6 +468,104 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
 // ============================================================
 // Compute Pipeline
 // ============================================================
+
+fn createComputePipelineVulkan(sm: *DoeShaderModule) ?*anyopaque {
+    const cp = make(DoeComputePipeline) orelse return null;
+    cp.* = .{};
+    cp.wg_x = sm.wg_x;
+    cp.wg_y = sm.wg_y;
+    cp.wg_z = sm.wg_z;
+    cp.needs_sizes_buf = sm.needs_sizes_buf;
+    cp.binding_count = sm.binding_count;
+    for (0..sm.binding_count) |i| cp.bindings[i] = sm.bindings[i];
+
+    const vk_compute = @import("doe_vulkan_compute_native.zig");
+    vk_compute.vulkan_copy_pipeline_spirv(cp, sm) catch {
+        set_last_error_stage_name("native_compile");
+        set_last_error_kind("OutOfMemory");
+        set_last_error("Vulkan compute pipeline creation failed: OOM duplicating SPIR-V");
+        std.log.err("doe: createComputePipeline (Vulkan) failed: OOM duplicating SPIR-V", .{});
+        alloc.destroy(cp);
+        return null;
+    };
+    return toOpaque(cp);
+}
+
+// ============================================================
+// Override constants — re-translate WGSL with overrides applied
+// ============================================================
+
+const MAX_OVERRIDE_ENTRIES: usize = 64;
+
+/// Convert WGPUConstantEntry C ABI array to wgsl_ir.OverrideEntry slice for the compiler.
+/// Returns null if any key pointer is invalid.
+fn buildOverrideEntries(
+    constants: [*]const types.WGPUConstantEntry,
+    count: usize,
+    out: *[MAX_OVERRIDE_ENTRIES]wgsl_ir.OverrideEntry,
+) ?[]const wgsl_ir.OverrideEntry {
+    if (count > MAX_OVERRIDE_ENTRIES) return null;
+    for (0..count) |i| {
+        const c = constants[i];
+        const key_data = c.key.data orelse return null;
+        const key_len = if (c.key.length == types.WGPU_STRLEN)
+            std.mem.len(@as([*:0]const u8, @ptrCast(key_data)))
+        else
+            c.key.length;
+        out[i] = .{
+            .key = key_data[0..key_len],
+            .value = c.value,
+        };
+    }
+    return out[0..count];
+}
+
+/// Re-translate WGSL source with override constants applied, compile to MTLLibrary.
+/// Returns a new MTLLibrary handle (caller must release), or null on failure.
+fn recompileWithOverrides(
+    dev: *DoeDevice,
+    sm: *DoeShaderModule,
+    constants: [*]const types.WGPUConstantEntry,
+    count: usize,
+) ?*anyopaque {
+    const wgsl = sm.wgsl_source orelse {
+        set_last_error_stage_name("native_compile");
+        set_last_error_kind("OverrideConstantsUnavailable");
+        set_last_error("pipeline override constants require WGSL source (not pre-translated MSL/SPIR-V)");
+        return null;
+    };
+
+    var entries: [MAX_OVERRIDE_ENTRIES]wgsl_ir.OverrideEntry = undefined;
+    const override_slice = buildOverrideEntries(constants, count, &entries) orelse {
+        set_last_error_stage_name("native_compile");
+        set_last_error_kind("InvalidOverrideConstants");
+        set_last_error("pipeline override constants: invalid key pointer or too many entries");
+        return null;
+    };
+
+    var msl_buf: [wgsl_compiler.MAX_OUTPUT]u8 = undefined;
+    const msl_len = wgsl_compiler.translateToMslWithOverrides(
+        alloc,
+        wgsl,
+        &msl_buf,
+        override_slice.ptr,
+        override_slice.len,
+    ) catch |err| {
+        set_last_error_stage(wgsl_compiler.lastErrorStage());
+        set_last_error_kind(@errorName(err));
+        capture_wgsl_error_location();
+        const detail = wgsl_compiler.lastErrorMessage();
+        if (detail.len > 0) {
+            set_last_error_fmt("WGSL→MSL re-translation with overrides failed: {s}", .{detail});
+        } else {
+            set_last_error_fmt("WGSL→MSL re-translation with overrides failed: {s}", .{@errorName(err)});
+        }
+        return null;
+    };
+
+    var err_buf: [ERR_CAP]u8 = undefined;
+    return compileMslToLibrary(dev, &msl_buf, msl_len, &err_buf);
+}
 
 pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?*const types.WGPUComputePipelineDescriptor) callconv(.c) ?*anyopaque {
     clear_last_error();
@@ -431,6 +580,21 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
         return null;
     };
 
+    if (dev.backend == .vulkan) {
+        const result = createComputePipelineVulkan(sm);
+        if (result != null) label_store.set(result, d.label.data, d.label.length);
+        return result;
+    }
+
+    // If override constants are provided, re-translate the WGSL with overrides applied.
+    const has_overrides = d.compute.constantCount > 0 and d.compute.constants != null;
+    var override_lib: ?*anyopaque = null;
+    if (has_overrides) {
+        override_lib = recompileWithOverrides(dev, sm, d.compute.constants.?, d.compute.constantCount);
+        if (override_lib == null) return null;
+    }
+    const active_lib = override_lib orelse sm.mtl_library;
+
     // Map entry point name: WGSL "main" → MSL "main_kernel" (Metal forbids "main").
     const entry: [*:0]const u8 = blk: {
         if (d.compute.entryPoint.data) |ep_data| {
@@ -441,7 +605,8 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
         break :blk "main_kernel";
     };
 
-    const func = metal_bridge_library_new_function(sm.mtl_library, entry) orelse {
+    const func = metal_bridge_library_new_function(active_lib, entry) orelse {
+        if (override_lib) |ol| metal_bridge_release(ol);
         set_last_error_stage_name("native_compile");
         set_last_error_kind("EntryPointNotFound");
         set_last_error_fmt("compute pipeline creation failed: entry point '{s}' not found", .{std.mem.span(entry)});
@@ -452,6 +617,7 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
 
     var err_buf: [ERR_CAP]u8 = undefined;
     const pso = metal_bridge_device_new_compute_pipeline(dev.mtl_device, func, &err_buf, ERR_CAP) orelse {
+        if (override_lib) |ol| metal_bridge_release(ol);
         const err_msg = std.mem.sliceTo(&err_buf, 0);
         set_last_error_stage_name("native_compile");
         set_last_error_kind("ComputePipelineCreationFailed");
@@ -464,6 +630,9 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
         }
         return null;
     };
+
+    // Override library is no longer needed after PSO creation — release it.
+    if (override_lib) |ol| metal_bridge_release(ol);
 
     const cp = make(DoeComputePipeline) orelse {
         metal_bridge_release(pso);
@@ -478,12 +647,18 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     // Transfer binding metadata from shader module for getBindGroupLayout.
     cp.binding_count = sm.binding_count;
     for (0..sm.binding_count) |i| cp.bindings[i] = sm.bindings[i];
-    return toOpaque(cp);
+    const result = toOpaque(cp);
+    label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 pub export fn doeNativeComputePipelineRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeComputePipeline, raw)) |p| {
+        label_store.remove(raw);
         if (p.mtl_pso) |pso| metal_bridge_release(pso);
+        // Free Vulkan SPIR-V words if present (Vulkan path only; no-op on Metal).
+        const vk_compute = @import("doe_vulkan_compute_native.zig");
+        vk_compute.vulkan_release_compute_pipeline(p);
         alloc.destroy(p);
     }
 }

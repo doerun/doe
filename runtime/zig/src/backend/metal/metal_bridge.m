@@ -6,6 +6,7 @@
 #include "metal_bridge.h"
 #include <string.h>
 #include <sched.h>
+#include <mach/mach_time.h>
 #include <CommonCrypto/CommonDigest.h>
 
 // CFBridging provides correct ARC-safe transfer across the void* boundary.
@@ -1014,6 +1015,103 @@ void metal_bridge_cmd_buf_encode_blit_copy(
     [encoder endEncoding];
 }
 
+// ============================================================
+// clearBuffer / copyTextureToTexture / writeTexture
+// ============================================================
+
+void metal_bridge_cmd_buf_fill_buffer(
+    MetalHandle cmd_buf_h,
+    MetalHandle buffer_h,
+    uint64_t    offset,
+    uint64_t    size)
+{
+    if (cmd_buf_h == NULL || buffer_h == NULL || size == 0) return;
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLBuffer> buffer = (__bridge id<MTLBuffer>)buffer_h;
+    id<MTLBlitCommandEncoder> encoder = [cmd_buf blitCommandEncoder];
+    [encoder fillBuffer:buffer range:NSMakeRange((NSUInteger)offset, (NSUInteger)size) value:0];
+    [encoder endEncoding];
+}
+
+void metal_bridge_cmd_buf_copy_texture_to_texture(
+    MetalHandle cmd_buf_h,
+    MetalHandle src_texture_h,
+    uint32_t    src_mip,
+    uint32_t    src_slice,
+    uint32_t    src_x,
+    uint32_t    src_y,
+    uint32_t    src_z,
+    MetalHandle dst_texture_h,
+    uint32_t    dst_mip,
+    uint32_t    dst_slice,
+    uint32_t    dst_x,
+    uint32_t    dst_y,
+    uint32_t    dst_z,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_layers)
+{
+    if (cmd_buf_h == NULL || src_texture_h == NULL || dst_texture_h == NULL) return;
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLTexture> src = (__bridge id<MTLTexture>)src_texture_h;
+    id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
+    MTLSize copy_size = MTLSizeMake(
+        width  > 0 ? width  : 1,
+        height > 0 ? height : 1,
+        depth_or_layers > 0 ? depth_or_layers : 1);
+    id<MTLBlitCommandEncoder> encoder = [cmd_buf blitCommandEncoder];
+    [encoder copyFromTexture:src
+                 sourceSlice:(NSUInteger)src_slice
+                 sourceLevel:(NSUInteger)src_mip
+                sourceOrigin:MTLOriginMake(src_x, src_y, src_z)
+                  sourceSize:copy_size
+                   toTexture:dst
+            destinationSlice:(NSUInteger)dst_slice
+            destinationLevel:(NSUInteger)dst_mip
+           destinationOrigin:MTLOriginMake(dst_x, dst_y, dst_z)];
+    [encoder endEncoding];
+}
+
+int metal_bridge_texture_write_region(
+    MetalHandle  texture_h,
+    const void*  data,
+    uint32_t     bytes_per_row,
+    uint32_t     rows_per_image,
+    uint32_t     dst_x,
+    uint32_t     dst_y,
+    uint32_t     dst_z,
+    uint32_t     dst_mip,
+    uint32_t     dst_slice,
+    uint32_t     width,
+    uint32_t     height,
+    uint32_t     depth_or_layers)
+{
+    if (texture_h == NULL || data == NULL || width == 0 || height == 0) return 0;
+    id<MTLTexture> tex = (__bridge id<MTLTexture>)texture_h;
+    NSUInteger d = depth_or_layers > 0 ? depth_or_layers : 1;
+    MTLRegion region;
+    if (tex.textureType == MTLTextureType3D) {
+        region = MTLRegionMake3D(dst_x, dst_y, dst_z, width, height, d);
+        NSUInteger bpi = (NSUInteger)rows_per_image * (NSUInteger)bytes_per_row;
+        if (bpi == 0) bpi = (NSUInteger)height * (NSUInteger)bytes_per_row;
+        [tex replaceRegion:region
+               mipmapLevel:(NSUInteger)dst_mip
+                     slice:(NSUInteger)dst_slice
+                 withBytes:data
+               bytesPerRow:(NSUInteger)bytes_per_row
+             bytesPerImage:bpi];
+    } else {
+        region = MTLRegionMake2D(dst_x, dst_y, width, height);
+        [tex replaceRegion:region
+               mipmapLevel:(NSUInteger)dst_mip
+                     slice:(NSUInteger)dst_slice
+                 withBytes:data
+               bytesPerRow:(NSUInteger)bytes_per_row
+             bytesPerImage:0];
+    }
+    return 1;
+}
+
 void metal_bridge_cmd_buf_encode_compute_dispatch(
     MetalHandle  cmd_buf_h,
     MetalHandle  pipeline_h,
@@ -1706,6 +1804,33 @@ int metal_bridge_resolve_timestamps(
     }
 }
 
+int metal_bridge_resolve_timestamps_ns(
+    MetalHandle counter_buffer_h,
+    uint32_t    first_query,
+    uint32_t    query_count,
+    uint64_t*   dest_ptr)
+{
+    if (counter_buffer_h == NULL || dest_ptr == NULL || query_count == 0) return 0;
+    id<MTLCounterSampleBuffer> csb = (__bridge id<MTLCounterSampleBuffer>)counter_buffer_h;
+    @try {
+        NSData* data = [csb resolveCounterRange:NSMakeRange(first_query, query_count)];
+        if (data == nil) return 0;
+        // Each sample is a MTLCounterResultTimestamp struct: { uint64_t timestamp; }
+        const uint64_t* timestamps = (const uint64_t*)[data bytes];
+        NSUInteger available = [data length] / sizeof(uint64_t);
+        if (available < query_count) return 0;
+        // Convert from Mach absolute time ticks to nanoseconds.
+        mach_timebase_info_data_t info;
+        mach_timebase_info(&info);
+        for (uint32_t i = 0; i < query_count; i++) {
+            dest_ptr[i] = timestamps[i] * info.numer / info.denom;
+        }
+        return 1;
+    } @catch (NSException* exception) {
+        return 0;
+    }
+}
+
 void metal_bridge_destroy_counter_sample_buffer(MetalHandle counter_buffer_h) {
     if (counter_buffer_h == NULL) return;
     CFRelease(counter_buffer_h);
@@ -2108,6 +2233,52 @@ void metal_bridge_retain_device(MetalHandle device_h) {
     id<MTLDevice> dev = (__bridge_transfer id<MTLDevice>)device_h;
     // Re-transfer ownership back, incrementing retain count by one via CFBridgingRetain.
     (void)(__bridge_retained MetalHandle)dev;
+}
+
+// ============================================================
+// Adapter info string
+// ============================================================
+
+// Extract the GPU generation label (M1, M2, M3, M4) from an MTLDevice name.
+// Returns a pointer to a string literal — do not free.
+static const char* extract_apple_silicon_arch(const char* name) {
+    if (name == NULL) return "Apple Silicon";
+    if (strstr(name, "M4") != NULL) return "M4";
+    if (strstr(name, "M3") != NULL) return "M3";
+    if (strstr(name, "M2") != NULL) return "M2";
+    if (strstr(name, "M1") != NULL) return "M1";
+    return "Apple Silicon";
+}
+
+char* metal_bridge_adapter_get_info_string(MetalHandle device_h) {
+    if (device_h == NULL) return NULL;
+    id<MTLDevice> dev = (__bridge id<MTLDevice>)device_h;
+    const char* name = dev.name.UTF8String;
+    if (name == NULL) name = "";
+
+    const char* vendor = "Apple";
+    const char* arch   = extract_apple_silicon_arch(name);
+    const char* device_str = name;
+    const char* desc   = name;
+
+    size_t vendor_len  = strlen(vendor);
+    size_t arch_len    = strlen(arch);
+    size_t device_len  = strlen(device_str);
+    size_t desc_len    = strlen(desc);
+    // Four NUL-terminated strings packed consecutively.
+    size_t total = vendor_len + 1 + arch_len + 1 + device_len + 1 + desc_len + 1;
+    char* result = (char*)malloc(total);
+    if (result == NULL) return NULL;
+    char* p = result;
+    memcpy(p, vendor, vendor_len + 1);     p += vendor_len + 1;
+    memcpy(p, arch,   arch_len + 1);       p += arch_len + 1;
+    memcpy(p, device_str, device_len + 1); p += device_len + 1;
+    memcpy(p, desc,   desc_len + 1);
+    return result;
+}
+
+void metal_bridge_free_string(char* str) {
+    free(str);
 }
 
 // ============================================================

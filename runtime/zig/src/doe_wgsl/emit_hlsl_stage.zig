@@ -7,21 +7,37 @@ const CLIP_DISTANCE_RESULT_NAME = "_doe_clip_distance";
 pub fn emit_stage_function(self: anytype, function_index: ir.FunctionId) !void {
     const function = self.module.functions.items[function_index];
     const stage = function.stage orelse return error.InvalidIr;
-    if (stage == .compute or function.return_io == null) return error.InvalidIr;
-    for (function.params.items) |param| {
-        if (switch (self.module.types.get(param.ty)) {
-            .struct_ => true,
-            else => false,
-        }) return error.InvalidIr;
-    }
+    if (stage == .compute) return error.InvalidIr;
+    // Need either scalar return with IO attr, or struct return with IO fields.
+    if (function.return_io == null and !is_io_struct(self, function.return_type)) return error.InvalidIr;
 
-    if (function.return_io.?.builtin == .clip_distances) {
+    if (function.return_io != null and function.return_io.?.builtin == .clip_distances) {
         try emit_clip_distance_impl_function(self, function_index);
     } else {
         try emit_impl_function(self, function_index);
     }
     try emit_output_struct(self, function, stage);
     try emit_wrapper_function(self, function_index, stage);
+}
+
+fn is_io_struct(self: anytype, ty: ir.TypeId) bool {
+    return switch (self.module.types.get(ty)) {
+        .struct_ => |struct_id| {
+            const struct_def = self.module.structs.items[struct_id];
+            for (struct_def.fields.items) |field| {
+                if (field.io != null) return true;
+            }
+            return false;
+        },
+        else => false,
+    };
+}
+
+fn get_struct_def(self: anytype, ty: ir.TypeId) ?ir.StructDef {
+    return switch (self.module.types.get(ty)) {
+        .struct_ => |struct_id| self.module.structs.items[struct_id],
+        else => null,
+    };
 }
 
 fn emit_impl_function(self: anytype, function_index: ir.FunctionId) !void {
@@ -47,11 +63,34 @@ fn emit_output_struct(self: anytype, function: ir.Function, stage: ir.ShaderStag
     try self.write(function.name);
     try self.write("_stage_out {\n");
     self.indent += 4;
-    try self.write_indent();
-    try self.emit_typed_name(function.return_type, "value");
-    try self.write(" : ");
-    try write_output_semantic(self, stage, function.return_io.?);
-    try self.write(";\n");
+    if (function.return_io) |io| {
+        // Non-struct return: single output with semantic.
+        try self.write_indent();
+        if (io.builtin == .clip_distances) {
+            const arr_len = switch (self.module.types.get(function.return_type)) {
+                .array => |arr| arr.len orelse 8,
+                else => 8,
+            };
+            try self.write("float value [");
+            try self.write_u32(arr_len);
+            try self.write("] : SV_ClipDistance;\n");
+        } else {
+            try self.emit_typed_name(function.return_type, "value");
+            try self.write(" : ");
+            try write_output_semantic(self, stage, io);
+            try self.write(";\n");
+        }
+    } else if (get_struct_def(self, function.return_type)) |struct_def| {
+        // Struct return: each field gets its own semantic.
+        for (struct_def.fields.items) |field| {
+            const io = field.io orelse continue;
+            try self.write_indent();
+            try self.emit_typed_name(field.ty, field.name);
+            try self.write(" : ");
+            try write_output_semantic(self, stage, io);
+            try self.write(";\n");
+        }
+    }
     self.indent -= 4;
     try self.write("};\n");
 }
@@ -59,6 +98,8 @@ fn emit_output_struct(self: anytype, function: ir.Function, stage: ir.ShaderStag
 fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir.ShaderStage) !void {
     _ = stage;
     const function = self.module.functions.items[function_index];
+    const is_struct_return = function.return_io == null and get_struct_def(self, function.return_type) != null;
+
     try self.write("\n");
     try self.write(function.name);
     try self.write("_stage_out ");
@@ -69,30 +110,92 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
         if (param.io) |io_attr| {
             if (maps.hlsl_intrinsic_builtin(io_attr.builtin) != null) continue;
         }
-        if (!first_param) try self.write(", ");
-        try self.emit_typed_name(param.ty, param.name);
-        try self.write(" : ");
-        try write_input_semantic(self, param.io.?);
-        first_param = false;
+        if (get_struct_def(self, param.ty)) |struct_def| {
+            // Struct-typed input: flatten fields into individual semantic parameters.
+            for (struct_def.fields.items) |field| {
+                const io = field.io orelse continue;
+                if (maps.hlsl_intrinsic_builtin(io.builtin) != null) continue;
+                if (!first_param) try self.write(", ");
+                try self.emit_typed_name(field.ty, field.name);
+                try self.write(" : ");
+                try write_input_semantic(self, io);
+                first_param = false;
+            }
+        } else {
+            if (!first_param) try self.write(", ");
+            try self.emit_typed_name(param.ty, param.name);
+            try self.write(" : ");
+            try write_input_semantic(self, param.io.?);
+            first_param = false;
+        }
     }
     try self.write(") {\n");
     self.indent += 4;
+
+    // Reconstruct struct parameters from flattened fields.
+    for (function.params.items) |param| {
+        if (get_struct_def(self, param.ty)) |struct_def| {
+            try self.write_indent();
+            try self.emit_type_only(param.ty);
+            try self.write(" ");
+            try self.write(param.name);
+            try self.write(";\n");
+            for (struct_def.fields.items) |field| {
+                if (field.io == null) continue;
+                try self.write_indent();
+                try self.write(param.name);
+                try self.write(".");
+                try self.write(field.name);
+                try self.write(" = ");
+                if (maps.hlsl_intrinsic_builtin(field.io.?.builtin)) |intrinsic| {
+                    try self.write(intrinsic);
+                } else {
+                    try self.write(field.name);
+                }
+                try self.write(";\n");
+            }
+        }
+    }
+
     try self.write_indent();
     try self.write(function.name);
     try self.write("_stage_out out;\n");
-    try self.write_indent();
-    if (function.return_io.?.builtin == .clip_distances) {
+
+    if (function.return_io != null and function.return_io.?.builtin == .clip_distances) {
+        try self.write_indent();
         try self.write(function.name);
         try self.write("_impl(out.value, ");
         try emit_wrapper_args(self, function);
         try self.write(");\n");
+    } else if (is_struct_return) {
+        // Call impl, store result, then decompose struct fields to output.
+        try self.write_indent();
+        try self.emit_type_only(function.return_type);
+        try self.write(" _result = ");
+        try self.write(function.name);
+        try self.write("_impl(");
+        try emit_wrapper_args(self, function);
+        try self.write(");\n");
+        if (get_struct_def(self, function.return_type)) |struct_def| {
+            for (struct_def.fields.items) |field| {
+                if (field.io == null) continue;
+                try self.write_indent();
+                try self.write("out.");
+                try self.write(field.name);
+                try self.write(" = _result.");
+                try self.write(field.name);
+                try self.write(";\n");
+            }
+        }
     } else {
+        try self.write_indent();
         try self.write("out.value = ");
         try self.write(function.name);
         try self.write("_impl(");
         try emit_wrapper_args(self, function);
         try self.write(");\n");
     }
+
     try self.write_indent();
     try self.write("return out;\n");
     self.indent -= 4;

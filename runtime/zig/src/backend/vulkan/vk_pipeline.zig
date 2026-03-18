@@ -301,6 +301,21 @@ fn prepare_descriptor_sets(
                     .info_index = image_infos.items.len - 1,
                 });
             },
+            .sampler => {
+                const vk_sampler = self.samplers.get(binding.resource_handle) orelse return error.InvalidState;
+                try image_infos.append(self.allocator, .{
+                    .sampler = vk_sampler,
+                    .imageView = VK_NULL_U64,
+                    .imageLayout = 0,
+                });
+                try pending_writes.append(self.allocator, .{
+                    .set_index = binding.group,
+                    .binding = binding.binding,
+                    .descriptor_type = descriptor_type,
+                    .kind = .image,
+                    .info_index = image_infos.items.len - 1,
+                });
+            },
         }
     }
 
@@ -332,6 +347,7 @@ fn ensure_descriptor_pool(self: *Runtime, bindings: ?[]const model.KernelBinding
     var storage_count: u32 = 0;
     var sampled_image_count: u32 = 0;
     var storage_image_count: u32 = 0;
+    var sampler_count: u32 = 0;
     if (bindings) |bs| {
         for (bs) |binding| {
             switch (try descriptor_type_for_binding(binding)) {
@@ -339,12 +355,13 @@ fn ensure_descriptor_pool(self: *Runtime, bindings: ?[]const model.KernelBinding
                 c.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER => storage_count += 1,
                 c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE => sampled_image_count += 1,
                 c.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE => storage_image_count += 1,
+                c.VK_DESCRIPTOR_TYPE_SAMPLER => sampler_count += 1,
                 else => return error.UnsupportedFeature,
             }
         }
     }
 
-    var pool_sizes: [4]c.VkDescriptorPoolSize = undefined;
+    var pool_sizes: [5]c.VkDescriptorPoolSize = undefined;
     var pool_size_count: usize = 0;
     if (uniform_count > 0) {
         pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = uniform_count };
@@ -360,6 +377,10 @@ fn ensure_descriptor_pool(self: *Runtime, bindings: ?[]const model.KernelBinding
     }
     if (storage_image_count > 0) {
         pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .descriptorCount = storage_image_count };
+        pool_size_count += 1;
+    }
+    if (sampler_count > 0) {
+        pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_SAMPLER, .descriptorCount = sampler_count };
         pool_size_count += 1;
     }
 
@@ -401,6 +422,7 @@ pub fn descriptor_type_for_binding(binding: model.KernelBinding) !u32 {
         },
         .texture => c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
         .storage_texture => c.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        .sampler => c.VK_DESCRIPTOR_TYPE_SAMPLER,
     };
 }
 
@@ -414,7 +436,7 @@ pub fn validate_texture_binding(binding: model.KernelBinding, texture: vk_resour
         binding.texture_format != texture.format) return error.InvalidState;
 
     switch (binding.resource_kind) {
-        .buffer => return error.InvalidArgument,
+        .buffer, .sampler => return error.InvalidArgument,
         .texture => {
             if ((texture.usage & model.WGPUTextureUsage_TextureBinding) == 0) return error.InvalidState;
             switch (binding.texture_sample_type) {

@@ -601,6 +601,14 @@ async function probeRuntime(page) {
       adapterAvailable: false,
       adapterInfo: null,
       featureCount: 0,
+      webgpuCanvasApi: {
+        offscreenCanvasAvailable: false,
+        webgpuContextAvailable: false,
+        webgpuContextHasConfigure: false,
+        webgpuContextHasGetCurrentTexture: false,
+        preferredCanvasFormatSupported: false,
+        preferredCanvasFormat: null,
+      },
       errors: [],
     };
 
@@ -619,6 +627,26 @@ async function probeRuntime(page) {
       response.featureCount = Array.from(adapter.features).length;
       if ("info" in adapter) {
         response.adapterInfo = adapter.info;
+      }
+      response.webgpuCanvasApi.preferredCanvasFormatSupported =
+        typeof navigator.gpu.getPreferredCanvasFormat === "function";
+      if (response.webgpuCanvasApi.preferredCanvasFormatSupported) {
+        try {
+          response.webgpuCanvasApi.preferredCanvasFormat = navigator.gpu.getPreferredCanvasFormat();
+        } catch (error) {
+          response.errors.push(`getPreferredCanvasFormat failed: ${String(error)}`);
+        }
+      }
+      if (typeof OffscreenCanvas !== "undefined") {
+        response.webgpuCanvasApi.offscreenCanvasAvailable = true;
+        const canvas = new OffscreenCanvas(1, 1);
+        const context = canvas.getContext("webgpu");
+        response.webgpuCanvasApi.webgpuContextAvailable = Boolean(context);
+        if (context) {
+          response.webgpuCanvasApi.webgpuContextHasConfigure = typeof context.configure === "function";
+          response.webgpuCanvasApi.webgpuContextHasGetCurrentTexture =
+            typeof context.getCurrentTexture === "function";
+        }
       }
     } catch (error) {
       response.errors.push(String(error));

@@ -25,6 +25,13 @@ pub const Capability = enum {
     indexed_indirect_draw,
     render_pass,
     render_draw,
+    on_submitted_work_done,
+    device_limits,
+    device_features,
+    query_set,
+    depth_stencil,
+    texture_view,
+    descriptor_binding,
 };
 
 pub const CapabilitySet = struct {
@@ -130,5 +137,12 @@ pub fn capability_name(cap: Capability) []const u8 {
         .indexed_indirect_draw => "indexed_indirect_draw",
         .render_pass => "render_pass",
         .render_draw => "render_draw",
+        .on_submitted_work_done => "on_submitted_work_done",
+        .device_limits => "device_limits",
+        .device_features => "device_features",
+        .query_set => "query_set",
+        .depth_stencil => "depth_stencil",
+        .texture_view => "texture_view",
+        .descriptor_binding => "descriptor_binding",
     };
 }

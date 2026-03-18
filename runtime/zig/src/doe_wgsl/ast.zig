@@ -54,7 +54,7 @@ pub const NodeTag = enum(u8) {
     global_var,
 
     /// `override name: type = expr;`
-    /// main_token = `override`. data.lhs = type node (or 0), data.rhs = initializer node (or 0).
+    /// main_token = `override`. data.lhs = extra start (OverrideExtra), data.rhs = unused.
     override_decl,
 
     /// `const name: type = expr;` (module scope)
@@ -214,6 +214,15 @@ pub const GlobalVarExtra = struct {
     addr_space: u32, // token index for address space keyword, or 0
     access_mode: u32, // token index for access mode keyword, or 0
     initializer: u32, // node index, or NULL_NODE
+    attrs_start: u32,
+    attrs_len: u32,
+};
+
+/// Data stored per override_decl in extra_data.
+pub const OverrideExtra = struct {
+    name_token: u32,
+    type_node: u32,
+    init_node: u32,
     attrs_start: u32,
     attrs_len: u32,
 };

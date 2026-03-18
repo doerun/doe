@@ -142,6 +142,27 @@ void metal_render_state_set_depth_stencil_state(
     MetalHandle encoder,
     MetalHandle depth_stencil_state);
 
+// ============================================================
+// Debug group / marker dynamic state
+// ============================================================
+
+// Push a named debug group onto the render command encoder's debug stack.
+// label_len bytes are read from label (no NUL terminator required).
+void metal_render_state_push_debug_group(
+    MetalHandle encoder,
+    const char* label,
+    size_t      label_len);
+
+// Pop the most recently pushed debug group from the render command encoder.
+void metal_render_state_pop_debug_group(MetalHandle encoder);
+
+// Insert a single-point debug marker on the render command encoder.
+// label_len bytes are read from label (no NUL terminator required).
+void metal_render_state_insert_debug_marker(
+    MetalHandle encoder,
+    const char* label,
+    size_t      label_len);
+
 // Create a multisample render target texture.
 // Returns NULL on failure.
 MetalHandle metal_render_state_new_msaa_texture(

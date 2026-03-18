@@ -1,0 +1,154 @@
+const common_timing = @import("../common/timing.zig");
+const model = @import("../../model.zig");
+const bridge = @import("metal_bridge_decls.zig");
+
+const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
+const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
+const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
+const metal_bridge_encode_compute_dispatch_batch = bridge.metal_bridge_encode_compute_dispatch_batch;
+const metal_bridge_release = bridge.metal_bridge_release;
+
+pub const MAX_BINDING_SLOTS: usize = 32;
+
+pub const DispatchMetrics = struct {
+    setup_ns: u64,
+    encode_ns: u64,
+    submit_wait_ns: u64,
+    dispatch_count: u32,
+};
+
+pub const KernelDispatchResult = struct {
+    metrics: DispatchMetrics,
+    gpu_elapsed_ns: u64 = 0,
+    gpu_timestamps_attempted: bool = false,
+    gpu_timestamps_valid: bool = false,
+};
+
+pub fn run_kernel_dispatch(
+    runtime: anytype,
+    kernel: []const u8,
+    x: u32,
+    y: u32,
+    z: u32,
+    repeat: u32,
+    warmup: u32,
+    bindings: ?[]const model.KernelBinding,
+) !DispatchMetrics {
+    const result = try run_kernel_dispatch_timed(runtime, kernel, x, y, z, repeat, warmup, bindings, false);
+    return result.metrics;
+}
+
+pub fn run_kernel_dispatch_timed(
+    runtime: anytype,
+    kernel: []const u8,
+    x: u32,
+    y: u32,
+    z: u32,
+    repeat: u32,
+    warmup: u32,
+    bindings: ?[]const model.KernelBinding,
+    record_timestamps: bool,
+) !KernelDispatchResult {
+    // Setup: pipeline compile, buffer allocation, warmup dispatches.
+    const setup_start = common_timing.now_ns();
+    const pipeline = try runtime.ensure_kernel_pipeline(kernel);
+
+    var buf_slots: [MAX_BINDING_SLOTS]?*anyopaque = [_]?*anyopaque{null} ** MAX_BINDING_SLOTS;
+    var slot_count: u32 = 0;
+
+    if (bindings) |bs| {
+        for (bs) |b| {
+            if (b.resource_kind != .buffer) continue;
+            if (b.binding >= MAX_BINDING_SLOTS) continue;
+            buf_slots[b.binding] = try runtime.ensure_compute_buffer(b.resource_handle, b.buffer_size);
+            if (b.binding + 1 > slot_count) slot_count = @intCast(b.binding + 1);
+        }
+    }
+
+    const run_count: u32 = if (repeat == 0) 1 else repeat;
+    const buf_ptr: ?[*]?*anyopaque = if (slot_count > 0) &buf_slots else null;
+
+    if (warmup > 0) {
+        const wcb = metal_bridge_encode_compute_dispatch_batch(
+            runtime.queue,
+            pipeline,
+            buf_ptr,
+            slot_count,
+            x,
+            y,
+            z,
+            warmup,
+        ) orelse return error.InvalidState;
+        metal_bridge_command_buffer_commit(wcb);
+        metal_bridge_command_buffer_wait_completed(wcb);
+        metal_bridge_release(wcb);
+    }
+    const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
+
+    const want_ts = record_timestamps and runtime.timestamp_state.supported;
+
+    // Timed run: batch all repeat dispatches into one command buffer.
+    const t_enc_start = common_timing.now_ns();
+
+    const cmd_buf = if (want_ts) blk: {
+        // When recording GPU timestamps, create the command buffer
+        // manually so we can bracket the compute work with timestamp
+        // samples in the correct GPU timeline order.
+        const cb = metal_bridge_create_command_buffer(runtime.queue) orelse return error.InvalidState;
+        runtime.timestamp_state.record_begin(cb);
+        var i: u32 = 0;
+        while (i < run_count) : (i += 1) {
+            bridge.metal_bridge_cmd_buf_encode_compute_dispatch(
+                cb,
+                pipeline,
+                buf_ptr,
+                slot_count,
+                x,
+                y,
+                z,
+                0,
+                0,
+                0,
+            );
+        }
+        runtime.timestamp_state.record_end(cb);
+        break :blk cb;
+    } else blk: {
+        break :blk metal_bridge_encode_compute_dispatch_batch(
+            runtime.queue,
+            pipeline,
+            buf_ptr,
+            slot_count,
+            x,
+            y,
+            z,
+            run_count,
+        ) orelse return error.InvalidState;
+    };
+
+    const encode_ns = common_timing.ns_delta(common_timing.now_ns(), t_enc_start);
+
+    metal_bridge_command_buffer_commit(cmd_buf);
+    const t_sub_start = common_timing.now_ns();
+    metal_bridge_command_buffer_wait_completed(cmd_buf);
+    const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), t_sub_start);
+
+    var gpu_elapsed_ns: u64 = 0;
+    if (want_ts) {
+        gpu_elapsed_ns = runtime.timestamp_state.resolve_elapsed_ns();
+    }
+
+    metal_bridge_release(cmd_buf);
+
+    return .{
+        .metrics = .{
+            .setup_ns = setup_ns,
+            .encode_ns = encode_ns,
+            .submit_wait_ns = submit_wait_ns,
+            .dispatch_count = run_count,
+        },
+        .gpu_elapsed_ns = gpu_elapsed_ns,
+        .gpu_timestamps_attempted = want_ts,
+        .gpu_timestamps_valid = want_ts and gpu_elapsed_ns > 0,
+    };
+}

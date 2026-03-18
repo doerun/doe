@@ -217,3 +217,88 @@ Deferred for full Set 2:
 2. Dawn default behavior unchanged.
 3. Selector decision and fallback reason observable in artifacts/logging.
 4. At least one negative test path validated.
+
+## Edit Set 5: Browser API surface completion (`GPUCanvasContext`, `GPUExternalTexture`)
+
+## Candidate Files (apply in lane/src when mounted)
+
+### Canvas path
+
+1. `src/third_party/blink/renderer/modules/webgpu/gpu_canvas_context.idl`
+2. `src/third_party/blink/renderer/modules/webgpu/gpu_canvas_context.h`
+3. `src/third_party/blink/renderer/modules/webgpu/gpu_canvas_context.cc`
+4. `src/third_party/blink/renderer/modules/webgpu/html_canvas_element.cc` (if needed for canvas binding assertions)
+
+### Device/queue path
+
+1. `src/third_party/blink/renderer/modules/webgpu/gpu_device.idl`
+2. `src/third_party/blink/renderer/modules/webgpu/gpu_device.h`
+3. `src/third_party/blink/renderer/modules/webgpu/gpu_device.cc`
+4. `src/third_party/blink/renderer/modules/webgpu/gpu_queue.idl`
+5. `src/third_party/blink/renderer/modules/webgpu/gpu_queue.h`
+6. `src/third_party/blink/renderer/modules/webgpu/gpu_queue.cc`
+
+### External texture path
+
+1. `src/third_party/blink/renderer/modules/webgpu/gpu_external_texture.idl`
+2. `src/third_party/blink/renderer/modules/webgpu/gpu_external_texture.h`
+3. `src/third_party/blink/renderer/modules/webgpu/gpu_external_texture.cc`
+4. `src/third_party/blink/renderer/modules/webgpu/gpu_texture.h`
+5. `src/third_party/blink/renderer/modules/webgpu/gpu_texture.cc`
+
+## Candidate Areas
+
+1. Blink WebGPU API surface and canvas binding ownership.
+2. WebGPU device binding points that expose browser-facing device methods and queue methods.
+3. External-image transport path from browser resource objects to platform-native shared textures.
+4. Swapchain and context-lifecycle integration for presentation paths.
+
+## Patch Intention
+
+1. Make browser `navigator.gpu` canvas APIs deterministic under Fawn mode:
+   - preferred canvas format
+   - `getContext("webgpu")` flow
+   - queue/texture readback behavior used by presentation scenarios
+2. Make `GPUDevice.importExternalTexture` and `GPUDevice.copyExternalImageToTexture` explicit in browser mode:
+   - fully wired with platform image sources, or
+   - explicit unsupported behavior with the same typed reason path used by other seam failures.
+3. Keep all edits in browser Track A files only; do not change headless runtime package semantics.
+
+### Merge-ready behavior
+
+#### BrowserCanvasContext requirements for Fawn mode
+
+1. `navigator.gpu.getPreferredCanvasFormat()` returns a concrete format via the WebGPU runtime seam.
+2. `canvas.getContext("webgpu")` returns a non-null `GPUCanvasContext`.
+3. `GPUCanvasContext.configure` and `getCurrentTexture` are present and internally call into the active runtime proc-table.
+4. `GPUCanvasContext.unconfigure` and descriptor validation paths remain deterministic under both Dawn and Doe runtime selections.
+
+#### Device queue requirements for Fawn mode
+
+1. `GPUDevice.importExternalTexture`:
+   - either implemented for platform-supported image sources, or
+   - returns `OperationError` with typed unsupported reason consistent with fallback taxonomy.
+2. `GPUQueue.copyExternalImageToTexture` follows same determinism contract and telemetry format.
+3. `webgpu_playwright` smoke probes for both methods are required to run in both dawn/doe modes before merge.
+
+#### Test and gate requirements
+
+1. Add/extend Blink unit tests in `third_party/blink/renderer/modules/webgpu/*_test.cc` for both APIs.
+2. Update browser smoke/layered probes to assert:
+   - `webgpuCanvasApi.webgpuContextAvailable === true`
+   - `webgpuDeviceApi.hasImportExternalTexture === true` or explicit typed unsupported
+3. Add browser gate rule requiring no required-L1 regression for the two APIs before Track A claiming.
+
+### Readiness criteria
+
+1. Browser smoke/layered probes report:
+   - `offscreenCanvasAvailable === true`
+   - `webgpuContextAvailable === true`
+2. `importExternalTexture`/`copyExternalImageToTexture` either both behave deterministically or emit typed unsupported with traceable telemetry.
+3. Regression checks confirm no hidden runtime switching introduced by this API layer.
+
+### Status (2026-03-17, merge-ready queue)
+
+1. Runtime probes were instrumented at browser harness level.
+2. Chromium checkout touchpoint edits are still pending until lane source is mounted.
+3. This edit set now has explicit implementation targets and gate requirements in Blink API surface files.

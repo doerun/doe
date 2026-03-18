@@ -221,12 +221,11 @@ pub fn parseGlobalVar(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 
 }
 
 pub fn parseOverrideDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 {
-    _ = attrs;
     const main_token = self.token_idx;
     self.advance(); // consume `override`
 
-    // skip name
-    self.advance();
+    const name_token = self.token_idx;
+    self.advance(); // consume name
 
     var type_node: u32 = NULL_NODE;
     if (self.peekTag() == .@":") {
@@ -242,10 +241,18 @@ pub fn parseOverrideDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u
 
     self.skipSemicolon();
 
+    const extra_start = try self.tree.addExtraSlice(&.{
+        name_token,
+        type_node,
+        init_node,
+        attrs.start,
+        attrs.len,
+    });
+
     return self.tree.addNode(.{
         .tag = .override_decl,
         .main_token = main_token,
-        .data = .{ .lhs = type_node, .rhs = init_node },
+        .data = .{ .lhs = extra_start, .rhs = 0 },
     });
 }
 

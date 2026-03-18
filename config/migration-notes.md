@@ -1,6 +1,95 @@
 # Config Migration Notes
 
+## 2026-03-17
+
+### Lean-verified bounds check elimination (Layer 2)
+
+- `config/proof-artifact.schema.json`: added `boundsEliminations` array to schema
+  (required field). Each entry maps a Lean theorem to an index access pattern,
+  precondition, and target runtime path for clamp elision.
+- `pipeline/lean/artifacts/proven-conditions.json`: added five shader bounds
+  theorems (`gid_component_lt_total`, `gid_inbounds_when_dispatch_fits`,
+  `clamp_noop_when_inbounds`, `gid_2d_inbounds`, `flat_index_2d_inbounds`) to
+  `theorems` array; added `boundsEliminations` array with two entries
+  (1D gid access, 2D flat index).
+- `runtime/zig/src/lean_proof.zig`: exposes `bounds_elimination_available` (bool,
+  comptime) and `boundsProven(pattern)` query; validates `boundsEliminations`
+  section presence when shader bounds theorems are listed.
+- `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig`: imports `lean_proof`,
+  exposes `ELISION_ENABLED`, `DispatchPrecondition`, `TransformResult`,
+  `applyWithResult()`. Pattern recognizer (`classify_gid_component`,
+  `resolve_storage_binding`) identifies `buf[gid.{x,y,z}]` on storage buffers
+  and skips `min()` clamp when proofs are available. Dispatch preconditions
+  recorded for host-side enforcement.
+- `runtime/zig/src/doe_wgsl/ir_transform_robustness_test.zig`: two new tests
+  (`gid pattern on storage buffer behavior`, `non-gid index still gets clamped`).
+- No runtime behavioral change for default builds (`-Dlean-verified` defaults to
+  false). Clamp elision activates only with `-Dlean-verified=true` and a valid
+  proof artifact.
+
+### Vulkan GPU fence/sync and streaming copy
+
+- New `vk_sync.zig` module adds `FencePool` (4-slot ring) and `TimelineSemaphore` to the Vulkan backend.
+- Deferred queue submissions now signal a pool fence instead of `VK_NULL_HANDLE`, enabling `FencePool.drain()` to wait per-submission without `vkQueueWaitIdle`.
+- `flush_queue` in `vk_upload.zig` uses `FencePool.drain()` when available; `vkQueueWaitIdle` retained as fallback only when fence pool is not initialized.
+- Timeline semaphore support (`VK_KHR_timeline_semaphore`) detected at device bootstrap via `vkGetPhysicalDeviceFeatures2`; timeline semaphore created when supported. Available for future monotonic GPU->CPU signaling.
+- Streaming copy command buffer (`begin_streaming_copy`, `streaming_copy_buffer_to_buffer`, `flush_streaming_copy`) enables batched blit/copy recording into a dedicated command buffer, submitted with fence-pool tracking.
+- No config schema changes; runtime-only addition.
+- Status table updated: Vulkan GPU fence/sync `○` -> `●`, Blit/copy batch/streaming `○` -> `●`.
+
+### spirv-val wired into routine build/test flow
+
+- `bench/spirv_val_gate.py` validates SPIR-V artifacts with `spirv-val`.
+  Scans `bench/kernels/`, `bench/out/`, and `runtime/zig/zig-out/` for
+  `.spv` files (excluding `bench/vendor/`). Skips gracefully when
+  `spirv-val` is not installed; fails with `--require`.
+- `runtime/zig/build.zig` exposes `zig build spirv-val` step.
+- `bench/run_blocking_gates.py` accepts `--with-spirv-val-gate`,
+  `--spirv-val-require`, and `--spirv-val-compile` flags.
+- No schema changes; `config/shader-toolchain.json` already modeled
+  `spirv_validate` as an optional external-tool stage for `doe_vulkan`.
+
+### Shader artifact manifest emitters adopt schemaVersion 2
+
+- Metal and D3D12 backend manifest emitters now emit `schemaVersion=2` manifests
+  conforming to `config/shader-artifact.schema.json` v2 definitions
+  (`v2MetalManifest`, `v2D3D12Manifest`).
+- Previously Metal and D3D12 emitted an ad-hoc format with no `schemaVersion`,
+  `irSha256`, backend-specific artifact hashes, or stage attestation array.
+- New emitter modules:
+  - `runtime/zig/src/backend/metal/artifact_emit.zig`
+  - `runtime/zig/src/backend/d3d12/artifact_emit.zig`
+- Both follow the same pattern as `runtime/zig/src/backend/vulkan/artifact_emit.zig`
+  (which already emitted v2).
+- Metal manifests now include: `irSha256`, `mslSha256`, `metallibSha256`,
+  `toolchainSha256`, `pipelineHash`, `taxonomyCode`, `stages` array with
+  `wgsl_parse`, `sema`, `ir_build`, `ir_validate`, `ir_to_msl`, `msl_compile`,
+  `metallib_link` route attestations.
+- D3D12 manifests now include: `irSha256`, `dxilSha256`, `toolchainSha256`,
+  `pipelineHash`, `taxonomyCode`, `stages` array with `wgsl_parse`, `sema`,
+  `ir_build`, `ir_validate`, `ir_to_dxil`, `dxil_validate` route attestations.
+- `runtime/zig/src/backend/metal/mod.zig` and `runtime/zig/src/backend/d3d12/mod.zig`
+  now delegate manifest emission to their respective `artifact_emit.zig` modules.
+- `docs/status.md` updated to reflect that strict native-route enforcement can now
+  be enabled universally.
+
 ## 2026-03-10
+
+### WebGPU backend checklist reconciliation
+
+- Reconciled `config/webgpu-spec-index.json` against the current backend/runtime
+  state in `docs/status.md`.
+- D3D12 checklist notes were promoted out of the stale "first compute-first
+  Windows subset" wording for surfaces now backed by the real Windows runtime:
+  limits/features, render pipeline/pass/draw, query sets, descriptor bindings,
+  texture lifecycle, `dispatchWorkgroupsIndirect`, and `onSubmittedWorkDone`.
+- Conservative member-level promotions were applied where source-backed D3D12
+  support now exists but fresh Windows evidence is still thin, including
+  `createPipelineLayout`, `createRenderBundleEncoder`, render-bundle finish /
+  execute, occlusion-query hooks, and render-pass state controls.
+- Vulkan checklist/docs were softened from "absent" to "Linux-only / in
+  progress" for resource/render cells that now have real native backend code,
+  while still leaving broad graphics/resource closure as open work.
 
 ### AMD Vulkan and Apple Metal lane naming cutover
 
@@ -854,6 +943,32 @@
   - `blocked=0`
   - `tracked=0`
   - `planned=0`
+
+### `webgpu-spec-index` backend checklist schema
+
+- Updated `config/webgpu-spec-index.schema.json` from schema version `1` to `3`.
+- `config/webgpu-spec-index.json` remains generated from the official `@webgpu/types` API surface, but now also carries the canonical per-backend checklist layer for `metal`, `vulkan`, `d3d12`, and `browser`.
+- Added root-level checklist metadata:
+  - `checklist.backends`
+  - `checklist.implementationStatusVocabulary`
+  - `checklist.correctnessStatusVocabulary`
+  - `checklist.performanceStatusVocabulary`
+  - `checklist.defaultImplementationStatus`
+  - `checklist.defaultCorrectnessStatus`
+  - `checklist.defaultPerformanceStatus`
+  - `checklist.notes`
+- Added per-entry backend checklist objects to:
+  - every interface
+  - every interface member
+  - every string union
+  - every string-union value
+- Each backend checklist object now carries distinct evidence lanes:
+  - `implementation`
+  - `correctness`
+  - `performance`
+- Initial checklist state defaults each evidence lane to `unreviewed` until an audited status plus `sourceRefs` are attached.
+- Generator preservation contract:
+  - `bench/generate_webgpu_spec_index.py` now preserves existing checklist annotations across regeneration from `@webgpu/types` by matching interface names, member keys, string-union names, and string-union value names.
 
 ### Dawn autodiscovery map coverage for extended comparable matrix
 

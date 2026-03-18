@@ -12,16 +12,14 @@ const artifact_meta = @import("../common/artifact_meta.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
 const artifact_state = @import("../common/artifact_state.zig");
 const hash_utils = @import("../common/hash_utils.zig");
+const artifact_emit = @import("artifact_emit.zig");
 const native_runtime = @import("metal_native_runtime.zig");
 
-const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
-const MANIFEST_CONTENT_CAPACITY: usize = 2048;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
 const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
-const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
@@ -139,29 +137,15 @@ pub const ZigMetalBackend = struct {
     }
 
     fn manifest_path(self: *const ZigMetalBackend) ?[]const u8 {
-        if (self.manifest_path_len == 0) return null;
-        return self.manifest_path_storage[0..self.manifest_path_len];
+        return artifact_emit.manifest_path(self);
     }
 
     fn manifest_hash(self: *const ZigMetalBackend) ?[]const u8 {
-        if (self.manifest_hash_len == 0) return null;
-        return self.manifest_hash_storage[0..self.manifest_hash_len];
-    }
-
-    fn previous_manifest_hash(self: *const ZigMetalBackend) []const u8 {
-        return self.manifest_hash() orelse ZERO_HASH;
+        return artifact_emit.manifest_hash(self);
     }
 
     fn flush_pending_artifact(self: *ZigMetalBackend) void {
-        if (!self.pending_artifact_write) return;
-        self.pending_artifact_write = false;
-        const status_code = self.pending_artifact_status_storage[0..self.pending_artifact_status_len];
-        if (manifest_signature_matches(self, self.pending_artifact_module, self.pending_artifact_meta, status_code)) return;
-        self.emit_shader_artifact_manifest_for_signature(
-            self.pending_artifact_module,
-            self.pending_artifact_meta,
-            status_code,
-        ) catch {};
+        artifact_emit.flush_pending_artifact(self);
     }
 
     fn emit_shader_artifact_manifest_for_signature(
@@ -170,49 +154,7 @@ pub const ZigMetalBackend = struct {
         meta: artifact_meta.ArtifactMeta,
         status_code: []const u8,
     ) common_errors.BackendNativeError!void {
-        self.manifest_emit_count +|= 1;
-
-        var path_buffer: [MANIFEST_PATH_CAPACITY]u8 = undefined;
-        const path = std.fmt.bufPrint(
-            &path_buffer,
-            "{s}/metal_shader_artifact_{d}.json",
-            .{ SHADER_ARTIFACT_DIR, self.manifest_emit_count },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        var content_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
-        const content = std.fmt.bufPrint(
-            &content_buffer,
-            "{{\"backendId\":\"doe_metal\",\"backendKind\":\"{s}\",\"timingSource\":\"{s}\",\"comparability\":\"{s}\",\"claimable\":{},\"module\":\"{s}\",\"statusCode\":\"{s}\",\"previousManifestHash\":\"{s}\"}}\n",
-            .{
-                meta.backend_kind.name(),
-                meta.timing_source.name(),
-                meta.comparability.name(),
-                meta.is_claimable(),
-                module,
-                status_code,
-                self.previous_manifest_hash(),
-            },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        const hash = hash_utils.sha256_hex(content);
-
-        std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-        const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-        defer file.close();
-        file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        artifact_state.persist_value(self.manifest_path_storage[0..], &self.manifest_path_len, path);
-        artifact_state.persist_value(self.manifest_hash_storage[0..], &self.manifest_hash_len, hash[0..]);
-        artifact_state.persist_manifest_signature(
-            &self.last_manifest_meta,
-            self.last_manifest_module_storage[0..],
-            &self.last_manifest_module_len,
-            self.last_manifest_status_storage[0..],
-            &self.last_manifest_status_len,
-            module,
-            meta,
-            status_code,
-        );
+        return artifact_emit.emit_shader_artifact_manifest_for_signature(self, module, meta, status_code);
     }
 };
 
@@ -220,6 +162,7 @@ fn native_capability_set() capabilities.CapabilitySet {
     var set = capabilities.CapabilitySet{};
     set.declare_all(&.{
         .compute_dispatch,
+        .compute_dispatch_indirect,
         .buffer_upload,
         .buffer_copy,
         .barrier_sync,
@@ -239,6 +182,9 @@ fn native_capability_set() capabilities.CapabilitySet {
         .async_resource_table_immediates,
         .async_lifecycle_refcount,
         .async_pixel_local_storage,
+        .map_async,
+        .gpu_timestamps,
+        .timestamp_inside_passes,
     });
     return set;
 }
@@ -311,8 +257,20 @@ fn ok_result(setup_ns: u64, encode_ns: u64, submit_wait_ns: u64, dispatch_count:
     };
 }
 
+fn gpu_timestamps_wanted(self: *const ZigMetalBackend) bool {
+    return self.gpu_timestamp_mode != .off;
+}
+
+fn check_timestamp_requirement(self: *ZigMetalBackend) !void {
+    if (self.gpu_timestamp_mode != .require) return;
+    const rt = get_runtime(self);
+    if (!rt.gpu_timestamps_supported()) return error.UnsupportedFeature;
+}
+
 fn execute_upload(self: *ZigMetalBackend, upload: model.UploadCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
+
+    if (gpu_timestamps_wanted(self)) rt.activate_gpu_timestamps() catch {};
 
     const setup_start = common_timing.now_ns();
     try rt.upload_bytes(@as(u64, @intCast(upload.bytes)), self.upload_buffer_usage_mode);
@@ -321,16 +279,30 @@ fn execute_upload(self: *ZigMetalBackend, upload: model.UploadCommand) !webgpu.N
     self.pending_upload_commands +|= 1;
 
     var submit_wait_ns: u64 = 0;
+    var gpu_ts_ns: u64 = 0;
+    var gpu_ts_attempted = false;
+    var gpu_ts_valid = false;
     if (self.queue_sync_mode == .per_command and self.pending_upload_commands >= self.upload_submit_every) {
-        submit_wait_ns = try rt.flush_queue();
+        const flush = try rt.flush_queue_timed();
+        submit_wait_ns = flush.submit_wait_ns;
+        gpu_ts_ns = flush.gpu_elapsed_ns;
+        gpu_ts_attempted = flush.gpu_timestamps_attempted;
+        gpu_ts_valid = flush.gpu_timestamps_valid;
         self.pending_upload_commands = 0;
     }
 
-    return ok_result(setup_ns, 0, submit_wait_ns, 0);
+    var r = ok_result(setup_ns, 0, submit_wait_ns, 0);
+    r.gpu_timestamp_ns = gpu_ts_ns;
+    r.gpu_timestamp_attempted = gpu_ts_attempted;
+    r.gpu_timestamp_valid = gpu_ts_valid;
+    return r;
 }
 
 fn execute_barrier(self: *ZigMetalBackend) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
+    // barrier is a control operation, not a GPU workload — no timestamp
+    // activation. Any pending streaming timestamps are flushed by barrier's
+    // internal flush_queue call (timestamps resolve on that commit cycle).
     const submit_wait_ns = try rt.barrier(self.queue_wait_mode, self.queue_sync_mode);
     return ok_result(0, 0, submit_wait_ns, 0);
 }
@@ -343,7 +315,8 @@ fn execute_dispatch(self: *ZigMetalBackend, dispatch: model.DispatchCommand) !we
 
 fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
-    const metrics = try rt.run_kernel_dispatch(
+    const want_ts = gpu_timestamps_wanted(self);
+    const result = try rt.run_kernel_dispatch_timed(
         kd.kernel,
         kd.x,
         kd.y,
@@ -351,14 +324,24 @@ fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchComma
         kd.repeat,
         kd.warmup_dispatch_count,
         kd.bindings,
+        want_ts,
     );
-    return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
+    var r = ok_result(result.metrics.setup_ns, result.metrics.encode_ns, result.metrics.submit_wait_ns, result.metrics.dispatch_count);
+    r.gpu_timestamp_ns = result.gpu_elapsed_ns;
+    r.gpu_timestamp_attempted = result.gpu_timestamps_attempted;
+    r.gpu_timestamp_valid = result.gpu_timestamps_valid;
+    return r;
 }
 
 fn execute_copy(self: *ZigMetalBackend, cmd: model.CopyCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
+    if (gpu_timestamps_wanted(self)) rt.activate_gpu_timestamps() catch {};
     const metrics = try rt.copy_command(cmd, self.queue_sync_mode);
-    return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, 0);
+    var r = ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, 0);
+    r.gpu_timestamp_ns = metrics.gpu_elapsed_ns;
+    r.gpu_timestamp_attempted = metrics.gpu_timestamps_attempted;
+    r.gpu_timestamp_valid = metrics.gpu_timestamps_valid;
+    return r;
 }
 
 fn execute_sampler_create(self: *ZigMetalBackend, cmd: model.SamplerCreateCommand) !webgpu.NativeExecutionResult {
@@ -446,8 +429,13 @@ fn execute_surface_release(self: *ZigMetalBackend, cmd: model.SurfaceReleaseComm
 
 fn execute_render_draw(self: *ZigMetalBackend, cmd: model.RenderDrawCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
+    if (gpu_timestamps_wanted(self)) rt.activate_gpu_timestamps() catch {};
     const metrics = try rt.render_draw(cmd, self.queue_sync_mode);
-    return ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.draw_count);
+    var r = ok_result(metrics.setup_ns, metrics.encode_ns, metrics.submit_wait_ns, metrics.draw_count);
+    r.gpu_timestamp_ns = metrics.gpu_elapsed_ns;
+    r.gpu_timestamp_attempted = metrics.gpu_timestamps_attempted;
+    r.gpu_timestamp_valid = metrics.gpu_timestamps_valid;
+    return r;
 }
 
 fn execute_async_diagnostics(self: *ZigMetalBackend, cmd: model.AsyncDiagnosticsCommand) !webgpu.NativeExecutionResult {
@@ -494,6 +482,10 @@ fn flush_pending_uploads_if_required(self: *ZigMetalBackend, command: model.Comm
 }
 
 fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgpu.NativeExecutionResult {
+    // Fail fast when gpu_timestamp_mode=require but the device does not
+    // support MTLCounterSamplingPointAtStageBoundary.
+    try check_timestamp_requirement(self);
+
     const requirements = command_requirements.requirements(command);
     if (self.capability_set.missing(requirements.required_capabilities)) |missing_cap| {
         return .{
@@ -516,6 +508,8 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
         .copy_buffer_to_texture => |copy| try execute_copy(self, copy),
         .barrier => try execute_barrier(self),
         .dispatch => |dispatch| try execute_dispatch(self, dispatch),
+        // TODO: implement Metal indirect dispatch via dispatchThreadgroupsWithIndirectBuffer:.
+        .dispatch_indirect => return error.Unsupported,
         .kernel_dispatch => |kd| try execute_kernel_dispatch(self, kd),
         .sampler_create => |cmd| try execute_sampler_create(self, cmd),
         .sampler_destroy => |cmd| try execute_sampler_destroy(self, cmd),
@@ -534,7 +528,8 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
         .draw_indexed_indirect => |cmd| try execute_render_draw(self, cmd),
         .render_pass => |cmd| try execute_render_draw(self, cmd),
         .async_diagnostics => |cmd| try execute_async_diagnostics(self, cmd),
-        else => return error.Unsupported,
+        // TODO: implement Metal map_async via synchronous MTLBuffer contents access.
+        .map_async => return error.Unsupported,
     };
     result.setup_ns +|= flush_setup_ns;
     result.submit_wait_ns +|= pending_submit_wait_ns;

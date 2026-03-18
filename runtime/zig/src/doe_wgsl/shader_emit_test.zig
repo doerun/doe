@@ -722,6 +722,226 @@ test "fragment emitter: location-decorated scalar input gets [[user(locN)]]" {
 }
 
 // ============================================================
+// emit_msl_shared: min/max/clamp type coercion
+// ============================================================
+
+test "shared: min with mismatched types emits cast to result type" {
+    var module = make_module_with_types();
+    defer module.deinit();
+
+    const f32_type = try module.types.intern(.{ .scalar = .f32 });
+    const i32_type = try module.types.intern(.{ .scalar = .i32 });
+
+    var function = ir.Function{
+        .name = try ir.dup_string(allocator, "test_fn"),
+        .return_type = try module.types.intern(.{ .scalar = .void }),
+        .stage = null,
+    };
+    defer cleanup_function(&function);
+
+    // Build: min(param_i32, literal_f32) -> f32
+    // arg0 is i32 param, arg1 is f32 literal. Result type is f32.
+    try function.params.append(allocator, .{
+        .name = try ir.dup_string(allocator, "x"),
+        .ty = i32_type,
+        .io = null,
+    });
+    const arg0 = try function.append_expr(allocator, .{
+        .ty = i32_type,
+        .category = .value,
+        .data = .{ .param_ref = 0 },
+    });
+    const arg1 = try function.append_expr(allocator, .{
+        .ty = f32_type,
+        .category = .value,
+        .data = .{ .float_lit = 1.0 },
+    });
+    const args_range = try function.append_expr_args(allocator, &.{ arg0, arg1 });
+    const call_expr = try function.append_expr(allocator, .{
+        .ty = f32_type,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "min"),
+            .kind = .builtin,
+            .args = args_range,
+        } },
+    });
+
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try emit_msl_shared.write_expr(&module, function, call_expr, &buf, &pos);
+    const result = output_str(&buf, pos);
+
+    // arg0 (i32) should be cast to float; arg1 (f32) matches, no cast needed.
+    try testing.expect(std.mem.indexOf(u8, result, "min(float(x), ") != null);
+    // Verify the cast wrapped arg0 but not arg1 (which already has the correct type).
+    try testing.expect(std.mem.indexOf(u8, result, "float(1)") == null);
+}
+
+test "shared: max with matching types emits no casts" {
+    var module = make_module_with_types();
+    defer module.deinit();
+
+    const f32_type = try module.types.intern(.{ .scalar = .f32 });
+
+    var function = ir.Function{
+        .name = try ir.dup_string(allocator, "test_fn"),
+        .return_type = try module.types.intern(.{ .scalar = .void }),
+        .stage = null,
+    };
+    defer cleanup_function(&function);
+
+    try function.params.append(allocator, .{
+        .name = try ir.dup_string(allocator, "a"),
+        .ty = f32_type,
+        .io = null,
+    });
+    try function.params.append(allocator, .{
+        .name = try ir.dup_string(allocator, "b"),
+        .ty = f32_type,
+        .io = null,
+    });
+    const arg0 = try function.append_expr(allocator, .{
+        .ty = f32_type,
+        .category = .value,
+        .data = .{ .param_ref = 0 },
+    });
+    const arg1 = try function.append_expr(allocator, .{
+        .ty = f32_type,
+        .category = .value,
+        .data = .{ .param_ref = 1 },
+    });
+    const args_range = try function.append_expr_args(allocator, &.{ arg0, arg1 });
+    const call_expr = try function.append_expr(allocator, .{
+        .ty = f32_type,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "max"),
+            .kind = .builtin,
+            .args = args_range,
+        } },
+    });
+
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try emit_msl_shared.write_expr(&module, function, call_expr, &buf, &pos);
+    const result = output_str(&buf, pos);
+
+    // Both args match result type, no casts needed.
+    try testing.expectEqualStrings("max(a, b)", result);
+}
+
+test "shared: clamp with abstract_int args emits casts to concrete type" {
+    var module = make_module_with_types();
+    defer module.deinit();
+
+    const u32_type = try module.types.intern(.{ .scalar = .u32 });
+    const abstract_int_type = try module.types.intern(.{ .scalar = .abstract_int });
+
+    var function = ir.Function{
+        .name = try ir.dup_string(allocator, "test_fn"),
+        .return_type = try module.types.intern(.{ .scalar = .void }),
+        .stage = null,
+    };
+    defer cleanup_function(&function);
+
+    try function.params.append(allocator, .{
+        .name = try ir.dup_string(allocator, "v"),
+        .ty = u32_type,
+        .io = null,
+    });
+    const arg0 = try function.append_expr(allocator, .{
+        .ty = u32_type,
+        .category = .value,
+        .data = .{ .param_ref = 0 },
+    });
+    const arg1 = try function.append_expr(allocator, .{
+        .ty = abstract_int_type,
+        .category = .value,
+        .data = .{ .int_lit = 0 },
+    });
+    const arg2 = try function.append_expr(allocator, .{
+        .ty = abstract_int_type,
+        .category = .value,
+        .data = .{ .int_lit = 255 },
+    });
+    const args_range = try function.append_expr_args(allocator, &.{ arg0, arg1, arg2 });
+    const call_expr = try function.append_expr(allocator, .{
+        .ty = u32_type,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "clamp"),
+            .kind = .builtin,
+            .args = args_range,
+        } },
+    });
+
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try emit_msl_shared.write_expr(&module, function, call_expr, &buf, &pos);
+    const result = output_str(&buf, pos);
+
+    // arg0 matches u32, no cast. arg1 and arg2 are abstract_int, should be cast to uint.
+    try testing.expect(std.mem.indexOf(u8, result, "clamp(v, uint(0), uint(255))") != null);
+}
+
+test "shared: min with vec types emits vector cast" {
+    var module = make_module_with_types();
+    defer module.deinit();
+
+    const f32_type = try module.types.intern(.{ .scalar = .f32 });
+    const i32_type = try module.types.intern(.{ .scalar = .i32 });
+    const vec3f_type = try module.types.intern(.{ .vector = .{ .elem = f32_type, .len = 3 } });
+    const vec3i_type = try module.types.intern(.{ .vector = .{ .elem = i32_type, .len = 3 } });
+
+    var function = ir.Function{
+        .name = try ir.dup_string(allocator, "test_fn"),
+        .return_type = try module.types.intern(.{ .scalar = .void }),
+        .stage = null,
+    };
+    defer cleanup_function(&function);
+
+    try function.params.append(allocator, .{
+        .name = try ir.dup_string(allocator, "a"),
+        .ty = vec3f_type,
+        .io = null,
+    });
+    try function.params.append(allocator, .{
+        .name = try ir.dup_string(allocator, "b"),
+        .ty = vec3i_type,
+        .io = null,
+    });
+    const arg0 = try function.append_expr(allocator, .{
+        .ty = vec3f_type,
+        .category = .value,
+        .data = .{ .param_ref = 0 },
+    });
+    const arg1 = try function.append_expr(allocator, .{
+        .ty = vec3i_type,
+        .category = .value,
+        .data = .{ .param_ref = 1 },
+    });
+    const args_range = try function.append_expr_args(allocator, &.{ arg0, arg1 });
+    const call_expr = try function.append_expr(allocator, .{
+        .ty = vec3f_type,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "min"),
+            .kind = .builtin,
+            .args = args_range,
+        } },
+    });
+
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try emit_msl_shared.write_expr(&module, function, call_expr, &buf, &pos);
+    const result = output_str(&buf, pos);
+
+    // arg0 matches float3, no cast. arg1 is int3, should be cast to float3.
+    try testing.expect(std.mem.indexOf(u8, result, "min(a, float3(b))") != null);
+}
+
+// ============================================================
 // emit_msl_shared function name helpers
 // ============================================================
 

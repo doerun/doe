@@ -34,6 +34,7 @@ pub const VkImage = vk.VkImage;
 pub const VkImageView = vk.VkImageView;
 pub const VkRenderPass = vk.VkRenderPass;
 pub const VkFramebuffer = vk.VkFramebuffer;
+pub const VkSemaphore = vk.VkSemaphore;
 pub const VkSampler = vk.VkSampler;
 pub const VK_NULL_U64 = vk.VK_NULL_U64;
 pub const VkAllocationCallbacks = vk.VkAllocationCallbacks;
@@ -160,6 +161,8 @@ pub const vkCmdBindDescriptorSets = functions.vkCmdBindDescriptorSets;
 pub const vkCreateQueryPool = functions.vkCreateQueryPool;
 pub const vkDestroyQueryPool = functions.vkDestroyQueryPool;
 pub const vkCmdWriteTimestamp = functions.vkCmdWriteTimestamp;
+pub const vkCmdResetQueryPool = functions.vkCmdResetQueryPool;
+pub const vkCmdCopyQueryPoolResults = functions.vkCmdCopyQueryPoolResults;
 pub const vkGetQueryPoolResults = functions.vkGetQueryPoolResults;
 pub const vkCreateRenderPass = functions.vkCreateRenderPass;
 pub const vkDestroyRenderPass = functions.vkDestroyRenderPass;
@@ -261,6 +264,7 @@ pub const VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT: u32 = 0x00000100;
 pub const VK_ACCESS_TRANSFER_WRITE_BIT: u32 = 0x00001000;
 
 // --- Descriptor types ---
+pub const VK_DESCRIPTOR_TYPE_SAMPLER: u32 = 0;
 pub const VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: u32 = 2;
 pub const VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: u32 = 3;
 pub const VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: u32 = 6;
@@ -302,6 +306,7 @@ pub const VK_ATTACHMENT_STORE_OP_STORE: u32 = 0;
 pub const VK_ATTACHMENT_STORE_OP_DONT_CARE: u32 = 1;
 pub const VK_SUBPASS_EXTERNAL: u32 = std.math.maxInt(u32);
 pub const VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT: u32 = 0x00002000;
+pub const VK_PIPELINE_STAGE_ALL_COMMANDS_BIT: u32 = 0x00010000;
 
 // --- Graphics pipeline structure type IDs ---
 pub const VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO: i32 = 38;

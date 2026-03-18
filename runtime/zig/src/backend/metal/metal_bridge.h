@@ -442,6 +442,16 @@ int metal_bridge_resolve_timestamps(
     uint32_t    query_count,
     uint64_t*   dest_ptr);
 
+// Resolve GPU timestamps from the counter sample buffer and convert to nanoseconds.
+// Writes query_count nanosecond values into dest_ptr.
+// Uses mach_timebase_info for Mach-absolute-time-to-nanosecond conversion.
+// Returns 1 on success, 0 on failure.
+int metal_bridge_resolve_timestamps_ns(
+    MetalHandle counter_buffer,
+    uint32_t    first_query,
+    uint32_t    query_count,
+    uint64_t*   dest_ptr);
+
 // Release a counter sample buffer handle.
 void metal_bridge_destroy_counter_sample_buffer(MetalHandle counter_buffer);
 
@@ -557,6 +567,54 @@ MetalHandle metal_bridge_device_new_storage_texture_rw(
     uint32_t    mip_levels,
     uint32_t    pixel_format);
 
+// === clearBuffer / copyTextureToTexture / writeTexture (command-buffer / CPU-direct level) ===
+
+// Zero-fill a byte range of buffer on an existing command buffer (no commit).
+// Creates a blit encoder, fills the range with value 0, ends encoding.
+void metal_bridge_cmd_buf_fill_buffer(
+    MetalHandle cmd_buf,
+    MetalHandle buffer,
+    uint64_t    offset,
+    uint64_t    size);
+
+// Copy a region of src_texture to dst_texture on an existing command buffer (no commit).
+// Creates a blit encoder, copies, ends encoding.
+// src_x/y/z: source origin. dst_x/y/z: destination origin.
+void metal_bridge_cmd_buf_copy_texture_to_texture(
+    MetalHandle cmd_buf,
+    MetalHandle src_texture,
+    uint32_t    src_mip,
+    uint32_t    src_slice,
+    uint32_t    src_x,
+    uint32_t    src_y,
+    uint32_t    src_z,
+    MetalHandle dst_texture,
+    uint32_t    dst_mip,
+    uint32_t    dst_slice,
+    uint32_t    dst_x,
+    uint32_t    dst_y,
+    uint32_t    dst_z,
+    uint32_t    width,
+    uint32_t    height,
+    uint32_t    depth_or_layers);
+
+// Write CPU data into a texture sub-region using replaceRegion (shared/unified-memory path).
+// dst_x/y/z: destination origin. dst_mip: mip level. dst_slice: array / depth slice.
+// Returns 1 on success, 0 on invalid arguments.
+int metal_bridge_texture_write_region(
+    MetalHandle  texture,
+    const void*  data,
+    uint32_t     bytes_per_row,
+    uint32_t     rows_per_image,
+    uint32_t     dst_x,
+    uint32_t     dst_y,
+    uint32_t     dst_z,
+    uint32_t     dst_mip,
+    uint32_t     dst_slice,
+    uint32_t     width,
+    uint32_t     height,
+    uint32_t     depth_or_layers);
+
 // === Multi-device adapter enumeration ===
 
 // Populate out_devices[0..max_count] with retained MTLDevice handles.
@@ -577,6 +635,17 @@ void     metal_bridge_device_name(MetalHandle device, char* buf, size_t cap);
 // Increment the ARC retain count of a MTLDevice.
 // Used when handing a device handle out to a second owner.
 void metal_bridge_retain_device(MetalHandle device);
+
+// === Adapter info string ===
+
+// Returns a heap-allocated block holding four NUL-terminated strings packed
+// consecutively: vendor, architecture, device, description.
+// Caller must free the block with metal_bridge_free_string() when done.
+// Returns NULL if the device handle is NULL.
+char* metal_bridge_adapter_get_info_string(MetalHandle device);
+
+// Free a string block previously returned by metal_bridge_adapter_get_info_string.
+void metal_bridge_free_string(char* str);
 
 // === MTLBinaryArchive pipeline caching (macOS 11+) ===
 

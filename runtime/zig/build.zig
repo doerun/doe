@@ -384,6 +384,10 @@ pub fn build(b: *std.Build) void {
     const coverage_gate_step = b.step("coverage-gate", "Validate split core/full coverage ledgers against Zig partitions");
     coverage_gate_step.dependOn(&coverage_gate_check.step);
 
+    const spirv_val_check = b.addSystemCommand(&.{ "python3", "../../bench/spirv_val_gate.py" });
+    const spirv_val_step = b.step("spirv-val", "Validate SPIR-V artifacts with spirv-val (skips gracefully if not installed)");
+    spirv_val_step.dependOn(&spirv_val_check.step);
+
     const core_dropin_lib = b.addLibrary(.{
         .name = "webgpu_doe_core",
         .linkage = .dynamic,
@@ -606,6 +610,21 @@ pub fn build(b: *std.Build) void {
     const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
     d3d12_test_step.dependOn(&import_fence_check.step);
     d3d12_test_step.dependOn(&run_d3d12_tests.step);
+
+    const wgsl_test_step = b.step("test-wgsl", "Run WGSL shader compiler tests");
+    const wgsl_test_exec = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test_suite_wgsl.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    wgsl_test_exec.linkLibC();
+    const run_wgsl_tests = b.addRunArtifact(wgsl_test_exec);
+    wgsl_test_step.dependOn(&run_wgsl_tests.step);
 
     const shader_bench_exe = b.addExecutable(.{
         .name = "doe-shader-bench",

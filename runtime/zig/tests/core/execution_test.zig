@@ -5,7 +5,7 @@ const execution = @import("../../src/execution.zig");
 const model = @import("../../src/model.zig");
 const backend_policy = @import("../../src/backend/backend_policy.zig");
 const backend_ids = @import("../../src/backend/backend_ids.zig");
-const compute_commands = @import("../../src/wgpu_commands_compute.zig");
+const compute_commands = @import("../../src/core/compute/wgpu_commands_compute.zig");
 const types = @import("../../src/core/abi/wgpu_types.zig");
 
 // ============================================================

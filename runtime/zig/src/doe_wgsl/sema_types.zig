@@ -73,6 +73,7 @@ pub const GlobalInfo = struct {
     access: ?ir.AccessMode = null,
     binding: ?ir.BindingPoint = null,
     io: ?ir.IoAttr = null,
+    override_id: ?u32 = null,
 
     fn deinit(self: *GlobalInfo, allocator: std.mem.Allocator) void {
         allocator.free(self.name);

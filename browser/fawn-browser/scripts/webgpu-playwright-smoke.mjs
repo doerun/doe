@@ -476,6 +476,18 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             computeIncrement: { pass: false, actual: null, expected: [2, 3, 4, 5], error: null },
             renderTriangle: { pass: false, centerRgba: null, error: null },
           },
+          webgpuCanvasApi: {
+            offscreenCanvasAvailable: false,
+            webgpuContextAvailable: false,
+            webgpuContextHasConfigure: false,
+            webgpuContextHasGetCurrentTexture: false,
+            preferredCanvasFormatSupported: false,
+            preferredCanvasFormat: null,
+          },
+          webgpuDeviceApi: {
+            hasImportExternalTexture: false,
+            hasCopyExternalImageToTexture: false,
+          },
           benches: {
             writeBuffer64kbUsPerOp: null,
             computeDispatchUsPerOp: null,
@@ -485,10 +497,10 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           errors: [],
         };
 
-        if (!result.webgpuAvailable) {
-          result.errors.push("navigator.gpu is unavailable");
-          return result;
-        }
+          if (!result.webgpuAvailable) {
+            result.errors.push("navigator.gpu is unavailable");
+            return result;
+          }
 
         let adapter = null;
         let device = null;
@@ -512,7 +524,36 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           if ("wgslLanguageFeatures" in navigator.gpu) {
             result.wgslLanguageFeatures = Array.from(navigator.gpu.wgslLanguageFeatures).sort();
           }
+
+          result.webgpuCanvasApi.preferredCanvasFormatSupported =
+            typeof navigator.gpu.getPreferredCanvasFormat === "function";
+          if (result.webgpuCanvasApi.preferredCanvasFormatSupported) {
+            try {
+              result.webgpuCanvasApi.preferredCanvasFormat = navigator.gpu.getPreferredCanvasFormat();
+            } catch (error) {
+              result.errors.push(`getPreferredCanvasFormat failed: ${String(error)}`);
+            }
+          }
+
+          if (typeof OffscreenCanvas !== "undefined") {
+            result.webgpuCanvasApi.offscreenCanvasAvailable = true;
+            const canvas = new OffscreenCanvas(1, 1);
+            const context = canvas.getContext("webgpu");
+            result.webgpuCanvasApi.webgpuContextAvailable = Boolean(context);
+            if (context) {
+              result.webgpuCanvasApi.webgpuContextHasConfigure = typeof context.configure === "function";
+              result.webgpuCanvasApi.webgpuContextHasGetCurrentTexture =
+                typeof context.getCurrentTexture === "function";
+            }
+          } else {
+            result.webgpuCanvasApi.offscreenCanvasAvailable = false;
+          }
+
           device = await withOpTimeout("requestDevice", () => adapter.requestDevice());
+          result.webgpuDeviceApi.hasImportExternalTexture =
+            typeof device.importExternalTexture === "function";
+          result.webgpuDeviceApi.hasCopyExternalImageToTexture =
+            typeof device.copyExternalImageToTexture === "function";
         } catch (error) {
           result.errors.push(`adapter/device init failed: ${String(error)}`);
           return result;
@@ -814,7 +855,7 @@ async function main() {
       modeResults.push(result);
       const status = hasFailure(result) ? "FAIL" : "PASS";
       console.log(
-        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
+        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} canvas=${result.webgpuCanvasApi.webgpuContextAvailable} importExternalTexture=${result.webgpuDeviceApi.hasImportExternalTexture} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
       );
       if (hasFailure(result)) {
         failed = true;

@@ -283,6 +283,7 @@ pub const Global = struct {
     binding: ?BindingPoint = null,
     io: ?IoAttr = null,
     initializer: ?ConstantValue = null,
+    override_id: ?u32 = null,
 
     pub fn deinit(self: *Global, allocator: std.mem.Allocator) void {
         allocator.free(self.name);
@@ -521,6 +522,22 @@ pub const EntryPoint = struct {
     workgroup_size: [3]u32,
 };
 
+/// Pipeline override constant: numeric id mapped to an f64 value.
+/// Matches the WebGPU GPUProgrammableStage.constants semantics.
+pub const OverrideEntry = struct {
+    key: []const u8,
+    value: f64,
+};
+
+/// Dispatch precondition recorded when a proven bounds elimination elides a
+/// runtime clamp. The host must verify this condition before dispatching.
+pub const DispatchPrecondition = struct {
+    /// Global invocation ID component axis (0=x, 1=y, 2=z).
+    gid_axis: u8,
+    /// Binding point of the storage buffer whose bounds were elided.
+    storage_binding: BindingPoint,
+};
+
 pub const Module = struct {
     allocator: std.mem.Allocator,
     types: TypeStore,
@@ -528,6 +545,11 @@ pub const Module = struct {
     globals: std.ArrayListUnmanaged(Global) = .{},
     functions: std.ArrayListUnmanaged(Function) = .{},
     entry_points: std.ArrayListUnmanaged(EntryPoint) = .{},
+    /// Preconditions recorded by the robustness transform when Lean-proven
+    /// bounds eliminations elide runtime clamps. The host must check
+    /// workgroup_size.{axis} * num_workgroups.{axis} <= arrayLength(&buf)
+    /// for each entry before dispatching.
+    dispatch_preconditions: std.ArrayListUnmanaged(DispatchPrecondition) = .{},
 
     pub fn init(allocator: std.mem.Allocator) Module {
         return .{
@@ -544,6 +566,7 @@ pub const Module = struct {
         for (self.functions.items) |*function| function.deinit(self.allocator);
         self.functions.deinit(self.allocator);
         self.entry_points.deinit(self.allocator);
+        self.dispatch_preconditions.deinit(self.allocator);
         self.types.deinit();
     }
 };

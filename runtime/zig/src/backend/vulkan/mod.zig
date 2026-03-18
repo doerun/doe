@@ -88,6 +88,7 @@ pub const ZigVulkanBackend = struct {
             .kernel_dispatch,
             .buffer_upload,
             .barrier_sync,
+            .sampler_lifecycle,
             .render_draw,
             .render_pass,
             .texture_write,
@@ -542,6 +543,17 @@ fn execute_surface_command(self: *ZigVulkanBackend, setup_ns: u64, command: mode
     return result_without_gpu_timestamps(setup_ns, common_timing.ns_delta(common_timing.now_ns(), start_ns), 0, 0);
 }
 
+fn execute_sampler_command(self: *ZigVulkanBackend, setup_ns: u64, command: model.Command) !webgpu.NativeExecutionResult {
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const start_ns = common_timing.now_ns();
+    switch (command) {
+        .sampler_create => |cmd| try runtime.sampler_create(cmd),
+        .sampler_destroy => |cmd| try runtime.sampler_destroy(cmd),
+        else => return error.InvalidArgument,
+    }
+    return result_without_gpu_timestamps(setup_ns, common_timing.ns_delta(common_timing.now_ns(), start_ns), 0, 0);
+}
+
 fn execute_texture_command(self: *ZigVulkanBackend, setup_ns: u64, command: model.Command) !webgpu.NativeExecutionResult {
     const runtime = try ensure_runtime_bootstrapped(self);
     const start_ns = common_timing.now_ns();
@@ -608,6 +620,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .draw_indexed_indirect => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
         .render_pass => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
         .async_diagnostics => |diagnostics| try execute_async_diagnostics(self, setup_ns, diagnostics),
+        .sampler_create, .sampler_destroy => try execute_sampler_command(self, setup_ns, command),
         .texture_write,
         .texture_query,
         .texture_destroy,
@@ -634,6 +647,7 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
         .kernel_dispatch,
         .buffer_upload,
         .barrier_sync,
+        .sampler_lifecycle,
         .render_draw,
         .render_pass,
         .texture_write,

@@ -44,7 +44,12 @@
     { "name": "doe_getMappedRange_gap", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
     { "name": "doe_dispatch_gap", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
     { "name": "doe_getMappedRange_superset", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
-    { "name": "doe_dispatch_superset", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" }
+    { "name": "doe_dispatch_superset", "module": "Fawn.Core.BufferLifecycle", "category": "lean_verified" },
+    { "name": "gid_component_lt_total", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "gid_inbounds_when_dispatch_fits", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "clamp_noop_when_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "gid_2d_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "flat_index_2d_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" }
   ],
   "evaluatedConditions": {
     "comparability.strictHappyPath.comparable": true,
@@ -125,6 +130,22 @@
       "theorem": "doe_dispatch_superset",
       "condition": "Doe permits all spec-valid dispatch calls; no false rejections",
       "runtimePath": "runtime/runtime/zig/src/doe_wgpu_native.zig:doeBufferRelease"
+    }
+  ],
+  "boundsEliminations": [
+    {
+      "theorem": "gid_inbounds_when_dispatch_fits",
+      "pattern": "global_invocation_id.{component} indexes storage buffer",
+      "precondition": "workgroup_size.{component} * num_workgroups.{component} <= buffer_element_count",
+      "eliminates": "min(gid.{component}, arrayLength(&buf) - 1) -> gid.{component}",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "flat_index_2d_inbounds",
+      "pattern": "gid.y * width + gid.x indexes storage buffer",
+      "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height <= buffer_element_count",
+      "eliminates": "min(flat_index, arrayLength(&buf) - 1) -> flat_index",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     }
   ]
 }

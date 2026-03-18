@@ -5,6 +5,7 @@
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
+const vk_sync = @import("vk_sync.zig");
 const vulkan_surface = @import("vulkan_surface.zig");
 const common_errors = @import("../common/errors.zig");
 
@@ -44,6 +45,8 @@ pub fn bootstrap(self: *Runtime) !void {
     try create_device_and_queue(self);
     try create_command_pool_and_primary_buffer(self);
     try create_fence(self);
+    try create_fence_pool(self);
+    create_timeline_semaphore(self);
 }
 
 pub fn create_instance(self: *Runtime) !void {
@@ -222,4 +225,15 @@ pub fn queue_selection_score(selection: QueueFamilySelection) u64 {
     if (selection.supports_graphics) score +|= 10_000;
     if (selection.timestamp_valid_bits > 0) score +|= 1_000;
     return score;
+}
+
+pub fn create_fence_pool(self: *Runtime) !void {
+    self.fence_pool_state = try vk_sync.FencePool.init(self.device);
+    self.has_fence_pool = true;
+}
+
+pub fn create_timeline_semaphore(self: *Runtime) void {
+    const supported = vk_sync.detect_timeline_semaphore_support(self.physical_device);
+    self.timeline_semaphore = vk_sync.TimelineSemaphore.init(self.device, supported);
+    self.has_timeline_semaphore = self.timeline_semaphore.available;
 }

@@ -1166,3 +1166,377 @@ test "spirv texture: textureSampleLevelOffset produces valid SPIR-V" {
     try testing.expect(len >= 20);
     try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
 }
+
+// ============================================================
+// HLSL vertex/fragment stage tests
+// ============================================================
+
+test "hlsl vertex: struct return with position and location" {
+    const source =
+        \\struct VsOut {
+        \\    @builtin(position) clip_pos: vec4f,
+        \\    @location(0) uv: vec2f,
+        \\}
+        \\
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+        \\    var out: VsOut;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "SV_Position"));
+    try testing.expect(contains(hlsl, "TEXCOORD0"));
+    try testing.expect(contains(hlsl, "vs_main_stage_out"));
+    try testing.expect(contains(hlsl, "clip_pos"));
+    try testing.expect(contains(hlsl, "uv"));
+    // The impl function must exist
+    try testing.expect(contains(hlsl, "vs_main_impl"));
+}
+
+test "hlsl vertex: struct input parameter flattened to semantics" {
+    const source =
+        \\struct VertIn {
+        \\    @location(0) pos: vec4f,
+        \\    @location(1) uv: vec2f,
+        \\}
+        \\struct VertOut {
+        \\    @builtin(position) clip_pos: vec4f,
+        \\    @location(0) uv: vec2f,
+        \\}
+        \\@vertex
+        \\fn vs_main(in: VertIn) -> VertOut {
+        \\    var out: VertOut;
+        \\    out.clip_pos = in.pos;
+        \\    out.uv = in.uv;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    // Input semantics from flattened struct
+    try testing.expect(contains(hlsl, "TEXCOORD0"));
+    try testing.expect(contains(hlsl, "TEXCOORD1"));
+    // Output semantics
+    try testing.expect(contains(hlsl, "SV_Position"));
+    // Struct reconstruction in wrapper body
+    try testing.expect(contains(hlsl, "VertIn in;"));
+}
+
+test "hlsl fragment: scalar return with location" {
+    const source =
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+        \\    return vec4f(uv, 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "SV_Target0"));
+    try testing.expect(contains(hlsl, "TEXCOORD0"));
+    try testing.expect(contains(hlsl, "fs_main_stage_out"));
+}
+
+test "hlsl fragment: struct return with MRT outputs" {
+    const source =
+        \\struct FragOut {
+        \\    @location(0) color0: vec4f,
+        \\    @location(1) color1: vec4f,
+        \\}
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> FragOut {
+        \\    var out: FragOut;
+        \\    out.color0 = vec4f(uv, 0.0, 1.0);
+        \\    out.color1 = vec4f(1.0, 0.0, 0.0, 1.0);
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "SV_Target0"));
+    try testing.expect(contains(hlsl, "SV_Target1"));
+    try testing.expect(contains(hlsl, "fs_main_stage_out"));
+    try testing.expect(contains(hlsl, "_result.color0"));
+    try testing.expect(contains(hlsl, "_result.color1"));
+}
+
+test "hlsl vertex: builtin vertex_index and instance_index" {
+    const source =
+        \\@vertex
+        \\fn vs_main(
+        \\    @builtin(vertex_index) vid: u32,
+        \\    @builtin(instance_index) iid: u32,
+        \\) -> @builtin(position) vec4f {
+        \\    return vec4f(f32(vid), f32(iid), 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "SV_VertexID"));
+    try testing.expect(contains(hlsl, "SV_InstanceID"));
+    try testing.expect(contains(hlsl, "SV_Position"));
+}
+
+test "hlsl fragment: builtin front_facing and position inputs" {
+    const source =
+        \\@fragment
+        \\fn fs_main(
+        \\    @builtin(position) frag_coord: vec4f,
+        \\    @builtin(front_facing) is_front: bool,
+        \\) -> @location(0) vec4f {
+        \\    if (!is_front) {
+        \\        discard;
+        \\    }
+        \\    return vec4f(frag_coord.x, frag_coord.y, 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "SV_Position"));
+    try testing.expect(contains(hlsl, "SV_IsFrontFace"));
+    try testing.expect(contains(hlsl, "discard"));
+}
+
+test "hlsl fragment: struct return with frag_depth" {
+    const source =
+        \\struct FragOut {
+        \\    @location(0) color: vec4f,
+        \\    @builtin(frag_depth) depth: f32,
+        \\}
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> FragOut {
+        \\    var out: FragOut;
+        \\    out.color = vec4f(uv, 0.0, 1.0);
+        \\    out.depth = 0.5;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "SV_Target0"));
+    try testing.expect(contains(hlsl, "SV_Depth"));
+    try testing.expect(contains(hlsl, "fs_main_stage_out"));
+}
+
+// ============================================================
+// SPIR-V vertex/fragment stage tests (struct I/O)
+// ============================================================
+
+test "spirv vertex: struct return with position and location" {
+    const source =
+        \\struct VsOut {
+        \\    @builtin(position) clip_pos: vec4f,
+        \\    @location(0) uv: vec2f,
+        \\}
+        \\
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+        \\    var out: VsOut;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify Vertex execution model and at least one OpDecorate for Location
+    var found_vertex = false;
+    var found_location = false;
+    var found_builtin = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 15 and wc >= 3) { // OpEntryPoint
+            const exec_model = read_u32_le(binary, (i + 1) * 4);
+            if (exec_model == 0) found_vertex = true; // Vertex
+        }
+        if (op == 71 and wc >= 3) { // OpDecorate
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 30) found_location = true; // Location
+            if (decoration == 11) found_builtin = true; // BuiltIn
+        }
+        i += wc;
+    }
+    try testing.expect(found_vertex);
+    try testing.expect(found_location);
+    try testing.expect(found_builtin);
+}
+
+test "spirv vertex: struct input parameter" {
+    const source =
+        \\struct VertIn {
+        \\    @location(0) pos: vec4f,
+        \\    @location(1) uv: vec2f,
+        \\}
+        \\struct VertOut {
+        \\    @builtin(position) clip_pos: vec4f,
+        \\    @location(0) uv: vec2f,
+        \\}
+        \\@vertex
+        \\fn vs_main(in: VertIn) -> VertOut {
+        \\    var out: VertOut;
+        \\    out.clip_pos = in.pos;
+        \\    out.uv = in.uv;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Count Location decorations: should have at least 3
+    // (2 input locations + 1 output location)
+    var location_count: u32 = 0;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 71 and wc >= 3) { // OpDecorate
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 30) location_count += 1; // Location
+        }
+        i += wc;
+    }
+    try testing.expect(location_count >= 3);
+}
+
+test "spirv fragment: struct return with MRT outputs" {
+    const source =
+        \\struct FragOut {
+        \\    @location(0) color0: vec4f,
+        \\    @location(1) color1: vec4f,
+        \\}
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> FragOut {
+        \\    var out: FragOut;
+        \\    out.color0 = vec4f(uv, 0.0, 1.0);
+        \\    out.color1 = vec4f(1.0, 0.0, 0.0, 1.0);
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify Fragment execution model and OriginUpperLeft execution mode
+    var found_fragment = false;
+    var found_origin_upper_left = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 15 and wc >= 3) { // OpEntryPoint
+            const exec_model = read_u32_le(binary, (i + 1) * 4);
+            if (exec_model == 4) found_fragment = true;
+        }
+        if (op == 16 and wc >= 3) { // OpExecutionMode
+            const mode = read_u32_le(binary, (i + 2) * 4);
+            if (mode == 7) found_origin_upper_left = true;
+        }
+        i += wc;
+    }
+    try testing.expect(found_fragment);
+    try testing.expect(found_origin_upper_left);
+}
+
+test "spirv fragment: frag_depth output with DepthReplacing" {
+    const source =
+        \\struct FragOut {
+        \\    @location(0) color: vec4f,
+        \\    @builtin(frag_depth) depth: f32,
+        \\}
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> FragOut {
+        \\    var out: FragOut;
+        \\    out.color = vec4f(uv, 0.0, 1.0);
+        \\    out.depth = 0.5;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify DepthReplacing execution mode (12)
+    var found_depth_replacing = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 16 and wc >= 3) { // OpExecutionMode
+            const mode = read_u32_le(binary, (i + 2) * 4);
+            if (mode == 12) found_depth_replacing = true;
+        }
+        i += wc;
+    }
+    try testing.expect(found_depth_replacing);
+}
+
+test "spirv vertex: interpolation decorations on outputs" {
+    const source =
+        \\struct VsOut {
+        \\    @builtin(position) pos: vec4f,
+        \\    @location(0) @interpolate(flat) flat_val: f32,
+        \\    @location(1) @interpolate(linear) linear_val: vec2f,
+        \\}
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+        \\    var out: VsOut;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify Flat (14) and NoPerspective (13) decorations
+    var found_flat = false;
+    var found_noperspective = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 71 and wc >= 3) { // OpDecorate
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 14) found_flat = true;
+            if (decoration == 13) found_noperspective = true;
+        }
+        i += wc;
+    }
+    try testing.expect(found_flat);
+    try testing.expect(found_noperspective);
+}

@@ -492,6 +492,9 @@ fn dispatchPassLayoutEntry(binding: model.KernelBinding) types.WGPUBindGroupLayo
             }
             layout_entry.storageTexture.viewDimension = normalizers.normalizeTextureViewDimension(binding.texture_view_dimension);
         },
+        .sampler => {
+            layout_entry.sampler.type = types.WGPUSamplerBindingType_Filtering;
+        },
     }
 
     return layout_entry;
@@ -536,6 +539,12 @@ fn dispatchPassBindEntry(
             const view = try createTextureViewForBinding(self, texture, binding);
             try texture_views.append(self.core.allocator, view);
             bind_entry.textureView = view;
+        },
+        .sampler => {
+            // Sampler binding via Dawn delegate: sampler object must be
+            // created externally and passed as resource_handle. The Dawn
+            // delegate backend manages VkSampler/MTLSamplerState lifetime.
+            bind_entry.sampler = @ptrFromInt(binding.resource_handle);
         },
     }
     return bind_entry;

@@ -52,13 +52,13 @@ WebGPU backend:
 - `src/wgpu_texture_procs.zig` — sampler/queueWriteTexture/texture query+destroy proc surface.
 - `src/wgpu_surface_procs.zig` — surface creation/configure/present proc surface and structs.
 - `src/wgpu_async_procs.zig` — async render-pipeline/error-scope/compilation-info proc surface and wait helpers.
-- `src/wgpu_resources.zig` — buffer/texture management, bind group building, shader module and pipeline creation.
+- `src/core/resource/wgpu_resources.zig` — buffer/texture management, bind group building, shader module and pipeline creation.
 
 Public surface (core/full split):
 - `src/core/surface.zig` — core-only public API surface: validate, accept, coverage ledger for compute/copy/resource/queue commands.
 - `src/full/surface_api.zig` — full public API surface: classify (core vs full-only), accept, combined coverage ledger for all commands.
-- `src/core/command_partition.zig` — core command kind enum and partition membership.
-- `src/full/command_partition.zig` — full-only command kind enum and partition membership.
+- `src/core/command_partition.zig` — core command kind enum, `CoreCommand` union, and partition membership.
+- `src/full/command_partition.zig` — full-only command kind enum, `FullCommand` union, and partition membership.
 
 Build:
 - `build.zig` — compile and run hooks, links libC and libdl.

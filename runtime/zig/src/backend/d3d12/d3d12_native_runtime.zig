@@ -8,13 +8,18 @@ const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 
 const d3d12_texture = @import("resources/d3d12_texture.zig");
 const d3d12_sampler = @import("resources/d3d12_sampler.zig");
-const d3d12_copy = @import("commands/d3d12_copy.zig");
+const d3d12_depth_stencil = @import("resources/d3d12_depth_stencil.zig");
+const d3d12_texture_view = @import("resources/d3d12_texture_view.zig");
+const d3d12_streaming_copy = @import("commands/d3d12_streaming_copy.zig");
 const d3d12_dispatch = @import("commands/d3d12_dispatch.zig");
 const d3d12_render = @import("commands/d3d12_render.zig");
 const d3d12_surface = @import("surface/d3d12_surface.zig");
 const d3d12_async = @import("commands/d3d12_async_diagnostics.zig");
 const d3d12_timestamps = @import("commands/d3d12_gpu_timestamps.zig");
 const d3d12_map = @import("commands/d3d12_map_async.zig");
+const d3d12_query_set = @import("d3d12_query_set.zig");
+const d3d12_descriptors = @import("d3d12_descriptors.zig");
+const d3d12_device_caps = @import("d3d12_device_caps.zig");
 const dc = @import("d3d12_constants.zig");
 
 pub const MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024;
@@ -91,10 +96,15 @@ pub const NativeD3D12Runtime = struct {
 
     texture_map: d3d12_texture.TextureMap = .{},
     sampler_state: d3d12_sampler.SamplerState = .{},
+    depth_stencil_state: d3d12_depth_stencil.DepthStencilState = .{},
+    texture_view_state: d3d12_texture_view.TextureViewState = .{},
+    streaming_copy_state: d3d12_streaming_copy.StreamingCopyState = .{},
     dispatch_state: d3d12_dispatch.DispatchState = .{},
     render_state: d3d12_render.RenderState = .{},
     surface_state: d3d12_surface.SurfaceState = .{},
     timestamp_state: d3d12_timestamps.TimestampState = .{},
+    query_set_state: d3d12_query_set.QuerySetState = .{},
+    descriptor_state: d3d12_descriptors.DescriptorHeapState = .{},
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeD3D12Runtime {
         var self = NativeD3D12Runtime{ .allocator = allocator, .kernel_root = kernel_root };
@@ -109,12 +119,17 @@ pub const NativeD3D12Runtime = struct {
         self.pending_uploads.deinit(self.allocator);
         d3d12_release_pool(&self.upload_pool, self.allocator);
         d3d12_release_pool(&self.default_pool, self.allocator);
+        self.streaming_copy_state.deinit();
         self.destroy_compute_objects();
         self.timestamp_state.deinit();
+        self.query_set_state.deinit(self.allocator);
         self.render_state.deinit();
         self.dispatch_state.deinit();
         self.surface_state.deinit(self.allocator);
         self.sampler_state.deinit(self.allocator);
+        self.depth_stencil_state.deinit();
+        self.texture_view_state.deinit(self.allocator);
+        self.descriptor_state.deinit();
         d3d12_texture.release_all(&self.texture_map);
         if (self.fence) |f| {
             d3d12_bridge_release(f);
@@ -168,6 +183,11 @@ pub const NativeD3D12Runtime = struct {
         if (!self.has_device) return 0;
         const start_ns = common_timing.now_ns();
 
+        // Flush any streaming copy commands first so they execute before the fence.
+        if (self.streaming_copy_state.has_pending()) {
+            _ = try self.streaming_copy_state.flush(self.queue, self.fence, &self.fence_value);
+        }
+
         for (self.pending_uploads.items) |item| {
             d3d12_bridge_queue_execute_command_list(self.queue, item.cmd_list);
         }
@@ -175,10 +195,6 @@ pub const NativeD3D12Runtime = struct {
         if (self.pending_uploads.items.len > 0 or self.has_deferred_submissions) {
             self.fence_value +|= 1;
             d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
-            // TODO(perf): replace blocking WaitForSingleObject in d3d12_bridge_fence_wait with
-            // ID3D12Fence::SetEventOnCompletion + short spin-poll loop before falling back to
-            // WaitForSingleObjectEx(INFINITE). On AMD/NVIDIA this saves ~50-200us per flush for
-            // small uploads by avoiding the OS scheduling roundtrip when the GPU finishes quickly.
             d3d12_bridge_fence_wait(self.fence, self.fence_value);
             self.has_deferred_submissions = false;
         }
@@ -319,8 +335,14 @@ pub const NativeD3D12Runtime = struct {
         return self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd);
     }
 
-    pub fn execute_copy(self: *NativeD3D12Runtime, cmd: model.CopyCommand) !d3d12_copy.CopyMetrics {
-        return d3d12_copy.execute_copy(self.device, self.queue, &self.texture_map, self.allocator, cmd);
+    pub fn execute_copy(self: *NativeD3D12Runtime, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_streaming_copy.CopyMetrics {
+        var metrics = try self.streaming_copy_state.record_copy(self.device, &self.texture_map, self.allocator, cmd);
+        self.has_deferred_submissions = true;
+        if (queue_sync_mode == .per_command) {
+            metrics.submit_wait_ns = try self.streaming_copy_state.flush(self.queue, self.fence, &self.fence_value);
+            self.has_deferred_submissions = false;
+        }
+        return metrics;
     }
 
     pub fn execute_render_draw(self: *NativeD3D12Runtime, cmd: model.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool) !d3d12_render.RenderMetrics {
@@ -365,6 +387,40 @@ pub const NativeD3D12Runtime = struct {
 
     pub fn init_timestamps(self: *NativeD3D12Runtime) !void {
         try self.timestamp_state.init_resources(self.device, self.queue);
+    }
+
+    // Doe is synchronous — onSubmittedWorkDone completes immediately.
+    pub fn on_submitted_work_done(self: *NativeD3D12Runtime) !u64 {
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+            return try self.flush_queue();
+        }
+        return 0;
+    }
+
+    pub fn has_feature(self: *const NativeD3D12Runtime, feature: u32) bool {
+        _ = self;
+        return d3d12_device_caps.d3d12_device_has_feature(feature);
+    }
+
+    pub fn get_limits(self: *const NativeD3D12Runtime, limits: *@import("../../core/abi/wgpu_types.zig").WGPULimits) void {
+        _ = self;
+        d3d12_device_caps.d3d12_device_get_limits(limits);
+    }
+
+    pub fn create_query_set(self: *NativeD3D12Runtime, handle: u64, query_type: d3d12_query_set.QueryType, count: u32) !u64 {
+        return self.query_set_state.create(self.allocator, self.device, self.queue, handle, query_type, count);
+    }
+
+    pub fn destroy_query_set(self: *NativeD3D12Runtime, handle: u64) void {
+        self.query_set_state.destroy(handle);
+    }
+
+    pub fn ensure_descriptor_heaps(self: *NativeD3D12Runtime) !void {
+        try self.descriptor_state.ensure_heaps(self.device);
+    }
+
+    pub fn create_depth_stencil(self: *NativeD3D12Runtime, width: u32, height: u32, format: u32) !void {
+        try self.depth_stencil_state.ensure_depth_texture(self.device, width, height, format);
     }
 
     // --- Private ---

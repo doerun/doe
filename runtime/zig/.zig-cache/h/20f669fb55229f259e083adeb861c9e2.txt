@@ -1,5 +1,5 @@
 0
-17253 75695564 1773698636377362757 b8d6fadf25b3e2e257f1b9d96d4cddf1 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_render_state_bridge.m
+18572 76756498 1773782826109076037 494c47fac65dbe1474de98241f7c4ad5 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_render_state_bridge.m
 3299 39704817 1754204360000000000 8909ff4eb50c9c3345cfd9917930061d 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/Metal.h
 847 39704805 1754204360000000000 6ae621f5e043f1fbc40548d53c299f30 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/MTLDefines.h
 14940 39607216 1754184064000000000 4ec834e4a95cf98ab2fd87a0c039787f 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/usr/include/os/availability.h
@@ -859,4 +859,4 @@
 5312 39608508 1754178845000000000 815d71069e51c396cf698cbf014c356e 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/MTL4Archive.h
 1650 39704775 1754204363000000000 f3056688d2eccec62499fb5afb4bce61 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/MTL4BinaryFunctionDescriptor.h
 3767 39704773 1754204363000000000 08dee5f25e5b7856f094eab6b716632e 0 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Metal.framework/Headers/MTL4LinkingDescriptor.h
-6468 75695563 1773698636377123174 a43237ff397eb7467e06ae5b5d9b6c08 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_render_state_bridge.h
+7298 76756491 1773782815153957991 a221a11349fb07d3b6bc8118261bf07e 0 /Users/xyz/deco/fawn/runtime/zig/src/backend/metal/metal_render_state_bridge.h

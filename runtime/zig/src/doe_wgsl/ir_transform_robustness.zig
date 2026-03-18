@@ -5,6 +5,8 @@
 //
 // Sized containers:        index = min(index, length - 1)
 // Runtime-sized arrays:    index = min(index, arrayLength(&buf) - 1)
+// textureLoad coords:      coords = clamp(coords, vec(0), textureDimensions(tex, level) - 1)
+// textureStore coords:     coords = clamp(coords, vec(0), textureDimensions(tex) - 1)
 //
 // This is the first IR transform pass in the Doe shader compiler. It runs after
 // IR building and validation, before emission to any backend (MSL, HLSL, SPIR-V).
@@ -16,14 +18,29 @@ pub const TransformError = error{
     OutOfMemory,
 };
 
-/// Apply robustness clamping to all index expressions in the module.
-pub fn apply(allocator: std.mem.Allocator, module: *ir.Module) TransformError!void {
+/// Configuration for the robustness transform pass.
+pub const Config = struct {
+    /// When true, pattern-match buf[gid.{x,y,z}] on storage buffers and elide
+    /// the runtime clamp when the access pattern is covered by a Lean proof.
+    /// The caller should set this to lean_proof.bounds_elimination_available.
+    elide_proven_bounds: bool = false,
+};
+
+/// Apply robustness clamping to all index and texture expressions in the module.
+/// When config.elide_proven_bounds is true, proven gid-indexed storage buffer
+/// accesses skip the clamp and record dispatch preconditions on the module.
+pub fn apply(allocator: std.mem.Allocator, module: *ir.Module, config: Config) TransformError!void {
     for (module.functions.items) |*function| {
-        try transform_function(allocator, module, function);
+        try transform_function(allocator, module, function, config);
     }
 }
 
-fn transform_function(allocator: std.mem.Allocator, module: *ir.Module, function: *ir.Function) TransformError!void {
+fn transform_function(
+    allocator: std.mem.Allocator,
+    module: *ir.Module,
+    function: *ir.Function,
+    config: Config,
+) TransformError!void {
     // Snapshot the expression count — we only transform pre-existing expressions.
     // New expressions appended by the transform are helper nodes and need not be
     // re-examined (they cannot themselves be index operations).
@@ -39,6 +56,16 @@ fn transform_function(allocator: std.mem.Allocator, module: *ir.Module, function
                         if (arr.len) |len| {
                             if (len > 0) try clamp_sized(allocator, module, function, i, len);
                         } else {
+                            // Runtime-sized array — try Lean elision first.
+                            if (config.elide_proven_bounds) {
+                                if (try_elide_gid_clamp(module, function, index_data)) |precondition| {
+                                    module.dispatch_preconditions.append(
+                                        module.allocator,
+                                        precondition,
+                                    ) catch return error.OutOfMemory;
+                                    continue;
+                                }
+                            }
                             try clamp_runtime_sized(allocator, module, function, i);
                         }
                     },
@@ -50,6 +77,10 @@ fn transform_function(allocator: std.mem.Allocator, module: *ir.Module, function
                     },
                     else => {},
                 }
+            },
+            .call => |call_data| {
+                if (call_data.kind != .builtin) continue;
+                try clamp_texture_coords(allocator, module, function, call_data);
             },
             else => {},
         }
@@ -112,9 +143,9 @@ fn clamp_sized(
 
 /// Clamp index for a runtime-sized array: min(index, arrayLength(&buf) - 1)
 ///
-/// Applies to direct globals and member-shaped bases rooted in the IR. The
-/// transform keeps the base expression intact and relies on backend emission to
-/// lower `arrayLength` for that base shape.
+/// Accepts any base expression shape that can produce a runtime-sized array
+/// reference. The transform keeps the base expression intact and relies on
+/// backend emission to lower `arrayLength` for that base shape.
 fn clamp_runtime_sized(
     allocator: std.mem.Allocator,
     module: *ir.Module,
@@ -123,8 +154,12 @@ fn clamp_runtime_sized(
 ) TransformError!void {
     const index_data = function.exprs.items[expr_idx].data.index;
 
+    // Accept any base shape that can produce a runtime-sized array reference:
+    // global_ref (direct storage buffer), member (struct.field), load (pointer
+    // deref), local_ref/param_ref (aliased references), index (nested access),
+    // call (function returning a reference).
     switch (function.exprs.items[index_data.base].data) {
-        .global_ref, .member => {},
+        .global_ref, .member, .load, .local_ref, .param_ref, .index, .call => {},
         else => return,
     }
 
@@ -181,473 +216,209 @@ fn clamp_runtime_sized(
     } };
 }
 
-// ============================================================
-// Tests
-// ============================================================
+// ---- Lean proof-driven clamp elision ----
 
-const testing = std.testing;
+/// Classify whether an expression is a global_invocation_id component access.
+/// Returns the axis index (0=x, 1=y, 2=z) or null if not a gid component.
+fn classify_gid_component(function: *const ir.Function, expr_id: ir.ExprId) ?u8 {
+    const expr = function.exprs.items[expr_id];
+    switch (expr.data) {
+        .member => |member_data| {
+            // Check if the base is a parameter with the global_invocation_id builtin.
+            const base = function.exprs.items[member_data.base];
+            switch (base.data) {
+                .param_ref => |param_idx| {
+                    if (param_idx >= function.params.items.len) return null;
+                    const param = function.params.items[param_idx];
+                    const io = param.io orelse return null;
+                    if (io.builtin != .global_invocation_id) return null;
 
-fn make_test_module(allocator: std.mem.Allocator) !ir.Module {
-    var module = ir.Module.init(allocator);
-    errdefer module.deinit();
-
-    // Intern base types: u32 and f32
-    _ = try module.types.intern(.{ .scalar = .u32 });
-    _ = try module.types.intern(.{ .scalar = .f32 });
-    return module;
-}
-
-fn u32_type(module: *ir.Module) ir.TypeId {
-    for (module.types.items.items, 0..) |item, idx| {
-        if (item == .scalar and item.scalar == .u32) return @intCast(idx);
-    }
-    unreachable;
-}
-
-fn f32_type(module: *ir.Module) ir.TypeId {
-    for (module.types.items.items, 0..) |item, idx| {
-        if (item == .scalar and item.scalar == .f32) return @intCast(idx);
-    }
-    unreachable;
-}
-
-fn add_struct_type(
-    module: *ir.Module,
-    allocator: std.mem.Allocator,
-    name: []const u8,
-    fields: []const struct { name: []const u8, ty: ir.TypeId },
-) !ir.TypeId {
-    var struct_def = ir.StructDef{ .name = try ir.dup_string(allocator, name) };
-    errdefer struct_def.deinit(allocator);
-    for (fields) |field| {
-        try struct_def.fields.append(allocator, .{
-            .name = try ir.dup_string(allocator, field.name),
-            .ty = field.ty,
-        });
-    }
-    try module.structs.append(allocator, struct_def);
-    const struct_id: ir.StructId = @intCast(module.structs.items.len - 1);
-    return try module.types.intern(.{ .struct_ = struct_id });
-}
-
-test "robustness: sized array index is clamped" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
-
-    const f32_ty = f32_type(&module);
-    const u32_ty = u32_type(&module);
-
-    // array<f32, 10>
-    const arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = 10 } });
-    const ref_arr_ty = try module.types.intern(.{ .ref = .{ .elem = arr_ty, .addr_space = .function, .access = .read_write } });
-
-    // Add a global for the array
-    try module.globals.append(allocator, .{
-        .name = try ir.dup_string(allocator, "data"),
-        .ty = ref_arr_ty,
-        .class = .var_,
-        .addr_space = .function,
-    });
-
-    // Build a function with: data[idx]
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-    errdefer function.deinit(allocator);
-
-    // expr 0: global_ref(0) — the array
-    const base_id = try function.append_expr(allocator, .{ .ty = ref_arr_ty, .category = .ref, .data = .{ .global_ref = 0 } });
-    // expr 1: int_lit(15) — intentionally out-of-bounds index
-    const idx_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 15 } });
-    // expr 2: index { base, index }
-    const index_id = try function.append_expr(allocator, .{ .ty = f32_ty, .category = .ref, .data = .{ .index = .{ .base = base_id, .index = idx_id } } });
-
-    try module.functions.append(allocator, function);
-
-    try apply(allocator, &module);
-
-    // The index expression should now reference a min() call, not the raw index.
-    const transformed = module.functions.items[0].exprs.items[index_id];
-    try testing.expect(transformed.data == .index);
-    const new_index = transformed.data.index.index;
-    // The new index should be a min() call appended after the original expressions.
-    try testing.expect(new_index > index_id);
-
-    const min_expr = module.functions.items[0].exprs.items[new_index];
-    try testing.expect(min_expr.data == .call);
-    try testing.expectEqualStrings("min", min_expr.data.call.name);
-    try testing.expectEqual(@as(u32, 2), min_expr.data.call.args.len);
-}
-
-test "robustness: vector index is clamped" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
-
-    const f32_ty = f32_type(&module);
-    const u32_ty = u32_type(&module);
-
-    // vec4<f32>
-    const vec_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
-
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-    errdefer function.deinit(allocator);
-
-    try function.locals.append(allocator, .{ .name = try ir.dup_string(allocator, "v"), .ty = vec_ty, .mutable = false });
-
-    // expr 0: local_ref(0) — the vector
-    const base_id = try function.append_expr(allocator, .{ .ty = vec_ty, .category = .value, .data = .{ .local_ref = 0 } });
-    // expr 1: int_lit(5) — out of bounds
-    const idx_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 5 } });
-    // expr 2: index { base, index }
-    const index_id = try function.append_expr(allocator, .{ .ty = f32_ty, .category = .value, .data = .{ .index = .{ .base = base_id, .index = idx_id } } });
-
-    try module.functions.append(allocator, function);
-    try apply(allocator, &module);
-
-    const transformed = module.functions.items[0].exprs.items[index_id];
-    const new_index = transformed.data.index.index;
-    const min_expr = module.functions.items[0].exprs.items[new_index];
-    try testing.expectEqualStrings("min", min_expr.data.call.name);
-
-    // The max value should be vec.len - 1 = 3
-    const max_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
-    const max_expr = module.functions.items[0].exprs.items[max_arg_id];
-    try testing.expectEqual(@as(u64, 3), max_expr.data.int_lit);
-}
-
-test "robustness: struct member and nested array indices are clamped" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
-
-    const f32_ty = f32_type(&module);
-    const u32_ty = u32_type(&module);
-
-    // array<array<f32, 4>, 3>
-    const inner_arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = 4 } });
-    const outer_arr_ty = try module.types.intern(.{ .array = .{ .elem = inner_arr_ty, .len = 3 } });
-    const struct_ty = try add_struct_type(&module, allocator, "Wrapper", &.{
-        .{ .name = "data", .ty = outer_arr_ty },
-    });
-
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-    errdefer function.deinit(allocator);
-
-    try function.locals.append(allocator, .{
-        .name = try ir.dup_string(allocator, "wrapper"),
-        .ty = struct_ty,
-        .mutable = false,
-    });
-
-    // expr 0: local_ref(0) — the struct wrapper
-    const base_id = try function.append_expr(allocator, .{
-        .ty = struct_ty,
-        .category = .value,
-        .data = .{ .local_ref = 0 },
-    });
-    // expr 1: member { base, data } — array<array<f32, 4>, 3>
-    const member_id = try function.append_expr(allocator, .{
-        .ty = outer_arr_ty,
-        .category = .value,
-        .data = .{
-            .member = .{
-                .base = base_id,
-                .field_name = try ir.dup_string(allocator, "data"),
-                .field_index = 0,
-            },
+                    if (std.mem.eql(u8, member_data.field_name, "x")) return 0;
+                    if (std.mem.eql(u8, member_data.field_name, "y")) return 1;
+                    if (std.mem.eql(u8, member_data.field_name, "z")) return 2;
+                    return null;
+                },
+                else => return null,
+            }
         },
-    });
-    // expr 2: int_lit(9) — out of bounds for the outer array
-    const outer_idx_id = try function.append_expr(allocator, .{
-        .ty = u32_ty,
-        .category = .value,
-        .data = .{ .int_lit = 9 },
-    });
-    // expr 3: index { member, outer_idx } — inner array< f32, 4 >
-    const outer_access_id = try function.append_expr(allocator, .{
-        .ty = inner_arr_ty,
-        .category = .value,
-        .data = .{ .index = .{ .base = member_id, .index = outer_idx_id } },
-    });
-    // expr 4: int_lit(8) — out of bounds for the inner array
-    const inner_idx_id = try function.append_expr(allocator, .{
-        .ty = u32_ty,
-        .category = .value,
-        .data = .{ .int_lit = 8 },
-    });
-    // expr 5: index { outer_access, inner_idx } — final f32 element
-    const inner_access_id = try function.append_expr(allocator, .{
-        .ty = f32_ty,
-        .category = .value,
-        .data = .{ .index = .{ .base = outer_access_id, .index = inner_idx_id } },
-    });
-
-    try module.functions.append(allocator, function);
-    try apply(allocator, &module);
-
-    const outer_transformed = module.functions.items[0].exprs.items[outer_access_id];
-    try testing.expect(outer_transformed.data == .index);
-    const outer_min_id = outer_transformed.data.index.index;
-    const outer_min_expr = module.functions.items[0].exprs.items[outer_min_id];
-    try testing.expectEqualStrings("min", outer_min_expr.data.call.name);
-    const outer_max_id = module.functions.items[0].expr_args.items[outer_min_expr.data.call.args.start + 1];
-    const outer_max_expr = module.functions.items[0].exprs.items[outer_max_id];
-    try testing.expectEqual(@as(u64, 2), outer_max_expr.data.int_lit);
-
-    const inner_transformed = module.functions.items[0].exprs.items[inner_access_id];
-    try testing.expect(inner_transformed.data == .index);
-    const inner_min_id = inner_transformed.data.index.index;
-    const inner_min_expr = module.functions.items[0].exprs.items[inner_min_id];
-    try testing.expectEqualStrings("min", inner_min_expr.data.call.name);
-    const inner_max_id = module.functions.items[0].expr_args.items[inner_min_expr.data.call.args.start + 1];
-    const inner_max_expr = module.functions.items[0].exprs.items[inner_max_id];
-    try testing.expectEqual(@as(u64, 3), inner_max_expr.data.int_lit);
+        else => return null,
+    }
 }
 
-test "robustness: nested refs to arrays are unwrapped for clamping" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
-
-    const f32_ty = f32_type(&module);
-    const u32_ty = u32_type(&module);
-
-    // array<f32, 5> wrapped in two ref layers.
-    const arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = 5 } });
-    const ref_ty = try module.types.intern(.{ .ref = .{
-        .elem = arr_ty,
-        .addr_space = .function,
-        .access = .read_write,
-    } });
-    const nested_ref_ty = try module.types.intern(.{ .ref = .{
-        .elem = ref_ty,
-        .addr_space = .function,
-        .access = .read_write,
-    } });
-
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-    errdefer function.deinit(allocator);
-
-    try function.locals.append(allocator, .{
-        .name = try ir.dup_string(allocator, "data"),
-        .ty = nested_ref_ty,
-        .mutable = false,
-    });
-
-    const base_id = try function.append_expr(allocator, .{
-        .ty = nested_ref_ty,
-        .category = .value,
-        .data = .{ .local_ref = 0 },
-    });
-    const idx_id = try function.append_expr(allocator, .{
-        .ty = u32_ty,
-        .category = .value,
-        .data = .{ .int_lit = 11 },
-    });
-    const index_id = try function.append_expr(allocator, .{
-        .ty = f32_ty,
-        .category = .value,
-        .data = .{ .index = .{ .base = base_id, .index = idx_id } },
-    });
-
-    try module.functions.append(allocator, function);
-    try apply(allocator, &module);
-
-    const transformed = module.functions.items[0].exprs.items[index_id];
-    try testing.expect(transformed.data == .index);
-    const new_index = transformed.data.index.index;
-    const min_expr = module.functions.items[0].exprs.items[new_index];
-    try testing.expectEqualStrings("min", min_expr.data.call.name);
-    const max_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
-    const max_expr = module.functions.items[0].exprs.items[max_arg_id];
-    try testing.expectEqual(@as(u64, 4), max_expr.data.int_lit);
+/// Resolve the storage buffer binding point for a base expression.
+/// Returns the binding point if the base is a global_ref to a storage buffer
+/// with a runtime-sized array, otherwise null.
+fn resolve_storage_binding(module: *const ir.Module, function: *const ir.Function, base_id: ir.ExprId) ?ir.BindingPoint {
+    const base_expr = function.exprs.items[base_id];
+    switch (base_expr.data) {
+        .global_ref => |global_idx| {
+            if (global_idx >= module.globals.items.len) return null;
+            const global = module.globals.items[global_idx];
+            if (global.addr_space != .storage) return null;
+            return global.binding;
+        },
+        else => return null,
+    }
 }
 
-test "robustness: runtime-sized array uses arrayLength" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
+/// Attempt to elide a gid-indexed storage buffer clamp using Lean proof.
+/// Pattern: buf[gid.{x,y,z}] where buf is a storage-address-space global.
+/// Returns a DispatchPrecondition if elision succeeds, null otherwise.
+fn try_elide_gid_clamp(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    index_data: @FieldType(ir.Expr, "index"),
+) ?ir.DispatchPrecondition {
+    const gid_axis = classify_gid_component(function, index_data.index) orelse return null;
+    const binding = resolve_storage_binding(module, function, index_data.base) orelse return null;
 
-    const f32_ty = f32_type(&module);
-    const u32_ty = u32_type(&module);
-
-    // array<f32> (runtime-sized)
-    const arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = null } });
-    const ref_arr_ty = try module.types.intern(.{ .ref = .{ .elem = arr_ty, .addr_space = .storage, .access = .read_write } });
-
-    try module.globals.append(allocator, .{
-        .name = try ir.dup_string(allocator, "buf"),
-        .ty = ref_arr_ty,
-        .class = .var_,
-        .addr_space = .storage,
-        .access = .read_write,
-        .binding = .{ .group = 0, .binding = 0 },
-    });
-
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-    errdefer function.deinit(allocator);
-
-    // expr 0: global_ref(0) — the runtime-sized array
-    const base_id = try function.append_expr(allocator, .{ .ty = ref_arr_ty, .category = .ref, .data = .{ .global_ref = 0 } });
-    // expr 1: int_lit(100)
-    const idx_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 100 } });
-    // expr 2: index { base, index }
-    const index_id = try function.append_expr(allocator, .{ .ty = f32_ty, .category = .ref, .data = .{ .index = .{ .base = base_id, .index = idx_id } } });
-
-    try module.functions.append(allocator, function);
-    try apply(allocator, &module);
-
-    const transformed = module.functions.items[0].exprs.items[index_id];
-    const new_index = transformed.data.index.index;
-    const min_expr = module.functions.items[0].exprs.items[new_index];
-    try testing.expectEqualStrings("min", min_expr.data.call.name);
-
-    // First arg to min should be the original index (expr 1)
-    const first_arg = module.functions.items[0].expr_args.items[min_expr.data.call.args.start];
-    try testing.expectEqual(idx_id, first_arg);
-
-    // Second arg should be a binary sub (arrayLength - 1)
-    const second_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
-    const sub_expr = module.functions.items[0].exprs.items[second_arg_id];
-    try testing.expect(sub_expr.data == .binary);
-    try testing.expectEqual(ir.BinaryOp.sub, sub_expr.data.binary.op);
-
-    // The lhs of the sub should be an arrayLength call
-    const al_expr = module.functions.items[0].exprs.items[sub_expr.data.binary.lhs];
-    try testing.expect(al_expr.data == .call);
-    try testing.expectEqualStrings("arrayLength", al_expr.data.call.name);
+    return .{
+        .gid_axis = gid_axis,
+        .storage_binding = binding,
+    };
 }
 
-test "robustness: runtime-sized array member uses arrayLength" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
+// ---- Texture coordinate clamping ----
 
-    const f32_ty = f32_type(&module);
-    const u32_ty = u32_type(&module);
+const TEXTURE_LOAD_NAME = "textureLoad";
+const TEXTURE_STORE_NAME = "textureStore";
 
-    const arr_ty = try module.types.intern(.{ .array = .{ .elem = f32_ty, .len = null } });
-    const struct_ty = try add_struct_type(&module, allocator, "Wrapper", &.{
-        .{ .name = "data", .ty = arr_ty },
+/// Returns true if the name is a texture builtin whose integer coordinate
+/// argument requires robustness clamping.
+fn is_clamped_texture_builtin(name: []const u8) bool {
+    return std.mem.eql(u8, name, TEXTURE_LOAD_NAME) or
+        std.mem.eql(u8, name, TEXTURE_STORE_NAME);
+}
+
+/// Resolve the texture type from a type id, looking through refs.
+fn resolve_texture_type(types: *const ir.TypeStore, ty: ir.TypeId) ir.Type {
+    var current = ty;
+    while (true) {
+        const t = types.get(current);
+        switch (t) {
+            .ref => |ref_ty| current = ref_ty.elem,
+            else => return t,
+        }
+    }
+}
+
+/// Return the coordinate vector dimensionality for a given texture type.
+fn texture_coord_dim(tex_type: ir.Type) ?u8 {
+    return switch (tex_type) {
+        .texture_2d, .texture_depth_2d, .texture_multisampled_2d, .storage_texture_2d => 2,
+        .texture_3d, .texture_cube, .texture_depth_cube => 3,
+        .texture_2d_array => 2,
+        else => null,
+    };
+}
+
+/// Returns true if this texture type variant has a mip level parameter.
+fn texture_has_level(tex_type: ir.Type) bool {
+    return switch (tex_type) {
+        .texture_2d, .texture_depth_2d => true,
+        .texture_3d, .texture_cube, .texture_depth_cube => true,
+        else => false,
+    };
+}
+
+/// Clamp coordinate arguments of textureLoad/textureStore to valid ranges.
+///
+/// For textureLoad(tex, coords, level):
+///   coords = clamp(coords, vec(0), vec(textureDimensions(tex, level) - 1))
+///
+/// For textureStore(tex, coords, value):
+///   coords = clamp(coords, vec(0), vec(textureDimensions(tex) - 1))
+fn clamp_texture_coords(
+    allocator: std.mem.Allocator,
+    module: *ir.Module,
+    function: *ir.Function,
+    call_data: @FieldType(ir.Expr, "call"),
+) TransformError!void {
+    if (!is_clamped_texture_builtin(call_data.name)) return;
+    if (call_data.args.len < 2) return;
+
+    const texture_arg = function.expr_args.items[call_data.args.start];
+    const coord_arg = function.expr_args.items[call_data.args.start + 1];
+    const tex_ty = resolve_texture_type(&module.types, function.exprs.items[texture_arg].ty);
+    const dim = texture_coord_dim(tex_ty) orelse return;
+
+    const u32_ty = try ensure_u32_type(module);
+    const coord_vec_ty = module.types.intern(.{
+        .vector = .{ .elem = u32_ty, .len = dim },
+    }) catch return error.OutOfMemory;
+
+    // Build textureDimensions(tex) or textureDimensions(tex, level)
+    const td_id = blk: {
+        const is_load = std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME);
+        if (is_load and texture_has_level(tex_ty) and call_data.args.len >= 3) {
+            const level_arg = function.expr_args.items[call_data.args.start + 2];
+            const td_args = try function.append_expr_args(allocator, &.{ texture_arg, level_arg });
+            break :blk try function.append_expr(allocator, .{
+                .ty = coord_vec_ty,
+                .category = .value,
+                .data = .{ .call = .{
+                    .name = try ir.dup_string(allocator, "textureDimensions"),
+                    .kind = .builtin,
+                    .args = td_args,
+                } },
+            });
+        } else {
+            const td_args = try function.append_expr_args(allocator, &.{texture_arg});
+            break :blk try function.append_expr(allocator, .{
+                .ty = coord_vec_ty,
+                .category = .value,
+                .data = .{ .call = .{
+                    .name = try ir.dup_string(allocator, "textureDimensions"),
+                    .kind = .builtin,
+                    .args = td_args,
+                } },
+            });
+        }
+    };
+
+    // vec<u32, dim>(1)
+    const one_scalar = try function.append_expr(allocator, .{
+        .ty = u32_ty, .category = .value, .data = .{ .int_lit = 1 },
     });
-    const ref_struct_ty = try module.types.intern(.{ .ref = .{
-        .elem = struct_ty,
-        .addr_space = .storage,
-        .access = .read_write,
-    } });
-
-    try module.globals.append(allocator, .{
-        .name = try ir.dup_string(allocator, "buf"),
-        .ty = ref_struct_ty,
-        .class = .var_,
-        .addr_space = .storage,
-        .access = .read_write,
-        .binding = .{ .group = 0, .binding = 0 },
-    });
-
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-
-    const root_id = try function.append_expr(allocator, .{
-        .ty = ref_struct_ty,
-        .category = .ref,
-        .data = .{ .global_ref = 0 },
-    });
-    const member_id = try function.append_expr(allocator, .{
-        .ty = arr_ty,
-        .category = .ref,
-        .data = .{ .member = .{
-            .base = root_id,
-            .field_name = try ir.dup_string(allocator, "data"),
-            .field_index = 0,
-        } },
-    });
-    const idx_id = try function.append_expr(allocator, .{
-        .ty = u32_ty,
+    const splat_one_args = try function.append_expr_args(allocator, &.{one_scalar});
+    const one_vec = try function.append_expr(allocator, .{
+        .ty = coord_vec_ty,
         .category = .value,
-        .data = .{ .int_lit = 9 },
+        .data = .{ .construct = .{ .ty = coord_vec_ty, .args = splat_one_args } },
     });
-    const index_id = try function.append_expr(allocator, .{
-        .ty = f32_ty,
-        .category = .ref,
-        .data = .{ .index = .{
-            .base = member_id,
-            .index = idx_id,
+
+    // textureDimensions - vec(1)
+    const max_coord = try function.append_expr(allocator, .{
+        .ty = coord_vec_ty,
+        .category = .value,
+        .data = .{ .binary = .{ .op = .sub, .lhs = td_id, .rhs = one_vec } },
+    });
+
+    // vec<u32, dim>(0)
+    const zero_scalar = try function.append_expr(allocator, .{
+        .ty = u32_ty, .category = .value, .data = .{ .int_lit = 0 },
+    });
+    const splat_zero_args = try function.append_expr_args(allocator, &.{zero_scalar});
+    const zero_vec = try function.append_expr(allocator, .{
+        .ty = coord_vec_ty,
+        .category = .value,
+        .data = .{ .construct = .{ .ty = coord_vec_ty, .args = splat_zero_args } },
+    });
+
+    // clamp(coords, vec(0), textureDimensions - 1)
+    const clamp_args = try function.append_expr_args(allocator, &.{ coord_arg, zero_vec, max_coord });
+    const clamped_coord = try function.append_expr(allocator, .{
+        .ty = coord_vec_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "clamp"),
+            .kind = .builtin,
+            .args = clamp_args,
         } },
     });
 
-    try module.functions.append(allocator, function);
-    try apply(allocator, &module);
-
-    const transformed = module.functions.items[0].exprs.items[index_id];
-    const min_id = transformed.data.index.index;
-    const min_expr = module.functions.items[0].exprs.items[min_id];
-    try testing.expectEqualStrings("min", min_expr.data.call.name);
-    const second_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
-    const second_arg_expr = module.functions.items[0].exprs.items[second_arg_id];
-    try testing.expect(second_arg_expr.data == .binary);
-    try testing.expectEqual(ir.BinaryOp.sub, second_arg_expr.data.binary.op);
-    const array_length_expr = module.functions.items[0].exprs.items[second_arg_expr.data.binary.lhs];
-    try testing.expect(array_length_expr.data == .call);
-    try testing.expectEqualStrings("arrayLength", array_length_expr.data.call.name);
-    const array_length_arg = module.functions.items[0].expr_args.items[array_length_expr.data.call.args.start];
-    try testing.expectEqual(member_id, array_length_arg);
+    // Replace the coordinate argument in the original call's arg list.
+    function.expr_args.items[call_data.args.start + 1] = clamped_coord;
 }
 
-test "robustness: non-index expressions are unchanged" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
-
-    const u32_ty = u32_type(&module);
-
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-    errdefer function.deinit(allocator);
-
-    // expr 0: int_lit(42) — no index, should not be modified
-    _ = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 42 } });
-    // expr 1: binary add
-    _ = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .binary = .{ .op = .add, .lhs = 0, .rhs = 0 } } });
-
-    try module.functions.append(allocator, function);
-
-    const original_count = module.functions.items[0].exprs.items.len;
-    try apply(allocator, &module);
-
-    // No new expressions should have been appended.
-    try testing.expectEqual(original_count, module.functions.items[0].exprs.items.len);
-}
-
-test "robustness: matrix column index is clamped" {
-    const allocator = testing.allocator;
-    var module = try make_test_module(allocator);
-    defer module.deinit();
-
-    const f32_ty = f32_type(&module);
-    const u32_ty = u32_type(&module);
-
-    // mat3x3<f32>
-    const vec3_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 3 } });
-    const mat_ty = try module.types.intern(.{ .matrix = .{ .elem = f32_ty, .columns = 3, .rows = 3 } });
-
-    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
-    errdefer function.deinit(allocator);
-
-    try function.locals.append(allocator, .{ .name = try ir.dup_string(allocator, "m"), .ty = mat_ty, .mutable = false });
-
-    const base_id = try function.append_expr(allocator, .{ .ty = mat_ty, .category = .value, .data = .{ .local_ref = 0 } });
-    const idx_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 7 } });
-    const index_id = try function.append_expr(allocator, .{ .ty = vec3_ty, .category = .value, .data = .{ .index = .{ .base = base_id, .index = idx_id } } });
-
-    try module.functions.append(allocator, function);
-    try apply(allocator, &module);
-
-    const transformed = module.functions.items[0].exprs.items[index_id];
-    const new_index = transformed.data.index.index;
-    const min_expr = module.functions.items[0].exprs.items[new_index];
-    try testing.expectEqualStrings("min", min_expr.data.call.name);
-
-    // Max should be columns - 1 = 2
-    const max_arg_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
-    const max_expr = module.functions.items[0].exprs.items[max_arg_id];
-    try testing.expectEqual(@as(u64, 2), max_expr.data.int_lit);
-}
+// Tests are in ir_transform_robustness_test.zig (split for 777-line limit).

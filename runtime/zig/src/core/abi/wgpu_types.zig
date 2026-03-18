@@ -635,12 +635,18 @@ pub const WGPUShaderSourceHLSL = extern struct {
     workgroup_size_z: u32,
 };
 
+pub const WGPUConstantEntry = extern struct {
+    nextInChain: ?*anyopaque,
+    key: WGPUStringView,
+    value: f64,
+};
+
 pub const WGPUComputeState = extern struct {
     nextInChain: ?*anyopaque,
     module: WGPUShaderModule,
     entryPoint: WGPUStringView,
     constantCount: usize,
-    constants: ?*anyopaque,
+    constants: ?[*]const WGPUConstantEntry,
 };
 
 pub const WGPUComputePipelineDescriptor = extern struct {

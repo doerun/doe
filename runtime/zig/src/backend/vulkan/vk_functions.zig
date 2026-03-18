@@ -58,6 +58,8 @@ pub extern fn vkCmdBindDescriptorSets(commandBuffer: vk.VkCommandBuffer, pipelin
 pub extern fn vkCreateQueryPool(device: vk.VkDevice, pCreateInfo: *const structs.VkQueryPoolCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pQueryPool: *vk.VkQueryPool) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyQueryPool(device: vk.VkDevice, queryPool: vk.VkQueryPool, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkCmdWriteTimestamp(commandBuffer: vk.VkCommandBuffer, pipelineStage: vk.VkFlags, queryPool: vk.VkQueryPool, query: u32) callconv(.c) void;
+pub extern fn vkCmdResetQueryPool(commandBuffer: vk.VkCommandBuffer, queryPool: vk.VkQueryPool, firstQuery: u32, queryCount: u32) callconv(.c) void;
+pub extern fn vkCmdCopyQueryPoolResults(commandBuffer: vk.VkCommandBuffer, queryPool: vk.VkQueryPool, firstQuery: u32, queryCount: u32, dstBuffer: vk.VkBuffer, dstOffset: vk.VkDeviceSize, stride: vk.VkDeviceSize, flags: vk.VkFlags) callconv(.c) void;
 pub extern fn vkGetQueryPoolResults(device: vk.VkDevice, queryPool: vk.VkQueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: ?*anyopaque, stride: vk.VkDeviceSize, flags: vk.VkFlags) callconv(.c) vk.VkResult;
 pub extern fn vkCreateRenderPass(device: vk.VkDevice, pCreateInfo: *const structs.VkRenderPassCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pRenderPass: *vk.VkRenderPass) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyRenderPass(device: vk.VkDevice, renderPass: vk.VkRenderPass, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;

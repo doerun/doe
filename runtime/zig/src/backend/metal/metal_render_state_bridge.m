@@ -172,6 +172,39 @@ void metal_render_state_set_blend_color(
 }
 
 // ============================================================
+// Debug group / marker dynamic state
+// ============================================================
+
+void metal_render_state_push_debug_group(
+    MetalHandle encoder_h,
+    const char* label,
+    size_t      label_len)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    NSString* ns_label = [[NSString alloc] initWithBytes:label
+                                                  length:label_len
+                                                encoding:NSUTF8StringEncoding];
+    if (ns_label) [encoder pushDebugGroup:ns_label];
+}
+
+void metal_render_state_pop_debug_group(MetalHandle encoder_h) {
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    [encoder popDebugGroup];
+}
+
+void metal_render_state_insert_debug_marker(
+    MetalHandle encoder_h,
+    const char* label,
+    size_t      label_len)
+{
+    id<MTLRenderCommandEncoder> encoder = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
+    NSString* ns_label = [[NSString alloc] initWithBytes:label
+                                                  length:label_len
+                                                encoding:NSUTF8StringEncoding];
+    if (ns_label) [encoder insertDebugSignpost:ns_label];
+}
+
+// ============================================================
 // Full render pipeline with blend, MSAA, depth/stencil
 // ============================================================
 

@@ -1,1 +1,9 @@
-pub usingnamespace @import("../../replay.zig");
+const _impl = @import("../../replay.zig");
+pub const ReplayValidationError = _impl.ReplayValidationError;
+pub const ReplayExpectation = _impl.ReplayExpectation;
+pub const RawReplayRow = _impl.RawReplayRow;
+pub const parseTraceHash = _impl.parseTraceHash;
+pub const parseReplayLine = _impl.parseReplayLine;
+pub const loadReplayExpectations = _impl.loadReplayExpectations;
+pub const freeReplayExpectations = _impl.freeReplayExpectations;
+pub const matchOptionalText = _impl.matchOptionalText;

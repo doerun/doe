@@ -49,8 +49,22 @@ function validateWriteBufferInput(data, dataOffset, size, path) {
 function createFullSurfaceClasses({
   globals,
   backend,
+  encoderClasses,
 }) {
   let classes = null;
+  const ERROR_FILTER_MAP = Object.freeze({
+    validation: 0x00000001,
+    'out-of-memory': 0x00000002,
+    internal: 0x00000003,
+  });
+
+  function normalizeErrorFilter(filter, path) {
+    const encoded = ERROR_FILTER_MAP[filter];
+    if (encoded === undefined) {
+      failValidation(path, `invalid filter "${filter}"; must be "validation", "out-of-memory", or "internal"`);
+    }
+    return encoded;
+  }
 
   class DoeGPUBuffer {
     constructor(native, instance, size, usage, queue, owner) {
@@ -59,6 +73,7 @@ function createFullSurfaceClasses({
       this._queue = queue;
       this.size = size;
       this.usage = usage;
+      this.label = '';
       initResource(this, 'GPUBuffer', owner);
       if (backend.initBufferState) {
         backend.initBufferState(this);
@@ -156,6 +171,7 @@ function createFullSurfaceClasses({
       this._native = native;
       this._instance = instance;
       this._device = device;
+      this.label = '';
       initResource(this, 'GPUQueue', device);
       if (backend.initQueueState) {
         backend.initQueueState(this);
@@ -189,6 +205,39 @@ function createFullSurfaceClasses({
       return backend.queueWriteBuffer(this, native, bufferNative, bufferOffset, view);
     }
 
+    writeTexture(destination, data, dataLayout, size) {
+      const native = assertLiveResource(this, 'GPUQueue.writeTexture', 'GPUQueue');
+      const destinationObject = assertObject(destination, 'GPUQueue.writeTexture', 'destination');
+      const layoutObject = assertObject(dataLayout, 'GPUQueue.writeTexture', 'dataLayout');
+      const sizeObject = assertObject(size, 'GPUQueue.writeTexture', 'size');
+      const view = validateWriteBufferInput(data, 0, undefined, 'GPUQueue.writeTexture');
+      return backend.queueWriteTexture(
+        this,
+        native,
+        {
+          texture: assertLiveResource(destinationObject.texture, 'GPUQueue.writeTexture', 'GPUTexture'),
+          mipLevel: destinationObject.mipLevel ?? 0,
+          origin: {
+            x: destinationObject.origin?.x ?? 0,
+            y: destinationObject.origin?.y ?? 0,
+            z: destinationObject.origin?.z ?? 0,
+          },
+          aspect: destinationObject.aspect,
+        },
+        view,
+        {
+          offset: layoutObject.offset ?? 0,
+          bytesPerRow: layoutObject.bytesPerRow ?? 0,
+          rowsPerImage: layoutObject.rowsPerImage ?? 0,
+        },
+        {
+          width: sizeObject.width,
+          height: sizeObject.height,
+          depthOrArrayLayers: sizeObject.depthOrArrayLayers ?? 1,
+        },
+      );
+    }
+
     async onSubmittedWorkDone() {
       const native = assertLiveResource(this, 'GPUQueue.onSubmittedWorkDone', 'GPUQueue');
       if (!this.hasPendingSubmissions()) {
@@ -197,17 +246,42 @@ function createFullSurfaceClasses({
       await backend.queueOnSubmittedWorkDone(this, native);
       this.markSubmittedWorkDone();
     }
+
+    copyExternalImageToTexture(source, destination, copySize) {
+      const native = assertLiveResource(this, 'GPUQueue.copyExternalImageToTexture', 'GPUQueue');
+      const sourceObject = assertObject(source, 'GPUQueue.copyExternalImageToTexture', 'source');
+      const destinationObject = assertObject(destination, 'GPUQueue.copyExternalImageToTexture', 'destination');
+      const sizeObject = assertObject(copySize, 'GPUQueue.copyExternalImageToTexture', 'copySize');
+      if (typeof backend.queueCopyExternalImageToTexture !== 'function') {
+        failValidation(
+          'GPUQueue.copyExternalImageToTexture',
+          'copyExternalImageToTexture is not supported on this package surface',
+        );
+      }
+      return backend.queueCopyExternalImageToTexture(this, native, sourceObject, destinationObject, sizeObject);
+    }
   }
 
   class DoeGPUTexture {
-    constructor(native, owner) {
+    constructor(native, owner, meta) {
       this._native = native;
+      this.width = meta?.width ?? 1;
+      this.height = meta?.height ?? 1;
+      this.depthOrArrayLayers = meta?.depthOrArrayLayers ?? 1;
+      this.mipLevelCount = meta?.mipLevelCount ?? 1;
+      this.sampleCount = meta?.sampleCount ?? 1;
+      this.dimension = meta?.dimension ?? '2d';
+      this.format = meta?.format ?? 'rgba8unorm';
+      this.usage = meta?.usage ?? 0;
+      this.label = '';
       initResource(this, 'GPUTexture', owner);
     }
 
     createView(descriptor) {
       const view = backend.textureCreateView(this, assertLiveResource(this, 'GPUTexture.createView', 'GPUTexture'), descriptor);
-      return new DoeGPUTextureView(view, this);
+      const tv = new DoeGPUTextureView(view, this);
+      tv.label = descriptor?.label ?? '';
+      return tv;
     }
 
     destroy() {
@@ -218,6 +292,7 @@ function createFullSurfaceClasses({
   class DoeGPUTextureView {
     constructor(native, owner) {
       this._native = native;
+      this.label = '';
       initResource(this, 'GPUTextureView', owner);
     }
   }
@@ -225,6 +300,7 @@ function createFullSurfaceClasses({
   class DoeGPUSampler {
     constructor(native, owner) {
       this._native = native;
+      this.label = '';
       initResource(this, 'GPUSampler', owner);
     }
   }
@@ -232,7 +308,14 @@ function createFullSurfaceClasses({
   class DoeGPURenderPipeline {
     constructor(native, owner) {
       this._native = native;
+      this.label = '';
       initResource(this, 'GPURenderPipeline', owner);
+    }
+
+    getBindGroupLayout(index) {
+      assertLiveResource(this, 'GPURenderPipeline.getBindGroupLayout', 'GPURenderPipeline');
+      assertIntegerInRange(index, 'GPURenderPipeline.getBindGroupLayout', 'index', { min: 0, max: UINT32_MAX });
+      return backend.renderPipelineGetBindGroupLayout(this, index, classes);
     }
   }
 
@@ -240,7 +323,16 @@ function createFullSurfaceClasses({
     constructor(native, code, owner) {
       this._native = native;
       this._code = code;
+      this.label = '';
       initResource(this, 'GPUShaderModule', owner);
+    }
+
+    async getCompilationInfo() {
+      const native = assertLiveResource(this, 'GPUShaderModule.getCompilationInfo', 'GPUShaderModule');
+      if (typeof backend.shaderModuleGetCompilationInfo === 'function') {
+        return backend.shaderModuleGetCompilationInfo(this, native);
+      }
+      return { messages: [] };
     }
 
     destroy() {
@@ -258,6 +350,7 @@ function createFullSurfaceClasses({
       this._explicitLayout = explicitLayout;
       this._autoLayoutEntriesByGroup = autoLayoutEntriesByGroup;
       this._cachedLayouts = new Map();
+      this.label = '';
       initResource(this, 'GPUComputePipeline', device);
     }
 
@@ -279,6 +372,7 @@ function createFullSurfaceClasses({
   class DoeGPUBindGroupLayout {
     constructor(native, owner) {
       this._native = native;
+      this.label = '';
       initResource(this, 'GPUBindGroupLayout', owner);
     }
   }
@@ -286,6 +380,7 @@ function createFullSurfaceClasses({
   class DoeGPUBindGroup {
     constructor(native, owner) {
       this._native = native;
+      this.label = '';
       initResource(this, 'GPUBindGroup', owner);
     }
   }
@@ -293,6 +388,7 @@ function createFullSurfaceClasses({
   class DoeGPUPipelineLayout {
     constructor(native, owner) {
       this._native = native;
+      this.label = '';
       initResource(this, 'GPUPipelineLayout', owner);
     }
   }
@@ -302,6 +398,7 @@ function createFullSurfaceClasses({
       this._native = native;
       this.type = type;
       this.count = count;
+      this.label = '';
       initResource(this, 'GPUQuerySet', owner);
     }
 
@@ -314,16 +411,62 @@ function createFullSurfaceClasses({
     constructor(native, instance, inheritedLimits = null, inheritedFeatures = null) {
       this._native = native;
       this._instance = instance;
+      this.label = '';
       initResource(this, 'GPUDevice');
+      if (typeof backend.initDeviceState === 'function') {
+        backend.initDeviceState(this);
+      }
       this.queue = new DoeGPUQueue(backend.deviceGetQueue(native), instance, this);
       this.limits = inheritedLimits ?? backend.deviceLimits(native);
       this.features = inheritedFeatures ?? backend.deviceFeatures(native);
+    }
+
+    get lost() {
+      const native = assertLiveResource(this, 'GPUDevice.lost', 'GPUDevice');
+      if (typeof backend.deviceGetLost === 'function') {
+        return backend.deviceGetLost(this, native);
+      }
+      failValidation('GPUDevice.lost', 'device lost tracking is not supported on this package surface');
+    }
+
+    pushErrorScope(filter) {
+      const native = assertLiveResource(this, 'GPUDevice.pushErrorScope', 'GPUDevice');
+      const encodedFilter = normalizeErrorFilter(filter, 'GPUDevice.pushErrorScope');
+      if (typeof backend.devicePushErrorScope !== 'function') {
+        failValidation('GPUDevice.pushErrorScope', 'error scopes are not supported on this package surface');
+      }
+      backend.devicePushErrorScope(this, native, filter, encodedFilter);
+    }
+
+    popErrorScope() {
+      const native = assertLiveResource(this, 'GPUDevice.popErrorScope', 'GPUDevice');
+      if (typeof backend.devicePopErrorScope !== 'function') {
+        failValidation('GPUDevice.popErrorScope', 'error scopes are not supported on this package surface');
+      }
+      return backend.devicePopErrorScope(this, native);
+    }
+
+    get onuncapturederror() {
+      const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');
+      if (typeof backend.deviceGetOnUncapturedError === 'function') {
+        return backend.deviceGetOnUncapturedError(this, native);
+      }
+      return null;
+    }
+
+    set onuncapturederror(handler) {
+      const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');
+      if (typeof backend.deviceSetOnUncapturedError !== 'function') {
+        failValidation('GPUDevice.onuncapturederror', 'uncaptured error handlers are not supported on this package surface');
+      }
+      backend.deviceSetOnUncapturedError(this, native, handler ?? null);
     }
 
     createBuffer(descriptor) {
       const validated = assertBufferDescriptor(descriptor, 'GPUDevice.createBuffer');
       const native = backend.deviceCreateBuffer(this, validated);
       const buffer = new DoeGPUBuffer(native, this._instance, validated.size, validated.usage, this.queue, this);
+      buffer.label = descriptor?.label ?? '';
       if (validated.mappedAtCreation && typeof backend.bufferMarkMappedAtCreation === 'function') {
         backend.bufferMarkMappedAtCreation(buffer);
       }
@@ -339,7 +482,9 @@ function createFullSurfaceClasses({
         shaderCheckFailure('GPUDevice.createShaderModule', preflight);
       }
       const native = backend.deviceCreateShaderModule(this, code);
-      return new DoeGPUShaderModule(native, code, this);
+      const module = new DoeGPUShaderModule(native, code, this);
+      module.label = objectDescriptor.label ?? '';
+      return module;
     }
 
     createComputePipeline(descriptor) {
@@ -362,8 +507,11 @@ function createFullSurfaceClasses({
           globals.GPUShaderStage.COMPUTE,
           'GPUDevice.createComputePipeline',
         );
-      const native = backend.deviceCreateComputePipeline(this, shaderNative, entryPoint, layout?._native ?? null);
-      return new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
+      const constants = compute.constants ?? null;
+      const native = backend.deviceCreateComputePipeline(this, shaderNative, entryPoint, layout?._native ?? null, constants);
+      const pipeline = new DoeGPUComputePipeline(native, this, layout, autoLayoutEntriesByGroup);
+      pipeline.label = pipelineDescriptor.label ?? '';
+      return pipeline;
     }
 
     async createComputePipelineAsync(descriptor) {
@@ -375,7 +523,9 @@ function createFullSurfaceClasses({
       const entries = assertArray(layoutDescriptor.entries ?? [], 'GPUDevice.createBindGroupLayout', 'descriptor.entries')
         .map((entry, index) => normalizeBindGroupLayoutEntry(entry, index, 'GPUDevice.createBindGroupLayout'));
       const native = backend.deviceCreateBindGroupLayout(this, entries);
-      return new DoeGPUBindGroupLayout(native, this);
+      const bgl = new DoeGPUBindGroupLayout(native, this);
+      bgl.label = layoutDescriptor.label ?? '';
+      return bgl;
     }
 
     createBindGroup(descriptor) {
@@ -398,7 +548,9 @@ function createFullSurfaceClasses({
           return normalized;
         });
       const native = backend.deviceCreateBindGroup(this, layoutNative, entries);
-      return new DoeGPUBindGroup(native, this);
+      const bg = new DoeGPUBindGroup(native, this);
+      bg.label = bindGroupDescriptor.label ?? '';
+      return bg;
     }
 
     createPipelineLayout(descriptor) {
@@ -406,7 +558,9 @@ function createFullSurfaceClasses({
       const layouts = assertArray(layoutDescriptor.bindGroupLayouts ?? [], 'GPUDevice.createPipelineLayout', 'descriptor.bindGroupLayouts')
         .map((layout, index) => assertLiveResource(layout, 'GPUDevice.createPipelineLayout', `descriptor.bindGroupLayouts[${index}]`));
       const native = backend.deviceCreatePipelineLayout(this, layouts);
-      return new DoeGPUPipelineLayout(native, this);
+      const pl = new DoeGPUPipelineLayout(native, this);
+      pl.label = layoutDescriptor.label ?? '';
+      return pl;
     }
 
     createTexture(descriptor) {
@@ -418,13 +572,26 @@ function createFullSurfaceClasses({
         ...textureDescriptor,
         dimension,
       }, size, usage);
-      return new DoeGPUTexture(native, this);
+      const texture = new DoeGPUTexture(native, this, {
+        width: size.width,
+        height: size.height,
+        depthOrArrayLayers: size.depthOrArrayLayers,
+        mipLevelCount: textureDescriptor.mipLevelCount ?? 1,
+        sampleCount: textureDescriptor.sampleCount ?? 1,
+        dimension,
+        format: textureDescriptor.format ?? 'rgba8unorm',
+        usage,
+      });
+      texture.label = textureDescriptor.label ?? '';
+      return texture;
     }
 
     createSampler(descriptor = {}) {
       assertObject(descriptor, 'GPUDevice.createSampler', 'descriptor');
       const native = backend.deviceCreateSampler(this, descriptor);
-      return new DoeGPUSampler(native, this);
+      const sampler = new DoeGPUSampler(native, this);
+      sampler.label = descriptor?.label ?? '';
+      return sampler;
     }
 
     createRenderPipeline(descriptor) {
@@ -455,7 +622,24 @@ function createFullSurfaceClasses({
         depthStencil: renderDescriptor.depthStencil ?? null,
         multisample: renderDescriptor.multisample ?? null,
       });
-      return new DoeGPURenderPipeline(native, this);
+      const rp = new DoeGPURenderPipeline(native, this);
+      rp.label = renderDescriptor.label ?? '';
+      return rp;
+    }
+
+    async createRenderPipelineAsync(descriptor) {
+      return this.createRenderPipeline(descriptor);
+    }
+
+    createRenderBundleEncoder(descriptor) {
+      const bundleDescriptor = assertObject(descriptor, 'GPUDevice.createRenderBundleEncoder', 'descriptor');
+      assertLiveResource(this, 'GPUDevice.createRenderBundleEncoder', 'GPUDevice');
+      if (!encoderClasses?.DoeGPURenderBundleEncoder) {
+        failValidation('GPUDevice.createRenderBundleEncoder', 'render bundle encoder surface unavailable on this package build');
+      }
+      const rbe = backend.deviceCreateRenderBundleEncoder(this, bundleDescriptor, encoderClasses);
+      rbe.label = bundleDescriptor.label ?? '';
+      return rbe;
     }
 
     createQuerySet(descriptor) {
@@ -466,7 +650,9 @@ function createFullSurfaceClasses({
       }
       assertIntegerInRange(queryDescriptor.count, 'GPUDevice.createQuerySet', 'descriptor.count', { min: 1, max: UINT32_MAX });
       const native = backend.deviceCreateQuerySet(this, queryDescriptor);
-      return new DoeGPUQuerySet(native, queryDescriptor.type, queryDescriptor.count, this);
+      const qs = new DoeGPUQuerySet(native, queryDescriptor.type, queryDescriptor.count, this);
+      qs.label = queryDescriptor.label ?? '';
+      return qs;
     }
 
     createCommandEncoder(descriptor) {
@@ -474,7 +660,21 @@ function createFullSurfaceClasses({
         assertObject(descriptor, 'GPUDevice.createCommandEncoder', 'descriptor');
       }
       assertLiveResource(this, 'GPUDevice.createCommandEncoder', 'GPUDevice');
-      return backend.deviceCreateCommandEncoder(this, descriptor, classes);
+      const encoder = backend.deviceCreateCommandEncoder(this, descriptor, classes);
+      encoder.label = descriptor?.label ?? '';
+      return encoder;
+    }
+
+    importExternalTexture(descriptor) {
+      const native = assertLiveResource(this, 'GPUDevice.importExternalTexture', 'GPUDevice');
+      const textureDescriptor = assertObject(descriptor, 'GPUDevice.importExternalTexture', 'descriptor');
+      if (typeof backend.deviceImportExternalTexture !== 'function') {
+        failValidation(
+          'GPUDevice.importExternalTexture',
+          'importExternalTexture is not supported on this package surface',
+        );
+      }
+      return backend.deviceImportExternalTexture(this, native, textureDescriptor, classes);
     }
 
     destroy() {
@@ -486,9 +686,30 @@ function createFullSurfaceClasses({
     constructor(native, instance) {
       this._native = native;
       this._instance = instance;
+      this._info = null;
+      this.label = '';
       this.features = backend.adapterFeatures(native);
       this.limits = backend.adapterLimits(native);
       initResource(this, 'GPUAdapter');
+    }
+
+    get info() {
+      if (this._info !== null) {
+        return this._info;
+      }
+      if (typeof backend.adapterGetInfo === 'function') {
+        this._info = backend.adapterGetInfo(this, this._native);
+        return this._info;
+      }
+      this._info = Object.freeze({
+        vendor: '',
+        architecture: '',
+        device: '',
+        description: '',
+        subgroupMinSize: 0,
+        subgroupMaxSize: 0,
+      });
+      return this._info;
     }
 
     async requestDevice(descriptor) {
@@ -500,9 +721,21 @@ function createFullSurfaceClasses({
     }
   }
 
+  const WGSL_LANGUAGE_FEATURES = Object.freeze(new Set([
+    'readonly-and-readwrite-storage-textures',
+  ]));
+
   class DoeGPU {
     constructor(instance) {
       this._instance = instance;
+    }
+
+    get wgslLanguageFeatures() {
+      return WGSL_LANGUAGE_FEATURES;
+    }
+
+    getPreferredCanvasFormat() {
+      return 'bgra8unorm';
     }
 
     async requestAdapter(options) {

@@ -487,7 +487,11 @@ pub const FunctionState = struct {
     pub fn ref_storage_class(self: *FunctionState, expr_id: ir.ExprId) EmitError!u32 {
         const expr = self.function.exprs.items[expr_id];
         return switch (expr.data) {
-            .param_ref, .local_ref => spirv.StorageClass.Function,
+            .param_ref => |index| switch (self.emitter.module.types.get(self.function.params.items[index].ty)) {
+                .ref => |ref_ty| emit_spirv.addr_space_to_storage_class(ref_ty.addr_space),
+                else => spirv.StorageClass.Function,
+            },
+            .local_ref => spirv.StorageClass.Function,
             .global_ref => |index| try self.emitter.global_storage_class(self.emitter.module.globals.items[index]),
             .member => |member| try self.ref_storage_class(member.base),
             .index => |index| try self.ref_storage_class(index.base),

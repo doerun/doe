@@ -66,15 +66,26 @@ pub extern fn metal_bridge_blit_encoder_copy_texture_to_texture(encoder: ?*anyop
 pub extern fn metal_bridge_create_surface_host(layer_out: *?*anyopaque) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_configure_surface_host(host: ?*anyopaque, width: u32, height: u32) callconv(.c) void;
 
+// clearBuffer / copyTextureToTexture / writeTexture
+pub extern fn metal_bridge_cmd_buf_fill_buffer(cmd_buf: ?*anyopaque, buffer: ?*anyopaque, offset: u64, size: u64) callconv(.c) void;
+pub extern fn metal_bridge_cmd_buf_copy_texture_to_texture(cmd_buf: ?*anyopaque, src_texture: ?*anyopaque, src_mip: u32, src_slice: u32, src_x: u32, src_y: u32, src_z: u32, dst_texture: ?*anyopaque, dst_mip: u32, dst_slice: u32, dst_x: u32, dst_y: u32, dst_z: u32, width: u32, height: u32, depth_or_layers: u32) callconv(.c) void;
+pub extern fn metal_bridge_texture_write_region(texture: ?*anyopaque, data: *const anyopaque, bytes_per_row: u32, rows_per_image: u32, dst_x: u32, dst_y: u32, dst_z: u32, dst_mip: u32, dst_slice: u32, width: u32, height: u32, depth_or_layers: u32) callconv(.c) c_int;
+
 // Device capability queries — runtime feature detection
 pub extern fn metal_bridge_query_device_features() callconv(.c) u32;
 pub extern fn metal_bridge_query_device_max_buffer_length() callconv(.c) u64;
+
+// Adapter info string — four NUL-terminated strings (vendor, arch, device, desc) in one block.
+// Caller frees with metal_bridge_free_string.
+pub extern fn metal_bridge_adapter_get_info_string(device: ?*anyopaque) callconv(.c) ?[*]u8;
+pub extern fn metal_bridge_free_string(str: ?[*]u8) callconv(.c) void;
 
 // GPU timestamp query (MTLCounterSampleBuffer)
 pub extern fn metal_bridge_supports_timestamp_query(device: ?*anyopaque) callconv(.c) c_int;
 pub extern fn metal_bridge_create_counter_sample_buffer(device: ?*anyopaque, count: u32) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_sample_timestamp(cmd_buf: ?*anyopaque, counter_buffer: ?*anyopaque, query_index: u32) callconv(.c) void;
 pub extern fn metal_bridge_resolve_timestamps(counter_buffer: ?*anyopaque, first_query: u32, query_count: u32, dest_ptr: [*]u64) callconv(.c) c_int;
+pub extern fn metal_bridge_resolve_timestamps_ns(counter_buffer: ?*anyopaque, first_query: u32, query_count: u32, dest_ptr: [*]u64) callconv(.c) c_int;
 pub extern fn metal_bridge_destroy_counter_sample_buffer(counter_buffer: ?*anyopaque) callconv(.c) void;
 pub const MetalVertexBufferLayout = extern struct {
     array_stride: u64,

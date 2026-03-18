@@ -133,8 +133,18 @@ pub const AsyncDiagnosticsFeaturePolicy = model_webgpu_types.AsyncDiagnosticsFea
 pub const AsyncDiagnosticsCommand = model_webgpu_types.AsyncDiagnosticsCommand;
 pub const MapAsyncMode = model_webgpu_types.MapAsyncMode;
 pub const MapAsyncCommand = model_webgpu_types.MapAsyncCommand;
-pub const CoreCommandKind = @import("core/command_partition.zig").CommandKind;
-pub const FullCommandKind = @import("full/command_partition.zig").CommandKind;
+const core_partition = @import("core/command_partition.zig");
+const full_partition = @import("full/command_partition.zig");
+
+/// Core command kind — authoritative definition in core/command_partition.zig.
+pub const CoreCommandKind = core_partition.CommandKind;
+/// Full-only command kind — authoritative definition in full/command_partition.zig.
+pub const FullCommandKind = full_partition.CommandKind;
+
+/// Core command union — authoritative definition in core/command_partition.zig.
+pub const CoreCommand = core_partition.Command;
+/// Full-only command union — authoritative definition in full/command_partition.zig.
+pub const FullCommand = full_partition.Command;
 
 pub const SchemaVersion = u8;
 pub const CURRENT_SCHEMA_VERSION: SchemaVersion = 2;
@@ -173,6 +183,8 @@ pub const ProofLevel = enum(u8) {
     rejected,
 };
 
+/// Combined command kind — composed from CoreCommandKind + FullCommandKind.
+/// Core variants come first (ordinals 0..N-1), full variants follow (N..N+M-1).
 pub const CommandKind = enum(u8) {
     upload,
     copy_buffer_to_texture,
@@ -200,22 +212,29 @@ pub const CommandKind = enum(u8) {
     map_async,
 };
 
+/// Combined command union — composes CoreCommand and FullCommand payload types.
+/// Payload types are defined authoritatively in the partition modules;
+/// this union references them to avoid duplicate definitions.
 pub const Command = union(CommandKind) {
+    // Core commands (payload types from core/command_partition.zig via CoreCommand)
     upload: UploadCommand,
     copy_buffer_to_texture: CopyCommand,
     barrier: BarrierCommand,
     dispatch: DispatchCommand,
     dispatch_indirect: DispatchIndirectCommand,
     kernel_dispatch: KernelDispatchCommand,
+    // Full-only commands (payload types from full/command_partition.zig via FullCommand)
     render_draw: RenderDrawCommand,
     draw_indirect: DrawIndirectCommand,
     draw_indexed_indirect: DrawIndexedIndirectCommand,
     render_pass: RenderPassCommand,
     sampler_create: SamplerCreateCommand,
     sampler_destroy: SamplerDestroyCommand,
+    // Core resource commands
     texture_write: TextureWriteCommand,
     texture_query: TextureQueryCommand,
     texture_destroy: TextureDestroyCommand,
+    // Full surface commands
     surface_create: SurfaceCreateCommand,
     surface_capabilities: SurfaceCapabilitiesCommand,
     surface_configure: SurfaceConfigureCommand,
@@ -223,39 +242,59 @@ pub const Command = union(CommandKind) {
     surface_present: SurfacePresentCommand,
     surface_unconfigure: SurfaceUnconfigureCommand,
     surface_release: SurfaceReleaseCommand,
+    // Full lifecycle commands
     async_diagnostics: AsyncDiagnosticsCommand,
+    // Core queue-sync commands
     map_async: MapAsyncCommand,
 };
 
-pub const CoreCommand = union(CoreCommandKind) {
-    upload: UploadCommand,
-    copy_buffer_to_texture: CopyCommand,
-    barrier: BarrierCommand,
-    dispatch: DispatchCommand,
-    dispatch_indirect: DispatchIndirectCommand,
-    kernel_dispatch: KernelDispatchCommand,
-    texture_write: TextureWriteCommand,
-    texture_query: TextureQueryCommand,
-    texture_destroy: TextureDestroyCommand,
-    map_async: MapAsyncCommand,
-};
+// Comptime check: every CoreCommand variant has a matching Command variant,
+// and every FullCommand variant has a matching Command variant, and the
+// combined Command has no extra variants beyond core + full.
+comptime {
+    const core_fields = @typeInfo(CoreCommand).@"union".fields;
+    const full_fields = @typeInfo(FullCommand).@"union".fields;
+    const combined_fields = @typeInfo(Command).@"union".fields;
 
-pub const FullCommand = union(FullCommandKind) {
-    render_draw: RenderDrawCommand,
-    draw_indirect: DrawIndirectCommand,
-    draw_indexed_indirect: DrawIndexedIndirectCommand,
-    render_pass: RenderPassCommand,
-    sampler_create: SamplerCreateCommand,
-    sampler_destroy: SamplerDestroyCommand,
-    surface_create: SurfaceCreateCommand,
-    surface_capabilities: SurfaceCapabilitiesCommand,
-    surface_configure: SurfaceConfigureCommand,
-    surface_acquire: SurfaceAcquireCommand,
-    surface_present: SurfacePresentCommand,
-    surface_unconfigure: SurfaceUnconfigureCommand,
-    surface_release: SurfaceReleaseCommand,
-    async_diagnostics: AsyncDiagnosticsCommand,
-};
+    // Combined must equal core + full
+    if (combined_fields.len != core_fields.len + full_fields.len) {
+        @compileError("Command variant count does not equal CoreCommand + FullCommand");
+    }
+
+    // Every core variant must exist in combined with the same payload type
+    for (core_fields) |core_field| {
+        var found = false;
+        for (combined_fields) |combined_field| {
+            if (std.mem.eql(u8, core_field.name, combined_field.name)) {
+                if (core_field.type != combined_field.type) {
+                    @compileError("Command." ++ core_field.name ++ " payload type differs from CoreCommand");
+                }
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            @compileError("CoreCommand." ++ core_field.name ++ " missing from Command");
+        }
+    }
+
+    // Every full variant must exist in combined with the same payload type
+    for (full_fields) |full_field| {
+        var found = false;
+        for (combined_fields) |combined_field| {
+            if (std.mem.eql(u8, full_field.name, combined_field.name)) {
+                if (full_field.type != combined_field.type) {
+                    @compileError("Command." ++ full_field.name ++ " payload type differs from FullCommand");
+                }
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            @compileError("FullCommand." ++ full_field.name ++ " missing from Command");
+        }
+    }
+}
 
 pub const UseTemporaryBufferAction = struct {
     alignment_bytes: u32,
@@ -480,61 +519,11 @@ pub fn as_full_command(cmd: Command) ?FullCommand {
 }
 
 pub fn command_kind(cmd: Command) CommandKind {
-    return switch (cmd) {
-        .upload => .upload,
-        .copy_buffer_to_texture => .copy_buffer_to_texture,
-        .barrier => .barrier,
-        .dispatch => .dispatch,
-        .dispatch_indirect => .dispatch_indirect,
-        .kernel_dispatch => .kernel_dispatch,
-        .render_draw => .render_draw,
-        .draw_indirect => .draw_indirect,
-        .draw_indexed_indirect => .draw_indexed_indirect,
-        .render_pass => .render_pass,
-        .sampler_create => .sampler_create,
-        .sampler_destroy => .sampler_destroy,
-        .texture_write => .texture_write,
-        .texture_query => .texture_query,
-        .texture_destroy => .texture_destroy,
-        .surface_create => .surface_create,
-        .surface_capabilities => .surface_capabilities,
-        .surface_configure => .surface_configure,
-        .surface_acquire => .surface_acquire,
-        .surface_present => .surface_present,
-        .surface_unconfigure => .surface_unconfigure,
-        .surface_release => .surface_release,
-        .async_diagnostics => .async_diagnostics,
-        .map_async => .map_async,
-    };
+    return std.meta.activeTag(cmd);
 }
 
 pub fn command_kind_name(cmd: CommandKind) []const u8 {
-    return switch (cmd) {
-        .upload => "upload",
-        .copy_buffer_to_texture => "copy_buffer_to_texture",
-        .barrier => "barrier",
-        .dispatch => "dispatch",
-        .dispatch_indirect => "dispatch_indirect",
-        .kernel_dispatch => "kernel_dispatch",
-        .render_draw => "render_draw",
-        .draw_indirect => "draw_indirect",
-        .draw_indexed_indirect => "draw_indexed_indirect",
-        .render_pass => "render_pass",
-        .sampler_create => "sampler_create",
-        .sampler_destroy => "sampler_destroy",
-        .texture_write => "texture_write",
-        .texture_query => "texture_query",
-        .texture_destroy => "texture_destroy",
-        .surface_create => "surface_create",
-        .surface_capabilities => "surface_capabilities",
-        .surface_configure => "surface_configure",
-        .surface_acquire => "surface_acquire",
-        .surface_present => "surface_present",
-        .surface_unconfigure => "surface_unconfigure",
-        .surface_release => "surface_release",
-        .async_diagnostics => "async_diagnostics",
-        .map_async => "map_async",
-    };
+    return @tagName(cmd);
 }
 
 pub fn scope_name(scope: Scope) []const u8 {

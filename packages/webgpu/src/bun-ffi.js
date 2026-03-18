@@ -240,8 +240,35 @@ function openLibrary(path) {
         wgpuRenderPassEncoderSetIndexBuffer: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.u64, FFIType.u64], returns: FFIType.void },
         wgpuRenderPassEncoderDraw: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
         wgpuRenderPassEncoderDrawIndexed: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.i32, FFIType.u32], returns: FFIType.void },
+        wgpuRenderPassEncoderSetViewport: { args: [FFIType.ptr, FFIType.f32, FFIType.f32, FFIType.f32, FFIType.f32, FFIType.f32, FFIType.f32], returns: FFIType.void },
+        wgpuRenderPassEncoderSetScissorRect: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
+        wgpuRenderPassEncoderSetBlendConstant: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+        wgpuRenderPassEncoderSetStencilReference: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
+        wgpuRenderPassEncoderPushDebugGroup: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuRenderPassEncoderPopDebugGroup: { args: [FFIType.ptr], returns: FFIType.void },
+        wgpuRenderPassEncoderInsertDebugMarker: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuRenderPassEncoderEnd: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuRenderPassEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
+
+        // Render bundle encoder / bundle
+        wgpuDeviceCreateRenderBundleEncoder: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        wgpuRenderBundleEncoderSetPipeline: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+        wgpuRenderBundleEncoderSetBindGroup: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
+        wgpuRenderBundleEncoderSetVertexBuffer: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.void },
+        wgpuRenderBundleEncoderSetIndexBuffer: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.u64, FFIType.u64], returns: FFIType.void },
+        wgpuRenderBundleEncoderDraw: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
+        wgpuRenderBundleEncoderDrawIndexed: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.i32, FFIType.u32], returns: FFIType.void },
+        wgpuRenderBundleEncoderDrawIndirect: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuRenderBundleEncoderDrawIndexedIndirect: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        wgpuRenderBundleEncoderFinish: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        wgpuRenderBundleEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
+        wgpuRenderBundleRelease: { args: [FFIType.ptr], returns: FFIType.void },
+
+        // Render pipeline bind group layout
+        wgpuRenderPipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
+
+        // Queue write texture
+        wgpuQueueWriteTexture: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     };
     if (process.platform === "darwin") {
         symbols.doeNativeComputePipelineGetBindGroupLayout = {
@@ -1079,6 +1106,65 @@ function buildExtent3D(size) {
     return new Uint8Array(buf);
 }
 
+// WGPUColor: { double r@0, double g@8, double b@16, double a@24 } = 32
+const WGPU_COLOR_SIZE = 32;
+
+function buildColorStruct(r, g, b, a) {
+    const buf = new ArrayBuffer(WGPU_COLOR_SIZE);
+    const v = new DataView(buf);
+    v.setFloat64(0, r, true);
+    v.setFloat64(8, g, true);
+    v.setFloat64(16, b, true);
+    v.setFloat64(24, a, true);
+    return new Uint8Array(buf);
+}
+
+// WGPUTexelCopyBufferLayout (standalone, for wgpuQueueWriteTexture):
+// { uint64_t offset@0, uint32_t bytesPerRow@8, uint32_t rowsPerImage@12 } = 16
+const WGPU_TEXEL_COPY_BUFFER_LAYOUT_SIZE = 16;
+
+function buildTexelCopyBufferLayout(layout) {
+    const buf = new ArrayBuffer(WGPU_TEXEL_COPY_BUFFER_LAYOUT_SIZE);
+    const v = new DataView(buf);
+    v.setBigUint64(0, BigInt(layout.offset ?? 0), true);
+    v.setUint32(8, layout.bytesPerRow ?? 0, true);
+    v.setUint32(12, layout.rowsPerImage ?? 0, true);
+    return new Uint8Array(buf);
+}
+
+// WGPURenderBundleEncoderDescriptor:
+// { ptr nextInChain@0, sv label@8(16), size_t colorFormatCount@24, ptr colorFormats@32,
+//   u32 depthStencilFormat@40, u32 sampleCount@44, u32 depthReadOnly@48, u32 stencilReadOnly@52 } = 56
+const WGPU_RENDER_BUNDLE_ENCODER_DESCRIPTOR_SIZE = 56;
+
+function buildRenderBundleEncoderDescriptor(descriptor) {
+    const colorFormats = descriptor.colorFormats ?? [];
+    const formatArr = new Uint32Array(colorFormats.length);
+    for (let i = 0; i < colorFormats.length; i++) {
+        formatArr[i] = TEXTURE_FORMAT_MAP[colorFormats[i]] ?? 0;
+    }
+    const buf = new ArrayBuffer(WGPU_RENDER_BUNDLE_ENCODER_DESCRIPTOR_SIZE);
+    const v = new DataView(buf);
+    writePtr(v, 0, null); // nextInChain
+    writeStringView(v, 8, null); // label
+    v.setBigUint64(24, BigInt(colorFormats.length), true); // colorFormatCount
+    writePtr(v, 32, colorFormats.length > 0 ? bunPtr(formatArr) : null); // colorFormats
+    v.setUint32(40, TEXTURE_FORMAT_MAP[descriptor.depthStencilFormat] ?? 0, true); // depthStencilFormat
+    v.setUint32(44, descriptor.sampleCount ?? 1, true); // sampleCount
+    v.setUint32(48, descriptor.depthReadOnly ? 1 : 0, true); // depthReadOnly
+    v.setUint32(52, descriptor.stencilReadOnly ? 1 : 0, true); // stencilReadOnly
+    return { desc: new Uint8Array(buf), _refs: [formatArr] };
+}
+
+// WGPUStringView for debug group/marker labels (data ptr + length).
+// The render pass debug group wgpu API expects WGPUStringView as two separate
+// args (ptr, size_t) decomposed at the call site, matching the FFI declaration.
+function encodeStringView(label) {
+    if (!label) return { bytes: null, len: 0 };
+    const bytes = encoder.encode(label);
+    return { bytes, len: bytes.length };
+}
+
 // ---------------------------------------------------------------------------
 // Callback trampolines for async-to-sync bridging
 //
@@ -1383,9 +1469,130 @@ const bunEncoderBackend = {
             firstInstance,
         );
     },
+    renderPassSetViewport(pass, x, y, width, height, minDepth, maxDepth) {
+        wgpu.symbols.wgpuRenderPassEncoderSetViewport(
+            assertLiveResource(pass, "GPURenderPassEncoder.setViewport", "GPURenderPassEncoder"),
+            x, y, width, height, minDepth, maxDepth,
+        );
+    },
+    renderPassSetScissorRect(pass, x, y, width, height) {
+        wgpu.symbols.wgpuRenderPassEncoderSetScissorRect(
+            assertLiveResource(pass, "GPURenderPassEncoder.setScissorRect", "GPURenderPassEncoder"),
+            x, y, width, height,
+        );
+    },
+    renderPassSetBlendConstant(pass, r, g, b, a) {
+        const colorBytes = buildColorStruct(r, g, b, a);
+        wgpu.symbols.wgpuRenderPassEncoderSetBlendConstant(
+            assertLiveResource(pass, "GPURenderPassEncoder.setBlendConstant", "GPURenderPassEncoder"),
+            colorBytes,
+        );
+    },
+    renderPassSetStencilReference(pass, ref) {
+        wgpu.symbols.wgpuRenderPassEncoderSetStencilReference(
+            assertLiveResource(pass, "GPURenderPassEncoder.setStencilReference", "GPURenderPassEncoder"),
+            ref,
+        );
+    },
+    renderPassPushDebugGroup(pass, label) {
+        const { bytes, len } = encodeStringView(label);
+        wgpu.symbols.wgpuRenderPassEncoderPushDebugGroup(
+            assertLiveResource(pass, "GPURenderPassEncoder.pushDebugGroup", "GPURenderPassEncoder"),
+            bytes,
+            BigInt(len),
+        );
+    },
+    renderPassPopDebugGroup(pass) {
+        wgpu.symbols.wgpuRenderPassEncoderPopDebugGroup(
+            assertLiveResource(pass, "GPURenderPassEncoder.popDebugGroup", "GPURenderPassEncoder"),
+        );
+    },
+    renderPassInsertDebugMarker(pass, label) {
+        const { bytes, len } = encodeStringView(label);
+        wgpu.symbols.wgpuRenderPassEncoderInsertDebugMarker(
+            assertLiveResource(pass, "GPURenderPassEncoder.insertDebugMarker", "GPURenderPassEncoder"),
+            bytes,
+            BigInt(len),
+        );
+    },
     renderPassEnd(pass) {
         wgpu.symbols.wgpuRenderPassEncoderEnd(assertLiveResource(pass, "GPURenderPassEncoder.end", "GPURenderPassEncoder"));
         pass._ended = true;
+    },
+    renderBundleEncoderInit(encoder, native) {
+        encoder._native = native;
+        encoder._finished = false;
+    },
+    renderBundleEncoderSetPipeline(encoder, pipelineNative) {
+        wgpu.symbols.wgpuRenderBundleEncoderSetPipeline(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.setPipeline", "GPURenderBundleEncoder"),
+            pipelineNative,
+        );
+    },
+    renderBundleEncoderSetBindGroup(encoder, index, bindGroupNative) {
+        wgpu.symbols.wgpuRenderBundleEncoderSetBindGroup(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.setBindGroup", "GPURenderBundleEncoder"),
+            index,
+            bindGroupNative,
+            BigInt(0),
+            null,
+        );
+    },
+    renderBundleEncoderSetVertexBuffer(encoder, slot, bufferNative, offset, size) {
+        wgpu.symbols.wgpuRenderBundleEncoderSetVertexBuffer(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.setVertexBuffer", "GPURenderBundleEncoder"),
+            slot,
+            bufferNative,
+            BigInt(offset),
+            BigInt(size ?? 0),
+        );
+    },
+    renderBundleEncoderSetIndexBuffer(encoder, bufferNative, format, offset, size) {
+        wgpu.symbols.wgpuRenderBundleEncoderSetIndexBuffer(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.setIndexBuffer", "GPURenderBundleEncoder"),
+            bufferNative,
+            INDEX_FORMAT_MAP[format] ?? INDEX_FORMAT_MAP.uint16,
+            BigInt(offset),
+            BigInt(size ?? 0),
+        );
+    },
+    renderBundleEncoderDraw(encoder, vertexCount, instanceCount, firstVertex, firstInstance) {
+        wgpu.symbols.wgpuRenderBundleEncoderDraw(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.draw", "GPURenderBundleEncoder"),
+            vertexCount, instanceCount, firstVertex, firstInstance,
+        );
+    },
+    renderBundleEncoderDrawIndexed(encoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance) {
+        wgpu.symbols.wgpuRenderBundleEncoderDrawIndexed(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.drawIndexed", "GPURenderBundleEncoder"),
+            indexCount, instanceCount, firstIndex, baseVertex, firstInstance,
+        );
+    },
+    renderBundleEncoderDrawIndirect(encoder, indirectBufferNative, indirectOffset) {
+        wgpu.symbols.wgpuRenderBundleEncoderDrawIndirect(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.drawIndirect", "GPURenderBundleEncoder"),
+            indirectBufferNative,
+            BigInt(indirectOffset),
+        );
+    },
+    renderBundleEncoderDrawIndexedIndirect(encoder, indirectBufferNative, indirectOffset) {
+        wgpu.symbols.wgpuRenderBundleEncoderDrawIndexedIndirect(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.drawIndexedIndirect", "GPURenderBundleEncoder"),
+            indirectBufferNative,
+            BigInt(indirectOffset),
+        );
+    },
+    renderBundleEncoderFinish(encoder, _descriptor, classes) {
+        const native = wgpu.symbols.wgpuRenderBundleEncoderFinish(
+            assertLiveResource(encoder, "GPURenderBundleEncoder.finish", "GPURenderBundleEncoder"),
+            null,
+        );
+        wgpu.symbols.wgpuRenderBundleEncoderRelease(encoder._native);
+        encoder._native = null;
+        return new classes.DoeGPURenderBundle(native, encoder._device);
+    },
+    renderBundleDestroy(native) {
+        wgpu.symbols.wgpuRenderBundleRelease(native);
     },
     commandEncoderInit(encoder) {
         encoder._commands = [];
@@ -1497,6 +1704,8 @@ const {
     DoeGPUComputePassEncoder,
     DoeGPUCommandEncoder,
     DoeGPURenderPassEncoder,
+    DoeGPURenderBundleEncoder,
+    DoeGPURenderBundle,
 } = createEncoderClasses(bunEncoderBackend);
 
 const fullSurfaceBackend = {
@@ -1614,6 +1823,19 @@ const fullSurfaceBackend = {
     queueWriteBuffer(_queue, native, bufferNative, bufferOffset, view) {
         wgpu.symbols.wgpuQueueWriteBuffer(native, bufferNative, BigInt(bufferOffset), view, BigInt(view.byteLength));
     },
+    queueWriteTexture(_queue, native, destination, data, dataLayout, size) {
+        const { desc: dstDesc, srcRefs: _dstRefs } = buildTexelCopyTextureInfo(destination);
+        const layoutBytes = buildTexelCopyBufferLayout(dataLayout);
+        const extent = buildExtent3D(size);
+        wgpu.symbols.wgpuQueueWriteTexture(
+            native,
+            dstDesc,
+            data,
+            BigInt(data.byteLength),
+            layoutBytes,
+            extent,
+        );
+    },
     async queueOnSubmittedWorkDone(queue, native) {
         try {
             waitForSubmittedWorkDoneSync(queue._instance, native);
@@ -1643,6 +1865,20 @@ const fullSurfaceBackend = {
             : wgpu.symbols.wgpuComputePipelineGetBindGroupLayout(pipeline._native, index);
         return new classes.DoeGPUBindGroupLayout(native, pipeline._device);
     },
+    renderPipelineGetBindGroupLayout(pipeline, index, classes) {
+        const native = wgpu.symbols.wgpuRenderPipelineGetBindGroupLayout(pipeline._native, index);
+        return new classes.DoeGPUBindGroupLayout(native, pipeline);
+    },
+    deviceCreateRenderBundleEncoder(device, descriptor, encoderClasses) {
+        const { desc, _refs } = buildRenderBundleEncoderDescriptor(descriptor);
+        const native = wgpu.symbols.wgpuDeviceCreateRenderBundleEncoder(
+            assertLiveResource(device, "GPUDevice.createRenderBundleEncoder", "GPUDevice"),
+            desc,
+        );
+        void _refs;
+        if (!native) throw new Error("[fawn-webgpu] createRenderBundleEncoder failed");
+        return new encoderClasses.DoeGPURenderBundleEncoder(native, device);
+    },
     deviceLimits,
     deviceFeatures,
     adapterLimits,
@@ -1670,7 +1906,7 @@ const fullSurfaceBackend = {
         }
         return mod;
     },
-    deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative) {
+    deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative, _constants) {
         const { desc, _refs } = buildComputePipelineDescriptor(shaderNative, entryPoint, layoutNative);
         let native;
         try {
@@ -1788,14 +2024,25 @@ const fullSurfaceBackend = {
             createTexture: classes.DoeGPUDevice.prototype.createTexture,
             createSampler: classes.DoeGPUDevice.prototype.createSampler,
             createRenderPipeline: classes.DoeGPUDevice.prototype.createRenderPipeline,
+            createRenderPipelineAsync: classes.DoeGPUDevice.prototype.createRenderPipelineAsync,
+            createRenderBundleEncoder: classes.DoeGPUDevice.prototype.createRenderBundleEncoder,
             createQuerySet: classes.DoeGPUDevice.prototype.createQuerySet,
             createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
+            pushErrorScope: classes.DoeGPUDevice.prototype.pushErrorScope,
+            popErrorScope: classes.DoeGPUDevice.prototype.popErrorScope,
             destroy: classes.DoeGPUDevice.prototype.destroy,
         };
         device._native = native;
         device._instance = adapter._instance;
+        device._lost = null;
+        device._errorScopes = [];
+        device._onuncapturederror = null;
         device.limits = deviceLimits(native);
         device.features = deviceFeatures(native);
+        Object.defineProperties(device, {
+            lost: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, 'lost'),
+            onuncapturederror: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, 'onuncapturederror'),
+        });
         const queue = {
             _destroyed: false,
             _resourceLabel: "GPUQueue",
@@ -1804,6 +2051,7 @@ const fullSurfaceBackend = {
             markSubmittedWorkDone: classes.DoeGPUQueue.prototype.markSubmittedWorkDone,
             submit: classes.DoeGPUQueue.prototype.submit,
             writeBuffer: classes.DoeGPUQueue.prototype.writeBuffer,
+            writeTexture: classes.DoeGPUQueue.prototype.writeTexture,
             onSubmittedWorkDone: classes.DoeGPUQueue.prototype.onSubmittedWorkDone,
         };
         queue._native = this.deviceGetQueue(native);
@@ -1840,6 +2088,7 @@ const {
 } = createFullSurfaceClasses({
     globals,
     backend: fullSurfaceBackend,
+    encoderClasses: { DoeGPURenderBundleEncoder, DoeGPURenderBundle },
 });
 
 // ---------------------------------------------------------------------------

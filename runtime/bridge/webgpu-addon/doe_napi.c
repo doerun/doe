@@ -572,6 +572,148 @@ DECL_PFN(uint32_t, doeNativeCheckShaderSource, (const char*, size_t));
 DECL_PFN(size_t, doeNativeShaderModuleGetBindings, (WGPUShaderModule, DoeShaderBindingInfo*, size_t));
 DECL_PFN(WGPUFuture, doeNativeAdapterRequestDevice, (WGPUAdapter, const void*, WGPURequestDeviceCallbackInfo));
 
+/* New symbols added for 14-binding expansion */
+typedef uint32_t (*FnAdapterGetPreferredCanvasFormat)(void* adapter);
+typedef void (*FnDeviceAddEventListener)(void* dev, const char* type, size_t type_len, void* callback, void* userdata);
+typedef void (*FnDeviceRemoveEventListener)(void* dev, const char* type, size_t type_len, void* callback, void* userdata);
+typedef void* (*FnDeviceImportExternalTexture)(void* dev, const void* descriptor);
+typedef void (*FnBindingCommandsSetImmediates)(void* encoder, uint32_t index, const uint8_t* data, size_t data_len);
+typedef void (*FnComputePassSetImmediates)(void* encoder, uint32_t index, const uint8_t* data, size_t data_len);
+typedef void (*FnRenderPassSetImmediates)(void* encoder, uint32_t index, const uint8_t* data, size_t data_len);
+typedef void (*FnRenderBundleEncoderSetImmediates)(void* encoder, uint32_t index, const uint8_t* data, size_t data_len);
+
+static FnAdapterGetPreferredCanvasFormat pfn_doeNativeAdapterGetPreferredCanvasFormat = NULL;
+static FnDeviceAddEventListener pfn_doeNativeDeviceAddEventListener = NULL;
+static FnDeviceRemoveEventListener pfn_doeNativeDeviceRemoveEventListener = NULL;
+static FnDeviceImportExternalTexture pfn_doeNativeDeviceImportExternalTexture = NULL;
+static FnBindingCommandsSetImmediates pfn_doeNativeBindingCommandsSetImmediates = NULL;
+static FnComputePassSetImmediates pfn_doeNativeComputePassSetImmediates = NULL;
+static FnRenderPassSetImmediates pfn_doeNativeRenderPassSetImmediates = NULL;
+static FnRenderBundleEncoderSetImmediates pfn_doeNativeRenderBundleEncoderSetImmediates = NULL;
+
+/* GPURenderPassEncoder control methods */
+typedef void (*FnRenderPassSetViewport)(void* encoder, double x, double y, double width, double height, double min_depth, double max_depth);
+typedef void (*FnRenderPassSetScissorRect)(void* encoder, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+typedef void (*FnRenderPassSetBlendConstant)(void* encoder, double r, double g, double b, double a);
+typedef void (*FnRenderPassSetStencilReference)(void* encoder, uint32_t reference);
+typedef void (*FnRenderPassPushDebugGroup)(void* encoder, const char* label, size_t label_len);
+typedef void (*FnRenderPassPopDebugGroup)(void* encoder);
+typedef void (*FnRenderPassInsertDebugMarker)(void* encoder, const char* label, size_t label_len);
+
+static FnRenderPassSetViewport pfn_doeNativeRenderPassSetViewport = NULL;
+static FnRenderPassSetScissorRect pfn_doeNativeRenderPassSetScissorRect = NULL;
+static FnRenderPassSetBlendConstant pfn_doeNativeRenderPassSetBlendConstant = NULL;
+static FnRenderPassSetStencilReference pfn_doeNativeRenderPassSetStencilReference = NULL;
+static FnRenderPassPushDebugGroup pfn_doeNativeRenderPassPushDebugGroup = NULL;
+static FnRenderPassPopDebugGroup pfn_doeNativeRenderPassPopDebugGroup = NULL;
+static FnRenderPassInsertDebugMarker pfn_doeNativeRenderPassInsertDebugMarker = NULL;
+
+/* GPUAdapter.info and GPUShaderModule.getCompilationInfo */
+typedef void (*FnAdapterGetInfo)(void* adapter,
+    const char** out_vendor, const char** out_arch,
+    const char** out_device, const char** out_desc,
+    char** out_block);
+typedef void (*FnAdapterFreeInfo)(char* block);
+typedef const char* (*FnShaderModuleGetCompilationInfo)(void* module);
+typedef struct {
+    void* next_in_chain;
+    uint32_t mode;
+    void (*callback)(uint32_t error_type, WGPUStringView message, void* userdata1, void* userdata2);
+    void* userdata1;
+    void* userdata2;
+} WGPUPopErrorScopeCallbackInfo2;
+typedef void (*FnDevicePushErrorScope)(void* device, uint32_t filter);
+typedef WGPUFuture (*FnDevicePopErrorScope)(void* device, WGPUPopErrorScopeCallbackInfo2 callback_info);
+typedef void (*FnDeviceSetUncapturedErrorCallback)(
+    void* device,
+    void (*callback)(uint32_t error_type, WGPUStringView message, void* userdata1, void* userdata2),
+    void* userdata1,
+    void* userdata2);
+typedef void (*FnDeviceRegisterLostCallback)(
+    void* device,
+    void (*callback)(uint32_t reason, const char* message_ptr, size_t message_len, void* userdata),
+    void* userdata);
+
+static FnAdapterGetInfo  pfn_doeNativeAdapterGetInfo = NULL;
+static FnAdapterFreeInfo pfn_doeNativeAdapterFreeInfo = NULL;
+static FnShaderModuleGetCompilationInfo pfn_doeNativeShaderModuleGetCompilationInfo = NULL;
+static FnDevicePushErrorScope pfn_doeNativeDevicePushErrorScope = NULL;
+static FnDevicePopErrorScope pfn_doeNativeDevicePopErrorScope = NULL;
+static FnDeviceSetUncapturedErrorCallback pfn_doeNativeDeviceSetUncapturedErrorCallback = NULL;
+static FnDeviceRegisterLostCallback pfn_doeNativeDeviceRegisterLostCallback = NULL;
+
+/* renderPipelineGetBindGroupLayout — doe-native reflect path */
+typedef void* (*FnRenderPipelineGetBindGroupLayout)(void* pipeline, uint32_t group_index);
+
+static FnRenderPipelineGetBindGroupLayout pfn_doeNativeRenderPipelineGetBindGroupLayout = NULL;
+
+/* clearBuffer / copyTextureToTexture / writeTexture */
+typedef void (*FnCommandEncoderClearBuffer)(void* encoder, void* buffer, uint64_t offset, uint64_t size);
+typedef void (*FnCommandEncoderCopyTextureToTexture)(
+    void* encoder,
+    void* src_texture, uint32_t src_mip, uint32_t src_slice, uint32_t src_x, uint32_t src_y, uint32_t src_z,
+    void* dst_texture, uint32_t dst_mip, uint32_t dst_slice, uint32_t dst_x, uint32_t dst_y, uint32_t dst_z,
+    uint32_t width, uint32_t height, uint32_t depth_or_layers);
+typedef void (*FnQueueWriteTexture)(
+    void* queue, void* texture,
+    const void* data, size_t data_len,
+    uint32_t bytes_per_row, uint32_t rows_per_image,
+    uint32_t dst_x, uint32_t dst_y, uint32_t dst_z,
+    uint32_t dst_mip, uint32_t dst_slice,
+    uint32_t width, uint32_t height, uint32_t depth_or_layers);
+
+static FnCommandEncoderClearBuffer         pfn_doeNativeCommandEncoderClearBuffer = NULL;
+static FnCommandEncoderCopyTextureToTexture pfn_doeNativeCommandEncoderCopyTextureToTexture = NULL;
+static FnQueueWriteTexture                 pfn_doeNativeQueueWriteTexture = NULL;
+
+typedef struct DeviceCallbackBinding {
+    void* device;
+    napi_threadsafe_function tsfn;
+    napi_ref value_ref;
+    struct DeviceCallbackBinding* next;
+} DeviceCallbackBinding;
+
+typedef struct {
+    napi_env env;
+    napi_deferred deferred;
+} PopErrorScopeRequest;
+
+typedef struct {
+    uint32_t error_type;
+    char* message;
+} UncapturedCallbackData;
+
+typedef struct {
+    uint32_t reason;
+    char* message;
+} LostCallbackData;
+
+static DeviceCallbackBinding* g_uncaptured_bindings = NULL;
+static DeviceCallbackBinding* g_lost_bindings = NULL;
+
+/* GPURenderBundleEncoder / GPURenderBundle */
+typedef void* (*FnDeviceCreateRenderBundleEncoder)(void* device, const void* desc);
+typedef void  (*FnRenderBundleEncoderRelease)(void* encoder);
+typedef void  (*FnRenderBundleEncoderSetPipeline)(void* encoder, void* pipeline);
+typedef void  (*FnRenderBundleEncoderSetBindGroup)(void* encoder, uint32_t index, void* bind_group, size_t dynamic_offset_count, const uint32_t* dynamic_offsets);
+typedef void  (*FnRenderBundleEncoderSetVertexBuffer)(void* encoder, uint32_t slot, void* buffer, uint64_t offset, uint64_t size);
+typedef void  (*FnRenderBundleEncoderSetIndexBuffer)(void* encoder, void* buffer, uint32_t format, uint64_t offset, uint64_t size);
+typedef void  (*FnRenderBundleEncoderDraw)(void* encoder, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance);
+typedef void  (*FnRenderBundleEncoderDrawIndexed)(void* encoder, uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t base_vertex, uint32_t first_instance);
+typedef void* (*FnRenderBundleEncoderFinish)(void* encoder, const void* desc);
+typedef void  (*FnRenderBundleRelease)(void* bundle);
+
+static FnDeviceCreateRenderBundleEncoder   pfn_doeNativeDeviceCreateRenderBundleEncoder = NULL;
+static FnRenderBundleEncoderRelease        pfn_doeNativeRenderBundleEncoderRelease = NULL;
+static FnRenderBundleEncoderSetPipeline    pfn_doeNativeRenderBundleEncoderSetPipeline = NULL;
+static FnRenderBundleEncoderSetBindGroup   pfn_doeNativeRenderBundleEncoderSetBindGroup = NULL;
+static FnRenderBundleEncoderSetVertexBuffer pfn_doeNativeRenderBundleEncoderSetVertexBuffer = NULL;
+static FnRenderBundleEncoderSetIndexBuffer  pfn_doeNativeRenderBundleEncoderSetIndexBuffer = NULL;
+static FnRenderBundleEncoderDraw           pfn_doeNativeRenderBundleEncoderDraw = NULL;
+static FnRenderBundleEncoderDrawIndexed    pfn_doeNativeRenderBundleEncoderDrawIndexed = NULL;
+static FnRenderBundleEncoderFinish         pfn_doeNativeRenderBundleEncoderFinish = NULL;
+static FnRenderBundleRelease               pfn_doeNativeRenderBundleRelease = NULL;
+
 /* Flat helpers are optional. When absent, the addon assembles the callback-info
  * structs directly and calls the standard WebGPU request entrypoints. */
 DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t, WGPURequestAdapterCallback, void*, void*));
@@ -630,6 +772,8 @@ static uint64_t monotonic_now_ns(void) {
 #endif
 }
 
+static napi_value native_direct_resolved_promise(napi_env env, napi_value value);
+
 static void wait_slice(void) {
 #ifdef _WIN32
     Sleep(0);
@@ -660,6 +804,270 @@ static void copy_string_view_message(WGPUStringView message, char* out, size_t o
     if (copy_len >= out_len) copy_len = out_len - 1;
     memcpy(out, message.data, copy_len);
     out[copy_len] = '\0';
+}
+
+static char* dup_string_view(WGPUStringView message) {
+    size_t len = message.data ? message.length : 0;
+    char* out = (char*)malloc(len + 1);
+    if (!out) return NULL;
+    if (len > 0 && message.data) {
+        memcpy(out, message.data, len);
+    }
+    out[len] = '\0';
+    return out;
+}
+
+static char* dup_c_string(const char* message_ptr, size_t message_len) {
+    size_t len = message_ptr ? message_len : 0;
+    char* out = (char*)malloc(len + 1);
+    if (!out) return NULL;
+    if (len > 0 && message_ptr) {
+        memcpy(out, message_ptr, len);
+    }
+    out[len] = '\0';
+    return out;
+}
+
+static const char* error_type_string(uint32_t error_type) {
+    switch (error_type) {
+        case 0x00000001: return "no-error";
+        case 0x00000002: return "validation";
+        case 0x00000003: return "out-of-memory";
+        case 0x00000004: return "internal";
+        default: return "unknown";
+    }
+}
+
+static const char* lost_reason_string(uint32_t reason) {
+    switch (reason) {
+        case 0: return "unknown";
+        case 1: return "destroyed";
+        case 3: return "callback-cancelled";
+        case 4: return "failed-creation";
+        default: return "unknown";
+    }
+}
+
+static DeviceCallbackBinding* binding_take(DeviceCallbackBinding** head, void* device) {
+    DeviceCallbackBinding* prev = NULL;
+    DeviceCallbackBinding* cur = *head;
+    while (cur) {
+        if (cur->device == device) {
+            if (prev) {
+                prev->next = cur->next;
+            } else {
+                *head = cur->next;
+            }
+            cur->next = NULL;
+            return cur;
+        }
+        prev = cur;
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+static void binding_insert(DeviceCallbackBinding** head, DeviceCallbackBinding* binding) {
+    binding->next = *head;
+    *head = binding;
+}
+
+static void binding_finalize(napi_env env, void* finalize_data, void* finalize_hint) {
+    (void)env;
+    (void)finalize_hint;
+    DeviceCallbackBinding* binding = (DeviceCallbackBinding*)finalize_data;
+    if (binding && binding->value_ref) {
+        napi_delete_reference(env, binding->value_ref);
+    }
+    free(binding);
+}
+
+static void release_binding(DeviceCallbackBinding* binding) {
+    if (!binding) return;
+    if (binding->tsfn) {
+        napi_release_threadsafe_function(binding->tsfn, napi_tsfn_release);
+    }
+}
+
+static DeviceCallbackBinding* create_device_callback_binding(
+    napi_env env,
+    void* device,
+    napi_value js_cb,
+    const char* resource_name,
+    napi_threadsafe_function_call_js call_js,
+    napi_value retained_value
+) {
+    DeviceCallbackBinding* binding = (DeviceCallbackBinding*)calloc(1, sizeof(DeviceCallbackBinding));
+    if (!binding) return NULL;
+    binding->device = device;
+
+    napi_value async_name;
+    if (napi_create_string_utf8(env, resource_name, NAPI_AUTO_LENGTH, &async_name) != napi_ok) {
+        free(binding);
+        return NULL;
+    }
+    if (retained_value != NULL) {
+        if (napi_create_reference(env, retained_value, 1, &binding->value_ref) != napi_ok) {
+            free(binding);
+            return NULL;
+        }
+    }
+    if (napi_create_threadsafe_function(
+            env,
+            js_cb,
+            NULL,
+            async_name,
+            0,
+            1,
+            binding,
+            binding_finalize,
+            NULL,
+            call_js,
+            &binding->tsfn) != napi_ok) {
+        if (binding->value_ref) {
+            napi_delete_reference(env, binding->value_ref);
+        }
+        free(binding);
+        return NULL;
+    }
+    return binding;
+}
+
+static napi_value create_gpu_error_value(napi_env env, uint32_t error_type, const char* message) {
+    napi_value global;
+    napi_value error_ctor;
+    napi_value message_val;
+    napi_value error_val;
+    napi_value name_val;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, "Error", &error_ctor);
+    napi_create_string_utf8(env, message ? message : "", NAPI_AUTO_LENGTH, &message_val);
+    napi_new_instance(env, error_ctor, 1, &message_val, &error_val);
+    napi_create_string_utf8(env,
+        error_type == 0x00000002 ? "GPUValidationError"
+        : error_type == 0x00000003 ? "GPUOutOfMemoryError"
+        : error_type == 0x00000004 ? "GPUInternalError"
+        : "GPUError",
+        NAPI_AUTO_LENGTH,
+        &name_val);
+    napi_set_named_property(env, error_val, "name", name_val);
+    return error_val;
+}
+
+static void pop_error_scope_native_callback(uint32_t error_type, WGPUStringView message, void* userdata1, void* userdata2) {
+    (void)userdata2;
+    PopErrorScopeRequest* request = (PopErrorScopeRequest*)userdata1;
+    if (!request) return;
+
+    napi_value result;
+    if (error_type == 0x00000001) {
+        napi_get_null(request->env, &result);
+    } else {
+        char error_message[DOE_ERROR_BUF_CAP];
+        copy_string_view_message(message, error_message, sizeof(error_message));
+        result = create_gpu_error_value(request->env, error_type, error_message);
+    }
+    napi_resolve_deferred(request->env, request->deferred, result);
+    free(request);
+}
+
+static void js_call_uncaptured_error(napi_env env, napi_value js_cb, void* context, void* data) {
+    (void)context;
+    UncapturedCallbackData* payload = (UncapturedCallbackData*)data;
+    if (!payload) return;
+    if (env != NULL && js_cb != NULL) {
+        napi_value global;
+        napi_value undefined_value;
+        napi_value error_ctor;
+        napi_value message_val;
+        napi_value error_val;
+        napi_value name_val;
+        napi_value event_obj;
+        napi_value type_val;
+        napi_value error_type_val;
+        napi_value args[1];
+
+        napi_get_global(env, &global);
+        napi_get_undefined(env, &undefined_value);
+        napi_get_named_property(env, global, "Error", &error_ctor);
+        napi_create_string_utf8(env, payload->message ? payload->message : "", NAPI_AUTO_LENGTH, &message_val);
+        napi_new_instance(env, error_ctor, 1, &message_val, &error_val);
+        napi_create_string_utf8(env,
+            payload->error_type == 0x00000002 ? "GPUValidationError"
+            : payload->error_type == 0x00000003 ? "GPUOutOfMemoryError"
+            : payload->error_type == 0x00000004 ? "GPUInternalError"
+            : "GPUError",
+            NAPI_AUTO_LENGTH,
+            &name_val);
+        napi_set_named_property(env, error_val, "name", name_val);
+
+        napi_create_object(env, &event_obj);
+        napi_create_string_utf8(env, "uncapturederror", NAPI_AUTO_LENGTH, &type_val);
+        napi_create_string_utf8(env, error_type_string(payload->error_type), NAPI_AUTO_LENGTH, &error_type_val);
+        napi_set_named_property(env, event_obj, "type", type_val);
+        napi_set_named_property(env, event_obj, "error", error_val);
+        napi_set_named_property(env, event_obj, "message", message_val);
+        napi_set_named_property(env, event_obj, "errorType", error_type_val);
+        args[0] = event_obj;
+        napi_call_function(env, undefined_value, js_cb, 1, args, NULL);
+    }
+    if (payload->message) free(payload->message);
+    free(payload);
+}
+
+static void js_call_lost_callback(napi_env env, napi_value js_cb, void* context, void* data) {
+    (void)context;
+    LostCallbackData* payload = (LostCallbackData*)data;
+    if (!payload) return;
+    if (env != NULL && js_cb != NULL) {
+        napi_value global;
+        napi_value undefined_value;
+        napi_value result_obj;
+        napi_value reason_val;
+        napi_value message_val;
+        napi_value args[1];
+
+        napi_get_global(env, &global);
+        napi_get_undefined(env, &undefined_value);
+        napi_create_object(env, &result_obj);
+        napi_create_string_utf8(env, lost_reason_string(payload->reason), NAPI_AUTO_LENGTH, &reason_val);
+        napi_create_string_utf8(env, payload->message ? payload->message : "", NAPI_AUTO_LENGTH, &message_val);
+        napi_set_named_property(env, result_obj, "reason", reason_val);
+        napi_set_named_property(env, result_obj, "message", message_val);
+        args[0] = result_obj;
+        napi_call_function(env, undefined_value, js_cb, 1, args, NULL);
+    }
+    if (payload->message) free(payload->message);
+    free(payload);
+}
+
+static void uncaptured_error_native_callback(uint32_t error_type, WGPUStringView message, void* userdata1, void* userdata2) {
+    (void)userdata2;
+    DeviceCallbackBinding* binding = (DeviceCallbackBinding*)userdata1;
+    if (!binding || !binding->tsfn) return;
+    UncapturedCallbackData* payload = (UncapturedCallbackData*)malloc(sizeof(UncapturedCallbackData));
+    if (!payload) return;
+    payload->error_type = error_type;
+    payload->message = dup_string_view(message);
+    if (napi_call_threadsafe_function(binding->tsfn, payload, napi_tsfn_nonblocking) != napi_ok) {
+        if (payload->message) free(payload->message);
+        free(payload);
+    }
+}
+
+static void lost_native_callback(uint32_t reason, const char* message_ptr, size_t message_len, void* userdata) {
+    DeviceCallbackBinding* binding = (DeviceCallbackBinding*)userdata;
+    if (!binding || !binding->tsfn) return;
+    LostCallbackData* payload = (LostCallbackData*)malloc(sizeof(LostCallbackData));
+    if (!payload) return;
+    payload->reason = reason;
+    payload->message = dup_c_string(message_ptr, message_len);
+    if (napi_call_threadsafe_function(binding->tsfn, payload, napi_tsfn_nonblocking) != napi_ok) {
+        if (payload->message) free(payload->message);
+        free(payload);
+    }
+    binding_take(&g_lost_bindings, binding->device);
+    release_binding(binding);
 }
 
 static napi_value throw_status_error(napi_env env, const char* code, const char* prefix, uint32_t status, const char* detail) {
@@ -898,6 +1306,54 @@ static napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeCommandEncoderResolveQuerySet = (PFN_doeNativeCommandEncoderResolveQuerySet)LIB_SYM(g_lib, "doeNativeCommandEncoderResolveQuerySet");
     pfn_doeNativeQuerySetDestroy = (PFN_doeNativeQuerySetDestroy)LIB_SYM(g_lib, "doeNativeQuerySetDestroy");
 
+    /* Optional symbols for new 14-binding expansion — absent until parallel agent delivers them. */
+    pfn_doeNativeAdapterGetPreferredCanvasFormat = (FnAdapterGetPreferredCanvasFormat)LIB_SYM(g_lib, "doeNativeAdapterGetPreferredCanvasFormat");
+    pfn_doeNativeDeviceAddEventListener = (FnDeviceAddEventListener)LIB_SYM(g_lib, "doeNativeDeviceAddEventListener");
+    pfn_doeNativeDeviceRemoveEventListener = (FnDeviceRemoveEventListener)LIB_SYM(g_lib, "doeNativeDeviceRemoveEventListener");
+    pfn_doeNativeDeviceImportExternalTexture = (FnDeviceImportExternalTexture)LIB_SYM(g_lib, "doeNativeDeviceImportExternalTexture");
+    pfn_doeNativeBindingCommandsSetImmediates = (FnBindingCommandsSetImmediates)LIB_SYM(g_lib, "doeNativeBindingCommandsSetImmediates");
+    pfn_doeNativeComputePassSetImmediates = (FnComputePassSetImmediates)LIB_SYM(g_lib, "doeNativeComputePassSetImmediates");
+    pfn_doeNativeRenderPassSetImmediates = (FnRenderPassSetImmediates)LIB_SYM(g_lib, "doeNativeRenderPassSetImmediates");
+    pfn_doeNativeRenderBundleEncoderSetImmediates = (FnRenderBundleEncoderSetImmediates)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderSetImmediates");
+
+    /* GPUAdapter.info and GPUShaderModule.getCompilationInfo — optional; absent on older builds. */
+    pfn_doeNativeAdapterGetInfo = (FnAdapterGetInfo)LIB_SYM(g_lib, "doeNativeAdapterGetInfo");
+    pfn_doeNativeAdapterFreeInfo = (FnAdapterFreeInfo)LIB_SYM(g_lib, "doeNativeAdapterFreeInfo");
+    pfn_doeNativeShaderModuleGetCompilationInfo = (FnShaderModuleGetCompilationInfo)LIB_SYM(g_lib, "doeNativeShaderModuleGetCompilationInfo");
+    pfn_doeNativeDevicePushErrorScope = (FnDevicePushErrorScope)LIB_SYM(g_lib, "doeNativeDevicePushErrorScope");
+    pfn_doeNativeDevicePopErrorScope = (FnDevicePopErrorScope)LIB_SYM(g_lib, "doeNativeDevicePopErrorScope");
+    pfn_doeNativeDeviceSetUncapturedErrorCallback = (FnDeviceSetUncapturedErrorCallback)LIB_SYM(g_lib, "doeNativeDeviceSetUncapturedErrorCallback");
+    pfn_doeNativeDeviceRegisterLostCallback = (FnDeviceRegisterLostCallback)LIB_SYM(g_lib, "doeNativeDeviceRegisterLostCallback");
+
+    /* GPURenderPassEncoder control methods — optional; absent on older builds. */
+    pfn_doeNativeRenderPassSetViewport = (FnRenderPassSetViewport)LIB_SYM(g_lib, "doeNativeRenderPassSetViewport");
+    pfn_doeNativeRenderPassSetScissorRect = (FnRenderPassSetScissorRect)LIB_SYM(g_lib, "doeNativeRenderPassSetScissorRect");
+    pfn_doeNativeRenderPassSetBlendConstant = (FnRenderPassSetBlendConstant)LIB_SYM(g_lib, "doeNativeRenderPassSetBlendConstant");
+    pfn_doeNativeRenderPassSetStencilReference = (FnRenderPassSetStencilReference)LIB_SYM(g_lib, "doeNativeRenderPassSetStencilReference");
+    pfn_doeNativeRenderPassPushDebugGroup = (FnRenderPassPushDebugGroup)LIB_SYM(g_lib, "doeNativeRenderPassPushDebugGroup");
+    pfn_doeNativeRenderPassPopDebugGroup = (FnRenderPassPopDebugGroup)LIB_SYM(g_lib, "doeNativeRenderPassPopDebugGroup");
+    pfn_doeNativeRenderPassInsertDebugMarker = (FnRenderPassInsertDebugMarker)LIB_SYM(g_lib, "doeNativeRenderPassInsertDebugMarker");
+
+    /* clearBuffer / copyTextureToTexture / writeTexture — optional; absent on older builds. */
+    pfn_doeNativeCommandEncoderClearBuffer = (FnCommandEncoderClearBuffer)LIB_SYM(g_lib, "doeNativeCommandEncoderClearBuffer");
+    pfn_doeNativeCommandEncoderCopyTextureToTexture = (FnCommandEncoderCopyTextureToTexture)LIB_SYM(g_lib, "doeNativeCommandEncoderCopyTextureToTexture");
+    pfn_doeNativeQueueWriteTexture = (FnQueueWriteTexture)LIB_SYM(g_lib, "doeNativeQueueWriteTexture");
+
+    /* renderPipelineGetBindGroupLayout — optional; absent on older builds. */
+    pfn_doeNativeRenderPipelineGetBindGroupLayout = (FnRenderPipelineGetBindGroupLayout)LIB_SYM(g_lib, "doeNativeRenderPipelineGetBindGroupLayout");
+
+    /* GPURenderBundleEncoder / GPURenderBundle — optional; absent on older builds. */
+    pfn_doeNativeDeviceCreateRenderBundleEncoder   = (FnDeviceCreateRenderBundleEncoder)LIB_SYM(g_lib, "doeNativeDeviceCreateRenderBundleEncoder");
+    pfn_doeNativeRenderBundleEncoderRelease        = (FnRenderBundleEncoderRelease)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderRelease");
+    pfn_doeNativeRenderBundleEncoderSetPipeline    = (FnRenderBundleEncoderSetPipeline)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderSetPipeline");
+    pfn_doeNativeRenderBundleEncoderSetBindGroup   = (FnRenderBundleEncoderSetBindGroup)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderSetBindGroup");
+    pfn_doeNativeRenderBundleEncoderSetVertexBuffer = (FnRenderBundleEncoderSetVertexBuffer)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderSetVertexBuffer");
+    pfn_doeNativeRenderBundleEncoderSetIndexBuffer  = (FnRenderBundleEncoderSetIndexBuffer)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderSetIndexBuffer");
+    pfn_doeNativeRenderBundleEncoderDraw           = (FnRenderBundleEncoderDraw)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderDraw");
+    pfn_doeNativeRenderBundleEncoderDrawIndexed    = (FnRenderBundleEncoderDrawIndexed)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderDrawIndexed");
+    pfn_doeNativeRenderBundleEncoderFinish         = (FnRenderBundleEncoderFinish)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderFinish");
+    pfn_doeNativeRenderBundleRelease               = (FnRenderBundleRelease)LIB_SYM(g_lib, "doeNativeRenderBundleRelease");
+
     /* Validate all critical function pointers were resolved. */
     if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceRequestAdapter ||
         !pfn_wgpuInstanceWaitAny || !pfn_wgpuInstanceProcessEvents ||
@@ -1047,7 +1503,16 @@ static napi_value doe_request_device(napi_env env, napi_callback_info info) {
 static napi_value doe_device_release(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     void* device = unwrap_ptr(env, _args[0]);
-    if (device) pfn_wgpuDeviceRelease(device);
+    if (device) {
+        DeviceCallbackBinding* uncaptured = binding_take(&g_uncaptured_bindings, device);
+        if (uncaptured && pfn_doeNativeDeviceSetUncapturedErrorCallback) {
+            pfn_doeNativeDeviceSetUncapturedErrorCallback(device, NULL, NULL, NULL);
+        }
+        if (uncaptured) {
+            release_binding(uncaptured);
+        }
+        pfn_wgpuDeviceRelease(device);
+    }
     return NULL;
 }
 
@@ -1537,11 +2002,57 @@ static napi_value doe_shader_module_get_bindings(napi_env env, napi_callback_inf
 
 /* ================================================================
  * Compute Pipeline
- * createComputePipeline(device, shaderModule, entryPoint, pipelineLayout?)
+ * createComputePipeline(device, shaderModule, entryPoint, pipelineLayout?, constants?)
  * ================================================================ */
 
+/* Parse a JS constants object/map {key: value, ...} into a WGPUConstantEntry array.
+ * Returns the number of entries written; caller must free the returned array. */
+static size_t parse_js_override_constants(napi_env env, napi_value constants_obj,
+                                           WGPUConstantEntry** out_entries) {
+    *out_entries = NULL;
+    if (!constants_obj) return 0;
+    napi_valuetype vtype;
+    napi_typeof(env, constants_obj, &vtype);
+    if (vtype != napi_object) return 0;
+
+    napi_value prop_names;
+    napi_get_property_names(env, constants_obj, &prop_names);
+    uint32_t count = 0;
+    napi_get_array_length(env, prop_names, &count);
+    if (count == 0) return 0;
+
+    WGPUConstantEntry* entries = (WGPUConstantEntry*)calloc(count, sizeof(WGPUConstantEntry));
+    if (!entries) return 0;
+    /* Allocate key string storage — each key needs a null-terminated copy. */
+    for (uint32_t i = 0; i < count; i++) {
+        napi_value key_val;
+        napi_get_element(env, prop_names, i, &key_val);
+        size_t key_len = 0;
+        napi_get_value_string_utf8(env, key_val, NULL, 0, &key_len);
+        char* key_str = (char*)malloc(key_len + 1);
+        if (!key_str) { free(entries); *out_entries = NULL; return 0; }
+        napi_get_value_string_utf8(env, key_val, key_str, key_len + 1, &key_len);
+        entries[i].nextInChain = NULL;
+        entries[i].key.data = key_str;
+        entries[i].key.length = key_len;
+        napi_value val;
+        napi_get_property(env, constants_obj, key_val, &val);
+        napi_get_value_double(env, val, &entries[i].value);
+    }
+    *out_entries = entries;
+    return count;
+}
+
+static void free_override_constants(WGPUConstantEntry* entries, size_t count) {
+    if (!entries) return;
+    for (size_t i = 0; i < count; i++) {
+        free((void*)entries[i].key.data);
+    }
+    free(entries);
+}
+
 static napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 4);
+    NAPI_ASSERT_ARGC(env, info, 5);
     CHECK_LIB_LOADED(env);
     WGPUDevice device = unwrap_ptr(env, _args[0]);
     WGPUShaderModule shader = unwrap_ptr(env, _args[1]);
@@ -1558,15 +2069,29 @@ static napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info i
     void* layout = NULL;
     if (layout_type == napi_external) layout = unwrap_ptr(env, _args[3]);
 
+    /* Parse optional override constants (5th arg) */
+    WGPUConstantEntry* override_entries = NULL;
+    size_t override_count = 0;
+    if (_argc > 4) {
+        napi_valuetype const_type;
+        napi_typeof(env, _args[4], &const_type);
+        if (const_type == napi_object) {
+            override_count = parse_js_override_constants(env, _args[4], &override_entries);
+        }
+    }
+
     WGPUComputePipelineDescriptor desc;
     memset(&desc, 0, sizeof(desc));
     desc.layout = layout;
     desc.compute.module = shader;
     desc.compute.entryPoint.data = ep;
     desc.compute.entryPoint.length = ep_len;
+    desc.compute.constantCount = override_count;
+    desc.compute.constants = override_entries;
 
     WGPUComputePipeline pipeline = pfn_wgpuDeviceCreateComputePipeline(device, &desc);
     free(ep);
+    free_override_constants(override_entries, override_count);
     if (!pipeline) {
         char msg[DOE_ERROR_BUF_CAP];
         char stage[64];
@@ -2505,6 +3030,74 @@ static napi_value doe_queue_release(napi_env env, napi_callback_info info) {
     return NULL;
 }
 
+/* queueWriteTexture(queueNative, textureNative, dataBuffer, dataOffset,
+ *                  bytesPerRow, rowsPerImage, mipLevel,
+ *                  originX, originY, originZ, width, height, depthOrArrayLayers) */
+static napi_value doe_queue_write_texture(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 13);
+    CHECK_LIB_LOADED(env);
+    void* queue   = unwrap_ptr(env, _args[0]);
+    void* texture = unwrap_ptr(env, _args[1]);
+    if (!queue || !texture) NAPI_THROW(env, "queueWriteTexture: invalid queue or texture");
+
+    /* data: ArrayBuffer or TypedArray */
+    void*  data     = NULL;
+    size_t data_len = 0;
+    bool is_typedarray = false;
+    napi_is_typedarray(env, _args[2], &is_typedarray);
+    if (is_typedarray) {
+        napi_typedarray_type ta_type;
+        size_t ta_length;
+        napi_value ab;
+        size_t byte_offset;
+        napi_get_typedarray_info(env, _args[2], &ta_type, &ta_length, &data, &ab, &byte_offset);
+        size_t elem_size = 1;
+        switch (ta_type) {
+            case napi_int16_array: case napi_uint16_array: elem_size = 2; break;
+            case napi_int32_array: case napi_uint32_array: case napi_float32_array: elem_size = 4; break;
+            case napi_float64_array: case napi_bigint64_array: case napi_biguint64_array: elem_size = 8; break;
+            default: elem_size = 1; break;
+        }
+        data_len = ta_length * elem_size;
+    } else {
+        bool is_ab = false;
+        napi_is_arraybuffer(env, _args[2], &is_ab);
+        if (is_ab) {
+            napi_get_arraybuffer_info(env, _args[2], &data, &data_len);
+        } else {
+            NAPI_THROW(env, "queueWriteTexture: data must be TypedArray or ArrayBuffer");
+        }
+    }
+
+    uint32_t data_offset      = 0; napi_get_value_uint32(env, _args[3], &data_offset);
+    uint32_t bytes_per_row    = 0; napi_get_value_uint32(env, _args[4], &bytes_per_row);
+    uint32_t rows_per_image   = 0; napi_get_value_uint32(env, _args[5], &rows_per_image);
+    uint32_t mip_level        = 0; napi_get_value_uint32(env, _args[6], &mip_level);
+    uint32_t origin_x         = 0; napi_get_value_uint32(env, _args[7], &origin_x);
+    uint32_t origin_y         = 0; napi_get_value_uint32(env, _args[8], &origin_y);
+    uint32_t origin_z         = 0; napi_get_value_uint32(env, _args[9], &origin_z);
+    uint32_t width            = 1; napi_get_value_uint32(env, _args[10], &width);
+    uint32_t height           = 1; napi_get_value_uint32(env, _args[11], &height);
+    uint32_t depth_or_layers  = 1; napi_get_value_uint32(env, _args[12], &depth_or_layers);
+
+    if (data_offset > 0 && data_offset < (uint32_t)data_len) {
+        data     = ((uint8_t*)data) + data_offset;
+        data_len -= data_offset;
+    }
+
+    if (pfn_doeNativeQueueWriteTexture) {
+        pfn_doeNativeQueueWriteTexture(
+            queue, texture,
+            data, data_len,
+            bytes_per_row, rows_per_image,
+            origin_x, origin_y, origin_z, mip_level, 0,
+            width, height, depth_or_layers);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
 /* ================================================================
  * Texture
  * createTexture(device, { format, width, height, usage, mipLevelCount?, dimension? })
@@ -3139,6 +3732,20 @@ static napi_value doe_render_pipeline_release(napi_env env, napi_callback_info i
     return NULL;
 }
 
+/* renderPipelineGetBindGroupLayout(pipeline, groupIndex) → bindGroupLayout */
+static napi_value doe_render_pipeline_get_bind_group_layout(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    void* pipeline = unwrap_ptr(env, _args[0]);
+    if (!pipeline) NAPI_THROW(env, "Invalid render pipeline");
+    uint32_t index;
+    napi_get_value_uint32(env, _args[1], &index);
+    if (!pfn_doeNativeRenderPipelineGetBindGroupLayout) NAPI_THROW(env, "renderPipelineGetBindGroupLayout not available");
+    void* layout = pfn_doeNativeRenderPipelineGetBindGroupLayout(pipeline, index);
+    if (!layout) NAPI_THROW(env, "renderPipelineGetBindGroupLayout failed");
+    return wrap_ptr(env, layout);
+}
+
 /* ================================================================
  * Render Pass
  * beginRenderPass(encoder, descriptor)
@@ -3305,6 +3912,285 @@ static napi_value doe_render_pass_release(napi_env env, napi_callback_info info)
     NAPI_ASSERT_ARGC(env, info, 1);
     void* p = unwrap_ptr(env, _args[0]);
     if (p) pfn_wgpuRenderPassEncoderRelease(p);
+    return NULL;
+}
+
+/* ================================================================
+ * GPURenderPassEncoder control methods — top-level module functions
+ * The first argument is always the render pass encoder handle.
+ * ================================================================ */
+
+/* renderPassSetViewport(pass, x, y, width, height, minDepth, maxDepth) */
+static napi_value doe_render_pass_set_viewport(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 7);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassSetViewport) return NULL;
+    double x = 0, y = 0, width = 0, height = 0, min_depth = 0, max_depth = 1;
+    napi_get_value_double(env, _args[1], &x);
+    napi_get_value_double(env, _args[2], &y);
+    napi_get_value_double(env, _args[3], &width);
+    napi_get_value_double(env, _args[4], &height);
+    napi_get_value_double(env, _args[5], &min_depth);
+    napi_get_value_double(env, _args[6], &max_depth);
+    pfn_doeNativeRenderPassSetViewport(pass, x, y, width, height, min_depth, max_depth);
+    return NULL;
+}
+
+/* renderPassSetScissorRect(pass, x, y, width, height) */
+static napi_value doe_render_pass_set_scissor_rect(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassSetScissorRect) return NULL;
+    uint32_t x = 0, y = 0, width = 0, height = 0;
+    napi_get_value_uint32(env, _args[1], &x);
+    napi_get_value_uint32(env, _args[2], &y);
+    napi_get_value_uint32(env, _args[3], &width);
+    napi_get_value_uint32(env, _args[4], &height);
+    pfn_doeNativeRenderPassSetScissorRect(pass, x, y, width, height);
+    return NULL;
+}
+
+/* renderPassSetBlendConstant(pass, r, g, b, a) */
+static napi_value doe_render_pass_set_blend_constant(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassSetBlendConstant) return NULL;
+    double r = 0, g = 0, b = 0, a = 1;
+    napi_get_value_double(env, _args[1], &r);
+    napi_get_value_double(env, _args[2], &g);
+    napi_get_value_double(env, _args[3], &b);
+    napi_get_value_double(env, _args[4], &a);
+    pfn_doeNativeRenderPassSetBlendConstant(pass, r, g, b, a);
+    return NULL;
+}
+
+/* renderPassSetStencilReference(pass, reference) */
+static napi_value doe_render_pass_set_stencil_reference(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassSetStencilReference) return NULL;
+    uint32_t reference = 0;
+    napi_get_value_uint32(env, _args[1], &reference);
+    pfn_doeNativeRenderPassSetStencilReference(pass, reference);
+    return NULL;
+}
+
+/* renderPassPushDebugGroup(pass, groupLabel) */
+static napi_value doe_render_pass_push_debug_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassPushDebugGroup) return NULL;
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1);
+    if (!label) return NULL;
+    napi_get_value_string_utf8(env, _args[1], label, label_len + 1, &label_len);
+    pfn_doeNativeRenderPassPushDebugGroup(pass, label, label_len);
+    free(label);
+    return NULL;
+}
+
+/* renderPassPopDebugGroup(pass) */
+static napi_value doe_render_pass_pop_debug_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassPopDebugGroup) return NULL;
+    pfn_doeNativeRenderPassPopDebugGroup(pass);
+    return NULL;
+}
+
+/* renderPassInsertDebugMarker(pass, markerLabel) */
+static napi_value doe_render_pass_insert_debug_marker(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* pass = unwrap_ptr(env, _args[0]);
+    if (!pass || !pfn_doeNativeRenderPassInsertDebugMarker) return NULL;
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1);
+    if (!label) return NULL;
+    napi_get_value_string_utf8(env, _args[1], label, label_len + 1, &label_len);
+    pfn_doeNativeRenderPassInsertDebugMarker(pass, label, label_len);
+    free(label);
+    return NULL;
+}
+
+/* ================================================================
+ * Render Bundle Encoder
+ * ================================================================ */
+
+/* RenderBundleEncoderDescriptor layout matching wgpu_render_types.zig:
+ *   nextInChain (ptr), label (WGPUStringView = ptr+len),
+ *   colorFormatCount (usize), colorFormats (ptr), depthStencilFormat (u32),
+ *   sampleCount (u32), depthReadOnly (u32), stencilReadOnly (u32) */
+typedef struct {
+    void*    nextInChain;
+    void*    label_data;
+    size_t   label_len;
+    size_t   colorFormatCount;
+    uint32_t* colorFormats;
+    uint32_t depthStencilFormat;
+    uint32_t sampleCount;
+    uint32_t depthReadOnly;
+    uint32_t stencilReadOnly;
+} BundleEncoderDescC;
+
+/* createRenderBundleEncoder(deviceNative, colorFormats[], depthStencilFormat,
+ *                           sampleCount, depthReadOnly, stencilReadOnly) */
+static napi_value doe_create_render_bundle_encoder(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 6);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceCreateRenderBundleEncoder) NAPI_THROW(env, "doeNativeDeviceCreateRenderBundleEncoder not available");
+    void* device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "createRenderBundleEncoder: invalid device");
+
+    /* colorFormats: JS array of uint32 texture format values */
+    uint32_t fmt_count = 0;
+    bool is_array = false;
+    napi_is_array(env, _args[1], &is_array);
+    if (is_array) napi_get_array_length(env, _args[1], &fmt_count);
+    uint32_t* fmts = fmt_count > 0 ? (uint32_t*)malloc(fmt_count * sizeof(uint32_t)) : NULL;
+    for (uint32_t i = 0; i < fmt_count; i++) {
+        napi_value elem;
+        napi_get_element(env, _args[1], i, &elem);
+        napi_get_value_uint32(env, elem, &fmts[i]);
+    }
+
+    uint32_t depth_stencil_format = 0; napi_get_value_uint32(env, _args[2], &depth_stencil_format);
+    uint32_t sample_count         = 1; napi_get_value_uint32(env, _args[3], &sample_count);
+    bool     depth_read_only      = false; napi_get_value_bool(env, _args[4], &depth_read_only);
+    bool     stencil_read_only    = false; napi_get_value_bool(env, _args[5], &stencil_read_only);
+
+    BundleEncoderDescC desc = {
+        .nextInChain         = NULL,
+        .label_data          = NULL,
+        .label_len           = 0,
+        .colorFormatCount    = (size_t)fmt_count,
+        .colorFormats        = fmts,
+        .depthStencilFormat  = depth_stencil_format,
+        .sampleCount         = sample_count == 0 ? 1 : sample_count,
+        .depthReadOnly       = depth_read_only ? 1 : 0,
+        .stencilReadOnly     = stencil_read_only ? 1 : 0,
+    };
+
+    void* enc = pfn_doeNativeDeviceCreateRenderBundleEncoder(device, &desc);
+    free(fmts);
+    if (!enc) NAPI_THROW(env, "createRenderBundleEncoder failed");
+    return wrap_ptr(env, enc);
+}
+
+/* renderBundleEncoderSetPipeline(encoderNative, pipelineNative) */
+static napi_value doe_render_bundle_encoder_set_pipeline(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* enc      = unwrap_ptr(env, _args[0]);
+    void* pipeline = unwrap_ptr(env, _args[1]);
+    if (!enc || !pipeline) return NULL;
+    if (pfn_doeNativeRenderBundleEncoderSetPipeline)
+        pfn_doeNativeRenderBundleEncoderSetPipeline(enc, pipeline);
+    return NULL;
+}
+
+/* renderBundleEncoderSetBindGroup(encoderNative, index, bindGroupNative) */
+static napi_value doe_render_bundle_encoder_set_bind_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    void* enc = unwrap_ptr(env, _args[0]);
+    if (!enc) return NULL;
+    uint32_t index = 0; napi_get_value_uint32(env, _args[1], &index);
+    void* bg = unwrap_ptr(env, _args[2]);
+    if (!bg) return NULL;
+    if (pfn_doeNativeRenderBundleEncoderSetBindGroup)
+        pfn_doeNativeRenderBundleEncoderSetBindGroup(enc, index, bg, 0, NULL);
+    return NULL;
+}
+
+/* renderBundleEncoderSetVertexBuffer(encoderNative, slot, bufferNative, offset, size) */
+static napi_value doe_render_bundle_encoder_set_vertex_buffer(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    void* enc = unwrap_ptr(env, _args[0]);
+    if (!enc) return NULL;
+    uint32_t slot = 0; napi_get_value_uint32(env, _args[1], &slot);
+    void* buf = unwrap_ptr(env, _args[2]);
+    if (!buf) return NULL;
+    int64_t offset = 0; napi_get_value_int64(env, _args[3], &offset);
+    int64_t size   = 0; napi_get_value_int64(env, _args[4], &size);
+    if (pfn_doeNativeRenderBundleEncoderSetVertexBuffer)
+        pfn_doeNativeRenderBundleEncoderSetVertexBuffer(enc, slot, buf, (uint64_t)offset, (uint64_t)size);
+    return NULL;
+}
+
+/* renderBundleEncoderSetIndexBuffer(encoderNative, bufferNative, format, offset, size) */
+static napi_value doe_render_bundle_encoder_set_index_buffer(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    void* enc = unwrap_ptr(env, _args[0]);
+    if (!enc) return NULL;
+    void* buf = unwrap_ptr(env, _args[1]);
+    if (!buf) return NULL;
+    uint32_t format = 0; napi_get_value_uint32(env, _args[2], &format);
+    int64_t  offset = 0; napi_get_value_int64(env, _args[3], &offset);
+    int64_t  size   = 0; napi_get_value_int64(env, _args[4], &size);
+    if (pfn_doeNativeRenderBundleEncoderSetIndexBuffer)
+        pfn_doeNativeRenderBundleEncoderSetIndexBuffer(enc, buf, format, (uint64_t)offset, (uint64_t)size);
+    return NULL;
+}
+
+/* renderBundleEncoderDraw(encoderNative, vertexCount, instanceCount, firstVertex, firstInstance) */
+static napi_value doe_render_bundle_encoder_draw(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    void* enc = unwrap_ptr(env, _args[0]);
+    if (!enc) return NULL;
+    uint32_t vertex_count   = 0; napi_get_value_uint32(env, _args[1], &vertex_count);
+    uint32_t instance_count = 1; napi_get_value_uint32(env, _args[2], &instance_count);
+    uint32_t first_vertex   = 0; napi_get_value_uint32(env, _args[3], &first_vertex);
+    uint32_t first_instance = 0; napi_get_value_uint32(env, _args[4], &first_instance);
+    if (pfn_doeNativeRenderBundleEncoderDraw)
+        pfn_doeNativeRenderBundleEncoderDraw(enc, vertex_count, instance_count, first_vertex, first_instance);
+    return NULL;
+}
+
+/* renderBundleEncoderDrawIndexed(encoderNative, indexCount, instanceCount,
+ *                                firstIndex, baseVertex, firstInstance) */
+static napi_value doe_render_bundle_encoder_draw_indexed(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 6);
+    void* enc = unwrap_ptr(env, _args[0]);
+    if (!enc) return NULL;
+    uint32_t index_count    = 0; napi_get_value_uint32(env, _args[1], &index_count);
+    uint32_t instance_count = 1; napi_get_value_uint32(env, _args[2], &instance_count);
+    uint32_t first_index    = 0; napi_get_value_uint32(env, _args[3], &first_index);
+    int32_t  base_vertex    = 0;
+    napi_valuetype bv_type; napi_typeof(env, _args[4], &bv_type);
+    if (bv_type == napi_number) { int64_t bv = 0; napi_get_value_int64(env, _args[4], &bv); base_vertex = (int32_t)bv; }
+    uint32_t first_instance = 0; napi_get_value_uint32(env, _args[5], &first_instance);
+    if (pfn_doeNativeRenderBundleEncoderDrawIndexed)
+        pfn_doeNativeRenderBundleEncoderDrawIndexed(enc, index_count, instance_count, first_index, base_vertex, first_instance);
+    return NULL;
+}
+
+/* renderBundleEncoderFinish(encoderNative) → bundleNative */
+static napi_value doe_render_bundle_encoder_finish(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeRenderBundleEncoderFinish) NAPI_THROW(env, "doeNativeRenderBundleEncoderFinish not available");
+    void* enc = unwrap_ptr(env, _args[0]);
+    if (!enc) NAPI_THROW(env, "renderBundleEncoderFinish: invalid encoder");
+    void* bundle = pfn_doeNativeRenderBundleEncoderFinish(enc, NULL);
+    if (!bundle) NAPI_THROW(env, "renderBundleEncoderFinish failed");
+    return wrap_ptr(env, bundle);
+}
+
+/* renderBundleEncoderRelease(encoderNative) */
+static napi_value doe_render_bundle_encoder_release(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* enc = unwrap_ptr(env, _args[0]);
+    if (enc && pfn_doeNativeRenderBundleEncoderRelease)
+        pfn_doeNativeRenderBundleEncoderRelease(enc);
+    return NULL;
+}
+
+/* renderBundleRelease(bundleNative) */
+static napi_value doe_render_bundle_release(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    void* bundle = unwrap_ptr(env, _args[0]);
+    if (bundle && pfn_doeNativeRenderBundleRelease)
+        pfn_doeNativeRenderBundleRelease(bundle);
     return NULL;
 }
 
@@ -3479,6 +4365,289 @@ static napi_value doe_get_last_error_column(napi_env env, napi_callback_info inf
     return result;
 }
 
+static napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    void* adapter = unwrap_ptr(env, _args[0]);
+    if (!adapter) NAPI_THROW(env, "Invalid adapter");
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+    const char* vendor = "";
+    const char* arch = "";
+    const char* device = "";
+    const char* desc = "";
+    char* block = NULL;
+
+    if (pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo) {
+        pfn_doeNativeAdapterGetInfo(adapter, &vendor, &arch, &device, &desc, &block);
+        if (!vendor) vendor = "";
+        if (!arch) arch = "";
+        if (!device) device = "";
+        if (!desc) desc = "";
+    }
+
+    napi_value v_vendor, v_arch, v_device, v_desc, v_sg_min, v_sg_max;
+    napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
+    napi_create_string_utf8(env, arch, NAPI_AUTO_LENGTH, &v_arch);
+    napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
+    napi_create_string_utf8(env, desc, NAPI_AUTO_LENGTH, &v_desc);
+    napi_create_uint32(env, 32, &v_sg_min);
+    napi_create_uint32(env, 32, &v_sg_max);
+    napi_set_named_property(env, obj, "vendor", v_vendor);
+    napi_set_named_property(env, obj, "architecture", v_arch);
+    napi_set_named_property(env, obj, "device", v_device);
+    napi_set_named_property(env, obj, "description", v_desc);
+    napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
+    napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
+
+    if (block && pfn_doeNativeAdapterFreeInfo) {
+        pfn_doeNativeAdapterFreeInfo(block);
+    }
+    return obj;
+}
+
+static napi_value doe_shader_module_get_compilation_info(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    void* shader_module = unwrap_ptr(env, _args[0]);
+
+    const char* json_str = "[]";
+    if (pfn_doeNativeShaderModuleGetCompilationInfo) {
+        const char* native_json = pfn_doeNativeShaderModuleGetCompilationInfo(shader_module);
+        if (native_json) json_str = native_json;
+    }
+
+    napi_value global, json_obj, json_parse_fn, json_str_val, parse_args[1], parsed, messages, compilation_info;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, "JSON", &json_obj);
+    napi_get_named_property(env, json_obj, "parse", &json_parse_fn);
+    napi_create_string_utf8(env, json_str, NAPI_AUTO_LENGTH, &json_str_val);
+    parse_args[0] = json_str_val;
+    if (napi_call_function(env, json_obj, json_parse_fn, 1, parse_args, &parsed) != napi_ok) {
+        napi_create_array_with_length(env, 0, &messages);
+    } else {
+        messages = parsed;
+    }
+    napi_create_object(env, &compilation_info);
+    napi_set_named_property(env, compilation_info, "messages", messages);
+    return native_direct_resolved_promise(env, compilation_info);
+}
+
+static napi_value doe_command_encoder_clear_buffer(napi_env env, napi_callback_info info) {
+    size_t argc = 4;
+    napi_value argv[4];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+    CHECK_LIB_LOADED(env);
+    if (argc < 2) NAPI_THROW(env, "commandEncoderClearBuffer requires encoder and buffer");
+    if (!pfn_doeNativeCommandEncoderClearBuffer) {
+        NAPI_THROW(env, "commandEncoderClearBuffer: no implementation available in loaded library");
+    }
+    WGPUCommandEncoder enc = unwrap_ptr(env, argv[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, argv[1]);
+    if (!enc || !buffer) NAPI_THROW(env, "commandEncoderClearBuffer requires encoder and buffer");
+    uint64_t offset = 0;
+    uint64_t size = WGPU_WHOLE_SIZE;
+    if (argc >= 3) {
+        napi_valuetype vt;
+        napi_typeof(env, argv[2], &vt);
+        if (vt == napi_number || vt == napi_bigint) {
+            int64_t v = 0;
+            napi_get_value_int64(env, argv[2], &v);
+            if (v > 0) offset = (uint64_t)v;
+        }
+    }
+    if (argc >= 4) {
+        napi_valuetype vt;
+        napi_typeof(env, argv[3], &vt);
+        if (vt == napi_number || vt == napi_bigint) {
+            int64_t v = 0;
+            napi_get_value_int64(env, argv[3], &v);
+            if (v > 0) size = (uint64_t)v;
+            else if (v == 0) size = 0;
+        }
+    }
+    pfn_doeNativeCommandEncoderClearBuffer(enc, buffer, offset, size);
+    return NULL;
+}
+
+static napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 15);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeCommandEncoderCopyTextureToTexture) {
+        NAPI_THROW(env, "commandEncoderCopyTextureToTexture: no implementation available in loaded library");
+    }
+    WGPUCommandEncoder enc = unwrap_ptr(env, _args[0]);
+    WGPUTexture src_texture = unwrap_ptr(env, _args[1]);
+    WGPUTexture dst_texture = unwrap_ptr(env, _args[7]);
+    if (!enc || !src_texture || !dst_texture) {
+        NAPI_THROW(env, "commandEncoderCopyTextureToTexture requires encoder and textures");
+    }
+    uint32_t src_mip = 0, src_x = 0, src_y = 0, src_z = 0;
+    uint32_t dst_mip = 0, dst_x = 0, dst_y = 0, dst_z = 0;
+    uint32_t width = 1, height = 1, depth_or_layers = 1;
+    napi_get_value_uint32(env, _args[2], &src_mip);
+    napi_get_value_uint32(env, _args[3], &src_x);
+    napi_get_value_uint32(env, _args[4], &src_y);
+    napi_get_value_uint32(env, _args[5], &src_z);
+    napi_get_value_uint32(env, _args[8], &dst_mip);
+    napi_get_value_uint32(env, _args[9], &dst_x);
+    napi_get_value_uint32(env, _args[10], &dst_y);
+    napi_get_value_uint32(env, _args[11], &dst_z);
+    napi_get_value_uint32(env, _args[12], &width);
+    napi_get_value_uint32(env, _args[13], &height);
+    napi_get_value_uint32(env, _args[14], &depth_or_layers);
+    pfn_doeNativeCommandEncoderCopyTextureToTexture(
+        enc,
+        src_texture, src_mip, 0, src_x, src_y, src_z,
+        dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
+        width, height, depth_or_layers);
+    return NULL;
+}
+
+typedef struct {
+    uint32_t done;
+    uint32_t error_type;
+    char message[DOE_ERROR_BUF_CAP];
+} DevicePopErrorScopeResult;
+
+static void pop_error_scope_callback(uint32_t error_type, WGPUStringView message, void* userdata1, void* userdata2) {
+    (void)userdata2;
+    DevicePopErrorScopeResult* result = (DevicePopErrorScopeResult*)userdata1;
+    result->done = 1;
+    result->error_type = error_type;
+    copy_string_view_message(message, result->message, sizeof(result->message));
+}
+
+static napi_value doe_device_push_error_scope(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDevicePushErrorScope) NAPI_THROW(env, "devicePushErrorScope not available");
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+    uint32_t filter = 0;
+    napi_get_value_uint32(env, _args[1], &filter);
+    pfn_doeNativeDevicePushErrorScope(device, filter);
+    return NULL;
+}
+
+static napi_value doe_device_pop_error_scope(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDevicePopErrorScope) NAPI_THROW(env, "devicePopErrorScope not available");
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    DevicePopErrorScopeResult result = {0};
+    WGPUPopErrorScopeCallbackInfo2 cb_info = {
+        .next_in_chain = NULL,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = pop_error_scope_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
+    pfn_doeNativeDevicePopErrorScope(device, cb_info);
+    if (!result.done) {
+        NAPI_THROW(env, "popErrorScope: no active error scope");
+    }
+    if (result.error_type == 0x00000001) {
+        return NULL;
+    }
+
+    napi_value out, type_val, message_val;
+    napi_create_object(env, &out);
+    napi_create_string_utf8(env, error_type_string(result.error_type), NAPI_AUTO_LENGTH, &type_val);
+    napi_create_string_utf8(env, result.message, NAPI_AUTO_LENGTH, &message_val);
+    napi_set_named_property(env, out, "type", type_val);
+    napi_set_named_property(env, out, "message", message_val);
+    return out;
+}
+
+static napi_value doe_device_set_uncaptured_error_callback(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceSetUncapturedErrorCallback) {
+        napi_value result;
+        napi_get_boolean(env, false, &result);
+        return result;
+    }
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    DeviceCallbackBinding* old = binding_take(&g_uncaptured_bindings, device);
+    if (old) {
+        pfn_doeNativeDeviceSetUncapturedErrorCallback(device, NULL, NULL, NULL);
+        release_binding(old);
+    }
+
+    napi_valuetype cb_type;
+    napi_typeof(env, _args[1], &cb_type);
+    if (cb_type == napi_null || cb_type == napi_undefined) {
+        return NULL;
+    }
+    if (cb_type != napi_function) {
+        NAPI_THROW(env, "deviceSetUncapturedErrorCallback requires a function or null");
+    }
+
+    DeviceCallbackBinding* binding = (DeviceCallbackBinding*)calloc(1, sizeof(DeviceCallbackBinding));
+    if (!binding) NAPI_THROW(env, "Out of memory");
+    binding->device = device;
+    napi_value resource_name;
+    napi_create_string_utf8(env, "doeDeviceUncapturedError", NAPI_AUTO_LENGTH, &resource_name);
+    if (napi_create_threadsafe_function(
+            env, _args[1], NULL, resource_name, 0, 1,
+            binding, binding_finalize, NULL, js_call_uncaptured_error, &binding->tsfn) != napi_ok) {
+        free(binding);
+        NAPI_THROW(env, "Failed to create uncaptured-error callback bridge");
+    }
+    binding_insert(&g_uncaptured_bindings, binding);
+    pfn_doeNativeDeviceSetUncapturedErrorCallback(device, uncaptured_error_native_callback, binding, NULL);
+    napi_value result;
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+
+static napi_value doe_device_register_lost_callback(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceRegisterLostCallback) {
+        napi_value result;
+        napi_get_boolean(env, false, &result);
+        return result;
+    }
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+
+    DeviceCallbackBinding* old = binding_take(&g_lost_bindings, device);
+    if (old) {
+        release_binding(old);
+    }
+
+    napi_valuetype cb_type;
+    napi_typeof(env, _args[1], &cb_type);
+    if (cb_type != napi_function) {
+        NAPI_THROW(env, "deviceRegisterLostCallback requires a function");
+    }
+
+    DeviceCallbackBinding* binding = (DeviceCallbackBinding*)calloc(1, sizeof(DeviceCallbackBinding));
+    if (!binding) NAPI_THROW(env, "Out of memory");
+    binding->device = device;
+    napi_value resource_name;
+    napi_create_string_utf8(env, "doeDeviceLost", NAPI_AUTO_LENGTH, &resource_name);
+    if (napi_create_threadsafe_function(
+            env, _args[1], NULL, resource_name, 0, 1,
+            binding, binding_finalize, NULL, js_call_lost_callback, &binding->tsfn) != napi_ok) {
+        free(binding);
+        NAPI_THROW(env, "Failed to create device-lost callback bridge");
+    }
+    binding_insert(&g_lost_bindings, binding);
+    pfn_doeNativeDeviceRegisterLostCallback(device, lost_native_callback, binding);
+    napi_value result;
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+
 /* ================================================================
  * QuerySet (timestamp query)
  * ================================================================ */
@@ -3598,6 +4767,25 @@ static napi_ref native_direct_method_compute_pass_set_bind_group_ref;
 static napi_ref native_direct_method_compute_pass_dispatch_workgroups_ref;
 static napi_ref native_direct_method_compute_pass_dispatch_workgroups_indirect_ref;
 static napi_ref native_direct_method_compute_pass_end_ref;
+static napi_ref native_direct_method_compute_pass_set_immediates_ref;
+static napi_ref native_direct_method_render_pass_set_immediates_ref;
+static napi_ref native_direct_method_render_pass_set_viewport_ref;
+static napi_ref native_direct_method_render_pass_set_scissor_rect_ref;
+static napi_ref native_direct_method_render_pass_set_blend_constant_ref;
+static napi_ref native_direct_method_render_pass_set_stencil_reference_ref;
+static napi_ref native_direct_method_render_pass_push_debug_group_ref;
+static napi_ref native_direct_method_render_pass_pop_debug_group_ref;
+static napi_ref native_direct_method_render_pass_insert_debug_marker_ref;
+static napi_ref native_direct_method_render_bundle_encoder_set_immediates_ref;
+static napi_ref native_direct_method_adapter_get_preferred_canvas_format_ref;
+static napi_ref native_direct_method_device_add_event_listener_ref;
+static napi_ref native_direct_method_device_remove_event_listener_ref;
+static napi_ref native_direct_method_device_import_external_texture_ref;
+static napi_ref native_direct_method_command_encoder_clear_buffer_ref;
+static napi_ref native_direct_method_command_encoder_copy_texture_to_texture_ref;
+static napi_ref native_direct_method_queue_write_texture_ref;
+static napi_ref native_direct_method_adapter_get_info_ref;
+static napi_ref native_direct_method_shader_module_get_compilation_info_ref;
 
 typedef struct {
     WGPUInstance instance;
@@ -3626,7 +4814,709 @@ typedef struct {
 static NativeDirectHandleCache* native_direct_get_handle_cache(napi_env env, napi_value obj);
 static NativeDirectQueueCache* native_direct_get_queue_cache(napi_env env, napi_value obj);
 static NativeDirectBufferCache* native_direct_get_buffer_cache(napi_env env, napi_value obj);
+static void* native_direct_unwrap_external_prop(napi_env env, napi_value obj, const char* key);
 static napi_ref native_direct_resolved_undefined_promise_ref;
+
+/* ================================================================
+ * Texture format u32 → string (inverse of texture_format_from_string)
+ * Used by getPreferredCanvasFormat to convert the returned u32 to a JS string.
+ * Only the canvas-candidate formats are mapped; unknown values fall back to
+ * returning the u32 as a number (handled at call site).
+ * ================================================================ */
+
+static const char* texture_format_u32_to_string(uint32_t fmt) {
+    switch (fmt) {
+        case 0x00000001: return "r8unorm";
+        case 0x00000002: return "r8snorm";
+        case 0x00000003: return "r8uint";
+        case 0x00000004: return "r8sint";
+        case 0x00000007: return "r16uint";
+        case 0x00000008: return "r16sint";
+        case 0x00000009: return "r16float";
+        case 0x0000000A: return "rg8unorm";
+        case 0x0000000B: return "rg8snorm";
+        case 0x0000000C: return "rg8uint";
+        case 0x0000000D: return "rg8sint";
+        case 0x0000000E: return "r32float";
+        case 0x0000000F: return "r32uint";
+        case 0x00000010: return "r32sint";
+        case 0x00000013: return "rg16uint";
+        case 0x00000014: return "rg16sint";
+        case 0x00000015: return "rg16float";
+        case 0x00000016: return "rgba8unorm";
+        case 0x00000017: return "rgba8unorm-srgb";
+        case 0x00000018: return "rgba8snorm";
+        case 0x00000019: return "rgba8uint";
+        case 0x0000001A: return "rgba8sint";
+        case 0x0000001B: return "bgra8unorm";
+        case 0x0000001C: return "bgra8unorm-srgb";
+        case 0x0000001D: return "rgb10a2uint";
+        case 0x0000001E: return "rgb10a2unorm";
+        case 0x0000001F: return "rg11b10ufloat";
+        case 0x00000020: return "rgb9e5ufloat";
+        case 0x00000021: return "rg32float";
+        case 0x00000022: return "rg32uint";
+        case 0x00000023: return "rg32sint";
+        case 0x00000024: return "rgba16uint";
+        case 0x00000025: return "rgba16sint";
+        case 0x00000026: return "rgba16float";
+        case 0x00000027: return "rgba32float";
+        case 0x00000028: return "rgba32uint";
+        case 0x00000029: return "rgba32sint";
+        default: return NULL; /* caller falls back to returning the u32 as a number */
+    }
+}
+
+/* ================================================================
+ * Group A: Adapter — getPreferredCanvasFormat
+ * ================================================================ */
+
+static napi_value native_direct_adapter_get_preferred_canvas_format(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    if (!pfn_doeNativeAdapterGetPreferredCanvasFormat) {
+        /* Symbol not present yet — return the WebGPU preferred canvas format
+         * for Apple Silicon (bgra8unorm is the Metal swapchain default). */
+        napi_value result;
+        napi_create_string_utf8(env, "bgra8unorm", NAPI_AUTO_LENGTH, &result);
+        return result;
+    }
+    NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+    void* adapter = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    uint32_t fmt = pfn_doeNativeAdapterGetPreferredCanvasFormat(adapter);
+    const char* name = texture_format_u32_to_string(fmt);
+    if (name) {
+        napi_value result;
+        napi_create_string_utf8(env, name, NAPI_AUTO_LENGTH, &result);
+        return result;
+    }
+    /* Unknown format — return the raw u32. TODO: extend texture_format_u32_to_string if needed. */
+    napi_value result;
+    napi_create_uint32(env, fmt, &result);
+    return result;
+}
+
+/* ================================================================
+ * Group A2: Adapter — getInfo
+ * ================================================================ */
+
+/* native_direct_adapter_get_info — implements GPUAdapter.info getter.
+ * Returns a JS object with vendor, architecture, device, description,
+ * subgroupMinSize, and subgroupMaxSize fields.
+ * Invoked as a method on the adapter object (zero args, `this` is the
+ * adapter).  When the native symbol is absent, returns empty-string fields
+ * with Apple Silicon fixed subgroup sizes as conservative defaults. */
+static napi_value native_direct_adapter_get_info(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+    const char* vendor = "";
+    const char* arch   = "";
+    const char* device = "";
+    const char* desc   = "";
+    char* block = NULL;
+
+    if (pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* adapter = cache ? cache->native
+                              : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeAdapterGetInfo(adapter, &vendor, &arch, &device, &desc, &block);
+        if (!vendor) vendor = "";
+        if (!arch)   arch   = "";
+        if (!device) device = "";
+        if (!desc)   desc   = "";
+    }
+
+    napi_value v_vendor, v_arch, v_device, v_desc;
+    napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
+    napi_create_string_utf8(env, arch,   NAPI_AUTO_LENGTH, &v_arch);
+    napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
+    napi_create_string_utf8(env, desc,   NAPI_AUTO_LENGTH, &v_desc);
+    napi_set_named_property(env, obj, "vendor",       v_vendor);
+    napi_set_named_property(env, obj, "architecture", v_arch);
+    napi_set_named_property(env, obj, "device",       v_device);
+    napi_set_named_property(env, obj, "description",  v_desc);
+
+    /* Apple Silicon SIMD-group size is fixed at 32 on all known variants. */
+    napi_value v_sg_min, v_sg_max;
+    napi_create_uint32(env, 32, &v_sg_min);
+    napi_create_uint32(env, 32, &v_sg_max);
+    napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
+    napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
+
+    if (block && pfn_doeNativeAdapterFreeInfo) {
+        pfn_doeNativeAdapterFreeInfo(block);
+    }
+    return obj;
+}
+
+/* ================================================================
+ * Group A3: ShaderModule — getCompilationInfo
+ * ================================================================ */
+
+/* native_direct_shader_module_get_compilation_info — implements
+ * GPUShaderModule.getCompilationInfo().
+ * Returns a Promise resolved with a GPUCompilationInfo-shaped object whose
+ * `messages` array is parsed from the JSON emitted by the native symbol.
+ * When compilation succeeded the list is empty; on failure it holds a single
+ * error entry with message, type, lineNum, linePos, offset, length. */
+static napi_value native_direct_shader_module_get_compilation_info(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+
+    NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+    void* module_raw = cache ? cache->native
+                             : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+
+    const char* json_str = "[]";
+    if (pfn_doeNativeShaderModuleGetCompilationInfo) {
+        const char* native_json = pfn_doeNativeShaderModuleGetCompilationInfo(module_raw);
+        if (native_json) json_str = native_json;
+    }
+
+    /* Parse via JS JSON.parse — the Zig layer emits strict JSON. */
+    napi_value global, json_obj, json_parse_fn, json_str_val, parse_args[1], parsed;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, "JSON", &json_obj);
+    napi_get_named_property(env, json_obj, "parse", &json_parse_fn);
+    napi_create_string_utf8(env, json_str, NAPI_AUTO_LENGTH, &json_str_val);
+    parse_args[0] = json_str_val;
+
+    napi_value messages;
+    napi_status parse_status = napi_call_function(env, json_obj, json_parse_fn, 1, parse_args, &parsed);
+    if (parse_status != napi_ok) {
+        napi_create_array_with_length(env, 0, &messages);
+    } else {
+        messages = parsed;
+    }
+
+    napi_value compilation_info;
+    napi_create_object(env, &compilation_info);
+    napi_set_named_property(env, compilation_info, "messages", messages);
+    return native_direct_resolved_promise(env, compilation_info);
+}
+
+static napi_value doe_adapter_get_info_export(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUAdapter adapter = unwrap_ptr(env, _args[0]);
+    if (!adapter) NAPI_THROW(env, "adapterGetInfo: null adapter");
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+    const char* vendor = "";
+    const char* arch = "";
+    const char* device = "";
+    const char* desc = "";
+    char* block = NULL;
+    if (pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo) {
+        pfn_doeNativeAdapterGetInfo(adapter, &vendor, &arch, &device, &desc, &block);
+        if (!vendor) vendor = "";
+        if (!arch) arch = "";
+        if (!device) device = "";
+        if (!desc) desc = "";
+    }
+
+    napi_value v_vendor;
+    napi_value v_arch;
+    napi_value v_device;
+    napi_value v_desc;
+    napi_value v_sg_min;
+    napi_value v_sg_max;
+    napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
+    napi_create_string_utf8(env, arch, NAPI_AUTO_LENGTH, &v_arch);
+    napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
+    napi_create_string_utf8(env, desc, NAPI_AUTO_LENGTH, &v_desc);
+    napi_create_uint32(env, 32, &v_sg_min);
+    napi_create_uint32(env, 32, &v_sg_max);
+    napi_set_named_property(env, obj, "vendor", v_vendor);
+    napi_set_named_property(env, obj, "architecture", v_arch);
+    napi_set_named_property(env, obj, "device", v_device);
+    napi_set_named_property(env, obj, "description", v_desc);
+    napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
+    napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
+
+    if (block && pfn_doeNativeAdapterFreeInfo) {
+        pfn_doeNativeAdapterFreeInfo(block);
+    }
+    return obj;
+}
+
+static napi_value doe_shader_module_get_compilation_info_export(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUShaderModule module = unwrap_ptr(env, _args[0]);
+    if (!module) NAPI_THROW(env, "shaderModuleGetCompilationInfo: null shader module");
+
+    const char* json_str = "[]";
+    if (pfn_doeNativeShaderModuleGetCompilationInfo) {
+        const char* native_json = pfn_doeNativeShaderModuleGetCompilationInfo(module);
+        if (native_json) json_str = native_json;
+    }
+
+    napi_value global;
+    napi_value json_obj;
+    napi_value json_parse_fn;
+    napi_value json_str_val;
+    napi_value parse_args[1];
+    napi_value parsed;
+    napi_value messages;
+    napi_value compilation_info;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, "JSON", &json_obj);
+    napi_get_named_property(env, json_obj, "parse", &json_parse_fn);
+    napi_create_string_utf8(env, json_str, NAPI_AUTO_LENGTH, &json_str_val);
+    parse_args[0] = json_str_val;
+    if (napi_call_function(env, json_obj, json_parse_fn, 1, parse_args, &parsed) != napi_ok) {
+        napi_create_array_with_length(env, 0, &messages);
+    } else {
+        messages = parsed;
+    }
+    napi_create_object(env, &compilation_info);
+    napi_set_named_property(env, compilation_info, "messages", messages);
+    return native_direct_resolved_promise(env, compilation_info);
+}
+
+static napi_value doe_device_push_error_scope_export(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDevicePushErrorScope) NAPI_THROW(env, "devicePushErrorScope not available");
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "devicePushErrorScope: null device");
+    uint32_t filter = 0;
+    napi_get_value_uint32(env, _args[1], &filter);
+    pfn_doeNativeDevicePushErrorScope(device, filter);
+    return NULL;
+}
+
+static napi_value doe_device_pop_error_scope_export(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDevicePopErrorScope) NAPI_THROW(env, "devicePopErrorScope not available");
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "devicePopErrorScope: null device");
+
+    napi_deferred deferred;
+    napi_value promise;
+    napi_create_promise(env, &deferred, &promise);
+
+    PopErrorScopeRequest* request = (PopErrorScopeRequest*)calloc(1, sizeof(PopErrorScopeRequest));
+    if (!request) NAPI_THROW(env, "devicePopErrorScope: allocation failed");
+    request->env = env;
+    request->deferred = deferred;
+
+    WGPUPopErrorScopeCallbackInfo2 cb_info = {0};
+    cb_info.mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS;
+    cb_info.callback = pop_error_scope_native_callback;
+    cb_info.userdata1 = request;
+    cb_info.userdata2 = NULL;
+
+    WGPUFuture future = pfn_doeNativeDevicePopErrorScope(device, cb_info);
+    if (future.id == 0) {
+        free(request);
+        NAPI_THROW(env, "devicePopErrorScope future unavailable");
+    }
+    return promise;
+}
+
+static napi_value doe_device_set_uncaptured_error_callback_export(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceSetUncapturedErrorCallback) NAPI_THROW(env, "deviceSetUncapturedErrorCallback not available");
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "deviceSetUncapturedErrorCallback: null device");
+
+    DeviceCallbackBinding* existing = binding_take(&g_uncaptured_bindings, device);
+    release_binding(existing);
+
+    napi_valuetype handler_type = napi_undefined;
+    napi_typeof(env, _args[1], &handler_type);
+    if (handler_type == napi_null || handler_type == napi_undefined) {
+        pfn_doeNativeDeviceSetUncapturedErrorCallback(device, NULL, NULL, NULL);
+        return NULL;
+    }
+    if (handler_type != napi_function) NAPI_THROW(env, "deviceSetUncapturedErrorCallback: handler must be a function or null");
+
+    DeviceCallbackBinding* binding = create_device_callback_binding(
+        env,
+        device,
+        _args[1],
+        "doe-device-uncaptured-error",
+        js_call_uncaptured_error,
+        NULL
+    );
+    if (!binding) NAPI_THROW(env, "deviceSetUncapturedErrorCallback: callback binding allocation failed");
+    binding_insert(&g_uncaptured_bindings, binding);
+    pfn_doeNativeDeviceSetUncapturedErrorCallback(device, uncaptured_error_native_callback, binding, NULL);
+    return NULL;
+}
+
+static napi_value doe_device_set_lost_callback_export(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceRegisterLostCallback) {
+        napi_value result;
+        napi_get_boolean(env, false, &result);
+        return result;
+    }
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "deviceSetLostCallback: null device");
+
+    DeviceCallbackBinding* existing = binding_take(&g_lost_bindings, device);
+    release_binding(existing);
+
+    napi_valuetype handler_type = napi_undefined;
+    napi_typeof(env, _args[1], &handler_type);
+    if (handler_type == napi_null || handler_type == napi_undefined) {
+        pfn_doeNativeDeviceRegisterLostCallback(device, NULL, NULL);
+        return NULL;
+    }
+    if (handler_type != napi_function) NAPI_THROW(env, "deviceSetLostCallback: handler must be a function or null");
+
+    DeviceCallbackBinding* binding = create_device_callback_binding(
+        env,
+        device,
+        _args[1],
+        "doe-device-lost",
+        js_call_lost_callback,
+        NULL
+    );
+    if (!binding) NAPI_THROW(env, "deviceSetLostCallback: callback binding allocation failed");
+    binding_insert(&g_lost_bindings, binding);
+    pfn_doeNativeDeviceRegisterLostCallback(device, lost_native_callback, binding);
+    return NULL;
+}
+
+/* ================================================================
+ * Group B: Device — addEventListener / removeEventListener (DOM stubs)
+ * ================================================================ */
+
+/* addEventListener is a DOM EventTarget stub required to prevent
+ * "TypeError: device.addEventListener is not a function" in code that
+ * attaches uncapturedError or devicelost listeners. The Doe runtime is
+ * synchronous and surfaces errors through explicit return values, so
+ * registration here is intentionally a no-op. */
+static napi_value native_direct_device_add_event_listener(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+    /* Consume type string and listener function to satisfy callers.
+     * No forwarding to the C ABI — pfn_doeNativeDeviceAddEventListener would
+     * also be a no-op and the symbol may not be present in the library yet. */
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value native_direct_device_remove_event_listener(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* ================================================================
+ * Group B: Device — importExternalTexture (explicitly unsupported)
+ * ================================================================ */
+
+static napi_value native_direct_device_import_external_texture(napi_env env, napi_callback_info info) {
+    (void)info;
+    /* External texture import requires platform video-frame OS APIs that are
+     * not available in the Doe headless runtime. Throw a TypeError with a
+     * clear unsupported message so callers get actionable feedback. */
+    napi_throw_type_error(env, "DOE_UNSUPPORTED",
+        "importExternalTexture is not supported in this runtime "
+        "(external video frame import requires platform-specific OS APIs)");
+    return NULL;
+}
+
+/* ================================================================
+ * Group C: Encoder setImmediates (mixin + per-encoder variants)
+ *
+ * The C ABI functions log unsupported internally in Zig when the
+ * capability is not available. All four variants share the same
+ * argument shape: index (u32) + data (ArrayBuffer or TypedArray).
+ * ================================================================ */
+
+static void extract_buffer_data(napi_env env, napi_value val, void** out_ptr, size_t* out_len) {
+    *out_ptr = NULL;
+    *out_len = 0;
+    bool is_typedarray = false;
+    napi_is_typedarray(env, val, &is_typedarray);
+    if (is_typedarray) {
+        napi_typedarray_type ta_type;
+        size_t ta_length = 0;
+        void* ta_data = NULL;
+        napi_value ta_ab;
+        size_t ta_byte_offset = 0;
+        napi_get_typedarray_info(env, val, &ta_type, &ta_length, &ta_data, &ta_ab, &ta_byte_offset);
+        *out_ptr = ta_data;
+        size_t elem_size = 1;
+        switch (ta_type) {
+            case napi_int16_array: case napi_uint16_array: elem_size = 2; break;
+            case napi_int32_array: case napi_uint32_array: case napi_float32_array: elem_size = 4; break;
+            case napi_float64_array: case napi_bigint64_array: case napi_biguint64_array: elem_size = 8; break;
+            default: elem_size = 1; break;
+        }
+        *out_len = ta_length * elem_size;
+        return;
+    }
+    bool is_ab = false;
+    napi_is_arraybuffer(env, val, &is_ab);
+    if (is_ab) {
+        napi_get_arraybuffer_info(env, val, out_ptr, out_len);
+        return;
+    }
+    bool is_buffer = false;
+    napi_is_buffer(env, val, &is_buffer);
+    if (is_buffer) {
+        napi_get_buffer_info(env, val, out_ptr, out_len);
+    }
+}
+
+/* GPUBindingCommandsMixin#setImmediates — registered on compute pass and render pass encoders */
+static napi_value native_direct_compute_pass_set_immediates(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 2) NAPI_THROW(env, "setImmediates requires index and data");
+    uint32_t index = 0;
+    napi_get_value_uint32(env, argv[0], &index);
+    void* data_ptr = NULL;
+    size_t data_len = 0;
+    extract_buffer_data(env, argv[1], &data_ptr, &data_len);
+    if (pfn_doeNativeComputePassSetImmediates) {
+        NativeDirectHandleCache* pass_cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = pass_cache ? pass_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeComputePassSetImmediates(pass, index, (const uint8_t*)data_ptr, data_len);
+    }
+    /* When pfn is NULL the C side has not been delivered yet; silently no-op
+     * so JS callers don't crash during the transition period. */
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#setImmediates */
+static napi_value native_direct_render_pass_set_immediates(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 2) NAPI_THROW(env, "setImmediates requires index and data");
+    uint32_t index = 0;
+    napi_get_value_uint32(env, argv[0], &index);
+    void* data_ptr = NULL;
+    size_t data_len = 0;
+    extract_buffer_data(env, argv[1], &data_ptr, &data_len);
+    if (pfn_doeNativeRenderPassSetImmediates) {
+        NativeDirectHandleCache* pass_cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = pass_cache ? pass_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassSetImmediates(pass, index, (const uint8_t*)data_ptr, data_len);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#setViewport(x, y, width, height, minDepth, maxDepth) */
+static napi_value native_direct_render_pass_set_viewport(napi_env env, napi_callback_info info) {
+    size_t argc = 6;
+    napi_value argv[6];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 6) NAPI_THROW(env, "setViewport requires x, y, width, height, minDepth, maxDepth");
+    double x = 0, y = 0, width = 0, height = 0, min_depth = 0, max_depth = 1;
+    napi_get_value_double(env, argv[0], &x);
+    napi_get_value_double(env, argv[1], &y);
+    napi_get_value_double(env, argv[2], &width);
+    napi_get_value_double(env, argv[3], &height);
+    napi_get_value_double(env, argv[4], &min_depth);
+    napi_get_value_double(env, argv[5], &max_depth);
+    if (pfn_doeNativeRenderPassSetViewport) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassSetViewport(pass, x, y, width, height, min_depth, max_depth);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#setScissorRect(x, y, width, height) */
+static napi_value native_direct_render_pass_set_scissor_rect(napi_env env, napi_callback_info info) {
+    size_t argc = 4;
+    napi_value argv[4];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 4) NAPI_THROW(env, "setScissorRect requires x, y, width, height");
+    uint32_t x = 0, y = 0, width = 0, height = 0;
+    napi_get_value_uint32(env, argv[0], &x);
+    napi_get_value_uint32(env, argv[1], &y);
+    napi_get_value_uint32(env, argv[2], &width);
+    napi_get_value_uint32(env, argv[3], &height);
+    if (pfn_doeNativeRenderPassSetScissorRect) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassSetScissorRect(pass, x, y, width, height);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#setBlendConstant(color)
+ * color: {r,g,b,a} object or [r,g,b,a] array */
+static napi_value native_direct_render_pass_set_blend_constant(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "setBlendConstant requires a color argument");
+    double r = 0, g = 0, b = 0, a = 1;
+    napi_valuetype vt;
+    napi_typeof(env, argv[0], &vt);
+    if (vt == napi_object) {
+        napi_value tmp;
+        bool is_array = false;
+        napi_is_array(env, argv[0], &is_array);
+        if (is_array) {
+            napi_get_element(env, argv[0], 0, &tmp); napi_get_value_double(env, tmp, &r);
+            napi_get_element(env, argv[0], 1, &tmp); napi_get_value_double(env, tmp, &g);
+            napi_get_element(env, argv[0], 2, &tmp); napi_get_value_double(env, tmp, &b);
+            napi_get_element(env, argv[0], 3, &tmp); napi_get_value_double(env, tmp, &a);
+        } else {
+            if (napi_get_named_property(env, argv[0], "r", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &r);
+            if (napi_get_named_property(env, argv[0], "g", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &g);
+            if (napi_get_named_property(env, argv[0], "b", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &b);
+            if (napi_get_named_property(env, argv[0], "a", &tmp) == napi_ok)
+                napi_get_value_double(env, tmp, &a);
+        }
+    }
+    if (pfn_doeNativeRenderPassSetBlendConstant) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassSetBlendConstant(pass, r, g, b, a);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#setStencilReference(reference) */
+static napi_value native_direct_render_pass_set_stencil_reference(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "setStencilReference requires reference");
+    uint32_t reference = 0;
+    napi_get_value_uint32(env, argv[0], &reference);
+    if (pfn_doeNativeRenderPassSetStencilReference) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassSetStencilReference(pass, reference);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#pushDebugGroup(groupLabel) */
+static napi_value native_direct_render_pass_push_debug_group(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "pushDebugGroup requires groupLabel");
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, argv[0], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1);
+    if (!label) return NULL;
+    napi_get_value_string_utf8(env, argv[0], label, label_len + 1, &label_len);
+    if (pfn_doeNativeRenderPassPushDebugGroup) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassPushDebugGroup(pass, label, label_len);
+    }
+    free(label);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#popDebugGroup() */
+static napi_value native_direct_render_pass_pop_debug_group(napi_env env, napi_callback_info info) {
+    size_t argc = 0;
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+    if (pfn_doeNativeRenderPassPopDebugGroup) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassPopDebugGroup(pass);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderPassEncoder#insertDebugMarker(markerLabel) */
+static napi_value native_direct_render_pass_insert_debug_marker(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "insertDebugMarker requires markerLabel");
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, argv[0], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1);
+    if (!label) return NULL;
+    napi_get_value_string_utf8(env, argv[0], label, label_len + 1, &label_len);
+    if (pfn_doeNativeRenderPassInsertDebugMarker) {
+        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+        void* pass = cache ? cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderPassInsertDebugMarker(pass, label, label_len);
+    }
+    free(label);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPURenderBundleEncoder#setImmediates */
+static napi_value native_direct_render_bundle_encoder_set_immediates(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value argv[2];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 2) NAPI_THROW(env, "setImmediates requires index and data");
+    uint32_t index = 0;
+    napi_get_value_uint32(env, argv[0], &index);
+    void* data_ptr = NULL;
+    size_t data_len = 0;
+    extract_buffer_data(env, argv[1], &data_ptr, &data_len);
+    if (pfn_doeNativeRenderBundleEncoderSetImmediates) {
+        NativeDirectHandleCache* enc_cache = native_direct_get_handle_cache(env, this_arg);
+        void* enc = enc_cache ? enc_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+        pfn_doeNativeRenderBundleEncoderSetImmediates(enc, index, (const uint8_t*)data_ptr, data_len);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
 
 static napi_value native_direct_resolved_promise(napi_env env, napi_value value) {
     napi_deferred deferred;
@@ -4063,15 +5953,26 @@ static napi_value native_direct_device_create_compute_pipeline(napi_env env, nap
         layout = native_direct_unwrap_external_prop(env, get_prop(env, argv[0], "layout"), DOE_DIRECT_NATIVE);
     }
 
+    /* Parse optional override constants from descriptor.compute.constants */
+    WGPUConstantEntry* override_entries = NULL;
+    size_t override_count = 0;
+    if (has_prop(env, compute, "constants")) {
+        napi_value constants_obj = get_prop(env, compute, "constants");
+        override_count = parse_js_override_constants(env, constants_obj, &override_entries);
+    }
+
     WGPUComputePipelineDescriptor desc;
     memset(&desc, 0, sizeof(desc));
     desc.layout = layout;
     desc.compute.module = shader;
     desc.compute.entryPoint.data = entry_point;
     desc.compute.entryPoint.length = entry_len;
+    desc.compute.constantCount = override_count;
+    desc.compute.constants = override_entries;
 
     WGPUComputePipeline pipeline = pfn_wgpuDeviceCreateComputePipeline(device, &desc);
     free(entry_point);
+    free_override_constants(override_entries, override_count);
     if (!pipeline) {
         char msg[DOE_ERROR_BUF_CAP];
         char stage[64];
@@ -4771,6 +6672,263 @@ static napi_value native_direct_command_encoder_finish(napi_env env, napi_callba
     return create_native_direct_command_buffer_object(env, command_buffer);
 }
 
+/* Helper: extract a uint32 from a named property of a JS object.
+ * Returns 0 if the property is absent or not a number. */
+static uint32_t get_u32_prop(napi_env env, napi_value obj, const char* key) {
+    napi_value val;
+    napi_get_named_property(env, obj, key, &val);
+    uint32_t out = 0;
+    napi_get_value_uint32(env, val, &out);
+    return out;
+}
+
+/* Helper: extract a GPUOrigin3D {x,y,z} from a JS object into three uint32 output args. */
+static void get_origin_3d(napi_env env, napi_value obj, uint32_t* x, uint32_t* y, uint32_t* z) {
+    *x = get_u32_prop(env, obj, "x");
+    *y = get_u32_prop(env, obj, "y");
+    *z = get_u32_prop(env, obj, "z");
+}
+
+/* Helper: extract a GPUExtent3D {width,height,depthOrArrayLayers} from a JS object. */
+static void get_extent_3d(napi_env env, napi_value obj, uint32_t* w, uint32_t* h, uint32_t* d) {
+    *w = get_u32_prop(env, obj, "width");
+    *h = get_u32_prop(env, obj, "height");
+    *d = get_u32_prop(env, obj, "depthOrArrayLayers");
+    if (*d == 0) *d = 1; /* default per WebGPU spec */
+}
+
+/* GPUCommandEncoder.clearBuffer(buffer, offset?, size?)
+ * argv[0]: GPUBuffer, argv[1]: offset (optional, default 0), argv[2]: size (optional, default WGPU_WHOLE_SIZE) */
+static napi_value native_direct_command_encoder_clear_buffer(napi_env env, napi_callback_info info) {
+    size_t argc = 3;
+    napi_value argv[3];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "clearBuffer requires a buffer");
+    NativeDirectHandleCache* enc_cache = native_direct_get_handle_cache(env, this_arg);
+    NativeDirectBufferCache* buf_cache = native_direct_get_buffer_cache(env, argv[0]);
+    void* encoder = enc_cache ? enc_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    void* buffer = buf_cache ? buf_cache->buffer : native_direct_unwrap_external_prop(env, argv[0], DOE_DIRECT_NATIVE);
+    if (!encoder || !buffer) NAPI_THROW(env, "clearBuffer: invalid encoder or buffer");
+    uint64_t offset = 0;
+    uint64_t size = UINT64_MAX; /* WGPU_WHOLE_SIZE */
+    if (argc >= 2 && argv[1]) {
+        int64_t v = 0;
+        napi_get_value_int64(env, argv[1], &v);
+        if (v > 0) offset = (uint64_t)v;
+    }
+    if (argc >= 3 && argv[2]) {
+        int64_t v = 0;
+        napi_get_value_int64(env, argv[2], &v);
+        if (v > 0) size = (uint64_t)v;
+    }
+    if (pfn_doeNativeCommandEncoderClearBuffer) {
+        pfn_doeNativeCommandEncoderClearBuffer(encoder, buffer, offset, size);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPUCommandEncoder.copyTextureToTexture(source, destination, copySize)
+ * argv[0]: {texture, mipLevel, origin: {x,y,z}}
+ * argv[1]: {texture, mipLevel, origin: {x,y,z}}
+ * argv[2]: {width, height, depthOrArrayLayers} */
+static napi_value native_direct_command_encoder_copy_texture_to_texture(napi_env env, napi_callback_info info) {
+    size_t argc = 3;
+    napi_value argv[3];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 3) NAPI_THROW(env, "copyTextureToTexture requires source, destination, and copySize");
+    NativeDirectHandleCache* enc_cache = native_direct_get_handle_cache(env, this_arg);
+    void* encoder = enc_cache ? enc_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!encoder) NAPI_THROW(env, "copyTextureToTexture: invalid encoder");
+    napi_value src_tex_obj = get_prop(env, argv[0], "texture");
+    napi_value dst_tex_obj = get_prop(env, argv[1], "texture");
+    void* src_texture = native_direct_unwrap_external_prop(env, src_tex_obj, DOE_DIRECT_NATIVE);
+    void* dst_texture = native_direct_unwrap_external_prop(env, dst_tex_obj, DOE_DIRECT_NATIVE);
+    if (!src_texture || !dst_texture) NAPI_THROW(env, "copyTextureToTexture: invalid source or destination texture");
+    uint32_t src_mip = get_u32_prop(env, argv[0], "mipLevel");
+    uint32_t dst_mip = get_u32_prop(env, argv[1], "mipLevel");
+    uint32_t src_x = 0, src_y = 0, src_z = 0;
+    uint32_t dst_x = 0, dst_y = 0, dst_z = 0;
+    napi_value src_origin = get_prop(env, argv[0], "origin");
+    napi_value dst_origin = get_prop(env, argv[1], "origin");
+    napi_valuetype src_origin_type, dst_origin_type;
+    napi_typeof(env, src_origin, &src_origin_type);
+    napi_typeof(env, dst_origin, &dst_origin_type);
+    if (src_origin_type == napi_object) get_origin_3d(env, src_origin, &src_x, &src_y, &src_z);
+    if (dst_origin_type == napi_object) get_origin_3d(env, dst_origin, &dst_x, &dst_y, &dst_z);
+    uint32_t width = 1, height = 1, depth_or_layers = 1;
+    napi_valuetype size_type;
+    napi_typeof(env, argv[2], &size_type);
+    if (size_type == napi_object) get_extent_3d(env, argv[2], &width, &height, &depth_or_layers);
+    if (pfn_doeNativeCommandEncoderCopyTextureToTexture) {
+        pfn_doeNativeCommandEncoderCopyTextureToTexture(
+            encoder,
+            src_texture, src_mip, 0, src_x, src_y, src_z,
+            dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
+            width, height, depth_or_layers);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+/* GPUQueue.writeTexture(destination, data, dataLayout, size)
+ * argv[0]: {texture, mipLevel, origin: {x,y,z}, aspect?}
+ * argv[1]: ArrayBuffer | TypedArray — pixel data
+ * argv[2]: {offset?, bytesPerRow, rowsPerImage?}
+ * argv[3]: {width, height, depthOrArrayLayers} */
+static napi_value native_direct_queue_write_texture(napi_env env, napi_callback_info info) {
+    size_t argc = 4;
+    napi_value argv[4];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 4) NAPI_THROW(env, "writeTexture requires destination, data, dataLayout, and size");
+    NativeDirectQueueCache* queue_cache = native_direct_get_queue_cache(env, this_arg);
+    void* queue = queue_cache ? queue_cache->queue : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!queue) NAPI_THROW(env, "writeTexture: invalid queue");
+    napi_value tex_obj = get_prop(env, argv[0], "texture");
+    void* texture = native_direct_unwrap_external_prop(env, tex_obj, DOE_DIRECT_NATIVE);
+    if (!texture) NAPI_THROW(env, "writeTexture: invalid destination texture");
+    uint32_t dst_mip = get_u32_prop(env, argv[0], "mipLevel");
+    uint32_t dst_x = 0, dst_y = 0, dst_z = 0;
+    napi_value dst_origin = get_prop(env, argv[0], "origin");
+    napi_valuetype dst_origin_type;
+    napi_typeof(env, dst_origin, &dst_origin_type);
+    if (dst_origin_type == napi_object) get_origin_3d(env, dst_origin, &dst_x, &dst_y, &dst_z);
+    /* Extract pixel data pointer and byte length */
+    void* data = NULL;
+    size_t data_len = 0;
+    bool is_typedarray = false;
+    napi_is_typedarray(env, argv[1], &is_typedarray);
+    if (is_typedarray) {
+        napi_typedarray_type ta_type;
+        size_t ta_length;
+        napi_value ab;
+        size_t byte_offset;
+        napi_get_typedarray_info(env, argv[1], &ta_type, &ta_length, &data, &ab, &byte_offset);
+        size_t elem_size = 1;
+        switch (ta_type) {
+            case napi_int16_array: case napi_uint16_array: elem_size = 2; break;
+            case napi_int32_array: case napi_uint32_array: case napi_float32_array: elem_size = 4; break;
+            case napi_float64_array: case napi_bigint64_array: case napi_biguint64_array: elem_size = 8; break;
+            default: elem_size = 1; break;
+        }
+        data_len = ta_length * elem_size;
+    } else {
+        bool is_ab = false;
+        napi_is_arraybuffer(env, argv[1], &is_ab);
+        if (is_ab) {
+            napi_get_arraybuffer_info(env, argv[1], &data, &data_len);
+        } else {
+            NAPI_THROW(env, "writeTexture: data must be TypedArray or ArrayBuffer");
+        }
+    }
+    /* dataLayout: {offset?, bytesPerRow, rowsPerImage?} */
+    uint32_t layout_offset = get_u32_prop(env, argv[2], "offset");
+    uint32_t bytes_per_row = get_u32_prop(env, argv[2], "bytesPerRow");
+    uint32_t rows_per_image = get_u32_prop(env, argv[2], "rowsPerImage");
+    if (layout_offset > 0 && layout_offset < data_len) {
+        data = ((uint8_t*)data) + layout_offset;
+        data_len -= layout_offset;
+    }
+    /* copySize */
+    uint32_t width = 1, height = 1, depth_or_layers = 1;
+    napi_valuetype size_type;
+    napi_typeof(env, argv[3], &size_type);
+    if (size_type == napi_object) get_extent_3d(env, argv[3], &width, &height, &depth_or_layers);
+    if (pfn_doeNativeQueueWriteTexture) {
+        pfn_doeNativeQueueWriteTexture(
+            queue, texture,
+            data, data_len,
+            bytes_per_row, rows_per_image,
+            dst_x, dst_y, dst_z, dst_mip, 0,
+            width, height, depth_or_layers);
+    }
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+static napi_value doe_command_encoder_clear_buffer_export(napi_env env, napi_callback_info info) {
+    size_t argc = 4;
+    napi_value argv[4];
+    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeCommandEncoderClearBuffer) NAPI_THROW(env, "commandEncoderClearBuffer not available");
+    if (argc < 2) NAPI_THROW(env, "commandEncoderClearBuffer requires encoder and buffer");
+
+    WGPUCommandEncoder encoder = unwrap_ptr(env, argv[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, argv[1]);
+    if (!encoder || !buffer) NAPI_THROW(env, "commandEncoderClearBuffer: invalid encoder or buffer");
+
+    uint64_t offset = 0;
+    uint64_t size = WGPU_WHOLE_SIZE;
+    if (argc >= 3 && argv[2]) {
+      napi_valuetype offset_type = napi_undefined;
+      napi_typeof(env, argv[2], &offset_type);
+      if (offset_type == napi_number) {
+        int64_t value = 0;
+        napi_get_value_int64(env, argv[2], &value);
+        if (value > 0) offset = (uint64_t)value;
+      }
+    }
+    if (argc >= 4 && argv[3]) {
+      napi_valuetype size_type = napi_undefined;
+      napi_typeof(env, argv[3], &size_type);
+      if (size_type == napi_number) {
+        int64_t value = 0;
+        napi_get_value_int64(env, argv[3], &value);
+        if (value >= 0) size = (uint64_t)value;
+      }
+    }
+    pfn_doeNativeCommandEncoderClearBuffer(encoder, buffer, offset, size);
+    return NULL;
+}
+
+static napi_value doe_command_encoder_copy_texture_to_texture_export(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 14);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeCommandEncoderCopyTextureToTexture) NAPI_THROW(env, "commandEncoderCopyTextureToTexture not available");
+
+    WGPUCommandEncoder encoder = unwrap_ptr(env, _args[0]);
+    WGPUTexture src_texture = unwrap_ptr(env, _args[1]);
+    uint32_t src_mip = 0;
+    uint32_t src_x = 0;
+    uint32_t src_y = 0;
+    uint32_t src_z = 0;
+    WGPUTexture dst_texture = unwrap_ptr(env, _args[6]);
+    uint32_t dst_mip = 0;
+    uint32_t dst_x = 0;
+    uint32_t dst_y = 0;
+    uint32_t dst_z = 0;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t depth_or_layers = 0;
+
+    if (!encoder || !src_texture || !dst_texture) NAPI_THROW(env, "commandEncoderCopyTextureToTexture: invalid encoder or textures");
+    napi_get_value_uint32(env, _args[2], &src_mip);
+    napi_get_value_uint32(env, _args[3], &src_x);
+    napi_get_value_uint32(env, _args[4], &src_y);
+    napi_get_value_uint32(env, _args[5], &src_z);
+    napi_get_value_uint32(env, _args[7], &dst_mip);
+    napi_get_value_uint32(env, _args[8], &dst_x);
+    napi_get_value_uint32(env, _args[9], &dst_y);
+    napi_get_value_uint32(env, _args[10], &dst_z);
+    napi_get_value_uint32(env, _args[11], &width);
+    napi_get_value_uint32(env, _args[12], &height);
+    napi_get_value_uint32(env, _args[13], &depth_or_layers);
+
+    pfn_doeNativeCommandEncoderCopyTextureToTexture(
+        encoder,
+        src_texture, src_mip, 0, src_x, src_y, src_z,
+        dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
+        width, height, depth_or_layers);
+    return NULL;
+}
+
 static napi_value native_direct_compute_pass_set_pipeline(napi_env env, napi_callback_info info) {
     size_t argc = 1;
     napi_value argv[1];
@@ -4876,13 +7034,11 @@ static napi_value create_native_direct_adapter_object(napi_env env, WGPUInstance
     WGPULimits limits = native_direct_query_adapter_limits(adapter, &limits_ok);
     native_direct_set_object_prop(env, obj, "limits", limits_ok ? create_limits_object(env, &limits) : native_direct_create_empty_object(env));
     native_direct_set_object_prop(env, obj, "features", native_direct_create_empty_set(env));
-    {
-        napi_value info;
-        napi_create_object(env, &info);
-        napi_set_named_property(env, obj, "info", info);
-    }
     native_direct_add_cached_method(env, obj, "requestDevice", native_direct_adapter_request_device, &native_direct_method_adapter_request_device_ref);
     native_direct_add_cached_method(env, obj, "destroy", native_direct_adapter_destroy, &native_direct_method_adapter_destroy_ref);
+    native_direct_add_cached_method(env, obj, "getPreferredCanvasFormat", native_direct_adapter_get_preferred_canvas_format, &native_direct_method_adapter_get_preferred_canvas_format_ref);
+    /* GPUAdapter.info — method that returns the info object directly (not async). */
+    native_direct_add_cached_method(env, obj, "getInfo", native_direct_adapter_get_info, &native_direct_method_adapter_get_info_ref);
     return obj;
 }
 
@@ -4899,6 +7055,7 @@ static napi_value create_native_direct_queue_object(napi_env env, WGPUInstance i
     native_direct_wrap_queue_cache(env, obj, instance, queue);
     native_direct_add_cached_method(env, obj, "submit", native_direct_queue_submit, &native_direct_method_queue_submit_ref);
     native_direct_add_cached_method(env, obj, "writeBuffer", native_direct_queue_write_buffer, &native_direct_method_queue_write_buffer_ref);
+    native_direct_add_cached_method(env, obj, "writeTexture", native_direct_queue_write_texture, &native_direct_method_queue_write_texture_ref);
     native_direct_add_cached_method(env, obj, "onSubmittedWorkDone", native_direct_queue_on_submitted_work_done, &native_direct_method_queue_on_submitted_work_done_ref);
     return obj;
 }
@@ -4924,6 +7081,9 @@ static napi_value create_native_direct_device_object(napi_env env, WGPUInstance 
     native_direct_add_cached_method(env, obj, "createPipelineLayout", native_direct_device_create_pipeline_layout, &native_direct_method_device_create_pipeline_layout_ref);
     native_direct_add_cached_method(env, obj, "createCommandEncoder", native_direct_device_create_command_encoder, &native_direct_method_device_create_command_encoder_ref);
     native_direct_add_cached_method(env, obj, "destroy", native_direct_device_destroy, &native_direct_method_device_destroy_ref);
+    native_direct_add_cached_method(env, obj, "addEventListener", native_direct_device_add_event_listener, &native_direct_method_device_add_event_listener_ref);
+    native_direct_add_cached_method(env, obj, "removeEventListener", native_direct_device_remove_event_listener, &native_direct_method_device_remove_event_listener_ref);
+    native_direct_add_cached_method(env, obj, "importExternalTexture", native_direct_device_import_external_texture, &native_direct_method_device_import_external_texture_ref);
     return obj;
 }
 
@@ -4977,6 +7137,8 @@ static napi_value create_native_direct_shader_module_object(napi_env env, WGPUSh
     napi_create_object(env, &obj);
     native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, shader_module);
     native_direct_wrap_handle_cache(env, obj, NULL, shader_module);
+    /* GPUShaderModule.getCompilationInfo() — returns a Promise<GPUCompilationInfo>. */
+    native_direct_add_cached_method(env, obj, "getCompilationInfo", native_direct_shader_module_get_compilation_info, &native_direct_method_shader_module_get_compilation_info_ref);
     return obj;
 }
 
@@ -5003,6 +7165,8 @@ static napi_value create_native_direct_command_encoder_object(napi_env env, WGPU
     native_direct_wrap_handle_cache(env, obj, NULL, encoder);
     native_direct_add_cached_method(env, obj, "beginComputePass", native_direct_command_encoder_begin_compute_pass, &native_direct_method_command_encoder_begin_compute_pass_ref);
     native_direct_add_cached_method(env, obj, "copyBufferToBuffer", native_direct_command_encoder_copy_buffer_to_buffer, &native_direct_method_command_encoder_copy_buffer_to_buffer_ref);
+    native_direct_add_cached_method(env, obj, "clearBuffer", native_direct_command_encoder_clear_buffer, &native_direct_method_command_encoder_clear_buffer_ref);
+    native_direct_add_cached_method(env, obj, "copyTextureToTexture", native_direct_command_encoder_copy_texture_to_texture, &native_direct_method_command_encoder_copy_texture_to_texture_ref);
     native_direct_add_cached_method(env, obj, "finish", native_direct_command_encoder_finish, &native_direct_method_command_encoder_finish_ref);
     return obj;
 }
@@ -5017,6 +7181,45 @@ static napi_value create_native_direct_compute_pass_object(napi_env env, WGPUCom
     native_direct_add_cached_method(env, obj, "dispatchWorkgroups", native_direct_compute_pass_dispatch_workgroups, &native_direct_method_compute_pass_dispatch_workgroups_ref);
     native_direct_add_cached_method(env, obj, "dispatchWorkgroupsIndirect", native_direct_compute_pass_dispatch_workgroups_indirect, &native_direct_method_compute_pass_dispatch_workgroups_indirect_ref);
     native_direct_add_cached_method(env, obj, "end", native_direct_compute_pass_end, &native_direct_method_compute_pass_end_ref);
+    /* GPUBindingCommandsMixin#setImmediates — covers both mixin and compute-pass-specific contract */
+    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_compute_pass_set_immediates, &native_direct_method_compute_pass_set_immediates_ref);
+    return obj;
+}
+
+/* create_native_direct_render_pass_object: wraps a WGPURenderPassEncoder as a JS
+ * object with all GPURenderPassEncoder control methods registered. */
+static napi_value
+create_native_direct_render_pass_object(napi_env env, WGPURenderPassEncoder pass) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, pass);
+    native_direct_wrap_handle_cache(env, obj, NULL, pass);
+    /* GPURenderPassEncoder#setImmediates (GPUBindingCommandsMixin) */
+    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_render_pass_set_immediates, &native_direct_method_render_pass_set_immediates_ref);
+    /* GPURenderPassEncoder dynamic state */
+    native_direct_add_cached_method(env, obj, "setViewport", native_direct_render_pass_set_viewport, &native_direct_method_render_pass_set_viewport_ref);
+    native_direct_add_cached_method(env, obj, "setScissorRect", native_direct_render_pass_set_scissor_rect, &native_direct_method_render_pass_set_scissor_rect_ref);
+    native_direct_add_cached_method(env, obj, "setBlendConstant", native_direct_render_pass_set_blend_constant, &native_direct_method_render_pass_set_blend_constant_ref);
+    native_direct_add_cached_method(env, obj, "setStencilReference", native_direct_render_pass_set_stencil_reference, &native_direct_method_render_pass_set_stencil_reference_ref);
+    /* GPURenderPassEncoder debug markers */
+    native_direct_add_cached_method(env, obj, "pushDebugGroup", native_direct_render_pass_push_debug_group, &native_direct_method_render_pass_push_debug_group_ref);
+    native_direct_add_cached_method(env, obj, "popDebugGroup", native_direct_render_pass_pop_debug_group, &native_direct_method_render_pass_pop_debug_group_ref);
+    native_direct_add_cached_method(env, obj, "insertDebugMarker", native_direct_render_pass_insert_debug_marker, &native_direct_method_render_pass_insert_debug_marker_ref);
+    return obj;
+}
+
+/* create_native_direct_render_bundle_encoder_object: wraps a WGPURenderBundleEncoder
+ * with setImmediates registered. The render bundle encoder is not yet plumbed through
+ * the full native-direct object model; this creator is provided so that callers
+ * constructing bundle encoders can attach setImmediates without special-casing. */
+static napi_value __attribute__((unused))
+create_native_direct_render_bundle_encoder_object(napi_env env, void* encoder) {
+    napi_value obj;
+    napi_create_object(env, &obj);
+    native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, encoder);
+    native_direct_wrap_handle_cache(env, obj, NULL, encoder);
+    /* GPURenderBundleEncoder#setImmediates (GPUBindingCommandsMixin) */
+    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_render_bundle_encoder_set_immediates, &native_direct_method_render_bundle_encoder_set_immediates_ref);
     return obj;
 }
 
@@ -5042,9 +7245,14 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("instanceRelease", doe_instance_release),
         EXPORT_FN("requestAdapter", doe_request_adapter),
         EXPORT_FN("adapterRelease", doe_adapter_release),
+        EXPORT_FN("adapterGetInfo", doe_adapter_get_info),
         EXPORT_FN("requestDevice", doe_request_device),
         EXPORT_FN("deviceRelease", doe_device_release),
         EXPORT_FN("deviceGetQueue", doe_device_get_queue),
+        EXPORT_FN("devicePushErrorScope", doe_device_push_error_scope),
+        EXPORT_FN("devicePopErrorScope", doe_device_pop_error_scope),
+        EXPORT_FN("deviceSetUncapturedErrorCallback", doe_device_set_uncaptured_error_callback),
+        EXPORT_FN("deviceRegisterLostCallback", doe_device_register_lost_callback),
         EXPORT_FN("createBuffer", doe_create_buffer),
         EXPORT_FN("bufferRelease", doe_buffer_release),
         EXPORT_FN("bufferUnmap", doe_buffer_unmap),
@@ -5060,6 +7268,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("createShaderModule", doe_create_shader_module),
         EXPORT_FN("shaderModuleRelease", doe_shader_module_release),
         EXPORT_FN("shaderModuleGetBindings", doe_shader_module_get_bindings),
+        EXPORT_FN("shaderModuleGetCompilationInfo", doe_shader_module_get_compilation_info),
         EXPORT_FN("createComputePipeline", doe_create_compute_pipeline),
         EXPORT_FN("computePipelineRelease", doe_compute_pipeline_release),
         EXPORT_FN("computePipelineGetBindGroupLayout", doe_compute_pipeline_get_bind_group_layout),
@@ -5074,6 +7283,8 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("commandEncoderCopyBufferToBuffer", doe_command_encoder_copy_buffer_to_buffer),
         EXPORT_FN("commandEncoderCopyBufferToTexture", doe_command_encoder_copy_buffer_to_texture),
         EXPORT_FN("commandEncoderCopyTextureToBuffer", doe_command_encoder_copy_texture_to_buffer),
+        EXPORT_FN("commandEncoderClearBuffer", doe_command_encoder_clear_buffer),
+        EXPORT_FN("commandEncoderCopyTextureToTexture", doe_command_encoder_copy_texture_to_texture),
         EXPORT_FN("commandEncoderFinish", doe_command_encoder_finish),
         EXPORT_FN("commandBufferRelease", doe_command_buffer_release),
         EXPORT_FN("beginComputePass", doe_begin_compute_pass),
@@ -5085,6 +7296,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("computePassRelease", doe_compute_pass_release),
         EXPORT_FN("queueSubmit", doe_queue_submit),
         EXPORT_FN("queueWriteBuffer", doe_queue_write_buffer),
+        EXPORT_FN("queueWriteTexture", doe_queue_write_texture),
         EXPORT_FN("queueFlush", doe_queue_flush),
         EXPORT_FN("submitBatched", doe_submit_batched),
         EXPORT_FN("submitComputeDispatchCopy", doe_submit_compute_dispatch_copy),
@@ -5098,6 +7310,7 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("samplerRelease", doe_sampler_release),
         EXPORT_FN("createRenderPipeline", doe_create_render_pipeline),
         EXPORT_FN("renderPipelineRelease", doe_render_pipeline_release),
+        EXPORT_FN("renderPipelineGetBindGroupLayout", doe_render_pipeline_get_bind_group_layout),
         EXPORT_FN("beginRenderPass", doe_begin_render_pass),
         EXPORT_FN("renderPassSetPipeline", doe_render_pass_set_pipeline),
         EXPORT_FN("renderPassSetBindGroup", doe_render_pass_set_bind_group),
@@ -5107,10 +7320,28 @@ static napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderPassDrawIndexed", doe_render_pass_draw_indexed),
         EXPORT_FN("renderPassEnd", doe_render_pass_end),
         EXPORT_FN("renderPassRelease", doe_render_pass_release),
+        EXPORT_FN("renderPassSetViewport", doe_render_pass_set_viewport),
+        EXPORT_FN("renderPassSetScissorRect", doe_render_pass_set_scissor_rect),
+        EXPORT_FN("renderPassSetBlendConstant", doe_render_pass_set_blend_constant),
+        EXPORT_FN("renderPassSetStencilReference", doe_render_pass_set_stencil_reference),
+        EXPORT_FN("renderPassPushDebugGroup", doe_render_pass_push_debug_group),
+        EXPORT_FN("renderPassPopDebugGroup", doe_render_pass_pop_debug_group),
+        EXPORT_FN("renderPassInsertDebugMarker", doe_render_pass_insert_debug_marker),
+        EXPORT_FN("createRenderBundleEncoder", doe_create_render_bundle_encoder),
+        EXPORT_FN("renderBundleEncoderSetPipeline", doe_render_bundle_encoder_set_pipeline),
+        EXPORT_FN("renderBundleEncoderSetBindGroup", doe_render_bundle_encoder_set_bind_group),
+        EXPORT_FN("renderBundleEncoderSetVertexBuffer", doe_render_bundle_encoder_set_vertex_buffer),
+        EXPORT_FN("renderBundleEncoderSetIndexBuffer", doe_render_bundle_encoder_set_index_buffer),
+        EXPORT_FN("renderBundleEncoderDraw", doe_render_bundle_encoder_draw),
+        EXPORT_FN("renderBundleEncoderDrawIndexed", doe_render_bundle_encoder_draw_indexed),
+        EXPORT_FN("renderBundleEncoderFinish", doe_render_bundle_encoder_finish),
+        EXPORT_FN("renderBundleEncoderRelease", doe_render_bundle_encoder_release),
+        EXPORT_FN("renderBundleRelease", doe_render_bundle_release),
         EXPORT_FN("adapterGetLimits", doe_adapter_get_limits),
         EXPORT_FN("adapterHasFeature", doe_adapter_has_feature),
         EXPORT_FN("deviceGetLimits", doe_device_get_limits),
         EXPORT_FN("deviceHasFeature", doe_device_has_feature),
+        EXPORT_FN("deviceSetLostCallback", doe_device_set_lost_callback_export),
         EXPORT_FN("createQuerySet", doe_create_query_set),
         EXPORT_FN("commandEncoderWriteTimestamp", doe_command_encoder_write_timestamp),
         EXPORT_FN("commandEncoderResolveQuerySet", doe_command_encoder_resolve_query_set),

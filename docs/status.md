@@ -2,16 +2,16 @@
 
 ## Snapshot
 
-Date: 2026-03-17
+Date: 2026-03-18
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
-Current `runtime/zig/src` size is 15,091 LOC (`wc -l runtime/zig/src/*.zig`, 2026-03-02) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering.
+Current `runtime/zig/src` size is ~60,642 non-test LOC across all backends (`find runtime/zig/src -name '*.zig' -not -name '*test*' -not -name '*bench*' | xargs wc -l`, 2026-03-18) and includes native queue-submitted execution for upload, copy, barrier, render, and dispatch-family lowering across Metal, Vulkan, and D3D12 backends.
 Shader/compiler state improved materially since the earlier strategic notes:
-- a first IR robustness transform now exists in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig` and is wired into the WGSL->IR pipeline, but it is still partial rather than full browser-grade robustness closure
+- the IR robustness transform in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig` covers sized arrays/vectors/matrices, runtime-sized arrays (with broadened base-expression whitelist: global_ref, member, load, local_ref, param_ref, index, call), and texture coordinate clamping for textureLoad/textureStore (2D/3D/cube/depth/multisampled/storage). Tests in `ir_transform_robustness_test.zig` (12 tests). Full CTS/security-surface hardening for remaining edge cases (e.g. texture_1d, textureSampleLevel integer coords) is follow-up work
 - SPIR-V texture/sampler lowering advanced materially in `runtime/zig/src/doe_wgsl/emit_spirv_texture.zig`, but Vulkan graphics-path promotion is still incomplete
 - `runtime/zig/src/doe_wgsl/bench_compilation.zig` now provides a local compilation benchmark harness; public published benchmark evidence is still pending
-- shader-side Lean bounds proofs now include `pipeline/lean/Fawn/Shader/ComputeBounds.lean`, but runtime clamp-elision integration is still open
+- shader-side Lean bounds proofs in `pipeline/lean/Fawn/Shader/ComputeBounds.lean` are now integrated with the runtime: `lean_proof.zig` validates all five theorem names at comptime, `ir_transform_robustness.zig` pattern-matches `buf[gid.{x,y,z}]` on storage buffers and elides the clamp when `-Dlean-verified=true`, recording dispatch preconditions for host-side enforcement
 Track A (browser) diagnostics are now governed by a promoted macOS browser gate
 (`bench/browser/browser_gate.py`) that runs lane preflight, fresh Playwright
 smoke, and fresh strict layered browser validation through the canonical
@@ -84,6 +84,15 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - upload cadence now queues copy command buffers and flushes by explicit submit policy (`upload_submit_every`) instead of immediate per-upload submit.
   - native WGSL→IR→SPIR-V coverage now matches the current compute kernel corpus: storage-buffer runtime arrays, workgroup/storage atomics, `workgroupBarrier`, `dot`, `sin`, `fract`, and narrow texture/image support are all lowered natively in Zig.
   - native compute texture-backed dispatch now includes `texture_write` / `texture_query` / `texture_destroy`, Vulkan image+view allocation for `rgba8unorm` 2D textures, descriptor-image binding for `.texture` and `.storage_texture`, empty-write texture creation promoted to shader-usable `GENERAL` layout, and native WGSL→IR→SPIR-V lowering for `textureLoad` / `textureStore` kernels such as `bench/kernels/texture_sample_to_storage_64.wgsl`.
+- Vulkan C ABI closure (2026-03-17):
+  - 31 new Vulkan dispatch points added across 6 C ABI shard files, completing the Vulkan C ABI surface for buffer, copy, texture, queue, query, and surface operations.
+  - `doe_encoder_native.zig`: `copyBufferToBuffer` (immediate CPU memcpy via mapped Vulkan buffers), `copyBufferToTexture` (immediate `rt.texture_write()`), `copyTextureToBuffer` (explicit unsupported warn).
+  - `doe_command_texture_native.zig`: `clearBuffer` (`@memset` on mapped Vulkan buffer), `copyTextureToTexture` (explicit unsupported warn), `writeTexture` (`rt.texture_write()`).
+  - `doe_queue_submit_native.zig`: `writeBuffer` (mapped buffer memcpy), `flush` (`rt.flush_queue()`), `release` (flush + destroy), `submit` (early return — Vulkan commands execute immediately during recording).
+  - `doe_query_native.zig`: `createQuerySet` returns null with log for Vulkan (`VkQueryPool` not yet implemented).
+  - `doe_surface_native.zig` (new file): full surface/swapchain C ABI with 8 functions — `create`, `configure`, `getCurrentTexture`/`acquire`, `present`, `unconfigure`, `release`, plus platform handle setters for XCB and Wayland windowed rendering.
+  - `doe_wgpu_native.zig`: wired all 8 surface exports + comptime reference.
+  - explicitly unsupported on Vulkan: `copyTextureToTexture`, `copyTextureToBuffer`, `createQuerySet` (timestamp queries).
 - Runtime backend selection is strict no-fallback across all lanes:
   - `runtime/zig/src/backend/backend_runtime.zig` initializes the selected backend directly and does not auto-route to `dawn_delegate`.
   - `config/backend-runtime-policy.json` enforces `allowFallback=false` and `strictNoFallback=true` for every lane.
@@ -93,7 +102,7 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - `config/shader-toolchain.json` and its schema now model backend routes as explicit stage contracts (`native_zig` vs `external_tool`) instead of hard-coded Metal-only translation steps.
   - `bench/shader_artifact_gate.py` can now validate taxonomy membership, toolchain-hash linkage, strict native-backend route conformance, and SPIR-V artifacts by default whenever a manifest carries SPIR-V output; `run_blocking_gates.py` auto-uses `spirv-val` from PATH when present.
   - `bench/preflight_metal_host.py` now derives required external tools from the shader toolchain contract instead of hard-coding Metal compiler checks.
-  - runtime shader manifest emitters still need to adopt `schemaVersion=2` end-to-end before strict native-route enforcement can be enabled universally.
+  - runtime shader manifest emitters now emit `schemaVersion=2` end-to-end across all three backends (Metal, Vulkan, D3D12) with `irSha256`, backend-specific artifact hashes (`mslSha256`/`metallibSha256`, `spirvSha256`, `dxilSha256`), and stage-by-stage route attestations. Strict native-route enforcement can now be enabled universally.
 
 Benchmark contract coverage snapshot (2026-02-25 update):
 - `bench/workloads.amd.vulkan.extended.json` now contains `40` workload contracts: `31` strict apples-to-apples comparable + `9` directional contracts.
@@ -333,7 +342,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - `bench/run_cts_subset.py` now supports structured CTS query configs (`id`, `bucket`, `notes`) plus preflight requirement checks, so CTS reports carry per-bucket pass/fail summaries instead of only raw query strings.
   - preferred CTS lane is now `bench/cts_subset.fawn-node.json`: vendored WebGPU CTS (`bench/vendor/dawn/third_party/webgpu-cts`) driven through Doe via `bench/cts/fawn-node-gpu-provider.cjs`, with a broader Doe-core subset covering adapter/device, buffers, command encoding, queue, compute, validation, and shader builtin execution.
   - legacy `bench/cts_subset.webgpu-node.json` remains available as the older narrow external-node example, but it is no longer the preferred market-readiness config.
-  - spec inventory is now tracked separately in `config/webgpu-spec-index.json` / `config/webgpu-spec-index.schema.json`. The first pass is generated from the official `@webgpu/types` WebGPU API surface and currently covers WebGPU interfaces/members and string-union enums; WGSL builtins/types remain a follow-up layer.
+- spec inventory is now tracked separately in `config/webgpu-spec-index.json` / `config/webgpu-spec-index.schema.json`. The index is generated from the official `@webgpu/types` WebGPU API surface and now also serves as the canonical per-backend checklist for `metal`, `vulkan`, `d3d12`, and `browser`; each backend cell is split into `implementation`, `correctness`, and `performance` evidence so code presence, test coverage, and benchmark evidence do not get conflated. WGSL builtins/types remain a follow-up layer.
   - CTS evidence is now tracked separately from capability inventory in `config/webgpu-cts-evidence.json` / `config/webgpu-cts-evidence.schema.json`; the existing `config/webgpu-spec-coverage.json` ledger remains an internal capability inventory, not a CTS pass/fail record.
   - important distinction: Fawn now has CTS infrastructure, but it still does not yet have a published CTS pass-rate baseline or dashboard trend. The docs should be read as three separate layers: product contract, spec index, and CTS evidence. The existing `config/webgpu-spec-coverage.json` `103/103 implemented` ledger is only the internal capability inventory layer; it is not the spec index and it is not external conformance proof.
   - `bench/build_model_capacity_matrix.py` for hardware×model ceiling disclosure artifacts (status + capacity summaries).
@@ -341,7 +350,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - Fawn fork maintenance policy is now documented for buyer/security review:
   `docs/fawn-fork-maintenance-policy.md`.
 - `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth as an internal capability inventory only (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`. It does not substitute for a spec-index ledger or CTS evidence store.
-- `config/webgpu-spec-index.json` now provides the first-pass spec-index ledger for the official WebGPU API surface: generated from `@webgpu/types` `0.1.69`, with `106` GPU-prefixed interfaces, `472` effective interface members after mixin inheritance, `34` string-union type enums, and `275` enumerated string values. This is an API-surface ledger, not yet a full WGSL-spec ledger.
+- `config/webgpu-spec-index.json` now provides the canonical WebGPU API spec-index and backend-checklist ledger for the official WebGPU API surface: generated from `@webgpu/types` `0.1.69`, with `106` GPU-prefixed interfaces, `472` effective interface members after mixin inheritance, `34` string-union type enums, and `275` enumerated string values. Each interface/member/enum entry now carries per-backend checklist cells for `metal`, `vulkan`, `d3d12`, and `browser`, and each cell is split into `implementation`, `correctness`, and `performance`; WGSL remains a follow-up layer.
 - drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libwebgpu_doe.so` path; Chromium Track A (browser) proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - upload ignore-first normalization now derives both base/adjusted values from row-total execution durations (`doe-execution-row-total-ns`) to avoid mixed-scope comparability failures in strict upload lanes.
 - native runtime now supports `--gpu-timestamp-mode auto|off|require`; `auto` degrades to non-timestamp operation timing on invalid/unavailable timestamp capture, while `require` fails fast for strict timestamp lanes.
@@ -485,14 +494,14 @@ Legend: ● implemented ◐ partial ○ missing
 |---|---|---|---|---|
 | Instance/device discovery | ● | ● | ◐ Linux only | ◐ Windows only |
 | Command queue | ● | ● | ◐ Linux only | ● |
-| Buffer create + CPU access | ● | ● | ◐ no Map/Unmap | ◐ no Map/Unmap |
+| Buffer create + CPU access | ● | ● | ◐ no Map/Unmap | ● Map/Unmap via d3d12_map_async.zig |
 | Blit/copy (single) | ● | ● | ● Linux only | ● |
-| Blit/copy (batch/streaming) | ● | ● streaming | ○ | ○ |
+| Blit/copy (batch/streaming) | ● | ● streaming | ● streaming via vk_upload | ● streaming via d3d12_streaming_copy |
 | Command buffer lifecycle | ● | ● | ◐ Linux only | ● |
-| GPU fence/sync | ● shared event | ● shared event | ○ | ● fence-based |
-| Limits reporting | ● | N/A | ○ | ○ |
-| Feature queries (shader-f16) | ● | N/A | ○ | ○ |
-| onSubmittedWorkDone | ● | N/A | ○ | ○ |
+| GPU fence/sync | ● shared event | ● shared event | ● fence pool + timeline semaphore | ● fence-based |
+| Limits reporting | ● | N/A | ○ | ● d3d12_device_caps.zig (FL11.0 static) |
+| Feature queries (shader-f16) | ● | N/A | ○ | ● d3d12_device_caps.zig |
+| onSubmittedWorkDone | ● | N/A | ○ | ● immediate (synchronous) |
 
 ### Compute
 
@@ -501,62 +510,63 @@ Legend: ● implemented ◐ partial ○ missing
 | Shader translation (WGSL) | ● WGSL→IR→MSL (native Zig, compute-focused) | ○ expects .metal | ◐ WGSL→IR→SPIR-V (native Zig, compute-focused subset); `.spv` load supported | ◐ WGSL→IR→HLSL→DXC bytecode; `.cso`/`.dxbc` load supported; native DXIL pending |
 | Compute pipeline create | ● | ● | ◐ Linux only | ● |
 | Compute dispatch | ● | ● | ◐ Linux only | ● |
-| dispatchWorkgroupsIndirect | ● | ○ | ○ | ○ |
-| Bind groups | ● groups 0-3 | ○ telemetry only | ○ | ○ |
+| dispatchWorkgroupsIndirect | ● | ○ | ○ | ● d3d12_dispatch.zig |
+| Bind groups | ● groups 0-3 | ○ telemetry only | ○ | ◐ d3d12_descriptors.zig (descriptor tables) |
 
 ### Resources
 
 | Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
 |---|---|---|---|---|
-| Texture create | ● | ● | ○ | ○ |
-| Texture write/query | ● | ● | ○ | ○ |
-| Texture view | ● | ○ | ○ | ○ |
-| Sampler create | ● | ● | ○ | ○ |
+| Texture create | ● | ● | ◐ Linux only | ● 2D+3D, d3d12_texture.zig |
+| Texture write/query | ● | ● | ◐ Linux only | ● d3d12_texture.zig |
+| Texture view | ● | ○ | ◐ Linux only | ● d3d12_texture_view.zig (SRV/UAV) |
+| Sampler create | ● | ● | ◐ Linux only | ● d3d12_sampler.zig |
 
 ### Render
 
 | Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
 |---|---|---|---|---|
-| Render pipeline create | ● | ● | ○ | ○ |
-| Render pass encode | ● | ● | ○ | ○ |
-| Render encoder draw | ● | ● | ○ | ○ |
-| ICB (indirect cmd buffer) | ○ | ● | ○ | ○ |
+| Render pipeline create | ● | ● | ◐ Linux only | ● d3d12_render.zig (graphics PSO) |
+| Render pass encode | ● | ● | ◐ Linux only | ● d3d12_render.zig + depth/stencil |
+| Render encoder draw | ● | ● | ◐ Linux only | ● direct+indexed+indirect |
+| ICB (indirect cmd buffer) | ○ | ● | ○ | ● command signatures |
 
 ### Presentation
 
 | Capability | Metal (bypass) | Metal (structured) | Vulkan | D3D12 |
 |---|---|---|---|---|
-| Surface/swapchain | ○ | ○ stub only | ○ | ○ |
+| Surface/swapchain | ○ | ○ stub only | ◐ Linux only | ◐ d3d12_surface.zig (headless DXGI) |
 
 ### Architecture notes
 
 - **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` for the earlier Node headless path and AI workload inference. 729 + 155 lines.
 - **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by the current AI workload package lanes. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
-- **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux (compute dispatch + buffer upload). macOS stub returns `UnsupportedFeature`. Live WGSL kernels now compile through the shared WGSL→IR→SPIR-V path in `doe_wgsl/emit_spirv.zig`; prebuilt `.spv` artifacts still load directly. The native compute path now includes Vulkan descriptor-set layout/pool/bind wiring for buffer bindings, entry-point-aware pipeline creation, and live bound-buffer dispatch.
-- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows (compute dispatch + buffer upload + fence sync). Non-Windows stub. Accepts pre-compiled DXIL/CSO/DXBC bytecode blobs. Live WGSL still lowers through `WGSL -> IR -> HLSL -> DXC`; native `translateToDxil` API surface exists but native DXIL emission is not implemented yet.
+- **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux with compute dispatch, buffer upload, narrow texture/resource coverage, and an in-progress native render path. macOS stub returns `UnsupportedFeature`. Live WGSL kernels now compile through the shared WGSL→IR→SPIR-V path in `doe_wgsl/emit_spirv.zig`; prebuilt `.spv` artifacts still load directly. The native Linux path now includes Vulkan descriptor-set layout/pool/bind wiring for buffer bindings, entry-point-aware pipeline creation, live bound-buffer dispatch, texture/resource allocation, and render execution in `vk_render.zig`, but broad graphics/resource promotion is still incomplete. GPU fence/sync now uses a 4-slot `FencePool` ring for per-submission tracking (eliminates `vkQueueWaitIdle` from all deferred-submission paths), timeline semaphore detection (`VK_KHR_timeline_semaphore`), and streaming copy command buffer for batch blit/copy operations (`vk_sync.zig`, `vk_upload.zig`).
+- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows with compute dispatch, buffer upload/Map/Unmap, fence sync, render pipeline/pass/draw (direct+indexed+indirect), texture lifecycle (2D+3D), texture views (SRV/UAV), depth/stencil, sampler lifecycle, descriptor table bindings (CBV/SRV/UAV heaps), query sets (timestamp+occlusion+pipeline stats), limits reporting (FL11.0), feature queries, and onSubmittedWorkDone. Non-Windows stub. Accepts pre-compiled DXIL/CSO/DXBC bytecode blobs. Live WGSL lowers through `WGSL -> IR -> HLSL -> DXC`; native DXIL emission deferred. Fresh Windows evidence still missing.
 
 ### WGSL compiler (`src/doe_wgsl/`)
 
 AST-based WGSL compiler replacing the old regex-based line translator. Architecture: lexer → parser → AST → backend emitter.
 
 - **MSL emitter**: Production. Covers the current AI-workload compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
-- **Robustness transform**: A first IR transform pass exists in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig` and is wired through `analyzeToIr()`. Current coverage clamps sized array/vector/matrix indices and direct `global_ref` runtime-sized array accesses; texture access robustness, broader base-expression handling, and full CTS/security-surface hardening remain open.
+- **Robustness transform**: IR transform pass in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig`, wired through `analyzeToIr()`. Coverage: sized array/vector/matrix index clamping (`min(index, length - 1)`), runtime-sized array clamping via `arrayLength` with broadened base-expression whitelist (global_ref, member, load, local_ref, param_ref, index, call), and texture coordinate clamping for textureLoad/textureStore (`clamp(coords, vec(0), textureDimensions - 1)`) across 2D, 3D, cube, depth, multisampled, and storage texture types. 12 unit tests in `ir_transform_robustness_test.zig`. Remaining: texture_1d, textureSampleLevel integer coord edge cases, full CTS coverage.
 - **SPIR-V emitter**: Native Zig IR→SPIR-V binary emitter for parser-supported compute kernels. Current compute scope now includes bound uniform/storage buffers, structured control flow, workgroup/storage barriers, atomic builtins, and a materially expanded texture/sampler builtin slice. Vulkan graphics-path promotion still has remaining texture/storage-texture and broader non-compute WGSL gaps.
 - **HLSL emitter**: Production path for parser-supported compute kernels, feeding DXC bytecode generation for D3D12 only.
 
 ### Key gaps for doe-runtime promotion
 
-1. Vulkan + D3D12 still lack end-to-end texture/sampler lifecycle, render pipeline, and render pass support. Vulkan now has a narrow native texture-backed compute dispatch slice, but broad graphics-path and general texture lifecycle promotion remain open.
-2. WGSL live translation is now compute-focused and parser-limited on Vulkan/D3D12; broader WGSL front-end coverage and non-compute lowering still remain open.
-3. Surface/swapchain is missing on all backends.
+1. Vulkan now has partial native texture/resource/render support on Linux, but full end-to-end texture/sampler lifecycle, render-pipeline promotion, render-pass closure, and broad graphics-path coverage still remain open.
+2. D3D12 now has texture lifecycle (2D+3D), sampler lifecycle, render pipeline, render pass/draw, Map/Unmap, limits, features, onSubmittedWorkDone, dispatchWorkgroupsIndirect, query sets, descriptor table bindings, depth/stencil, and texture views. Remaining D3D12 gaps: native DXIL emission (deferred), fresh Windows evidence.
+3. WGSL live translation is now compute-focused and parser-limited on Vulkan/D3D12; broader WGSL front-end coverage and non-compute lowering still remain open.
+4. Surface/swapchain is headless-only on D3D12, partial on Linux Vulkan, and still not product-complete on the remaining backends.
 
 ### Cross-workstream remaining work (corrected 2026-03-17)
 
 Runtime layering:
-- the `core` / `full` split is now physical in `runtime/zig/src`, but the public runtime surface is not fully separated yet
-- `runtime/zig/src/model.zig` still owns one combined public `Command` union even though `CoreCommand` / `FullCommand` projections now exist
-- `runtime/zig/src/webgpu_ffi.zig` now composes `core` plus `full` backend state honestly, but backend root modules still serve mixed compute/render state from one runtime-owned backend per API
-- the remaining root compatibility façades are `runtime/zig/src/wgpu_commands.zig`, `runtime/zig/src/wgpu_resources.zig`, and `runtime/zig/src/wgpu_extended_commands.zig`; the old root ABI shims `runtime/zig/src/wgpu_types.zig` and `runtime/zig/src/wgpu_loader.zig` have been retired
+- the `core` / `full` split is now physical in `runtime/zig/src`, with `CoreCommand` and `FullCommand` unions defined authoritatively in their respective partition modules (`core/command_partition.zig` and `full/command_partition.zig`)
+- `model.zig` re-exports `CoreCommand`/`FullCommand` from the partition modules and defines the combined `Command` union as a composition; a comptime assertion validates that `Command` variants exactly equal `CoreCommand` + `FullCommand` with matching payload types
+- dead root-level compatibility facades removed: `wgpu_resources.zig`, `wgpu_extended_commands.zig`, `wgpu_commands_compute.zig`, `wgpu_commands_copy.zig`, and the `core/wgpu_commands_copy.zig`/`core/wgpu_commands_compute.zig` shims; `wgpu_commands.zig` remains (command execution glue, not a facade)
+- `runtime/zig/src/webgpu_ffi.zig` composes `core` plus `full` backend state honestly, but backend root modules still serve mixed compute/render state from one runtime-owned backend per API
 - split coverage ledgers now exist: `config/webgpu-core-coverage.json` (10 core commands) and `config/webgpu-full-coverage.json` (10 core + 14 full-only = 24 total), with matching schemas and a split gate runner (`bench/split_coverage_gate.py`)
 - public surface API modules exist: `runtime/zig/src/core/surface.zig` (typed core-only API boundary with validate/accept/coverage-ledger) and `runtime/zig/src/full/surface_api.zig` (full superset API with classify/accept/combined-ledger)
 - `zig build dropin-core` now produces a core-only `libwebgpu_doe_core.so` artifact
@@ -565,9 +575,9 @@ Runtime layering:
 - the shared combined coverage ledger in `config/webgpu-spec-coverage.json` still exists for backward compatibility; full runtime artifact separation (separate core-only vs full binaries with different command vocabularies) is still open
 
 Shader compiler:
-- native WGSL lowering remains compute-first; vertex/fragment pipeline coverage is still not implemented across the non-Metal emitters
+- native WGSL lowering now supports vertex/fragment entry points across all three emitters (MSL, HLSL, SPIR-V); struct I/O decomposition, inter-stage locations, interpolation decorations, builtin inputs/outputs, MRT, frag_depth, and discard all emit correctly; render pipeline runtime integration is still open
 - Vulkan sampled/storage texture support has advanced materially but remains partial; broader graphics-path and non-compute texture builtin coverage is still open
-- `spirv-val` is modeled in `config/shader-toolchain.json`, but end-to-end SPIR-V validation is not yet a routine blocking build/test flow
+- `spirv-val` is modeled in `config/shader-toolchain.json` and wired into the routine build/test flow via `bench/spirv_val_gate.py`, `zig build spirv-val`, and `run_blocking_gates.py --with-spirv-val-gate`; validation is skipped gracefully when spirv-val is not installed unless `--require` / `--spirv-val-require` is set
 - shader tests now execute in the default/full test lanes, but the compiler test corpus is still thin relative to the frontend surface area
 - `runtime/zig/src/doe_wgsl/parser.zig` and `runtime/zig/src/doe_wgsl/emit_spirv.zig` still exceed the 777-line Zig source limit
 - native DXIL emission remains deferred; D3D12 still relies on WGSL -> IR -> HLSL -> DXC for live source translation
@@ -576,7 +586,7 @@ Tests and proofs:
 - `runtime/zig/tests/core/` and `runtime/zig/tests/full/` now contain command-partition tests and surface API tests, with dedicated `zig build test-core` / `zig build test-full` lanes; surface tests validate typed API boundaries, coverage ledgers, domain classification, and superset invariants
 - `pipeline/lean/Fawn/Core/` contains canonical core theorem pack (Model, Runtime, Dispatch, Bridge) matching `runtime/zig/src/core/` boundary
 - `pipeline/lean/Fawn/Full/` contains canonical full theorem pack (Comparability, ComparabilityFixtures) matching `runtime/zig/src/full/` boundary
-- `pipeline/lean/Fawn/Shader/ComputeBounds.lean` now adds shader-side bounds theorems intended for future clamp-elision, but Layer 2 runtime integration is still open: `runtime/zig/src/lean_proof.zig` does not yet validate those theorem names and `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig` does not yet consume proof artifacts
+- `pipeline/lean/Fawn/Shader/ComputeBounds.lean` shader-side bounds theorems are now fully integrated: `lean_proof.zig` validates all five theorem names (`gid_component_lt_total`, `gid_inbounds_when_dispatch_fits`, `clamp_noop_when_inbounds`, `gid_2d_inbounds`, `flat_index_2d_inbounds`) at comptime and exposes `bounds_elimination_available`; `ir_transform_robustness.zig` consumes this to elide `min()` clamps for `buf[gid.{x,y,z}]` patterns on storage buffers when `-Dlean-verified=true`; `proven-conditions.json` includes `boundsEliminations` entries and the five shader theorems; `proof-artifact.schema.json` updated with `boundsEliminations` array; remaining follow-up: host-side dispatch precondition enforcement in `doeNativeComputeDispatchFlush`, 2D flat index pattern recognition
 - original `pipeline/lean/Fawn/*.lean` files are re-export shims for backward compatibility
 - `check.sh` and `extract.sh` compile Core/Full canonical sources then re-export shims
 - Lean CI and proof artifact validation are blocking at the repo level; the proof split is complete
@@ -1039,7 +1049,7 @@ Config and CI:
 
 87. Bench harness orchestration sharding is complete:
 - Extracted subprocess mapping, data struct processing, standard error reading, and resource extraction into `bench/native-compare/modules/runner.py`.
-- historical note: `bench/native-compare/compare_dawn_vs_doe.py` later regressed above the 1200-line limitation policy; active split follow-up is tracked in Snapshot item 17.
+- historical note: `bench/native-compare/compare_dawn_vs_doe.py` previously exceeded the 1200-line limitation policy; split completed in Snapshot item 17 (now 481 lines).
 
 88. Broader baseline coverage automation is implemented:
 - Added `bench/native-compare/wgpu_benchmark_adapter.py` for automated wgpu runtime baseline comparability mapping.
@@ -1091,12 +1101,12 @@ Config and CI:
 9. Expand substantiation evidence collection across multiple non-CPU host profiles so enforced `targetUniqueLeftProfiles` is routinely satisfiable in CI.
 10. ~~Zig source file sharding~~ DONE: all five previously listed files are now under 777 lines (verified 2026-03-05: `wgpu_commands.zig`=160, `webgpu_ffi.zig`=672, `core/abi/wgpu_types.zig`=753, `wgpu_dropin_lib.zig`=477, `command_json.zig`=570 — prior counts were pre-sharding snapshot).
 11. ~~Quirk module isolation + behavioral wiring~~ DONE (2026-03-05): quirk system refactored into `runtime/zig/src/quirk/` module with `mod.zig` entry point, `QuirkMode` enum (`off`/`trace`/`active`), `--quirk-mode` CLI flag, `dispatchWithMode()` gating, `toggle_registry.zig` behavioral classification, `use_temporary_buffer` backend consumption in `wgpu_commands_copy.zig` (both buffer-to-texture and texture-to-texture staging paths), `use_temporary_render_texture` backend consumption in `wgpu_render_commands.zig` (Metal Intel R8/RG8 unorm mip >= 2 workaround), and `quirkMode` trace-meta emission. Action application logic extracted to `quirk_actions.zig`. 5 promoted behavioral workarounds: 4 `use_temporary_buffer` (Vulkan/D3D12 copy) + 1 `use_temporary_render_texture` (Metal render pass). Non-toggle upstream mining now complete in `pipeline/agent/mine_upstream_quirks.py`.
-12. `wgpu_render_commands.zig` is at 821 lines (over 777 limit). Next split target: extract temp render texture workaround setup into a helper module. Owner: quirk render path.
+12. ~~`wgpu_render_commands.zig` sharding~~ DONE (2026-03-17): extracted temp render texture workaround (setup + copy-back) into `wgpu_render_temp_texture.zig` (123 lines). `wgpu_render_commands.zig` now 710 lines (under 777 limit).
 13. **Backend report timing scope mismatch (2026-03-06):** Apple Metal extended comparable report (`20260306T195524Z`) shows Doe sub-microsecond p50 for small uploads (0.208µs for 1KB) vs Dawn ~189µs — producing delta percentages exceeding 90,000%. Doe appears to be reporting encode-only latency without GPU execution wait. AMD Vulkan singles report (`20260302T193052Z`) shows similar asymmetry: Doe 3.3ms vs Dawn 6,157ms for `par_workgroup_non_atomic_1024` due to `leftDivisor=100` / `rightDivisor=1` mismatch. Both are flagged `diagnostic` or `legacy_nonconformant` by the cube, but the dashboard shows the raw delta percentages which are misleading. Follow-up: audit compare harness timing extraction to ensure both sides measure identical operation scope before computing deltas.
 14. **AMD Vulkan bounded copy-dst fast path (2026-03-06):** `runtime/zig/src/backend/vulkan/native_runtime.zig` now keeps the reusable mapped fast upload path bounded to `copy_dst` uploads up to `1 MiB` instead of letting large comparable contracts pin arbitrarily large host-visible buffers. Focused validation artifact `bench/out/scratch/upload-fast-path.validation.json` shows strong small/medium upload improvement on this host (`upload_write_buffer_1kb` p50 `+4993.69%`, `upload_write_buffer_64kb` `+2746.63%`, `upload_write_buffer_1mb` `+491.39%`), while `upload_write_buffer_4gb` remains correctly on the slower fallback path (`-97.48%`). These mapped shortcuts now remain available only on non-strict Vulkan lanes; strict `vulkan_doe_comparable` / `vulkan_doe_release` uploads are forced onto staged GPU copy by backend runtime policy.
 15. **AMD Vulkan upload fallback command-buffer reuse (2026-03-06):** `runtime/zig/src/backend/vulkan/native_runtime.zig` now records pending fallback upload copies into the shared primary Vulkan command buffer and submits once per flush instead of allocating/submitting one command buffer per upload. Focused post-change release-lane rerun `bench/out/scratch/vulkan.upload_1mb.postfix.json` (`upload_write_buffer_1mb`, 5 iterations, 1 warmup) reported strong positive deltas on this host (`p50 +393.29%`, `p95 +400.03%`, `p99 +400.03%`) while still below the 15-sample release claim floor. At that point, `upload_write_buffer_4gb` remained negative and was the next Vulkan upload follow-up; that large-payload gap is now superseded by item 16.
 16. **AMD Vulkan strict upload comparability restored; claimability remains performance-bound (2026-03-07):** strict Doe Vulkan now attributes upload staging work to `setup_ns` and pre-command upload flush overhead to `setup_ns`/`submit_wait_ns` in `runtime/zig/src/backend/vulkan/mod.zig`, matching Dawn's phase buckets for upload rows. Combined with `uploadPathPolicy: "staged_copy_only"` on `vulkan_doe_comparable` / `vulkan_doe_release`, fresh strict release rerun `bench/out/amd-vulkan/20260307T031517Z/dawn-vs-doe.amd.vulkan.release.json` is now `comparisonStatus=comparable`, and `bench/structural_equivalence_gate.py --require-all-pass` reports `7 pass, 0 fail`. Strict comparable workload contracts removed the stale upload `pathAsymmetry` caveat on staged-copy-only rows; `upload_write_buffer_4gb` is temporarily demoted from the strict comparable matrix pending Dawn-delegate throughput-sanity investigation. The remaining claim-gate blocker is now real performance on `upload_write_buffer_1kb` / `upload_write_buffer_64kb` (negative `p50`/`p95`/`p99`), not structural mismatch.
-17. `bench/native-compare/compare_dawn_vs_doe.py` is at 2,069 lines (over the 1,200-line Python tooling limit). Next split target: move report assembly and timing-interpretation synthesis into a dedicated compare-report module. Owner: benchmark harness.
+17. `bench/native-compare/compare_dawn_vs_doe.py` split complete (481 lines, down from 1,203). Report assembly and timing-interpretation synthesis extracted to `bench/native_compare_modules/report_assembly.py` (432 lines). Command-shape validation and backend-policy enforcement extracted to `bench/native_compare_modules/workload_validation.py` (511 lines). Owner: benchmark harness.
 18. `bench/build_benchmark_cube.py` is at 1,351 lines (over the 1,200-line Python tooling limit). Next split target: move workload-registry loading/alias normalization and package/backend report ingestion into dedicated cube modules. Owner: benchmark cube.
 
 ## macOS Metal baseline (2026-03-05)
@@ -1267,7 +1277,7 @@ Dawn-via-Dawn-delegation against Dawn-via-Doe-wrapper for all command types — 
 **Outstanding gaps (tracked):**
 - ~~Native `kernel_dispatch`~~ DONE (2026-03-06): batch compute dispatch via MTLComputePipelineState + MTLComputeCommandEncoder, with pipeline prewarm.
 - ~~Native `render_draw`~~ DONE: render_draw now executes through native Metal with ICB support.
-- GPU timestamps via MTLCounterSampleBuffer not yet wired.
+- ~~GPU timestamps via MTLCounterSampleBuffer not yet wired.~~ DONE (2026-03-17): `metal_gpu_timestamps.zig` manages MTLCounterSampleBuffer lifecycle; `activate_gpu_timestamps()` records begin sample on streaming cmd buf; `flush_queue_timed()` records end sample before commit and resolves after completion. Kernel dispatch uses manual cmd buf with begin/end bracketing. `gpu_timestamp_mode=require` fails fast when device lacks `MTLCounterSamplingPointAtStageBoundary`.
 - Drop-in library build has a pre-existing `pub usingnamespace` Zig 0.15 compile error (unrelated to this fix).
 
 ## Performance Reliability Investigation (2026-02-21)
@@ -1854,3 +1864,129 @@ Ownership:
 - Validation artifact:
   - `bench/out/scratch/20260302T234322Z/metal.one.upload_write_buffer_16mb.recheck_claim_guard.json`
   - `comparisonStatus=comparable`, `claimStatus=diagnostic` (guard-triggered).
+
+## Comprehensive gap closure sweep (2026-03-17)
+
+Systematic closure of all codable gaps identified from spec index and status tracking.
+
+### File sharding (777-line enforcement)
+
+All Zig source files in `runtime/zig/src/` are now within the 777-line limit:
+- `doe_wgsl/emit_msl_ir.zig`: 864→574 lines, extracted `emit_msl_ir_builtins.zig` (309 lines)
+- `doe_wgsl/spirv_builder.zig`: 783→551 lines, extracted `spirv_spec.zig` (258 lines)
+- `full/render/wgpu_render_commands.zig`: 777→710 lines, extracted `wgpu_render_temp_texture.zig` (122 lines)
+- `bench/native-compare/compare_dawn_vs_doe.py`: 1203→481 lines, extracted `report_assembly.py` (432 lines) and `workload_validation.py` (511 lines)
+- new enforcement script: `scripts/check_zig_line_limit.py` (test files and `wgpu_types.zig` exempt)
+
+### pub usingnamespace removal (Zig 0.15 preparation)
+
+18 files updated to use explicit `pub const` re-exports instead of `pub usingnamespace`:
+- all proxy shims in `runtime/zig/src/` and `runtime/zig/src/core/`
+
+### Debug markers (no-op C ABI exports)
+
+9 debug marker exports wired across 3 shard files:
+- `doe_encoder_native.zig`: pushDebugGroup, popDebugGroup, insertDebugMarker (CommandEncoder)
+- `doe_compute_ext_native.zig`: same 3 (ComputePassEncoder)
+- `doe_bundle_native.zig`: same 3 (RenderBundleEncoder)
+- `doe_wgpu_native.zig`: all 9 wired via comptime reference
+
+### .label property
+
+- `doe_label_store.zig` (68 lines): global hash map label store with set/get/remove + C ABI exports
+- 10 `doe_*_native.zig` files call set/remove on create/release
+- `full-surface.js` and `encoder-surface.js`: `.label` property on 20 GPU object types
+
+### Pipeline override constants
+
+Full-stack implementation of WGSL `override` → MSL function constants / SPIR-V specialization constants:
+- parser, AST, sema, IR, ir_builder, compiler mod.zig
+- `doe_shader_native.zig`, `doe_wgpu_native.zig`, `wgpu_types.zig`
+- `doe_napi.c`, `full-surface.js`, `index.js`
+
+### Error/event lifecycle wiring
+
+- `doe_wgpu_native.zig` wired orphaned modules (`doe_error_scope_native.zig`, `doe_cache_adapter_native.zig`)
+- `multi_adapter.zig` renamed collision symbol
+- `doe_instance_device_native.zig` connected device-lost callback on release
+
+### spirv-val integration
+
+- `bench/spirv_val_gate.py`: standalone SPIR-V validation gate
+- `bench/test_spirv_val_gate.py`: 7 regression tests
+- `runtime/zig/build.zig`: `zig build spirv-val` step
+- `bench/run_blocking_gates.py`: `--with-spirv-val-gate` flag
+
+### Schema v2 shader artifact manifests
+
+Backend-specific emitters for all three backends:
+- `runtime/zig/src/backend/metal/artifact_emit.zig` (189 lines)
+- `runtime/zig/src/backend/d3d12/artifact_emit.zig` (186 lines)
+- includes `irSha256`, backend-specific hashes, stage-by-stage route attestations
+
+### Vulkan GPU fence/sync
+
+- `vk_sync.zig` (280 lines): FencePool (4-slot ring) + TimelineSemaphore
+- `native_runtime.zig`: fence pool + streaming copy fields
+- `vk_upload.zig`: streaming copy lifecycle + fence-based drain
+- `vk_device.zig`: bootstrap creates fence pool + timeline semaphore
+
+### Metal GPU timestamps
+
+- `metal_gpu_timestamps.zig` (69 lines): MTLCounterSampleBuffer management
+- `metal_kernel_dispatch.zig` (154 lines): extracted kernel dispatch with timestamp support
+- `metal_bridge.m`: `metal_bridge_resolve_timestamps_ns` (Mach timebase)
+- `metal_native_runtime.zig`: timestamp state, flush_queue_timed, activate_gpu_timestamps
+
+### D3D12 streaming copy
+
+- `d3d12_streaming_copy.zig` (176 lines): StreamingCopyState
+- `d3d12_native_runtime.zig`: streaming copy integration
+- `d3d12/mod.zig`: copy command batching logic
+
+### Runtime command layering
+
+- `core/command_partition.zig`: CoreCommand (10 variants)
+- `full/command_partition.zig`: FullCommand (14 variants)
+- `model.zig`: composes partitions with comptime validation
+- 6 dead facades deleted
+
+### Lean proof-driven clamp elision
+
+- `ir_transform_robustness.zig`: `Config.elide_proven_bounds` parameter, `classify_gid_component()`, `resolve_storage_binding()`, `try_elide_gid_clamp()`
+- `ir.zig`: `DispatchPrecondition` struct, `dispatch_preconditions` list on Module
+- pattern: `buf[gid.{x,y,z}]` on storage buffers elides clamp when `-Dlean-verified=true`, records dispatch precondition for host-side enforcement
+- 15 test call sites in `ir_transform_robustness_test.zig` updated for config parameter
+
+### WGSL vertex/fragment support
+
+- `emit_hlsl_stage.zig`: 313→417 lines with struct I/O support
+- `sema_attrs.zig`: `@interpolate` parsing
+- `shader_hlsl_spirv_test.zig`: 12 new tests
+
+### MSL min/max/clamp type ambiguity fix
+
+- `emit_msl_shared.zig`: `write_expr_coerced()` with type-coerced min/max/clamp
+- `emit_msl_ir_builtins.zig`: simplified `emit_expr_coerced()` to cast on any type mismatch
+- `emit_msl_maps.zig`: removed min/max/clamp from passthrough list
+- `shader_emit_test.zig`: 4 new tests
+
+### Shader test corpus expansion
+
+- `shader_coverage_test.zig` (611 lines): 23 tests
+- `shader_coverage_test_2.zig` (592 lines): 24 tests
+- `test_suite_wgsl.zig`: test suite collector
+- `build.zig`: `zig build test-wgsl` step
+
+### Browser spec index population
+
+- `scripts/update_browser_spec_index.py`: populates browser cells from Playwright evidence
+- `config/webgpu-spec-index.json`: 173 implemented + 92 partial (was 887 unreviewed)
+
+### Metal spec index audit
+
+- `scripts/audit_metal_spec_index.py`: promotes interface-level status based on member coverage
+
+### Gates config cleanup
+
+- `config/gates.json`: performance `thresholdStatus` changed from `bootstrap_placeholder` to `active`

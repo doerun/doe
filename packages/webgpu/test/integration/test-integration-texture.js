@@ -12,6 +12,10 @@ function skip(msg) {
   console.log(`  SKIP: ${msg}`);
 }
 
+function isUnsupportedError(err) {
+  return /unsupported|not supported|not implemented|not available|not wired|is not a function|unavailable/i.test(err?.message ?? String(err));
+}
+
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
@@ -354,10 +358,104 @@ try {
 }
 
 // ---------------------------------------------------------------------------
-// l. createTexture with mipLevelCount
+// l. copyTextureToTexture — copy pixels between textures
 // ---------------------------------------------------------------------------
 
-console.log("\n--- l. createTexture with mipLevelCount ---");
+console.log("\n--- l. copyTextureToTexture ---");
+try {
+  const WIDTH = 4;
+  const HEIGHT = 4;
+  const BYTES_PER_PIXEL = 4;
+  const dataSize = WIDTH * HEIGHT * BYTES_PER_PIXEL;
+  const pixelData = new Uint8Array(dataSize);
+  for (let i = 0; i < dataSize; i += BYTES_PER_PIXEL) {
+    pixelData[i] = 32;
+    pixelData[i + 1] = 64;
+    pixelData[i + 2] = 128;
+    pixelData[i + 3] = 255;
+  }
+
+  const uploadBuffer = device.createBuffer({
+    size: dataSize,
+    usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(uploadBuffer, 0, pixelData);
+
+  const srcTexture = device.createTexture({
+    size: [WIDTH, HEIGHT, 1],
+    format: "rgba8unorm",
+    usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC,
+  });
+  const dstTexture = device.createTexture({
+    size: [WIDTH, HEIGHT, 1],
+    format: "rgba8unorm",
+    usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC,
+  });
+
+  const encoder1 = device.createCommandEncoder();
+  encoder1.copyBufferToTexture(
+    { buffer: uploadBuffer, bytesPerRow: WIDTH * BYTES_PER_PIXEL, rowsPerImage: HEIGHT },
+    { texture: srcTexture },
+    { width: WIDTH, height: HEIGHT },
+  );
+  device.queue.submit([encoder1.finish()]);
+  await device.queue.onSubmittedWorkDone();
+
+  const encoder2 = device.createCommandEncoder();
+  if (typeof encoder2.copyTextureToTexture !== "function") {
+    skip("copyTextureToTexture is not exposed on this backend");
+  } else {
+    try {
+      encoder2.copyTextureToTexture(
+        { texture: srcTexture },
+        { texture: dstTexture },
+        { width: WIDTH, height: HEIGHT, depthOrArrayLayers: 1 },
+      );
+
+      const readbackBuffer = device.createBuffer({
+        size: dataSize,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+      });
+
+      encoder2.copyTextureToBuffer(
+        { texture: dstTexture },
+        { buffer: readbackBuffer, bytesPerRow: WIDTH * BYTES_PER_PIXEL, rowsPerImage: HEIGHT },
+        { width: WIDTH, height: HEIGHT },
+      );
+      device.queue.submit([encoder2.finish()]);
+      await device.queue.onSubmittedWorkDone();
+
+      await readbackBuffer.mapAsync(full.globals.GPUMapMode.READ);
+      const result = new Uint8Array(readbackBuffer.getMappedRange(0, dataSize));
+      assert(result[0] === 32, "copied pixel R = 32");
+      assert(result[1] === 64, "copied pixel G = 64");
+      assert(result[2] === 128, "copied pixel B = 128");
+      assert(result[3] === 255, "copied pixel A = 255");
+      readbackBuffer.unmap();
+      readbackBuffer.destroy();
+    } catch (err) {
+      if (isUnsupportedError(err)) {
+        skip(`copyTextureToTexture unavailable: ${err?.message ?? err}`);
+      } else {
+        failed++;
+        console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+      }
+    }
+  }
+
+  uploadBuffer.destroy();
+  srcTexture.destroy();
+  dstTexture.destroy();
+} catch (err) {
+  failed++;
+  console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+}
+
+// ---------------------------------------------------------------------------
+// m. createTexture with mipLevelCount
+// ---------------------------------------------------------------------------
+
+console.log("\n--- m. createTexture with mipLevelCount ---");
 try {
   // 16x16 supports up to 5 mip levels (16, 8, 4, 2, 1)
   const texture = device.createTexture({
@@ -374,10 +472,10 @@ try {
 }
 
 // ---------------------------------------------------------------------------
-// m. createTexture — dimension "2d" (default)
+// n. createTexture — dimension "2d" (default)
 // ---------------------------------------------------------------------------
 
-console.log("\n--- m. createTexture — dimension 2d ---");
+console.log("\n--- n. createTexture — dimension 2d ---");
 try {
   const texture = device.createTexture({
     size: [8, 8, 1],

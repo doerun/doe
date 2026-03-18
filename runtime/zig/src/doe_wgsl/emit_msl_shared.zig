@@ -377,7 +377,7 @@ pub fn write_expr(module: *const ir.Module, function: ir.Function, expr_id: ir.E
             try write_expr(module, function, binary.rhs, buf, pos);
             try write_str(buf, pos, ")");
         },
-        .call => |call| try write_call(module, function, call, buf, pos),
+        .call => |call| try write_call(module, function, expr.ty, call, buf, pos),
         .construct => |construct| {
             try write_type(module, construct.ty, buf, pos);
             try write_str(buf, pos, "(");
@@ -398,9 +398,24 @@ pub fn write_expr(module: *const ir.Module, function: ir.Function, expr_id: ir.E
     }
 }
 
-fn write_call(module: *const ir.Module, function: ir.Function, call: @FieldType(ir.Expr, "call"), buf: []u8, pos: *usize) EmitError!void {
+// Emit an expression with an explicit cast to the target type when the
+// expression type does not match. Prevents MSL overload ambiguity in
+// builtins like min/max/clamp where mixed argument types are invalid.
+fn write_expr_coerced(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId, buf: []u8, pos: *usize) EmitError!void {
+    const expr_ty = function.exprs.items[expr_id].ty;
+    if (expr_ty != target_ty) {
+        try write_type(module, target_ty, buf, pos);
+        try write_str(buf, pos, "(");
+        try write_expr(module, function, expr_id, buf, pos);
+        try write_str(buf, pos, ")");
+        return;
+    }
+    try write_expr(module, function, expr_id, buf, pos);
+}
+
+fn write_call(module: *const ir.Module, function: ir.Function, result_ty: ir.TypeId, call: @FieldType(ir.Expr, "call"), buf: []u8, pos: *usize) EmitError!void {
     if (call.kind == .builtin) {
-        if (try try_write_special_builtin(module, function, call, buf, pos)) return;
+        if (try try_write_special_builtin(module, function, result_ty, call, buf, pos)) return;
     }
     try write_str(buf, pos, call.name);
     try write_str(buf, pos, "(");
@@ -409,13 +424,27 @@ fn write_call(module: *const ir.Module, function: ir.Function, call: @FieldType(
 }
 
 // Returns true if the call was fully emitted as a special case.
-fn try_write_special_builtin(module: *const ir.Module, function: ir.Function, call: @FieldType(ir.Expr, "call"), buf: []u8, pos: *usize) EmitError!bool {
+fn try_write_special_builtin(module: *const ir.Module, function: ir.Function, result_ty: ir.TypeId, call: @FieldType(ir.Expr, "call"), buf: []u8, pos: *usize) EmitError!bool {
     if (std.mem.eql(u8, call.name, "workgroupBarrier")) {
         try write_str(buf, pos, "threadgroup_barrier(mem_flags::mem_threadgroup)");
         return true;
     }
     if (std.mem.eql(u8, call.name, "storageBarrier")) {
         try write_str(buf, pos, "threadgroup_barrier(mem_flags::mem_device)");
+        return true;
+    }
+    // min/max/clamp: cast all arguments to the result type to avoid MSL
+    // overload ambiguity when argument types differ (e.g. int vs uint,
+    // abstract_int vs concrete, or mixed vector element types).
+    if (std.mem.eql(u8, call.name, "min") or std.mem.eql(u8, call.name, "max") or std.mem.eql(u8, call.name, "clamp")) {
+        try write_str(buf, pos, call.name);
+        try write_str(buf, pos, "(");
+        var i: u32 = 0;
+        while (i < call.args.len) : (i += 1) {
+            if (i > 0) try write_str(buf, pos, ", ");
+            try write_expr_coerced(module, function, function.expr_args.items[call.args.start + i], result_ty, buf, pos);
+        }
+        try write_str(buf, pos, ")");
         return true;
     }
     // textureSample(t, s, coord) → t.sample(s, coord)

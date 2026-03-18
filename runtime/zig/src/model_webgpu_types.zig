@@ -199,6 +199,7 @@ pub const KernelBindingResourceKind = enum(u8) {
     buffer,
     texture,
     storage_texture,
+    sampler,
 };
 
 pub const KernelBinding = struct {

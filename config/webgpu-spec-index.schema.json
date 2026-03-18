@@ -9,12 +9,113 @@
     "specFamily",
     "source",
     "notes",
+    "checklist",
     "stats",
     "interfaces",
     "stringUnions"
   ],
+  "$defs": {
+    "implementationStatus": {
+      "type": "string",
+      "enum": [
+        "unreviewed",
+        "implemented",
+        "partial",
+        "not_wired",
+        "blocked",
+        "out_of_scope"
+      ]
+    },
+    "correctnessStatus": {
+      "type": "string",
+      "enum": [
+        "unreviewed",
+        "unit",
+        "integration",
+        "cts",
+        "governed"
+      ]
+    },
+    "performanceStatus": {
+      "type": "string",
+      "enum": [
+        "unreviewed",
+        "diagnostic",
+        "comparable",
+        "claimable",
+        "not_meaningful"
+      ]
+    },
+    "evidenceCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "notes", "sourceRefs"],
+      "properties": {
+        "status": { "type": "string" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "implementationCell": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceCell" },
+        {
+          "properties": {
+            "status": { "$ref": "#/$defs/implementationStatus" }
+          }
+        }
+      ]
+    },
+    "correctnessCell": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceCell" },
+        {
+          "properties": {
+            "status": { "$ref": "#/$defs/correctnessStatus" }
+          }
+        }
+      ]
+    },
+    "performanceCell": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceCell" },
+        {
+          "properties": {
+            "status": { "$ref": "#/$defs/performanceStatus" }
+          }
+        }
+      ]
+    },
+    "backendChecklistCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementation", "correctness", "performance"],
+      "properties": {
+        "implementation": { "$ref": "#/$defs/implementationCell" },
+        "correctness": { "$ref": "#/$defs/correctnessCell" },
+        "performance": { "$ref": "#/$defs/performanceCell" }
+      }
+    },
+    "backendChecklist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metal", "vulkan", "d3d12", "browser"],
+      "properties": {
+        "metal": { "$ref": "#/$defs/backendChecklistCell" },
+        "vulkan": { "$ref": "#/$defs/backendChecklistCell" },
+        "d3d12": { "$ref": "#/$defs/backendChecklistCell" },
+        "browser": { "$ref": "#/$defs/backendChecklistCell" }
+      }
+    }
+  },
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 3 },
     "lastUpdated": { "type": "string" },
     "specFamily": {
       "type": "string",
@@ -39,6 +140,56 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "checklist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backends",
+        "implementationStatusVocabulary",
+        "correctnessStatusVocabulary",
+        "performanceStatusVocabulary",
+        "defaultImplementationStatus",
+        "defaultCorrectnessStatus",
+        "defaultPerformanceStatus",
+        "notes"
+      ],
+      "properties": {
+        "backends": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["metal", "vulkan", "d3d12", "browser"]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "implementationStatusVocabulary": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/implementationStatus" },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "correctnessStatusVocabulary": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/correctnessStatus" },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "performanceStatusVocabulary": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/performanceStatus" },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "defaultImplementationStatus": { "$ref": "#/$defs/implementationStatus" },
+        "defaultCorrectnessStatus": { "$ref": "#/$defs/correctnessStatus" },
+        "defaultPerformanceStatus": { "$ref": "#/$defs/performanceStatus" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "stats": {
       "type": "object",
       "additionalProperties": false,
@@ -60,7 +211,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "interfaceKind", "specUrl", "memberCount", "extends", "members"],
+        "required": ["name", "interfaceKind", "specUrl", "memberCount", "extends", "checklist", "members"],
         "properties": {
           "name": { "type": "string" },
           "interfaceKind": {
@@ -73,18 +224,20 @@
             "type": "array",
             "items": { "type": "string" }
           },
+          "checklist": { "$ref": "#/$defs/backendChecklist" },
           "members": {
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["name", "memberKind"],
+              "required": ["name", "memberKind", "checklist"],
               "properties": {
                 "name": { "type": "string" },
                 "memberKind": {
                   "type": "string",
                   "enum": ["method", "property"]
-                }
+                },
+                "checklist": { "$ref": "#/$defs/backendChecklist" }
               }
             }
           }
@@ -96,7 +249,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "unionKind", "specUrl", "valueCount", "values"],
+        "required": ["name", "unionKind", "specUrl", "valueCount", "checklist", "values"],
         "properties": {
           "name": { "type": "string" },
           "unionKind": {
@@ -105,9 +258,18 @@
           },
           "specUrl": { "type": "string" },
           "valueCount": { "type": "integer", "minimum": 0 },
+          "checklist": { "$ref": "#/$defs/backendChecklist" },
           "values": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "checklist"],
+              "properties": {
+                "name": { "type": "string" },
+                "checklist": { "$ref": "#/$defs/backendChecklist" }
+              }
+            }
           }
         }
       }

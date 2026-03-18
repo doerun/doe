@@ -588,6 +588,462 @@ void d3d12_bridge_resource_unmap(D3D12Handle resource_h) {
     resource->lpVtbl->Unmap(resource, 0, NULL);
 }
 
+/* --- Device info / adapter queries --- */
+
+void d3d12_bridge_device_get_adapter_desc(D3D12Handle device_h, char* desc_out, size_t desc_size,
+                                           uint32_t* vendor_id_out, uint32_t* device_id_out,
+                                           uint64_t* dedicated_vram_out) {
+    if (desc_out && desc_size > 0) desc_out[0] = '\0';
+    if (vendor_id_out) *vendor_id_out = 0;
+    if (device_id_out) *device_id_out = 0;
+    if (dedicated_vram_out) *dedicated_vram_out = 0;
+
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    LUID luid = device->lpVtbl->GetAdapterLuid(device);
+
+    IDXGIFactory4* factory = NULL;
+    if (FAILED(CreateDXGIFactory1(&IID_IDXGIFactory4, (void**)&factory))) return;
+
+    IDXGIAdapter1* adapter = NULL;
+    for (UINT i = 0; factory->lpVtbl->EnumAdapters1(factory, i, &adapter) != DXGI_ERROR_NOT_FOUND; i++) {
+        DXGI_ADAPTER_DESC1 desc;
+        adapter->lpVtbl->GetDesc1(adapter, &desc);
+        if (desc.AdapterLuid.LowPart == luid.LowPart && desc.AdapterLuid.HighPart == luid.HighPart) {
+            if (desc_out && desc_size > 0) {
+                WideCharToMultiByte(CP_UTF8, 0, desc.Description, -1, desc_out, (int)desc_size, NULL, NULL);
+                desc_out[desc_size - 1] = '\0';
+            }
+            if (vendor_id_out) *vendor_id_out = desc.VendorId;
+            if (device_id_out) *device_id_out = desc.DeviceId;
+            if (dedicated_vram_out) *dedicated_vram_out = (uint64_t)desc.DedicatedVideoMemory;
+            adapter->lpVtbl->Release(adapter);
+            break;
+        }
+        adapter->lpVtbl->Release(adapter);
+    }
+    factory->lpVtbl->Release(factory);
+}
+
+/* --- Depth/stencil views --- */
+
+D3D12Handle d3d12_bridge_device_create_dsv_heap(D3D12Handle device_h, uint32_t num_descriptors) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_DESCRIPTOR_HEAP_DESC desc;
+    desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    desc.NumDescriptors = num_descriptors;
+    desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    desc.NodeMask       = 0;
+
+    ID3D12DescriptorHeap* heap = NULL;
+    HRESULT hr = device->lpVtbl->CreateDescriptorHeap(device, &desc, &IID_ID3D12DescriptorHeap, (void**)&heap);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)heap;
+}
+
+static DXGI_FORMAT map_depth_format(uint32_t format) {
+    switch (format) {
+        case 0x0000002D: return DXGI_FORMAT_D16_UNORM;
+        case 0x0000002E: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24Plus */
+        case 0x0000002F: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24PlusStencil8 */
+        case 0x00000030: return DXGI_FORMAT_D32_FLOAT;
+        case 0x00000031: return DXGI_FORMAT_D32_FLOAT_S8X24_UINT; /* Depth32FloatStencil8 */
+        default:         return DXGI_FORMAT_D32_FLOAT;
+    }
+}
+
+void d3d12_bridge_device_create_dsv(D3D12Handle device_h, D3D12Handle resource_h, D3D12Handle dsv_heap_h,
+                                     uint32_t index, uint32_t format) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12Resource* resource = (ID3D12Resource*)resource_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)dsv_heap_h;
+
+    UINT dsv_size = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &cpu_handle);
+    cpu_handle.ptr += (SIZE_T)(dsv_size * index);
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc;
+    memset(&dsv_desc, 0, sizeof(dsv_desc));
+    dsv_desc.Format               = map_depth_format(format);
+    dsv_desc.ViewDimension        = D3D12_DSV_DIMENSION_TEXTURE2D;
+    dsv_desc.Texture2D.MipSlice   = 0;
+
+    device->lpVtbl->CreateDepthStencilView(device, resource, &dsv_desc, cpu_handle);
+}
+
+D3D12Handle d3d12_bridge_device_create_depth_texture(D3D12Handle device_h, uint32_t width, uint32_t height, uint32_t format) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+
+    D3D12_HEAP_PROPERTIES heap_props;
+    heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+    heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heap_props.CreationNodeMask     = 1;
+    heap_props.VisibleNodeMask      = 1;
+
+    D3D12_RESOURCE_DESC desc;
+    desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    desc.Alignment          = 0;
+    desc.Width              = (UINT64)width;
+    desc.Height             = height;
+    desc.DepthOrArraySize   = 1;
+    desc.MipLevels          = 1;
+    desc.Format             = map_depth_format(format);
+    desc.SampleDesc.Count   = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_CLEAR_VALUE clear_value;
+    clear_value.Format               = desc.Format;
+    clear_value.DepthStencil.Depth   = 1.0f;
+    clear_value.DepthStencil.Stencil = 0;
+
+    ID3D12Resource* tex = NULL;
+    HRESULT hr = device->lpVtbl->CreateCommittedResource(
+        device, &heap_props, D3D12_HEAP_FLAG_NONE,
+        &desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clear_value,
+        &IID_ID3D12Resource, (void**)&tex);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)tex;
+}
+
+/* --- CBV/SRV/UAV descriptor heap --- */
+
+D3D12Handle d3d12_bridge_device_create_cbv_srv_uav_heap(D3D12Handle device_h, uint32_t num_descriptors) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_DESCRIPTOR_HEAP_DESC desc;
+    desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    desc.NumDescriptors = num_descriptors;
+    desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    desc.NodeMask       = 0;
+
+    ID3D12DescriptorHeap* heap = NULL;
+    HRESULT hr = device->lpVtbl->CreateDescriptorHeap(device, &desc, &IID_ID3D12DescriptorHeap, (void**)&heap);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)heap;
+}
+
+void d3d12_bridge_device_create_cbv(D3D12Handle device_h, D3D12Handle heap_h, uint32_t index,
+                                     D3D12Handle buffer_h, uint64_t offset, uint32_t size) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+    ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc;
+    cbv_desc.BufferLocation = buffer->lpVtbl->GetGPUVirtualAddress(buffer) + offset;
+    cbv_desc.SizeInBytes    = (UINT)((size + 255u) & ~255u); /* D3D12 CBV must be 256-byte aligned */
+
+    device->lpVtbl->CreateConstantBufferView(device, &cbv_desc, handle);
+}
+
+void d3d12_bridge_device_create_srv_buffer(D3D12Handle device_h, D3D12Handle heap_h, uint32_t index,
+                                            D3D12Handle buffer_h, uint32_t num_elements, uint32_t stride) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+    ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+    memset(&srv_desc, 0, sizeof(srv_desc));
+    srv_desc.Format                     = DXGI_FORMAT_UNKNOWN;
+    srv_desc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
+    srv_desc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srv_desc.Buffer.NumElements         = num_elements;
+    srv_desc.Buffer.StructureByteStride = stride;
+
+    device->lpVtbl->CreateShaderResourceView(device, buffer, &srv_desc, handle);
+}
+
+void d3d12_bridge_device_create_uav_buffer(D3D12Handle device_h, D3D12Handle heap_h, uint32_t index,
+                                            D3D12Handle buffer_h, uint32_t num_elements, uint32_t stride) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+    ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc;
+    memset(&uav_desc, 0, sizeof(uav_desc));
+    uav_desc.Format                      = DXGI_FORMAT_UNKNOWN;
+    uav_desc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
+    uav_desc.Buffer.NumElements          = num_elements;
+    uav_desc.Buffer.StructureByteStride  = stride;
+
+    device->lpVtbl->CreateUnorderedAccessView(device, buffer, NULL, &uav_desc, handle);
+}
+
+void d3d12_bridge_device_create_srv_texture_2d(D3D12Handle device_h, D3D12Handle resource_h,
+                                                D3D12Handle heap_h, uint32_t index, uint32_t format,
+                                                uint32_t base_mip, uint32_t mip_count) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12Resource* resource = (ID3D12Resource*)resource_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+    memset(&srv_desc, 0, sizeof(srv_desc));
+    srv_desc.Format                        = map_wgpu_format_to_dxgi(format);
+    srv_desc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srv_desc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srv_desc.Texture2D.MostDetailedMip     = base_mip;
+    srv_desc.Texture2D.MipLevels           = mip_count == 0 ? (UINT)-1 : mip_count;
+
+    device->lpVtbl->CreateShaderResourceView(device, resource, &srv_desc, handle);
+}
+
+void d3d12_bridge_device_create_srv_texture_cube(D3D12Handle device_h, D3D12Handle resource_h,
+                                                  D3D12Handle heap_h, uint32_t index, uint32_t format,
+                                                  uint32_t base_mip, uint32_t mip_count) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12Resource* resource = (ID3D12Resource*)resource_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+    memset(&srv_desc, 0, sizeof(srv_desc));
+    srv_desc.Format                           = map_wgpu_format_to_dxgi(format);
+    srv_desc.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURECUBE;
+    srv_desc.Shader4ComponentMapping          = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srv_desc.TextureCube.MostDetailedMip      = base_mip;
+    srv_desc.TextureCube.MipLevels            = mip_count == 0 ? (UINT)-1 : mip_count;
+
+    device->lpVtbl->CreateShaderResourceView(device, resource, &srv_desc, handle);
+}
+
+void d3d12_bridge_device_create_srv_texture_3d(D3D12Handle device_h, D3D12Handle resource_h,
+                                                D3D12Handle heap_h, uint32_t index, uint32_t format,
+                                                uint32_t base_mip, uint32_t mip_count) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12Resource* resource = (ID3D12Resource*)resource_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+    memset(&srv_desc, 0, sizeof(srv_desc));
+    srv_desc.Format                          = map_wgpu_format_to_dxgi(format);
+    srv_desc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE3D;
+    srv_desc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srv_desc.Texture3D.MostDetailedMip       = base_mip;
+    srv_desc.Texture3D.MipLevels             = mip_count == 0 ? (UINT)-1 : mip_count;
+
+    device->lpVtbl->CreateShaderResourceView(device, resource, &srv_desc, handle);
+}
+
+void d3d12_bridge_device_create_uav_texture_2d(D3D12Handle device_h, D3D12Handle resource_h,
+                                                D3D12Handle heap_h, uint32_t index, uint32_t format,
+                                                uint32_t mip_slice) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12Resource* resource = (ID3D12Resource*)resource_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc;
+    memset(&uav_desc, 0, sizeof(uav_desc));
+    uav_desc.Format                    = map_wgpu_format_to_dxgi(format);
+    uav_desc.ViewDimension             = D3D12_UAV_DIMENSION_TEXTURE2D;
+    uav_desc.Texture2D.MipSlice        = mip_slice;
+
+    device->lpVtbl->CreateUnorderedAccessView(device, resource, NULL, &uav_desc, handle);
+}
+
+void d3d12_bridge_command_list_set_descriptor_heaps(D3D12Handle cmd_list_h,
+                                                     D3D12Handle cbv_srv_uav_heap_h,
+                                                     D3D12Handle sampler_heap_h) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    UINT count = 0;
+    ID3D12DescriptorHeap* heaps[2];
+    if (cbv_srv_uav_heap_h) heaps[count++] = (ID3D12DescriptorHeap*)cbv_srv_uav_heap_h;
+    if (sampler_heap_h)     heaps[count++] = (ID3D12DescriptorHeap*)sampler_heap_h;
+    if (count > 0) cmd->lpVtbl->SetDescriptorHeaps(cmd, count, heaps);
+}
+
+/* --- Root signature with descriptor table parameters --- */
+
+D3D12Handle d3d12_bridge_device_create_root_signature_with_ranges(D3D12Handle device_h,
+                                                                    uint32_t num_cbv, uint32_t num_srv,
+                                                                    uint32_t num_uav, uint32_t num_samplers) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+
+    D3D12_DESCRIPTOR_RANGE ranges[4];
+    UINT range_count = 0;
+    D3D12_ROOT_PARAMETER params[2];
+    UINT param_count = 0;
+
+    /* CBV/SRV/UAV table */
+    UINT cbv_srv_uav_total = num_cbv + num_srv + num_uav;
+    if (cbv_srv_uav_total > 0) {
+        UINT ri = 0;
+        if (num_cbv > 0) {
+            ranges[ri].RangeType          = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+            ranges[ri].NumDescriptors     = num_cbv;
+            ranges[ri].BaseShaderRegister = 0;
+            ranges[ri].RegisterSpace      = 0;
+            ranges[ri].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            ri++;
+        }
+        if (num_srv > 0) {
+            ranges[ri].RangeType          = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+            ranges[ri].NumDescriptors     = num_srv;
+            ranges[ri].BaseShaderRegister = 0;
+            ranges[ri].RegisterSpace      = 0;
+            ranges[ri].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            ri++;
+        }
+        if (num_uav > 0) {
+            ranges[ri].RangeType          = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+            ranges[ri].NumDescriptors     = num_uav;
+            ranges[ri].BaseShaderRegister = 0;
+            ranges[ri].RegisterSpace      = 0;
+            ranges[ri].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            ri++;
+        }
+        params[param_count].ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        params[param_count].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
+        params[param_count].DescriptorTable.NumDescriptorRanges = ri;
+        params[param_count].DescriptorTable.pDescriptorRanges   = ranges;
+        param_count++;
+        range_count = ri;
+    }
+
+    /* Sampler table */
+    if (num_samplers > 0) {
+        D3D12_DESCRIPTOR_RANGE* sampler_range = &ranges[range_count];
+        sampler_range->RangeType          = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+        sampler_range->NumDescriptors     = num_samplers;
+        sampler_range->BaseShaderRegister = 0;
+        sampler_range->RegisterSpace      = 0;
+        sampler_range->OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+        params[param_count].ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        params[param_count].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
+        params[param_count].DescriptorTable.NumDescriptorRanges = 1;
+        params[param_count].DescriptorTable.pDescriptorRanges   = sampler_range;
+        param_count++;
+    }
+
+    D3D12_ROOT_SIGNATURE_DESC sig_desc;
+    sig_desc.NumParameters     = param_count;
+    sig_desc.pParameters       = param_count > 0 ? params : NULL;
+    sig_desc.NumStaticSamplers = 0;
+    sig_desc.pStaticSamplers   = NULL;
+    sig_desc.Flags             = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+    ID3DBlob* blob  = NULL;
+    ID3DBlob* error = NULL;
+    HRESULT hr = D3D12SerializeRootSignature(&sig_desc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error);
+    if (error) error->lpVtbl->Release(error);
+    if (FAILED(hr) || blob == NULL) return NULL;
+
+    ID3D12RootSignature* root_sig = NULL;
+    hr = device->lpVtbl->CreateRootSignature(
+        device, 0,
+        blob->lpVtbl->GetBufferPointer(blob),
+        blob->lpVtbl->GetBufferSize(blob),
+        &IID_ID3D12RootSignature, (void**)&root_sig);
+    blob->lpVtbl->Release(blob);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)root_sig;
+}
+
+/* --- Occlusion and pipeline statistics queries --- */
+
+D3D12Handle d3d12_bridge_device_create_occlusion_query_heap(D3D12Handle device_h, uint32_t count) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_QUERY_HEAP_DESC desc;
+    desc.Type     = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
+    desc.Count    = count;
+    desc.NodeMask = 0;
+
+    ID3D12QueryHeap* heap = NULL;
+    HRESULT hr = device->lpVtbl->CreateQueryHeap(device, &desc, &IID_ID3D12QueryHeap, (void**)&heap);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)heap;
+}
+
+D3D12Handle d3d12_bridge_device_create_pipeline_statistics_query_heap(D3D12Handle device_h, uint32_t count) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_QUERY_HEAP_DESC desc;
+    desc.Type     = D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS;
+    desc.Count    = count;
+    desc.NodeMask = 0;
+
+    ID3D12QueryHeap* heap = NULL;
+    HRESULT hr = device->lpVtbl->CreateQueryHeap(device, &desc, &IID_ID3D12QueryHeap, (void**)&heap);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)heap;
+}
+
+void d3d12_bridge_command_list_begin_query(D3D12Handle cmd_list_h, D3D12Handle query_heap_h, uint32_t index) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12QueryHeap* heap          = (ID3D12QueryHeap*)query_heap_h;
+    cmd->lpVtbl->BeginQuery(cmd, heap, D3D12_QUERY_TYPE_OCCLUSION, index);
+}
+
+/* --- 3D Texture --- */
+
+D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device_h, uint32_t width, uint32_t height,
+                                                    uint32_t depth, uint32_t mip_levels,
+                                                    uint32_t format, uint32_t usage_flags) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+
+    D3D12_HEAP_PROPERTIES heap_props;
+    heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+    heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heap_props.CreationNodeMask     = 1;
+    heap_props.VisibleNodeMask      = 1;
+
+    D3D12_RESOURCE_DESC desc;
+    desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+    desc.Alignment          = 0;
+    desc.Width              = (UINT64)width;
+    desc.Height             = height;
+    desc.DepthOrArraySize   = (UINT16)(depth == 0 ? 1 : depth);
+    desc.MipLevels          = (UINT16)(mip_levels == 0 ? 1 : mip_levels);
+    desc.Format             = map_wgpu_format_to_dxgi(format);
+    desc.SampleDesc.Count   = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags              = map_wgpu_usage_to_d3d12_flags(usage_flags);
+
+    ID3D12Resource* tex = NULL;
+    HRESULT hr = device->lpVtbl->CreateCommittedResource(
+        device, &heap_props, D3D12_HEAP_FLAG_NONE,
+        &desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+        &IID_ID3D12Resource, (void**)&tex);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)tex;
+}
+
 /* --- DXGI swap chain (surface) --- */
 
 D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue_h, uint32_t width, uint32_t height, uint32_t format) {
@@ -631,4 +1087,153 @@ int d3d12_bridge_swap_chain_resize(D3D12Handle swap_chain_h, uint32_t width, uin
     IDXGISwapChain1* chain = (IDXGISwapChain1*)swap_chain_h;
     HRESULT hr = chain->lpVtbl->ResizeBuffers(chain, 2, width, height, map_wgpu_format_to_dxgi(format), 0);
     return SUCCEEDED(hr) ? 0 : -1;
+}
+
+/* --- Simple SRV texture (2D, all mip levels) ---
+   Matches Zig extern: d3d12_bridge_device_create_srv_texture(device, heap, index, texture, format) */
+void d3d12_bridge_device_create_srv_texture(D3D12Handle device_h, D3D12Handle heap_h, uint32_t index,
+                                             D3D12Handle texture_h, uint32_t format) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+    ID3D12Resource* texture = (ID3D12Resource*)texture_h;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * index);
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+    memset(&srv_desc, 0, sizeof(srv_desc));
+    srv_desc.Format                        = map_wgpu_format_to_dxgi(format);
+    srv_desc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srv_desc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srv_desc.Texture2D.MostDetailedMip     = 0;
+    srv_desc.Texture2D.MipLevels           = (UINT)-1; /* all mip levels */
+    srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+    device->lpVtbl->CreateShaderResourceView(device, texture, &srv_desc, handle);
+}
+
+/* --- Root signature from explicit range array ---
+   Matches Zig extern: d3d12_bridge_device_create_root_signature_with_tables(device, ranges, range_count, flags)
+   Builds one descriptor table root parameter per contiguous run of CBV/SRV/UAV ranges,
+   and a separate table for sampler ranges (D3D12 requires separate heaps). */
+D3D12Handle d3d12_bridge_device_create_root_signature_with_tables(D3D12Handle device_h,
+                                                                     const D3D12DescriptorRangeDesc* ranges,
+                                                                     uint32_t range_count, uint32_t flags) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    if (range_count == 0) return NULL;
+
+    /* Translate range descs into D3D12_DESCRIPTOR_RANGE, split CBV/SRV/UAV from SAMPLER */
+    D3D12_DESCRIPTOR_RANGE d3d_ranges[64];
+    D3D12_DESCRIPTOR_RANGE sampler_ranges[16];
+    UINT d3d_count = 0;
+    UINT sampler_count = 0;
+
+    for (uint32_t i = 0; i < range_count && i < 64; i++) {
+        D3D12_DESCRIPTOR_RANGE r;
+        r.RangeType          = (D3D12_DESCRIPTOR_RANGE_TYPE)ranges[i].range_type;
+        r.NumDescriptors     = ranges[i].num_descriptors;
+        r.BaseShaderRegister = ranges[i].base_shader_register;
+        r.RegisterSpace      = ranges[i].register_space;
+        r.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+        if (ranges[i].range_type == 3) { /* SAMPLER */
+            if (sampler_count < 16) sampler_ranges[sampler_count++] = r;
+        } else {
+            if (d3d_count < 64) d3d_ranges[d3d_count++] = r;
+        }
+    }
+
+    D3D12_ROOT_PARAMETER params[2];
+    UINT param_count = 0;
+
+    if (d3d_count > 0) {
+        params[param_count].ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        params[param_count].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
+        params[param_count].DescriptorTable.NumDescriptorRanges = d3d_count;
+        params[param_count].DescriptorTable.pDescriptorRanges   = d3d_ranges;
+        param_count++;
+    }
+    if (sampler_count > 0) {
+        params[param_count].ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        params[param_count].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
+        params[param_count].DescriptorTable.NumDescriptorRanges = sampler_count;
+        params[param_count].DescriptorTable.pDescriptorRanges   = sampler_ranges;
+        param_count++;
+    }
+
+    D3D12_ROOT_SIGNATURE_DESC sig_desc;
+    sig_desc.NumParameters     = param_count;
+    sig_desc.pParameters       = param_count > 0 ? params : NULL;
+    sig_desc.NumStaticSamplers = 0;
+    sig_desc.pStaticSamplers   = NULL;
+    sig_desc.Flags             = (D3D12_ROOT_SIGNATURE_FLAGS)flags;
+
+    ID3DBlob* blob  = NULL;
+    ID3DBlob* error = NULL;
+    HRESULT hr = D3D12SerializeRootSignature(&sig_desc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error);
+    if (error) error->lpVtbl->Release(error);
+    if (FAILED(hr) || blob == NULL) return NULL;
+
+    ID3D12RootSignature* root_sig = NULL;
+    hr = device->lpVtbl->CreateRootSignature(
+        device, 0,
+        blob->lpVtbl->GetBufferPointer(blob),
+        blob->lpVtbl->GetBufferSize(blob),
+        &IID_ID3D12RootSignature, (void**)&root_sig);
+    blob->lpVtbl->Release(blob);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)root_sig;
+}
+
+/* --- Compute root descriptor table binding --- */
+void d3d12_bridge_command_list_set_compute_root_descriptor_table(D3D12Handle cmd_list_h,
+                                                                   uint32_t root_parameter_index,
+                                                                   D3D12Handle heap_h,
+                                                                   uint32_t base_descriptor_index) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+
+    UINT incr = 0;
+    /* Get increment size from heap type — use CBV/SRV/UAV as default */
+    {
+        ID3D12Device* device = NULL;
+        HRESULT hr = cmd->lpVtbl->GetDevice(cmd, &IID_ID3D12Device, (void**)&device);
+        if (SUCCEEDED(hr) && device) {
+            incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            device->lpVtbl->Release(device);
+        }
+    }
+
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+    heap->lpVtbl->GetGPUDescriptorHandleForHeapStart(heap, &gpu_handle);
+    gpu_handle.ptr += (UINT64)(incr * base_descriptor_index);
+
+    cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, root_parameter_index, gpu_handle);
+}
+
+/* --- Graphics root descriptor table binding --- */
+void d3d12_bridge_command_list_set_graphics_root_descriptor_table(D3D12Handle cmd_list_h,
+                                                                    uint32_t root_parameter_index,
+                                                                    D3D12Handle heap_h,
+                                                                    uint32_t base_descriptor_index) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+
+    UINT incr = 0;
+    {
+        ID3D12Device* device = NULL;
+        HRESULT hr = cmd->lpVtbl->GetDevice(cmd, &IID_ID3D12Device, (void**)&device);
+        if (SUCCEEDED(hr) && device) {
+            incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            device->lpVtbl->Release(device);
+        }
+    }
+
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+    heap->lpVtbl->GetGPUDescriptorHandleForHeapStart(heap, &gpu_handle);
+    gpu_handle.ptr += (UINT64)(incr * base_descriptor_index);
+
+    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, root_parameter_index, gpu_handle);
 }

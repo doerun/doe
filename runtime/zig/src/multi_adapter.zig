@@ -316,8 +316,10 @@ pub export fn doeNativeInstanceSelectAdapter(
     return @intCast(select_adapter(list, opts) orelse 0);
 }
 
-// Get adapter info for a single DoeAdapter handle (the one created by requestAdapter).
-pub export fn doeNativeAdapterGetInfo(
+// Get adapter info as a DoeAdapterInfo struct for a single DoeAdapter handle.
+// Named *Struct to avoid symbol collision with the string-based doeNativeAdapterGetInfo
+// in doe_adapter_info_native.zig (used by the N-API layer).
+pub export fn doeNativeAdapterGetInfoStruct(
     adapter_raw: ?*anyopaque,
     out: ?*DoeAdapterInfo,
 ) callconv(.c) u32 {

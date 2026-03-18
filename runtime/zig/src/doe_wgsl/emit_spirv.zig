@@ -188,7 +188,7 @@ pub const Emitter = struct {
         var param_types = std.ArrayListUnmanaged(u32){};
         defer param_types.deinit(self.alloc);
         for (function.params.items) |param| {
-            try param_types.append(self.alloc, try self.lower_type(param.ty));
+            try param_types.append(self.alloc, try self.lower_param_type(param.ty));
         }
 
         const fn_type = try self.builder.type_function(return_type, param_types.items);
@@ -198,7 +198,7 @@ pub const Emitter = struct {
         const param_value_ids = try self.alloc.alloc(u32, function.params.items.len);
         defer self.alloc.free(param_value_ids);
         for (param_value_ids, function.params.items) |*slot, param| {
-            slot.* = try self.builder.function_parameter(try self.lower_type(param.ty));
+            slot.* = try self.builder.function_parameter(try self.lower_param_type(param.ty));
         }
 
         _ = try self.builder.label();
@@ -207,11 +207,20 @@ pub const Emitter = struct {
         defer state.deinit();
 
         for (function.params.items, 0..) |param, param_index| {
-            const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Function, try self.lower_type(param.ty));
-            const ptr_id = try self.builder.variable_function(ptr_type);
-            state.param_ptr_ids[param_index] = ptr_id;
-            try self.builder.emit_name(ptr_id, param.name);
-            try self.emit_store(ptr_id, param_value_ids[param_index]);
+            switch (self.module.types.get(param.ty)) {
+                .ref => {
+                    // Pointer parameters are already pointers; use them directly.
+                    state.param_ptr_ids[param_index] = param_value_ids[param_index];
+                    try self.builder.emit_name(param_value_ids[param_index], param.name);
+                },
+                else => {
+                    const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Function, try self.lower_type(param.ty));
+                    const ptr_id = try self.builder.variable_function(ptr_type);
+                    state.param_ptr_ids[param_index] = ptr_id;
+                    try self.builder.emit_name(ptr_id, param.name);
+                    try self.emit_store(ptr_id, param_value_ids[param_index]);
+                },
+            }
         }
 
         for (function.locals.items, 0..) |local, local_index| {
@@ -443,6 +452,18 @@ pub const Emitter = struct {
         return lowered;
     }
 
+    /// Lower a parameter type. For ref types, produces OpTypePointer with the
+    /// correct storage class; for all other types, delegates to lower_type.
+    pub fn lower_param_type(self: *Emitter, ty: ir.TypeId) EmitError!u32 {
+        return switch (self.module.types.get(ty)) {
+            .ref => |ref_ty| try self.builder.type_pointer(
+                addr_space_to_storage_class(ref_ty.addr_space),
+                try self.lower_type(ref_ty.elem),
+            ),
+            else => try self.lower_type(ty),
+        };
+    }
+
     pub fn lower_sampler_type(self: *Emitter) EmitError!u32 {
         if (self.sampler_type != 0) return self.sampler_type;
         const id = self.builder.reserve_id();
@@ -666,6 +687,17 @@ fn round_up(alignment: u32, value: u32) u32 {
     const remainder = value % alignment;
     if (remainder == 0) return value;
     return value + alignment - remainder;
+}
+
+pub fn addr_space_to_storage_class(addr_space: ir.AddressSpace) u32 {
+    return switch (addr_space) {
+        .function => spirv.StorageClass.Function,
+        .private => spirv.StorageClass.Private,
+        .workgroup => spirv.StorageClass.Workgroup,
+        .uniform => spirv.StorageClass.Uniform,
+        .storage => spirv.StorageClass.StorageBuffer,
+        .handle => spirv.StorageClass.UniformConstant,
+    };
 }
 
 pub fn builtin_to_spirv(builtin: ir.Builtin) EmitError!u32 {

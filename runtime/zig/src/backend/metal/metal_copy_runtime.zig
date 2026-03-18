@@ -18,6 +18,9 @@ pub const CopyMetrics = struct {
     setup_ns: u64,
     encode_ns: u64,
     submit_wait_ns: u64,
+    gpu_elapsed_ns: u64 = 0,
+    gpu_timestamps_attempted: bool = false,
+    gpu_timestamps_valid: bool = false,
 };
 
 pub fn execute_copy(self: anytype, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !CopyMetrics {
@@ -91,8 +94,18 @@ pub fn execute_copy(self: anytype, cmd: model.CopyCommand, queue_sync_mode: webg
 
     self.has_deferred_submissions = true;
     self.streaming_has_copy = true;
-    const submit_wait_ns = if (queue_sync_mode == .deferred) 0 else try self.flush_queue();
-    return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns };
+    if (queue_sync_mode == .deferred) {
+        return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = 0 };
+    }
+    const flush = try self.flush_queue_timed();
+    return .{
+        .setup_ns = setup_ns,
+        .encode_ns = encode_ns,
+        .submit_wait_ns = flush.submit_wait_ns,
+        .gpu_elapsed_ns = flush.gpu_elapsed_ns,
+        .gpu_timestamps_attempted = flush.gpu_timestamps_attempted,
+        .gpu_timestamps_valid = flush.gpu_timestamps_valid,
+    };
 }
 
 fn ensure_buffer(self: anytype, handle: u64, size: u64) !?*anyopaque {

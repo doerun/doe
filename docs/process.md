@@ -226,6 +226,7 @@ Apple Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
   - `--with-metal-sync-conformance-gate`
   - `--with-metal-timing-policy-gate`
   - `--with-shader-artifact-gate`
+  - `--with-spirv-val-gate` (validates .spv binaries with spirv-val; skips when not installed)
 
 4. strict lane policy
 - strict Apple Metal lanes must fail on fallback (`fallbackUsed=true`)
@@ -258,6 +259,7 @@ AMD Vulkan extended lanes are additive and must not weaken the governed AMD Vulk
   - `--with-vulkan-sync-conformance-gate`
   - `--with-vulkan-timing-policy-gate`
   - `--with-shader-artifact-gate`
+  - `--with-spirv-val-gate` (validates .spv binaries with spirv-val; skips when not installed)
 
 4. strict lane policy
 - strict AMD Vulkan extended lanes must fail on fallback (`fallbackUsed=true`)

@@ -7,7 +7,9 @@ const copy_runtime = @import("metal_copy_runtime.zig");
 const dispatch_runtime = @import("metal_dispatch_runtime.zig");
 const resource_runtime = @import("metal_runtime_resources.zig");
 const surface_runtime = @import("metal_surface_runtime.zig");
+const kernel_dispatch = @import("metal_kernel_dispatch.zig");
 const bridge = @import("metal_bridge_decls.zig");
+const metal_gpu_timestamps = @import("metal_gpu_timestamps.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
 const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
@@ -40,25 +42,21 @@ const metal_bridge_texture_replace_region = bridge.metal_bridge_texture_replace_
 const metal_bridge_texture_sample_count = bridge.metal_bridge_texture_sample_count;
 const metal_bridge_texture_width = bridge.metal_bridge_texture_width;
 
-// Metal on Apple Silicon supports large shared buffers up to device maxBufferLength.
-// No artificial cap here — let allocation failure propagate as InvalidState.
 pub const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
 pub const MAX_BINDING_SLOTS: usize = 32;
-pub const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024; // reuse staging pair for uploads <= 1MB
+pub const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024;
 pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;
-
-pub const DispatchMetrics = struct {
-    setup_ns: u64,
-    encode_ns: u64,
-    submit_wait_ns: u64,
-    dispatch_count: u32,
-};
+pub const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
+pub const DispatchMetrics = kernel_dispatch.DispatchMetrics;
 
 pub const RenderMetrics = struct {
     setup_ns: u64,
     encode_ns: u64,
     submit_wait_ns: u64,
     draw_count: u32,
+    gpu_elapsed_ns: u64 = 0,
+    gpu_timestamps_attempted: bool = false,
+    gpu_timestamps_valid: bool = false,
 };
 
 pub const PendingUpload = struct {
@@ -66,8 +64,6 @@ pub const PendingUpload = struct {
     dst_buffer: ?*anyopaque,
     byte_count: usize,
 };
-
-pub const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
 
 pub const KernelPipeline = struct {
     library: ?*anyopaque,
@@ -79,6 +75,13 @@ pub const IcbKey = struct {
     vertex_count: u32,
     instance_count: u32,
     redundant: bool,
+};
+
+pub const FlushResult = struct {
+    submit_wait_ns: u64 = 0,
+    gpu_elapsed_ns: u64 = 0,
+    gpu_timestamps_attempted: bool = false,
+    gpu_timestamps_valid: bool = false,
 };
 
 pub const NativeMetalRuntime = struct {
@@ -104,6 +107,7 @@ pub const NativeMetalRuntime = struct {
     streaming_has_copy: bool = false,
     streaming_max_upload_bytes: usize = 0,
     streaming_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
+    streaming_gpu_timestamps_active: bool = false,
 
     shared_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
     private_pool: std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque)) = .{},
@@ -134,6 +138,7 @@ pub const NativeMetalRuntime = struct {
     cached_icb_key: IcbKey = .{ .draw_count = 0, .vertex_count = 0, .instance_count = 0, .redundant = false },
 
     pipeline_binary_cache: ?*anyopaque = null,
+    timestamp_state: metal_gpu_timestamps.TimestampState = .{},
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeMetalRuntime {
         var self = NativeMetalRuntime{ .allocator = allocator, .kernel_root = kernel_root };
@@ -177,6 +182,7 @@ pub const NativeMetalRuntime = struct {
         self.release_samplers();
         self.release_surfaces();
         self.release_render_resources();
+        self.timestamp_state.deinit();
         release_ref(&self.shared_event);
         if (builtin.os.tag == .macos) {
             if (HAS_PIPELINE_CACHE) {
@@ -258,11 +264,18 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn flush_queue(self: *NativeMetalRuntime) !u64 {
-        if (!self.has_device) return 0;
+        const result = try self.flush_queue_timed();
+        return result.submit_wait_ns;
+    }
+
+    pub fn flush_queue_timed(self: *NativeMetalRuntime) !FlushResult {
+        if (!self.has_device) return .{};
         const has_streaming = self.streaming_cmd_buf != null;
-        if (!has_streaming and !self.has_deferred_submissions) return 0;
+        if (!has_streaming and !self.has_deferred_submissions) return .{};
         const start_ns = common_timing.now_ns();
         self.wait_outstanding();
+        var gpu_timestamps_attempted = false;
+        var gpu_elapsed_ns: u64 = 0;
         if (has_streaming) {
             if (self.streaming_render_encoder) |enc| {
                 metal_bridge_render_encoder_end(enc);
@@ -275,6 +288,13 @@ pub const NativeMetalRuntime = struct {
             }
 
             const cmd_buf = self.streaming_cmd_buf.?;
+
+            // Record end GPU timestamp before commit (after all other encoders).
+            gpu_timestamps_attempted = self.streaming_gpu_timestamps_active;
+            if (self.streaming_gpu_timestamps_active) {
+                self.timestamp_state.record_end(cmd_buf);
+            }
+
             self.fence_value +%= 1;
             const use_fast_wait =
                 !self.streaming_has_render and
@@ -286,12 +306,27 @@ pub const NativeMetalRuntime = struct {
                 metal_bridge_command_buffer_setup_fast_wait(cmd_buf);
             }
             metal_bridge_command_buffer_commit(cmd_buf);
-            if (use_fast_wait) metal_bridge_command_buffer_wait_fast() else metal_bridge_command_buffer_wait_completed(cmd_buf);
+            // When using fast wait with GPU timestamps, fall back to
+            // waitUntilCompleted so counter data is guaranteed resolvable.
+            if (gpu_timestamps_attempted) {
+                metal_bridge_command_buffer_wait_completed(cmd_buf);
+            } else if (use_fast_wait) {
+                metal_bridge_command_buffer_wait_fast();
+            } else {
+                metal_bridge_command_buffer_wait_completed(cmd_buf);
+            }
+
+            // Resolve GPU timestamps after command buffer completion.
+            if (gpu_timestamps_attempted) {
+                gpu_elapsed_ns = self.timestamp_state.resolve_elapsed_ns();
+            }
+
             metal_bridge_release(cmd_buf);
             self.streaming_cmd_buf = null;
             self.streaming_has_render = false;
             self.streaming_has_copy = false;
             self.streaming_max_upload_bytes = 0;
+            self.streaming_gpu_timestamps_active = false;
             for (self.streaming_uploads.items) |item| {
                 pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
                 pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
@@ -311,7 +346,12 @@ pub const NativeMetalRuntime = struct {
         self.has_deferred_submissions = false;
         const end_ns = common_timing.now_ns();
         self.release_deferred_releases();
-        return common_timing.ns_delta(end_ns, start_ns);
+        return .{
+            .submit_wait_ns = common_timing.ns_delta(end_ns, start_ns),
+            .gpu_elapsed_ns = gpu_elapsed_ns,
+            .gpu_timestamps_attempted = gpu_timestamps_attempted,
+            .gpu_timestamps_valid = gpu_timestamps_attempted and gpu_elapsed_ns > 0,
+        };
     }
 
     fn wait_outstanding(self: *NativeMetalRuntime) void {
@@ -368,6 +408,8 @@ pub const NativeMetalRuntime = struct {
         _ = try self.flush_queue();
     }
 
+    pub const KernelDispatchResult = kernel_dispatch.KernelDispatchResult;
+
     pub fn run_kernel_dispatch(
         self: *NativeMetalRuntime,
         kernel: []const u8,
@@ -378,63 +420,21 @@ pub const NativeMetalRuntime = struct {
         warmup: u32,
         bindings: ?[]const model.KernelBinding,
     ) !DispatchMetrics {
-        // Setup: pipeline compile, buffer allocation, warmup dispatches.
-        const setup_start = common_timing.now_ns();
-        const pipeline = try self.ensure_kernel_pipeline(kernel);
+        return kernel_dispatch.run_kernel_dispatch(self, kernel, x, y, z, repeat, warmup, bindings);
+    }
 
-        var buf_slots: [MAX_BINDING_SLOTS]?*anyopaque = [_]?*anyopaque{null} ** MAX_BINDING_SLOTS;
-        var slot_count: u32 = 0;
-
-        if (bindings) |bs| {
-            for (bs) |b| {
-                if (b.resource_kind != .buffer) continue;
-                if (b.binding >= MAX_BINDING_SLOTS) continue;
-                buf_slots[b.binding] = try self.ensure_compute_buffer(b.resource_handle, b.buffer_size);
-                if (b.binding + 1 > slot_count) slot_count = @intCast(b.binding + 1);
-            }
-        }
-
-        const run_count: u32 = if (repeat == 0) 1 else repeat;
-        const buf_ptr: ?[*]?*anyopaque = if (slot_count > 0) &buf_slots else null;
-
-        if (warmup > 0) {
-            const wcb = metal_bridge_encode_compute_dispatch_batch(
-                self.queue,
-                pipeline,
-                buf_ptr,
-                slot_count,
-                x,
-                y,
-                z,
-                warmup,
-            ) orelse return error.InvalidState;
-            metal_bridge_command_buffer_commit(wcb);
-            metal_bridge_command_buffer_wait_completed(wcb);
-            metal_bridge_release(wcb);
-        }
-        const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
-
-        // Timed run: batch all repeat dispatches into one command buffer.
-        const t_enc_start = common_timing.now_ns();
-        const cmd_buf = metal_bridge_encode_compute_dispatch_batch(
-            self.queue,
-            pipeline,
-            buf_ptr,
-            slot_count,
-            x,
-            y,
-            z,
-            run_count,
-        ) orelse return error.InvalidState;
-        const encode_ns = common_timing.ns_delta(common_timing.now_ns(), t_enc_start);
-
-        metal_bridge_command_buffer_commit(cmd_buf);
-        const t_sub_start = common_timing.now_ns();
-        metal_bridge_command_buffer_wait_completed(cmd_buf);
-        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), t_sub_start);
-        metal_bridge_release(cmd_buf);
-
-        return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
+    pub fn run_kernel_dispatch_timed(
+        self: *NativeMetalRuntime,
+        kernel: []const u8,
+        x: u32,
+        y: u32,
+        z: u32,
+        repeat: u32,
+        warmup: u32,
+        bindings: ?[]const model.KernelBinding,
+        record_timestamps: bool,
+    ) !KernelDispatchResult {
+        return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, x, y, z, repeat, warmup, bindings, record_timestamps);
     }
 
     pub fn run_dispatch(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
@@ -553,9 +553,19 @@ pub const NativeMetalRuntime = struct {
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
         // Submit+wait: commit command buffer and wait for GPU completion.
-        const submit_wait_ns = if (queue_sync_mode == .deferred) 0 else try self.flush_queue();
-
-        return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = cmd.draw_count };
+        if (queue_sync_mode == .deferred) {
+            return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = 0, .draw_count = cmd.draw_count };
+        }
+        const flush = try self.flush_queue_timed();
+        return .{
+            .setup_ns = setup_ns,
+            .encode_ns = encode_ns,
+            .submit_wait_ns = flush.submit_wait_ns,
+            .draw_count = cmd.draw_count,
+            .gpu_elapsed_ns = flush.gpu_elapsed_ns,
+            .gpu_timestamps_attempted = flush.gpu_timestamps_attempted,
+            .gpu_timestamps_valid = flush.gpu_timestamps_valid,
+        };
     }
 
     pub fn copy_command(self: *NativeMetalRuntime, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !copy_runtime.CopyMetrics {
@@ -603,6 +613,7 @@ pub const NativeMetalRuntime = struct {
         self.queue = metal_bridge_device_new_command_queue(self.device) orelse return error.InvalidState;
         self.shared_event = metal_bridge_device_new_shared_event(self.device);
         self.has_device = true;
+        self.timestamp_state.init_resources(self.device);
         if (builtin.os.tag == .macos) {
             if (HAS_PIPELINE_CACHE) {
                 const cache_dir = self.kernel_root orelse "bench/kernels";
@@ -702,6 +713,34 @@ pub const NativeMetalRuntime = struct {
     fn ensure_icb(self: *NativeMetalRuntime, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pl: c_int) !?*anyopaque {
         return resource_runtime.ensure_icb(self, draw_count, vertex_count, instance_count, redundant_pl);
     }
+
+    pub fn activate_gpu_timestamps(self: *NativeMetalRuntime) !void {
+        if (!self.timestamp_state.supported) return;
+        if (self.streaming_gpu_timestamps_active) return;
+        // Ensure a streaming command buffer exists.
+        if (self.streaming_cmd_buf == null) {
+            var encoder: ?*anyopaque = null;
+            self.streaming_cmd_buf = metal_bridge_begin_blit_encoding(self.queue, &encoder) orelse return error.InvalidState;
+            self.streaming_blit_encoder = encoder;
+        }
+        // End any active encoder before sampling (one encoder per cmd buf).
+        if (self.streaming_render_encoder) |enc| {
+            metal_bridge_render_encoder_end(enc);
+            metal_bridge_release(enc);
+            self.streaming_render_encoder = null;
+        }
+        if (self.streaming_blit_encoder) |enc| {
+            metal_bridge_end_blit_encoding(enc);
+            self.streaming_blit_encoder = null;
+        }
+        self.timestamp_state.record_begin(self.streaming_cmd_buf);
+        self.streaming_gpu_timestamps_active = true;
+    }
+
+    pub fn gpu_timestamps_supported(self: *const NativeMetalRuntime) bool {
+        return self.timestamp_state.supported;
+    }
+
 };
 
 pub const BufferPool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));

@@ -193,6 +193,22 @@ extern fn metal_render_state_cmd_buf_msaa_render_encoder(
     resolve_target: ?*anyopaque,
 ) callconv(.c) ?*anyopaque;
 
+extern fn metal_render_state_push_debug_group(
+    encoder: ?*anyopaque,
+    label: ?[*]const u8,
+    label_len: usize,
+) callconv(.c) void;
+
+extern fn metal_render_state_pop_debug_group(
+    encoder: ?*anyopaque,
+) callconv(.c) void;
+
+extern fn metal_render_state_insert_debug_marker(
+    encoder: ?*anyopaque,
+    label: ?[*]const u8,
+    label_len: usize,
+) callconv(.c) void;
+
 // ============================================================
 // C-layout structs matching metal_render_state_bridge.h
 // ============================================================
@@ -567,6 +583,33 @@ pub export fn doeNativeDeviceCreateMsaaTexture(
 ) callconv(.c) ?*anyopaque {
     const sc = if (sample_count < 2) MSAA_SAMPLE_COUNT_4 else sample_count;
     return create_msaa_texture(device, width, height, pixel_format, sc);
+}
+
+// Push a named debug group onto an open render pass encoder.
+// label_ptr / label_len: UTF-8 byte span (no NUL terminator required).
+pub export fn doeNativeRenderPassEncoderPushDebugGroup(
+    encoder: ?*anyopaque,
+    label_ptr: ?[*]const u8,
+    label_len: usize,
+) callconv(.c) void {
+    metal_render_state_push_debug_group(encoder, label_ptr, label_len);
+}
+
+// Pop the most recently pushed debug group from an open render pass encoder.
+pub export fn doeNativeRenderPassEncoderPopDebugGroup(
+    encoder: ?*anyopaque,
+) callconv(.c) void {
+    metal_render_state_pop_debug_group(encoder);
+}
+
+// Insert a single-point debug marker on an open render pass encoder.
+// label_ptr / label_len: UTF-8 byte span (no NUL terminator required).
+pub export fn doeNativeRenderPassEncoderInsertDebugMarker(
+    encoder: ?*anyopaque,
+    label_ptr: ?[*]const u8,
+    label_len: usize,
+) callconv(.c) void {
+    metal_render_state_insert_debug_marker(encoder, label_ptr, label_len);
 }
 
 // Open an MSAA render encoder that resolves into resolve_target.

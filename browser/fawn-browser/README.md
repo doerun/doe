@@ -69,6 +69,15 @@ Fawn already has an ABI-focused drop-in lane and compatibility gates that make C
 This layer extends those capabilities to Chromium integration planning without
 coupling directly to core runtime code yet.
 
+Browser-facing WebGPU API contracts (for example `GPUCanvasContext`,
+`GPUExternalTexture`, and external texture imports/copy paths) are implemented
+in the lane Chromium source checkout:
+
+- `browser/chromium_webgpu_lane/src/third_party/blink/renderer/modules/webgpu/`
+
+The `browser/fawn-browser` directory remains planner/gate/probe ownership and does
+not own Blink API surface files directly.
+
 Terminology used in this directory:
 
 1. "browser integration layer"

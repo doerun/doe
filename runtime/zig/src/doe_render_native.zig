@@ -10,6 +10,7 @@ const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
 const ERR_CAP = native.ERR_CAP;
+const label_store = native.label_store;
 
 const DoeDevice = native.DoeDevice;
 const DoeTexture = native.DoeTexture;
@@ -118,13 +119,27 @@ const RenderPipelineDesc = extern struct {
 pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const types.WGPUTextureDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
-    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.format, @intCast(d.usage), d.dimension) orelse return null;
-    const tex = make(DoeTexture) orelse {
-        metal_bridge_release(mtl);
+    const tex = make(DoeTexture) orelse return null;
+    tex.* = .{};
+    if (dev.backend == .vulkan) {
+        const vk_render = @import("doe_vulkan_render_native.zig");
+        if (!vk_render.vulkan_create_texture(dev, tex, d)) {
+            alloc.destroy(tex);
+            return null;
+        }
+        const result = toOpaque(tex);
+        label_store.set(result, d.label.data, d.label.length);
+        return result;
+    }
+    // Metal path.
+    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.format, @intCast(d.usage), d.dimension) orelse {
+        alloc.destroy(tex);
         return null;
     };
     tex.* = .{ .mtl = mtl, .format = d.format, .width = d.size.width, .height = d.size.height };
-    return toOpaque(tex);
+    const result = toOpaque(tex);
+    label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const types.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque {
@@ -137,13 +152,23 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
 
 pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTexture, raw)) |t| {
+        label_store.remove(raw);
+        if (t.vk_id != 0) {
+            const vk_render = @import("doe_vulkan_render_native.zig");
+            vk_render.vulkan_destroy_texture(t);
+            alloc.destroy(t);
+            return;
+        }
         if (t.mtl) |m| metal_bridge_release(m);
         alloc.destroy(t);
     }
 }
 
 pub export fn doeNativeTextureViewRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeTextureView, raw)) |tv| alloc.destroy(tv);
+    if (cast(DoeTextureView, raw)) |tv| {
+        label_store.remove(raw);
+        alloc.destroy(tv);
+    }
 }
 
 // ============================================================
@@ -153,17 +178,40 @@ pub export fn doeNativeTextureViewRelease(raw: ?*anyopaque) callconv(.c) void {
 pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const types.WGPUSamplerDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
-    const mtl = metal_bridge_device_new_sampler(dev.mtl_device, d.minFilter, d.magFilter, d.mipmapFilter, d.addressModeU, d.addressModeV, d.addressModeW, d.lodMinClamp, d.lodMaxClamp, d.maxAnisotropy) orelse return null;
-    const s = make(DoeSampler) orelse {
-        metal_bridge_release(mtl);
+    const s = make(DoeSampler) orelse return null;
+    s.* = .{};
+    if (dev.backend == .vulkan) {
+        const vk_render = @import("doe_vulkan_render_native.zig");
+        if (!vk_render.vulkan_create_sampler(dev, s, d)) {
+            alloc.destroy(s);
+            return null;
+        }
+        const result = toOpaque(s);
+        label_store.set(result, d.label.data, d.label.length);
+        return result;
+    }
+    // Metal path.
+    const mtl = metal_bridge_device_new_sampler(dev.mtl_device, d.minFilter, d.magFilter, d.mipmapFilter, d.addressModeU, d.addressModeV, d.addressModeW, d.lodMinClamp, d.lodMaxClamp, d.maxAnisotropy) orelse {
+        alloc.destroy(s);
         return null;
     };
     s.* = .{ .mtl = mtl };
-    return toOpaque(s);
+    const result = toOpaque(s);
+    label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 pub export fn doeNativeSamplerRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeSampler, raw)) |s| {
+        label_store.remove(raw);
+        if (s.vk_runtime_ref) |rt_ptr| {
+            const NativeVulkanRuntime = native.NativeVulkanRuntime;
+            const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+            const vk_render = @import("doe_vulkan_render_native.zig");
+            vk_render.vulkan_destroy_sampler(s, rt);
+            alloc.destroy(s);
+            return;
+        }
         if (s.mtl) |m| metal_bridge_release(m);
         alloc.destroy(s);
     }
@@ -213,11 +261,24 @@ fn mslStageName(sv: RenderStringView, stage: StageKind, buf: []u8) [*:0]const u8
 
 pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw: ?*anyopaque) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    const pip = make(DoeRenderPipeline) orelse return null;
+    pip.* = .{};
+    if (dev.backend == .vulkan) {
+        const vk_render = @import("doe_vulkan_render_native.zig");
+        if (!vk_render.vulkan_create_render_pipeline(dev, pip, desc_raw orelse {
+            alloc.destroy(pip);
+            return null;
+        })) {
+            alloc.destroy(pip);
+            return null;
+        }
+        return toOpaque(pip);
+    }
     var err_buf: [ERR_CAP]u8 = undefined;
-    const d = @as(*const RenderPipelineDesc, @ptrCast(@alignCast(desc_raw orelse return null)));
-    const frag = d.fragment orelse return null;
-    const vert_mod = cast(DoeShaderModule, d.vertex.module) orelse return null;
-    const frag_mod = cast(DoeShaderModule, frag.module) orelse return null;
+    const d = @as(*const RenderPipelineDesc, @ptrCast(@alignCast(desc_raw orelse { alloc.destroy(pip); return null; })));
+    const frag = d.fragment orelse { alloc.destroy(pip); return null; };
+    const vert_mod = cast(DoeShaderModule, d.vertex.module) orelse { alloc.destroy(pip); return null; };
+    const frag_mod = cast(DoeShaderModule, frag.module) orelse { alloc.destroy(pip); return null; };
 
     // Pixel format from the first fragment target (default rgba8unorm).
     const pixel_format: u32 = if (frag.targetCount > 0)
@@ -242,6 +303,7 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
     if (vfn == null or ffn == null) {
         if (vfn) |f| metal_bridge_release(f);
         if (ffn) |f| metal_bridge_release(f);
+        alloc.destroy(pip);
         return null;
     }
 
@@ -292,23 +354,24 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
     ) orelse {
         if (vfn) |f| metal_bridge_release(f);
         if (ffn) |f| metal_bridge_release(f);
+        alloc.destroy(pip);
         return null;
     };
     // Release function handles — PSO holds its own retain.
     if (vfn) |f| metal_bridge_release(f);
     if (ffn) |f| metal_bridge_release(f);
-    const rp = make(DoeRenderPipeline) orelse { metal_bridge_release(pso); return null; };
-    rp.* = .{
+    pip.* = .{
         .mtl_pso = pso,
         .topology = d.primitive.topology,
         .front_face = d.primitive.frontFace,
         .cull_mode = d.primitive.cullMode,
     };
-    return toOpaque(rp);
+    return toOpaque(pip);
 }
 
 pub export fn doeNativeRenderPipelineRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeRenderPipeline, raw)) |p| {
+        label_store.remove(raw);
         if (p.mtl_pso) |pso| metal_bridge_release(pso);
         alloc.destroy(p);
     }
@@ -345,6 +408,11 @@ pub export fn doeNativeRenderPassSetPipeline(pass_raw: ?*anyopaque, pip_raw: ?*a
 
 pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, instance_count: u32, first_vertex: u32, first_instance: u32) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    if (pass.enc.dev.backend == .vulkan) {
+        const vk_render = @import("doe_vulkan_render_native.zig");
+        vk_render.vulkan_render_pass_draw(pass, vertex_count, instance_count, first_vertex, first_instance);
+        return;
+    }
     const pip = pass.pipeline orelse return;
     pass.enc.cmds.append(alloc, .{ .render_pass = .{
         .pso = pip.mtl_pso,
@@ -394,21 +462,35 @@ pub export fn doeNativeRenderPassSetBindGroup(pass_raw: ?*anyopaque, group_index
 }
 
 pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count: u32, instance_count: u32, first_index: u32, base_vertex: i32, first_instance: u32) callconv(.c) void {
-    _ = cast(DoeRenderPass, pass_raw) orelse return;
+    const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    if (pass.enc.dev.backend == .vulkan) {
+        const vk_render = @import("doe_vulkan_render_native.zig");
+        vk_render.vulkan_render_pass_draw_indexed(pass, index_count, instance_count, first_index, base_vertex, first_instance);
+        return;
+    }
+    // TODO: implement indexed draw for Metal
     _ = index_count;
     _ = instance_count;
     _ = first_index;
     _ = base_vertex;
     _ = first_instance;
-    // TODO: implement indexed draw
 }
 
 pub export fn doeNativeRenderPassEnd(raw: ?*anyopaque) callconv(.c) void {
-    _ = raw;
+    const pass = cast(DoeRenderPass, raw) orelse return;
+    if (pass.enc.dev.backend == .vulkan) {
+        const vk_render = @import("doe_vulkan_render_native.zig");
+        vk_render.vulkan_render_pass_end(pass);
+        return;
+    }
+    // Metal: render pass commands were recorded and will be submitted on queue submit.
 }
 
 pub export fn doeNativeRenderPassRelease(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeRenderPass, raw)) |p| alloc.destroy(p);
+    if (cast(DoeRenderPass, raw)) |p| {
+        label_store.remove(raw);
+        alloc.destroy(p);
+    }
 }
 
 // Full render state: viewport, scissor, blend, MSAA, stencil, depth/stencil pipeline.

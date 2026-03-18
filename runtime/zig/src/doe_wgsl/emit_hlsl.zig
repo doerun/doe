@@ -3,6 +3,7 @@ const ir = @import("ir.zig");
 const maps = @import("emit_hlsl_maps.zig");
 const stage_render = @import("emit_hlsl_stage.zig");
 const texture = @import("emit_hlsl_texture.zig");
+const layout = @import("layout_utils.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -112,31 +113,36 @@ const Emitter = struct {
         for (self.module.globals.items) |global| {
             if ((global.addr_space orelse continue) != .storage) continue;
             if (global.binding == null) continue;
-            const arr = switch (self.module.types.get(global.ty)) {
-                .array => |arr| arr,
-                else => continue,
-            };
-            if (arr.len != null) continue;
-            try self.write("\nuint doe_arrayLength_");
-            try self.write(global.name);
-            try self.write("() {\n");
-            self.indent += 4;
-            try self.write_indent();
-            try self.write("uint count = 0u;\n");
-            try self.write_indent();
-            try self.write("uint stride = 0u;\n");
-            try self.write_indent();
-            try self.write(global.name);
-            try self.write(".GetDimensions(count, stride);\n");
-            try self.write_indent();
-            try self.write("return count;\n");
-            self.indent -= 4;
-            try self.write("}\n");
+            switch (self.module.types.get(global.ty)) {
+                .array => |arr| {
+                    if (arr.len != null) continue;
+                    try self.write("\nuint doe_arrayLength_");
+                    try self.write(global.name);
+                    try self.write("() {\n");
+                    self.indent += 4;
+                    try self.write_indent();
+                    try self.write("uint count = 0u;\n");
+                    try self.write_indent();
+                    try self.write("uint stride = 0u;\n");
+                    try self.write_indent();
+                    try self.write(global.name);
+                    try self.write(".GetDimensions(count, stride);\n");
+                    try self.write_indent();
+                    try self.write("return count;\n");
+                    self.indent -= 4;
+                    try self.write("}\n");
+                },
+                .struct_ => |struct_id| {
+                    // Generate helpers for struct fields that are runtime-sized arrays.
+                    try self.emit_struct_array_length_helpers(global, struct_id);
+                },
+                else => {},
+            }
         }
         for (self.module.globals.items) |global| {
             if (global.binding == null) continue;
             switch (self.module.types.get(global.ty)) {
-                .texture_2d => {
+                .texture_2d, .texture_cube, .texture_depth_cube => {
                     try self.write("\nuint2 doe_textureDimensions_");
                     try self.write(global.name);
                     try self.write("(uint level) {\n");
@@ -150,6 +156,27 @@ const Emitter = struct {
                     try self.write_indent();
                     try self.write(global.name);
                     try self.write(".GetDimensions(level, width, height, levels);\n");
+                    try self.write_indent();
+                    try self.write("return uint2(width, height);\n");
+                    self.indent -= 4;
+                    try self.write("}\n");
+                },
+                .texture_2d_array => {
+                    try self.write("\nuint2 doe_textureDimensions_");
+                    try self.write(global.name);
+                    try self.write("(uint level) {\n");
+                    self.indent += 4;
+                    try self.write_indent();
+                    try self.write("uint width = 0u;\n");
+                    try self.write_indent();
+                    try self.write("uint height = 0u;\n");
+                    try self.write_indent();
+                    try self.write("uint elements = 0u;\n");
+                    try self.write_indent();
+                    try self.write("uint levels = 0u;\n");
+                    try self.write_indent();
+                    try self.write(global.name);
+                    try self.write(".GetDimensions(level, width, height, elements, levels);\n");
                     try self.write_indent();
                     try self.write("return uint2(width, height);\n");
                     self.indent -= 4;
@@ -176,6 +203,45 @@ const Emitter = struct {
             }
         }
     }
+
+    /// Generate arrayLength helpers for runtime-sized array fields inside
+    /// struct-typed storage globals.  Uses GetDimensions on the parent buffer:
+    /// count=1, stride=total_buffer_size.  The array element count is then
+    /// (stride - field_byte_offset) / sizeof(elem).
+    fn emit_struct_array_length_helpers(self: *Emitter, global: ir.Global, struct_id: ir.StructId) EmitError!void {
+        const struct_def = self.module.structs.items[struct_id];
+        for (struct_def.fields.items, 0..) |field, field_idx| {
+            const arr = switch (self.module.types.get(field.ty)) {
+                .array => |a| a,
+                else => continue,
+            };
+            if (arr.len != null) continue;
+            const field_offset = hlsl_struct_field_offset(self.module, struct_def, @intCast(field_idx));
+            const elem_size = hlsl_type_size(self.module, arr.elem);
+            try self.write("\nuint doe_arrayLength_");
+            try self.write(global.name);
+            try self.write("_");
+            try self.write(field.name);
+            try self.write("() {\n");
+            self.indent += 4;
+            try self.write_indent();
+            try self.write("uint count = 0u;\n");
+            try self.write_indent();
+            try self.write("uint stride = 0u;\n");
+            try self.write_indent();
+            try self.write(global.name);
+            try self.write(".GetDimensions(count, stride);\n");
+            try self.write_indent();
+            try self.write("return (stride - ");
+            try self.write_u32(field_offset);
+            try self.write(") / ");
+            try self.write_u32(elem_size);
+            try self.write(";\n");
+            self.indent -= 4;
+            try self.write("}\n");
+        }
+    }
+
     fn emit_bound_global(self: *Emitter, global: ir.Global) EmitError!void {
         const binding = global.binding orelse return error.InvalidIr;
         if (global.addr_space) |addr_space| switch (addr_space) {
@@ -300,7 +366,17 @@ const Emitter = struct {
     }
 
     fn emit_param(self: *Emitter, param: ir.Param) EmitError!void {
-        try self.emit_typed_name(param.ty, param.name);
+        switch (self.module.types.get(param.ty)) {
+            .ref => |ref_ty| {
+                if (ref_ty.access == .read) {
+                    try self.write("in ");
+                } else {
+                    try self.write("inout ");
+                }
+                try self.emit_typed_name(ref_ty.elem, param.name);
+            },
+            else => try self.emit_typed_name(param.ty, param.name),
+        }
         if (param.io) |io_attr| {
             if (io_attr.builtin != .none) {
                 try self.write(" : ");
@@ -528,6 +604,24 @@ const Emitter = struct {
                             else => return error.InvalidIr,
                         }
                     },
+                    .member => |member| {
+                        // arrayLength(&buf.data) — struct field runtime-sized array.
+                        const global_index = hlsl_resolve_member_global(function, member.base) orelse return error.InvalidIr;
+                        const global = self.module.globals.items[global_index];
+                        const struct_id = switch (self.module.types.get(global.ty)) {
+                            .struct_ => |sid| sid,
+                            else => return error.InvalidIr,
+                        };
+                        const struct_def = self.module.structs.items[struct_id];
+                        if (member.field_index >= struct_def.fields.items.len) return error.InvalidIr;
+                        const field = struct_def.fields.items[member.field_index];
+                        try self.write("doe_arrayLength_");
+                        try self.write(global.name);
+                        try self.write("_");
+                        try self.write(field.name);
+                        try self.write("()");
+                        return;
+                    },
                     else => return error.InvalidIr,
                 }
             }
@@ -746,3 +840,108 @@ const Emitter = struct {
         }
     }
 };
+
+/// Walk a chain of member/load expressions to find the root global_ref index.
+fn hlsl_resolve_member_global(function: ir.Function, expr_id: ir.ExprId) ?ir.GlobalId {
+    var current = expr_id;
+    while (true) {
+        switch (function.exprs.items[current].data) {
+            .global_ref => |index| return index,
+            .member => |m| current = m.base,
+            .load => |inner| current = inner,
+            else => return null,
+        }
+    }
+}
+
+/// Compute the byte offset of a field in a struct for storage layout (std430).
+fn hlsl_struct_field_offset(module: *const ir.Module, struct_def: ir.StructDef, target_field: u32) u32 {
+    var offset: u32 = 0;
+    for (struct_def.fields.items[0..target_field]) |field| {
+        const field_align = hlsl_type_alignment(module, field.ty);
+        offset = hlsl_round_up(offset, field_align);
+        offset += hlsl_type_size(module, field.ty);
+    }
+    const target_align = hlsl_type_alignment(module, struct_def.fields.items[target_field].ty);
+    return hlsl_round_up(offset, target_align);
+}
+
+fn hlsl_round_up(value: u32, alignment: u32) u32 {
+    if (alignment <= 1) return value;
+    const remainder = value % alignment;
+    if (remainder == 0) return value;
+    return value + alignment - remainder;
+}
+
+fn hlsl_type_alignment(module: *const ir.Module, ty: ir.TypeId) u32 {
+    return switch (module.types.get(ty)) {
+        .scalar => |s| switch (s) {
+            .f16 => 2,
+            .bool, .i32, .u32, .f32, .abstract_int, .abstract_float => 4,
+            else => 4,
+        },
+        .vector => |v| hlsl_type_alignment(module, v.elem) * switch (v.len) {
+            2 => @as(u32, 2),
+            3, 4 => @as(u32, 4),
+            else => 1,
+        },
+        .matrix => |m| hlsl_type_alignment(module, m.elem) * switch (m.rows) {
+            2 => @as(u32, 2),
+            3, 4 => @as(u32, 4),
+            else => 1,
+        },
+        .array => |a| hlsl_type_alignment(module, a.elem),
+        .atomic => |inner| hlsl_type_alignment(module, inner),
+        .struct_ => |sid| blk: {
+            var max_align: u32 = 1;
+            for (module.structs.items[sid].fields.items) |field| {
+                max_align = @max(max_align, hlsl_type_alignment(module, field.ty));
+            }
+            break :blk max_align;
+        },
+        else => 4,
+    };
+}
+
+fn hlsl_type_size(module: *const ir.Module, ty: ir.TypeId) u32 {
+    return switch (module.types.get(ty)) {
+        .scalar => |s| switch (s) {
+            .f16 => 2,
+            .bool, .i32, .u32, .f32, .abstract_int, .abstract_float => 4,
+            else => 4,
+        },
+        .vector => |v| hlsl_type_size(module, v.elem) * v.len,
+        .matrix => |m| blk: {
+            const col_size = hlsl_type_size(module, m.elem) * m.rows;
+            const col_align = hlsl_type_alignment(module, m.elem) * switch (m.rows) {
+                2 => @as(u32, 2),
+                3, 4 => @as(u32, 4),
+                else => 1,
+            };
+            const stride = hlsl_round_up(col_size, col_align);
+            break :blk stride * m.columns;
+        },
+        .array => |a| blk: {
+            if (a.len) |len| {
+                const elem_size = hlsl_type_size(module, a.elem);
+                const elem_align = hlsl_type_alignment(module, a.elem);
+                const stride = hlsl_round_up(elem_size, elem_align);
+                break :blk stride * len;
+            }
+            break :blk 0;
+        },
+        .atomic => |inner| hlsl_type_size(module, inner),
+        .struct_ => |sid| blk: {
+            var offset: u32 = 0;
+            var max_align: u32 = 1;
+            for (module.structs.items[sid].fields.items) |field| {
+                const field_align = hlsl_type_alignment(module, field.ty);
+                offset = hlsl_round_up(offset, field_align);
+                offset += hlsl_type_size(module, field.ty);
+                max_align = @max(max_align, field_align);
+            }
+            break :blk hlsl_round_up(offset, max_align);
+        },
+        else => 4,
+    };
+}

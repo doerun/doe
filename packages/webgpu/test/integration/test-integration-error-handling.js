@@ -12,6 +12,10 @@ function skip(msg) {
   console.log(`  SKIP: ${msg}`);
 }
 
+function isUnsupportedError(err) {
+  return /unsupported|not supported|not implemented|not available|not wired|is not a function|unavailable/i.test(err?.message ?? String(err));
+}
+
 async function assertRejects(fn, msg) {
   try {
     await fn();
@@ -470,6 +474,79 @@ try {
   assert(threw, "getMappedRange with offset+size > buffer.size throws");
   buf.unmap();
   buf.destroy();
+} catch (err) {
+  failed++;
+  console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+}
+
+// ---------------------------------------------------------------------------
+// t. error scopes expose real captured errors when available
+// ---------------------------------------------------------------------------
+
+console.log("\n--- t. error scopes ---");
+try {
+  assert(typeof device.pushErrorScope === "function", "device.pushErrorScope exists");
+  assert(typeof device.popErrorScope === "function", "device.popErrorScope exists");
+
+  try {
+    const handler = () => {};
+    device.onuncapturederror = handler;
+    assert(device.onuncapturederror === handler, "device.onuncapturederror setter/getter round-trips");
+    device.onuncapturederror = null;
+    assert(device.onuncapturederror === null, "device.onuncapturederror clears to null");
+  } catch (err) {
+    if (isUnsupportedError(err)) {
+      skip(`uncaptured error handler unavailable: ${err?.message ?? err}`);
+    } else {
+      throw err;
+    }
+  }
+
+  let invalidFilterThrew = false;
+  try {
+    device.pushErrorScope("invalid-filter");
+  } catch {
+    invalidFilterThrew = true;
+  }
+  assert(invalidFilterThrew, "pushErrorScope rejects invalid filter");
+
+  let scopeActive = false;
+  try {
+    device.pushErrorScope("validation");
+    scopeActive = true;
+
+    let validationThrew = false;
+    try {
+      device.createQuerySet({ type: "occlusion", count: 2 });
+    } catch {
+      validationThrew = true;
+    }
+    assert(validationThrew, "validation error still surfaces while a scope is active");
+
+    const captured = await device.popErrorScope();
+    scopeActive = false;
+    if (captured == null) {
+      skip("real error-scope capture not available on this package backend");
+    } else {
+      assert(typeof captured === "object", "popErrorScope returns an error object when capture is available");
+      assert(typeof captured.message === "string" && captured.message.length > 0, "captured error has message");
+      if ("type" in captured && captured.type != null) {
+        assert(typeof captured.type === "string", "captured error type is string when present");
+      }
+    }
+  } catch (err) {
+    if (scopeActive) {
+      try {
+        await device.popErrorScope();
+      } catch {}
+    }
+    if (isUnsupportedError(err)) {
+      skip(`error-scope capture unavailable: ${err?.message ?? err}`);
+    } else {
+      failed++;
+      console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+    }
+  }
 } catch (err) {
   failed++;
   console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);

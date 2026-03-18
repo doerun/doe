@@ -42,10 +42,10 @@ WebGPU native execution lane:
   - C API type/function/proc-table contracts
 - `runtime/zig/src/core/abi/wgpu_loader.zig`
   - dynamic proc loading and callback helpers
-- `runtime/zig/src/wgpu_resources.zig`
+- `runtime/zig/src/core/resource/wgpu_resources.zig`
   - buffer/texture/shader/pipeline resource management
 - `runtime/zig/src/wgpu_commands.zig`
-  - upload/copy/barrier/dispatch and command execution glue
+  - command execution glue (sandbox validation, core/full dispatch routing)
 - `runtime/zig/src/wgpu_render_*`
   - render pass/bundle/resource/type-specific surfaces
 - `runtime/zig/src/wgpu_*_procs.zig`

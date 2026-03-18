@@ -63,6 +63,33 @@ Relevant for cache handles and runtime artifact integration behavior.
 
 Track A should avoid coupling to Graphite behavior changes unless explicitly required.
 
+## Browser-facing WebGPU API surface touchpoints (Blink layer)
+
+These files own the browser-side `navigator.gpu` objects, including canvas and external texture surface area.
+
+1. `src/third_party/blink/renderer/modules/webgpu/gpu_canvas_context.idl`
+2. `src/third_party/blink/renderer/modules/webgpu/gpu_canvas_context.h`
+3. `src/third_party/blink/renderer/modules/webgpu/gpu_canvas_context.cc`
+4. `src/third_party/blink/renderer/modules/webgpu/gpu_device.idl`
+5. `src/third_party/blink/renderer/modules/webgpu/gpu_device.h`
+6. `src/third_party/blink/renderer/modules/webgpu/gpu_device.cc`
+7. `src/third_party/blink/renderer/modules/webgpu/gpu_queue.idl`
+8. `src/third_party/blink/renderer/modules/webgpu/gpu_queue.h`
+9. `src/third_party/blink/renderer/modules/webgpu/gpu_queue.cc`
+10. `src/third_party/blink/renderer/modules/webgpu/gpu_external_texture.idl`
+11. `src/third_party/blink/renderer/modules/webgpu/gpu_external_texture.h`
+12. `src/third_party/blink/renderer/modules/webgpu/gpu_external_texture.cc`
+13. `src/third_party/blink/renderer/modules/webgpu/gpu_texture.h`
+14. `src/third_party/blink/renderer/modules/webgpu/gpu_texture.cc`
+15. `src/third_party/blink/renderer/modules/webgpu/gpu_canvas_context_test.cc`
+16. `src/third_party/blink/renderer/modules/webgpu/webgpu_context_test.cc`
+
+`GPUCanvasContext` and `GPUExternalTexture` are Blink-exposed API contracts, so they live in this surface regardless of backend selection.
+
+Concrete merge sequence for these API surfaces is tracked in:
+
+- [chromium-browser-api-surface-merge-queue.md](chromium-browser-api-surface-merge-queue.md)
+
 ## Initial Integration Sequence (Code-Facing)
 
 1. Add selector enum/control surface (`dawn|doe|auto`) in GPU preference flow.

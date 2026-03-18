@@ -29,6 +29,8 @@ const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_bli
 const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
 const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
 const metal_bridge_cmd_buf_encode_blit_copy = bridge.metal_bridge_cmd_buf_encode_blit_copy;
+const metal_bridge_cmd_buf_fill_buffer = bridge.metal_bridge_cmd_buf_fill_buffer;
+const metal_bridge_cmd_buf_copy_texture_to_texture = bridge.metal_bridge_cmd_buf_copy_texture_to_texture;
 const metal_bridge_cmd_buf_encode_compute_dispatch = bridge.metal_bridge_cmd_buf_encode_compute_dispatch;
 const metal_bridge_cmd_buf_encode_compute_dispatch_indirect = bridge.metal_bridge_cmd_buf_encode_compute_dispatch_indirect;
 const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
@@ -137,6 +139,21 @@ pub fn try_schedule_deferred_copy(
 
 pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [*]const ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
+
+    // For the Vulkan C ABI path, commands are executed immediately during
+    // recording (e.g. via doeNativeComputePassDispatch issuing vkCmdDispatch
+    // synchronously). Queue submit therefore only needs to drain the recorded
+    // command buffer handles without re-executing them.
+    if (q.dev.backend == .vulkan) {
+        for (cmd_bufs[0..count]) |raw| {
+            if (cast(DoeCommandBuffer, raw)) |buf| {
+                buf.cmds.deinit(alloc);
+                alloc.destroy(buf);
+            }
+        }
+        return;
+    }
+
     const queue = q.dev.mtl_queue;
 
     // Flush any prior pending GPU work before encoding new commands.
@@ -229,6 +246,31 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                         c.depth_or_array_layers,
                     );
                     metal_bridge_end_blit_encoding(blit);
+                    has_gpu_work = true;
+                },
+                .clear_buffer => |c| {
+                    metal_bridge_cmd_buf_fill_buffer(mtl_cmd, c.buffer, c.offset, c.size);
+                    has_gpu_work = true;
+                },
+                .copy_texture_to_texture => |c| {
+                    metal_bridge_cmd_buf_copy_texture_to_texture(
+                        mtl_cmd,
+                        c.src_texture,
+                        c.src_mip,
+                        c.src_slice,
+                        c.src_x,
+                        c.src_y,
+                        c.src_z,
+                        c.dst_texture,
+                        c.dst_mip,
+                        c.dst_slice,
+                        c.dst_x,
+                        c.dst_y,
+                        c.dst_z,
+                        c.width,
+                        c.height,
+                        c.depth_or_layers,
+                    );
                     has_gpu_work = true;
                 },
                 .dispatch_indirect => |d| {
@@ -378,12 +420,30 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
 /// Flush pending GPU work. Called before CPU reads (mapAsync) and at queue release.
 pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
+    if (q.dev.backend == .vulkan) {
+        const rt = native.device_vk_runtime(q.dev) orelse return;
+        _ = rt.flush_queue() catch {};
+        return;
+    }
     flush_pending_work(q);
 }
 
 pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque, offset: u64, data: [*]const u8, size: usize) callconv(.c) void {
-    _ = q_raw;
+    const q = cast(DoeQueue, q_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
+    if (q.dev.backend == .vulkan) {
+        if (buf.vk_id != 0) {
+            const rt = native.device_vk_runtime(q.dev) orelse return;
+            if (rt.compute_buffers.get(buf.vk_id)) |cb| {
+                if (cb.mapped) |ptr| {
+                    const o: usize = @intCast(offset);
+                    const d: [*]u8 = @ptrCast(ptr);
+                    @memcpy(d[o .. o + size], data[0..size]);
+                }
+            }
+        }
+        return;
+    }
     const contents = metal_bridge_buffer_contents(buf.mtl) orelse return;
     const dst = (contents + @as(usize, @intCast(offset)))[0..size];
     @memcpy(dst, data[0..size]);
@@ -391,6 +451,14 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
 
 pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeQueue, raw)) |q| {
+        native.label_store.remove(raw);
+        if (q.dev.backend == .vulkan) {
+            if (native.device_vk_runtime(q.dev)) |rt| {
+                _ = rt.flush_queue() catch {};
+            }
+            alloc.destroy(q);
+            return;
+        }
         flush_pending_work(q);
         if (q.mtl_event) |ev| metal_bridge_release(ev);
         alloc.destroy(q);

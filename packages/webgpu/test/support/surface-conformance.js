@@ -89,6 +89,18 @@ export async function runSurfaceConformance(api, label = "surface") {
     assertPublishedLimits(adapter.limits, "adapter.limits");
     assert(adapter.limits.maxComputeInvocationsPerWorkgroup > 0, "adapter dynamic limits are available");
 
+    section("adapter.info");
+    const adapterInfo = adapter.info;
+    assert(adapterInfo != null && typeof adapterInfo === "object", "adapter.info is object");
+    assert(Object.isFrozen(adapterInfo), "adapter.info is frozen");
+    assert(typeof adapterInfo.vendor === "string", "adapter.info.vendor is string");
+    assert(typeof adapterInfo.architecture === "string", "adapter.info.architecture is string");
+    assert(typeof adapterInfo.device === "string", "adapter.info.device is string");
+    assert(typeof adapterInfo.description === "string", "adapter.info.description is string");
+    assert(Number.isFinite(adapterInfo.subgroupMinSize) && adapterInfo.subgroupMinSize >= 0, "adapter.info.subgroupMinSize is finite");
+    assert(Number.isFinite(adapterInfo.subgroupMaxSize) && adapterInfo.subgroupMaxSize >= 0, "adapter.info.subgroupMaxSize is finite");
+    assert(adapterInfo.subgroupMaxSize >= adapterInfo.subgroupMinSize, "adapter.info subgroup range is ordered");
+
     section("adapter.requestDevice");
     const deviceFromAdapter = await adapter.requestDevice();
     assert(deviceFromAdapter != null, "adapter.requestDevice returns non-null");
@@ -169,6 +181,15 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
     });
     assert(shaderModule != null, "createShaderModule returns non-null");
     assert(shaderModule._native != null, "shaderModule._native is set");
+    assert(typeof shaderModule.getCompilationInfo === "function", "shaderModule.getCompilationInfo exists");
+    const compilationInfo = await shaderModule.getCompilationInfo();
+    assert(compilationInfo != null && typeof compilationInfo === "object", "shaderModule.getCompilationInfo returns object");
+    assert(Array.isArray(compilationInfo.messages), "shaderModule.getCompilationInfo.messages is array");
+    for (const [index, message] of compilationInfo.messages.entries()) {
+        assert(message != null && typeof message === "object", `compilationInfo.messages[${index}] is object`);
+        assert(typeof message.type === "string", `compilationInfo.messages[${index}].type is string`);
+        assert(typeof message.message === "string", `compilationInfo.messages[${index}].message is string`);
+    }
 
     section("createComputePipeline");
     const pipeline = device.createComputePipeline({

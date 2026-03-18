@@ -1,8 +1,9 @@
-// doe_wgpu_native.zig — Native wgpu* C ABI implementations backed by Metal.
+// doe_wgpu_native.zig — Native wgpu* C ABI implementations backed by Metal or Vulkan.
 // Implements the ~40 functions needed by doe_napi.c without Dawn.
 //
 // Limitations (v0.1):
 // - No reference counting — release destroys immediately.
+// - Vulkan path executes commands immediately (no deferred batching).
 
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
@@ -41,6 +42,12 @@ const MAGIC_SAMPLER: u32 = 0xD0E1_0010;
 const MAGIC_RENDER_PIPE: u32 = 0xD0E1_0011;
 const MAGIC_RENDER_PASS: u32 = 0xD0E1_0012;
 
+// Backend discriminant — selects Metal or Vulkan execution paths at device level.
+pub const BackendKind = enum(u8) { metal = 0, vulkan = 1 };
+
+// NativeVulkanRuntime import — used by buffer create/release and device lifecycle.
+pub const NativeVulkanRuntime = @import("backend/vulkan/native_runtime.zig").NativeVulkanRuntime;
+
 pub const MAX_BIND: usize = 16;
 pub const MAX_RENDER_BIND_GROUPS: usize = 4;
 pub const MAX_COMPUTE_BIND_GROUPS: usize = 4;
@@ -61,6 +68,7 @@ pub const DoeAdapter = struct {
     const TYPE_MAGIC = MAGIC_ADAPTER;
     magic: u32 = TYPE_MAGIC,
     mtl_device: ?*anyopaque = null,
+    backend: BackendKind = .metal,
 };
 
 pub const DoeDevice = struct {
@@ -71,6 +79,9 @@ pub const DoeDevice = struct {
     queue: ?*DoeQueue = null, // cached; getQueue returns this
     // Per-device error scope stack for pushErrorScope/popErrorScope.
     error_scopes: error_scope.ErrorScopeStack = error_scope.ErrorScopeStack.init(),
+    backend: BackendKind = .metal,
+    // Heap-allocated NativeVulkanRuntime; non-null only when backend == .vulkan.
+    vk_runtime: ?*anyopaque = null,
 };
 
 pub const DeferredCopy = struct {
@@ -111,6 +122,10 @@ pub const DoeBuffer = struct {
     size: u64 = 0,
     usage: u64 = 0,
     mapped: bool = false,
+    // Vulkan-only fields: key in NativeVulkanRuntime.compute_buffers and
+    // back-reference to the runtime for cleanup on release.
+    vk_id: u64 = 0,
+    vk_runtime_ref: ?*anyopaque = null,
 };
 
 // Extract @workgroup_size(x[,y[,z]]) from WGSL source via string search.
@@ -164,6 +179,9 @@ pub const DoeShaderModule = struct {
     spirv_data: ?[]const u32 = null,
     // HLSL source text (heap-allocated copy, owned by this module).
     hlsl_source: ?[]const u8 = null,
+    // Original WGSL source (heap-allocated copy, owned by this module).
+    // Retained for re-translation when pipeline override constants are provided.
+    wgsl_source: ?[]const u8 = null,
 };
 
 pub const DoeComputePipeline = struct {
@@ -176,6 +194,8 @@ pub const DoeComputePipeline = struct {
     wg_y: u32 = 0,
     wg_z: u32 = 0,
     needs_sizes_buf: bool = false,
+    // Vulkan-only: heap-allocated SPIR-V words, duplicated from the shader module.
+    spirv_data: ?[]const u32 = null,
 };
 
 pub const DoeBindGroupLayout = struct {
@@ -201,7 +221,7 @@ pub const DoeBindGroup = struct {
     count: u32 = 0,
 };
 
-pub const CmdTag = enum { dispatch, dispatch_indirect, copy_buf, copy_buffer_to_texture, copy_texture_to_buffer, render_pass, write_timestamp, resolve_query_set };
+pub const CmdTag = enum { dispatch, dispatch_indirect, copy_buf, copy_buffer_to_texture, copy_texture_to_buffer, clear_buffer, copy_texture_to_texture, render_pass, write_timestamp, resolve_query_set };
 pub const RecordedCmd = union(CmdTag) {
     dispatch: struct { pso: ?*anyopaque, needs_sizes_buf: bool, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_sizes: [MAX_FLAT_BIND]u64, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32 },
     dispatch_indirect: struct { pso: ?*anyopaque, needs_sizes_buf: bool, bufs: [MAX_FLAT_BIND]?*anyopaque, buf_sizes: [MAX_FLAT_BIND]u64, buf_count: u32, indirect_buf: ?*anyopaque, offset: u64, wg_x: u32 = 0, wg_y: u32 = 0, wg_z: u32 = 0 },
@@ -227,6 +247,28 @@ pub const RecordedCmd = union(CmdTag) {
         width: u32,
         height: u32,
         depth_or_array_layers: u32,
+    },
+    clear_buffer: struct {
+        buffer: ?*anyopaque, // MTLBuffer
+        offset: u64,
+        size: u64,
+    },
+    copy_texture_to_texture: struct {
+        src_texture: ?*anyopaque,
+        src_mip: u32,
+        src_slice: u32,
+        src_x: u32,
+        src_y: u32,
+        src_z: u32,
+        dst_texture: ?*anyopaque,
+        dst_mip: u32,
+        dst_slice: u32,
+        dst_x: u32,
+        dst_y: u32,
+        dst_z: u32,
+        width: u32,
+        height: u32,
+        depth_or_layers: u32,
     },
     render_pass: struct {
         pso: ?*anyopaque,
@@ -296,6 +338,10 @@ pub const DoeTexture = struct {
     height: u32 = 0,
     depth_or_array_layers: u32 = 1,
     dimension: u32 = 0,
+    // Vulkan-only: key in NativeVulkanRuntime.textures and back-reference
+    // to the runtime for explicit release on doeNativeTextureRelease.
+    vk_id: u64 = 0,
+    vk_runtime_ref: ?*anyopaque = null,
 };
 
 pub const DoeTextureView = struct {
@@ -308,6 +354,8 @@ pub const DoeSampler = struct {
     const TYPE_MAGIC = MAGIC_SAMPLER;
     magic: u32 = TYPE_MAGIC,
     mtl: ?*anyopaque = null,
+    // Vulkan-only: back-reference to the runtime for vkDestroySampler on release.
+    vk_runtime_ref: ?*anyopaque = null,
 };
 
 pub const DoeRenderPipeline = struct {
@@ -359,6 +407,13 @@ pub fn toOpaque(p: anytype) ?*anyopaque {
     return @ptrCast(p);
 }
 
+// Cast the vk_runtime opaque pointer on a DoeDevice to NativeVulkanRuntime.
+// Returns null when the device is Metal-backed or the pointer is unset.
+pub fn device_vk_runtime(dev: *DoeDevice) ?*NativeVulkanRuntime {
+    const ptr = dev.vk_runtime orelse return null;
+    return @as(*NativeVulkanRuntime, @ptrCast(@alignCast(ptr)));
+}
+
 // ============================================================
 // Buffer
 // ============================================================
@@ -368,18 +423,56 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
     const d = desc orelse return null;
     const buf = make(DoeBuffer) orelse return null;
     buf.* = .{ .size = d.size, .usage = d.usage };
-    // All buffers shared (Apple Silicon unified memory).
+
+    if (dev.backend == .vulkan) {
+        const rt = device_vk_runtime(dev) orelse { alloc.destroy(buf); return null; };
+        // Use the buffer's heap address as a stable, unique key in the runtime map.
+        const id: u64 = @intFromPtr(buf);
+        buf.vk_id = id;
+        buf.vk_runtime_ref = @ptrCast(rt);
+        const vk_resources = @import("backend/vulkan/vk_resources.zig");
+        const cb = vk_resources.create_compute_buffer(rt, d.size, false) catch {
+            alloc.destroy(buf);
+            return null;
+        };
+        rt.compute_buffers.put(rt.allocator, id, cb) catch {
+            vk_resources.release_compute_buffer(rt, cb);
+            alloc.destroy(buf);
+            return null;
+        };
+        if (d.mappedAtCreation != 0) buf.mapped = true;
+        const result = toOpaque(buf);
+        label_store.set(result, d.label.data, d.label.length);
+        return result;
+    }
+
+    // Metal path: all buffers use shared (unified) memory on Apple Silicon.
     buf.mtl = metal_bridge_device_new_buffer_shared(dev.mtl_device, @intCast(d.size));
     if (buf.mtl == null) {
         alloc.destroy(buf);
         return null;
     }
     if (d.mappedAtCreation != 0) buf.mapped = true;
-    return toOpaque(buf);
+    const result = toOpaque(buf);
+    label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBuffer, raw)) |b| {
+        label_store.remove(raw);
+        if (b.vk_id != 0) {
+            // Destroy the VkBuffer explicitly rather than waiting for device deinit.
+            if (b.vk_runtime_ref) |rt_ptr| {
+                const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+                const vk_resources = @import("backend/vulkan/vk_resources.zig");
+                if (rt.compute_buffers.fetchRemove(b.vk_id)) |entry| {
+                    vk_resources.release_compute_buffer(rt, entry.value);
+                }
+            }
+            alloc.destroy(b);
+            return;
+        }
         if (b.mtl) |m| metal_bridge_release(m);
         alloc.destroy(b);
     }
@@ -407,6 +500,18 @@ pub export fn doeNativeBufferMapAsync(
 pub export fn doeNativeBufferGetConstMappedRange(buf_raw: ?*anyopaque, offset: usize, size: usize) callconv(.c) ?*anyopaque {
     _ = size;
     const buf = cast(DoeBuffer, buf_raw) orelse return null;
+
+    if (buf.vk_id != 0) {
+        // Return a pointer into the persistently-mapped Vulkan host-visible allocation.
+        if (buf.vk_runtime_ref) |rt_ptr| {
+            const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+            const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
+            const base: [*]u8 = @ptrCast(cb.mapped orelse return null);
+            return @ptrCast(base + offset);
+        }
+        return null;
+    }
+
     const contents = metal_bridge_buffer_contents(buf.mtl) orelse return null;
     return @ptrCast(contents + offset);
 }
@@ -458,6 +563,9 @@ pub const doeNativeCommandEncoderCopyBufferToTexture = encoder.doeNativeCommandE
 pub const doeNativeCommandEncoderCopyTextureToBuffer = encoder.doeNativeCommandEncoderCopyTextureToBuffer;
 pub const doeNativeCommandEncoderFinish = encoder.doeNativeCommandEncoderFinish;
 pub const doeNativeCommandBufferRelease = encoder.doeNativeCommandBufferRelease;
+pub const doeNativeCommandEncoderInsertDebugMarker = encoder.doeNativeCommandEncoderInsertDebugMarker;
+pub const doeNativeCommandEncoderPushDebugGroup = encoder.doeNativeCommandEncoderPushDebugGroup;
+pub const doeNativeCommandEncoderPopDebugGroup = encoder.doeNativeCommandEncoderPopDebugGroup;
 
 // Queue submit loop, deferred-work helpers, and queue lifecycle in doe_queue_submit_native.zig.
 const queue_submit = @import("doe_queue_submit_native.zig");
@@ -499,6 +607,9 @@ pub const doeNativeComputePassEnd = compute_ext.doeNativeComputePassEnd;
 pub const doeNativeComputePassRelease = compute_ext.doeNativeComputePassRelease;
 pub const doeNativeComputePipelineGetBindGroupLayout = compute_ext.doeNativeComputePipelineGetBindGroupLayout;
 pub const doeNativeComputePassDispatchIndirect = compute_ext.doeNativeComputePassDispatchIndirect;
+pub const doeNativeComputePassInsertDebugMarker = compute_ext.doeNativeComputePassInsertDebugMarker;
+pub const doeNativeComputePassPushDebugGroup = compute_ext.doeNativeComputePassPushDebugGroup;
+pub const doeNativeComputePassPopDebugGroup = compute_ext.doeNativeComputePassPopDebugGroup;
 
 // Feature queries and device limits in doe_device_caps.zig.
 const caps = @import("doe_device_caps.zig");
@@ -514,6 +625,73 @@ pub const doeNativeCommandEncoderWriteTimestamp = query.doeNativeCommandEncoderW
 pub const doeNativeCommandEncoderResolveQuerySet = query.doeNativeCommandEncoderResolveQuerySet;
 pub const doeNativeQuerySetDestroy = query.doeNativeQuerySetDestroy;
 
+// Canvas format query and DOM EventTarget stubs in doe_canvas_event_native.zig.
+const canvas_event = @import("doe_canvas_event_native.zig");
+pub const doeNativeAdapterGetPreferredCanvasFormat = canvas_event.doeNativeAdapterGetPreferredCanvasFormat;
+pub const doeNativeDeviceAddEventListener = canvas_event.doeNativeDeviceAddEventListener;
+pub const doeNativeDeviceRemoveEventListener = canvas_event.doeNativeDeviceRemoveEventListener;
+
+// Error scope lifecycle (pushErrorScope/popErrorScope/setUncapturedErrorCallback/injectError).
+const error_scope_native = @import("doe_error_scope_native.zig");
+pub const doeNativeDevicePushErrorScope = error_scope_native.doeNativeDevicePushErrorScope;
+pub const doeNativeDevicePopErrorScope = error_scope_native.doeNativeDevicePopErrorScope;
+pub const doeNativeDeviceSetUncapturedErrorCallback = error_scope_native.doeNativeDeviceSetUncapturedErrorCallback;
+pub const doeNativeDeviceInjectError = error_scope_native.doeNativeDeviceInjectError;
+
+// Pipeline cache, multi-adapter, and device-lost callbacks.
+const cache_adapter = @import("doe_cache_adapter_native.zig");
+
+// setImmediates (push constants) and importExternalTexture unsupported stubs in doe_immediates_external_native.zig.
+const immediates_external = @import("doe_immediates_external_native.zig");
+pub const doeNativeBindingCommandsSetImmediates = immediates_external.doeNativeBindingCommandsSetImmediates;
+pub const doeNativeComputePassSetImmediates = immediates_external.doeNativeComputePassSetImmediates;
+pub const doeNativeRenderPassSetImmediates = immediates_external.doeNativeRenderPassSetImmediates;
+pub const doeNativeRenderBundleEncoderSetImmediates = immediates_external.doeNativeRenderBundleEncoderSetImmediates;
+pub const doeNativeDeviceImportExternalTexture = immediates_external.doeNativeDeviceImportExternalTexture;
+
+// RenderPassEncoder control methods (setViewport, setScissorRect, setBlendConstant,
+// setStencilReference, pushDebugGroup, popDebugGroup, insertDebugMarker).
+const render_pass_controls = @import("doe_render_pass_controls_native.zig");
+pub const doeNativeRenderPassSetViewport = render_pass_controls.doeNativeRenderPassSetViewport;
+pub const doeNativeRenderPassSetScissorRect = render_pass_controls.doeNativeRenderPassSetScissorRect;
+pub const doeNativeRenderPassSetBlendConstant = render_pass_controls.doeNativeRenderPassSetBlendConstant;
+pub const doeNativeRenderPassSetStencilReference = render_pass_controls.doeNativeRenderPassSetStencilReference;
+pub const doeNativeRenderPassPushDebugGroup = render_pass_controls.doeNativeRenderPassPushDebugGroup;
+pub const doeNativeRenderPassPopDebugGroup = render_pass_controls.doeNativeRenderPassPopDebugGroup;
+pub const doeNativeRenderPassInsertDebugMarker = render_pass_controls.doeNativeRenderPassInsertDebugMarker;
+
+// GPUAdapter.info native implementation in doe_adapter_info_native.zig.
+const adapter_info = @import("doe_adapter_info_native.zig");
+pub const doeNativeAdapterGetInfo = adapter_info.doeNativeAdapterGetInfo;
+pub const doeNativeAdapterFreeInfo = adapter_info.doeNativeAdapterFreeInfo;
+
+// GPUShaderModule.getCompilationInfo() in doe_shader_compilation_info_native.zig.
+const shader_compilation_info = @import("doe_shader_compilation_info_native.zig");
+pub const doeNativeShaderModuleGetCompilationInfo = shader_compilation_info.doeNativeShaderModuleGetCompilationInfo;
+
+// clearBuffer, copyTextureToTexture, writeTexture in doe_command_texture_native.zig.
+const command_texture = @import("doe_command_texture_native.zig");
+pub const doeNativeCommandEncoderClearBuffer = command_texture.doeNativeCommandEncoderClearBuffer;
+pub const doeNativeCommandEncoderCopyTextureToTexture = command_texture.doeNativeCommandEncoderCopyTextureToTexture;
+pub const doeNativeQueueWriteTexture = command_texture.doeNativeQueueWriteTexture;
+
+// Surface lifecycle (Vulkan) in doe_surface_native.zig.
+const surface_native = @import("doe_surface_native.zig");
+pub const doeNativeInstanceCreateSurface = surface_native.doeNativeInstanceCreateSurface;
+pub const doeNativeSurfaceSetXcbHandle = surface_native.doeNativeSurfaceSetXcbHandle;
+pub const doeNativeSurfaceSetWaylandHandle = surface_native.doeNativeSurfaceSetWaylandHandle;
+pub const doeNativeSurfaceConfigure = surface_native.doeNativeSurfaceConfigure;
+pub const doeNativeSurfaceGetCurrentTexture = surface_native.doeNativeSurfaceGetCurrentTexture;
+pub const doeNativeSurfacePresent = surface_native.doeNativeSurfacePresent;
+pub const doeNativeSurfaceUnconfigure = surface_native.doeNativeSurfaceUnconfigure;
+pub const doeNativeSurfaceRelease = surface_native.doeNativeSurfaceRelease;
+
+// Object debug label store in doe_label_store.zig.
+pub const label_store = @import("doe_label_store.zig");
+pub const doeNativeObjectSetLabel = label_store.doeNativeObjectSetLabel;
+pub const doeNativeObjectGetLabel = label_store.doeNativeObjectGetLabel;
+pub const doeNativeObjectRemoveLabel = label_store.doeNativeObjectRemoveLabel;
+
 comptime {
     _ = instance_device;
     _ = shader;
@@ -524,7 +702,20 @@ comptime {
     _ = compute_ext;
     _ = caps;
     _ = query;
+    _ = canvas_event;
+    _ = error_scope_native;
+    _ = cache_adapter;
+    _ = immediates_external;
+    _ = render_pass_controls;
+    _ = adapter_info;
+    _ = shader_compilation_info;
+    _ = command_texture;
+    _ = surface_native;
     _ = @import("doe_compute_fast.zig");
+    // Render bundle encoder / bundle exports (sharded file).
+    _ = @import("doe_bundle_native.zig");
+    // Object debug label store exports.
+    _ = label_store;
 }
 
 // Instance process events (no-op for sync).

@@ -162,6 +162,21 @@ def parse_args() -> argparse.Namespace:
         help="Which surface(s) to validate in the split coverage gate.",
     )
     parser.add_argument(
+        "--with-spirv-val-gate",
+        action="store_true",
+        help="Run spirv_val_gate.py to validate SPIR-V artifacts with spirv-val.",
+    )
+    parser.add_argument(
+        "--spirv-val-require",
+        action="store_true",
+        help="Fail if spirv-val is not available (default: skip with warning).",
+    )
+    parser.add_argument(
+        "--spirv-val-compile",
+        action="store_true",
+        help="Compile WGSL kernels to SPIR-V before validation.",
+    )
+    parser.add_argument(
         "--with-dropin-proc-resolution-gate",
         action="store_true",
         help="Run dropin_proc_resolution_tests.py in the drop-in phase.",
@@ -345,6 +360,7 @@ def main() -> int:
     trace_gate = bench_dir / "trace_gate.py"
     backend_selection_gate = bench_dir / "backend_selection_gate.py"
     shader_artifact_gate = bench_dir / "shader_artifact_gate.py"
+    spirv_val_gate = bench_dir / "spirv_val_gate.py"
     metal_sync_conformance = bench_dir / "metal_sync_conformance.py"
     metal_timing_policy_gate = bench_dir / "metal_timing_policy_gate.py"
     vulkan_sync_conformance = bench_dir / "vulkan_sync_conformance.py"
@@ -525,6 +541,17 @@ def main() -> int:
             if args.shader_artifact_require_spirv_validation and not spirv_val:
                 shader_artifact_command.append("--require-spirv-validation")
             run_gate("shader-artifact", shader_artifact_command)
+
+        if args.with_spirv_val_gate:
+            spirv_val_command = [
+                sys.executable,
+                str(spirv_val_gate),
+            ]
+            if args.spirv_val_require:
+                spirv_val_command.append("--require")
+            if args.spirv_val_compile:
+                spirv_val_command.append("--compile")
+            run_gate("spirv-val", spirv_val_command)
 
         if args.with_metal_sync_conformance_gate:
             timing_policy_path = Path(args.backend_timing_policy)

@@ -2,8 +2,8 @@ const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_msl_maps.zig");
 const stage_render = @import("emit_msl_stage.zig");
-const texture_builtins = @import("emit_msl_texture.zig");
 const subgroups = @import("emit_msl_subgroups.zig");
+const call_builtins = @import("emit_msl_ir_builtins.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -28,7 +28,7 @@ const Emitter = struct {
     pos: usize = 0,
     indent: usize = 0,
 
-    fn msl_binding_slot(_: *Emitter, binding: ir.BindingPoint) u32 {
+    pub fn msl_binding_slot(_: *Emitter, binding: ir.BindingPoint) u32 {
         return binding.group * BINDINGS_PER_GROUP + binding.binding;
     }
 
@@ -38,7 +38,57 @@ const Emitter = struct {
         for (self.module.globals.items) |global| {
             switch (self.module.types.get(global.ty)) {
                 .array => |arr| if (arr.len == null and stage_render.runtime_array_needs_size_param(self, global.name)) return true,
+                .struct_ => |struct_id| {
+                    // Check if a struct-typed storage global has a runtime-sized
+                    // array field accessed via arrayLength(&buf.field).
+                    if (struct_has_runtime_array_with_array_length(self, struct_id, global.name)) return true;
+                },
                 else => {},
+            }
+        }
+        return false;
+    }
+
+    /// Check if any function calls arrayLength on a member of a struct-typed
+    /// storage global (e.g. arrayLength(&buf.data)).
+    fn struct_has_runtime_array_with_array_length(self: *Emitter, struct_id: ir.StructId, global_name: []const u8) bool {
+        const struct_def = self.module.structs.items[struct_id];
+        // First check the struct actually has a runtime-sized array field.
+        var has_rta = false;
+        for (struct_def.fields.items) |field| {
+            switch (self.module.types.get(field.ty)) {
+                .array => |arr| if (arr.len == null) {
+                    has_rta = true;
+                    break;
+                },
+                else => {},
+            }
+        }
+        if (!has_rta) return false;
+        // Scan expressions for arrayLength calls targeting this global's member.
+        for (self.module.functions.items) |function| {
+            for (function.exprs.items) |expr| {
+                if (expr.data != .call) continue;
+                const call = expr.data.call;
+                if (call.kind != .builtin or !std.mem.eql(u8, call.name, "arrayLength") or call.args.len != 1) continue;
+                const target_expr = function.expr_args.items[call.args.start];
+                switch (function.exprs.items[target_expr].data) {
+                    .member => |member| {
+                        // Walk up to find the global ref.
+                        var base = member.base;
+                        while (true) {
+                            switch (function.exprs.items[base].data) {
+                                .global_ref => |idx| {
+                                    if (std.mem.eql(u8, self.module.globals.items[idx].name, global_name)) return true;
+                                    break;
+                                },
+                                .load => |inner| base = inner,
+                                else => break,
+                            }
+                        }
+                    },
+                    else => {},
+                }
             }
         }
         return false;
@@ -212,9 +262,14 @@ const Emitter = struct {
     }
 
     fn emit_param(self: *Emitter, param: ir.Param) EmitError!void {
-        try self.emit_type(param.ty);
-        try self.write(" ");
-        try self.write(param.name);
+        switch (self.module.types.get(param.ty)) {
+            .ref => |ref_ty| try self.emit_ref_param(ref_ty, param.name),
+            else => {
+                try self.emit_type(param.ty);
+                try self.write(" ");
+                try self.write(param.name);
+            },
+        }
         if (param.io) |io_attr| {
             if (io_attr.builtin != .none) {
                 try self.write(" [[");
@@ -229,6 +284,45 @@ const Emitter = struct {
                 return error.InvalidIr;
             }
         }
+    }
+
+    fn emit_ref_param(self: *Emitter, ref_ty: @FieldType(ir.Type, "ref"), name: []const u8) EmitError!void {
+        switch (ref_ty.addr_space) {
+            .storage => {
+                if (ref_ty.access == .read) {
+                    try self.write("const device ");
+                } else {
+                    try self.write("device ");
+                }
+                switch (self.module.types.get(ref_ty.elem)) {
+                    .array => |arr| {
+                        try self.emit_type(arr.elem);
+                        try self.write("* ");
+                    },
+                    else => {
+                        try self.emit_type(ref_ty.elem);
+                        try self.write("& ");
+                    },
+                }
+            },
+            .uniform => {
+                try self.write("constant ");
+                try self.emit_type(ref_ty.elem);
+                try self.write("& ");
+            },
+            .workgroup => {
+                try self.write("threadgroup ");
+                try self.emit_type(ref_ty.elem);
+                try self.write("& ");
+            },
+            .function, .private => {
+                try self.write("thread ");
+                try self.emit_type(ref_ty.elem);
+                try self.write("& ");
+            },
+            .handle => return error.InvalidIr,
+        }
+        try self.write(name);
     }
 
     pub fn emit_stmt(self: *Emitter, function: ir.Function, stmt_id: ir.StmtId) EmitError!void {
@@ -392,7 +486,7 @@ const Emitter = struct {
                 try self.emit_expr(function, binary.rhs);
                 try self.write(")");
             },
-            .call => |call| try self.emit_call(function, expr.ty, call),
+            .call => |call| try call_builtins.emit_call(self, function, expr.ty, call),
             .construct => |construct| {
                 switch (self.module.types.get(construct.ty)) {
                     .array => {
@@ -423,297 +517,7 @@ const Emitter = struct {
         }
     }
 
-    fn emit_call(self: *Emitter, function: ir.Function, result_ty: ir.TypeId, call: @FieldType(ir.Expr, "call")) EmitError!void {
-        if (call.kind == .builtin) {
-            if (std.mem.eql(u8, call.name, "workgroupBarrier")) {
-                try self.write("threadgroup_barrier(mem_flags::mem_threadgroup)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "storageBarrier")) {
-                try self.write("threadgroup_barrier(mem_flags::mem_device)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "bitcast")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("as_type<");
-                try self.emit_type(result_ty);
-                try self.write(">(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "unpack2x16float")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("float2(as_type<half2>(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write("))");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "pack2x16float")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("as_type<uint>(half2(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write("))");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "unpack4x8unorm")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("(float4(as_type<uchar4>(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")) / 255.0)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "unpack4x8snorm")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("clamp(float4(as_type<char4>(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")) / 127.0, -1.0, 1.0)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "pack4x8unorm")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("as_type<uint>(uchar4(round(clamp(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(", 0.0, 1.0) * 255.0)))");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "pack4x8snorm")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("as_type<uint>(char4(round(clamp(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(", -1.0, 1.0) * 127.0)))");
-                return;
-            }
-            if (try texture_builtins.emit_builtin(self, function, call)) return;
-            if (std.mem.eql(u8, call.name, "atomicLoad")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("atomic_load_explicit(&(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write("), memory_order_relaxed)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicStore")) {
-                if (call.args.len != 2) return error.InvalidIr;
-                try self.write("atomic_store_explicit(&(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write("), ");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(", memory_order_relaxed)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicAdd")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_add_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicSub")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_sub_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicMax")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_max_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicMin")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_min_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicAnd")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_and_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicOr")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_or_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicXor")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_fetch_xor_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "atomicExchange")) {
-                try self.emit_atomic_fetch_explicit(function, call, "atomic_exchange_explicit");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupAdd")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("simd_sum(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupExclusiveAdd")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("simd_prefix_exclusive_sum(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupMin")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("simd_min(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupMax")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("simd_max(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupBroadcast")) {
-                if (call.args.len != 2) return error.InvalidIr;
-                try self.write("simd_broadcast(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(", ");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupShuffle")) {
-                if (call.args.len != 2) return error.InvalidIr;
-                try self.write("simd_shuffle(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(", ");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "subgroupShuffleXor")) {
-                if (call.args.len != 2) return error.InvalidIr;
-                try self.write("simd_shuffle_xor(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(", ");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "inverseSqrt")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("rsqrt(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(")");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "degrees")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(" * 57.29577951308232)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "radians")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                try self.write("(");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write(" * 0.017453292519943295)");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "arrayLength")) {
-                if (call.args.len != 1) return error.InvalidIr;
-                const target_expr = function.expr_args.items[call.args.start];
-                switch (function.exprs.items[target_expr].data) {
-                    .global_ref => |index| {
-                        const global = self.module.globals.items[index];
-                        switch (self.module.types.get(global.ty)) {
-                            .array => |arr| {
-                                if (arr.len != null) return error.InvalidIr;
-                                const binding = global.binding orelse return error.InvalidIr;
-                                // _doe_sizes[N] contains the byte size of buffer slot N.
-                                try self.write("uint(_doe_sizes[");
-                                try self.write_u32(self.msl_binding_slot(binding));
-                                try self.write("] / sizeof(");
-                                try self.emit_type(arr.elem);
-                                try self.write("))");
-                                return;
-                            },
-                            else => return error.InvalidIr,
-                        }
-                    },
-                    else => return error.InvalidIr,
-                }
-            }
-            if (std.mem.eql(u8, call.name, "select")) {
-                if (call.args.len != 3) return error.InvalidIr;
-                try self.write("((");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
-                try self.write(") ? (");
-                try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                try self.write(") : (");
-                try self.emit_expr(function, function.expr_args.items[call.args.start]);
-                try self.write("))");
-                return;
-            }
-            if (std.mem.eql(u8, call.name, "min") or std.mem.eql(u8, call.name, "max") or std.mem.eql(u8, call.name, "clamp")) {
-                try self.emit_concrete_numeric_builtin(function, result_ty, call);
-                return;
-            }
-            if (maps.msl_builtin_passthrough_name(call.name)) |mapped_name| {
-                try self.write(mapped_name);
-                try self.write("(");
-                try self.emit_expr_list(function, call.args);
-                try self.write(")");
-                return;
-            }
-            return error.InvalidIr;
-        }
-        try self.write(call.name);
-        try self.write("(");
-        try self.emit_expr_list(function, call.args);
-        try self.write(")");
-    }
-
-    fn emit_concrete_numeric_builtin(
-        self: *Emitter,
-        function: ir.Function,
-        result_ty: ir.TypeId,
-        call: @FieldType(ir.Expr, "call"),
-    ) EmitError!void {
-        try self.write(call.name);
-        try self.write("(");
-        var i: u32 = 0;
-        while (i < call.args.len) : (i += 1) {
-            if (i > 0) try self.write(", ");
-            try self.emit_expr_coerced(function, function.expr_args.items[call.args.start + i], result_ty);
-        }
-        try self.write(")");
-    }
-
-    fn emit_atomic_fetch_explicit(self: *Emitter, function: ir.Function, call: @FieldType(ir.Expr, "call"), name: []const u8) EmitError!void {
-        if (call.args.len != 2) return error.InvalidIr;
-        try self.write(name);
-        try self.write("(&(");
-        try self.emit_expr(function, function.expr_args.items[call.args.start]);
-        try self.write("), ");
-        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-        try self.write(", memory_order_relaxed)");
-    }
-
-    fn emit_expr_coerced(self: *Emitter, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId) EmitError!void {
-        if (self.expr_needs_concrete_numeric_cast(function, expr_id, target_ty)) {
-            try self.emit_type(target_ty);
-            try self.write("(");
-            try self.emit_expr(function, expr_id);
-            try self.write(")");
-            return;
-        }
-        try self.emit_expr(function, expr_id);
-    }
-
-    fn expr_needs_concrete_numeric_cast(self: *Emitter, function: ir.Function, expr_id: ir.ExprId, target_ty: ir.TypeId) bool {
-        const expr_ty = function.exprs.items[expr_id].ty;
-        if (expr_ty == target_ty) return false;
-        return switch (self.module.types.get(expr_ty)) {
-            .scalar => |expr_scalar| switch (self.module.types.get(target_ty)) {
-                .scalar => |target_scalar| (expr_scalar == .abstract_int and (target_scalar == .i32 or target_scalar == .u32)) or
-                    (expr_scalar == .abstract_float and (target_scalar == .f32 or target_scalar == .f16)),
-                else => false,
-            },
-            else => false,
-        };
-    }
-
-    fn emit_expr_list(self: *Emitter, function: ir.Function, range: ir.Range) EmitError!void {
+    pub fn emit_expr_list(self: *Emitter, function: ir.Function, range: ir.Range) EmitError!void {
         var i: u32 = 0;
         while (i < range.len) : (i += 1) {
             if (i > 0) try self.write(", ");

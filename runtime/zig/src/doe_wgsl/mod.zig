@@ -270,7 +270,7 @@ pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateErro
         setLastError(.ir_validate, TranslateError.InvalidIr, null, null);
         return TranslateError.InvalidIr;
     };
-    ir_transform_robustness.apply(allocator, &module) catch {
+    ir_transform_robustness.apply(allocator, &module, .{}) catch {
         return TranslateError.OutOfMemory;
     };
     return module;
@@ -307,8 +307,16 @@ pub fn extractBindings(allocator: std.mem.Allocator, wgsl: []const u8, out: []Bi
 }
 
 pub fn translateToMsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
+    return translateToMslWithOverrides(allocator, wgsl, out, null, 0);
+}
+
+pub fn translateToMslWithOverrides(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, overrides: ?[*]const ir.OverrideEntry, override_count: usize) TranslateError!usize {
     var module_ir = try analyzeToIr(allocator, wgsl);
     defer module_ir.deinit();
+
+    if (overrides != null and override_count > 0) {
+        applyOverrides(&module_ir, overrides.?[0..override_count]);
+    }
 
     return emit_msl.emit(&module_ir, out) catch |err| {
         const kind = switch (err) {
@@ -318,6 +326,40 @@ pub fn translateToMsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8)
         setLastError(.msl_emit, kind, null, null);
         return kind;
     };
+}
+
+/// Apply pipeline override constants to a compiled IR module.
+/// For each override entry, find the matching global (by numeric @id key or name key)
+/// and replace its initializer value. The override is then demoted to a const so the
+/// emitter outputs a fixed value rather than a pipeline-overridable declaration.
+pub fn applyOverrides(module: *ir.Module, overrides: []const ir.OverrideEntry) void {
+    for (overrides) |entry| {
+        // Try numeric id match first.
+        const numeric_id = std.fmt.parseInt(u32, entry.key, 10) catch null;
+        for (module.globals.items) |*global| {
+            if (global.class != .override_) continue;
+            const matched = if (numeric_id) |id|
+                (global.override_id != null and global.override_id.? == id)
+            else
+                std.mem.eql(u8, global.name, entry.key);
+            if (!matched) continue;
+            // Replace the initializer with the override value.
+            const scalar_type = switch (module.types.get(global.ty)) {
+                .scalar => |s| s,
+                else => continue,
+            };
+            global.initializer = switch (scalar_type) {
+                .bool => .{ .bool = entry.value != 0.0 },
+                .i32, .abstract_int => .{ .int = @bitCast(@as(i64, @intFromFloat(entry.value))) },
+                .u32 => .{ .int = @intFromFloat(entry.value) },
+                .f32, .f16, .abstract_float => .{ .float = entry.value },
+                else => continue,
+            };
+            // Demote to const so emitter outputs a fixed constant.
+            global.class = .const_;
+            break;
+        }
+    }
 }
 
 pub fn translateToHlsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
@@ -433,6 +475,7 @@ test {
     _ = ir_builder;
     _ = ir_validate;
     _ = ir_transform_robustness;
+    _ = @import("ir_transform_robustness_test.zig");
     _ = emit_msl;
     _ = emit_msl_subgroups;
     _ = emit_msl_shared;

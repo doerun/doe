@@ -68,8 +68,12 @@ fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Modu
                 const init_node = tree.extra_data.items[node.data.rhs + 3];
                 if (init_node != NULL_NODE) initializer = try scalar_constant_from_node(tree, init_node);
             },
-            .const_decl, .override_decl => {
+            .const_decl => {
                 if (node.data.rhs != NULL_NODE) initializer = try scalar_constant_from_node(tree, node.data.rhs);
+            },
+            .override_decl => {
+                const init_node = tree.extra_data.items[node.data.lhs + 2];
+                if (init_node != NULL_NODE) initializer = try scalar_constant_from_node(tree, init_node);
             },
             else => {},
         }
@@ -82,6 +86,7 @@ fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Modu
             .binding = global_info.binding,
             .io = global_info.io,
             .initializer = initializer,
+            .override_id = global_info.override_id,
         });
     }
 }

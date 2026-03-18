@@ -51,6 +51,9 @@ pub fn parseKernelBindingKind(raw_kind: ?[]const u8) ?model.KernelBindingResourc
     if (eqIgnoreCase(value, "storage_texture") or eqIgnoreCase(value, "storage_texture_binding") or eqIgnoreCase(value, "storage")) {
         return .storage_texture;
     }
+    if (eqIgnoreCase(value, "sampler") or eqIgnoreCase(value, "filtering_sampler") or eqIgnoreCase(value, "non_filtering_sampler") or eqIgnoreCase(value, "comparison_sampler")) {
+        return .sampler;
+    }
     return null;
 }
 

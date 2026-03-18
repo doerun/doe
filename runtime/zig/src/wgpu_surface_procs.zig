@@ -1,1 +1,11 @@
-pub usingnamespace @import("full/surface/wgpu_surface_procs.zig");
+const _impl = @import("full/surface/wgpu_surface_procs.zig");
+pub const Surface = _impl.Surface;
+pub const SurfaceSourceMetalLayerSType = _impl.SurfaceSourceMetalLayerSType;
+pub const ChainedStruct = _impl.ChainedStruct;
+pub const SurfaceDescriptor = _impl.SurfaceDescriptor;
+pub const SurfaceSourceMetalLayer = _impl.SurfaceSourceMetalLayer;
+pub const SurfaceCapabilities = _impl.SurfaceCapabilities;
+pub const SurfaceConfiguration = _impl.SurfaceConfiguration;
+pub const SurfaceTexture = _impl.SurfaceTexture;
+pub const SurfaceProcs = _impl.SurfaceProcs;
+pub const loadSurfaceProcs = _impl.loadSurfaceProcs;

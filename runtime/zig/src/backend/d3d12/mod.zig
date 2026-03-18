@@ -12,9 +12,9 @@ const artifact_meta = @import("../common/artifact_meta.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
 const artifact_state = @import("../common/artifact_state.zig");
 const hash_utils = @import("../common/hash_utils.zig");
+const artifact_emit = @import("artifact_emit.zig");
 const native_runtime = @import("d3d12_native_runtime.zig");
 
-const SHADER_ARTIFACT_DIR = "bench/out/shader-artifacts";
 const MANIFEST_PATH_CAPACITY: usize = 256;
 
 // Uploads accumulate and flush lazily: flush_pending_uploads_if_required fires
@@ -22,11 +22,9 @@ const MANIFEST_PATH_CAPACITY: usize = 256;
 // This matches Dawn's batched-upload behavior and eliminates per-upload fence overhead.
 const UPLOAD_BATCH_LAZY: u32 = std.math.maxInt(u32);
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
-const MANIFEST_CONTENT_CAPACITY: usize = 2048;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
 const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
-const ZERO_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
@@ -141,29 +139,15 @@ pub const ZigD3D12Backend = struct {
     }
 
     fn manifest_path(self: *const ZigD3D12Backend) ?[]const u8 {
-        if (self.manifest_path_len == 0) return null;
-        return self.manifest_path_storage[0..self.manifest_path_len];
+        return artifact_emit.manifest_path(self);
     }
 
     fn manifest_hash(self: *const ZigD3D12Backend) ?[]const u8 {
-        if (self.manifest_hash_len == 0) return null;
-        return self.manifest_hash_storage[0..self.manifest_hash_len];
-    }
-
-    fn previous_manifest_hash(self: *const ZigD3D12Backend) []const u8 {
-        return self.manifest_hash() orelse ZERO_HASH;
+        return artifact_emit.manifest_hash(self);
     }
 
     fn flush_pending_artifact(self: *ZigD3D12Backend) void {
-        if (!self.pending_artifact_write) return;
-        self.pending_artifact_write = false;
-        const status_code = self.pending_artifact_status_storage[0..self.pending_artifact_status_len];
-        if (manifest_signature_matches(self, self.pending_artifact_module, self.pending_artifact_meta, status_code)) return;
-        self.emit_shader_artifact_manifest_for_signature(
-            self.pending_artifact_module,
-            self.pending_artifact_meta,
-            status_code,
-        ) catch {};
+        artifact_emit.flush_pending_artifact(self);
     }
 
     fn emit_shader_artifact_manifest_for_signature(
@@ -172,49 +156,7 @@ pub const ZigD3D12Backend = struct {
         meta: artifact_meta.ArtifactMeta,
         status_code: []const u8,
     ) common_errors.BackendNativeError!void {
-        self.manifest_emit_count +|= 1;
-
-        var path_buffer: [MANIFEST_PATH_CAPACITY]u8 = undefined;
-        const path = std.fmt.bufPrint(
-            &path_buffer,
-            "{s}/d3d12_shader_artifact_{d}.json",
-            .{ SHADER_ARTIFACT_DIR, self.manifest_emit_count },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        var content_buffer: [MANIFEST_CONTENT_CAPACITY]u8 = undefined;
-        const content = std.fmt.bufPrint(
-            &content_buffer,
-            "{{\"backendId\":\"doe_d3d12\",\"backendKind\":\"{s}\",\"timingSource\":\"{s}\",\"comparability\":\"{s}\",\"claimable\":{},\"module\":\"{s}\",\"statusCode\":\"{s}\",\"previousManifestHash\":\"{s}\"}}\n",
-            .{
-                meta.backend_kind.name(),
-                meta.timing_source.name(),
-                meta.comparability.name(),
-                meta.is_claimable(),
-                module,
-                status_code,
-                self.previous_manifest_hash(),
-            },
-        ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        const hash = hash_utils.sha256_hex(content);
-
-        std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-        const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-        defer file.close();
-        file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-        artifact_state.persist_value(self.manifest_path_storage[0..], &self.manifest_path_len, path);
-        artifact_state.persist_value(self.manifest_hash_storage[0..], &self.manifest_hash_len, hash[0..]);
-        artifact_state.persist_manifest_signature(
-            &self.last_manifest_meta,
-            self.last_manifest_module_storage[0..],
-            &self.last_manifest_module_len,
-            self.last_manifest_status_storage[0..],
-            &self.last_manifest_status_len,
-            module,
-            meta,
-            status_code,
-        );
+        return artifact_emit.emit_shader_artifact_manifest_for_signature(self, module, meta, status_code);
     }
 };
 
@@ -245,6 +187,13 @@ fn native_capability_set() capabilities.CapabilitySet {
         .indexed_indirect_draw,
         .render_pass,
         .render_draw,
+        .on_submitted_work_done,
+        .device_limits,
+        .device_features,
+        .query_set,
+        .depth_stencil,
+        .texture_view,
+        .descriptor_binding,
     });
     return set;
 }
@@ -403,7 +352,7 @@ fn execute_dispatch_indirect_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: mod
 
 fn execute_copy_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.CopyCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
-    const metrics = try rt.execute_copy(cmd);
+    const metrics = try rt.execute_copy(cmd, self.queue_sync_mode);
     return .{
         .status = .ok,
         .status_message = "",
@@ -493,11 +442,13 @@ fn execute_map_async_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.MapAs
 
 fn flush_pending_uploads_if_required(self: *ZigD3D12Backend, command: model.Command) !u64 {
     switch (command) {
-        .upload => return 0,
+        .upload, .copy_buffer_to_texture => return 0,
         else => {},
     }
-    if (self.pending_upload_commands == 0) return 0;
     const rt = try ensure_runtime_bootstrapped(self);
+    const has_pending_uploads = self.pending_upload_commands > 0;
+    const has_pending_copies = rt.streaming_copy_state.has_pending();
+    if (!has_pending_uploads and !has_pending_copies) return 0;
     self.pending_upload_commands = 0;
     return try rt.flush_queue();
 }

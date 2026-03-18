@@ -96,6 +96,82 @@ uint64_t d3d12_bridge_queue_get_timestamp_frequency(D3D12Handle queue);
 void* d3d12_bridge_resource_map(D3D12Handle resource);
 void  d3d12_bridge_resource_unmap(D3D12Handle resource);
 
+/* Device info / adapter queries */
+void d3d12_bridge_device_get_adapter_desc(D3D12Handle device, char* desc_out, size_t desc_size,
+                                           uint32_t* vendor_id_out, uint32_t* device_id_out,
+                                           uint64_t* dedicated_vram_out);
+
+/* Depth/stencil views */
+D3D12Handle d3d12_bridge_device_create_dsv_heap(D3D12Handle device, uint32_t num_descriptors);
+void d3d12_bridge_device_create_dsv(D3D12Handle device, D3D12Handle resource, D3D12Handle dsv_heap,
+                                     uint32_t index, uint32_t format);
+D3D12Handle d3d12_bridge_device_create_depth_texture(D3D12Handle device, uint32_t width,
+                                                       uint32_t height, uint32_t format);
+
+/* CBV/SRV/UAV descriptor heap */
+D3D12Handle d3d12_bridge_device_create_cbv_srv_uav_heap(D3D12Handle device, uint32_t num_descriptors);
+void d3d12_bridge_device_create_cbv(D3D12Handle device, D3D12Handle heap, uint32_t index,
+                                     D3D12Handle buffer, uint64_t offset, uint32_t size);
+void d3d12_bridge_device_create_srv_buffer(D3D12Handle device, D3D12Handle heap, uint32_t index,
+                                            D3D12Handle buffer, uint32_t num_elements, uint32_t stride);
+void d3d12_bridge_device_create_uav_buffer(D3D12Handle device, D3D12Handle heap, uint32_t index,
+                                            D3D12Handle buffer, uint32_t num_elements, uint32_t stride);
+void d3d12_bridge_device_create_srv_texture(D3D12Handle device, D3D12Handle heap, uint32_t index,
+                                             D3D12Handle texture, uint32_t format);
+void d3d12_bridge_device_create_srv_texture_2d(D3D12Handle device, D3D12Handle resource,
+                                                D3D12Handle heap, uint32_t index, uint32_t format,
+                                                uint32_t base_mip, uint32_t mip_count);
+void d3d12_bridge_device_create_srv_texture_cube(D3D12Handle device, D3D12Handle resource,
+                                                  D3D12Handle heap, uint32_t index, uint32_t format,
+                                                  uint32_t base_mip, uint32_t mip_count);
+void d3d12_bridge_device_create_srv_texture_3d(D3D12Handle device, D3D12Handle resource,
+                                                D3D12Handle heap, uint32_t index, uint32_t format,
+                                                uint32_t base_mip, uint32_t mip_count);
+void d3d12_bridge_device_create_uav_texture_2d(D3D12Handle device, D3D12Handle resource,
+                                                D3D12Handle heap, uint32_t index, uint32_t format,
+                                                uint32_t mip_slice);
+void d3d12_bridge_command_list_set_descriptor_heaps(D3D12Handle cmd_list,
+                                                     D3D12Handle cbv_srv_uav_heap,
+                                                     D3D12Handle sampler_heap);
+
+/* Descriptor range for root signature tables — must match Zig DescriptorRangeDesc layout */
+typedef struct {
+    uint32_t range_type;
+    uint32_t num_descriptors;
+    uint32_t base_shader_register;
+    uint32_t register_space;
+} D3D12DescriptorRangeDesc;
+
+/* Root signature with descriptor table parameters (simple count-based, single register space) */
+D3D12Handle d3d12_bridge_device_create_root_signature_with_ranges(D3D12Handle device,
+                                                                    uint32_t num_cbv, uint32_t num_srv,
+                                                                    uint32_t num_uav, uint32_t num_samplers);
+
+/* Root signature from explicit range array (multi-space, used by Zig descriptor module) */
+D3D12Handle d3d12_bridge_device_create_root_signature_with_tables(D3D12Handle device,
+                                                                     const D3D12DescriptorRangeDesc* ranges,
+                                                                     uint32_t range_count, uint32_t flags);
+
+/* Compute/graphics root descriptor table binding */
+void d3d12_bridge_command_list_set_compute_root_descriptor_table(D3D12Handle cmd_list,
+                                                                   uint32_t root_parameter_index,
+                                                                   D3D12Handle heap,
+                                                                   uint32_t base_descriptor_index);
+void d3d12_bridge_command_list_set_graphics_root_descriptor_table(D3D12Handle cmd_list,
+                                                                    uint32_t root_parameter_index,
+                                                                    D3D12Handle heap,
+                                                                    uint32_t base_descriptor_index);
+
+/* Occlusion and pipeline statistics queries */
+D3D12Handle d3d12_bridge_device_create_occlusion_query_heap(D3D12Handle device, uint32_t count);
+D3D12Handle d3d12_bridge_device_create_pipeline_statistics_query_heap(D3D12Handle device, uint32_t count);
+void d3d12_bridge_command_list_begin_query(D3D12Handle cmd_list, D3D12Handle query_heap, uint32_t index);
+
+/* 3D texture */
+D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device, uint32_t width, uint32_t height,
+                                                    uint32_t depth, uint32_t mip_levels,
+                                                    uint32_t format, uint32_t usage_flags);
+
 /* DXGI swap chain (surface) */
 D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue, uint32_t width, uint32_t height, uint32_t format);
 int  d3d12_bridge_swap_chain_present(D3D12Handle swap_chain, uint32_t sync_interval);

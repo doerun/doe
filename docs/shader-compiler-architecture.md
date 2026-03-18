@@ -242,8 +242,8 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 | Semantic analysis | sema, sema_attrs, sema_body, sema_helpers, sema_resolve, sema_types | 1,821 | Production, sharded |
 | IR + validation | ir, ir_builder, ir_validate | 1,263 | Production |
 | IR → MSL | emit_msl, emit_msl_ir, emit_msl_maps, emit_msl_stage, emit_msl_texture | 1,206 | Production, compute + vertex/fragment |
-| IR → HLSL | emit_hlsl, emit_hlsl_maps, emit_hlsl_stage | 1,059 | Production, compute + vertex/fragment |
-| IR → SPIR-V | emit_spirv, emit_spirv_builtins, emit_spirv_fn, emit_spirv_stages, spirv_builder | 2,843 | Working, compute-first with vertex/fragment stage support; samplers/graphics incomplete |
+| IR → HLSL | emit_hlsl, emit_hlsl_maps, emit_hlsl_stage | 1,059 | Production, compute + vertex/fragment (struct I/O, builtins, MRT, frag_depth, interpolation) |
+| IR → SPIR-V | emit_spirv, emit_spirv_builtins, emit_spirv_fn, emit_spirv_stages, spirv_builder | 2,843 | Working, compute + vertex/fragment (struct I/O, builtins, MRT, frag_depth, interpolation); samplers/graphics incomplete |
 | IR → DXIL | emit_dxil | 383 | Stub |
 | Legacy MSL | doe_wgsl_msl | 641 | Legacy regex-based path |
 | Public API + tests | mod.zig, mod_test.zig | 1,920 | All four translateTo* wired |
@@ -258,9 +258,9 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
      - broader texture/storage-texture format coverage
      - graphics-stage IO and render-pipeline integration
 
-2. **Graphics pipeline integration is still not implemented.**
-   - Vertex/fragment builtins and stage IO are parsed, lowered to IR, and emitted by all backends.
-   - Render pipeline lowering, location/interpolation assignment, and graphics-stage runtime integration remain open.
+2. **Shader-side vertex/fragment emission is functional across all backends.**
+   - Vertex/fragment builtins, stage IO, struct I/O decomposition, inter-stage locations, interpolation decorations, MRT, frag_depth, and discard are parsed, lowered to IR, and emitted correctly by MSL, HLSL, and SPIR-V.
+   - Render pipeline runtime integration (render pass wiring, location assignment at pipeline creation, draw command encoding) remains open.
 
 3. **SPIR-V validation/build proof is still outstanding.**
    - The native SPIR-V path has moved well beyond the original stub state, but it still needs an actual build/validation pass (`zig build`, `spirv-val`) to prove the current emitter/runtime integration.

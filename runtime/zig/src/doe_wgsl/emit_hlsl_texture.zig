@@ -196,7 +196,7 @@ pub fn emit_texture_builtin(
                 try ctx.write("doe_textureDimensions_");
                 try ctx.write(global.name);
                 switch (module.types.get(global.ty)) {
-                    .texture_2d => {
+                    .texture_2d, .texture_cube, .texture_depth_cube, .texture_2d_array => {
                         if (args.len != 2) return error.InvalidIr;
                         try ctx.write("(uint(");
                         try ctx.emit_expr(function, function.expr_args.items[args.start + 1]);

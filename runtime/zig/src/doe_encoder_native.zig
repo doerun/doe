@@ -11,6 +11,7 @@ const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
 const MAX_BIND = native.MAX_BIND;
+const label_store = native.label_store;
 
 const DoeDevice = native.DoeDevice;
 const DoeBuffer = native.DoeBuffer;
@@ -32,15 +33,17 @@ const DoePipelineLayoutLocal = struct {
 // Command Encoder / Command Buffer
 
 pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const types.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque {
-    _ = desc;
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const enc = make(DoeCommandEncoder) orelse return null;
     enc.* = .{ .dev = dev };
-    return toOpaque(enc);
+    const result = toOpaque(enc);
+    if (desc) |d| label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeCommandEncoder, raw)) |e| {
+        label_store.remove(raw);
         e.cmds.deinit(alloc);
         alloc.destroy(e);
     }
@@ -58,6 +61,26 @@ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyop
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src = cast(DoeBuffer, src_raw) orelse return;
     const dst = cast(DoeBuffer, dst_raw) orelse return;
+    if (enc.dev.backend == .vulkan) {
+        const rt = native.device_vk_runtime(enc.dev) orelse return;
+        if (src.vk_id != 0 and dst.vk_id != 0) {
+            if (rt.compute_buffers.get(src.vk_id)) |scb| {
+                if (rt.compute_buffers.get(dst.vk_id)) |dcb| {
+                    if (scb.mapped) |sptr| {
+                        if (dcb.mapped) |dptr| {
+                            const n: usize = @intCast(size);
+                            const so: usize = @intCast(src_off);
+                            const do: usize = @intCast(dst_off);
+                            const s: [*]const u8 = @ptrCast(sptr);
+                            const d: [*]u8 = @ptrCast(dptr);
+                            @memcpy(d[do .. do + n], s[so .. so + n]);
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    }
     enc.cmds.append(alloc, .{ .copy_buf = .{
         .src = src.mtl,
         .src_off = src_off,
@@ -82,6 +105,33 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src_buffer = cast(DoeBuffer, src_buffer_raw) orelse return;
     const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
+    if (enc.dev.backend == .vulkan) {
+        const rt = native.device_vk_runtime(enc.dev) orelse return;
+        if (src_buffer.vk_id != 0 and dst_texture.vk_id != 0) {
+            if (rt.compute_buffers.get(src_buffer.vk_id)) |scb| {
+                if (scb.mapped) |mapped_ptr| {
+                    const rows = if (src_rows_per_image > 0) src_rows_per_image else height;
+                    const byte_count: usize = @intCast(@as(u64, src_bytes_per_row) * rows * depth_or_array_layers);
+                    const base_off: usize = @intCast(src_offset);
+                    const raw: [*]const u8 = @ptrCast(mapped_ptr);
+                    const model = @import("model.zig");
+                    const copy_res = model.CopyTextureResource{
+                        .handle = dst_texture.vk_id,
+                        .width = width,
+                        .height = height,
+                        .depth_or_array_layers = depth_or_array_layers,
+                        .mip_level = dst_mip_level,
+                        .bytes_per_row = src_bytes_per_row,
+                        .rows_per_image = rows,
+                    };
+                    rt.texture_write(.{ .texture = copy_res, .data = raw[base_off .. base_off + byte_count] }) catch |err| {
+                        std.log.err("doe_encoder_native: copyBufferToTexture Vulkan failed: {s}", .{@errorName(err)});
+                    };
+                }
+            }
+        }
+        return;
+    }
     enc.cmds.append(alloc, .{ .copy_buffer_to_texture = .{
         .src_buffer = src_buffer.mtl,
         .src_offset = src_offset,
@@ -110,6 +160,10 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src_texture = cast(DoeTexture, src_texture_raw) orelse return;
     const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
+    if (enc.dev.backend == .vulkan) {
+        std.log.warn("doe_encoder_native: copyTextureToBuffer not yet supported on Vulkan path", .{});
+        return;
+    }
     enc.cmds.append(alloc, .{ .copy_texture_to_buffer = .{
         .src_texture = src_texture.mtl,
         .src_mip_level = src_mip_level,
@@ -124,17 +178,39 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
 }
 
 pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const types.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
-    _ = desc;
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const cb = make(DoeCommandBuffer) orelse return null;
     cb.* = .{ .dev = enc.dev, .cmds = enc.cmds };
     enc.cmds = .{}; // Transfer ownership.
-    return toOpaque(cb);
+    const result = toOpaque(cb);
+    if (desc) |d| label_store.set(result, d.label.data, d.label.length);
+    return result;
 }
 
 pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeCommandBuffer, raw)) |cb| {
+        label_store.remove(raw);
         cb.cmds.deinit(alloc);
         alloc.destroy(cb);
     }
 }
+
+// ============================================================
+// Debug markers — no-ops in headless runtime; symbols required for API surface completeness.
+// ============================================================
+
+pub export fn doeNativeCommandEncoderInsertDebugMarker(
+    _: ?*anyopaque,
+    _: ?[*]const u8,
+    _: usize,
+) callconv(.c) void {}
+
+pub export fn doeNativeCommandEncoderPushDebugGroup(
+    _: ?*anyopaque,
+    _: ?[*]const u8,
+    _: usize,
+) callconv(.c) void {}
+
+pub export fn doeNativeCommandEncoderPopDebugGroup(
+    _: ?*anyopaque,
+) callconv(.c) void {}

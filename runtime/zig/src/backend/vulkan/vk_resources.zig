@@ -1,12 +1,13 @@
-// Buffer and texture resource management for the Vulkan backend.
+// Buffer, texture, and sampler resource management for the Vulkan backend.
 //
 // Handles compute buffer lifecycle, texture creation/destroy/layout
-// transitions, and format helpers.
+// transitions, sampler lifecycle, and format helpers.
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_upload = @import("vk_upload.zig");
+const vk_formats = @import("vk_formats.zig");
 const model = @import("../../model.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
@@ -357,6 +358,7 @@ pub fn create_texture_resource(
 
     try c.check_vk(c.vkBindImageMemory(self.device, image, memory, 0));
 
+    const aspect_mask = vk_formats.aspect_mask_for_format(texture.format);
     var view_info = c.VkImageViewCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = null,
@@ -371,7 +373,7 @@ pub fn create_texture_resource(
             .a = c.VK_COMPONENT_SWIZZLE_IDENTITY,
         },
         .subresourceRange = .{
-            .aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask = aspect_mask,
             .baseMipLevel = 0,
             .levelCount = mip_levels,
             .baseArrayLayer = 0,
@@ -433,7 +435,7 @@ pub fn transition_texture_layout(
         .dstQueueFamilyIndex = std.math.maxInt(u32),
         .image = texture.image,
         .subresourceRange = .{
-            .aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask = vk_formats.aspect_mask_for_format(texture.format),
             .baseMipLevel = 0,
             .levelCount = texture.mip_levels,
             .baseArrayLayer = 0,
@@ -483,10 +485,7 @@ pub fn effective_texture_usage(requested: model.WGPUFlags) model.WGPUFlags {
 }
 
 pub fn texture_format_to_vk(format: model.WGPUTextureFormat) !u32 {
-    return switch (format) {
-        model.WGPUTextureFormat_RGBA8Unorm => c.VK_FORMAT_R8G8B8A8_UNORM,
-        else => error.UnsupportedFeature,
-    };
+    return vk_formats.wgpu_format_to_vk_format(format);
 }
 
 pub fn image_usage_for_texture(usage: model.WGPUFlags) u32 {
@@ -499,8 +498,83 @@ pub fn image_usage_for_texture(usage: model.WGPUFlags) u32 {
 }
 
 pub fn bytes_per_pixel_for_texture_format(format: model.WGPUTextureFormat) u32 {
-    return switch (format) {
-        model.WGPUTextureFormat_RGBA8Unorm => 4,
-        else => 4,
+    return vk_formats.bytes_per_pixel(format) catch 4;
+}
+
+// --- Sampler resource management ---
+
+// WebGPU filter/address mode constants for sampler translation.
+const WGPU_FILTER_LINEAR: u32 = 2;
+const WGPU_ADDRESS_MODE_REPEAT: u32 = 2;
+const WGPU_ADDRESS_MODE_MIRROR_REPEAT: u32 = 3;
+const VK_SAMPLER_ADDRESS_MODE_REPEAT: u32 = 0;
+const VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT: u32 = 1;
+const VK_FILTER_LINEAR: u32 = 1;
+const VK_SAMPLER_MIPMAP_MODE_LINEAR: u32 = 1;
+
+fn wgpu_filter_to_vk(filter: u32) u32 {
+    return if (filter == WGPU_FILTER_LINEAR) VK_FILTER_LINEAR else c.VK_FILTER_NEAREST;
+}
+
+fn wgpu_mipmap_to_vk(filter: u32) u32 {
+    return if (filter == WGPU_FILTER_LINEAR) VK_SAMPLER_MIPMAP_MODE_LINEAR else c.VK_SAMPLER_MIPMAP_MODE_NEAREST;
+}
+
+fn wgpu_address_to_vk(mode: u32) u32 {
+    return switch (mode) {
+        WGPU_ADDRESS_MODE_REPEAT => VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        WGPU_ADDRESS_MODE_MIRROR_REPEAT => VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+        else => c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
     };
+}
+
+pub fn create_sampler(self: *Runtime, cmd: model.SamplerCreateCommand) !c.VkSampler {
+    var create_info = c.VkSamplerCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .magFilter = wgpu_filter_to_vk(cmd.mag_filter),
+        .minFilter = wgpu_filter_to_vk(cmd.min_filter),
+        .mipmapMode = wgpu_mipmap_to_vk(cmd.mipmap_filter),
+        .addressModeU = wgpu_address_to_vk(cmd.address_mode_u),
+        .addressModeV = wgpu_address_to_vk(cmd.address_mode_v),
+        .addressModeW = wgpu_address_to_vk(cmd.address_mode_w),
+        .mipLodBias = 0.0,
+        .anisotropyEnable = c.VK_FALSE,
+        .maxAnisotropy = @floatFromInt(cmd.max_anisotropy),
+        .compareEnable = c.VK_FALSE,
+        .compareOp = c.VK_COMPARE_OP_NEVER,
+        .minLod = cmd.lod_min_clamp,
+        .maxLod = cmd.lod_max_clamp,
+        .borderColor = c.VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        .unnormalizedCoordinates = c.VK_FALSE,
+    };
+
+    var vk_sampler: c.VkSampler = c.VK_NULL_U64;
+    try c.check_vk(c.vkCreateSampler(self.device, &create_info, null, &vk_sampler));
+
+    const gop = try self.samplers.getOrPut(self.allocator, cmd.handle);
+    if (gop.found_existing and gop.value_ptr.* != c.VK_NULL_U64) {
+        c.vkDestroySampler(self.device, gop.value_ptr.*, null);
+    }
+    gop.value_ptr.* = vk_sampler;
+    return vk_sampler;
+}
+
+pub fn destroy_sampler(self: *Runtime, handle: u64) void {
+    if (self.samplers.fetchRemove(handle)) |entry| {
+        if (entry.value != c.VK_NULL_U64) {
+            c.vkDestroySampler(self.device, entry.value, null);
+        }
+    }
+}
+
+pub fn release_samplers(self: *Runtime) void {
+    var iterator = self.samplers.valueIterator();
+    while (iterator.next()) |vk_sampler| {
+        if (vk_sampler.* != c.VK_NULL_U64) {
+            c.vkDestroySampler(self.device, vk_sampler.*, null);
+        }
+    }
+    self.samplers.deinit(self.allocator);
 }

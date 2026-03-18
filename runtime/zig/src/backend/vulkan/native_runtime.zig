@@ -18,9 +18,11 @@ const vulkan_surface = @import("vulkan_surface.zig");
 
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
+const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
 const vk_resources = @import("vk_resources.zig");
+const vk_formats = @import("vk_formats.zig");
 const vk_render = @import("vk_render.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
@@ -54,6 +56,11 @@ pub const NativeVulkanRuntime = struct {
     command_pool: c.VkCommandPool = VK_NULL_U64,
     primary_command_buffer: c.VkCommandBuffer = null,
     fence: c.VkFence = VK_NULL_U64,
+    fence_pool_state: vk_sync.FencePool = .{},
+    timeline_semaphore: vk_sync.TimelineSemaphore = .{},
+    streaming_copy_buffer: c.VkCommandBuffer = null,
+    streaming_copy_active: bool = false,
+    streaming_copy_count: u32 = 0,
 
     shader_module: c.VkShaderModule = VK_NULL_U64,
     pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
@@ -82,12 +89,16 @@ pub const NativeVulkanRuntime = struct {
     hot_dst_pool_size: u64 = 0,
     compute_buffers: std.AutoHashMapUnmanaged(u64, vk_resources.ComputeBuffer) = .{},
     textures: std.AutoHashMapUnmanaged(u64, vk_resources.TextureResource) = .{},
+    samplers: std.AutoHashMapUnmanaged(u64, c.VkSampler) = .{},
 
     has_instance: bool = false,
     has_device: bool = false,
     has_command_pool: bool = false,
     has_primary_command_buffer: bool = false,
     has_fence: bool = false,
+    has_fence_pool: bool = false,
+    has_timeline_semaphore: bool = false,
+    has_streaming_copy_buffer: bool = false,
     has_shader_module: bool = false,
     has_pipeline_layout: bool = false,
     has_pipeline: bool = false,
@@ -122,6 +133,15 @@ pub const NativeVulkanRuntime = struct {
         vk_pipeline.destroy_descriptor_state(self);
         vk_resources.release_compute_buffers(self);
         vk_resources.release_textures(self);
+        vk_resources.release_samplers(self);
+        if (self.has_timeline_semaphore) {
+            self.timeline_semaphore.deinit(self.device);
+            self.has_timeline_semaphore = false;
+        }
+        if (self.has_fence_pool) {
+            self.fence_pool_state.deinit(self.device);
+            self.has_fence_pool = false;
+        }
         if (self.has_fence) {
             c.vkDestroyFence(self.device, self.fence, null);
             self.has_fence = false;
@@ -289,7 +309,12 @@ pub const NativeVulkanRuntime = struct {
             const wait_all: c.VkBool32 = if (queue_wait_mode == .wait_any) c.VK_FALSE else c.VK_TRUE;
             try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), wait_all, vk_upload.WAIT_TIMEOUT_NS));
         } else {
-            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+            // Deferred: use fence pool so drain can wait per-submission
+            const deferred_fence = if (self.has_fence_pool)
+                try self.fence_pool_state.acquire(self.device)
+            else
+                VK_NULL_U64;
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
             self.has_deferred_submissions = true;
         }
         const submit_end = common_timing.now_ns();
@@ -328,6 +353,25 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn flush_queue(self: *NativeVulkanRuntime) !u64 {
         return vk_upload.flush_queue(self);
+    }
+
+    // --- Streaming copy API ---
+
+    pub fn begin_streaming_copy(self: *NativeVulkanRuntime) !void {
+        return vk_upload.begin_streaming_copy(self);
+    }
+
+    pub fn streaming_copy_buffer_to_buffer(self: *NativeVulkanRuntime, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
+        return vk_upload.streaming_copy_buffer_to_buffer(self, src, dst, size);
+    }
+
+    pub fn flush_streaming_copy(self: *NativeVulkanRuntime, wait: bool) !void {
+        return vk_upload.flush_streaming_copy(self, wait);
+    }
+
+    /// Query whether the timeline semaphore extension is available.
+    pub fn timeline_semaphore_available(self: *const NativeVulkanRuntime) bool {
+        return self.has_timeline_semaphore;
     }
 
     pub fn prewarm_upload_path(
@@ -462,7 +506,7 @@ pub const NativeVulkanRuntime = struct {
                 0,
             .bufferImageHeight = cmd_arg.texture.rows_per_image,
             .imageSubresource = .{
-                .aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask = vk_formats.aspect_mask_for_format(cmd_arg.texture.format),
                 .mipLevel = cmd_arg.texture.mip_level,
                 .baseArrayLayer = 0,
                 .layerCount = 1,
@@ -528,6 +572,16 @@ pub const NativeVulkanRuntime = struct {
         if (self.textures.fetchRemove(cmd_arg.handle)) |entry| {
             vk_resources.release_texture_resource(self, entry.value);
         }
+    }
+
+    // --- Sampler commands ---
+
+    pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model.SamplerCreateCommand) !void {
+        _ = try vk_resources.create_sampler(self, cmd);
+    }
+
+    pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model.SamplerDestroyCommand) !void {
+        vk_resources.destroy_sampler(self, cmd.handle);
     }
 
     // --- Surface lifecycle ---

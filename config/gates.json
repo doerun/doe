@@ -30,9 +30,9 @@
     "performance": {
       "metric": "submit_latency_p95_ms",
       "maxRegressionPercent": 2.0,
-      "thresholdStatus": "bootstrap_placeholder",
+      "thresholdStatus": "active",
       "baselineRefs": ["dawn", "wgpu"],
-      "notes": "Reported in v0, not merge-blocking until baseline stabilizes."
+      "notes": "Advisory in v0. Regression threshold enforced when baseline evidence exists for the target backend lane."
     },
     "trace": {
       "requireTraceArtifact": true,

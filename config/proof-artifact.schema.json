@@ -3,7 +3,7 @@
   "title": "Fawn Proof Artifact",
   "description": "Machine-readable artifact emitted by Lean proof extraction. Compilation of the extraction module verifies all listed theorems. Decidable propositions are additionally evaluated at runtime.",
   "type": "object",
-  "required": ["schemaVersion", "status", "contractHashes", "theorems", "evaluatedConditions", "eliminationTargets"],
+  "required": ["schemaVersion", "status", "contractHashes", "theorems", "evaluatedConditions", "eliminationTargets", "boundsEliminations"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": {
@@ -76,6 +76,37 @@
           "runtimePath": {
             "type": "string",
             "description": "Zig source path and function where the runtime branch can be eliminated."
+          }
+        }
+      }
+    },
+    "boundsEliminations": {
+      "type": "array",
+      "description": "Proven bounds conditions that allow the robustness transform to elide clamps. Each entry maps a Lean theorem to an index access pattern that is provably safe under stated preconditions.",
+      "items": {
+        "type": "object",
+        "required": ["theorem", "pattern", "precondition", "eliminates", "runtimePath"],
+        "additionalProperties": false,
+        "properties": {
+          "theorem": {
+            "type": "string",
+            "description": "Lean theorem name proving the bounds condition."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Index access pattern matched by the robustness transform."
+          },
+          "precondition": {
+            "type": "string",
+            "description": "Host-side dispatch precondition required for the proof to apply."
+          },
+          "eliminates": {
+            "type": "string",
+            "description": "The clamp expression that becomes a no-op under the precondition."
+          },
+          "runtimePath": {
+            "type": "string",
+            "description": "Zig source path and function where the clamp is elided."
           }
         }
       }

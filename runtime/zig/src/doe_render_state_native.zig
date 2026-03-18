@@ -65,6 +65,32 @@ else
             _ = a;
         }
 
+        pub fn doeNativeRenderPassEncoderPushDebugGroup(
+            encoder: ?*anyopaque,
+            label_ptr: ?[*]const u8,
+            label_len: usize,
+        ) void {
+            _ = encoder;
+            _ = label_ptr;
+            _ = label_len;
+        }
+
+        pub fn doeNativeRenderPassEncoderPopDebugGroup(
+            encoder: ?*anyopaque,
+        ) void {
+            _ = encoder;
+        }
+
+        pub fn doeNativeRenderPassEncoderInsertDebugMarker(
+            encoder: ?*anyopaque,
+            label_ptr: ?[*]const u8,
+            label_len: usize,
+        ) void {
+            _ = encoder;
+            _ = label_ptr;
+            _ = label_len;
+        }
+
         pub fn doeNativeDeviceCreateRenderPipelineFull(
             device: ?*anyopaque,
             vertex_msl: ?[*:0]const u8,
@@ -202,6 +228,9 @@ pub const doeNativeRenderPassEncoderSetViewport = impl.doeNativeRenderPassEncode
 pub const doeNativeRenderPassEncoderSetScissorRect = impl.doeNativeRenderPassEncoderSetScissorRect;
 pub const doeNativeRenderPassEncoderSetStencilReference = impl.doeNativeRenderPassEncoderSetStencilReference;
 pub const doeNativeRenderPassEncoderSetBlendConstant = impl.doeNativeRenderPassEncoderSetBlendConstant;
+pub const doeNativeRenderPassEncoderPushDebugGroup = impl.doeNativeRenderPassEncoderPushDebugGroup;
+pub const doeNativeRenderPassEncoderPopDebugGroup = impl.doeNativeRenderPassEncoderPopDebugGroup;
+pub const doeNativeRenderPassEncoderInsertDebugMarker = impl.doeNativeRenderPassEncoderInsertDebugMarker;
 pub const doeNativeDeviceCreateRenderPipelineFull = impl.doeNativeDeviceCreateRenderPipelineFull;
 pub const doeNativeDeviceCreateDepthStencilState = impl.doeNativeDeviceCreateDepthStencilState;
 pub const doeNativeRenderPassEncoderSetDepthStencilState = impl.doeNativeRenderPassEncoderSetDepthStencilState;

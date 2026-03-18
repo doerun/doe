@@ -6,6 +6,10 @@
 
 const builtin = @import("builtin");
 const types = @import("core/abi/wgpu_types.zig");
+const native = @import("doe_wgpu_native.zig");
+const DoeDevice = native.DoeDevice;
+const DoeAdapter = native.DoeAdapter;
+const BackendKind = native.BackendKind;
 
 // Metal bridge — only linked on macOS; guarded by comptime platform check.
 const BRIDGE_AVAILABLE = builtin.os.tag == .macos;
@@ -80,6 +84,49 @@ const METAL_LIMITS_STATIC = types.WGPULimits{
     .maxImmediateSize = 0,
 };
 
+// Conservative Vulkan limits matching Vulkan 1.0 minimum guarantees.
+// Storage buffer binding size and maxBufferSize use the 128 MB minimum
+// rather than querying VkPhysicalDeviceProperties at init time.
+const VULKAN_MAX_STORAGE_BUFFER_BINDING_SIZE: u64 = 134_217_728; // 128 MB
+const VULKAN_MAX_BUFFER_SIZE: u64 = 268_435_456; // 256 MB
+const VULKAN_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT: u32 = 64;
+
+const VULKAN_LIMITS_STATIC = types.WGPULimits{
+    .nextInChain = null,
+    .maxTextureDimension1D = 16384,
+    .maxTextureDimension2D = 16384,
+    .maxTextureDimension3D = 2048,
+    .maxTextureArrayLayers = 2048,
+    .maxBindGroups = 4,
+    .maxBindGroupsPlusVertexBuffers = 24,
+    .maxBindingsPerBindGroup = 1000,
+    .maxDynamicUniformBuffersPerPipelineLayout = 8,
+    .maxDynamicStorageBuffersPerPipelineLayout = 4,
+    .maxSampledTexturesPerShaderStage = 16,
+    .maxSamplersPerShaderStage = 16,
+    .maxStorageBuffersPerShaderStage = 8,
+    .maxStorageTexturesPerShaderStage = 4,
+    .maxUniformBuffersPerShaderStage = 12,
+    .maxUniformBufferBindingSize = METAL_MAX_UNIFORM_BUFFER_BINDING_SIZE,
+    .maxStorageBufferBindingSize = VULKAN_MAX_STORAGE_BUFFER_BINDING_SIZE,
+    .minUniformBufferOffsetAlignment = 256,
+    .minStorageBufferOffsetAlignment = VULKAN_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT,
+    .maxVertexBuffers = 8,
+    .maxBufferSize = VULKAN_MAX_BUFFER_SIZE,
+    .maxVertexAttributes = 16,
+    .maxVertexBufferArrayStride = 2048,
+    .maxInterStageShaderVariables = 16,
+    .maxColorAttachments = 8,
+    .maxColorAttachmentBytesPerSample = 32,
+    .maxComputeWorkgroupStorageSize = 32768,
+    .maxComputeInvocationsPerWorkgroup = 1024,
+    .maxComputeWorkgroupSizeX = 1024,
+    .maxComputeWorkgroupSizeY = 1024,
+    .maxComputeWorkgroupSizeZ = 64,
+    .maxComputeWorkgroupsPerDimension = 65535,
+    .maxImmediateSize = 0,
+};
+
 // Resolved by metal_bridge.m at link time. This file is only compiled on
 // macOS (doe_wgpu_native.zig — its only importer — is platform-guarded).
 extern fn metal_bridge_device_max_buffer_length(device: ?*anyopaque) callconv(.c) u64;
@@ -108,9 +155,9 @@ fn build_limits(mtl_device: ?*anyopaque) types.WGPULimits {
 // Feature queries
 // ============================================================
 
-fn is_feature_supported(feature: u32) bool {
+fn is_metal_feature_supported(feature: u32) bool {
     return switch (feature) {
-        // Universally enabled on Doe.
+        // Universally enabled on Doe Metal.
         FEATURE_SHADER_F16 => true,
         // Apple Silicon Metal features — all supported on this target.
         FEATURE_DEPTH_CLIP_CONTROL,
@@ -126,32 +173,54 @@ fn is_feature_supported(feature: u32) bool {
     };
 }
 
+// Vulkan feature support: conservative baseline without per-device extension query.
+// shader-f16 requires VK_KHR_shader_float16_int8; we conservatively report false
+// until the Vulkan path queries extensions at device init time.
+fn is_vulkan_feature_supported(feature: u32) bool {
+    return switch (feature) {
+        FEATURE_DEPTH_CLIP_CONTROL => true,
+        FEATURE_INDIRECT_FIRST_INSTANCE => true,
+        else => false,
+    };
+}
+
 pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
-    _ = raw;
-    return if (is_feature_supported(feature)) 1 else 0;
+    if (native.cast(DoeAdapter, raw)) |a| {
+        if (a.backend == .vulkan) return if (is_vulkan_feature_supported(feature)) 1 else 0;
+    }
+    return if (is_metal_feature_supported(feature)) 1 else 0;
 }
 
 pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
-    _ = raw;
-    return if (is_feature_supported(feature)) 1 else 0;
+    if (native.cast(DoeDevice, raw)) |d| {
+        if (d.backend == .vulkan) return if (is_vulkan_feature_supported(feature)) 1 else 0;
+    }
+    return if (is_metal_feature_supported(feature)) 1 else 0;
 }
 
 // ============================================================
 // Device / Adapter limits — runtime queries
 // ============================================================
 
-// doeNativeDeviceGetLimits — called with a DoeDevice* opaque pointer.
-// Reports static conservative values; for runtime-accurate large-buffer
-// limits, callers should use doeNativeDeviceGetLimitsFromMtl with the
-// underlying MTLDevice pointer.
+// doeNativeDeviceGetLimits — dispatches to Vulkan or Metal limits based on backend.
 pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
-    _ = raw;
+    if (native.cast(DoeDevice, raw)) |d| {
+        if (d.backend == .vulkan) {
+            if (limits) |l| l.* = VULKAN_LIMITS_STATIC;
+            return types.WGPUStatus_Success;
+        }
+    }
     if (limits) |l| l.* = build_limits(null);
     return types.WGPUStatus_Success;
 }
 
 pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
-    _ = raw;
+    if (native.cast(DoeAdapter, raw)) |a| {
+        if (a.backend == .vulkan) {
+            if (limits) |l| l.* = VULKAN_LIMITS_STATIC;
+            return types.WGPUStatus_Success;
+        }
+    }
     if (limits) |l| l.* = build_limits(null);
     return types.WGPUStatus_Success;
 }

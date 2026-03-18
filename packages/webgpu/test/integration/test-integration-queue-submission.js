@@ -20,6 +20,7 @@ const { providerInfo, requestDevice, globals } = api;
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
 
 function assert(condition, message) {
     if (condition) {
@@ -30,8 +31,17 @@ function assert(condition, message) {
     }
 }
 
+function skip(message) {
+    skipped++;
+    console.log(`SKIP: ${message}`);
+}
+
 function section(name) {
     console.log(`\n--- queue-submission: ${name} ---`);
+}
+
+function isUnsupportedError(error) {
+    return /unsupported|not supported|not implemented|not available|not wired|is not a function|unavailable/i.test(error?.message ?? String(error));
 }
 
 const info = providerInfo();
@@ -221,6 +231,49 @@ section("bufferMapAsync: uses direct path when no pending submissions");
     readback.destroy();
 }
 
+// --- clearBuffer zeros a written range ---
+// This covers the encoder path end to end when the backend exposes the command.
+
+section("commandEncoder.clearBuffer zeros written bytes");
+{
+    const size = 16;
+    const buffer = device.createBuffer({
+        size,
+        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+    });
+    const readback = device.createBuffer({
+        size,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    device.queue.writeBuffer(buffer, 0, new Uint32Array([0x11111111, 0x22222222, 0x33333333, 0x44444444]));
+
+    const enc = device.createCommandEncoder();
+    if (typeof enc.clearBuffer !== "function") {
+        skip("clearBuffer is not exposed on this backend");
+    } else {
+        try {
+            enc.clearBuffer(buffer, 0, size);
+            enc.copyBufferToBuffer(buffer, 0, readback, 0, size);
+            device.queue.submit([enc.finish()]);
+            await device.queue.onSubmittedWorkDone();
+            await readback.mapAsync(GPUMapMode.READ, 0, size);
+            const result = new Uint32Array(readback.getMappedRange(0, size));
+            assert(result.every((value) => value === 0), "clearBuffer zeroes the copied range");
+            readback.unmap();
+        } catch (error) {
+            if (isUnsupportedError(error)) {
+                skip(`clearBuffer unavailable: ${error?.message ?? error}`);
+            } else {
+                failed++;
+                console.error(`FAIL (unexpected error): ${error?.message ?? error}`);
+            }
+        }
+    }
+
+    buffer.destroy();
+    readback.destroy();
+}
+
 // --- multiple sequential submits: serial monotonically increases and is always marked done ---
 // Every batched compute+copy submit must leave the queue in a completed state. Over N
 // sequential submits the serial must equal the initial value plus N.
@@ -332,5 +385,5 @@ section("commandEncoderFinish: copy-before-dispatch order is not batched");
     readback.destroy();
 }
 
-console.log(`\nResults: ${passed} passed, ${failed} failed`);
+console.log(`\nResults: ${passed} passed, ${failed} failed, ${skipped} skipped`);
 process.exitCode = failed > 0 ? 1 : 0;

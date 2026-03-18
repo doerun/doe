@@ -6,6 +6,7 @@
 const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
+const vk_sync = @import("vk_sync.zig");
 const backend_policy = @import("../backend_policy.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const common_errors = @import("../common/errors.zig");
@@ -78,8 +79,13 @@ pub fn flush_queue(self: *Runtime) !u64 {
         try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
         self.has_deferred_submissions = false;
     } else if (self.has_deferred_submissions) {
-        // No pending uploads but earlier deferred work exists; drain fully.
-        try c.check_vk(c.vkQueueWaitIdle(self.queue));
+        // No pending uploads but earlier deferred work exists; drain via
+        // fence pool (per-submission waits) instead of vkQueueWaitIdle.
+        if (self.has_fence_pool) {
+            try self.fence_pool_state.drain(self.device);
+        } else {
+            try c.check_vk(c.vkQueueWaitIdle(self.queue));
+        }
         self.has_deferred_submissions = false;
     }
     self.upload_recording_active = false;
@@ -450,6 +456,83 @@ pub fn release_pool_entry(device: c.VkDevice, entry: ?VkPoolEntry) void {
         c.vkDestroyBuffer(device, value.buffer, null);
         c.vkFreeMemory(device, value.memory, null);
     }
+}
+
+// --- Streaming copy lifecycle ---
+
+/// Begin a streaming copy session. Allocates a dedicated command buffer
+/// if needed and begins recording. Multiple copy operations can be
+/// batched into a single submission.
+pub fn begin_streaming_copy(self: *Runtime) !void {
+    if (self.streaming_copy_active) return;
+    if (!self.has_streaming_copy_buffer) {
+        var alloc_info = c.VkCommandBufferAllocateInfo{
+            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext = null,
+            .commandPool = self.command_pool,
+            .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = 1,
+        };
+        try c.check_vk(c.vkAllocateCommandBuffers(self.device, &alloc_info, @ptrCast(&self.streaming_copy_buffer)));
+        self.has_streaming_copy_buffer = true;
+    } else {
+        try c.check_vk(c.vkResetCommandBuffer(self.streaming_copy_buffer, 0));
+    }
+    var begin_info = c.VkCommandBufferBeginInfo{
+        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext = null,
+        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .pInheritanceInfo = null,
+    };
+    try c.check_vk(c.vkBeginCommandBuffer(self.streaming_copy_buffer, &begin_info));
+    self.streaming_copy_active = true;
+    self.streaming_copy_count = 0;
+}
+
+/// Record a buffer-to-buffer copy into the streaming command buffer.
+pub fn streaming_copy_buffer_to_buffer(self: *Runtime, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
+    if (!self.streaming_copy_active) try begin_streaming_copy(self);
+    var region = c.VkBufferCopy{ .srcOffset = 0, .dstOffset = 0, .size = size };
+    c.vkCmdCopyBuffer(self.streaming_copy_buffer, src, dst, 1, @ptrCast(&region));
+    self.streaming_copy_count += 1;
+}
+
+/// Finish recording and submit the streaming copy command buffer.
+/// Uses a fence-pool fence for deferred tracking or the primary fence
+/// for immediate wait, depending on `wait`.
+pub fn flush_streaming_copy(self: *Runtime, wait: bool) !void {
+    if (!self.streaming_copy_active) return;
+    try c.check_vk(c.vkEndCommandBuffer(self.streaming_copy_buffer));
+    self.streaming_copy_active = false;
+
+    if (self.streaming_copy_count == 0) return;
+
+    var submit_info = c.VkSubmitInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = null,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = null,
+        .pWaitDstStageMask = null,
+        .commandBufferCount = 1,
+        .pCommandBuffers = @ptrCast(&self.streaming_copy_buffer),
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores = null,
+    };
+
+    if (wait) {
+        try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+    } else {
+        const VK_NULL_FENCE = c.VK_NULL_U64;
+        const deferred_fence = if (self.has_fence_pool)
+            try self.fence_pool_state.acquire(self.device)
+        else
+            VK_NULL_FENCE;
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+        self.has_deferred_submissions = true;
+    }
+    self.streaming_copy_count = 0;
 }
 
 pub fn vk_release_pool(pool: *VkPool, allocator: std.mem.Allocator, device: c.VkDevice) void {

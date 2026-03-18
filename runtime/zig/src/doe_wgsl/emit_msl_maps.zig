@@ -21,6 +21,9 @@ pub fn msl_function_name(name: []const u8, stage: ?ir.ShaderStage) []const u8 {
 }
 
 pub fn msl_builtin_passthrough_name(name: []const u8) ?[]const u8 {
+    // min, max, clamp are intentionally excluded: they require explicit
+    // type casts on arguments to avoid MSL overload ambiguity and are
+    // handled by emit_concrete_numeric_builtin instead.
     const passthrough = [_][]const u8{
         "abs",
         "acos",
@@ -28,7 +31,6 @@ pub fn msl_builtin_passthrough_name(name: []const u8) ?[]const u8 {
         "atan",
         "atan2",
         "ceil",
-        "clamp",
         "cos",
         "cosh",
         "cross",
@@ -43,8 +45,6 @@ pub fn msl_builtin_passthrough_name(name: []const u8) ?[]const u8 {
         "length",
         "log",
         "log2",
-        "max",
-        "min",
         "mix",
         "normalize",
         "pow",

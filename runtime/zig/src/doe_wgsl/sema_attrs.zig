@@ -65,6 +65,9 @@ pub fn parse_io_attr(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.IoAtt
         } else if (std.mem.eql(u8, name, "flat")) {
             result.interpolation = .flat;
             seen = true;
+        } else if (std.mem.eql(u8, name, "interpolate")) {
+            result.interpolation = try parse_interpolation_attr(self.module.tree, attr_idx);
+            seen = true;
         } else if (std.mem.eql(u8, name, "invariant")) {
             result.invariant = true;
             seen = true;
@@ -188,6 +191,17 @@ fn storage_format_scalar(format: ir.TextureFormat) ir.ScalarType {
     };
 }
 
+pub fn parse_override_id(self: anytype, attrs_start: u32, attrs_len: u32) !?u32 {
+    for (self.module.tree.extra_data.items[attrs_start .. attrs_start + attrs_len]) |attr_idx| {
+        const attr = self.module.tree.nodes.items[attr_idx];
+        const name = self.module.tree.tokenSlice(attr.data.lhs);
+        if (std.mem.eql(u8, name, "id")) {
+            return try parse_single_int_attr(self.module.tree, attr_idx);
+        }
+    }
+    return null;
+}
+
 pub fn parse_address_space(name: []const u8) !ir.AddressSpace {
     if (std.mem.eql(u8, name, "function")) return .function;
     if (std.mem.eql(u8, name, "private")) return .private;
@@ -215,6 +229,19 @@ fn parse_single_int_attr(tree: *const Ast, attr_idx: u32) !u32 {
     const arg = tree.nodes.items[tree.extra_data.items[span.start]];
     if (arg.tag != .int_literal) return error.InvalidAttribute;
     return try std.fmt.parseInt(u32, tree.tokenSlice(arg.main_token), 10);
+}
+
+fn parse_interpolation_attr(tree: *const Ast, attr_idx: u32) !ir.Interpolation {
+    const attr = tree.nodes.items[attr_idx];
+    const span = decode_packed_span(attr.data.rhs);
+    if (span.len == 0) return error.InvalidAttribute;
+    const arg = tree.nodes.items[tree.extra_data.items[span.start]];
+    if (arg.tag != .ident_expr) return error.InvalidAttribute;
+    const name = tree.tokenSlice(arg.main_token);
+    if (std.mem.eql(u8, name, "flat")) return .flat;
+    if (std.mem.eql(u8, name, "linear")) return .linear;
+    if (std.mem.eql(u8, name, "perspective")) return .perspective;
+    return error.InvalidAttribute;
 }
 
 fn parse_builtin_attr(tree: *const Ast, attr_idx: u32) !ir.Builtin {
