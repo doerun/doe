@@ -88,11 +88,11 @@ test "push multiple commands preserves order" {
     var enc = make_test_encoder(std.testing.allocator);
     defer enc.cmds.deinit(enc.allocator);
 
-    rb.bundle_encoder_push(&enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+    rb.bundle_encoder_push(&enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = null } });
     push_draw(&enc, 6, 1);
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .mtl_buffer = null,
+        .handle = null,
         .offset = 0,
     } });
     push_draw(&enc, 12, 2);
@@ -145,8 +145,8 @@ test "set_bind_group records group index and entry count" {
         .entries = undefined,
         .count = 2,
     };
-    bg.entries[0] = .{ .mtl_buffer = null, .offset = 0 };
-    bg.entries[1] = .{ .mtl_buffer = null, .offset = 64 };
+    bg.entries[0] = .{ .handle = null, .offset = 0 };
+    bg.entries[1] = .{ .handle = null, .offset = 64 };
 
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_bind_group = .{
         .group = 1,
@@ -166,7 +166,7 @@ test "set_index_buffer records format and offset" {
 
     rb.bundle_encoder_push(&enc, BundleCmd{
         .set_index_buffer = .{
-            .mtl_buffer = null,
+            .handle = null,
             .format = 0x1, // uint16
             .offset = 128,
             .size = 2048,
@@ -257,15 +257,15 @@ test "replay produces correct command sequence for mixed commands" {
     var enc = make_test_encoder(std.testing.allocator);
 
     // Record: pipeline -> vertex buffer -> draw -> draw_indexed
-    rb.bundle_encoder_push(&enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+    rb.bundle_encoder_push(&enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = null } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .mtl_buffer = null,
+        .handle = null,
         .offset = 0,
     } });
     push_draw(&enc, 6, 1);
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_index_buffer = .{
-        .mtl_buffer = null,
+        .handle = null,
         .format = 0x2,
         .offset = 0,
         .size = 1024,
@@ -522,7 +522,7 @@ test "full lifecycle: create encoder, record, finish, destroy" {
     const enc = rb.make_bundle_encoder(0x04, 0, 1, false, false) orelse
         return error.AllocationFailed;
 
-    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = null } });
     rb.bundle_encoder_push(enc, BundleCmd{ .draw = .{
         .vertex_count = 3,
         .instance_count = 1,
@@ -592,18 +592,18 @@ test "all BundleCmdTag variants can be pushed and recovered" {
     var enc = make_test_encoder(std.testing.allocator);
     defer enc.cmds.deinit(enc.allocator);
 
-    rb.bundle_encoder_push(&enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+    rb.bundle_encoder_push(&enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = null } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_bind_group = .{
         .group = 0,
         .bg = .{ .entries = undefined, .count = 0 },
     } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .mtl_buffer = null,
+        .handle = null,
         .offset = 0,
     } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_index_buffer = .{
-        .mtl_buffer = null,
+        .handle = null,
         .format = 0x2,
         .offset = 0,
         .size = 0,
@@ -680,18 +680,18 @@ test "replay sequence: all command types recorded and data preserved" {
         return error.AllocationFailed;
 
     // 1. set_pipeline
-    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = null } });
 
     // 2. set_bind_group (group 0, 2 entries)
     var bg0 = rb.BundleBindGroup{ .entries = undefined, .count = 2 };
-    bg0.entries[0] = .{ .mtl_buffer = null, .offset = 0 };
-    bg0.entries[1] = .{ .mtl_buffer = null, .offset = 256 };
+    bg0.entries[0] = .{ .handle = null, .offset = 0 };
+    bg0.entries[1] = .{ .handle = null, .offset = 256 };
     rb.bundle_encoder_push(enc, BundleCmd{ .set_bind_group = .{ .group = 0, .bg = bg0 } });
 
     // 3. set_vertex_buffer (slot 0)
     rb.bundle_encoder_push(enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .mtl_buffer = null,
+        .handle = null,
         .offset = 0,
     } });
 
@@ -705,7 +705,7 @@ test "replay sequence: all command types recorded and data preserved" {
 
     // 5. set_index_buffer
     rb.bundle_encoder_push(enc, BundleCmd{ .set_index_buffer = .{
-        .mtl_buffer = null,
+        .handle = null,
         .format = 0x2,
         .offset = 0,
         .size = 4096,
@@ -822,7 +822,7 @@ test "replay sequence: multiple bind groups in replay order" {
         var bg = rb.BundleBindGroup{ .entries = undefined, .count = i + 1 };
         var j: u32 = 0;
         while (j < bg.count) : (j += 1) {
-            bg.entries[j] = .{ .mtl_buffer = null, .offset = @as(u64, i) * 1000 + @as(u64, j) * 64 };
+            bg.entries[j] = .{ .handle = null, .offset = @as(u64, i) * 1000 + @as(u64, j) * 64 };
         }
         rb.bundle_encoder_push(enc, BundleCmd{ .set_bind_group = .{ .group = i, .bg = bg } });
     }
@@ -857,14 +857,14 @@ test "replay sequence: multiple vertex buffer slots" {
     const enc = rb.make_bundle_encoder(0x04, 0, 1, false, false) orelse
         return error.AllocationFailed;
 
-    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = null } });
+    rb.bundle_encoder_push(enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = null } });
 
     // Record vertex buffers on slots 0..MAX_VTX_BUFS-1.
     var slot: u32 = 0;
     while (slot < rb.MAX_VTX_BUFS) : (slot += 1) {
         rb.bundle_encoder_push(enc, BundleCmd{ .set_vertex_buffer = .{
             .slot = slot,
-            .mtl_buffer = null,
+            .handle = null,
             .offset = @as(u64, slot) * 128,
         } });
     }
