@@ -2,7 +2,7 @@ const std = @import("std");
 const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
 
-extern fn d3d12_bridge_create_swap_chain(queue: ?*anyopaque, width: u32, height: u32, format: u32) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_create_swap_chain(queue: ?*anyopaque, width: u32, height: u32, format: u32, alpha_mode: u32, tone_mapping_mode: u32) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_swap_chain_present(swap_chain: ?*anyopaque, sync_interval: u32) callconv(.c) c_int;
 extern fn d3d12_bridge_swap_chain_get_buffer(swap_chain: ?*anyopaque, index: u32) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_swap_chain_resize(swap_chain: ?*anyopaque, width: u32, height: u32, format: u32) callconv(.c) c_int;
@@ -19,6 +19,8 @@ pub const SurfaceEntry = struct {
     width: u32 = 0,
     height: u32 = 0,
     format: u32 = model.WGPUTextureFormat_RGBA8Unorm,
+    alpha_mode: u32 = 0x00000001,
+    tone_mapping_mode: u32 = model.WGPUCanvasToneMappingMode_Standard,
     swap_chain: ?*anyopaque = null,
     render_target: ?*anyopaque = null,
     rtv_heap: ?*anyopaque = null,
@@ -61,6 +63,10 @@ pub const SurfaceState = struct {
             d3d12_bridge_release(rt);
             entry.render_target = null;
         }
+        if (entry.swap_chain) |sc| {
+            d3d12_bridge_release(sc);
+            entry.swap_chain = null;
+        }
 
         const usage_render: u32 = @truncate(model.WGPUTextureUsage_RenderAttachment);
         entry.render_target = d3d12_bridge_device_create_texture_2d(device, cmd.width, cmd.height, 1, cmd.format, usage_render) orelse return error.InvalidState;
@@ -74,13 +80,18 @@ pub const SurfaceState = struct {
         }
         d3d12_bridge_device_create_rtv(device, entry.render_target, entry.rtv_heap, 0, cmd.format);
 
+        entry.swap_chain = d3d12_bridge_create_swap_chain(queue, cmd.width, cmd.height, cmd.format, cmd.alpha_mode, cmd.tone_mapping_mode);
         if (entry.swap_chain == null) {
-            entry.swap_chain = d3d12_bridge_create_swap_chain(queue, cmd.width, cmd.height, cmd.format);
+            d3d12_bridge_release(entry.render_target);
+            entry.render_target = null;
+            return error.InvalidState;
         }
 
         entry.width = cmd.width;
         entry.height = cmd.height;
         entry.format = cmd.format;
+        entry.alpha_mode = cmd.alpha_mode;
+        entry.tone_mapping_mode = cmd.tone_mapping_mode;
         entry.status = .configured;
         self.map.put(allocator, cmd.handle, entry) catch return error.InvalidState;
 
@@ -101,7 +112,9 @@ pub const SurfaceState = struct {
         const submit_start = common_timing.now_ns();
         if (self.map.getPtr(cmd.handle)) |entry| {
             if (entry.swap_chain) |sc| {
-                _ = d3d12_bridge_swap_chain_present(sc, 0);
+                if (d3d12_bridge_swap_chain_present(sc, 0) != 0) return error.InvalidState;
+            } else {
+                return error.InvalidState;
             }
             entry.status = .configured;
         }
@@ -114,6 +127,14 @@ pub const SurfaceState = struct {
             if (entry.render_target) |rt| {
                 d3d12_bridge_release(rt);
                 entry.render_target = null;
+            }
+            if (entry.swap_chain) |sc| {
+                d3d12_bridge_release(sc);
+                entry.swap_chain = null;
+            }
+            if (entry.rtv_heap) |heap| {
+                d3d12_bridge_release(heap);
+                entry.rtv_heap = null;
             }
             entry.status = .created;
         }

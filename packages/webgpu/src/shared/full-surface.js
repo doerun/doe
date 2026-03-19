@@ -650,6 +650,9 @@ function createFullSurfaceClasses({
     }
 
     set onuncapturederror(handler) {
+      if (handler !== null && handler !== undefined && typeof handler !== 'function') {
+        failValidation('GPUDevice.onuncapturederror', 'handler must be a function or null');
+      }
       this._onuncapturederror = handler ?? null;
       if (typeof backend.deviceSetOnUncapturedError === 'function') {
         const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');

@@ -6,6 +6,7 @@
 const std = @import("std");
 const vk = @import("vulkan_types.zig");
 const structs = @import("vk_structs.zig");
+const capability_structs = @import("vk_capability_structs.zig");
 const functions = @import("vk_functions.zig");
 const vulkan_errors = @import("vulkan_errors.zig");
 
@@ -109,6 +110,13 @@ pub const VkMemoryHeap = structs.VkMemoryHeap;
 pub const VkPhysicalDeviceMemoryProperties = structs.VkPhysicalDeviceMemoryProperties;
 pub const VkPipelineRasterizationDepthClipStateCreateInfoEXT = structs.VkPipelineRasterizationDepthClipStateCreateInfoEXT;
 pub const VkExtensionProperties = structs.VkExtensionProperties;
+pub const VkFormatProperties = capability_structs.VkFormatProperties;
+pub const VkPhysicalDeviceFeatures = capability_structs.VkPhysicalDeviceFeatures;
+pub const VkPhysicalDeviceFeatures2 = capability_structs.VkPhysicalDeviceFeatures2;
+pub const VkPhysicalDeviceProperties = capability_structs.VkPhysicalDeviceProperties;
+pub const VkPhysicalDeviceProperties2 = capability_structs.VkPhysicalDeviceProperties2;
+pub const VkPhysicalDeviceSubgroupProperties = capability_structs.VkPhysicalDeviceSubgroupProperties;
+pub const VkPhysicalDeviceVulkan12Features = capability_structs.VkPhysicalDeviceVulkan12Features;
 
 pub const vkCreateInstance = functions.vkCreateInstance;
 pub const vkDestroyInstance = functions.vkDestroyInstance;
@@ -153,6 +161,9 @@ pub const vkBindBufferMemory = functions.vkBindBufferMemory;
 pub const vkMapMemory = functions.vkMapMemory;
 pub const vkUnmapMemory = functions.vkUnmapMemory;
 pub const vkGetPhysicalDeviceMemoryProperties = functions.vkGetPhysicalDeviceMemoryProperties;
+pub const vkGetPhysicalDeviceFeatures2 = functions.vkGetPhysicalDeviceFeatures2;
+pub const vkGetPhysicalDeviceProperties2 = functions.vkGetPhysicalDeviceProperties2;
+pub const vkGetPhysicalDeviceFormatProperties = functions.vkGetPhysicalDeviceFormatProperties;
 pub const vkCreateShaderModule = functions.vkCreateShaderModule;
 pub const vkDestroyShaderModule = functions.vkDestroyShaderModule;
 pub const vkCreateDescriptorSetLayout = functions.vkCreateDescriptorSetLayout;
@@ -226,6 +237,10 @@ pub const VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO: i32 = 40;
 pub const VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO: i32 = 41;
 pub const VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO: i32 = 42;
 pub const VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER: i32 = 45;
+pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES: i32 = 1000094000;
+pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2: i32 = 1000059000;
+pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2: i32 = 1000059001;
+pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES: i32 = 51;
 
 // --- Queue and command bits ---
 pub const VK_QUEUE_GRAPHICS_BIT: u32 = 0x00000001;
@@ -246,6 +261,12 @@ pub const VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT: u32 = 0x00000400;
 pub const VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT: u32 = 0x00000800;
 pub const VK_PIPELINE_STAGE_TRANSFER_BIT: u32 = 0x00001000;
 pub const VK_PIPELINE_BIND_POINT_GRAPHICS: i32 = 0;
+pub const VK_SUBGROUP_FEATURE_BASIC_BIT: u32 = 0x00000001;
+pub const VK_SUBGROUP_FEATURE_VOTE_BIT: u32 = 0x00000002;
+pub const VK_SUBGROUP_FEATURE_ARITHMETIC_BIT: u32 = 0x00000004;
+pub const VK_SUBGROUP_FEATURE_BALLOT_BIT: u32 = 0x00000008;
+pub const VK_SUBGROUP_FEATURE_SHUFFLE_BIT: u32 = 0x00000010;
+pub const VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT: u32 = 0x00000020;
 
 // --- Query ---
 pub const VK_QUERY_TYPE_TIMESTAMP: u32 = 2;

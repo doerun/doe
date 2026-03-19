@@ -1047,6 +1047,9 @@ const fullSurfaceBackend = {
     return addon.bufferGetMappedRange(native, offset, size).slice(0);
   },
   bufferGetMapState(_wrapper, native) {
+    if (_wrapper?._mapState === 'pending') {
+      return 'pending';
+    }
     if (typeof addon.bufferGetMapState !== 'function') {
       return null;
     }

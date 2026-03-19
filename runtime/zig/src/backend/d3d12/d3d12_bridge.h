@@ -4,6 +4,49 @@
 
 typedef void* D3D12Handle;
 
+typedef struct {
+    uint32_t format;
+    uint32_t input_slot;
+    uint32_t aligned_byte_offset;
+    uint32_t semantic_index;
+    uint32_t input_slot_class;
+    uint32_t instance_data_step_rate;
+} D3D12InputElementDesc;
+
+typedef struct {
+    uint32_t target_format;
+    uint32_t depth_stencil_format;
+    uint32_t sample_count;
+    uint32_t topology;
+    uint32_t topology_type;
+    uint32_t front_face;
+    uint32_t cull_mode;
+    uint32_t blend_enabled;
+    uint32_t color_operation;
+    uint32_t color_src_factor;
+    uint32_t color_dst_factor;
+    uint32_t alpha_operation;
+    uint32_t alpha_src_factor;
+    uint32_t alpha_dst_factor;
+    uint32_t color_write_mask;
+    uint32_t depth_compare;
+    uint32_t depth_write_enabled;
+    uint32_t stencil_front_compare;
+    uint32_t stencil_front_fail_op;
+    uint32_t stencil_front_depth_fail_op;
+    uint32_t stencil_front_pass_op;
+    uint32_t stencil_back_compare;
+    uint32_t stencil_back_fail_op;
+    uint32_t stencil_back_depth_fail_op;
+    uint32_t stencil_back_pass_op;
+    uint32_t stencil_read_mask;
+    uint32_t stencil_write_mask;
+    int32_t depth_bias;
+    float depth_bias_slope_scale;
+    float depth_bias_clamp;
+    uint32_t unclipped_depth;
+} D3D12GraphicsPipelineDesc;
+
 /* Device and core objects */
 D3D12Handle d3d12_bridge_create_device(void);
 void        d3d12_bridge_release(D3D12Handle obj);
@@ -15,6 +58,7 @@ D3D12Handle d3d12_bridge_device_create_command_allocator(D3D12Handle device);
 D3D12Handle d3d12_bridge_device_create_command_list(D3D12Handle device, D3D12Handle allocator);
 /* heap_type: 1 = DEFAULT (GPU-local), 2 = UPLOAD (CPU-visible), 3 = READBACK (CPU-readable) */
 D3D12Handle d3d12_bridge_device_create_buffer(D3D12Handle device, size_t size, int heap_type);
+uint64_t    d3d12_bridge_buffer_get_size(D3D12Handle buffer);
 
 /* Buffer copy */
 void d3d12_bridge_command_list_copy_buffer(D3D12Handle cmd_list, D3D12Handle dst, D3D12Handle src, size_t size);
@@ -60,15 +104,35 @@ D3D12Handle d3d12_bridge_device_create_graphics_pipeline(D3D12Handle device, D3D
                                                            const void* vs_bytecode, size_t vs_size,
                                                            const void* ps_bytecode, size_t ps_size,
                                                            uint32_t target_format);
+D3D12Handle d3d12_bridge_device_create_graphics_pipeline_hlsl(
+    D3D12Handle device,
+    D3D12Handle root_sig,
+    const char* vs_source,
+    size_t vs_source_len,
+    const char* vs_entry,
+    const char* ps_source,
+    size_t ps_source_len,
+    const char* ps_entry,
+    const D3D12GraphicsPipelineDesc* desc,
+    const D3D12InputElementDesc* input_elements,
+    uint32_t input_element_count);
 
 /* Render commands */
 void d3d12_bridge_command_list_set_graphics_root_signature(D3D12Handle cmd_list, D3D12Handle root_sig);
 void d3d12_bridge_command_list_set_render_target(D3D12Handle cmd_list, D3D12Handle rtv_heap, uint32_t index);
+void d3d12_bridge_command_list_set_render_targets(
+    D3D12Handle cmd_list,
+    D3D12Handle rtv_heap,
+    uint32_t rtv_index,
+    D3D12Handle dsv_heap,
+    uint32_t dsv_index);
 void d3d12_bridge_command_list_set_viewport(D3D12Handle cmd_list, float x, float y, float w, float h,
                                              float min_depth, float max_depth);
 void d3d12_bridge_command_list_set_scissor(D3D12Handle cmd_list, int32_t left, int32_t top,
                                             int32_t right, int32_t bottom);
 void d3d12_bridge_command_list_ia_set_primitive_topology(D3D12Handle cmd_list, int topology);
+void d3d12_bridge_command_list_set_blend_factor(D3D12Handle cmd_list, const float rgba[4]);
+void d3d12_bridge_command_list_set_stencil_ref(D3D12Handle cmd_list, uint32_t reference);
 void d3d12_bridge_command_list_draw_instanced(D3D12Handle cmd_list, uint32_t vertex_count,
                                                uint32_t instance_count, uint32_t start_vertex,
                                                uint32_t start_instance);

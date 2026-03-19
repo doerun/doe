@@ -5,19 +5,11 @@
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
+const vk_feature_caps = @import("vk_feature_caps.zig");
 const vk_sync = @import("vk_sync.zig");
 const vulkan_surface = @import("vulkan_surface.zig");
-const common_errors = @import("../common/errors.zig");
 
-const VkResult = c.VkResult;
-const VkInstance = c.VkInstance;
 const VkPhysicalDevice = c.VkPhysicalDevice;
-const VkDevice = c.VkDevice;
-const VkQueue = c.VkQueue;
-const VkCommandPool = c.VkCommandPool;
-const VkCommandBuffer = c.VkCommandBuffer;
-const VkFence = c.VkFence;
-const VK_NULL_U64 = c.VK_NULL_U64;
 
 const APP_NAME: [*:0]const u8 = "doe-zig-runtime";
 const ENGINE_NAME: [*:0]const u8 = "doe-vulkan-runtime";
@@ -47,6 +39,19 @@ pub fn bootstrap(self: *Runtime) !void {
     try create_fence(self);
     try create_fence_pool(self);
     create_timeline_semaphore(self);
+}
+
+pub fn probe_default_feature_caps(allocator: std.mem.Allocator) !vk_feature_caps.VulkanFeatureCaps {
+    var probe = Runtime{ .allocator = allocator, .kernel_root = null };
+    try create_instance(&probe);
+    defer if (probe.has_instance) {
+        c.vkDestroyInstance(probe.instance, null);
+        probe.instance = null;
+        probe.has_instance = false;
+        probe.physical_device = null;
+    };
+    try select_physical_device(&probe);
+    return vk_feature_caps.query(probe.physical_device).caps;
 }
 
 pub fn create_instance(self: *Runtime) !void {
@@ -96,6 +101,7 @@ pub fn create_device_and_queue(self: *Runtime) !void {
         self.physical_device,
         c.VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
     );
+    const feature_query = vk_feature_caps.query(self.physical_device);
 
     // Build combined extension list: surface extensions + depth_clip_enable if available.
     const extra_ext_count: usize = if (depth_clip_available) 1 else 0;
@@ -119,7 +125,7 @@ pub fn create_device_and_queue(self: *Runtime) !void {
     };
     var device_info = c.VkDeviceCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext = null,
+        .pNext = @ptrCast(&feature_query.enabled_vulkan12_features),
         .flags = 0,
         .queueCreateInfoCount = 1,
         .pQueueCreateInfos = @ptrCast(&queue_info),
@@ -127,7 +133,7 @@ pub fn create_device_and_queue(self: *Runtime) !void {
         .ppEnabledLayerNames = null,
         .enabledExtensionCount = @intCast(total_ext_count),
         .ppEnabledExtensionNames = if (total_ext_count > 0) &all_exts else null,
-        .pEnabledFeatures = null,
+        .pEnabledFeatures = @ptrCast(&feature_query.enabled_features),
     };
     try c.check_vk(c.vkCreateDevice(self.physical_device, &device_info, null, &self.device));
     self.has_device = true;

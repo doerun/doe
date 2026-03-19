@@ -7,9 +7,10 @@
 const builtin = @import("builtin");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
+const vk_feature_caps = @import("backend/vulkan/vk_feature_caps.zig");
+const vulkan_feature_cache = @import("doe_vulkan_feature_cache.zig");
 const DoeDevice = native.DoeDevice;
 const DoeAdapter = native.DoeAdapter;
-const BackendKind = native.BackendKind;
 
 // Metal bridge — only linked on macOS; guarded by comptime platform check.
 const BRIDGE_AVAILABLE = builtin.os.tag == .macos;
@@ -200,12 +201,18 @@ fn is_metal_feature_supported(feature: u32) bool {
     };
 }
 
-// Vulkan feature support: conservative baseline without per-device extension query.
-// Reports features widely available on Vulkan 1.1+ desktop devices without needing
-// runtime extension queries. shader-f16, subgroups, dual-source blending, and
-// compressed-texture families (ETC2, ASTC) require per-device extension checks.
-fn is_vulkan_feature_supported(feature: u32) bool {
+// Vulkan feature support combines the static baseline already used across the
+// runtime with per-adapter/device probes for features that depend on native
+// feature or format-capability publication.
+fn is_vulkan_feature_supported(feature: u32, caps: ?vk_feature_caps.VulkanFeatureCaps) bool {
     return switch (feature) {
+        FEATURE_SHADER_F16,
+        FEATURE_FLOAT32_BLENDABLE,
+        FEATURE_SUBGROUPS,
+        FEATURE_DUAL_SOURCE_BLENDING,
+        FEATURE_TEXTURE_FORMATS_TIER1,
+        FEATURE_TEXTURE_FORMATS_TIER2,
+        => if (caps) |resolved| vk_feature_caps.dynamic_feature_supported(feature, resolved) else false,
         // Vulkan 1.0 mandatory or Vulkan 1.1+ widely available features.
         FEATURE_DEPTH_CLIP_CONTROL,
         FEATURE_DEPTH32FLOAT_STENCIL8,
@@ -229,14 +236,20 @@ fn is_vulkan_feature_supported(feature: u32) bool {
 
 pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
     if (native.cast(DoeAdapter, raw)) |a| {
-        if (a.backend == .vulkan) return if (is_vulkan_feature_supported(feature)) 1 else 0;
+        if (a.backend == .vulkan) {
+            const caps = vulkan_feature_cache.get_adapter(raw);
+            return if (is_vulkan_feature_supported(feature, caps)) 1 else 0;
+        }
     }
     return if (is_metal_feature_supported(feature)) 1 else 0;
 }
 
 pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
     if (native.cast(DoeDevice, raw)) |d| {
-        if (d.backend == .vulkan) return if (is_vulkan_feature_supported(feature)) 1 else 0;
+        if (d.backend == .vulkan) {
+            const caps = vulkan_feature_cache.get_device(raw);
+            return if (is_vulkan_feature_supported(feature, caps)) 1 else 0;
+        }
     }
     return if (is_metal_feature_supported(feature)) 1 else 0;
 }

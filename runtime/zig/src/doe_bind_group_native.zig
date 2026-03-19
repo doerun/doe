@@ -34,6 +34,8 @@ fn classify_layout_entry(entry: types.WGPUBindGroupLayoutEntry) DoeBindGroupLayo
     };
     if (entry.storageTexture.access != 0 or entry.storageTexture.format != 0 or entry.storageTexture.viewDimension != 0) {
         out.resource_kind = RESOURCE_KIND_STORAGE_TEXTURE;
+        out.texture_sample_type = entry.storageTexture.access;
+        out.texture_view_dimension = entry.storageTexture.viewDimension;
         return out;
     }
     if (entry.texture.sampleType != 0 or entry.texture.viewDimension != 0 or entry.texture.multisampled != 0) {
@@ -96,6 +98,39 @@ fn resolve_view_dimension(view: *DoeTextureView) u32 {
     };
 }
 
+fn texture_aspect_matches(tex: *DoeTexture, view: *DoeTextureView) bool {
+    const aspect = if (view.aspect != 0) view.aspect else types.WGPUTextureAspect_All;
+    return switch (aspect) {
+        types.WGPUTextureAspect_All => true,
+        types.WGPUTextureAspect_DepthOnly => switch (tex.format) {
+            types.WGPUTextureFormat_Stencil8 => false,
+            types.WGPUTextureFormat_Depth16Unorm,
+            types.WGPUTextureFormat_Depth24Plus,
+            types.WGPUTextureFormat_Depth24PlusStencil8,
+            types.WGPUTextureFormat_Depth32Float,
+            types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            else => false,
+        },
+        types.WGPUTextureAspect_StencilOnly => switch (tex.format) {
+            types.WGPUTextureFormat_Stencil8,
+            types.WGPUTextureFormat_Depth24PlusStencil8,
+            types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            else => false,
+        },
+        else => false,
+    };
+}
+
+fn storage_texture_access_supported(access: u32) bool {
+    return switch (access) {
+        types.WGPUStorageTextureAccess_Undefined,
+        types.WGPUStorageTextureAccess_WriteOnly,
+        types.WGPUStorageTextureAccess_ReadOnly,
+        types.WGPUStorageTextureAccess_ReadWrite => true,
+        else => false,
+    };
+}
+
 fn texture_view_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *DoeTextureView) bool {
     const tex = view.tex;
     if (layout_entry.texture_multisampled != (tex.sample_count > 1)) return false;
@@ -105,7 +140,27 @@ fn texture_view_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *Doe
     if (layout_entry.texture_sample_type != 0 and
         layout_entry.texture_sample_type != types.WGPUTextureSampleType_Undefined and
         layout_entry.texture_sample_type != infer_texture_sample_type(tex)) return false;
+    if (!texture_aspect_matches(tex, view)) return false;
     return true;
+}
+
+fn storage_texture_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *DoeTextureView) bool {
+    switch (view.tex.format) {
+        types.WGPUTextureFormat_Stencil8,
+        types.WGPUTextureFormat_Depth16Unorm,
+        types.WGPUTextureFormat_Depth24Plus,
+        types.WGPUTextureFormat_Depth24PlusStencil8,
+        types.WGPUTextureFormat_Depth32Float,
+        types.WGPUTextureFormat_Depth32FloatStencil8 => return false,
+        else => {},
+    }
+    const usage = view.usage | view.tex.usage;
+    if ((usage & types.WGPUTextureUsage_StorageBinding) == 0) return false;
+    if (layout_entry.texture_view_dimension != 0 and
+        layout_entry.texture_view_dimension != types.WGPUTextureViewDimension_Undefined and
+        layout_entry.texture_view_dimension != resolve_view_dimension(view)) return false;
+    if (!texture_aspect_matches(view.tex, view)) return false;
+    return storage_texture_access_supported(layout_entry.texture_sample_type);
 }
 
 fn find_layout_entry(layout: *DoeBindGroupLayout, binding: u32) ?DoeBindGroupLayoutEntry {
@@ -170,6 +225,15 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                         return null;
                     };
                     if (!texture_view_matches_layout(layout_entry, view)) {
+                        alloc.destroy(bg);
+                        return null;
+                    }
+                } else if (layout_entry.resource_kind == RESOURCE_KIND_STORAGE_TEXTURE) {
+                    const view = cast(DoeTextureView, e.textureView) orelse {
+                        alloc.destroy(bg);
+                        return null;
+                    };
+                    if (!storage_texture_matches_layout(layout_entry, view)) {
                         alloc.destroy(bg);
                         return null;
                     }

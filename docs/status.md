@@ -631,7 +631,13 @@ Tests and proofs:
 
 D3D12:
 - D3D12 is no longer a pure stub; it is a real compute-first backend on Windows
-- descriptor heaps/resource binding breadth, full texture lifecycle, render pipeline, and render pass support remain open
+- descriptor heaps/resource binding breadth and fresh Windows evidence still remain open, but the backend is no longer compute-only
+- this tranche widened repo-local D3D12 truth materially:
+  - `d3d12_device_caps.zig` and `d3d12_formats.zig` now publish the real BC/shader-f16/subgroups feature/format baseline instead of leaving those rows as ledger debt
+  - `d3d12_render.zig` now builds real graphics PSOs, consumes vertex layouts/attributes/formats/step modes, and carries topology/front-face/cull/blend/depth-stencil state through native render execution
+  - `d3d12_texture.zig`, `d3d12_texture_view.zig`, and `d3d12_surface.zig` now make texture aspect/storage access/canvas alpha+tone-mapping settings real backend behavior instead of validation-only surface claims
+  - `doe_buffer_native.zig` now makes `GPUBuffer.mapState` truthful on D3D12 package paths
+- remaining D3D12 gaps are narrower and explicit: strip-index-format parity, deeper render-bundle replay/resource-table render submission parity, ETC2/EAC/ASTC publication, and fresh Windows evidence
 - the first governed benchmark lane is now explicitly scoped to compute, upload, pipeline, and p0-resource contracts only
 - no live D3D12 compare artifact was produced in this macOS session; Windows-host preflight/config/gate plumbing is ready, the release lane is scaffolded, and cube publication now reports `contract exists, evidence missing` until a real Windows run lands
 
@@ -2059,6 +2065,19 @@ Backend-specific emitters for all three backends:
     export instead of a hardcoded `"unmapped"` stub.
   - non-macOS render-state ABI fallbacks and native-direct device event-listener
     shims now report unsupported behavior explicitly instead of silently no-oping.
+- Shared package/device lifecycle closure advanced on Vulkan package paths:
+  - Node/addon and Bun package devices now wire native `pushErrorScope`,
+    `popErrorScope`, `lost`, and `onuncapturederror` instead of leaving those
+    surfaces stubbed.
+  - `GPUDevice.addEventListener` / `removeEventListener` now retain listeners on
+    the shared package surface and dispatch native `uncapturederror` events.
+  - `GPUDevice.adapterInfo` now reuses the adapter-info surface on package
+    devices, and `GPUBuffer.mapState` now preserves `pending` in JS while
+    reading `mapped` / `unmapped` from the native buffer state export.
+- Vulkan feature publication now closes the remaining package-surface tail for
+  `shader-f16`, `float32-blendable`, `dual-source-blending`, `subgroups`,
+  `texture-formats-tier1`, and `texture-formats-tier2` by probing the selected
+  physical device and caching the resulting adapter/device feature set.
 - Pipeline-creation failures now normalize to `GPUPipelineError` with a
   concrete `reason` on Node/addon and Bun package paths.
 - Doe pipeline-layout handles now retain `immediateSize`, and compute/render

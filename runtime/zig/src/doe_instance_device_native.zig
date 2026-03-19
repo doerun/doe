@@ -18,8 +18,9 @@ const DoeInstance = native.DoeInstance;
 const DoeAdapter = native.DoeAdapter;
 const DoeDevice = native.DoeDevice;
 const DoeQueue = native.DoeQueue;
-const BackendKind = native.BackendKind;
 const NativeVulkanRuntime = native.NativeVulkanRuntime;
+const vulkan_feature_cache = @import("doe_vulkan_feature_cache.zig");
+const vk_device = @import("backend/vulkan/vk_device.zig");
 
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
@@ -91,11 +92,13 @@ pub export fn doeNativeRequestAdapterFlat(
     _ = inst;
 
     if (env_requests_vulkan()) {
+        const feature_caps = vk_device.probe_default_feature_caps(alloc) catch .{};
         const adapter = make(DoeAdapter) orelse {
             if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
             return .{ .id = 1 };
         };
         adapter.* = .{ .backend = .vulkan };
+        vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
         if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
         return .{ .id = 1 };
     }
@@ -125,11 +128,13 @@ pub export fn doeNativeInstanceRequestAdapter(
     _ = inst;
 
     if (env_requests_vulkan()) {
+        const feature_caps = vk_device.probe_default_feature_caps(alloc) catch .{};
         const adapter = make(DoeAdapter) orelse {
             info.callback(.@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), info.userdata1, info.userdata2);
             return .{ .id = 1 };
         };
         adapter.* = .{ .backend = .vulkan };
+        vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
         info.callback(.success, toOpaque(adapter), stringView(""), info.userdata1, info.userdata2);
         return .{ .id = 1 };
     }
@@ -153,6 +158,7 @@ pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
     // Adapter does NOT own the MTLDevice — device ownership transfers to DoeDevice.
     if (cast(DoeAdapter, raw)) |a| {
         label_store.remove(raw);
+        if (a.backend == .vulkan) vulkan_feature_cache.remove_adapter(raw);
         alloc.destroy(a);
     }
 }
@@ -173,6 +179,7 @@ pub export fn doeNativeAdapterRequestDevice(
     };
 
     if (adapter.backend == .vulkan) {
+        const feature_caps = vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
         const dev = make(DoeDevice) orelse {
             info.callback(.@"error", null, stringView(MSG_DEVICE_ALLOCATION_FAILED), info.userdata1, info.userdata2);
             return .{ .id = 2 };
@@ -189,6 +196,7 @@ pub export fn doeNativeAdapterRequestDevice(
             return .{ .id = 2 };
         };
         dev.* = .{ .backend = .vulkan, .vk_runtime = @ptrCast(rt) };
+        vulkan_feature_cache.set_device(toOpaque(dev), feature_caps);
         info.callback(.success, toOpaque(dev), stringView(""), info.userdata1, info.userdata2);
         return .{ .id = 2 };
     }
@@ -223,6 +231,7 @@ pub export fn doeNativeRequestDeviceFlat(
     };
 
     if (adapter.backend == .vulkan) {
+        const feature_caps = vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
         const dev = make(DoeDevice) orelse {
             if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_DEVICE_ALLOCATION_FAILED), userdata1, userdata2);
             return .{ .id = 2 };
@@ -239,6 +248,7 @@ pub export fn doeNativeRequestDeviceFlat(
             return .{ .id = 2 };
         };
         dev.* = .{ .backend = .vulkan, .vk_runtime = @ptrCast(rt) };
+        vulkan_feature_cache.set_device(toOpaque(dev), feature_caps);
         if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(dev), stringView(""), userdata1, userdata2);
         return .{ .id = 2 };
     }
@@ -265,6 +275,7 @@ pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
         const multi_adapter = @import("multi_adapter.zig");
         multi_adapter.notify_device_released(raw);
         if (d.backend == .vulkan) {
+            vulkan_feature_cache.remove_device(raw);
             // Queue is just a thin wrapper with no Metal resources — destroy it.
             if (d.queue) |q| alloc.destroy(q);
             // Deinit and free the Vulkan runtime (releases all VkBuffer/VkDevice etc.).

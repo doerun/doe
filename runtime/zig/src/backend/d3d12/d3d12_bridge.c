@@ -1,7 +1,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <d3d12.h>
+#include <d3dcompiler.h>
 #include <dxgi1_4.h>
+#include <string.h>
 #include "d3d12_bridge.h"
 
 D3D12Handle d3d12_bridge_create_device(void) {
@@ -100,6 +102,13 @@ D3D12Handle d3d12_bridge_device_create_buffer(D3D12Handle device_h, size_t size,
         &IID_ID3D12Resource, (void**)&resource);
     if (FAILED(hr)) return NULL;
     return (D3D12Handle)resource;
+}
+
+uint64_t d3d12_bridge_buffer_get_size(D3D12Handle buffer_h) {
+    ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
+    if (buffer == NULL) return 0;
+    D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+    return (uint64_t)desc.Width;
 }
 
 void d3d12_bridge_command_list_copy_buffer(D3D12Handle cmd_list_h, D3D12Handle dst_h, D3D12Handle src_h, size_t size) {
@@ -216,9 +225,16 @@ int d3d12_bridge_command_list_reset(D3D12Handle cmd_list_h, D3D12Handle allocato
 static DXGI_FORMAT map_wgpu_format_to_dxgi(uint32_t format) {
     switch (format) {
         case 0x00000001: return DXGI_FORMAT_R8_UNORM;              /* R8Unorm */
+        case 0x00000002: return DXGI_FORMAT_R8_SNORM;              /* R8Snorm */
         case 0x00000005: return DXGI_FORMAT_R16_UNORM;             /* R16Unorm */
         case 0x00000006: return DXGI_FORMAT_R16_SNORM;             /* R16Snorm */
+        case 0x00000007: return DXGI_FORMAT_R16_UINT;              /* R16Uint */
+        case 0x00000008: return DXGI_FORMAT_R16_SINT;              /* R16Sint */
         case 0x00000009: return DXGI_FORMAT_R16_FLOAT;             /* R16Float */
+        case 0x0000000A: return DXGI_FORMAT_R8G8_UNORM;            /* RG8Unorm */
+        case 0x0000000B: return DXGI_FORMAT_R8G8_SNORM;            /* RG8Snorm */
+        case 0x0000000C: return DXGI_FORMAT_R8G8_UINT;             /* RG8Uint */
+        case 0x0000000D: return DXGI_FORMAT_R8G8_SINT;             /* RG8Sint */
         case 0x0000000E: return DXGI_FORMAT_R32_FLOAT;             /* R32Float */
         case 0x0000000F: return DXGI_FORMAT_R32_UINT;              /* R32Uint */
         case 0x00000010: return DXGI_FORMAT_R32_SINT;              /* R32Sint */
@@ -226,35 +242,35 @@ static DXGI_FORMAT map_wgpu_format_to_dxgi(uint32_t format) {
         case 0x00000012: return DXGI_FORMAT_R16G16_SNORM;          /* RG16Snorm */
         case 0x00000013: return DXGI_FORMAT_R16G16_UINT;           /* RG16Uint */
         case 0x00000014: return DXGI_FORMAT_R16G16_SINT;           /* RG16Sint */
-        case 0x00000015: return DXGI_FORMAT_R16G16_FLOAT;         /* RG16Float */
-        case 0x00000016: return DXGI_FORMAT_R8G8B8A8_UNORM;       /* RGBA8Unorm */
-        case 0x00000017: return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;  /* RGBA8UnormSrgb */
-        case 0x00000018: return DXGI_FORMAT_R8G8B8A8_SNORM;       /* RGBA8Snorm */
-        case 0x00000019: return DXGI_FORMAT_R8G8B8A8_UINT;        /* RGBA8Uint */
-        case 0x0000001A: return DXGI_FORMAT_R8G8B8A8_SINT;        /* RGBA8Sint */
-        case 0x0000001B: return DXGI_FORMAT_B8G8R8A8_UNORM;       /* BGRA8Unorm */
-        case 0x0000001C: return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;  /* BGRA8UnormSrgb */
-        case 0x0000001D: return DXGI_FORMAT_R10G10B10A2_UINT;     /* RGB10A2Uint */
-        case 0x0000001E: return DXGI_FORMAT_R10G10B10A2_UNORM;    /* RGB10A2Unorm */
-        case 0x0000001F: return DXGI_FORMAT_R11G11B10_FLOAT;      /* RG11B10Ufloat */
-        case 0x00000020: return DXGI_FORMAT_R9G9B9E5_SHAREDEXP;   /* RGB9E5Ufloat */
-        case 0x00000021: return DXGI_FORMAT_R32G32_UINT;          /* RG32Uint */
-        case 0x00000022: return DXGI_FORMAT_R32G32_SINT;          /* RG32Sint */
-        case 0x00000023: return DXGI_FORMAT_R32G32_FLOAT;         /* RG32Float */
-        case 0x00000024: return DXGI_FORMAT_R16G16B16A16_UINT;    /* RGBA16Uint */
-        case 0x00000025: return DXGI_FORMAT_R16G16B16A16_SINT;    /* RGBA16Sint */
-        case 0x00000026: return DXGI_FORMAT_R16G16B16A16_FLOAT;   /* RGBA16Float */
-        case 0x00000027: return DXGI_FORMAT_R16G16B16A16_UNORM;   /* RGBA16Unorm */
-        case 0x00000028: return DXGI_FORMAT_R16G16B16A16_SNORM;   /* RGBA16Snorm */
-        case 0x00000029: return DXGI_FORMAT_R32G32B32A32_UINT;    /* RGBA32Uint */
-        case 0x0000002A: return DXGI_FORMAT_R32G32B32A32_SINT;    /* RGBA32Sint */
-        case 0x0000002B: return DXGI_FORMAT_R32G32B32A32_FLOAT;   /* RGBA32Float */
-        case 0x0000002C: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Stencil8 */
-        case 0x0000002D: return DXGI_FORMAT_D16_UNORM;            /* Depth16Unorm */
-        case 0x0000002E: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24Plus */
-        case 0x0000002F: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24PlusStencil8 */
-        case 0x00000030: return DXGI_FORMAT_D32_FLOAT;            /* Depth32Float */
-        case 0x00000031: return DXGI_FORMAT_D32_FLOAT_S8X24_UINT; /* Depth32FloatStencil8 */
+        case 0x00000015: return DXGI_FORMAT_R16G16_FLOAT;          /* RG16Float */
+        case 0x00000016: return DXGI_FORMAT_R8G8B8A8_UNORM;        /* RGBA8Unorm */
+        case 0x00000017: return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;   /* RGBA8UnormSrgb */
+        case 0x00000018: return DXGI_FORMAT_R8G8B8A8_SNORM;        /* RGBA8Snorm */
+        case 0x00000019: return DXGI_FORMAT_R8G8B8A8_UINT;         /* RGBA8Uint */
+        case 0x0000001A: return DXGI_FORMAT_R8G8B8A8_SINT;         /* RGBA8Sint */
+        case 0x0000001B: return DXGI_FORMAT_B8G8R8A8_UNORM;        /* BGRA8Unorm */
+        case 0x0000001C: return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;   /* BGRA8UnormSrgb */
+        case 0x0000001D: return DXGI_FORMAT_R10G10B10A2_UINT;      /* RGB10A2Uint */
+        case 0x0000001E: return DXGI_FORMAT_R10G10B10A2_UNORM;     /* RGB10A2Unorm */
+        case 0x0000001F: return DXGI_FORMAT_R11G11B10_FLOAT;       /* RG11B10Ufloat */
+        case 0x00000020: return DXGI_FORMAT_R9G9B9E5_SHAREDEXP;    /* RGB9E5Ufloat */
+        case 0x00000021: return DXGI_FORMAT_R32G32_FLOAT;          /* RG32Float */
+        case 0x00000022: return DXGI_FORMAT_R32G32_UINT;           /* RG32Uint */
+        case 0x00000023: return DXGI_FORMAT_R32G32_SINT;           /* RG32Sint */
+        case 0x00000024: return DXGI_FORMAT_R16G16B16A16_UINT;     /* RGBA16Uint */
+        case 0x00000025: return DXGI_FORMAT_R16G16B16A16_SINT;     /* RGBA16Sint */
+        case 0x00000026: return DXGI_FORMAT_R16G16B16A16_FLOAT;    /* RGBA16Float */
+        case 0x00000027: return DXGI_FORMAT_R32G32B32A32_FLOAT;    /* RGBA32Float */
+        case 0x00000028: return DXGI_FORMAT_R32G32B32A32_UINT;     /* RGBA32Uint */
+        case 0x00000029: return DXGI_FORMAT_R32G32B32A32_SINT;     /* RGBA32Sint */
+        case 0x0000002A: return DXGI_FORMAT_R16G16B16A16_UNORM;    /* RGBA16Unorm */
+        case 0x0000002B: return DXGI_FORMAT_R16G16B16A16_SNORM;    /* RGBA16Snorm */
+        case 0x0000002C: return DXGI_FORMAT_R24G8_TYPELESS;         /* Stencil8 */
+        case 0x0000002D: return DXGI_FORMAT_R16_TYPELESS;           /* Depth16Unorm */
+        case 0x0000002E: return DXGI_FORMAT_R32_TYPELESS;           /* Depth24Plus */
+        case 0x0000002F: return DXGI_FORMAT_R24G8_TYPELESS;         /* Depth24PlusStencil8 */
+        case 0x00000030: return DXGI_FORMAT_R32_TYPELESS;           /* Depth32Float */
+        case 0x00000031: return DXGI_FORMAT_R32G8X24_TYPELESS;      /* Depth32FloatStencil8 */
         case 0x00000032: return DXGI_FORMAT_BC1_UNORM;            /* BC1RGBAUnorm */
         case 0x00000033: return DXGI_FORMAT_BC1_UNORM_SRGB;       /* BC1RGBAUnormSrgb */
         case 0x00000034: return DXGI_FORMAT_BC2_UNORM;            /* BC2RGBAUnorm */
@@ -273,9 +289,39 @@ static DXGI_FORMAT map_wgpu_format_to_dxgi(uint32_t format) {
     }
 }
 
-static D3D12_RESOURCE_FLAGS map_wgpu_usage_to_d3d12_flags(uint32_t usage) {
+static DXGI_FORMAT map_wgpu_format_to_dxgi_view(uint32_t format, uint32_t aspect) {
+    switch (format) {
+        case 0x0000002C: /* Stencil8 */
+            return DXGI_FORMAT_X24_TYPELESS_G8_UINT;
+        case 0x0000002D: /* Depth16Unorm */
+            return DXGI_FORMAT_R16_UNORM;
+        case 0x0000002E: /* Depth24Plus */
+            return DXGI_FORMAT_R32_FLOAT;
+        case 0x0000002F: /* Depth24PlusStencil8 */
+            return aspect == 1 ? DXGI_FORMAT_X24_TYPELESS_G8_UINT : DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        case 0x00000030: /* Depth32Float */
+            return DXGI_FORMAT_R32_FLOAT;
+        case 0x00000031: /* Depth32FloatStencil8 */
+            return aspect == 1 ? DXGI_FORMAT_X32_TYPELESS_G8X24_UINT : DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+        default:
+            return map_wgpu_format_to_dxgi(format);
+    }
+}
+
+static D3D12_RESOURCE_FLAGS map_wgpu_usage_to_d3d12_flags(uint32_t format, uint32_t usage) {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-    if (usage & 0x0000000000000010) flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; /* RenderAttachment */
+    if (usage & 0x0000000000000010) {
+        if (format == 0x0000002C ||
+            format == 0x0000002D ||
+            format == 0x0000002E ||
+            format == 0x0000002F ||
+            format == 0x00000030 ||
+            format == 0x00000031) {
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        } else {
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; /* RenderAttachment */
+        }
+    }
     if (usage & 0x0000000000000008) flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; /* StorageBinding */
     return flags;
 }
@@ -302,9 +348,18 @@ D3D12Handle d3d12_bridge_device_create_texture_2d(D3D12Handle device_h, uint32_t
     desc.SampleDesc.Count   = 1;
     desc.SampleDesc.Quality = 0;
     desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    desc.Flags              = map_wgpu_usage_to_d3d12_flags(usage_flags);
+    desc.Flags              = map_wgpu_usage_to_d3d12_flags(format, usage_flags);
 
     D3D12_RESOURCE_STATES initial = D3D12_RESOURCE_STATE_COPY_DEST;
+    if (usage_flags & 0x0000000000000010) {
+        if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) {
+            initial = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+        } else {
+            initial = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        }
+    } else if (usage_flags & 0x0000000000000008) {
+        initial = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    }
 
     ID3D12Resource* tex = NULL;
     HRESULT hr = device->lpVtbl->CreateCommittedResource(
@@ -410,6 +465,142 @@ void d3d12_bridge_device_create_rtv(D3D12Handle device_h, D3D12Handle resource_h
 
 /* --- Graphics pipeline --- */
 
+static DXGI_FORMAT map_depth_format(uint32_t format);
+
+static D3D12_PRIMITIVE_TOPOLOGY_TYPE map_wgpu_topology_type(uint32_t topology_type, uint32_t topology) {
+    if (topology_type != 0) return (D3D12_PRIMITIVE_TOPOLOGY_TYPE)topology_type;
+    switch (topology) {
+        case 0x00000001: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+        case 0x00000002:
+        case 0x00000003: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+        case 0x00000004:
+        case 0x00000005: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+        default:         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    }
+}
+
+static D3D12_CULL_MODE map_wgpu_cull_mode(uint32_t cull_mode) {
+    switch (cull_mode) {
+        case 0x00000002: return D3D12_CULL_MODE_FRONT;
+        case 0x00000003: return D3D12_CULL_MODE_BACK;
+        case 0x00000001:
+        default:         return D3D12_CULL_MODE_NONE;
+    }
+}
+
+static D3D12_BLEND_OP map_wgpu_blend_op(uint32_t op) {
+    switch (op) {
+        case 0x00000002: return D3D12_BLEND_OP_SUBTRACT;
+        case 0x00000003: return D3D12_BLEND_OP_REV_SUBTRACT;
+        case 0x00000004: return D3D12_BLEND_OP_MIN;
+        case 0x00000005: return D3D12_BLEND_OP_MAX;
+        case 0x00000001:
+        default:         return D3D12_BLEND_OP_ADD;
+    }
+}
+
+static D3D12_BLEND map_wgpu_blend_factor(uint32_t factor) {
+    switch (factor) {
+        case 0x00000001: return D3D12_BLEND_ZERO;
+        case 0x00000002: return D3D12_BLEND_ONE;
+        case 0x00000003: return D3D12_BLEND_SRC_COLOR;
+        case 0x00000004: return D3D12_BLEND_INV_SRC_COLOR;
+        case 0x00000005: return D3D12_BLEND_SRC_ALPHA;
+        case 0x00000006: return D3D12_BLEND_INV_SRC_ALPHA;
+        case 0x00000007: return D3D12_BLEND_DEST_COLOR;
+        case 0x00000008: return D3D12_BLEND_INV_DEST_COLOR;
+        case 0x00000009: return D3D12_BLEND_DEST_ALPHA;
+        case 0x0000000A: return D3D12_BLEND_INV_DEST_ALPHA;
+        case 0x0000000B: return D3D12_BLEND_SRC_ALPHA_SAT;
+        case 0x0000000C: return D3D12_BLEND_BLEND_FACTOR;
+        case 0x0000000D: return D3D12_BLEND_INV_BLEND_FACTOR;
+        case 0x0000000E: return D3D12_BLEND_SRC1_COLOR;
+        case 0x0000000F: return D3D12_BLEND_INV_SRC1_COLOR;
+        case 0x00000010: return D3D12_BLEND_SRC1_ALPHA;
+        case 0x00000011: return D3D12_BLEND_INV_SRC1_ALPHA;
+        default:         return D3D12_BLEND_ONE;
+    }
+}
+
+static D3D12_COMPARISON_FUNC map_wgpu_compare(uint32_t compare) {
+    switch (compare) {
+        case 0x00000001: return D3D12_COMPARISON_FUNC_NEVER;
+        case 0x00000002: return D3D12_COMPARISON_FUNC_LESS;
+        case 0x00000003: return D3D12_COMPARISON_FUNC_EQUAL;
+        case 0x00000004: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        case 0x00000005: return D3D12_COMPARISON_FUNC_GREATER;
+        case 0x00000006: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+        case 0x00000007: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+        case 0x00000008:
+        default:         return D3D12_COMPARISON_FUNC_ALWAYS;
+    }
+}
+
+static D3D12_STENCIL_OP map_wgpu_stencil_op(uint32_t op) {
+    switch (op) {
+        case 0x00000001: return D3D12_STENCIL_OP_ZERO;
+        case 0x00000002: return D3D12_STENCIL_OP_REPLACE;
+        case 0x00000003: return D3D12_STENCIL_OP_INVERT;
+        case 0x00000004: return D3D12_STENCIL_OP_INCR_SAT;
+        case 0x00000005: return D3D12_STENCIL_OP_DECR_SAT;
+        case 0x00000006: return D3D12_STENCIL_OP_INCR;
+        case 0x00000007: return D3D12_STENCIL_OP_DECR;
+        case 0x00000000:
+        default:         return D3D12_STENCIL_OP_KEEP;
+    }
+}
+
+static UINT mask_color_write(uint32_t mask) {
+    UINT d3d_mask = 0;
+    if (mask & 0x1u) d3d_mask |= D3D12_COLOR_WRITE_ENABLE_RED;
+    if (mask & 0x2u) d3d_mask |= D3D12_COLOR_WRITE_ENABLE_GREEN;
+    if (mask & 0x4u) d3d_mask |= D3D12_COLOR_WRITE_ENABLE_BLUE;
+    if (mask & 0x8u) d3d_mask |= D3D12_COLOR_WRITE_ENABLE_ALPHA;
+    return d3d_mask;
+}
+
+typedef HRESULT (WINAPI *PFN_D3DCOMPILE)(
+    LPCVOID,
+    SIZE_T,
+    LPCSTR,
+    const D3D_SHADER_MACRO*,
+    ID3DInclude*,
+    LPCSTR,
+    LPCSTR,
+    UINT,
+    UINT,
+    ID3DBlob**,
+    ID3DBlob**);
+
+static PFN_D3DCOMPILE load_d3d_compile(void) {
+    static PFN_D3DCOMPILE fn = NULL;
+    static int attempted = 0;
+    if (attempted) return fn;
+    attempted = 1;
+    HMODULE compiler = LoadLibraryA("d3dcompiler_47.dll");
+    if (compiler == NULL) compiler = LoadLibraryA("d3dcompiler_46.dll");
+    if (compiler == NULL) compiler = LoadLibraryA("d3dcompiler_43.dll");
+    if (compiler == NULL) return NULL;
+    fn = (PFN_D3DCOMPILE)GetProcAddress(compiler, "D3DCompile");
+    return fn;
+}
+
+static ID3DBlob* compile_hlsl_blob(const char* source, size_t source_len, const char* entry, const char* target) {
+    PFN_D3DCOMPILE compile_fn = load_d3d_compile();
+    if (compile_fn == NULL || source == NULL || entry == NULL || target == NULL) return NULL;
+
+    ID3DBlob* code = NULL;
+    ID3DBlob* errors = NULL;
+    UINT flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3;
+    HRESULT hr = compile_fn(source, source_len, "doe_d3d12", NULL, NULL, entry, target, flags, 0, &code, &errors);
+    if (errors) errors->lpVtbl->Release(errors);
+    if (FAILED(hr)) {
+        if (code) code->lpVtbl->Release(code);
+        return NULL;
+    }
+    return code;
+}
+
 /* Minimal passthrough VS/PS bytecode (DXBC noop shaders) embedded at build time is impractical;
    callers provide bytecode. This function wires VS+PS into a graphics PSO. */
 D3D12Handle d3d12_bridge_device_create_graphics_pipeline(D3D12Handle device_h, D3D12Handle root_sig_h,
@@ -445,6 +636,120 @@ D3D12Handle d3d12_bridge_device_create_graphics_pipeline(D3D12Handle device_h, D
     return (D3D12Handle)pso;
 }
 
+D3D12Handle d3d12_bridge_device_create_graphics_pipeline_hlsl(
+    D3D12Handle device_h,
+    D3D12Handle root_sig_h,
+    const char* vs_source,
+    size_t vs_source_len,
+    const char* vs_entry,
+    const char* ps_source,
+    size_t ps_source_len,
+    const char* ps_entry,
+    const D3D12GraphicsPipelineDesc* pipeline_desc,
+    const D3D12InputElementDesc* input_elements,
+    uint32_t input_element_count) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12RootSignature* root_sig = (ID3D12RootSignature*)root_sig_h;
+    if (device == NULL || root_sig == NULL || pipeline_desc == NULL) return NULL;
+
+    ID3DBlob* vs_blob = compile_hlsl_blob(vs_source, vs_source_len, vs_entry, "vs_5_0");
+    if (vs_blob == NULL) return NULL;
+    ID3DBlob* ps_blob = compile_hlsl_blob(ps_source, ps_source_len, ps_entry, "ps_5_0");
+    if (ps_blob == NULL) {
+        vs_blob->lpVtbl->Release(vs_blob);
+        return NULL;
+    }
+
+    D3D12_INPUT_ELEMENT_DESC stack_elements[16];
+    D3D12_INPUT_ELEMENT_DESC* native_elements = NULL;
+    if (input_element_count > 0) {
+        if (input_element_count <= 16) {
+            native_elements = stack_elements;
+        } else {
+            native_elements = (D3D12_INPUT_ELEMENT_DESC*)calloc(input_element_count, sizeof(D3D12_INPUT_ELEMENT_DESC));
+            if (native_elements == NULL) {
+                vs_blob->lpVtbl->Release(vs_blob);
+                ps_blob->lpVtbl->Release(ps_blob);
+                return NULL;
+            }
+        }
+        for (uint32_t i = 0; i < input_element_count; ++i) {
+            native_elements[i].SemanticName = "ATTR";
+            native_elements[i].SemanticIndex = input_elements[i].semantic_index;
+            native_elements[i].Format = (DXGI_FORMAT)input_elements[i].format;
+            native_elements[i].InputSlot = input_elements[i].input_slot;
+            native_elements[i].AlignedByteOffset = input_elements[i].aligned_byte_offset;
+            native_elements[i].InputSlotClass = (D3D12_INPUT_CLASSIFICATION)input_elements[i].input_slot_class;
+            native_elements[i].InstanceDataStepRate = input_elements[i].instance_data_step_rate;
+        }
+    }
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.pRootSignature = root_sig;
+    desc.VS.pShaderBytecode = vs_blob->lpVtbl->GetBufferPointer(vs_blob);
+    desc.VS.BytecodeLength = vs_blob->lpVtbl->GetBufferSize(vs_blob);
+    desc.PS.pShaderBytecode = ps_blob->lpVtbl->GetBufferPointer(ps_blob);
+    desc.PS.BytecodeLength = ps_blob->lpVtbl->GetBufferSize(ps_blob);
+    desc.InputLayout.pInputElementDescs = native_elements;
+    desc.InputLayout.NumElements = input_element_count;
+    desc.SampleMask = UINT_MAX;
+    desc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    desc.RasterizerState.CullMode = map_wgpu_cull_mode(pipeline_desc->cull_mode);
+    desc.RasterizerState.FrontCounterClockwise = pipeline_desc->front_face == 0x00000001 ? TRUE : FALSE;
+    desc.RasterizerState.DepthBias = pipeline_desc->depth_bias;
+    desc.RasterizerState.DepthBiasClamp = pipeline_desc->depth_bias_clamp;
+    desc.RasterizerState.SlopeScaledDepthBias = pipeline_desc->depth_bias_slope_scale;
+    desc.RasterizerState.DepthClipEnable = pipeline_desc->unclipped_depth ? FALSE : TRUE;
+    desc.BlendState.AlphaToCoverageEnable = FALSE;
+    desc.BlendState.IndependentBlendEnable = FALSE;
+    desc.BlendState.RenderTarget[0].BlendEnable = pipeline_desc->blend_enabled ? TRUE : FALSE;
+    desc.BlendState.RenderTarget[0].LogicOpEnable = FALSE;
+    desc.BlendState.RenderTarget[0].SrcBlend = map_wgpu_blend_factor(pipeline_desc->color_src_factor);
+    desc.BlendState.RenderTarget[0].DestBlend = map_wgpu_blend_factor(pipeline_desc->color_dst_factor);
+    desc.BlendState.RenderTarget[0].BlendOp = map_wgpu_blend_op(pipeline_desc->color_operation);
+    desc.BlendState.RenderTarget[0].SrcBlendAlpha = map_wgpu_blend_factor(pipeline_desc->alpha_src_factor);
+    desc.BlendState.RenderTarget[0].DestBlendAlpha = map_wgpu_blend_factor(pipeline_desc->alpha_dst_factor);
+    desc.BlendState.RenderTarget[0].BlendOpAlpha = map_wgpu_blend_op(pipeline_desc->alpha_operation);
+    desc.BlendState.RenderTarget[0].RenderTargetWriteMask = mask_color_write(pipeline_desc->color_write_mask);
+    desc.DepthStencilState.DepthEnable = pipeline_desc->depth_stencil_format != 0 ? TRUE : FALSE;
+    desc.DepthStencilState.DepthWriteMask = pipeline_desc->depth_write_enabled ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    desc.DepthStencilState.DepthFunc = map_wgpu_compare(pipeline_desc->depth_compare);
+    desc.DepthStencilState.StencilEnable =
+        (pipeline_desc->stencil_front_compare != 0x00000008 || pipeline_desc->stencil_back_compare != 0x00000008 ||
+         pipeline_desc->stencil_front_fail_op != 0 || pipeline_desc->stencil_front_depth_fail_op != 0 ||
+         pipeline_desc->stencil_front_pass_op != 0 || pipeline_desc->stencil_back_fail_op != 0 ||
+         pipeline_desc->stencil_back_depth_fail_op != 0 || pipeline_desc->stencil_back_pass_op != 0 ||
+         pipeline_desc->stencil_read_mask != 0xFFFFFFFFu || pipeline_desc->stencil_write_mask != 0xFFFFFFFFu) ? TRUE : FALSE;
+    desc.DepthStencilState.StencilReadMask = (UINT8)(pipeline_desc->stencil_read_mask & 0xFFu);
+    desc.DepthStencilState.StencilWriteMask = (UINT8)(pipeline_desc->stencil_write_mask & 0xFFu);
+    desc.DepthStencilState.FrontFace.StencilFunc = map_wgpu_compare(pipeline_desc->stencil_front_compare);
+    desc.DepthStencilState.FrontFace.StencilFailOp = map_wgpu_stencil_op(pipeline_desc->stencil_front_fail_op);
+    desc.DepthStencilState.FrontFace.StencilDepthFailOp = map_wgpu_stencil_op(pipeline_desc->stencil_front_depth_fail_op);
+    desc.DepthStencilState.FrontFace.StencilPassOp = map_wgpu_stencil_op(pipeline_desc->stencil_front_pass_op);
+    desc.DepthStencilState.BackFace.StencilFunc = map_wgpu_compare(pipeline_desc->stencil_back_compare);
+    desc.DepthStencilState.BackFace.StencilFailOp = map_wgpu_stencil_op(pipeline_desc->stencil_back_fail_op);
+    desc.DepthStencilState.BackFace.StencilDepthFailOp = map_wgpu_stencil_op(pipeline_desc->stencil_back_depth_fail_op);
+    desc.DepthStencilState.BackFace.StencilPassOp = map_wgpu_stencil_op(pipeline_desc->stencil_back_pass_op);
+    desc.PrimitiveTopologyType = map_wgpu_topology_type(pipeline_desc->topology_type, pipeline_desc->topology);
+    desc.NumRenderTargets = 1;
+    desc.RTVFormats[0] = map_wgpu_format_to_dxgi(pipeline_desc->target_format);
+    desc.DSVFormat = pipeline_desc->depth_stencil_format != 0
+        ? map_depth_format(pipeline_desc->depth_stencil_format)
+        : DXGI_FORMAT_UNKNOWN;
+    desc.SampleDesc.Count = pipeline_desc->sample_count == 0 ? 1 : pipeline_desc->sample_count;
+    desc.SampleDesc.Quality = 0;
+
+    ID3D12PipelineState* pso = NULL;
+    HRESULT hr = device->lpVtbl->CreateGraphicsPipelineState(device, &desc, &IID_ID3D12PipelineState, (void**)&pso);
+
+    if (native_elements != NULL && native_elements != stack_elements) free(native_elements);
+    vs_blob->lpVtbl->Release(vs_blob);
+    ps_blob->lpVtbl->Release(ps_blob);
+    if (FAILED(hr)) return NULL;
+    return (D3D12Handle)pso;
+}
+
 /* --- Render commands --- */
 
 void d3d12_bridge_command_list_set_graphics_root_signature(D3D12Handle cmd_list_h, D3D12Handle root_sig_h) {
@@ -453,19 +758,30 @@ void d3d12_bridge_command_list_set_graphics_root_signature(D3D12Handle cmd_list_
     cmd->lpVtbl->SetGraphicsRootSignature(cmd, root_sig);
 }
 
-void d3d12_bridge_command_list_set_render_target(D3D12Handle cmd_list_h, D3D12Handle rtv_heap_h, uint32_t index) {
+void d3d12_bridge_command_list_set_render_targets(
+    D3D12Handle cmd_list_h,
+    D3D12Handle rtv_heap_h,
+    uint32_t rtv_index,
+    D3D12Handle dsv_heap_h,
+    uint32_t dsv_index) {
     ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
-    ID3D12DescriptorHeap* heap     = (ID3D12DescriptorHeap*)rtv_heap_h;
+    ID3D12DescriptorHeap* rtv_heap = (ID3D12DescriptorHeap*)rtv_heap_h;
+    ID3D12DescriptorHeap* dsv_heap = (ID3D12DescriptorHeap*)dsv_heap_h;
+    D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle;
+    rtv_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(rtv_heap, &rtv_handle);
+    (void)rtv_index;
+    if (dsv_heap != NULL) {
+        D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle;
+        dsv_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(dsv_heap, &dsv_handle);
+        (void)dsv_index;
+        cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &rtv_handle, FALSE, &dsv_handle);
+    } else {
+        cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &rtv_handle, FALSE, NULL);
+    }
+}
 
-    /* Get increment size — we need the device for this; query from heap's parent.
-       Workaround: assume standard RTV increment (typically 32 bytes on most GPUs).
-       The proper approach uses ID3D12Device::GetDescriptorHandleIncrementSize,
-       but we don't have the device here. We store the full CPU handle start instead. */
-    D3D12_CPU_DESCRIPTOR_HANDLE handle;
-    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
-    /* index is passed as 0 for single-target usage; for multi-target, caller pre-offsets */
-    (void)index;
-    cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &handle, FALSE, NULL);
+void d3d12_bridge_command_list_set_render_target(D3D12Handle cmd_list_h, D3D12Handle rtv_heap_h, uint32_t index) {
+    d3d12_bridge_command_list_set_render_targets(cmd_list_h, rtv_heap_h, index, NULL, 0);
 }
 
 void d3d12_bridge_command_list_set_viewport(D3D12Handle cmd_list_h, float x, float y, float w, float h,
@@ -497,6 +813,16 @@ void d3d12_bridge_command_list_ia_set_primitive_topology(D3D12Handle cmd_list_h,
     cmd->lpVtbl->IASetPrimitiveTopology(cmd, (D3D12_PRIMITIVE_TOPOLOGY)topology);
 }
 
+void d3d12_bridge_command_list_set_blend_factor(D3D12Handle cmd_list_h, const float rgba[4]) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    cmd->lpVtbl->OMSetBlendFactor(cmd, rgba);
+}
+
+void d3d12_bridge_command_list_set_stencil_ref(D3D12Handle cmd_list_h, uint32_t reference) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    cmd->lpVtbl->OMSetStencilRef(cmd, reference);
+}
+
 void d3d12_bridge_command_list_draw_instanced(D3D12Handle cmd_list_h, uint32_t vertex_count,
                                                uint32_t instance_count, uint32_t start_vertex,
                                                uint32_t start_instance) {
@@ -509,6 +835,61 @@ void d3d12_bridge_command_list_draw_indexed_instanced(D3D12Handle cmd_list_h, ui
                                                        int32_t base_vertex, uint32_t start_instance) {
     ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
     cmd->lpVtbl->DrawIndexedInstanced(cmd, index_count, instance_count, start_index, base_vertex, start_instance);
+}
+
+void d3d12_bridge_command_list_ia_set_vertex_buffers(D3D12Handle cmd_list_h, uint32_t start_slot,
+                                                      uint32_t num_views, D3D12Handle buffer_h,
+                                                      uint32_t size_in_bytes, uint32_t stride_in_bytes,
+                                                      uint64_t offset) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
+    if (cmd == NULL || buffer == NULL || num_views == 0) return;
+
+    D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+    UINT64 total_size = desc.Width;
+    if (offset >= total_size) return;
+
+    D3D12_VERTEX_BUFFER_VIEW view;
+    view.BufferLocation = buffer->lpVtbl->GetGPUVirtualAddress(buffer) + offset;
+    view.SizeInBytes = size_in_bytes != 0 && (UINT64)size_in_bytes <= total_size - offset
+        ? size_in_bytes
+        : (UINT)(total_size - offset);
+    view.StrideInBytes = stride_in_bytes;
+    cmd->lpVtbl->IASetVertexBuffers(cmd, start_slot, 1, &view);
+}
+
+void d3d12_bridge_command_list_ia_set_index_buffer(D3D12Handle cmd_list_h, D3D12Handle buffer_h,
+                                                    uint32_t format, uint32_t size_in_bytes,
+                                                    uint64_t offset) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
+    if (cmd == NULL || buffer == NULL) return;
+
+    D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+    UINT64 total_size = desc.Width;
+    if (offset >= total_size) return;
+
+    DXGI_FORMAT dxgi_format;
+    switch (format) {
+        case 0x00000001:
+        case DXGI_FORMAT_R16_UINT:
+            dxgi_format = DXGI_FORMAT_R16_UINT;
+            break;
+        case 0x00000002:
+        case DXGI_FORMAT_R32_UINT:
+            dxgi_format = DXGI_FORMAT_R32_UINT;
+            break;
+        default:
+            return;
+    }
+
+    D3D12_INDEX_BUFFER_VIEW view;
+    view.BufferLocation = buffer->lpVtbl->GetGPUVirtualAddress(buffer) + offset;
+    view.SizeInBytes = size_in_bytes != 0 && (UINT64)size_in_bytes <= total_size - offset
+        ? size_in_bytes
+        : (UINT)(total_size - offset);
+    view.Format = dxgi_format;
+    cmd->lpVtbl->IASetIndexBuffer(cmd, &view);
 }
 
 /* --- Indirect execution --- */
@@ -685,6 +1066,7 @@ D3D12Handle d3d12_bridge_device_create_dsv_heap(D3D12Handle device_h, uint32_t n
 
 static DXGI_FORMAT map_depth_format(uint32_t format) {
     switch (format) {
+        case 0x0000002C: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Stencil8 */
         case 0x0000002D: return DXGI_FORMAT_D16_UNORM;
         case 0x0000002E: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24Plus */
         case 0x0000002F: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24PlusStencil8 */
@@ -830,7 +1212,7 @@ void d3d12_bridge_device_create_uav_buffer(D3D12Handle device_h, D3D12Handle hea
 
 void d3d12_bridge_device_create_srv_texture_2d(D3D12Handle device_h, D3D12Handle resource_h,
                                                 D3D12Handle heap_h, uint32_t index, uint32_t format,
-                                                uint32_t base_mip, uint32_t mip_count) {
+                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count) {
     ID3D12Device* device = (ID3D12Device*)device_h;
     ID3D12Resource* resource = (ID3D12Resource*)resource_h;
     ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
@@ -842,7 +1224,7 @@ void d3d12_bridge_device_create_srv_texture_2d(D3D12Handle device_h, D3D12Handle
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
     memset(&srv_desc, 0, sizeof(srv_desc));
-    srv_desc.Format                        = map_wgpu_format_to_dxgi(format);
+    srv_desc.Format                        = map_wgpu_format_to_dxgi_view(format, aspect);
     srv_desc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
     srv_desc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srv_desc.Texture2D.MostDetailedMip     = base_mip;
@@ -853,7 +1235,7 @@ void d3d12_bridge_device_create_srv_texture_2d(D3D12Handle device_h, D3D12Handle
 
 void d3d12_bridge_device_create_srv_texture_cube(D3D12Handle device_h, D3D12Handle resource_h,
                                                   D3D12Handle heap_h, uint32_t index, uint32_t format,
-                                                  uint32_t base_mip, uint32_t mip_count) {
+                                                  uint32_t aspect, uint32_t base_mip, uint32_t mip_count) {
     ID3D12Device* device = (ID3D12Device*)device_h;
     ID3D12Resource* resource = (ID3D12Resource*)resource_h;
     ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
@@ -865,7 +1247,7 @@ void d3d12_bridge_device_create_srv_texture_cube(D3D12Handle device_h, D3D12Hand
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
     memset(&srv_desc, 0, sizeof(srv_desc));
-    srv_desc.Format                           = map_wgpu_format_to_dxgi(format);
+    srv_desc.Format                           = map_wgpu_format_to_dxgi_view(format, aspect);
     srv_desc.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURECUBE;
     srv_desc.Shader4ComponentMapping          = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srv_desc.TextureCube.MostDetailedMip      = base_mip;
@@ -876,7 +1258,7 @@ void d3d12_bridge_device_create_srv_texture_cube(D3D12Handle device_h, D3D12Hand
 
 void d3d12_bridge_device_create_srv_texture_3d(D3D12Handle device_h, D3D12Handle resource_h,
                                                 D3D12Handle heap_h, uint32_t index, uint32_t format,
-                                                uint32_t base_mip, uint32_t mip_count) {
+                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count) {
     ID3D12Device* device = (ID3D12Device*)device_h;
     ID3D12Resource* resource = (ID3D12Resource*)resource_h;
     ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
@@ -888,7 +1270,7 @@ void d3d12_bridge_device_create_srv_texture_3d(D3D12Handle device_h, D3D12Handle
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
     memset(&srv_desc, 0, sizeof(srv_desc));
-    srv_desc.Format                          = map_wgpu_format_to_dxgi(format);
+    srv_desc.Format                          = map_wgpu_format_to_dxgi_view(format, aspect);
     srv_desc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE3D;
     srv_desc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srv_desc.Texture3D.MostDetailedMip       = base_mip;
@@ -1076,12 +1458,17 @@ D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device_h, uint32_t
     desc.SampleDesc.Count   = 1;
     desc.SampleDesc.Quality = 0;
     desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    desc.Flags              = map_wgpu_usage_to_d3d12_flags(usage_flags);
+    desc.Flags              = map_wgpu_usage_to_d3d12_flags(format, usage_flags);
+
+    D3D12_RESOURCE_STATES initial = D3D12_RESOURCE_STATE_COPY_DEST;
+    if (usage_flags & 0x0000000000000008) {
+        initial = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    }
 
     ID3D12Resource* tex = NULL;
     HRESULT hr = device->lpVtbl->CreateCommittedResource(
         device, &heap_props, D3D12_HEAP_FLAG_NONE,
-        &desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+        &desc, initial, NULL,
         &IID_ID3D12Resource, (void**)&tex);
     if (FAILED(hr)) return NULL;
     return (D3D12Handle)tex;
@@ -1120,7 +1507,24 @@ int d3d12_bridge_device_supports_native_16bit(D3D12Handle device) {
 
 /* --- DXGI swap chain (surface) --- */
 
-D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue_h, uint32_t width, uint32_t height, uint32_t format) {
+static DXGI_ALPHA_MODE map_canvas_alpha_mode(uint32_t alpha_mode) {
+    switch (alpha_mode) {
+        case 0x00000002: return DXGI_ALPHA_MODE_PREMULTIPLIED;
+        case 0x00000001:
+        default:         return DXGI_ALPHA_MODE_IGNORE;
+    }
+}
+
+static DXGI_COLOR_SPACE_TYPE map_canvas_color_space(uint32_t tone_mapping_mode) {
+    switch (tone_mapping_mode) {
+        case 0x00000002: return DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+        case 0x00000001:
+        default:         return DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+    }
+}
+
+D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue_h, uint32_t width, uint32_t height, uint32_t format,
+                                           uint32_t alpha_mode, uint32_t tone_mapping_mode) {
     IDXGIFactory4* factory = NULL;
     HRESULT hr = CreateDXGIFactory1(&IID_IDXGIFactory4, (void**)&factory);
     if (FAILED(hr)) return NULL;
@@ -1134,12 +1538,27 @@ D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue_h, uint32_t width, 
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     desc.BufferCount = 2;
     desc.SwapEffect  = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    desc.AlphaMode   = map_canvas_alpha_mode(alpha_mode);
 
     /* Headless swap chain for benchmarking; no HWND target */
     IDXGISwapChain1* chain = NULL;
     hr = factory->lpVtbl->CreateSwapChainForComposition(factory, (IUnknown*)queue_h, &desc, NULL, &chain);
     factory->lpVtbl->Release(factory);
     if (FAILED(hr)) return NULL;
+    if (tone_mapping_mode == 0x00000002) {
+        IDXGISwapChain3* chain3 = NULL;
+        hr = chain->lpVtbl->QueryInterface(chain, &IID_IDXGISwapChain3, (void**)&chain3);
+        if (FAILED(hr) || chain3 == NULL) {
+            chain->lpVtbl->Release(chain);
+            return NULL;
+        }
+        hr = chain3->lpVtbl->SetColorSpace1(chain3, map_canvas_color_space(tone_mapping_mode));
+        chain3->lpVtbl->Release(chain3);
+        if (FAILED(hr)) {
+            chain->lpVtbl->Release(chain);
+            return NULL;
+        }
+    }
     return (D3D12Handle)chain;
 }
 
@@ -1178,7 +1597,7 @@ void d3d12_bridge_device_create_srv_texture(D3D12Handle device_h, D3D12Handle he
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
     memset(&srv_desc, 0, sizeof(srv_desc));
-    srv_desc.Format                        = map_wgpu_format_to_dxgi(format);
+    srv_desc.Format                        = map_wgpu_format_to_dxgi_view(format, 0);
     srv_desc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
     srv_desc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srv_desc.Texture2D.MostDetailedMip     = 0;

@@ -15,6 +15,7 @@ const WGPU_DEPTH24_PLUS: u32 = 0x0000002E;
 const WGPU_DEPTH24_PLUS_STENCIL8: u32 = 0x0000002F;
 const WGPU_DEPTH32_FLOAT: u32 = 0x00000030;
 const WGPU_DEPTH32_FLOAT_STENCIL8: u32 = 0x00000031;
+const WGPU_STENCIL8: u32 = 0x0000002C;
 
 // Single DSV descriptor per depth/stencil state; more can be added if MRT
 // depth targets are needed in the future.
@@ -63,6 +64,7 @@ extern fn d3d12_bridge_device_create_depth_texture(
 pub fn map_wgpu_depth_format(format: u32) u32 {
     return switch (format) {
         WGPU_DEPTH16_UNORM => DXGI_FORMAT_D16_UNORM,
+        WGPU_STENCIL8 => DXGI_FORMAT_D24_UNORM_S8_UINT,
         WGPU_DEPTH24_PLUS => DXGI_FORMAT_D24_UNORM_S8_UINT,
         WGPU_DEPTH24_PLUS_STENCIL8 => DXGI_FORMAT_D24_UNORM_S8_UINT,
         WGPU_DEPTH32_FLOAT => DXGI_FORMAT_D32_FLOAT,
@@ -75,6 +77,7 @@ pub fn map_wgpu_depth_format(format: u32) u32 {
 pub fn is_depth_format(format: u32) bool {
     return switch (format) {
         WGPU_DEPTH16_UNORM,
+        WGPU_STENCIL8,
         WGPU_DEPTH24_PLUS,
         WGPU_DEPTH24_PLUS_STENCIL8,
         WGPU_DEPTH32_FLOAT,
@@ -88,6 +91,7 @@ pub fn is_depth_format(format: u32) bool {
 pub fn has_stencil(format: u32) bool {
     return switch (format) {
         WGPU_DEPTH24_PLUS_STENCIL8,
+        WGPU_STENCIL8,
         WGPU_DEPTH32_FLOAT_STENCIL8,
         => true,
         else => false,

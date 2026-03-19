@@ -1,6 +1,7 @@
 const vk = @import("vk_constants.zig");
 const vulkan_errors = @import("vulkan_errors.zig");
 const structs = @import("vk_structs.zig");
+const capability_structs = @import("vk_capability_structs.zig");
 
 pub extern fn vkCreateInstance(pCreateInfo: *const structs.VkInstanceCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pInstance: *vk.VkInstance) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyInstance(instance: vk.VkInstance, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
@@ -45,6 +46,9 @@ pub extern fn vkBindBufferMemory(device: vk.VkDevice, buffer: vk.VkBuffer, memor
 pub extern fn vkMapMemory(device: vk.VkDevice, memory: vk.VkDeviceMemory, offset: vk.VkDeviceSize, size: vk.VkDeviceSize, flags: vk.VkFlags, ppData: *?*anyopaque) callconv(.c) vk.VkResult;
 pub extern fn vkUnmapMemory(device: vk.VkDevice, memory: vk.VkDeviceMemory) callconv(.c) void;
 pub extern fn vkGetPhysicalDeviceMemoryProperties(physicalDevice: vk.VkPhysicalDevice, pMemoryProperties: *structs.VkPhysicalDeviceMemoryProperties) callconv(.c) void;
+pub extern fn vkGetPhysicalDeviceFeatures2(physicalDevice: vk.VkPhysicalDevice, pFeatures: *capability_structs.VkPhysicalDeviceFeatures2) callconv(.c) void;
+pub extern fn vkGetPhysicalDeviceProperties2(physicalDevice: vk.VkPhysicalDevice, pProperties: *capability_structs.VkPhysicalDeviceProperties2) callconv(.c) void;
+pub extern fn vkGetPhysicalDeviceFormatProperties(physicalDevice: vk.VkPhysicalDevice, format: u32, pFormatProperties: *capability_structs.VkFormatProperties) callconv(.c) void;
 pub extern fn vkCreateShaderModule(device: vk.VkDevice, pCreateInfo: *const structs.VkShaderModuleCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pShaderModule: *vk.VkShaderModule) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyShaderModule(device: vk.VkDevice, shaderModule: vk.VkShaderModule, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkCreateDescriptorSetLayout(device: vk.VkDevice, pCreateInfo: *const structs.VkDescriptorSetLayoutCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pSetLayout: *vk.VkDescriptorSetLayout) callconv(.c) vk.VkResult;

@@ -47,6 +47,10 @@ pub fn texture_write(
     const format: u32 = if (tex_res.format != model.WGPUTextureFormat_Undefined) tex_res.format else model.WGPUTextureFormat_RGBA8Unorm;
     const usage: u32 = @truncate(tex_res.usage);
 
+    if (tex_res.dimension != model.WGPUTextureDimension_2D) return error.UnsupportedFeature;
+    if (tex_res.depth_or_array_layers != 1) return error.UnsupportedFeature;
+    if (tex_res.sample_count > 1) return error.UnsupportedFeature;
+
     const encode_start = common_timing.now_ns();
 
     var entry = texture_map.get(tex_res.handle);

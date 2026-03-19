@@ -1,12 +1,13 @@
 const std = @import("std");
+const model = @import("../../../model.zig");
 const common_timing = @import("../../common/timing.zig");
 
 // --- Bridge externs ---
 
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_cube(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_3d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
+extern fn d3d12_bridge_device_create_srv_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
+extern fn d3d12_bridge_device_create_srv_texture_cube(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
+extern fn d3d12_bridge_device_create_srv_texture_3d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
 extern fn d3d12_bridge_device_create_uav_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, mip_slice: u32) callconv(.c) void;
 
 // --- View dimension constants (WebGPU GPUTextureViewDimension) ---
@@ -23,6 +24,88 @@ const VIEW_DIMENSION_3D: u32 = 6;
 const TEXTURE_ASPECT_ALL: u32 = 0;
 const TEXTURE_ASPECT_STENCIL_ONLY: u32 = 1;
 const TEXTURE_ASPECT_DEPTH_ONLY: u32 = 2;
+
+fn normalize_aspect(aspect: u32) ?u32 {
+    return switch (aspect) {
+        TEXTURE_ASPECT_ALL, model.WGPUTextureAspect_All => TEXTURE_ASPECT_ALL,
+        TEXTURE_ASPECT_STENCIL_ONLY, model.WGPUTextureAspect_StencilOnly => TEXTURE_ASPECT_STENCIL_ONLY,
+        TEXTURE_ASPECT_DEPTH_ONLY, model.WGPUTextureAspect_DepthOnly => TEXTURE_ASPECT_DEPTH_ONLY,
+        else => null,
+    };
+}
+
+fn texture_aspect_supported(format: u32, aspect: u32) bool {
+    const normalized = normalize_aspect(aspect) orelse return false;
+    return switch (normalized) {
+        TEXTURE_ASPECT_ALL => true,
+        TEXTURE_ASPECT_DEPTH_ONLY => switch (format) {
+            model.WGPUTextureFormat_Stencil8 => false,
+            model.WGPUTextureFormat_Depth16Unorm,
+            model.WGPUTextureFormat_Depth24Plus,
+            model.WGPUTextureFormat_Depth24PlusStencil8,
+            model.WGPUTextureFormat_Depth32Float,
+            model.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            else => false,
+        },
+        TEXTURE_ASPECT_STENCIL_ONLY => switch (format) {
+            model.WGPUTextureFormat_Stencil8,
+            model.WGPUTextureFormat_Depth24PlusStencil8,
+            model.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            else => false,
+        },
+        else => false,
+    };
+}
+
+fn texture_supports_storage_binding(format: u32) bool {
+    return switch (format) {
+        model.WGPUTextureFormat_Stencil8,
+        model.WGPUTextureFormat_Depth16Unorm,
+        model.WGPUTextureFormat_Depth24Plus,
+        model.WGPUTextureFormat_Depth24PlusStencil8,
+        model.WGPUTextureFormat_Depth32Float,
+        model.WGPUTextureFormat_Depth32FloatStencil8,
+        model.WGPUTextureFormat_BGRA8Unorm,
+        model.WGPUTextureFormat_BGRA8UnormSrgb,
+        model.WGPUTextureFormat_RGB10A2Uint,
+        model.WGPUTextureFormat_RGB10A2Unorm,
+        model.WGPUTextureFormat_RG11B10Ufloat,
+        model.WGPUTextureFormat_RGB9E5Ufloat,
+        model.WGPUTextureFormat_BC1RGBAUnorm,
+        model.WGPUTextureFormat_BC1RGBAUnormSrgb,
+        model.WGPUTextureFormat_BC2RGBAUnorm,
+        model.WGPUTextureFormat_BC2RGBAUnormSrgb,
+        model.WGPUTextureFormat_BC3RGBAUnorm,
+        model.WGPUTextureFormat_BC3RGBAUnormSrgb,
+        model.WGPUTextureFormat_BC4RUnorm,
+        model.WGPUTextureFormat_BC4RSnorm,
+        model.WGPUTextureFormat_BC5RGUnorm,
+        model.WGPUTextureFormat_BC5RGSnorm,
+        model.WGPUTextureFormat_BC6HRGBUfloat,
+        model.WGPUTextureFormat_BC6HRGBFloat,
+        model.WGPUTextureFormat_BC7RGBAUnorm,
+        model.WGPUTextureFormat_BC7RGBAUnormSrgb,
+        model.WGPUTextureFormat_ETC2RGB8Unorm,
+        model.WGPUTextureFormat_ETC2RGB8UnormSrgb,
+        model.WGPUTextureFormat_ETC2RGB8A1Unorm,
+        model.WGPUTextureFormat_ETC2RGB8A1UnormSrgb,
+        model.WGPUTextureFormat_ETC2RGBA8Unorm,
+        model.WGPUTextureFormat_ETC2RGBA8UnormSrgb,
+        model.WGPUTextureFormat_EACR11Unorm,
+        model.WGPUTextureFormat_EACR11Snorm,
+        model.WGPUTextureFormat_EACRG11Unorm,
+        model.WGPUTextureFormat_EACRG11Snorm,
+        model.WGPUTextureFormat_ASTC4x4Unorm,
+        model.WGPUTextureFormat_ASTC4x4UnormSrgb,
+        model.WGPUTextureFormat_ASTC5x4Unorm,
+        model.WGPUTextureFormat_ASTC5x4UnormSrgb,
+        model.WGPUTextureFormat_ASTC5x5Unorm,
+        model.WGPUTextureFormat_ASTC5x5UnormSrgb,
+        model.WGPUTextureFormat_ASTC6x5Unorm,
+        model.WGPUTextureFormat_ASTC6x5UnormSrgb => false,
+        else => true,
+    };
+}
 
 // --- D3D12 SRV dimension values (D3D12_SRV_DIMENSION) ---
 // These map WebGPU view dimensions to the D3D12 enum for CreateShaderResourceView.
@@ -71,13 +154,29 @@ pub const TextureViewState = struct {
         base_layer: u32,
         layer_count: u32,
         aspect: u32,
+        texture_usage: u64,
         descriptor_heap: ?*anyopaque,
         descriptor_index: u32,
     ) !u64 {
         const encode_start = common_timing.now_ns();
 
-        // Write the SRV descriptor into the heap based on view dimension.
-        switch (dimension) {
+        if (!texture_aspect_supported(format, aspect)) return error.UnsupportedFeature;
+
+        // Storage bindings use UAV descriptors; sampled bindings use SRVs.
+        if ((texture_usage & model.WGPUTextureUsage_StorageBinding) != 0) {
+            if (!texture_supports_storage_binding(format)) return error.UnsupportedFeature;
+            const normalized_aspect = normalize_aspect(aspect) orelse return error.UnsupportedFeature;
+            if (normalized_aspect != TEXTURE_ASPECT_ALL) return error.UnsupportedFeature;
+            if (dimension != VIEW_DIMENSION_2D) return error.UnsupportedFeature;
+            d3d12_bridge_device_create_uav_texture_2d(
+                device,
+                texture_resource,
+                descriptor_heap,
+                descriptor_index,
+                format,
+                base_mip,
+            );
+        } else switch (dimension) {
             VIEW_DIMENSION_1D, VIEW_DIMENSION_2D, VIEW_DIMENSION_2D_ARRAY => {
                 d3d12_bridge_device_create_srv_texture_2d(
                     device,
@@ -85,6 +184,7 @@ pub const TextureViewState = struct {
                     descriptor_heap,
                     descriptor_index,
                     format,
+                    aspect,
                     base_mip,
                     mip_count,
                 );
@@ -96,6 +196,7 @@ pub const TextureViewState = struct {
                     descriptor_heap,
                     descriptor_index,
                     format,
+                    aspect,
                     base_mip,
                     mip_count,
                 );
@@ -107,6 +208,7 @@ pub const TextureViewState = struct {
                     descriptor_heap,
                     descriptor_index,
                     format,
+                    aspect,
                     base_mip,
                     mip_count,
                 );
