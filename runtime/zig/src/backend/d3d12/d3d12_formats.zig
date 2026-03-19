@@ -142,6 +142,10 @@ pub fn wgpu_format_to_dxgi(format: model.WGPUTextureFormat) !u32 {
         model.WGPUTextureFormat_BGRA8Unorm => DXGI_FORMAT_B8G8R8A8_UNORM,
         model.WGPUTextureFormat_BGRA8UnormSrgb => DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
 
+        // 4-channel 16-bit
+        model.WGPUTextureFormat_RGBA16Unorm => DXGI_FORMAT_R16G16B16A16_UNORM,
+        model.WGPUTextureFormat_RGBA16Snorm => DXGI_FORMAT_R16G16B16A16_SNORM,
+
         // Packed 32-bit color
         model.WGPUTextureFormat_RGB10A2Uint => DXGI_FORMAT_R10G10B10A2_UINT,
         model.WGPUTextureFormat_RGB10A2Unorm => DXGI_FORMAT_R10G10B10A2_UNORM,
@@ -245,6 +249,8 @@ pub fn bytes_per_pixel(format: model.WGPUTextureFormat) !u32 {
         model.WGPUTextureFormat_RGBA8Sint,
         model.WGPUTextureFormat_BGRA8Unorm,
         model.WGPUTextureFormat_BGRA8UnormSrgb,
+        model.WGPUTextureFormat_RGBA16Unorm,
+        model.WGPUTextureFormat_RGBA16Snorm,
         model.WGPUTextureFormat_RGB10A2Uint,
         model.WGPUTextureFormat_RGB10A2Unorm,
         model.WGPUTextureFormat_RG11B10Ufloat,

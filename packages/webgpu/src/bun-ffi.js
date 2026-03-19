@@ -49,6 +49,7 @@ import {
 } from "./shared/compiler-errors.js";
 import {
   createFullSurfaceClasses,
+  dispatchDeviceEvent,
 } from "./shared/full-surface.js";
 import {
   createEncoderClasses,
@@ -78,6 +79,31 @@ const MAP_ASYNC_STATUS_SUCCESS = 1;
 const STYPE_SHADER_SOURCE_WGSL = 0x00000002;
 const PROCESS_EVENTS_TIMEOUT_NS = 5_000_000_000;
 let processEventsTimeoutNs = PROCESS_EVENTS_TIMEOUT_NS;
+const BUFFER_MAP_STATE = Object.freeze({
+    unmapped: 0,
+    pending: 1,
+    mapped: 2,
+});
+const DEVICE_LOST_REASON = Object.freeze({
+    unknown: 0,
+    destroyed: 1,
+    callbackCancelled: 3,
+    failedCreation: 4,
+});
+const ERROR_TYPE = Object.freeze({
+    noError: 0x00000001,
+    validation: 0x00000002,
+    outOfMemory: 0x00000003,
+    internal: 0x00000004,
+});
+const EMPTY_ADAPTER_INFO = Object.freeze({
+    vendor: "",
+    architecture: "",
+    device: "",
+    description: "",
+    subgroupMinSize: 0,
+    subgroupMaxSize: 0,
+});
 const SAMPLER_BINDING_TYPE = Object.freeze({
     filtering: 2,
     "non-filtering": 3,
@@ -185,8 +211,14 @@ function openLibrary(path) {
         doeRequestDeviceFlat:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
         doeNativeAdapterHasFeature: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.u32 },
         doeNativeAdapterGetLimits:  { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
+        doeNativeAdapterGetInfo:    { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+        doeNativeAdapterFreeInfo:   { args: [FFIType.ptr], returns: FFIType.void },
         doeNativeDeviceHasFeature:  { args: [FFIType.ptr, FFIType.u32], returns: FFIType.u32 },
         doeNativeDeviceGetLimits:   { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
+        doeNativeDevicePushErrorScope: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
+        doeNativeDevicePopErrorScopeFlat: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
+        doeNativeDeviceSetUncapturedErrorCallback: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+        doeNativeDeviceRegisterLostCallback: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
         wgpuAdapterRelease:       { args: [FFIType.ptr], returns: FFIType.void },
         wgpuAdapterHasFeature:    { args: [FFIType.ptr, FFIType.u32], returns: FFIType.u32 },
         wgpuAdapterGetLimits:     { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
@@ -201,6 +233,7 @@ function openLibrary(path) {
         wgpuBufferUnmap:          { args: [FFIType.ptr], returns: FFIType.void },
         wgpuBufferGetConstMappedRange: { args: [FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.ptr },
         wgpuBufferGetMappedRange: { args: [FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.ptr },
+        doeNativeBufferGetMapState: { args: [FFIType.ptr], returns: FFIType.u32 },
         doeBufferMapAsyncFlat:    { args: [FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u64, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
         doeBufferMapSyncFlat:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u64], returns: FFIType.u32 },
 

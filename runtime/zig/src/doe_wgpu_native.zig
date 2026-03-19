@@ -730,6 +730,7 @@ pub const doeNativeDeviceRemoveEventListener = canvas_event.doeNativeDeviceRemov
 const error_scope_native = @import("doe_error_scope_native.zig");
 pub const doeNativeDevicePushErrorScope = error_scope_native.doeNativeDevicePushErrorScope;
 pub const doeNativeDevicePopErrorScope = error_scope_native.doeNativeDevicePopErrorScope;
+pub const doeNativeDevicePopErrorScopeFlat = error_scope_native.doeNativeDevicePopErrorScopeFlat;
 pub const doeNativeDeviceSetUncapturedErrorCallback = error_scope_native.doeNativeDeviceSetUncapturedErrorCallback;
 pub const doeNativeDeviceInjectError = error_scope_native.doeNativeDeviceInjectError;
 

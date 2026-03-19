@@ -16,6 +16,8 @@ const DOE_BUFFER_MAP_STATE_UNMAPPED: u32 = 0;
 const DOE_BUFFER_MAP_STATE_PENDING: u32 = 1;
 const DOE_BUFFER_MAP_STATE_MAPPED: u32 = 2;
 
+var buffer_map_states: std.AutoHashMapUnmanaged(usize, u32) = .{};
+
 extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?[*]u8;
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 extern fn metal_bridge_shared_event_wait(event: ?*anyopaque, value: u64) callconv(.c) void;
@@ -26,19 +28,23 @@ extern fn metal_bridge_shared_event_wait(event: ?*anyopaque, value: u64) callcon
 
 pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBuffer, raw)) |b| {
+        _ = buffer_map_states.remove(@intFromPtr(b));
         if (b.mtl) |m| metal_bridge_release(m);
         alloc.destroy(b);
     }
 }
 
 pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeBuffer, raw)) |b| b.mapped = false;
+    if (cast(DoeBuffer, raw)) |b| {
+        b.mapped = false;
+        buffer_map_states.put(alloc, @intFromPtr(b), DOE_BUFFER_MAP_STATE_UNMAPPED) catch {};
+    }
 }
 
 pub export fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32 {
     const buf = cast(DoeBuffer, raw) orelse return DOE_BUFFER_MAP_STATE_UNMAPPED;
+    if (buffer_map_states.get(@intFromPtr(buf))) |state| return state;
     if (buf.mapped) return DOE_BUFFER_MAP_STATE_MAPPED;
-    _ = DOE_BUFFER_MAP_STATE_PENDING;
     return DOE_BUFFER_MAP_STATE_UNMAPPED;
 }
 
@@ -121,8 +127,10 @@ pub export fn doeNativeBufferMapAsync(
     //
     // Apple Silicon unified memory: contents are CPU-visible as soon as the GPU
     // signals. We do not need an additional readback copy.
+    buffer_map_states.put(alloc, @intFromPtr(buf), DOE_BUFFER_MAP_STATE_PENDING) catch {};
     buf.mapped = true;
     cb_info.callback(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+    buffer_map_states.put(alloc, @intFromPtr(buf), DOE_BUFFER_MAP_STATE_MAPPED) catch {};
     return .{ .id = 3 };
 }
 

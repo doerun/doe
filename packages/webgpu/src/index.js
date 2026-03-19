@@ -51,6 +51,7 @@ import {
 } from './shared/compiler-errors.js';
 import {
   createFullSurfaceClasses,
+  dispatchDeviceEvent,
 } from './shared/full-surface.js';
 import {
   createEncoderClasses,
@@ -281,6 +282,18 @@ function createGpuError(result) {
   return error;
 }
 
+function dispatchNodeDeviceEvent(device, event) {
+  if (!event || typeof event !== 'object') {
+    return;
+  }
+  if (typeof event.type === 'string') {
+    dispatchDeviceEvent(device, event.type, event);
+  }
+  if (event.type === 'uncapturederror' && typeof device._onuncapturederror === 'function') {
+    device._onuncapturederror.call(device, event);
+  }
+}
+
 function unsupportedNodeDeviceCapability(name) {
   return new Error(`${name} is not available in this Node package build`);
 }
@@ -320,8 +333,8 @@ function installNodeDeviceCallbacks(device) {
   device._lostSupported = false;
   device._lostRegistrationAttempted = false;
   device._lost = null;
+  device._eventListeners = new Map();
   device._onuncapturederror = null;
-  device._onuncapturederrorDispatch = null;
   const lostDescriptor = {
       configurable: true,
       enumerable: true,
@@ -335,6 +348,20 @@ function installNodeDeviceCallbacks(device) {
     };
   Object.defineProperties(device, {
     lost: lostDescriptor,
+    adapterInfo: {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return this._adapterInfo ?? Object.freeze({
+          vendor: '',
+          architecture: '',
+          device: '',
+          description: '',
+          subgroupMinSize: 0,
+          subgroupMaxSize: 0,
+        });
+      },
+    },
     onuncapturederror: {
       configurable: true,
       enumerable: true,
@@ -347,24 +374,25 @@ function installNodeDeviceCallbacks(device) {
           failValidation('GPUDevice.onuncapturederror', 'handler must be a function or null');
         }
         this._onuncapturederror = handler ?? null;
-        const dispatch = handler
-          ? (event) => handler.call(this, event)
-          : null;
-        this._onuncapturederrorDispatch = dispatch;
         if (typeof addon?.deviceSetUncapturedErrorCallback !== 'function') {
-          if (dispatch) {
+          if (handler) {
             throw unsupportedNodeDeviceCapability('GPUDevice.onuncapturederror');
           }
           return;
         }
         try {
-          const registered = addon.deviceSetUncapturedErrorCallback(this._native, dispatch);
-          if (registered === false && dispatch) {
+          const registered = addon.deviceSetUncapturedErrorCallback(
+            this._native,
+            handler
+              ? (event) => dispatchNodeDeviceEvent(this, event)
+              : null,
+          );
+          if (registered === false && handler) {
             throw unsupportedNodeDeviceCapability('GPUDevice.onuncapturederror');
           }
         } catch (error) {
           if (String(error?.message ?? '').includes('not available')) {
-            if (dispatch) {
+            if (handler) {
               throw unsupportedNodeDeviceCapability('GPUDevice.onuncapturederror');
             }
             return;
@@ -1018,6 +1046,12 @@ const fullSurfaceBackend = {
     }
     return addon.bufferGetMappedRange(native, offset, size).slice(0);
   },
+  bufferGetMapState(_wrapper, native) {
+    if (typeof addon.bufferGetMapState !== 'function') {
+      return null;
+    }
+    return addon.bufferGetMapState(native);
+  },
   bufferAssertMappedPrefixF32(_wrapper, native, expected, count) {
     return addon.bufferAssertMappedPrefixF32(native, expected, count);
   },
@@ -1392,12 +1426,15 @@ const fullSurfaceBackend = {
       createQuerySet: classes.DoeGPUDevice.prototype.createQuerySet,
       createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
       importExternalTexture: classes.DoeGPUDevice.prototype.importExternalTexture,
+      addEventListener: classes.DoeGPUDevice.prototype.addEventListener,
+      removeEventListener: classes.DoeGPUDevice.prototype.removeEventListener,
       pushErrorScope: nodeDevicePushErrorScope,
       popErrorScope: nodeDevicePopErrorScope,
       destroy: classes.DoeGPUDevice.prototype.destroy,
     };
     device._native = native;
     device._instance = adapter._instance;
+    device._adapterInfo = adapter.info;
     device.limits = deviceLimits(native);
     device.features = deviceFeatures(native);
     installNodeDeviceCallbacks(device);

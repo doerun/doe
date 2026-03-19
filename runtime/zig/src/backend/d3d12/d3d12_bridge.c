@@ -215,22 +215,61 @@ int d3d12_bridge_command_list_reset(D3D12Handle cmd_list_h, D3D12Handle allocato
 
 static DXGI_FORMAT map_wgpu_format_to_dxgi(uint32_t format) {
     switch (format) {
-        case 0x00000016: return DXGI_FORMAT_R8G8B8A8_UNORM;       /* RGBA8Unorm */
-        case 0x00000017: return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;  /* RGBA8UnormSrgb */
-        case 0x0000001B: return DXGI_FORMAT_B8G8R8A8_UNORM;       /* BGRA8Unorm */
-        case 0x0000001C: return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;  /* BGRA8UnormSrgb */
         case 0x00000001: return DXGI_FORMAT_R8_UNORM;              /* R8Unorm */
+        case 0x00000005: return DXGI_FORMAT_R16_UNORM;             /* R16Unorm */
+        case 0x00000006: return DXGI_FORMAT_R16_SNORM;             /* R16Snorm */
+        case 0x00000009: return DXGI_FORMAT_R16_FLOAT;             /* R16Float */
         case 0x0000000E: return DXGI_FORMAT_R32_FLOAT;             /* R32Float */
         case 0x0000000F: return DXGI_FORMAT_R32_UINT;              /* R32Uint */
         case 0x00000010: return DXGI_FORMAT_R32_SINT;              /* R32Sint */
-        case 0x00000009: return DXGI_FORMAT_R16_FLOAT;             /* R16Float */
-        case 0x00000005: return DXGI_FORMAT_R16_UNORM;             /* R16Unorm */
-        case 0x00000006: return DXGI_FORMAT_R16_SNORM;             /* R16Snorm */
         case 0x00000011: return DXGI_FORMAT_R16G16_UNORM;          /* RG16Unorm */
         case 0x00000012: return DXGI_FORMAT_R16G16_SNORM;          /* RG16Snorm */
-        case 0x0000002D: return DXGI_FORMAT_D16_UNORM;             /* Depth16Unorm */
-        case 0x00000030: return DXGI_FORMAT_D32_FLOAT;             /* Depth32Float */
-        default:         return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case 0x00000013: return DXGI_FORMAT_R16G16_UINT;           /* RG16Uint */
+        case 0x00000014: return DXGI_FORMAT_R16G16_SINT;           /* RG16Sint */
+        case 0x00000015: return DXGI_FORMAT_R16G16_FLOAT;         /* RG16Float */
+        case 0x00000016: return DXGI_FORMAT_R8G8B8A8_UNORM;       /* RGBA8Unorm */
+        case 0x00000017: return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;  /* RGBA8UnormSrgb */
+        case 0x00000018: return DXGI_FORMAT_R8G8B8A8_SNORM;       /* RGBA8Snorm */
+        case 0x00000019: return DXGI_FORMAT_R8G8B8A8_UINT;        /* RGBA8Uint */
+        case 0x0000001A: return DXGI_FORMAT_R8G8B8A8_SINT;        /* RGBA8Sint */
+        case 0x0000001B: return DXGI_FORMAT_B8G8R8A8_UNORM;       /* BGRA8Unorm */
+        case 0x0000001C: return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;  /* BGRA8UnormSrgb */
+        case 0x0000001D: return DXGI_FORMAT_R10G10B10A2_UINT;     /* RGB10A2Uint */
+        case 0x0000001E: return DXGI_FORMAT_R10G10B10A2_UNORM;    /* RGB10A2Unorm */
+        case 0x0000001F: return DXGI_FORMAT_R11G11B10_FLOAT;      /* RG11B10Ufloat */
+        case 0x00000020: return DXGI_FORMAT_R9G9B9E5_SHAREDEXP;   /* RGB9E5Ufloat */
+        case 0x00000021: return DXGI_FORMAT_R32G32_UINT;          /* RG32Uint */
+        case 0x00000022: return DXGI_FORMAT_R32G32_SINT;          /* RG32Sint */
+        case 0x00000023: return DXGI_FORMAT_R32G32_FLOAT;         /* RG32Float */
+        case 0x00000024: return DXGI_FORMAT_R16G16B16A16_UINT;    /* RGBA16Uint */
+        case 0x00000025: return DXGI_FORMAT_R16G16B16A16_SINT;    /* RGBA16Sint */
+        case 0x00000026: return DXGI_FORMAT_R16G16B16A16_FLOAT;   /* RGBA16Float */
+        case 0x00000027: return DXGI_FORMAT_R16G16B16A16_UNORM;   /* RGBA16Unorm */
+        case 0x00000028: return DXGI_FORMAT_R16G16B16A16_SNORM;   /* RGBA16Snorm */
+        case 0x00000029: return DXGI_FORMAT_R32G32B32A32_UINT;    /* RGBA32Uint */
+        case 0x0000002A: return DXGI_FORMAT_R32G32B32A32_SINT;    /* RGBA32Sint */
+        case 0x0000002B: return DXGI_FORMAT_R32G32B32A32_FLOAT;   /* RGBA32Float */
+        case 0x0000002C: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Stencil8 */
+        case 0x0000002D: return DXGI_FORMAT_D16_UNORM;            /* Depth16Unorm */
+        case 0x0000002E: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24Plus */
+        case 0x0000002F: return DXGI_FORMAT_D24_UNORM_S8_UINT;    /* Depth24PlusStencil8 */
+        case 0x00000030: return DXGI_FORMAT_D32_FLOAT;            /* Depth32Float */
+        case 0x00000031: return DXGI_FORMAT_D32_FLOAT_S8X24_UINT; /* Depth32FloatStencil8 */
+        case 0x00000032: return DXGI_FORMAT_BC1_UNORM;            /* BC1RGBAUnorm */
+        case 0x00000033: return DXGI_FORMAT_BC1_UNORM_SRGB;       /* BC1RGBAUnormSrgb */
+        case 0x00000034: return DXGI_FORMAT_BC2_UNORM;            /* BC2RGBAUnorm */
+        case 0x00000035: return DXGI_FORMAT_BC2_UNORM_SRGB;       /* BC2RGBAUnormSrgb */
+        case 0x00000036: return DXGI_FORMAT_BC3_UNORM;            /* BC3RGBAUnorm */
+        case 0x00000037: return DXGI_FORMAT_BC3_UNORM_SRGB;       /* BC3RGBAUnormSrgb */
+        case 0x00000038: return DXGI_FORMAT_BC4_UNORM;            /* BC4RUnorm */
+        case 0x00000039: return DXGI_FORMAT_BC4_SNORM;            /* BC4RSnorm */
+        case 0x0000003A: return DXGI_FORMAT_BC5_UNORM;            /* BC5RGUnorm */
+        case 0x0000003B: return DXGI_FORMAT_BC5_SNORM;            /* BC5RGSnorm */
+        case 0x0000003C: return DXGI_FORMAT_BC6H_UF16;            /* BC6HRGBUfloat */
+        case 0x0000003D: return DXGI_FORMAT_BC6H_SF16;            /* BC6HRGBFloat */
+        case 0x0000003E: return DXGI_FORMAT_BC7_UNORM;            /* BC7RGBAUnorm */
+        case 0x0000003F: return DXGI_FORMAT_BC7_UNORM_SRGB;       /* BC7RGBAUnormSrgb */
+        default:         return DXGI_FORMAT_UNKNOWN;
     }
 }
 

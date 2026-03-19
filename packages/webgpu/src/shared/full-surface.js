@@ -123,6 +123,52 @@ class GPUUncapturedErrorEvent extends Event {
   }
 }
 
+function ensureDeviceEventListeners(device) {
+  if (!(device._eventListeners instanceof Map)) {
+    device._eventListeners = new Map();
+  }
+  return device._eventListeners;
+}
+
+function addDeviceEventListener(device, type, listener) {
+  if (typeof listener !== 'function') {
+    return;
+  }
+  const listeners = ensureDeviceEventListeners(device);
+  const typeListeners = listeners.get(type) ?? new Set();
+  typeListeners.add(listener);
+  listeners.set(type, typeListeners);
+}
+
+function removeDeviceEventListener(device, type, listener) {
+  const listeners = device._eventListeners;
+  if (!(listeners instanceof Map)) {
+    return;
+  }
+  const typeListeners = listeners.get(type);
+  if (!(typeListeners instanceof Set)) {
+    return;
+  }
+  typeListeners.delete(listener);
+  if (typeListeners.size === 0) {
+    listeners.delete(type);
+  }
+}
+
+function dispatchDeviceEvent(device, type, event) {
+  const listeners = device._eventListeners;
+  if (!(listeners instanceof Map)) {
+    return;
+  }
+  const typeListeners = listeners.get(type);
+  if (!(typeListeners instanceof Set)) {
+    return;
+  }
+  for (const listener of [...typeListeners]) {
+    listener.call(device, event);
+  }
+}
+
 const EMPTY_ADAPTER_INFO = Object.freeze({
   vendor: '',
   architecture: '',
@@ -168,6 +214,12 @@ function createFullSurfaceClasses({
     }
 
     get mapState() {
+      if (typeof backend.bufferGetMapState === 'function' && this._native != null) {
+        const nativeState = backend.bufferGetMapState(this, this._native);
+        if (typeof nativeState === 'string') {
+          this._mapState = nativeState;
+        }
+      }
       return this._mapState ?? 'unmapped';
     }
 
@@ -538,6 +590,7 @@ function createFullSurfaceClasses({
       this._native = native;
       this._instance = instance;
       this._onuncapturederror = null;
+      this._eventListeners = new Map();
       this.label = '';
       initResource(this, 'GPUDevice');
       if (typeof backend.initDeviceState === 'function') {
@@ -548,9 +601,13 @@ function createFullSurfaceClasses({
       this.features = inheritedFeatures ?? backend.deviceFeatures(native);
     }
 
-    addEventListener(_type, _listener) {}
+    addEventListener(type, listener) {
+      addDeviceEventListener(this, type, listener);
+    }
 
-    removeEventListener(_type, _listener) {}
+    removeEventListener(type, listener) {
+      removeDeviceEventListener(this, type, listener);
+    }
 
     get lost() {
       if (typeof backend.deviceGetLost === 'function') {
@@ -593,12 +650,12 @@ function createFullSurfaceClasses({
     }
 
     set onuncapturederror(handler) {
+      this._onuncapturederror = handler ?? null;
       if (typeof backend.deviceSetOnUncapturedError === 'function') {
         const native = assertLiveResource(this, 'GPUDevice.onuncapturederror', 'GPUDevice');
         backend.deviceSetOnUncapturedError(this, native, handler ?? null);
         return;
       }
-      this._onuncapturederror = handler ?? null;
     }
 
     createBuffer(descriptor) {
@@ -1026,6 +1083,9 @@ function createFullSurfaceClasses({
 
 export {
   createFullSurfaceClasses,
+  addDeviceEventListener,
+  removeDeviceEventListener,
+  dispatchDeviceEvent,
   GPUError,
   GPUValidationError,
   GPUOutOfMemoryError,

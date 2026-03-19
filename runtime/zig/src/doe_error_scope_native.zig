@@ -60,6 +60,21 @@ pub export fn doeNativeDevicePopErrorScope(
     return .{ .id = 5 };
 }
 
+pub export fn doeNativeDevicePopErrorScopeFlat(
+    dev_raw: ?*anyopaque,
+    callback: ?err_scope.PopErrorScopeCallback,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) types.WGPUFuture {
+    return doeNativeDevicePopErrorScope(dev_raw, .{
+        .next_in_chain = null,
+        .mode = 0,
+        .callback = callback,
+        .userdata1 = userdata1,
+        .userdata2 = userdata2,
+    });
+}
+
 // ============================================================
 // C ABI: setUncapturedErrorCallback
 // ============================================================

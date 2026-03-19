@@ -167,6 +167,7 @@ fn is_feature_supported_with_caps(feature: u32, caps: D3D12DeviceCaps) bool {
         FEATURE_SHADER_F16 => D3D12_AVAILABLE and caps.has_shader_f16,
         FEATURE_SUBGROUPS => D3D12_AVAILABLE and caps.has_subgroups,
         FEATURE_SUBGROUPS_F16 => D3D12_AVAILABLE and caps.has_subgroups_f16,
+        FEATURE_TEXTURE_COMPRESSION_BC => D3D12_AVAILABLE,
         else => is_feature_supported_static(feature),
     };
 }
