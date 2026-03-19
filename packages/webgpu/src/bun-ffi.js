@@ -1471,6 +1471,243 @@ function nativeFailureMessage(prefix) {
     return detail ? `${prefix}: ${detail}` : prefix;
 }
 
+function decodeStringView(dataPtr, length) {
+    if (!dataPtr || !length) return "";
+    return decoder.decode(new Uint8Array(toArrayBuffer(dataPtr, 0, Number(length))));
+}
+
+function decodeCString(dataPtr, maxBytes = 4096) {
+    if (!dataPtr) return "";
+    const bytes = new Uint8Array(toArrayBuffer(dataPtr, 0, maxBytes));
+    let len = 0;
+    while (len < bytes.length && bytes[len] !== 0) {
+        len += 1;
+    }
+    return decoder.decode(bytes.subarray(0, len));
+}
+
+function mapBufferMapState(state) {
+    switch (Number(state)) {
+        case BUFFER_MAP_STATE.pending:
+            return "pending";
+        case BUFFER_MAP_STATE.mapped:
+            return "mapped";
+        default:
+            return "unmapped";
+    }
+}
+
+function mapDeviceLostReason(reason) {
+    switch (Number(reason)) {
+        case DEVICE_LOST_REASON.destroyed:
+            return "destroyed";
+        case DEVICE_LOST_REASON.callbackCancelled:
+            return "callback-cancelled";
+        case DEVICE_LOST_REASON.failedCreation:
+            return "failed-creation";
+        default:
+            return "unknown";
+    }
+}
+
+function mapErrorType(errorType) {
+    switch (Number(errorType)) {
+        case ERROR_TYPE.noError:
+            return "no-error";
+        case ERROR_TYPE.validation:
+            return "validation";
+        case ERROR_TYPE.outOfMemory:
+            return "out-of-memory";
+        case ERROR_TYPE.internal:
+            return "internal";
+        default:
+            return "unknown";
+    }
+}
+
+function createGpuError(result) {
+    if (!result || result.type === "no-error") {
+        return null;
+    }
+    const error = new Error(result.message ?? "");
+    if (result.type === "validation") {
+        error.name = "GPUValidationError";
+    } else if (result.type === "out-of-memory") {
+        error.name = "GPUOutOfMemoryError";
+    } else if (result.type === "internal") {
+        error.name = "GPUInternalError";
+    } else {
+        error.name = "GPUError";
+    }
+    error.type = result.type ?? "unknown";
+    return error;
+}
+
+function unsupportedBunDeviceCapability(name) {
+    return new Error(`${name} is not available in this Bun package build`);
+}
+
+function dispatchBunDeviceEvent(device, event) {
+    if (!event || typeof event !== "object") {
+        return;
+    }
+    if (typeof event.type === "string") {
+        dispatchDeviceEvent(device, event.type, event);
+    }
+    if (event.type === "uncapturederror" && typeof device._onuncapturederror === "function") {
+        device._onuncapturederror.call(device, event);
+    }
+}
+
+function readAdapterInfo(native) {
+    const getInfo = wgpu?.symbols?.doeNativeAdapterGetInfo;
+    const freeInfo = wgpu?.symbols?.doeNativeAdapterFreeInfo;
+    if (typeof getInfo !== "function" || typeof freeInfo !== "function" || !native) {
+        return EMPTY_ADAPTER_INFO;
+    }
+    const vendorOut = new BigUint64Array(1);
+    const archOut = new BigUint64Array(1);
+    const deviceOut = new BigUint64Array(1);
+    const descOut = new BigUint64Array(1);
+    const blockOut = new BigUint64Array(1);
+    getInfo(native, vendorOut, archOut, deviceOut, descOut, blockOut);
+    const block = Number(blockOut[0] ?? 0n);
+    try {
+        return Object.freeze({
+            vendor: decodeCString(Number(vendorOut[0] ?? 0n)),
+            architecture: decodeCString(Number(archOut[0] ?? 0n)),
+            device: decodeCString(Number(deviceOut[0] ?? 0n)),
+            description: decodeCString(Number(descOut[0] ?? 0n)),
+            subgroupMinSize: 32,
+            subgroupMaxSize: 32,
+        });
+    } finally {
+        if (block !== 0) {
+            freeInfo(block);
+        }
+    }
+}
+
+function ensureBunDeviceLostRegistration(device, native) {
+    if (device._lostRegistrationAttempted) {
+        return device._lostSupported;
+    }
+    device._lostRegistrationAttempted = true;
+    const registerLost = wgpu?.symbols?.doeNativeDeviceRegisterLostCallback;
+    if (typeof registerLost !== "function") {
+        device._lostSupported = false;
+        device._lost = null;
+        return false;
+    }
+    let resolveLost;
+    const lostPromise = new Promise((resolve) => {
+        resolveLost = resolve;
+    });
+    const callback = new JSCallback(
+        (reason, msgPtr, msgLen) => {
+            resolveLost({
+                reason: mapDeviceLostReason(reason),
+                message: decodeStringView(msgPtr, msgLen),
+            });
+            callback.close();
+            if (device._lostCallback === callback) {
+                device._lostCallback = null;
+            }
+        },
+        { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
+    );
+    try {
+        registerLost(native, callback.ptr, null);
+    } catch (error) {
+        callback.close();
+        if (!String(error?.message ?? "").includes("not available")) {
+            throw error;
+        }
+        device._lostSupported = false;
+        device._lost = null;
+        return false;
+    }
+    device._lost = lostPromise;
+    device._lostCallback = callback;
+    device._lostSupported = true;
+    return true;
+}
+
+function setBunDeviceUncapturedErrorHandler(device, native, handler) {
+    const setCallback = wgpu?.symbols?.doeNativeDeviceSetUncapturedErrorCallback;
+    if (device._uncapturedErrorCallback) {
+        device._uncapturedErrorCallback.close();
+        device._uncapturedErrorCallback = null;
+    }
+    if (typeof setCallback !== "function") {
+        if (handler) {
+            throw unsupportedBunDeviceCapability("GPUDevice.onuncapturederror");
+        }
+        return;
+    }
+    setCallback(native, null, null, null);
+    if (!handler) {
+        return;
+    }
+    const callback = new JSCallback(
+        (errorType, msgPtr, msgLen) => {
+            const type = mapErrorType(errorType);
+            const message = decodeStringView(msgPtr, msgLen);
+            const event = {
+                type: "uncapturederror",
+                error: createGpuError({ type, message }),
+                message,
+                errorType: type,
+            };
+            dispatchBunDeviceEvent(device, event);
+        },
+        { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+    );
+    try {
+        setCallback(native, callback.ptr, null, null);
+    } catch (error) {
+        callback.close();
+        if (String(error?.message ?? "").includes("not available")) {
+            throw unsupportedBunDeviceCapability("GPUDevice.onuncapturederror");
+        }
+        throw error;
+    }
+    device._uncapturedErrorCallback = callback;
+}
+
+function popDeviceErrorScope(native) {
+    const popErrorScope = wgpu?.symbols?.doeNativeDevicePopErrorScopeFlat;
+    if (typeof popErrorScope !== "function") {
+        throw unsupportedBunDeviceCapability("GPUDevice.popErrorScope");
+    }
+    let done = false;
+    let result = null;
+    const callback = new JSCallback(
+        (errorType, msgPtr, msgLen) => {
+            done = true;
+            const type = mapErrorType(errorType);
+            if (type === "no-error") {
+                result = null;
+                return;
+            }
+            result = createGpuError({
+                type,
+                message: decodeStringView(msgPtr, msgLen),
+            });
+        },
+        { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+    );
+    try {
+        popErrorScope(native, callback.ptr, null, null);
+        if (!done) {
+            throw new Error("[fawn-webgpu] popErrorScope: no active error scope");
+        }
+        return result;
+    } finally {
+        callback.close();
+    }
+}
+
 function requestAdapterSync(instancePtr, options) {
     let resolvedAdapter = null;
     let resolvedStatus = null;
@@ -2076,6 +2313,16 @@ const fullSurfaceBackend = {
         new Uint8Array(copy).set(new Uint8Array(nativeView));
         return copy;
     },
+    bufferGetMapState(wrapper, native) {
+        if (wrapper?._mapState === "pending") {
+            return "pending";
+        }
+        const fn = wgpu?.symbols?.doeNativeBufferGetMapState;
+        if (typeof fn !== "function") {
+            return null;
+        }
+        return mapBufferMapState(fn(native));
+    },
     bufferUnmap(native, wrapper) {
         wgpu.symbols.wgpuBufferUnmap(native);
         wrapper._mapMode = 0;
@@ -2393,8 +2640,36 @@ const fullSurfaceBackend = {
     deviceCreateCommandEncoder(device) {
         return new DoeGPUCommandEncoder(null, device);
     },
+    deviceGetLost(wrapper, native) {
+        if (!ensureBunDeviceLostRegistration(wrapper, native)) {
+            throw unsupportedBunDeviceCapability("GPUDevice.lost");
+        }
+        return wrapper._lost;
+    },
+    deviceGetAdapterInfo(wrapper, _native) {
+        return wrapper._adapterInfo ?? EMPTY_ADAPTER_INFO;
+    },
+    devicePushErrorScope(_wrapper, native, _filter, encodedFilter) {
+        const pushErrorScope = wgpu?.symbols?.doeNativeDevicePushErrorScope;
+        if (typeof pushErrorScope !== "function") {
+            throw unsupportedBunDeviceCapability("GPUDevice.pushErrorScope");
+        }
+        pushErrorScope(native, encodedFilter);
+    },
+    devicePopErrorScope(_wrapper, native) {
+        return Promise.resolve(popDeviceErrorScope(native));
+    },
+    deviceGetOnUncapturedError(wrapper, _native) {
+        return wrapper._onuncapturederror ?? null;
+    },
+    deviceSetOnUncapturedError(wrapper, native, handler) {
+        setBunDeviceUncapturedErrorHandler(wrapper, native, handler);
+    },
     deviceDestroy(native) {
         wgpu.symbols.wgpuDeviceRelease(native);
+    },
+    adapterGetInfo(_adapter, native) {
+        return readAdapterInfo(native);
     },
     adapterRequestDevice(adapter, _descriptor, classes) {
         const native = requestDeviceSync(adapter._instance, assertLiveResource(adapter, "GPUAdapter.requestDevice", "GPUAdapter"));
@@ -2416,20 +2691,29 @@ const fullSurfaceBackend = {
             createRenderBundleEncoder: classes.DoeGPUDevice.prototype.createRenderBundleEncoder,
             createQuerySet: classes.DoeGPUDevice.prototype.createQuerySet,
             createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
+            addEventListener: classes.DoeGPUDevice.prototype.addEventListener,
+            removeEventListener: classes.DoeGPUDevice.prototype.removeEventListener,
             pushErrorScope: classes.DoeGPUDevice.prototype.pushErrorScope,
             popErrorScope: classes.DoeGPUDevice.prototype.popErrorScope,
             destroy: classes.DoeGPUDevice.prototype.destroy,
         };
         device._native = native;
         device._instance = adapter._instance;
+        device._adapterInfo = adapter.info;
         device._lost = null;
+        device._lostSupported = false;
+        device._lostRegistrationAttempted = false;
+        device._lostCallback = null;
         device._errorScopes = [];
+        device._eventListeners = new Map();
         device._onuncapturederror = null;
+        device._uncapturedErrorCallback = null;
         device.limits = deviceLimits(native);
         device.features = deviceFeatures(native);
         Object.defineProperties(device, {
-            lost: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, 'lost'),
-            onuncapturederror: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, 'onuncapturederror'),
+            lost: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "lost"),
+            adapterInfo: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "adapterInfo"),
+            onuncapturederror: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "onuncapturederror"),
         });
         const queue = {
             _destroyed: false,
