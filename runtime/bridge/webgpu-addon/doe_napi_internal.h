@@ -301,10 +301,26 @@ typedef struct {
 
 typedef struct {
     void* nextInChain;
-    void* compatibleSurface;  /* NULL for headless */
+    uint32_t featureLevel;
     uint32_t powerPreference;
     WGPUBool forceFallbackAdapter;
+    uint32_t backendType;
+    void* compatibleSurface;  /* NULL for headless */
 } WGPURequestAdapterOptions;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView vendor;
+    WGPUStringView architecture;
+    WGPUStringView device;
+    WGPUStringView description;
+    uint32_t backendType;
+    uint32_t adapterType;
+    uint32_t vendorID;
+    uint32_t deviceID;
+    uint32_t subgroupMinSize;
+    uint32_t subgroupMaxSize;
+} WGPUAdapterInfo;
 
 /* ================================================================
  * Function pointer types — DECL_PFN creates typedef + extern decl
@@ -319,7 +335,9 @@ DECL_PFN(uint32_t, wgpuInstanceWaitAny, (WGPUInstance, size_t, WGPUFutureWaitInf
 DECL_PFN(void, wgpuInstanceProcessEvents, (WGPUInstance));
 DECL_PFN(void, wgpuAdapterRelease, (WGPUAdapter));
 DECL_PFN(WGPUBool, wgpuAdapterHasFeature, (WGPUAdapter, uint32_t));
+DECL_PFN(uint32_t, wgpuAdapterGetInfo, (WGPUAdapter, WGPUAdapterInfo*));
 DECL_PFN(uint32_t, wgpuAdapterGetLimits, (WGPUAdapter, void*));
+DECL_PFN(void, wgpuAdapterInfoFreeMembers, (WGPUAdapterInfo));
 DECL_PFN(WGPUFuture, wgpuAdapterRequestDevice, (WGPUAdapter, const void*, WGPURequestDeviceCallbackInfo));
 DECL_PFN(void, wgpuDeviceRelease, (WGPUDevice));
 DECL_PFN(WGPUBool, wgpuDeviceHasFeature, (WGPUDevice, uint32_t));

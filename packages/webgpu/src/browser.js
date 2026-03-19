@@ -57,12 +57,23 @@ function resolve_canvas_backend(options) {
 }
 
 function normalize_bind_group_entry(entry) {
+  let resource;
+  if (entry.buffer) {
+    resource = {
+      buffer: unwrap_native(entry.buffer),
+      offset: entry.offset ?? 0,
+      ...(entry.size === undefined ? {} : { size: entry.size }),
+    };
+  } else if (entry.sampler) {
+    resource = unwrap_native(entry.sampler);
+  } else if (entry.textureView) {
+    resource = unwrap_native(entry.textureView);
+  } else if (entry.externalTexture) {
+    resource = unwrap_native(entry.externalTexture);
+  }
   return {
-    ...entry,
-    buffer: unwrap_native(entry.buffer),
-    sampler: unwrap_native(entry.sampler),
-    textureView: unwrap_native(entry.textureView),
-    externalTexture: unwrap_native(entry.externalTexture),
+    binding: entry.binding,
+    resource,
   };
 }
 
@@ -109,7 +120,8 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
       if (!native_gpu) {
         failValidation('GPU.requestAdapter', 'native browser GPU object is unavailable');
       }
-      const native_adapter = await native_gpu.requestAdapter(options);
+      const request_options = options == null ? undefined : { ...options };
+      const native_adapter = await native_gpu.requestAdapter(request_options);
       if (native_adapter == null) {
         return null;
       }
@@ -254,7 +266,7 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
         fragment: {
           module: descriptor.fragmentModule,
           entryPoint: descriptor.fragmentEntryPoint,
-          targets: [{ format: descriptor.colorFormat }],
+          targets: [{ format: descriptor.fragmentTarget?.format ?? descriptor.colorFormat }],
         },
         ...(descriptor.primitive ? { primitive: descriptor.primitive } : {}),
         ...(descriptor.depthStencil ? { depthStencil: descriptor.depthStencil } : {}),
@@ -276,7 +288,7 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
         fragment: {
           module: descriptor.fragmentModule,
           entryPoint: descriptor.fragmentEntryPoint,
-          targets: [{ format: descriptor.colorFormat }],
+          targets: [{ format: descriptor.fragmentTarget?.format ?? descriptor.colorFormat }],
         },
         ...(descriptor.primitive ? { primitive: descriptor.primitive } : {}),
         ...(descriptor.depthStencil ? { depthStencil: descriptor.depthStencil } : {}),
@@ -353,7 +365,19 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
     },
 
     queueCopyExternalImageToTexture(queue, native, source, destination, copySize) {
-      return canvasBackend.queueCopyExternalImageToTexture(queue, native, source, destination, copySize);
+      return canvasBackend.queueCopyExternalImageToTexture(
+        queue,
+        native,
+        {
+          ...source,
+          origin: normalizeOrigin2D(source.origin, 'GPUQueue.copyExternalImageToTexture(source.origin)'),
+        },
+        {
+          ...destination,
+          origin: normalizeOrigin2D(destination.origin, 'GPUQueue.copyExternalImageToTexture(destination.origin)'),
+        },
+        copySize,
+      );
     },
 
     queueHasPendingSubmissions(queue) {
@@ -652,9 +676,17 @@ function create_browser_runtime_internal(options = {}) {
   const canvasBackend = resolve_canvas_backend(options);
   const backend = create_browser_backend({ native_gpu, canvasBackend });
   const encoderClasses = createEncoderClasses(backend);
-  const fullClasses = createFullSurfaceClasses({ backend, encoderClasses });
+  const fullClasses = createFullSurfaceClasses({ globals, backend, encoderClasses });
+  Object.assign(fullClasses, encoderClasses);
   const classes = createBrowserSurfaceClasses({ canvasBackend, fullClasses });
   const wrapped_gpu = native_gpu ? new classes.DoeGPU(native_gpu) : null;
+  if (wrapped_gpu && native_gpu) {
+    wrapped_gpu._native = native_gpu;
+    wrapped_gpu.getPreferredCanvasFormat = function getPreferredCanvasFormat() {
+      return native_gpu.getPreferredCanvasFormat?.() ?? 'bgra8unorm';
+    };
+    setupGlobalsOnTarget(globalThis, wrapped_gpu, globals);
+  }
   return {
     nativeGpu: native_gpu,
     canvasBackend,

@@ -68,6 +68,8 @@ const VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR: u32 = 0x00000008;
 
 // VkImageUsageFlagBitsKHR
 const VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT: u32 = 0x00000010;
+const VK_IMAGE_USAGE_SAMPLED_BIT: u32 = 0x00000004;
+const VK_IMAGE_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
 const VK_IMAGE_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
 
 // VkSharingMode
@@ -228,12 +230,15 @@ pub const VulkanSurface = struct {
     current_image_index: u32 = 0,
     width: u32 = 0,
     height: u32 = 0,
+    requested_format: model.WGPUTextureFormat = model.WGPUTextureFormat_BGRA8Unorm,
     format: model.WGPUTextureFormat = model.WGPUTextureFormat_RGBA8Unorm,
     usage: model.WGPUFlags = model.WGPUTextureUsage_RenderAttachment,
     alpha_mode: u32 = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
     present_mode: u32 = WGPU_PRESENT_MODE_FIFO,
     tone_mapping_mode: u32 = WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD,
     desired_maximum_frame_latency: u32 = DEFAULT_SURFACE_MAX_FRAME_LATENCY,
+    last_acquire_suboptimal: bool = false,
+    last_present_suboptimal: bool = false,
 
     // Cached capabilities
     capabilities_queried: bool = false,
@@ -434,6 +439,7 @@ pub fn destroy_sync_objects(
 /// Select the best surface format from available formats.
 fn select_surface_format(
     formats: []const VkSurfaceFormatKHR,
+    requested_format: model.WGPUTextureFormat,
     tone_mapping_mode: u32,
 ) VkSurfaceFormatKHR {
     if (tone_mapping_mode == WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED) {
@@ -448,7 +454,42 @@ fn select_surface_format(
             if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) return fmt;
         }
     }
-    // Prefer B8G8R8A8_SRGB with sRGB nonlinear color space
+    if (requested_format == model.WGPUTextureFormat_BGRA8Unorm) {
+        for (formats) |fmt| {
+            if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and
+                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return fmt;
+            }
+        }
+    }
+    if (requested_format == model.WGPUTextureFormat_RGBA8Unorm) {
+        for (formats) |fmt| {
+            if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
+                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return fmt;
+            }
+        }
+    }
+    if (requested_format == model.WGPUTextureFormat_BGRA8UnormSrgb) {
+        for (formats) |fmt| {
+            if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
+                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return fmt;
+            }
+        }
+    }
+    if (requested_format == model.WGPUTextureFormat_RGBA8UnormSrgb) {
+        for (formats) |fmt| {
+            if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
+                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return fmt;
+            }
+        }
+    }
     for (formats) |fmt| {
         if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
             fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -467,6 +508,45 @@ fn select_surface_format(
     // Last resort: use whatever the driver offers first
     if (formats.len > 0) return formats[0];
     return .{ .format = VK_FORMAT_B8G8R8A8_SRGB, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+}
+
+pub fn preferred_canvas_format_from_surface_formats(formats: []const VkSurfaceFormatKHR) model.WGPUTextureFormat {
+    for (formats) |fmt| {
+        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            return model.WGPUTextureFormat_BGRA8Unorm;
+        }
+    }
+    for (formats) |fmt| {
+        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            return model.WGPUTextureFormat_RGBA8Unorm;
+        }
+    }
+    for (formats) |fmt| {
+        if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            return model.WGPUTextureFormat_BGRA8Unorm;
+        }
+    }
+    for (formats) |fmt| {
+        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM) return model.WGPUTextureFormat_RGBA8Unorm;
+        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM) return model.WGPUTextureFormat_BGRA8Unorm;
+    }
+    return model.WGPUTextureFormat_BGRA8Unorm;
+}
+
+fn canvas_format_for_selected_surface_format(
+    requested_format: model.WGPUTextureFormat,
+    selected_format: VkSurfaceFormatKHR,
+) model.WGPUTextureFormat {
+    switch (selected_format.format) {
+        VK_FORMAT_B8G8R8A8_UNORM => return model.WGPUTextureFormat_BGRA8Unorm,
+        VK_FORMAT_B8G8R8A8_SRGB => return if (requested_format == model.WGPUTextureFormat_BGRA8UnormSrgb)
+            model.WGPUTextureFormat_BGRA8UnormSrgb
+        else
+            model.WGPUTextureFormat_BGRA8Unorm,
+        VK_FORMAT_R8G8B8A8_UNORM => return model.WGPUTextureFormat_RGBA8Unorm,
+        VK_FORMAT_R16G16B16A16_SFLOAT => return requested_format,
+        else => return requested_format,
+    }
 }
 
 /// Map WebGPU present mode to Vulkan present mode.
@@ -511,6 +591,16 @@ fn clamp_extent(
     };
 }
 
+fn map_surface_usage_flags(wgpu_usage: model.WGPUFlags) VkFlags {
+    var usage: VkFlags = 0;
+    if ((wgpu_usage & model.WGPUTextureUsage_RenderAttachment) != 0) usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if ((wgpu_usage & model.WGPUTextureUsage_CopySrc) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if ((wgpu_usage & model.WGPUTextureUsage_CopyDst) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if ((wgpu_usage & model.WGPUTextureUsage_TextureBinding) != 0) usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (usage == 0) usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    return usage;
+}
+
 /// Create (or recreate) a swapchain for the given surface.
 pub fn create_swapchain(
     device: VkDevice,
@@ -547,10 +637,16 @@ pub fn create_swapchain(
         &formats,
     ));
 
-    const chosen_format = select_surface_format(formats[0..query_format_count], surface_state.tone_mapping_mode);
+    const chosen_format = select_surface_format(
+        formats[0..@as(usize, query_format_count)],
+        surface_state.requested_format,
+        surface_state.tone_mapping_mode,
+    );
     const chosen_present_mode = map_present_mode(surface_state.present_mode);
     const chosen_alpha_mode = map_composite_alpha(surface_state.alpha_mode, caps.supportedCompositeAlpha);
     const chosen_extent = clamp_extent(surface_state.width, surface_state.height, caps);
+    const requested_usage = map_surface_usage_flags(surface_state.usage);
+    if ((requested_usage & caps.supportedUsageFlags) != requested_usage) return error.UnsupportedFeature;
 
     // Image count: prefer one more than minimum for triple buffering
     var image_count: u32 = caps.minImageCount + 1;
@@ -570,7 +666,7 @@ pub fn create_swapchain(
         .imageColorSpace = chosen_format.colorSpace,
         .imageExtent = chosen_extent,
         .imageArrayLayers = 1,
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .imageUsage = requested_usage,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 1,
         .pQueueFamilyIndices = @ptrCast(&queue_family_index),
@@ -602,6 +698,9 @@ pub fn create_swapchain(
     surface_state.swapchain_image_count = actual_image_count;
     surface_state.swapchain_format = chosen_format.format;
     surface_state.swapchain_extent = chosen_extent;
+    surface_state.format = canvas_format_for_selected_surface_format(surface_state.requested_format, chosen_format);
+    surface_state.last_acquire_suboptimal = false;
+    surface_state.last_present_suboptimal = false;
 
     // Create sync objects if not yet created
     if (surface_state.image_available_semaphore == VK_NULL_U64) {
@@ -642,6 +741,7 @@ pub fn acquire_next_image(
         VK_SUCCESS, VK_SUBOPTIMAL_KHR => {
             surface_state.current_image_index = image_index;
             surface_state.acquired = true;
+            surface_state.last_acquire_suboptimal = result == VK_SUBOPTIMAL_KHR;
             return image_index;
         },
         VK_ERROR_OUT_OF_DATE_KHR => {
@@ -677,6 +777,7 @@ pub fn present_image(
 
     const result = vkQueuePresentKHR(queue, &present_info);
     surface_state.acquired = false;
+    surface_state.last_present_suboptimal = result == VK_SUBOPTIMAL_KHR;
 
     switch (result) {
         VK_SUCCESS, VK_SUBOPTIMAL_KHR => return,

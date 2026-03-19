@@ -60,6 +60,12 @@ function normalizeCanvasConfiguration(config, path) {
 }
 
 function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
+  if (typeof fullClasses.DoeGPU === 'function') {
+    fullClasses.DoeGPU.prototype.getPreferredCanvasFormat = function getPreferredCanvasFormat() {
+      return this._native?.getPreferredCanvasFormat?.() ?? 'bgra8unorm';
+    };
+  }
+
   class DoeGPUCanvasContext {
     constructor(canvas) {
       this._canvas = canvas;

@@ -67,6 +67,20 @@ pub extern fn metal_bridge_blit_encoder_copy_texture_to_buffer(encoder: ?*anyopa
 pub extern fn metal_bridge_blit_encoder_copy_texture_to_texture(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
 pub extern fn metal_bridge_create_surface_host(layer_out: *?*anyopaque) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_configure_surface_host(host: ?*anyopaque, width: u32, height: u32) callconv(.c) void;
+pub extern fn doe_surface_create_offscreen() callconv(.c) ?*anyopaque;
+pub extern fn doe_surface_create_from_layer(layer_h: ?*anyopaque) callconv(.c) ?*anyopaque;
+pub extern fn doe_surface_release(surf_h: ?*anyopaque) callconv(.c) void;
+pub extern fn doe_surface_configure(surf_h: ?*anyopaque, device_h: ?*anyopaque, width: u32, height: u32, pixel_format: u32, present_mode: u32, alpha_opaque: c_int, dpi_scale: f32) callconv(.c) void;
+pub extern fn doe_surface_unconfigure(surf_h: ?*anyopaque) callconv(.c) void;
+pub extern fn doe_surface_supports_format(wgpu_format: u32) callconv(.c) c_int;
+pub extern fn doe_surface_acquire_drawable(surf_h: ?*anyopaque, drawable_out: *?*anyopaque) callconv(.c) ?*anyopaque;
+pub extern fn doe_surface_present_drawable(cmd_buf_h: ?*anyopaque, drawable_h: ?*anyopaque) callconv(.c) void;
+pub extern fn doe_surface_present_drawable_async(cmd_buf_h: ?*anyopaque, drawable_h: ?*anyopaque) callconv(.c) void;
+pub extern fn doe_surface_discard_drawable(drawable_h: ?*anyopaque) callconv(.c) void;
+pub extern fn doe_surface_resize(surf_h: ?*anyopaque, width: u32, height: u32, dpi_scale: f32) callconv(.c) void;
+pub extern fn doe_surface_drawable_width(surf_h: ?*anyopaque) callconv(.c) u32;
+pub extern fn doe_surface_drawable_height(surf_h: ?*anyopaque) callconv(.c) u32;
+pub extern fn doe_surface_is_configured(surf_h: ?*anyopaque) callconv(.c) c_int;
 
 // clearBuffer / copyTextureToTexture / writeTexture
 pub extern fn metal_bridge_cmd_buf_fill_buffer(cmd_buf: ?*anyopaque, buffer: ?*anyopaque, offset: u64, size: u64) callconv(.c) void;

@@ -213,22 +213,21 @@ test "expressions: array indexing with expression through SPIR-V" {
 }
 
 // ============================================================
-// 32. Builtins: local_invocation_id and workgroup_id
+// 32. Builtins: local_invocation_id, workgroup_id, and num_workgroups
 // ============================================================
 
-test "builtins: local_invocation_id and workgroup_id through MSL" {
-    // num_workgroups is not yet wired in the MSL IR emitter (falls through to
-    // unsupported_builtin). Test only the two builtins that are supported.
+test "builtins: local_invocation_id, workgroup_id, and num_workgroups through MSL" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
         \\
         \\@compute @workgroup_size(64)
         \\fn main(
         \\    @builtin(local_invocation_id) lid: vec3u,
-        \\    @builtin(workgroup_id) wid: vec3u
+        \\    @builtin(workgroup_id) wid: vec3u,
+        \\    @builtin(num_workgroups) nwg: vec3u
         \\) {
         \\    let index = wid.x * 64u + lid.x;
-        \\    data[index] = index;
+        \\    data[index] = index + nwg.x;
         \\}
     ;
 
@@ -238,6 +237,7 @@ test "builtins: local_invocation_id and workgroup_id through MSL" {
     const msl = out[0..len];
     try std.testing.expect(contains(msl, "thread_position_in_threadgroup"));
     try std.testing.expect(contains(msl, "threadgroup_position_in_grid"));
+    try std.testing.expect(contains(msl, "threadgroups_per_grid"));
 }
 
 // ============================================================

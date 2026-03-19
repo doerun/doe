@@ -3,6 +3,8 @@
 /* String values match WGPUPowerPreference enums in the local addon ABI. */
 #define DOE_NATIVE_DIRECT_POWER_PREFERENCE_LOW_POWER 2
 #define DOE_NATIVE_DIRECT_POWER_PREFERENCE_HIGH_PERFORMANCE 3
+#define DOE_NATIVE_DIRECT_FEATURE_LEVEL_COMPATIBILITY 1
+#define DOE_NATIVE_DIRECT_FEATURE_LEVEL_CORE 2
 
 napi_value native_direct_resolved_promise(napi_env env, napi_value value) {
     napi_deferred deferred;
@@ -231,6 +233,21 @@ WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst, 
         napi_valuetype vt = napi_undefined;
         napi_typeof(env, options, &vt);
         if (vt == napi_object) {
+            napi_valuetype feature_level_type = napi_undefined;
+            napi_value feature_level_val;
+            if (napi_get_named_property(env, options, "featureLevel", &feature_level_val) == napi_ok) {
+                napi_typeof(env, feature_level_val, &feature_level_type);
+            }
+            if (feature_level_type == napi_string) {
+                char feature_level_str[32];
+                size_t feature_level_len = 0;
+                napi_get_value_string_utf8(env, feature_level_val, feature_level_str, sizeof(feature_level_str), &feature_level_len);
+                if (strcmp(feature_level_str, "compatibility") == 0) {
+                    opts.featureLevel = DOE_NATIVE_DIRECT_FEATURE_LEVEL_COMPATIBILITY;
+                } else if (strcmp(feature_level_str, "core") == 0) {
+                    opts.featureLevel = DOE_NATIVE_DIRECT_FEATURE_LEVEL_CORE;
+                }
+            }
             napi_valuetype pp_type = napi_undefined;
             napi_value pp_val;
             if (napi_get_named_property(env, options, "powerPreference", &pp_val) == napi_ok) {

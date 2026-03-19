@@ -903,6 +903,17 @@ pub const NativeVulkanRuntime = struct {
         }
     }
 
+    pub fn preferred_canvas_format(self: *NativeVulkanRuntime) model.WGPUTextureFormat {
+        var it = self.surfaces.valueIterator();
+        while (it.next()) |surface| {
+            if (!surface.capabilities_queried or surface.cached_capabilities.format_count == 0) continue;
+            return vulkan_surface.preferred_canvas_format_from_surface_formats(
+                surface.cached_capabilities.formats[0..@as(usize, surface.cached_capabilities.format_count)],
+            );
+        }
+        return model.WGPUTextureFormat_BGRA8Unorm;
+    }
+
     pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: model.SurfaceConfigureCommand) !void {
         if (cmd_arg.width == 0 or cmd_arg.height == 0) return error.InvalidArgument;
         const surface = self.surfaces.getPtr(cmd_arg.handle) orelse return error.SurfaceUnavailable;
@@ -915,12 +926,14 @@ pub const NativeVulkanRuntime = struct {
         surface.acquired = false;
         surface.width = cmd_arg.width;
         surface.height = cmd_arg.height;
-        surface.format = cmd_arg.format;
+        surface.requested_format = if (cmd_arg.format == 0) self.preferred_canvas_format() else cmd_arg.format;
+        surface.format = surface.requested_format;
         surface.usage = if (cmd_arg.usage == 0) model.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
         surface.alpha_mode = if (cmd_arg.alpha_mode == 0) c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR else cmd_arg.alpha_mode;
         surface.present_mode = if (cmd_arg.present_mode == 0) c.VK_PRESENT_MODE_FIFO_KHR else cmd_arg.present_mode;
         surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0) model.WGPUCanvasToneMappingMode_Standard else cmd_arg.tone_mapping_mode;
         surface.desired_maximum_frame_latency = if (cmd_arg.desired_maximum_frame_latency == 0) c.DEFAULT_SURFACE_MAX_FRAME_LATENCY else cmd_arg.desired_maximum_frame_latency;
+        try self.get_surface_capabilities(cmd_arg.handle);
         try vulkan_surface.create_swapchain(
             self.device,
             self.physical_device,
@@ -952,6 +965,8 @@ pub const NativeVulkanRuntime = struct {
         surface.acquired = false;
         surface.width = 0;
         surface.height = 0;
+        surface.last_acquire_suboptimal = false;
+        surface.last_present_suboptimal = false;
     }
 
     pub fn release_surface(self: *NativeVulkanRuntime, handle: u64) !void {

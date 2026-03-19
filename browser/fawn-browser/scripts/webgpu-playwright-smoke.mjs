@@ -599,7 +599,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           result.webgpuDeviceApi.hasImportExternalTexture =
             typeof device.importExternalTexture === "function";
           result.webgpuDeviceApi.hasCopyExternalImageToTexture =
-            typeof device.copyExternalImageToTexture === "function";
+            typeof device.queue?.copyExternalImageToTexture === "function";
         } catch (error) {
           result.errors.push(`adapter/device init failed: ${String(error)}`);
           return result;
@@ -744,8 +744,14 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
         let benchDevice = device;
         if (!result.smoke.renderTriangle.pass) {
           try {
+            const benchAdapter = await withOpTimeout("bench fallback requestAdapter", () =>
+              gpu.requestAdapter(),
+            );
+            if (!benchAdapter) {
+              throw new Error("bench fallback requestAdapter returned null");
+            }
             benchDevice = await withOpTimeout("bench fallback requestDevice", () =>
-              adapter.requestDevice(),
+              benchAdapter.requestDevice(),
             );
           } catch (error) {
             const message = `bench fallback device init failed: ${String(error)}`;

@@ -617,8 +617,6 @@ function baseLaunchArgs(port) {
     "--no-sandbox",
     "--disable-setuid-sandbox",
     "--disable-dev-shm-usage",
-    "--disable-crash-reporter",
-    "--disable-crashpad-for-testing",
     "--ignore-gpu-blocklist",
     "--enable-unsafe-webgpu",
   ];
@@ -1465,7 +1463,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
   try {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await page.goto(pageTarget.url, { waitUntil: "load", timeout: 120000 });
+    await page.goto(pageTarget.url, { waitUntil: "domcontentloaded", timeout: 120000 });
     const browserSurfaceArgs = {
       apiSurface: args.apiSurface,
       browserModuleUrl: browserSurfaceModuleUrl(pageTarget.url),

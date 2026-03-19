@@ -1,8 +1,14 @@
 // doe_canvas_event_native.zig — Canvas format query and native device event exports.
 // Sharded from doe_wgpu_native.zig to keep related surface concerns together.
 
+const builtin = @import("builtin");
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
+const native = @import("doe_wgpu_native.zig");
+const model = @import("model.zig");
+const bridge = @import("backend/metal/metal_bridge_decls.zig");
+
+const doe_surface_supports_format = bridge.doe_surface_supports_format;
 
 // BGRA8Unorm is the Metal-native swapchain format on Apple Silicon.
 // All modern macOS display hardware uses BGRA byte order for CAMetalLayer.
@@ -14,10 +20,25 @@ const PREFERRED_CANVAS_FORMAT: u32 = types.WGPUTextureFormat_BGRA8Unorm;
 // ============================================================
 
 // Returns the preferred canvas texture format for the adapter.
-// Metal always prefers bgra8unorm — the format is hardware-fixed, not adapter-instance-specific.
-// The raw adapter pointer is accepted for ABI compatibility but not interrogated.
+// Metal prefers BGRA8Unorm when the native bridge reports support.
+// Vulkan returns the runtime's best-known surface-backed preference when a
+// NativeVulkanRuntime is attached; otherwise it falls back to BGRA8Unorm,
+// matching the repo-local Vulkan surface preference order.
 pub export fn doeNativeAdapterGetPreferredCanvasFormat(raw: ?*anyopaque) callconv(.c) u32 {
-    _ = raw;
+    if (native.cast(native.DoeAdapter, raw)) |adapter| {
+        if (adapter.backend == .vulkan) return model.WGPUTextureFormat_BGRA8Unorm;
+    }
+    if (native.cast(native.DoeDevice, raw)) |device| {
+        if (device.backend == .vulkan) {
+            if (native.device_vk_runtime(device)) |rt| return rt.preferred_canvas_format();
+            return model.WGPUTextureFormat_BGRA8Unorm;
+        }
+    }
+    if (builtin.os.tag == .macos) {
+        if (doe_surface_supports_format(PREFERRED_CANVAS_FORMAT) != 0) return PREFERRED_CANVAS_FORMAT;
+        const rgba8: u32 = types.WGPUTextureFormat_RGBA8Unorm;
+        if (doe_surface_supports_format(rgba8) != 0) return rgba8;
+    }
     return PREFERRED_CANVAS_FORMAT;
 }
 

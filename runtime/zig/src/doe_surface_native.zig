@@ -17,6 +17,7 @@ const alloc = native.alloc;
 const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
+const model = @import("model.zig");
 
 const DoeDevice = native.DoeDevice;
 const DoeTexture = native.DoeTexture;
@@ -138,7 +139,6 @@ pub export fn doeNativeSurfaceConfigure(
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-    const model = @import("model.zig");
     rt.configure_surface(model.SurfaceConfigureCommand{
         .handle = surf.handle,
         .width = width,
@@ -174,11 +174,25 @@ pub export fn doeNativeSurfaceGetCurrentTexture(
         return;
     };
 
+    const surface_state = rt.surfaces.getPtr(surf.handle) orelse return;
+
     if (surf.current_tex) |old| alloc.destroy(old);
     const tex = make(DoeTexture) orelse return;
-    tex.* = .{ .vk_runtime_ref = surf.vk_runtime_ref };
+    tex.* = .{
+        .format = surface_state.format,
+        .width = surface_state.swapchain_extent.width,
+        .height = surface_state.swapchain_extent.height,
+        .depth_or_array_layers = 1,
+        .dimension = model.WGPUTextureDimension_2D,
+        .mip_level_count = 1,
+        .sample_count = 1,
+        .usage = surface_state.usage,
+        .texture_binding_view_dimension = model.WGPUTextureViewDimension_2D,
+        .vk_runtime_ref = surf.vk_runtime_ref,
+    };
     surf.current_tex = tex;
     if (out_texture) |t| t.* = toOpaque(tex);
+    if (out_suboptimal) |s| s.* = if (surface_state.last_acquire_suboptimal or surface_state.last_present_suboptimal) 1 else 0;
     if (out_status) |s| s.* = WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUCCESS;
 }
 
@@ -200,6 +214,10 @@ pub export fn doeNativeSurfaceUnconfigure(surf_raw: ?*anyopaque) callconv(.c) vo
     rt.unconfigure_surface(surf.handle) catch |err| {
         std.log.err("doe_surface_native: unconfigure_surface failed: {s}", .{@errorName(err)});
     };
+    if (surf.current_tex) |tex| {
+        alloc.destroy(tex);
+        surf.current_tex = null;
+    }
 }
 
 pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {

@@ -193,13 +193,13 @@ void d3d12_bridge_device_create_srv_texture(D3D12Handle device, D3D12Handle heap
                                              D3D12Handle texture, uint32_t format);
 void d3d12_bridge_device_create_srv_texture_2d(D3D12Handle device, D3D12Handle resource,
                                                 D3D12Handle heap, uint32_t index, uint32_t format,
-                                                uint32_t base_mip, uint32_t mip_count);
+                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count);
 void d3d12_bridge_device_create_srv_texture_cube(D3D12Handle device, D3D12Handle resource,
                                                   D3D12Handle heap, uint32_t index, uint32_t format,
-                                                  uint32_t base_mip, uint32_t mip_count);
+                                                  uint32_t aspect, uint32_t base_mip, uint32_t mip_count);
 void d3d12_bridge_device_create_srv_texture_3d(D3D12Handle device, D3D12Handle resource,
                                                 D3D12Handle heap, uint32_t index, uint32_t format,
-                                                uint32_t base_mip, uint32_t mip_count);
+                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count);
 void d3d12_bridge_device_create_uav_texture_2d(D3D12Handle device, D3D12Handle resource,
                                                 D3D12Handle heap, uint32_t index, uint32_t format,
                                                 uint32_t mip_slice);
@@ -257,7 +257,7 @@ int  d3d12_bridge_device_get_wave_lane_count_max(D3D12Handle device);
 int  d3d12_bridge_device_supports_native_16bit(D3D12Handle device);
 
 /* DXGI swap chain (surface) */
-D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue, uint32_t width, uint32_t height, uint32_t format);
+D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue, uint32_t width, uint32_t height, uint32_t format, uint32_t alpha_mode, uint32_t tone_mapping_mode);
 int  d3d12_bridge_swap_chain_present(D3D12Handle swap_chain, uint32_t sync_interval);
 D3D12Handle d3d12_bridge_swap_chain_get_buffer(D3D12Handle swap_chain, uint32_t index);
 int  d3d12_bridge_swap_chain_resize(D3D12Handle swap_chain, uint32_t width, uint32_t height, uint32_t format);

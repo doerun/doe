@@ -1,5 +1,5 @@
 import type {
-  BrowserSurfaceCanvasBackend,
+  NativeBrowserCanvasBackend,
   ProviderInfo,
   createBrowserSurfaceClasses,
   createNativeBrowserCanvasBackend,
@@ -13,7 +13,7 @@ import type {
 
 export interface BrowserCreateOptions {
   gpu?: GPU;
-  canvasBackend?: BrowserSurfaceCanvasBackend;
+  canvasBackend?: NativeBrowserCanvasBackend;
   contextFactory?: (canvas: HTMLCanvasElement | OffscreenCanvas) => GPUCanvasContext | null;
 }
 
@@ -25,7 +25,7 @@ export interface BrowserRequestDeviceOptions extends BrowserCreateOptions {
 export interface BrowserRuntime {
   readonly nativeGpu: GPU | null;
   readonly gpu: GPU | null;
-  readonly canvasBackend: BrowserSurfaceCanvasBackend;
+  readonly canvasBackend: NativeBrowserCanvasBackend;
   readonly classes: Record<string, unknown> & {
     DoeGPUCanvasContext: new (canvas: HTMLCanvasElement | OffscreenCanvas) => GPUCanvasContext;
     DoeGPUAdapter: new (native: GPUAdapter, instance?: GPU | null) => GPUAdapter;

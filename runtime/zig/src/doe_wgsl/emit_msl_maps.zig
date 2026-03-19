@@ -111,6 +111,7 @@ pub fn msl_builtin_name(builtin: ir.Builtin) []const u8 {
         .local_invocation_id => "thread_position_in_threadgroup",
         .local_invocation_index => "thread_index_in_threadgroup",
         .workgroup_id => "threadgroup_position_in_grid",
+        .num_workgroups => "threadgroups_per_grid",
         .sample_index => "sample_id",
         .sample_mask => "sample_mask",
         .vertex_index => "vertex_id",
@@ -127,14 +128,10 @@ pub fn msl_builtin_name(builtin: ir.Builtin) []const u8 {
 // Float formats → "float", uint formats → "uint", sint formats → "int".
 pub fn msl_storage_texture_elem(format: ir.TextureFormat) []const u8 {
     return switch (format) {
-        .rgba8unorm, .rgba8snorm,
-        .rgba16float,
-        .r32float, .rg32float, .rgba32float => "float",
+        .rgba8unorm, .rgba8snorm, .rgba16float, .r32float, .rg32float, .rgba32float => "float",
 
-        .rgba8uint, .rgba16uint,
-        .r32uint, .rg32uint, .rgba32uint => "uint",
+        .rgba8uint, .rgba16uint, .r32uint, .rg32uint, .rgba32uint => "uint",
 
-        .rgba8sint, .rgba16sint,
-        .r32sint, .rg32sint, .rgba32sint => "int",
+        .rgba8sint, .rgba16sint, .r32sint, .rg32sint, .rgba32sint => "int",
     };
 }

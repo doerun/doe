@@ -123,6 +123,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--doe-lib", default=str(DEFAULT_DOE_LIB))
     parser.add_argument("--mode", choices=["dawn", "doe", "both"], default="both")
+    parser.add_argument("--api-surface", choices=["native", "package-browser"], default="native")
     parser.add_argument("--headless", default="true", choices=["true", "false"])
     parser.add_argument("--chrome-arg", action="append", default=[])
     parser.add_argument(
@@ -430,6 +431,8 @@ def main() -> int:
             args.headless,
             "--out",
             str(out),
+            "--api-surface",
+            args.api_surface,
         ]
         if args.allow_bench_out:
             run_command.append("--allow-bench-out")
@@ -510,6 +513,7 @@ def main() -> int:
             "doeChrome": str(doe_chrome),
             "doeLib": str(doe_lib),
             "mode": args.mode,
+            "apiSurface": args.api_surface,
             "promotionApprovals": str(promotion_approvals),
         },
         "commands": {

@@ -78,6 +78,22 @@ static napi_value native_direct_adapter_get_preferred_canvas_format(napi_env env
  * Adapter — getInfo
  * ================================================================ */
 
+static size_t native_direct_adapter_info_string_len(WGPUStringView view) {
+    return view.length == WGPU_STRLEN ? NAPI_AUTO_LENGTH : view.length;
+}
+
+static void native_direct_set_adapter_info_string_prop(
+    napi_env env,
+    napi_value obj,
+    const char* name,
+    WGPUStringView view
+) {
+    napi_value value;
+    const char* data = view.data ? view.data : "";
+    napi_create_string_utf8(env, data, native_direct_adapter_info_string_len(view), &value);
+    napi_set_named_property(env, obj, name, value);
+}
+
 static napi_value native_direct_adapter_get_info(napi_env env, napi_callback_info info) {
     size_t argc = 0;
     napi_value this_arg;
@@ -86,6 +102,37 @@ static napi_value native_direct_adapter_get_info(napi_env env, napi_callback_inf
     napi_value obj;
     napi_create_object(env, &obj);
 
+    NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+    void* adapter = cache ? cache->native
+                          : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+
+    bool used_standard_info = false;
+    WGPUAdapterInfo info_view;
+    memset(&info_view, 0, sizeof(info_view));
+    if (pfn_wgpuAdapterGetInfo) {
+        used_standard_info = pfn_wgpuAdapterGetInfo(adapter, &info_view) == WGPU_STATUS_SUCCESS;
+    }
+
+    if (used_standard_info) {
+        native_direct_set_adapter_info_string_prop(env, obj, "vendor", info_view.vendor);
+        native_direct_set_adapter_info_string_prop(env, obj, "architecture", info_view.architecture);
+        native_direct_set_adapter_info_string_prop(env, obj, "device", info_view.device);
+        native_direct_set_adapter_info_string_prop(env, obj, "description", info_view.description);
+
+        napi_value v_is_fallback, v_sg_min, v_sg_max;
+        napi_get_boolean(env, false, &v_is_fallback);
+        napi_create_uint32(env, info_view.subgroupMinSize, &v_sg_min);
+        napi_create_uint32(env, info_view.subgroupMaxSize, &v_sg_max);
+        napi_set_named_property(env, obj, "isFallbackAdapter", v_is_fallback);
+        napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
+        napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
+
+        if (pfn_wgpuAdapterInfoFreeMembers) {
+            pfn_wgpuAdapterInfoFreeMembers(info_view);
+        }
+        return obj;
+    }
+
     const char* vendor = "";
     const char* arch   = "";
     const char* device = "";
@@ -93,9 +140,6 @@ static napi_value native_direct_adapter_get_info(napi_env env, napi_callback_inf
     char* block = NULL;
 
     if (pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo) {
-        NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
-        void* adapter = cache ? cache->native
-                              : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
         pfn_doeNativeAdapterGetInfo(adapter, &vendor, &arch, &device, &desc, &block);
         if (!vendor) vendor = "";
         if (!arch)   arch   = "";
@@ -103,17 +147,18 @@ static napi_value native_direct_adapter_get_info(napi_env env, napi_callback_inf
         if (!desc)   desc   = "";
     }
 
-    napi_value v_vendor, v_arch, v_device, v_desc;
+    napi_value v_vendor, v_arch, v_device, v_desc, v_is_fallback;
     napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
     napi_create_string_utf8(env, arch,   NAPI_AUTO_LENGTH, &v_arch);
     napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
     napi_create_string_utf8(env, desc,   NAPI_AUTO_LENGTH, &v_desc);
+    napi_get_boolean(env, false, &v_is_fallback);
     napi_set_named_property(env, obj, "vendor",       v_vendor);
     napi_set_named_property(env, obj, "architecture", v_arch);
     napi_set_named_property(env, obj, "device",       v_device);
     napi_set_named_property(env, obj, "description",  v_desc);
+    napi_set_named_property(env, obj, "isFallbackAdapter", v_is_fallback);
 
-    /* Apple Silicon SIMD-group size is fixed at 32 on all known variants. */
     napi_value v_sg_min, v_sg_max;
     napi_create_uint32(env, 32, &v_sg_min);
     napi_create_uint32(env, 32, &v_sg_max);

@@ -20,7 +20,9 @@ PFN_wgpuInstanceWaitAny pfn_wgpuInstanceWaitAny = NULL;
 PFN_wgpuInstanceProcessEvents pfn_wgpuInstanceProcessEvents = NULL;
 PFN_wgpuAdapterRelease pfn_wgpuAdapterRelease = NULL;
 PFN_wgpuAdapterHasFeature pfn_wgpuAdapterHasFeature = NULL;
+PFN_wgpuAdapterGetInfo pfn_wgpuAdapterGetInfo = NULL;
 PFN_wgpuAdapterGetLimits pfn_wgpuAdapterGetLimits = NULL;
+PFN_wgpuAdapterInfoFreeMembers pfn_wgpuAdapterInfoFreeMembers = NULL;
 PFN_wgpuAdapterRequestDevice pfn_wgpuAdapterRequestDevice = NULL;
 PFN_wgpuDeviceRelease pfn_wgpuDeviceRelease = NULL;
 PFN_wgpuDeviceHasFeature pfn_wgpuDeviceHasFeature = NULL;
@@ -346,6 +348,8 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeRenderBundleEncoderSetImmediates = (FnRenderBundleEncoderSetImmediates)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderSetImmediates");
 
     /* GPUAdapter.info and GPUShaderModule.getCompilationInfo — optional; absent on older builds. */
+    pfn_wgpuAdapterGetInfo = (PFN_wgpuAdapterGetInfo)LIB_SYM(g_lib, "wgpuAdapterGetInfo");
+    pfn_wgpuAdapterInfoFreeMembers = (PFN_wgpuAdapterInfoFreeMembers)LIB_SYM(g_lib, "wgpuAdapterInfoFreeMembers");
     pfn_doeNativeAdapterGetInfo = (FnAdapterGetInfo)LIB_SYM(g_lib, "doeNativeAdapterGetInfo");
     pfn_doeNativeAdapterFreeInfo = (FnAdapterFreeInfo)LIB_SYM(g_lib, "doeNativeAdapterFreeInfo");
     pfn_doeNativeShaderModuleGetCompilationInfo = (FnShaderModuleGetCompilationInfo)LIB_SYM(g_lib, "doeNativeShaderModuleGetCompilationInfo");

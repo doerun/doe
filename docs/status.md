@@ -256,7 +256,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package now also exports a concrete browser-owned canvas provider helper in `packages/webgpu/src/shared/browser-native-canvas-backend.js` (`createNativeBrowserCanvasBackend`), which delegates `GPUCanvasContext.configure/getCurrentTexture/unconfigure` plus browser-native `importExternalTexture` / `copyExternalImageToTexture` calls onto real browser WebGPU objects for Track A/offscreen adapter use.
   - bind-group validation now recognizes `GPUExternalTexture` resources and `externalTexture` layout entries on the shared JS surface, but the headless Doe runtime package surface still fails fast for those bindings without an explicit browser canvas backend provider.
   - package now exposes an explicit browser composition subpath at `@simulatte/webgpu/browser` (`packages/webgpu/src/browser.js`), which assembles the shared full surface, encoder surface, browser surface classes, and native browser canvas backend into a browser-owned wrapper for `navigator.gpu`, `GPUAdapter`, `GPUDevice`, and `GPUCanvasContext` without changing the default headless package contract.
-  - `GPUDevice.importExternalTexture` and `GPUQueue.copyExternalImageToTexture` remain helper-surface delegation points rather than native Doe runtime features; concrete canvas/video-frame interop is still pending browser-backend provider wiring.
+  - `GPUDevice.importExternalTexture` and `GPUQueue.copyExternalImageToTexture` are now repo-local browser-package surfaces on `@simulatte/webgpu/browser`; Playwright smoke reports both methods present on the package-browser path. Native Doe Metal/Vulkan/D3D12 backends still do not own OS-level media interop themselves.
   - `doe.runCompute()` now infers binding access from Doe helper-created buffer usage and fails fast when a bare binding lacks Doe helper metadata or resolves to non-bindable/ambiguous usage.
     - prebuild infrastructure for self-contained installs:
       - `scripts/install.js`: uses prebuilt binaries when present, falls back to node-gyp
@@ -645,6 +645,7 @@ Browser integration (`browser/fawn-browser`):
 - the browser lane has a concrete plan, contracts, smoke/bench harnesses, and bring-up scripts
 - Track A (browser) M1-M3 governance is now wired through `bench/browser/browser_gate.py` with explicit ownership and cross-owner promotion approvals
 - Track B (modules) M4-M6 promotion governance is now wired for all five modules, but browser-lane rollout remains an active bring-up track rather than a finished product surface
+- package-browser validation on Linux/Chrome now passes smoke in both Dawn and Doe modes, including compute, render, `preferredCanvasFormat`, `importExternalTexture`, and `queue.copyExternalImageToTexture`. The layered bench now runs on the package-browser path with `62/68` required L1 scenarios and `3/4` required L2 workflows passing per mode; it remains diagnostic with `14` required failures left overall.
 
 Performance substantiation:
 - the broad Metal lane remains under timing-scope audit and is not citable as broad claim evidence
@@ -2084,3 +2085,27 @@ Backend-specific emitters for all three backends:
   `setImmediates` rejects writes that exceed the bound layout budget.
 - Vulkan render-pass descriptors now carry `maxDrawCount` through the Doe ABI,
   and Doe render-pass recording rejects draws beyond that declared limit.
+
+### D3D12 and Metal package-surface alignment
+
+- Node/addon and native-direct now forward `featureLevel` through the
+  `requestAdapter` ABI on the Metal package surface; Bun already forwarded it.
+- Node/addon and native-direct adapter info now prefer `wgpuAdapterGetInfo`
+  with the Doe-native fallback retained for older builds, which closes the
+  D3D12 package `GPUAdapter.info` / `GPUDevice.adapterInfo` publication path.
+- D3D12 package devices now wire native `pushErrorScope`, `popErrorScope`,
+  `lost`, `onuncapturederror`, and `addEventListener` /
+  `removeEventListener` instead of tracking those rows as not wired.
+- D3D12 package surfaces now count `createComputePipelineAsync`,
+  `createRenderBundleEncoder`, render-bundle `finish`, render-pass
+  `beginOcclusionQuery` / `endOcclusionQuery` / `executeBundles`, `queue`,
+  `destroy`, and `GPUShaderModule.getCompilationInfo` as implemented package
+  paths backed by existing Doe native exports.
+- The remaining D3D12 top-level `GPU` / `GPUAdapter` partials were stale:
+  the shared package surface already exposed `requestAdapter`,
+  `requestDevice`, `wgslLanguageFeatures`, and the package-owned
+  `getPreferredCanvasFormat()` helper, so those tracker rows now count as
+  implemented.
+- Metal `GPUSupportedLimits.maxImmediateSize` and
+  `GPUTextureViewDescriptor.swizzle` were stale tracker rows; both were
+  already implemented through the existing runtime and package plumbing.

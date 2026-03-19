@@ -100,24 +100,22 @@ pub const SurfaceState = struct {
 
     pub fn acquire_surface(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model.SurfaceAcquireCommand) !u64 {
         const encode_start = common_timing.now_ns();
-        if (self.map.getPtr(cmd.handle)) |entry| {
-            entry.status = .acquired;
-        } else {
-            self.map.put(allocator, cmd.handle, .{ .handle = cmd.handle, .status = .acquired }) catch return error.InvalidState;
-        }
+        _ = allocator;
+        const entry = self.map.getPtr(cmd.handle) orelse return error.InvalidState;
+        if (entry.status != .configured) return error.InvalidState;
+        entry.status = .acquired;
         return common_timing.ns_delta(common_timing.now_ns(), encode_start);
     }
 
     pub fn present_surface(self: *SurfaceState, cmd: model.SurfacePresentCommand) !u64 {
         const submit_start = common_timing.now_ns();
-        if (self.map.getPtr(cmd.handle)) |entry| {
-            if (entry.swap_chain) |sc| {
-                if (d3d12_bridge_swap_chain_present(sc, 0) != 0) return error.InvalidState;
-            } else {
-                return error.InvalidState;
-            }
-            entry.status = .configured;
+        const entry = self.map.getPtr(cmd.handle) orelse return error.InvalidState;
+        if (entry.swap_chain) |sc| {
+            if (d3d12_bridge_swap_chain_present(sc, 0) != 0) return error.InvalidState;
+        } else {
+            return error.InvalidState;
         }
+        entry.status = .configured;
         return common_timing.ns_delta(common_timing.now_ns(), submit_start);
     }
 

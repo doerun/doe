@@ -2,6 +2,19 @@ import {
   failValidation,
 } from './resource-lifecycle.js';
 
+function normalize_origin2d(origin) {
+  if (origin === undefined || origin === null) {
+    return { x: 0, y: 0 };
+  }
+  if (Array.isArray(origin)) {
+    return { x: origin[0] ?? 0, y: origin[1] ?? 0 };
+  }
+  return {
+    x: origin.x ?? 0,
+    y: origin.y ?? 0,
+  };
+}
+
 function default_context_factory(canvas) {
   if (!canvas || typeof canvas.getContext !== 'function') {
     failValidation(
@@ -102,10 +115,14 @@ function createNativeBrowserCanvasBackend({ contextFactory = default_context_fac
         );
       }
       return native.copyExternalImageToTexture(
-        source,
+        {
+          ...source,
+          origin: normalize_origin2d(source.origin),
+        },
         {
           ...destination,
           texture: destination.texture?._native ?? destination.texture,
+          origin: normalize_origin2d(destination.origin),
         },
         copySize,
       );

@@ -28,6 +28,8 @@ napi_value doe_instance_release(napi_env env, napi_callback_info info) {
  * 0 = undefined, 2 = low-power, 3 = high-performance */
 #define WGPU_POWER_PREFERENCE_LOW_POWER      2
 #define WGPU_POWER_PREFERENCE_HIGH_PERFORMANCE 3
+#define WGPU_FEATURE_LEVEL_COMPATIBILITY 1
+#define WGPU_FEATURE_LEVEL_CORE          2
 napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
     /* Accept 1 or 2 args: (instance[, options]) */
     size_t actual_argc = 2;
@@ -46,6 +48,22 @@ napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
         napi_valuetype vt = napi_undefined;
         napi_typeof(env, args[1], &vt);
         if (vt == napi_object) {
+            /* featureLevel */
+            napi_valuetype feature_level_type = napi_undefined;
+            napi_value feature_level_val;
+            if (napi_get_named_property(env, args[1], "featureLevel", &feature_level_val) == napi_ok) {
+                napi_typeof(env, feature_level_val, &feature_level_type);
+            }
+            if (feature_level_type == napi_string) {
+                char feature_level_str[32];
+                size_t feature_level_len = 0;
+                napi_get_value_string_utf8(env, feature_level_val, feature_level_str, sizeof(feature_level_str), &feature_level_len);
+                if (strcmp(feature_level_str, "compatibility") == 0) {
+                    opts.featureLevel = WGPU_FEATURE_LEVEL_COMPATIBILITY;
+                } else if (strcmp(feature_level_str, "core") == 0) {
+                    opts.featureLevel = WGPU_FEATURE_LEVEL_CORE;
+                }
+            }
             /* powerPreference */
             napi_valuetype pp_type = napi_undefined;
             napi_value pp_val;

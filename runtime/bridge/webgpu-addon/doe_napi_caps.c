@@ -314,6 +314,17 @@ napi_value doe_device_register_lost_callback(napi_env env, napi_callback_info in
  * Adapter info and shader module compilation info
  * ================================================================ */
 
+static size_t adapter_info_string_len(WGPUStringView view) {
+    return view.length == WGPU_STRLEN ? NAPI_AUTO_LENGTH : view.length;
+}
+
+static void set_adapter_info_string_prop(napi_env env, napi_value obj, const char* name, WGPUStringView view) {
+    napi_value value;
+    const char* data = view.data ? view.data : "";
+    napi_create_string_utf8(env, data, adapter_info_string_len(view), &value);
+    napi_set_named_property(env, obj, name, value);
+}
+
 napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 1);
     CHECK_LIB_LOADED(env);
@@ -322,6 +333,33 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
 
     napi_value obj;
     napi_create_object(env, &obj);
+
+    bool used_standard_info = false;
+    WGPUAdapterInfo info_view;
+    memset(&info_view, 0, sizeof(info_view));
+    if (pfn_wgpuAdapterGetInfo) {
+        used_standard_info = pfn_wgpuAdapterGetInfo(adapter, &info_view) == WGPU_STATUS_SUCCESS;
+    }
+
+    if (used_standard_info) {
+        set_adapter_info_string_prop(env, obj, "vendor", info_view.vendor);
+        set_adapter_info_string_prop(env, obj, "architecture", info_view.architecture);
+        set_adapter_info_string_prop(env, obj, "device", info_view.device);
+        set_adapter_info_string_prop(env, obj, "description", info_view.description);
+
+        napi_value v_is_fallback, v_sg_min, v_sg_max;
+        napi_get_boolean(env, false, &v_is_fallback);
+        napi_create_uint32(env, info_view.subgroupMinSize, &v_sg_min);
+        napi_create_uint32(env, info_view.subgroupMaxSize, &v_sg_max);
+        napi_set_named_property(env, obj, "isFallbackAdapter", v_is_fallback);
+        napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
+        napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
+
+        if (pfn_wgpuAdapterInfoFreeMembers) {
+            pfn_wgpuAdapterInfoFreeMembers(info_view);
+        }
+        return obj;
+    }
 
     const char* vendor = "";
     const char* arch = "";
@@ -337,17 +375,19 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
         if (!desc) desc = "";
     }
 
-    napi_value v_vendor, v_arch, v_device, v_desc, v_sg_min, v_sg_max;
+    napi_value v_vendor, v_arch, v_device, v_desc, v_is_fallback, v_sg_min, v_sg_max;
     napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
     napi_create_string_utf8(env, arch, NAPI_AUTO_LENGTH, &v_arch);
     napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
     napi_create_string_utf8(env, desc, NAPI_AUTO_LENGTH, &v_desc);
+    napi_get_boolean(env, false, &v_is_fallback);
     napi_create_uint32(env, 32, &v_sg_min);
     napi_create_uint32(env, 32, &v_sg_max);
     napi_set_named_property(env, obj, "vendor", v_vendor);
     napi_set_named_property(env, obj, "architecture", v_arch);
     napi_set_named_property(env, obj, "device", v_device);
     napi_set_named_property(env, obj, "description", v_desc);
+    napi_set_named_property(env, obj, "isFallbackAdapter", v_is_fallback);
     napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
     napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
 
